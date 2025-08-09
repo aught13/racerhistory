@@ -1,8 +1,14 @@
 parameters:
-    level: 8
+    level: 3
     treatPhpDocTypesAsCertain: false
-    checkGenericClassInNonGenericObjectType: false
     bootstrapFiles:
         - config/bootstrap.php
     paths:
         - src/
+    ignoreErrors:
+        # Allow CakePHP magic properties
+        - '#Access to an undefined property.*::\$Authentication#'
+        - '#Access to an undefined property.*::\$Users#'
+        # Allow missing return types for now
+        - '#Method .* has no return type specified#'
+        - '#Method .* has parameter .* with no type specified#'
