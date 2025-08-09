@@ -59,6 +59,11 @@ jobs:
         with:
           dependency-versions: ${{ matrix.dependencies }}
           composer-options: ${{ matrix.composer-options }}
+        env:
+          COMPOSER_ALLOW_SUPERUSER: 1
+
+      - name: Validate Composer dependencies
+        run: composer validate --strict --no-check-publish
 
       - name: Copy configuration file
         run: cp config/app_local.example.php config/app_local.php
@@ -108,7 +113,7 @@ jobs:
         if: ${{ matrix.coverage == true }}
         uses: codecov/codecov-action@2db07e317924c76f654a414629d71c65876882e2 # v4.6.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN || '' }}
           file: ./coverage.xml
           flags: unittests
           name: codecov-racerhistory
