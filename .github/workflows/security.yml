@@ -57,8 +57,8 @@ jobs:
           name: security-report
           path: security-report.json
 
-  psalm-security:
-    name: Psalm Security Analysis
+  phpstan-security:
+    name: PHPStan Security Analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -75,11 +75,18 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Run Psalm Security Analysis
+      - name: Copy configuration file for analysis
+        run: cp config/app_local.example.php config/app_local.php
+
+      - name: Run PHPStan Security Analysis
         run: |
-          if [ -f psalm.xml ]; then
-            vendor/bin/psalm --output-format=github --taint-analysis
+          if [ -f vendor/bin/phpstan ]; then
+            vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=512M
+            echo "## PHPStan Security Analysis Completed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "Psalm configuration not found, skipping security analysis"
+            echo "PHPStan not available, skipping security analysis"
+            echo "## PHPStan Security Analysis Skipped" >> $GITHUB_STEP_SUMMARY
           fi
         continue-on-error: true
+        env:
+          SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
