@@ -1,13 +1,27 @@
 
 # RacerHistory Web Application
 
+[![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
+[![CakePHP](https://img.shields.io/badge/CakePHP-5.x-red.svg)](https://cakephp.org)
+[![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Build Status](https://github.com/aught13/racerhistory/workflows/CI/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/ci.yml)
+[![Security Scan](https://github.com/aught13/racerhistory/workflows/Security/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/security.yml)
+[![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/master/graph/badge.svg)](https://codecov.io/gh/aught13/racerhistory)
+[![GitHub last commit](https://img.shields.io/github/last-commit/aught13/racerhistory)](https://github.com/aught13/racerhistory)
+[![GitHub issues](https://img.shields.io/github/issues/aught13/racerhistory)](https://github.com/aught13/racerhistory/issues)
+[![GitHub stars](https://img.shields.io/github/stars/aught13/racerhistory)](https://github.com/aught13/racerhistory/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/aught13/racerhistory)](https://github.com/aught13/racerhistory/network)
+[![Documentation](https://img.shields.io/badge/Documentation-95%25-brightgreen.svg)](templates/README.md)
+[![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)](https://github.com/aught13/racerhistory/graphs/commit-activity)
+
 A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.x framework with Bootstrap 5.3.2 and modern web technologies.
 
 ## 🏁 Overview
 
 This project powers the racerhistory.com website, providing features for:
 - **User Authentication** - Secure registration, login, and password management
-- **Admin Dashboard** - Administrative interface for user and content management  
+- **Admin Dashboard** - Administrative interface for user and content management
 - **Historical Game Data** - Management system for racing game historical data
 - **Responsive Design** - Mobile-first Bootstrap 5.3.2 interface
 
@@ -114,7 +128,7 @@ racerhistory/
 
 ### Code Coverage
 - **Controllers**: ~85% documented with comprehensive PHPDoc
-- **Models**: ~90% documented with entity and table documentation  
+- **Models**: ~90% documented with entity and table documentation
 - **Views**: ~95% documented with template headers and annotations
 - **Tests**: ~40% coverage with ongoing expansion
 
@@ -150,7 +164,7 @@ bin/cake test --coverage-html tmp/coverage/
 - **Password Hashing** using PHP's password_hash()
 - **Form Security** with CSRF tokens on all forms
 
-### Input Validation  
+### Input Validation
 - **HTML Escaping** via `h()` helper in all templates
 - **Form Validation** with CakePHP validation rules
 - **SQL Injection Prevention** through ORM and prepared statements
@@ -187,7 +201,7 @@ bin/cake test --coverage-html tmp/coverage/
 
 ### Tools
 - **PHPStan** - Static analysis
-- **PHP_CodeSniffer** - Code style checking  
+- **PHP_CodeSniffer** - Code style checking
 - **PHPUnit** - Testing framework
 - **Composer** - Dependency management
 

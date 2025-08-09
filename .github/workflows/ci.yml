@@ -2,13 +2,9 @@ name: CI
 
 on:
   push:
-    branches:
-      - '5.x'
-      - '5.next'
-      - '6.x'
+    branches: [ master, main ]
   pull_request:
-    branches:
-      - '*'
+    branches: [ master, main ]
   workflow_dispatch:
 
 permissions:
@@ -17,14 +13,32 @@ permissions:
 jobs:
   testsuite:
     runs-on: ubuntu-24.04
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: racerhistory_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
     strategy:
       fail-fast: false
       matrix:
         include:
           - php-version: '8.1'
             dependencies: 'lowest'
-          - php-version: '8.4'
+            coverage: true
+          - php-version: '8.2'
             dependencies: 'highest'
+            coverage: false
+          - php-version: '8.3'
+            dependencies: 'highest'
+            coverage: false
 
     steps:
     - uses: actions/checkout@v4
@@ -33,9 +47,9 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-version }}
-        extensions: mbstring, intl, pdo_sqlite
+        extensions: mbstring, intl, pdo_mysql, zip, curl, xml, json
         ini-values: zend.assertions=1
-        coverage: none
+        coverage: ${{ matrix.coverage && 'xdebug' || 'none' }}
 
     - name: Composer install
       uses: ramsey/composer-install@v3
@@ -43,13 +57,51 @@ jobs:
         dependency-versions: ${{ matrix.dependencies }}
         composer-options: ${{ matrix.composer-options }}
 
+    - name: Copy configuration file
+      run: cp config/app_local.example.php config/app_local.php
+
+    - name: Setup test database configuration
+      run: |
+        sed -i "s/'host' => 'localhost'/'host' => '127.0.0.1'/" config/app_local.php
+        sed -i "s/'username' => 'my_app'/'username' => 'test_user'/" config/app_local.php
+        sed -i "s/'password' => 'secret'/'password' => 'test_password'/" config/app_local.php
+        sed -i "s/'database' => 'my_app'/'database' => 'racerhistory_test'/" config/app_local.php
+
+    - name: Run database migrations
+      run: |
+        bin/cake migrations migrate --connection=test
+      continue-on-error: true
+
     - name: Composer post install
       run: composer run-script post-install-cmd --no-interaction
 
-    - name: Run PHPUnit
+    - name: Run PHPUnit (with coverage)
+      if: matrix.coverage
+      run: vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit=test-results.xml
+      env:
+        DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+
+    - name: Run PHPUnit (without coverage)
+      if: "!matrix.coverage"
       run: vendor/bin/phpunit
       env:
-        DATABASE_TEST_URL: sqlite://./testdb.sqlite
+        DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+
+    - name: Upload coverage reports to Codecov
+      if: matrix.coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-racerhistory
+        fail_ci_if_error: false
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.php-version }}
+        path: test-results.xml
 
   coding-standard:
     name: Coding Standard & Static Analysis
