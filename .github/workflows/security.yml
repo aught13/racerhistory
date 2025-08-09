@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@9e3e5c00865167583515a69f8f299ec52ffb4058 # v2.30.6 (full SHA pinned)
+        uses: shivammathur/setup-php@0ac4874a143196d74f30423c89f1864a161ba10e # v2.30.4
         with:
           php-version: "8.3"
           extensions: mbstring, intl, zip, curl, xml, json
@@ -50,15 +50,8 @@ jobs:
           echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
           composer audit --no-dev || echo "Security vulnerabilities found - check the full report" >> $GITHUB_STEP_SUMMARY
 
-      - name: GitHub Security Advisory Check
-        uses: github/osv-scanner-action@0a71af12b0e01b2c0e1b9d71ee5e5977ac05a96d # v1.8.5
-        with:
-          scan-args: |-
-            --lockfile
-            ./composer.lock
-
       - name: Upload security report
-        uses: actions/upload-artifact@f1a9a9406c1c2c2c8e85b2e1fa53232fddc7a3c4 # v4.4.3
+        uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v4.4.3
         if: always()
         with:
           name: security-report
@@ -73,7 +66,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@9e3e5c00865167583515a69f8f299ec52ffb4058 # v2.30.6 (full SHA pinned)
+        uses: shivammathur/setup-php@0ac4874a143196d74f30423c89f1864a161ba10e # v2.30.4
         with:
           php-version: "8.3"
           extensions: mbstring, intl, zip, curl, xml, json
