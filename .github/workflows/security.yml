@@ -47,7 +47,7 @@ jobs:
         vendor/bin/security-checker security:check composer.lock --format=json > security-report.json || true
 
     - name: Upload security report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: security-report
