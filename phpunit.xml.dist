@@ -7,8 +7,9 @@
          cacheDirectory=".phpunit.cache"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.1/phpunit.xsd">
     <php>
-        <ini name="memory_limit" value="-1"/>
+        <ini name="memory_limit" value="512M"/>
         <ini name="apc.enable_cli" value="1"/>
+        <env name="XDEBUG_MODE" value="coverage"/>
     </php>
 
     <!-- Add any additional test suites you want to run here -->
@@ -32,6 +33,19 @@
         </include>
         <exclude>
             <file>src/Console/Installer.php</file>
+            <directory>src/Console/</directory>
         </exclude>
     </source>
+
+    <!-- Coverage reporting configuration -->
+    <coverage includeUncoveredFiles="true"
+              processUncoveredFiles="true"
+              ignoreDeprecatedCodeUnits="true"
+              disableCodeCoverageIgnore="false">
+        <report>
+            <clover outputFile="coverage.xml"/>
+            <html outputDirectory="tmp/coverage/"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
+    </coverage>
 </phpunit>

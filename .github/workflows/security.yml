@@ -2,12 +2,12 @@ name: Security
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
   schedule:
     # Run security scan every Monday at 9:00 AM UTC
-    - cron: '0 9 * * 1'
+    - cron: "0 9 * * 1"
 
 permissions:
   contents: read
@@ -20,62 +20,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.1'
-        extensions: mbstring, intl, zip, curl, xml, json
-        tools: composer:v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: mbstring, intl, zip, curl, xml, json
+          tools: composer:v2
 
-    - name: Cache Composer packages
-      uses: actions/cache@v3
-      with:
-        path: vendor
-        key: ${{ runner.os }}-php-security-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-security-
+      - name: Cache Composer packages
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-security-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-security-
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
 
-    - name: Run Security Checker
-      run: |
-        composer require --dev sensiolabs/security-checker
-        vendor/bin/security-checker security:check composer.lock --format=json > security-report.json || true
+      - name: Run Security Checker
+        run: |
+          composer require --dev sensiolabs/security-checker
+          vendor/bin/security-checker security:check composer.lock --format=json > security-report.json || true
 
-    - name: Upload security report
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: security-report
-        path: security-report.json
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-report
+          path: security-report.json
 
   psalm-security:
     name: Psalm Security Analysis
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.1'
-        extensions: mbstring, intl, zip, curl, xml, json
-        tools: composer:v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: mbstring, intl, zip, curl, xml, json
+          tools: composer:v2
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
 
-    - name: Run Psalm Security Analysis
-      run: |
-        if [ -f psalm.xml ]; then
-          vendor/bin/psalm --output-format=github --taint-analysis
-        else
-          echo "Psalm configuration not found, skipping security analysis"
-        fi
-      continue-on-error: true
+      - name: Run Psalm Security Analysis
+        run: |
+          if [ -f psalm.xml ]; then
+            vendor/bin/psalm --output-format=github --taint-analysis
+          else
+            echo "Psalm configuration not found, skipping security analysis"
+          fi
+        continue-on-error: true

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
   workflow_dispatch:
 
 permissions:
@@ -13,7 +13,7 @@ permissions:
 jobs:
   testsuite:
     runs-on: ubuntu-24.04
-    
+
     services:
       mysql:
         image: mysql:8.0
@@ -25,107 +25,114 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - php-version: '8.1'
-            dependencies: 'lowest'
+          - php-version: "8.1"
+            dependencies: "lowest"
+            composer-options: "--prefer-lowest"
             coverage: true
-          - php-version: '8.2'
-            dependencies: 'highest'
+          - php-version: "8.2"
+            dependencies: "highest"
+            composer-options: ""
             coverage: false
-          - php-version: '8.3'
-            dependencies: 'highest'
+          - php-version: "8.3"
+            dependencies: "highest"
+            composer-options: ""
             coverage: false
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: ${{ matrix.php-version }}
-        extensions: mbstring, intl, pdo_mysql, zip, curl, xml, json
-        ini-values: zend.assertions=1
-        coverage: ${{ matrix.coverage && 'xdebug' || 'none' }}
+      - name: Setup PHP
+        uses: shivammathur/setup-php@0ac4874a143196d74f30423c89f1864a161ba10e # v2.30.4
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, pdo_mysql, zip, curl, xml, json
+          ini-values: zend.assertions=1
+          coverage: ${{ matrix.coverage == true && 'xdebug' || 'none' }}
 
-    - name: Composer install
-      uses: ramsey/composer-install@v3
-      with:
-        dependency-versions: ${{ matrix.dependencies }}
-        composer-options: ${{ matrix.composer-options }}
+      - name: Composer install
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.0.0
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+          composer-options: ${{ matrix.composer-options }}
 
-    - name: Copy configuration file
-      run: cp config/app_local.example.php config/app_local.php
+      - name: Copy configuration file
+        run: cp config/app_local.example.php config/app_local.php
 
-    - name: Setup test database configuration
-      run: |
-        sed -i "s/'host' => 'localhost'/'host' => '127.0.0.1'/" config/app_local.php
-        sed -i "s/'username' => 'my_app'/'username' => 'test_user'/" config/app_local.php
-        sed -i "s/'password' => 'secret'/'password' => 'test_password'/" config/app_local.php
-        sed -i "s/'database' => 'my_app'/'database' => 'racerhistory_test'/" config/app_local.php
+      - name: Setup test database configuration
+        run: |
+          sed -i "s/'host' => 'localhost'/'host' => '127.0.0.1'/" config/app_local.php
+          sed -i "s/'username' => 'my_app'/'username' => 'test_user'/" config/app_local.php
+          sed -i "s/'password' => 'secret'/'password' => 'test_password'/" config/app_local.php
+          sed -i "s/'database' => 'my_app'/'database' => 'racerhistory_test'/" config/app_local.php
 
-    - name: Run database migrations
-      run: |
-        bin/cake migrations migrate --connection=test
-      continue-on-error: true
+      - name: Run database migrations
+        run: |
+          bin/cake migrations migrate --connection=test
+        continue-on-error: true
 
-    - name: Composer post install
-      run: composer run-script post-install-cmd --no-interaction
+      - name: Composer post install
+        run: composer run-script post-install-cmd --no-interaction
 
-    - name: Run PHPUnit (with coverage)
-      if: matrix.coverage
-      run: vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit=test-results.xml
-      env:
-        DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+      - name: Run PHPUnit (with coverage)
+        if: ${{ matrix.coverage == true }}
+        run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text --log-junit=test-results.xml
+        env:
+          DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+          XDEBUG_MODE: coverage
 
-    - name: Run PHPUnit (without coverage)
-      if: "!matrix.coverage"
-      run: vendor/bin/phpunit
-      env:
-        DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+      - name: Run PHPUnit (without coverage)
+        if: ${{ matrix.coverage == false }}
+        run: vendor/bin/phpunit
+        env:
+          DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
-    - name: Upload coverage reports to Codecov
-      if: matrix.coverage
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-racerhistory
-        fail_ci_if_error: false
+      - name: Upload coverage reports to Codecov
+        if: ${{ matrix.coverage == true }}
+        uses: codecov/codecov-action@2db07e317924c76f654a414629d71c65876882e2 # v4.6.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-racerhistory
+          fail_ci_if_error: false
+          verbose: true
+        continue-on-error: true
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: test-results-${{ matrix.php-version }}
-        path: test-results.xml
+      - name: Upload test results
+        uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v4.4.3
+        if: always()
+        with:
+          name: test-results-${{ matrix.php-version }}
+          path: test-results.xml
 
   coding-standard:
     name: Coding Standard & Static Analysis
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.1'
-        extensions: mbstring, intl
-        coverage: none
-        tools: cs2pr, phpstan:1.12
+      - name: Setup PHP
+        uses: shivammathur/setup-php@0ac4874a143196d74f30423c89f1864a161ba10e # v2.30.4
+        with:
+          php-version: "8.1"
+          extensions: mbstring, intl
+          coverage: none
+          tools: cs2pr, phpstan:1.12
 
-    - name: Composer install
-      uses: ramsey/composer-install@v3
+      - name: Composer install
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.0.0
 
-    - name: Run PHP CodeSniffer
-      run: vendor/bin/phpcs --report=checkstyle | cs2pr
+      - name: Run PHP CodeSniffer
+        run: vendor/bin/phpcs --report=checkstyle | cs2pr
 
-    - name: Run phpstan
-      if: always()
-      run: phpstan
-      env:
-        SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
+      - name: Run phpstan
+        if: always()
+        run: phpstan
+        env:
+          SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
