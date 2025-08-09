@@ -26,7 +26,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.3"
           extensions: mbstring, intl, zip, curl, xml, json
           tools: composer:v2
 
@@ -64,7 +64,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.3"
           extensions: mbstring, intl, zip, curl, xml, json
           tools: composer:v2
 
