@@ -32,7 +32,8 @@ class ErrorController extends AppController
      */
     public function initialize(): void
     {
-        // Only add parent::initialize() if you are confident your `AppController` is safe.
+        $this->loadComponent('RequestHandler');
+        // Don't initialize authentication for error pages to avoid infinite loops
     }
 
     /**
@@ -43,6 +44,10 @@ class ErrorController extends AppController
      */
     public function beforeFilter(EventInterface $event): void
     {
+        // Allow unauthenticated access to error pages
+        if (method_exists($this, 'Authentication')) {
+            $this->Authentication->allowUnauthenticated(['error400', 'error404', 'error500']);
+        }
     }
 
     /**
@@ -56,6 +61,13 @@ class ErrorController extends AppController
         parent::beforeRender($event);
 
         $this->viewBuilder()->setTemplatePath('Error');
+
+        // Set layout based on debug mode
+        if (\Cake\Core\Configure::read('debug')) {
+            $this->viewBuilder()->setLayout('dev_error');
+        } else {
+            $this->viewBuilder()->setLayout('error');
+        }
     }
 
     /**

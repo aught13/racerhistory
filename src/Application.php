@@ -20,6 +20,9 @@ use Cake\Core\Configure;
 use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
 use Authentication\AuthenticationService;
+use Authentication\Middleware\AuthenticationMiddleware;
+use Cake\Http\Exception\ForbiddenException;
+use Cake\Http\Exception\UnauthorizedException;
 use Psr\Http\Message\ServerRequestInterface;
 use Cake\Core\ContainerInterface;
 use Cake\Datasource\FactoryLocator;
@@ -81,8 +84,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // caching in production could improve performance.
             // See https://github.com/CakeDC/cakephp-cached-routing
             ->add(new RoutingMiddleware($this))
-            // Add Authentication Middleware
-            ->add(new \Authentication\Middleware\AuthenticationMiddleware($this))
 
             // Parse various types of encoded request bodies so that they are
             // available as array through $request->getData()
@@ -93,7 +94,13 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // https://book.cakephp.org/5/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
             ->add(new CsrfProtectionMiddleware([
                 'httponly' => true,
-            ]));
+            ]))
+
+            // Add Authentication Middleware AFTER CSRF
+            // This middleware will handle authentication and set the identity
+            // on the request object.
+            // It should be added before any middleware that requires authentication.
+            ->add(new \Authentication\Middleware\AuthenticationMiddleware($this));
 
         return $middlewareQueue;
     }
@@ -116,25 +123,35 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
      */
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
-        $service = new AuthenticationService();
+        $service = new AuthenticationService([
+            'unauthenticatedRedirect' => '/users/login',
+            'queryParam' => 'redirect',
+        ]);
 
-        // Load authenticators
-        $service->loadAuthenticator('Authentication.Session');
+        // Load the Password identifier
+        $service->loadIdentifier('Authentication.Password', [
+            'fields' => [
+                'username' => 'username',
+                'password' => 'password',
+            ],
+            'passwordHasher' => 'Authentication.Default',
+        ]);
+
+        // Load Session authenticator for persistence
+        $service->loadAuthenticator('Authentication.Session', [
+            'sessionKey' => 'Auth',
+            'identify' => true
+        ]);
+
+        // Load Form authenticator for login forms
         $service->loadAuthenticator('Authentication.Form', [
             'fields' => [
                 'username' => 'username',
                 'password' => 'password',
             ],
             'loginUrl' => '/users/login',
-            'identifier' => 'Authentication.Password',
-            'identifierConfig' => [
-                'fields' => [
-                    'username' => 'username',
-                    'password' => 'password',
-                ],
-                'passwordHasher' => 'Authentication.Default'
-            ]
         ]);
+
         return $service;
     }
 }

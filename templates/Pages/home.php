@@ -31,7 +31,8 @@ $checkConnection = function (string $name) {
         $connected = true;
     } catch (Exception $connectionError) {
         $error = $connectionError->getMessage();
-        if (method_exists($connectionError, 'getAttributes')) {
+        // Optionally, check for CakePHP exceptions with attributes
+        if ($connectionError instanceof \Cake\Core\Exception\CakeException) {
             $attributes = $connectionError->getAttributes();
             if (isset($attributes['message'])) {
                 $error .= '<br />' . $attributes['message'];
@@ -59,6 +60,7 @@ endif;
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -68,12 +70,16 @@ endif;
     </title>
     <?= $this->Html->meta('icon') ?>
 
-    <?= $this->Html->css(['normalize.min', 'milligram.min', 'fonts', 'cake', 'home']) ?>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <?= $this->Html->css(['cake', 'home']) ?>
 
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
 </head>
+
 <body>
     <header>
         <div class="container text-center">
@@ -91,14 +97,20 @@ endif;
                 <div class="row">
                     <div class="column">
                         <div class="message default text-center">
-                            <small>Please be aware that this page will not be shown if you turn off debug mode unless you replace templates/Pages/home.php with your own version.</small>
+                            <small>Please be aware that this page will not be shown if you turn off debug mode unless
+                                you replace templates/Pages/home.php with your own version.</small>
                         </div>
-                        <div id="url-rewriting-warning" style="padding: 1rem; background: #fcebea; color: #cc1f1a; border-color: #ef5753;">
+                        <div id="url-rewriting-warning"
+                            style="padding: 1rem; background: #fcebea; color: #cc1f1a; border-color: #ef5753;">
                             <ul>
                                 <li class="bullet problem">
                                     URL rewriting is not properly configured on your server.<br />
-                                    1) <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/installation.html#url-rewriting">Help me configure it</a><br />
-                                    2) <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/development/configuration.html#general-configuration">I don't / can't use URL rewriting</a>
+                                    1) <a target="_blank" rel="noopener"
+                                        href="https://book.cakephp.org/5/en/installation.html#url-rewriting">Help me
+                                        configure it</a><br />
+                                    2) <a target="_blank" rel="noopener"
+                                        href="https://book.cakephp.org/5/en/development/configuration.html#general-configuration">I
+                                        don't / can't use URL rewriting</a>
                                 </li>
                             </ul>
                         </div>
@@ -109,56 +121,63 @@ endif;
                     <div class="column">
                         <h4>Environment</h4>
                         <ul>
-                        <?php if (version_compare(PHP_VERSION, '8.1.0', '>=')) : ?>
-                            <li class="bullet success">Your version of PHP is 8.1.0 or higher (detected <?= PHP_VERSION ?>).</li>
-                        <?php else : ?>
-                            <li class="bullet problem">Your version of PHP is too low. You need PHP 8.1.0 or higher to use CakePHP (detected <?= PHP_VERSION ?>).</li>
-                        <?php endif; ?>
+                            <?php if (version_compare(PHP_VERSION, '8.1.0', '>=')) : ?>
+                            <li class="bullet success">Your version of PHP is 8.1.0 or higher (detected
+                                <?= PHP_VERSION ?>).</li>
+                            <?php else : ?>
+                            <li class="bullet problem">Your version of PHP is too low. You need PHP 8.1.0 or higher to
+                                use CakePHP (detected <?= PHP_VERSION ?>).</li>
+                            <?php endif; ?>
 
-                        <?php if (extension_loaded('mbstring')) : ?>
+                            <?php if (extension_loaded('mbstring')) : ?>
                             <li class="bullet success">Your version of PHP has the mbstring extension loaded.</li>
-                        <?php else : ?>
-                            <li class="bullet problem">Your version of PHP does NOT have the mbstring extension loaded.</li>
-                        <?php endif; ?>
+                            <?php else : ?>
+                            <li class="bullet problem">Your version of PHP does NOT have the mbstring extension loaded.
+                            </li>
+                            <?php endif; ?>
 
-                        <?php if (extension_loaded('openssl')) : ?>
+                            <?php if (extension_loaded('openssl')) : ?>
                             <li class="bullet success">Your version of PHP has the openssl extension loaded.</li>
-                        <?php else : ?>
-                            <li class="bullet problem">Your version of PHP does NOT have the openssl extension loaded.</li>
-                        <?php endif; ?>
+                            <?php else : ?>
+                            <li class="bullet problem">Your version of PHP does NOT have the openssl extension loaded.
+                            </li>
+                            <?php endif; ?>
 
-                        <?php if (extension_loaded('intl')) : ?>
+                            <?php if (extension_loaded('intl')) : ?>
                             <li class="bullet success">Your version of PHP has the intl extension loaded.</li>
-                        <?php else : ?>
+                            <?php else : ?>
                             <li class="bullet problem">Your version of PHP does NOT have the intl extension loaded.</li>
-                        <?php endif; ?>
+                            <?php endif; ?>
 
-                        <?php if (ini_get('zend.assertions') !== '1') : ?>
-                            <li class="bullet problem">You should set <code>zend.assertions</code> to <code>1</code> in your <code>php.ini</code> for your development environment.</li>
-                        <?php endif; ?>
+                            <?php if (ini_get('zend.assertions') !== '1') : ?>
+                            <li class="bullet problem">You should set <code>zend.assertions</code> to <code>1</code> in
+                                your <code>php.ini</code> for your development environment.</li>
+                            <?php endif; ?>
                         </ul>
                     </div>
                     <div class="column">
                         <h4>Filesystem</h4>
                         <ul>
-                        <?php if (is_writable(TMP)) : ?>
+                            <?php if (is_writable(TMP)) : ?>
                             <li class="bullet success">Your tmp directory is writable.</li>
-                        <?php else : ?>
+                            <?php else : ?>
                             <li class="bullet problem">Your tmp directory is NOT writable.</li>
-                        <?php endif; ?>
+                            <?php endif; ?>
 
-                        <?php if (is_writable(LOGS)) : ?>
+                            <?php if (is_writable(LOGS)) : ?>
                             <li class="bullet success">Your logs directory is writable.</li>
-                        <?php else : ?>
+                            <?php else : ?>
                             <li class="bullet problem">Your logs directory is NOT writable.</li>
-                        <?php endif; ?>
+                            <?php endif; ?>
 
-                        <?php $settings = Cache::getConfig('_cake_translations_'); ?>
-                        <?php if (!empty($settings)) : ?>
-                            <li class="bullet success">The <em><?= h($settings['className']) ?></em> is being used for core caching. To change the config edit config/app.php</li>
-                        <?php else : ?>
-                            <li class="bullet problem">Your cache is NOT working. Please check the settings in config/app.php</li>
-                        <?php endif; ?>
+                            <?php $settings = Cache::getConfig('_cake_translations_'); ?>
+                            <?php if (!empty($settings)) : ?>
+                            <li class="bullet success">The <em><?= h($settings['className']) ?></em> is being used for
+                                core caching. To change the config edit config/app.php</li>
+                            <?php else : ?>
+                            <li class="bullet problem">Your cache is NOT working. Please check the settings in
+                                config/app.php</li>
+                            <?php endif; ?>
                         </ul>
                     </div>
                 </div>
@@ -170,29 +189,31 @@ endif;
                         $result = $checkConnection('default');
                         ?>
                         <ul>
-                        <?php if ($result['connected']) : ?>
+                            <?php if ($result['connected']) : ?>
                             <li class="bullet success">CakePHP is able to connect to the database.</li>
-                        <?php else : ?>
-                            <li class="bullet problem">CakePHP is NOT able to connect to the database.<br /><?= h($result['error']) ?></li>
-                        <?php endif; ?>
+                            <?php else : ?>
+                            <li class="bullet problem">CakePHP is NOT able to connect to the
+                                database.<br /><?= h($result['error']) ?></li>
+                            <?php endif; ?>
                         </ul>
                     </div>
                     <div class="column">
                         <h4>DebugKit</h4>
                         <ul>
-                        <?php if (Plugin::isLoaded('DebugKit')) : ?>
+                            <?php if (Plugin::isLoaded('DebugKit')) : ?>
                             <li class="bullet success">DebugKit is loaded.</li>
                             <?php
                             $result = $checkConnection('debug_kit');
                             ?>
                             <?php if ($result['connected']) : ?>
-                                <li class="bullet success">DebugKit can connect to the database.</li>
+                            <li class="bullet success">DebugKit can connect to the database.</li>
                             <?php else : ?>
-                                <li class="bullet problem">There are configuration problems present which need to be fixed:<br /><?= $result['error'] ?></li>
+                            <li class="bullet problem">There are configuration problems present which need to be
+                                fixed:<br /><?= $result['error'] ?></li>
                             <?php endif; ?>
-                        <?php else : ?>
+                            <?php else : ?>
                             <li class="bullet problem">DebugKit is <strong>not</strong> loaded.</li>
-                        <?php endif; ?>
+                            <?php endif; ?>
                         </ul>
                     </div>
                 </div>
@@ -200,8 +221,11 @@ endif;
                 <div class="row">
                     <div class="column links">
                         <h3>Getting Started</h3>
-                        <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/">CakePHP Documentation</a>
-                        <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/tutorials-and-examples/cms/installation.html">The 20 min CMS Tutorial</a>
+                        <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/">CakePHP
+                            Documentation</a>
+                        <a target="_blank" rel="noopener"
+                            href="https://book.cakephp.org/5/en/tutorials-and-examples/cms/installation.html">The 20 min
+                            CMS Tutorial</a>
                     </div>
                 </div>
                 <hr>
@@ -209,7 +233,8 @@ endif;
                     <div class="column links">
                         <h3>Help and Bug Reports</h3>
                         <a target="_blank" rel="noopener" href="https://slack-invite.cakephp.org/">Slack</a>
-                        <a target="_blank" rel="noopener" href="https://github.com/cakephp/cakephp/issues">CakePHP Issues</a>
+                        <a target="_blank" rel="noopener" href="https://github.com/cakephp/cakephp/issues">CakePHP
+                            Issues</a>
                         <a target="_blank" rel="noopener" href="https://discourse.cakephp.org/">CakePHP Forum</a>
                     </div>
                 </div>
@@ -219,10 +244,12 @@ endif;
                         <h3>Docs and Downloads</h3>
                         <a target="_blank" rel="noopener" href="https://api.cakephp.org/">CakePHP API</a>
                         <a target="_blank" rel="noopener" href="https://bakery.cakephp.org">The Bakery</a>
-                        <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/">CakePHP Documentation</a>
+                        <a target="_blank" rel="noopener" href="https://book.cakephp.org/5/en/">CakePHP
+                            Documentation</a>
                         <a target="_blank" rel="noopener" href="https://plugins.cakephp.org">CakePHP plugins repo</a>
                         <a target="_blank" rel="noopener" href="https://github.com/cakephp/">CakePHP Code</a>
-                        <a target="_blank" rel="noopener" href="https://github.com/FriendsOfCake/awesome-cakephp">CakePHP Awesome List</a>
+                        <a target="_blank" rel="noopener"
+                            href="https://github.com/FriendsOfCake/awesome-cakephp">CakePHP Awesome List</a>
                         <a target="_blank" rel="noopener" href="https://www.cakephp.org">CakePHP</a>
                     </div>
                 </div>
@@ -230,7 +257,8 @@ endif;
                 <div class="row">
                     <div class="column links">
                         <h3>Training and Certification</h3>
-                        <a target="_blank" rel="noopener" href="https://cakefoundation.org/">Cake Software Foundation</a>
+                        <a target="_blank" rel="noopener" href="https://cakefoundation.org/">Cake Software
+                            Foundation</a>
                         <a target="_blank" rel="noopener" href="https://training.cakephp.org/">CakePHP Training</a>
                     </div>
                 </div>
@@ -238,4 +266,5 @@ endif;
         </div>
     </main>
 </body>
+
 </html>

@@ -30,6 +30,17 @@ use Cake\Routing\RouteBuilder;
  * if required.
  */
 return function (RouteBuilder $routes): void {
+    $routes->prefix('Admin', function (RouteBuilder $routes) {
+        // All routes here will be prefixed with `/admin`
+        // And have the 'Admin' prefix.
+        // Make sure to call `parent::beforeFilter()` in your controllers.
+        // AdminAuthMiddleware is handled globally in Application.php - no need to apply it here
+
+        $routes->connect('/', ['controller' => 'Dashboard', 'action' => 'index']); // Admin root route
+        $routes->connect('/login', ['controller' => 'Users', 'action' => 'login']); // Admin login route
+        $routes->connect('/users', ['controller' => 'Users', 'action' => 'index']);
+        $routes->fallbacks(DashedRoute::class);
+    });
     /*
      * The default class to use for all routes
      *
@@ -76,6 +87,9 @@ return function (RouteBuilder $routes): void {
          * See https://book.cakephp.org/5/en/development/routing.html#fallbacks-method for more information
          */
         $builder->fallbacks();
+
+        // Custom 404 route for any unmatched routes
+        $builder->connect('/*', ['controller' => 'Error', 'action' => 'error404']);
     });
 
     /*

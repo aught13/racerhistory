@@ -74,6 +74,8 @@ class Initial extends BaseMigration
             ])
             ->create();
 
+        // Refactored for MariaDB/SQLite compatibility
+        $driver = $this->getAdapter()->getAdapterType();
         $this->table('games')
             ->addColumn('id', 'integer', [
                 'autoIncrement' => true,
@@ -199,13 +201,13 @@ class Initial extends BaseMigration
                 'limit' => 16777215,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -252,13 +254,13 @@ class Initial extends BaseMigration
                 'null' => true,
                 'signed' => false,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -308,13 +310,13 @@ class Initial extends BaseMigration
                 'limit' => 162,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'current_timestamp()',
                 'limit' => null,
                 'null' => false,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'current_timestamp()',
                 'limit' => null,
                 'null' => false,
             ])
@@ -339,13 +341,13 @@ class Initial extends BaseMigration
                 'limit' => 162,
                 'null' => false,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -378,13 +380,13 @@ class Initial extends BaseMigration
                 'limit' => null,
                 'null' => false,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'current_timestamp()',
                 'limit' => null,
                 'null' => false,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -425,13 +427,13 @@ class Initial extends BaseMigration
                 'limit' => 16777215,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -451,13 +453,13 @@ class Initial extends BaseMigration
                 'limit' => 162,
                 'null' => false,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -609,15 +611,15 @@ class Initial extends BaseMigration
                 'limit' => 11,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -761,15 +763,15 @@ class Initial extends BaseMigration
                 'limit' => 11,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -904,15 +906,15 @@ class Initial extends BaseMigration
                 'limit' => 3,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -966,15 +968,15 @@ class Initial extends BaseMigration
                 'limit' => 11,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -1083,15 +1085,15 @@ class Initial extends BaseMigration
                 'limit' => 11,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -1206,15 +1208,15 @@ class Initial extends BaseMigration
                 'null' => true,
                 'signed' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -1323,15 +1325,15 @@ class Initial extends BaseMigration
                 'limit' => 11,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -1360,13 +1362,13 @@ class Initial extends BaseMigration
                 'limit' => 162,
                 'null' => false,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
@@ -1444,15 +1446,15 @@ class Initial extends BaseMigration
                 'limit' => 16777215,
                 'null' => true,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => 'current_timestamp()',
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => '0000-00-00 00:00:00',
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
-                'null' => false,
+                'null' => true,
             ])
             ->create();
 
@@ -1500,6 +1502,16 @@ class Initial extends BaseMigration
             ->addColumn('roster_weight', 'string', [
                 'default' => null,
                 'limit' => 162,
+                'null' => true,
+            ])
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
+                'limit' => null,
+                'null' => true,
+            ])
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
+                'limit' => null,
                 'null' => true,
             ])
             ->create();
@@ -1571,13 +1583,13 @@ class Initial extends BaseMigration
                 'limit' => 1,
                 'null' => false,
             ])
-            ->addColumn('created_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])
-            ->addColumn('updated_at', 'timestamp', [
-                'default' => null,
+            ->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
                 'limit' => null,
                 'null' => true,
             ])

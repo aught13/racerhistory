@@ -42,11 +42,32 @@ class AppController extends Controller
         parent::initialize();
 
         $this->loadComponent('Flash');
+        $this->loadComponent('FormProtection');
 
-        /*
-         * Enable the following component for recommended CakePHP form protection settings.
-         * see https://book.cakephp.org/5/en/controllers/components/form-protection.html
-         */
-        //$this->loadComponent('FormProtection');
+        // Only load authentication for admin controllers and user-related actions
+        // This prevents authentication from being enforced on all public pages
+        $isAdminController = str_contains($this->getRequest()->getParam('prefix') ?? '', 'Admin');
+        $isUsersController = $this->getRequest()->getParam('controller') === 'Users';
+
+        if (!($this instanceof ErrorController) && ($isAdminController || $isUsersController)) {
+            $this->loadComponent('Authentication.Authentication');
+        }
+    }
+
+    /**
+     * Before filter callback.
+     *
+     * @param \Cake\Event\EventInterface $event The beforeFilter event.
+     * @return void
+     */
+    public function beforeFilter(\Cake\Event\EventInterface $event): void
+    {
+        parent::beforeFilter($event);
+
+        // Allow unauthenticated access to login actions for Users controller
+        // Admin controllers handle authentication in their own beforeFilter
+        if (method_exists($this, 'Authentication') && $this->getRequest()->getParam('controller') === 'Users') {
+            $this->Authentication->allowUnauthenticated(['login', 'register']);
+        }
     }
 }

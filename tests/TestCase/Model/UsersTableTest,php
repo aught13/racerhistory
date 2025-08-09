@@ -1,0 +1,119 @@
+<?php
+namespace App\Test\TestCase\Model\Table;
+
+use App\Model\Table\UsersTable;
+use Cake\TestSuite\TestCase;
+use Cake\ORM\TableRegistry;
+
+class UsersTableTest extends TestCase
+{
+    protected array $fixtures = [
+        'app.Users',
+    ];
+
+    protected UsersTable $Users;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->Users = TableRegistry::getTableLocator()->get('Users');
+    }
+
+    public function tearDown(): void
+    {
+        unset($this->Users);
+        parent::tearDown();
+    }
+
+    public function testInitialize(): void
+    {
+        $this->assertEquals('users', $this->Users->getTable());
+        $this->assertEquals('email', $this->Users->getDisplayField());
+        $this->assertEquals('id', $this->Users->getPrimaryKey());
+        $this->assertTrue($this->Users->hasBehavior('Timestamp'));
+    }
+
+    public function testValidationDefault(): void
+    {
+        $validator = $this->Users->getValidator('default');
+
+        $this->assertTrue($validator->hasField('username'));
+        $this->assertTrue($validator->hasField('email'));
+        $this->assertTrue($validator->hasField('password'));
+    }
+
+    public function testValidationSuccess(): void
+    {
+        $data = [
+            'username' => 'testuser',
+            'email' => 'test@example.com',
+            'password' => 'password123'
+        ];
+
+        $user = $this->Users->newEntity($data);
+        $this->assertEmpty($user->getErrors());
+    }
+
+    public function testValidationFailure(): void
+    {
+        $data = [
+            'username' => '', // Empty username
+            'email' => 'invalid-email', // Invalid email
+            'password' => '123' // Too short
+        ];
+
+        $user = $this->Users->newEntity($data);
+        $this->assertNotEmpty($user->getErrors());
+        $this->assertArrayHasKey('username', $user->getErrors());
+        $this->assertArrayHasKey('email', $user->getErrors());
+        $this->assertArrayHasKey('password', $user->getErrors());
+    }
+
+    public function testBeforeSavePasswordHashing(): void
+    {
+        $plainPassword = 'plaintext123';
+        $user = $this->Users->newEntity([
+            'username' => 'testuser',
+            'email' => 'test@example.com',
+            'password' => $plainPassword
+        ]);
+
+        $this->Users->save($user);
+
+        $this->assertNotEquals($plainPassword, $user->password);
+        $this->assertStringStartsWith('$2y$', $user->password); // bcrypt hash
+    }
+
+    public function testFindActive(): void
+    {
+        $query = $this->Users->find('active');
+        $this->assertStringContainsString('active', $query->sql());
+    }
+
+    public function testCreateUser(): void
+    {
+        $data = [
+            'username' => 'newuser',
+            'email' => 'new@example.com',
+            'password' => 'password123'
+        ];
+
+        $user = $this->Users->createUser($data);
+
+        $this->assertNotNull($user);
+        $this->assertEquals('newuser', $user->username);
+        $this->assertEquals('new@example.com', $user->email);
+    }
+
+    public function testCreateUserWithInvalidData(): void
+    {
+        $data = [
+            'username' => '', // Invalid
+            'email' => 'invalid-email',
+            'password' => '123'
+        ];
+
+        $user = $this->Users->createUser($data);
+        $this->assertNull($user);
+    }
+}

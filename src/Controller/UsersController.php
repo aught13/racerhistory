@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Controller\AppController;
@@ -6,91 +8,105 @@ use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\UnauthorizedException;
 
+/**
+ * Users Controller
+ *
+ * Handles user authentication, registration, and account management.
+ * This controller manages public user actions like login, logout, and registration.
+ *
+ * @property \App\Controller\Component\UserManagerComponent $UserManager
+ */
 class UsersController extends AppController
 {
+    /**
+     * Initialization hook method.
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        $this->loadComponent('UserManager');
     }
 
-    public function beforeFilter(EventInterface $event)
+    /**
+     * Before filter callback.
+     *
+     * @param \Cake\Event\EventInterface $event The beforeFilter event.
+     * @return void
+     */
+    public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
         $this->Authentication->addUnauthenticatedActions(['login', 'register', 'resetPassword']);
     }
 
+    /**
+     * User login action.
+     *
+     * @return \Cake\Http\Response|null Redirects on successful login.
+     */
     public function login()
     {
-        $this->request->allowMethod(['get', 'post']);
-
-        if ($this->request->is('post')) {
-            $result = $this->Authentication->getResult();
-            if ($result->isValid()) {
-                $user = $this->Authentication->getIdentity();
-                if ($user->status !== 'active') {
-                    $this->Authentication->logout();
-                    $this->Flash->error('Your account is not active. Please contact an administrator.');
-                    return;
-                }
-                $redirect = $this->request->getQuery('redirect', [
-                    'controller' => 'Pages',
-                    'action' => 'home'
-                ]);
-                return $this->redirect($redirect);
-            }
-            $this->Flash->error('Invalid username or password');
-        }
+        return $this->UserManager->login($this);
     }
 
+    /**
+     * User logout action.
+     *
+     * @return \Cake\Http\Response Redirects to login page.
+     */
     public function logout()
     {
-        $this->Authentication->logout();
-        return $this->redirect(['controller' => 'Users', 'action' => 'login']);
+        return $this->UserManager->logout($this);
     }
 
+    /**
+     * User registration action.
+     *
+     * Allows new users to register if registration is enabled.
+     *
+     * @return \Cake\Http\Response|null Redirects on successful registration.
+     */
     public function register()
     {
-        $user = $this->Users->newEmptyEntity();
-        if ($this->request->is('post')) {
-            $data = $this->request->getData();
-            $data['role'] = 'view';
-            $data['status'] = 'pending';
-
-            // Check for duplicate username or email
-            $duplicate = $this->Users->find()
-                ->where([
-                    'OR' => [
-                        'username' => $data['username'],
-                        'email' => $data['email']
-                    ]
-                ])
-                ->first();
-            if ($duplicate) {
-                if ($duplicate->username === $data['username']) {
-                    $this->Flash->error('Username is already taken. Please choose another.');
-                }
-                if ($duplicate->email === $data['email']) {
-                    $this->Flash->error('Email address is already registered. Please use another.');
-                }
-            } else {
-                $user = $this->Users->patchEntity($user, $data);
-                if ($this->Users->save($user)) {
-                    $this->Flash->success('Registration successful. You can now log in.');
-                    return $this->redirect(['action' => 'login']);
-                }
-                $this->Flash->error('Unable to register user.');
-            }
+        // Check registration setting
+        $siteOptionsTable = $this->fetchTable('SiteOptions');
+        $siteOption = $siteOptionsTable->find()->where(['option_key' => 'registration'])->first();
+        $registrationEnabled = !$siteOption || $siteOption->value === 'true';
+        if (!$registrationEnabled) {
+            $this->Flash->error('Registration is currently disabled.');
         }
-        $this->set(compact('user'));
+        $data = $this->request->is('post') ? $this->request->getData() : [];
+        if ($this->request->is('post') && $registrationEnabled) {
+            $data['role'] = 'user';
+            $data['status'] = 'active';
+            $usersTable = $this->fetchTable('Users');
+            $user = $usersTable->newEmptyEntity();
+            $user = $usersTable->patchEntity($user, $data);
+            if ($usersTable->save($user)) {
+                $this->request->getSession()->write('Auth.username', $user->username);
+                return $this->redirect(['action' => 'login']);
+            }
+            $this->Flash->error('Unable to register user');
+        }
+        $this->set('user', isset($user) ? $user : null);
     }
 
+    /**
+     * Password reset action.
+     *
+     * @return \Cake\Http\Response|null
+     */
     public function resetPassword()
     {
-        if ($this->request->is('post')) {
-            $email = $this->request->getData('email');
-            // Here you would generate a token and send an email
-            $this->Flash->success('If your email exists, a reset link will be sent.');
-        }
+        return $this->UserManager->resetPassword($this);
+    }
+
+    // Redirect all other actions to home
+    public function __call($name, $arguments)
+    {
+        return $this->redirect('/');
     }
 }
