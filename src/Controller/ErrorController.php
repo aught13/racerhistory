@@ -32,8 +32,8 @@ class ErrorController extends AppController
      */
     public function initialize(): void
     {
-        $this->loadComponent('RequestHandler');
         // Don't initialize authentication for error pages to avoid infinite loops
+        // Note: RequestHandler component was removed in CakePHP 5.x
     }
 
     /**

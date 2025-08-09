@@ -98,14 +98,14 @@ jobs:
 
       - name: Run PHPUnit (with coverage)
         if: ${{ matrix.coverage == true }}
-        run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text --log-junit=test-results.xml
+        run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text --log-junit=test-results.xml --verbose
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
           XDEBUG_MODE: coverage
 
       - name: Run PHPUnit (without coverage)
         if: ${{ matrix.coverage == false }}
-        run: vendor/bin/phpunit
+        run: vendor/bin/phpunit --verbose
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
