@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-use Migrations\BaseMigration;
+use Migrations\AbstractMigration;
 
-class Initial extends BaseMigration
+class Initial extends AbstractMigration
 {
     public bool $autoId = false;
 
@@ -352,12 +352,14 @@ class Initial extends BaseMigration
                 'null' => true,
             ])
             ->addIndex(
-                $this->index([
-                        'place_name',
-                        'place_state',
-                    ])
-                    ->setName('duplicate')
-                    ->setType('unique')
+                [
+                    'place_name',
+                    'place_state',
+                ],
+                [
+                    'name' => 'duplicate',
+                    'unique' => true
+                ]
             )
             ->create();
 
@@ -464,9 +466,11 @@ class Initial extends BaseMigration
                 'null' => true,
             ])
             ->addIndex(
-                $this->index('sport_name')
-                    ->setName('name')
-                    ->setType('unique')
+                ['sport_name'],
+                [
+                    'name' => 'name',
+                    'unique' => true
+                ]
             )
             ->create();
 

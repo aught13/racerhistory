@@ -69,11 +69,24 @@ jobs:
           sed -i "s/'username' => 'my_app'/'username' => 'test_user'/" config/app_local.php
           sed -i "s/'password' => 'secret'/'password' => 'test_password'/" config/app_local.php
           sed -i "s/'database' => 'my_app'/'database' => 'racerhistory_test'/" config/app_local.php
+          # Also update the test datasource to use MySQL
+          sed -i "s/'url' => env('DATABASE_TEST_URL', 'sqlite:\/\/\/.*')/'url' => env('DATABASE_TEST_URL', 'mysql:\/\/test_user:test_password@127.0.0.1:3306\/racerhistory_test')/" config/app_local.php
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -u root -proot && break
+            echo "Waiting for MySQL to be ready..."
+            sleep 2
+          done
+          # Ensure test database exists and user has permissions
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS racerhistory_test; GRANT ALL PRIVILEGES ON racerhistory_test.* TO 'test_user'@'%';"
 
       - name: Run database migrations
         run: |
-          bin/cake migrations migrate --connection=test
-        continue-on-error: true
+          bin/cake migrations migrate --no-interaction
+        env:
+          DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
       - name: Composer post install
         run: composer run-script post-install-cmd --no-interaction
