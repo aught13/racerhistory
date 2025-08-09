@@ -93,6 +93,21 @@ jobs:
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
+      - name: Clear application caches
+        run: |
+          rm -rf tmp/cache/models/*
+          rm -rf tmp/cache/persistent/*
+          bin/cake cache clear_all || true
+
+      - name: Debug migration files
+        run: |
+          echo "=== Migration files ==="
+          find config/Migrations -name "*.php" -exec basename {} \;
+          echo "=== Checking for BaseMigration references ==="
+          grep -r "BaseMigration" config/Migrations/ || echo "No BaseMigration references found"
+          echo "=== PHPUnit version ==="
+          vendor/bin/phpunit --version
+
       - name: Composer post install
         run: composer run-script post-install-cmd --no-interaction
 

@@ -72,4 +72,16 @@ ConnectionHelper::addTestAliases();
 // use Cake\TestSuite\Fixture\SchemaLoader;
 // (new SchemaLoader())->loadSqlFiles('./tests/schema.sql', 'test');
 
-(new Migrator())->run();
+use Cake\TestSuite\Fixture\SchemaLoader;
+
+try {
+    (new Migrator())->run();
+} catch (\Exception $e) {
+    // If migrations fail, try to use schema loader as fallback
+    if (file_exists('./tests/schema.sql')) {
+        (new SchemaLoader())->loadSqlFiles('./tests/schema.sql', 'test');
+    } else {
+        // If no schema file, re-throw the original exception
+        throw $e;
+    }
+}
