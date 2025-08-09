@@ -58,9 +58,16 @@ jobs:
         uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.0.0
         with:
           dependency-versions: ${{ matrix.dependencies }}
-          composer-options: ${{ matrix.composer-options }}
+          composer-options: ${{ matrix.php-version == '8.1' && '--ignore-platform-req=php' || matrix.composer-options }}
         env:
           COMPOSER_ALLOW_SUPERUSER: 1
+
+      - name: Handle PHP 8.1 compatibility
+        if: ${{ matrix.php-version == '8.1' && matrix.dependencies == 'lowest' }}
+        run: |
+          # For PHP 8.1 with lowest dependencies, update to compatible versions
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer update --prefer-lowest --with-dependencies --no-progress --ignore-platform-req=php
 
       - name: Validate Composer dependencies
         run: composer validate --strict --no-check-publish
