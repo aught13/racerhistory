@@ -197,6 +197,21 @@ jobs:
           
           if [[ "$PHPUNIT_VERSION" == "12."* ]]; then
             echo "Using PHPUnit 12.x compatibility mode..."
+            
+            # Strategy 1: Downgrade to PHPUnit 11.x (proven to work on PHP 8.2)
+            echo "PHPUnit 12.x detected. Attempting downgrade to PHPUnit 11.x (known working version)..."
+            composer require --dev "phpunit/phpunit:^11.1.3" --no-update --quiet || echo "PHPUnit constraint update failed"
+            composer update phpunit/phpunit --no-progress --quiet || echo "PHPUnit downgrade failed"
+            
+            PHPUNIT_VERSION_NEW=$(vendor/bin/phpunit --version | grep -oP '\d+\.\d+' | head -1)
+            echo "PHPUnit version after attempted downgrade: $PHPUNIT_VERSION_NEW"
+            
+            if [[ "$PHPUNIT_VERSION_NEW" == "11."* ]]; then
+              echo "Successfully downgraded to PHPUnit 11.x, running tests..."
+              vendor/bin/phpunit --configuration phpunit.xml.dist
+            else
+              echo "Downgrade failed, continuing with PHPUnit 12.x strategies..."
+              # Strategy 2: PHPUnit 12.x native compatibility attempts
             # PHPUnit 12.x has stricter requirements for test execution
             echo "Checking test configuration compatibility..."
             
