@@ -148,8 +148,24 @@ jobs:
           find tests/TestCase -name "*.php" | head -10
           echo "=== PHPUnit dry run to check test discovery ==="
           vendor/bin/phpunit --list-tests || echo "Test listing failed"
-          echo "=== Running actual tests ==="
-          vendor/bin/phpunit
+          echo "=== Test database connection before PHPUnit ==="
+          mysql -h 127.0.0.1 -u test_user -ptest_password racerhistory_test -e "SELECT 'Database connection successful' as status;" || echo "Database connection failed"
+          echo "=== Check CakePHP config ==="
+          php -r "
+          require 'vendor/autoload.php';
+          require 'config/bootstrap.php';
+          use Cake\Datasource\ConnectionManager;
+          try {
+            \$connection = ConnectionManager::get('test');
+            echo 'Test connection configured: ' . get_class(\$connection) . PHP_EOL;
+            \$connection->connect();
+            echo 'Test connection successful' . PHP_EOL;
+          } catch (Exception \$e) {
+            echo 'Test connection error: ' . \$e->getMessage() . PHP_EOL;
+          }
+          "
+          echo "=== Running actual tests with verbose output ==="
+          vendor/bin/phpunit --debug
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
