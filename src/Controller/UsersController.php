@@ -93,7 +93,7 @@ class UsersController extends AppController
             $this->Flash->error('Unable to register user');
         }
         $this->set('user', $user);
-        
+
         return null;
     }
 
