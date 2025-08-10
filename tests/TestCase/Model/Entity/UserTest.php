@@ -75,7 +75,7 @@ class UserTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'secret123',
             'role' => 'user',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $user = new User($data);
@@ -89,7 +89,7 @@ class UserTest extends TestCase
 
         // Test that ID cannot be set via mass assignment with patchEntity
         $user->setAccess('id', false); // Ensure ID is not accessible
-        $user = $user->set(['id' => 999], ['guard' => true]);
+        $user = $user->patch(['id' => 999]);
         $this->assertNotEquals(999, $user->id);
     }
 

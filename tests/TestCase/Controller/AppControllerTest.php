@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\AppController;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -30,12 +31,12 @@ class AppControllerTest extends TestCase
      */
     public function testInitializeComponents(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        $request = $this->createMock(ServerRequest::class);
         $controller = new AppController($request);
         $controller->initialize();
 
         $this->assertTrue($controller->components()->has('Flash'));
-        $this->assertTrue($controller->components()->has('FormProtection'));
+        $this->assertFalse($controller->components()->has('FormProtection'), 'FormProtection should not load for a generic controller now');
     }
 
     /**
@@ -72,7 +73,7 @@ class AppControllerTest extends TestCase
      */
     public function testFlashComponentLoaded(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        $request = $this->createMock(ServerRequest::class);
         $controller = new AppController($request);
         $controller->initialize();
 
@@ -86,10 +87,22 @@ class AppControllerTest extends TestCase
      */
     public function testFormProtectionComponentLoaded(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        // Simulate Users controller by creating a mock request that returns controller param
+        $request = $this->getMockBuilder(ServerRequest::class)
+            ->onlyMethods(['getParam'])
+            ->getMock();
+        $request->method('getParam')->willReturnCallback(function ($name) {
+            if ($name === 'controller') {
+                return 'Users';
+            }
+            if ($name === 'action') {
+                return 'login';
+            }
+
+            return null;
+        });
         $controller = new AppController($request);
         $controller->initialize();
-
         $this->assertTrue($controller->components()->has('FormProtection'));
     }
 }

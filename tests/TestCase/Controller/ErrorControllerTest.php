@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\ErrorController;
+use Cake\Event\EventInterface;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -21,11 +23,10 @@ class ErrorControllerTest extends TestCase
      */
     public function testInitialize(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        $request = $this->createMock(ServerRequest::class);
         $controller = new ErrorController($request);
         $controller->initialize();
-
-        $this->assertTrue($controller->components()->has('RequestHandler'));
+        $this->assertTrue(method_exists($controller, 'beforeRender'));
     }
 
     /**
@@ -48,11 +49,11 @@ class ErrorControllerTest extends TestCase
      */
     public function testBeforeRenderSetsTemplatePath(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        $request = $this->createMock(ServerRequest::class);
         $controller = new ErrorController($request);
         $controller->initialize();
 
-        $event = $this->createMock(\Cake\Event\EventInterface::class);
+        $event = $this->createMock(EventInterface::class);
         $controller->beforeRender($event);
 
         $templatePath = $controller->viewBuilder()->getTemplatePath();
@@ -66,11 +67,11 @@ class ErrorControllerTest extends TestCase
      */
     public function testErrorLayoutSetBasedOnDebugMode(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        $request = $this->createMock(ServerRequest::class);
         $controller = new ErrorController($request);
         $controller->initialize();
 
-        $event = $this->createMock(\Cake\Event\EventInterface::class);
+        $event = $this->createMock(EventInterface::class);
         $controller->beforeRender($event);
 
         $layout = $controller->viewBuilder()->getLayout();

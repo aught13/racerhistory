@@ -1,13 +1,13 @@
-
 # RacerHistory Web Application
 
+[![Version](https://img.shields.io/badge/Version-0.1.0--alpha-orange.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/CakePHP-5.x-red.svg)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Build Status](https://github.com/aught13/racerhistory/workflows/CI/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/aught13/racerhistory/workflows/Security/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/security.yml)
-[![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/master/graph/badge.svg)](https://codecov.io/gh/aught13/racerhistory)
+[![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/master/graph/badge.svg?token=)](https://app.codecov.io/gh/aught13/racerhistory)
 [![GitHub last commit](https://img.shields.io/github/last-commit/aught13/racerhistory)](https://github.com/aught13/racerhistory)
 [![GitHub issues](https://img.shields.io/github/issues/aught13/racerhistory)](https://github.com/aught13/racerhistory/issues)
 [![GitHub stars](https://img.shields.io/github/stars/aught13/racerhistory)](https://github.com/aught13/racerhistory/stargazers)
@@ -20,6 +20,7 @@ A comprehensive web application for [racerhistory.com](https://racerhistory.com)
 ## 🏁 Overview
 
 This project powers the racerhistory.com website, providing features for:
+
 - **User Authentication** - Secure registration, login, and password management
 - **Admin Dashboard** - Administrative interface for user and content management
 - **Historical Game Data** - Management system for racing game historical data
@@ -30,18 +31,21 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 ## 🚀 Features
 
 ### Authentication System
+
 - User registration with validation
 - Secure login with password visibility controls
 - Password reset functionality
 - Session management with CakePHP Authentication plugin
 
 ### Administrative Interface
+
 - Role-based admin dashboard
 - User management (add, edit, approve, manage)
 - Responsive admin navigation
 - Bootstrap-styled admin interface
 
 ### UI/UX
+
 - **Bootstrap 5.3.2** responsive framework
 - **Bootstrap Icons 1.11.3** for consistent iconography
 - **jQuery 3.7.1** for enhanced interactions
@@ -49,6 +53,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - Flash messaging system with multiple types
 
 ### Security Features
+
 - CSRF protection on all forms
 - HTML escaping for XSS prevention
 - Password hashing with CakePHP security
@@ -64,17 +69,20 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 ## 🔧 Installation
 
 ### 1. Clone Repository
+
 ```bash
 git clone https://github.com/aught13/racerhistory.git
 cd racerhistory
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 composer install
 ```
 
 ### 3. Database Setup
+
 ```bash
 # Copy configuration template
 cp config/app_local.example.php config/app_local.php
@@ -85,6 +93,7 @@ bin/cake migrations migrate
 ```
 
 ### 4. Development Server
+
 ```bash
 # Start built-in server
 bin/cake server
@@ -122,17 +131,20 @@ racerhistory/
 ## 📚 Documentation
 
 ### Application Documentation
+
 - **[Templates Documentation](templates/README.md)** - Complete template system guide
 - **[Source Code Documentation](src/)** - Comprehensive PHPDoc annotations
 - **[Test Coverage](tests/)** - Unit and integration test suite
 
 ### Code Coverage
+
 - **Controllers**: ~85% documented with comprehensive PHPDoc
 - **Models**: ~90% documented with entity and table documentation
 - **Views**: ~95% documented with template headers and annotations
 - **Tests**: ~40% coverage with ongoing expansion
 
 ### Key Documentation Features
+
 - **PHPDoc Annotations**: All classes, methods, and properties documented
 - **Template Headers**: Purpose, features, variables, and usage examples
 - **Security Guidelines**: CSRF, XSS prevention, and authentication practices
@@ -141,6 +153,7 @@ racerhistory/
 ## 🧪 Testing
 
 ### Run Test Suite
+
 ```bash
 # All tests
 bin/cake test
@@ -153,6 +166,7 @@ bin/cake test --coverage-html tmp/coverage/
 ```
 
 ### Test Structure
+
 - **Unit Tests**: Model validation, entity behavior, component logic
 - **Integration Tests**: Controller actions, authentication, form processing
 - **Fixtures**: Test data for consistent testing environment
@@ -160,16 +174,19 @@ bin/cake test --coverage-html tmp/coverage/
 ## 🔐 Security
 
 ### Authentication
+
 - **CakePHP Authentication Plugin** for secure user sessions
 - **Password Hashing** using PHP's password_hash()
 - **Form Security** with CSRF tokens on all forms
 
 ### Input Validation
+
 - **HTML Escaping** via `h()` helper in all templates
 - **Form Validation** with CakePHP validation rules
 - **SQL Injection Prevention** through ORM and prepared statements
 
 ### External Resources
+
 - **CDN Integrity Hashes** for Bootstrap and jQuery
 - **HTTPS Enforcement** for production deployment
 - **Secure Headers** for XSS and clickjacking protection
@@ -177,16 +194,19 @@ bin/cake test --coverage-html tmp/coverage/
 ## 🎨 Frontend Technologies
 
 ### CSS Framework
+
 - **Bootstrap 5.3.2** - Responsive CSS framework
 - **Bootstrap Icons 1.11.3** - Comprehensive icon library
 - **Custom Styling** - Additional cake.css for application-specific styles
 
 ### JavaScript
+
 - **jQuery 3.7.1** - DOM manipulation and AJAX
 - **Bootstrap JS** - Interactive components (modals, dropdowns, etc.)
 - **Vanilla JS** - Password visibility toggles and form enhancements
 
 ### Design Principles
+
 - **Mobile-First** responsive design
 - **Accessibility** with ARIA labels and semantic HTML
 - **Performance** optimized with CDN resources and minified assets
@@ -194,12 +214,14 @@ bin/cake test --coverage-html tmp/coverage/
 ## 🔄 Development Workflow
 
 ### Code Standards
+
 - **PSR-12** PHP coding standards
 - **CakePHP Conventions** for naming and structure
 - **PHPDoc Documentation** for all public methods
 - **Unit Tests** for new functionality
 
 ### Tools
+
 - **PHPStan** - Static analysis
 - **PHP_CodeSniffer** - Code style checking
 - **PHPUnit** - Testing framework
@@ -208,6 +230,7 @@ bin/cake test --coverage-html tmp/coverage/
 ## 🚀 Deployment
 
 ### Production Setup
+
 1. Configure `config/app_local.php` for production database
 2. Set `'debug' => false` in configuration
 3. Run `composer install --no-dev --optimize-autoloader`
@@ -216,12 +239,14 @@ bin/cake test --coverage-html tmp/coverage/
 6. Configure caching and session storage
 
 ### Environment Configuration
+
 - **Development**: Debug enabled, detailed error reporting
 - **Production**: Debug disabled, error logging, optimized autoloader
 
 ## 🤝 Contributing
 
 ### Code Contributions
+
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
 3. Follow coding standards and add tests
@@ -229,6 +254,7 @@ bin/cake test --coverage-html tmp/coverage/
 5. Submit pull request with detailed description
 
 ### Documentation Updates
+
 - All new features require documentation updates
 - Template changes need header documentation
 - API changes require PHPDoc updates
@@ -246,4 +272,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ using CakePHP 5.x and Bootstrap 5.3.2**
+### Built with ❤️ using CakePHP 5.x and Bootstrap**Built with ❤️ using CakePHP 5.x and Bootstrap**

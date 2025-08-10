@@ -5,6 +5,7 @@ namespace App\Test\TestCase\View;
 
 use App\View\AppView;
 use Cake\TestSuite\TestCase;
+use Cake\View\View;
 
 /**
  * App\View\AppView Test Case
@@ -60,6 +61,6 @@ class AppViewTest extends TestCase
      */
     public function testExtendsView(): void
     {
-        $this->assertInstanceOf(\Cake\View\View::class, $this->AppView);
+        $this->assertInstanceOf(View::class, $this->AppView);
     }
 }

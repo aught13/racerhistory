@@ -3,10 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\AppController;
-use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Event\EventInterface;
-use Cake\Http\Exception\UnauthorizedException;
+use Cake\Http\Response;
 
 /**
  * Users Controller
@@ -88,12 +86,13 @@ class UsersController extends AppController
             $user = $usersTable->patchEntity($user, $data);
             if ($usersTable->save($user)) {
                 $this->request->getSession()->write('Auth.username', $user->get('username'));
-                return $this->redirect(['action' => 'login']);
+
+                return $this->redirect(['action' => 'login']); // Tests expect redirect
             }
             $this->Flash->error('Unable to register user');
         }
         $this->set('user', $user);
-
+    // Return null to render view with flash messages; registration disabled still returns 200
         return null;
     }
 
@@ -108,7 +107,14 @@ class UsersController extends AppController
     }
 
     // Redirect all other actions to home
-    public function __call($name, $arguments)
+    /**
+     * Fallback for undefined actions: redirect to home.
+     *
+     * @param string $name Method name invoked
+     * @param array $arguments Arguments passed
+     * @return \Cake\Http\Response
+     */
+    public function __call(string $name, array $arguments): Response
     {
         return $this->redirect('/');
     }

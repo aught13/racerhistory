@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Controller\Admin\AppController;
+use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -13,6 +15,7 @@ use Cake\TestSuite\TestCase;
 class AppControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+    use AuthTestTrait;
 
     /**
      * Fixtures
@@ -30,15 +33,7 @@ class AppControllerTest extends TestCase
      */
     private function loginAsAdmin(): void
     {
-        $this->session([
-            'Auth' => [
-                'id' => 1,
-                'username' => 'admin',
-                'role' => 'admin',
-                'email' => 'admin@example.com',
-                'status' => 'active'
-            ]
-        ]);
+        $this->mockIdentity();
     }
 
     /**
@@ -48,7 +43,7 @@ class AppControllerTest extends TestCase
      */
     public function testAdminLayoutSet(): void
     {
-        $request = $this->createMock(\Cake\Http\ServerRequest::class);
+        $request = $this->createMock(ServerRequest::class);
         $controller = new AppController($request);
         $controller->initialize();
 
@@ -64,7 +59,7 @@ class AppControllerTest extends TestCase
     public function testUnauthenticatedAccessRedirectsToLogin(): void
     {
         $this->get('/admin');
-        $this->assertRedirect();
+        $this->assertRedirectContains('/users/login');
     }
 
     /**
@@ -86,18 +81,16 @@ class AppControllerTest extends TestCase
      */
     public function testNonAdminUserAccessDenied(): void
     {
-        $this->session([
-            'Auth' => [
-                'id' => 2,
-                'username' => 'user',
-                'role' => 'user', // Not admin
-                'email' => 'user@example.com',
-                'status' => 'active'
-            ]
+        $this->mockIdentity([
+            'id' => 2,
+            'username' => 'user',
+            'role' => 'user',
+            'email' => 'user@example.com',
+            'status' => 'active',
         ]);
 
         $this->get('/admin');
-        $this->assertRedirect('/');
+        $this->assertRedirectContains('/users/login');
     }
 
     /**
@@ -107,14 +100,12 @@ class AppControllerTest extends TestCase
      */
     public function testInactiveUserAccessDenied(): void
     {
-        $this->session([
-            'Auth' => [
-                'id' => 3,
-                'username' => 'inactive',
-                'role' => 'admin',
-                'email' => 'inactive@example.com',
-                'status' => 'inactive' // Not active
-            ]
+        $this->mockIdentity([
+            'id' => 3,
+            'username' => 'inactive',
+            'role' => 'admin',
+            'email' => 'inactive@example.com',
+            'status' => 'inactive',
         ]);
 
         $this->get('/admin');

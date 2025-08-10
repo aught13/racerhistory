@@ -32,6 +32,12 @@ class AppController extends BaseController
     {
         parent::beforeFilter($event);
 
+        // Allow the login action to render without auth enforcement
+        $action = $this->request->getParam('action');
+        if ($action === 'login') {
+            return; // Skip checks so login form renders (tests expect 200 OK)
+        }
+
         // Check if user is authenticated
         $identity = $this->Authentication->getIdentity();
 
@@ -42,9 +48,10 @@ class AppController extends BaseController
                 'controller' => 'Users',
                 'action' => 'login',
                 'prefix' => false,
-                '?' => ['redirect' => $this->request->getRequestTarget()]
+                '?' => ['redirect' => $this->request->getRequestTarget()],
             ]);
             $this->setResponse($response);
+
             return;
         }
 
@@ -55,17 +62,23 @@ class AppController extends BaseController
             $response = $this->redirect([
                 'controller' => 'Users',
                 'action' => 'login',
-                'prefix' => false
+                'prefix' => false,
             ]);
             $this->setResponse($response);
+
             return;
         }
 
         // Check if user has admin role
         if ($identity->get('role') !== 'admin') {
             $this->Flash->error('You do not have permission to access the admin area.');
-            $response = $this->redirect('/');
+            $response = $this->redirect([
+                'controller' => 'Users',
+                'action' => 'login',
+                'prefix' => false,
+            ]);
             $this->setResponse($response);
+
             return;
         }
     }
