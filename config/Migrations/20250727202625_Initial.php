@@ -5,7 +5,9 @@ use Migrations\AbstractMigration;
 
 class Initial extends AbstractMigration
 {
-    public $autoId = false;
+    // Property compatibility with different Migrations versions
+    // Newer versions require explicit bool type, older versions don't
+    public bool $autoId = false;
 
     /**
      * Up Method.
