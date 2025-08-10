@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  checks: write # allow Codecov to create checks/statuses
+  pull-requests: write
 
 jobs:
   testsuite:
@@ -143,10 +145,15 @@ jobs:
 
       - name: Run PHPUnit (with coverage)
         if: ${{ matrix.coverage == true }}
-        run: vendor/bin/phpunit --coverage-clover=coverage.xml --coverage-text --log-junit=test-results.xml
+        run: |
+          echo "=== Running test suite with coverage ==="
+          vendor/bin/phpunit --configuration phpunit.ci.xml
+          ls -lh coverage.xml || { echo 'coverage.xml missing'; exit 1; }
+          head -20 coverage.xml || true
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
           XDEBUG_MODE: coverage
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Debug test environment
         run: |
@@ -166,102 +173,8 @@ jobs:
       - name: Run PHPUnit (without coverage)
         if: ${{ matrix.coverage == false }}
         run: |
-          echo "=== Running PHPUnit without coverage ==="
-          echo "Test directory contents:"
-          find tests/TestCase -name "*.php" | head -10
-          echo "=== PHPUnit dry run to check test discovery ==="
-          vendor/bin/phpunit --list-tests || echo "Test listing failed"
-          echo "=== Test database connection before PHPUnit ==="
-          mysql -h 127.0.0.1 -u test_user -ptest_password racerhistory_test -e "SELECT 'Database connection successful' as status;" || echo "Database connection failed"
-          echo "=== Check CakePHP config ==="
-          php -r "
-          require 'vendor/autoload.php';
-          require 'config/bootstrap.php';
-          use Cake\Datasource\ConnectionManager;
-          try {
-            \$connection = ConnectionManager::get('test');
-            echo 'Test connection configured: ' . get_class(\$connection) . PHP_EOL;
-            \$result = \$connection->execute('SELECT 1 as test');
-            echo 'Test connection successful' . PHP_EOL;
-          } catch (Exception \$e) {
-            echo 'Test connection error: ' . \$e->getMessage() . PHP_EOL;
-          }
-          "
-          echo "=== Running actual tests with verbose output ==="
-          echo "Testing bootstrap directly..."
-          php tests/bootstrap.php && echo "Bootstrap successful" || echo "Bootstrap failed"
-
-          # Check PHPUnit version and apply compatibility fixes
-          PHPUNIT_VERSION=$(vendor/bin/phpunit --version | grep -oP '\d+\.\d+' | head -1)
-          echo "Detected PHPUnit version: $PHPUNIT_VERSION"
-
-          if [[ "$PHPUNIT_VERSION" == "12."* ]]; then
-            echo "Using PHPUnit 12.x compatibility mode..."
-
-            # Strategy 1: Downgrade to PHPUnit 11.x (proven to work on PHP 8.2)
-            echo "PHPUnit 12.x detected. Attempting downgrade to PHPUnit 11.x (known working version)..."
-            composer require --dev "phpunit/phpunit:^11.1.3" --no-update --quiet || echo "PHPUnit constraint update failed"
-            composer update phpunit/phpunit --no-progress --quiet || echo "PHPUnit downgrade failed"
-
-            PHPUNIT_VERSION_NEW=$(vendor/bin/phpunit --version | grep -oP '\d+\.\d+' | head -1)
-            echo "PHPUnit version after attempted downgrade: $PHPUNIT_VERSION_NEW"
-
-            if [[ "$PHPUNIT_VERSION_NEW" == "11."* ]]; then
-              echo "Successfully downgraded to PHPUnit 11.x, running tests..."
-              vendor/bin/phpunit --configuration phpunit.xml.dist
-            else
-              echo "Downgrade failed, continuing with PHPUnit 12.x strategies..."
-              # Strategy 2: PHPUnit 12.x native compatibility attempts
-              echo "Checking test configuration compatibility..."
-
-              # Create PHPUnit 12.x compatible configuration
-              echo "Creating PHPUnit 12.x compatible configuration..."
-              cp phpunit.xml.dist phpunit-12x.xml
-              # Update schema to PHPUnit 12.x
-              sed -i 's/schema.phpunit.de\/10.1\/phpunit.xsd/schema.phpunit.de\/12.0\/phpunit.xsd/' phpunit-12x.xml
-
-              # Clear all caches that might interfere
-              rm -rf tmp/cache/models/* tmp/cache/persistent/* .phpunit.cache/* 2>/dev/null || true
-
-              # PHPUnit 12.x sometimes requires explicit test suite specification
-              echo "Trying with PHPUnit 12.x compatible configuration..."
-              vendor/bin/phpunit --configuration phpunit-12x.xml --testsuite=app || {
-                echo "Test suite failed, trying without fixture extension..."
-                # Remove CakePHP fixture extension which is known problematic in PHPUnit 12.x
-                sed -i '/<extensions>/,/<\/extensions>/d' phpunit-12x.xml
-                vendor/bin/phpunit --configuration phpunit-12x.xml tests/TestCase/ApplicationTest.php || {
-                  echo "Extension removal failed, trying process isolation..."
-                  # Sometimes PHPUnit 12.x needs process isolation for CakePHP
-                  sed -i 's/processIsolation="false"/processIsolation="true"/' phpunit-12x.xml
-                  vendor/bin/phpunit --configuration phpunit-12x.xml tests/TestCase/ApplicationTest.php || {
-                      echo "Process isolation failed, trying minimal test execution..."
-                    # Final attempt: run tests with absolute minimal configuration
-                    echo "Using proven working minimal execution approach..."
-                    vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/TestCase/ || {
-                      echo "Full test suite failed, running core tests first..."
-                      # Run stable test files first (proven to work)
-                      vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/TestCase/ApplicationTest.php tests/TestCase/View/ tests/TestCase/Model/ tests/TestCase/Controller/Component/ || {
-                        echo "Core tests failed, marking as CI issue but continuing..."
-                        exit 0  # Don't fail CI for known compatibility issues
-                      }
-                      echo "Core tests passed, running controller tests with fault tolerance..."
-                      # Run controller tests individually to handle authentication issues
-                      for test_file in tests/TestCase/Controller/AppControllerTest.php tests/TestCase/Controller/ErrorControllerTest.php tests/TestCase/Controller/PagesControllerTest.php tests/TestCase/Controller/UsersControllerTest.php tests/TestCase/Controller/Admin/*.php; do
-                        if [[ -f "$test_file" ]]; then
-                          echo "Running: $test_file"
-                          vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php "$test_file" || echo "Test file $test_file had failures (expected for integration tests) - continuing..."
-                        fi
-                      done
-                      echo "Test execution completed with minimal approach - some failures expected due to missing templates/authentication setup in CI"
-                    }
-                  }
-                }
-              }
-            fi
-          else
-            echo "Using standard PHPUnit execution..."
-            vendor/bin/phpunit --debug --stop-on-error
-          fi
+          echo "=== Running PHPUnit without coverage (default config) ==="
+          vendor/bin/phpunit
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
@@ -269,12 +182,15 @@ jobs:
         if: ${{ matrix.coverage == true }}
         uses: codecov/codecov-action@2db07e317924c76f654a414629d71c65876882e2 # v4.6.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN || '' }}
-          flags: unittests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: php81-lowest,unittests
           name: codecov-racerhistory
-          fail_ci_if_error: false
+          fail_ci_if_error: true
           verbose: true
-        continue-on-error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: false
 
       - name: Upload test results
         uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v4.4.3

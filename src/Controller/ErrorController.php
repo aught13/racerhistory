@@ -16,6 +16,7 @@ declare(strict_types=1);
  */
 namespace App\Controller;
 
+use Cake\Core\Configure;
 use Cake\Event\EventInterface;
 
 /**
@@ -32,8 +33,7 @@ class ErrorController extends AppController
      */
     public function initialize(): void
     {
-        // Don't initialize authentication for error pages to avoid infinite loops
-        // Note: RequestHandler component was removed in CakePHP 5.x
+    // Keep minimal init to avoid auth loops on error pages
     }
 
     /**
@@ -63,7 +63,7 @@ class ErrorController extends AppController
         $this->viewBuilder()->setTemplatePath('Error');
 
         // Set layout based on debug mode
-        if (\Cake\Core\Configure::read('debug')) {
+        if (Configure::read('debug')) {
             $this->viewBuilder()->setLayout('dev_error');
         } else {
             $this->viewBuilder()->setLayout('error');

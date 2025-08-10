@@ -15,68 +15,43 @@ declare(strict_types=1);
  * @license   https://opensource.org/licenses/mit-license.php MIT License
  */
 
-use Cake\Chronos\Chronos;
-use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
-use Cake\TestSuite\ConnectionHelper;
+use Cake\Cache\Cache;
+use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\ORM\TableRegistry;
+use Cake\TestSuite\Fixture\SchemaLoader;
 use Migrations\TestSuite\Migrator;
+use App\Test\Fixture\UsersFixture;
+use App\Test\Fixture\SiteOptionsFixture;
 
-/**
- * Test runner bootstrap.
- *
- * Add additional configuration/setup your application needs when running
- * unit tests in this file.
- */
+// Ensure Composer autoloader is loaded first
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+// Load application bootstrap (defines ROOT, paths, config, etc.) before migrations
 require dirname(__DIR__) . '/config/bootstrap.php';
 
-if (empty($_SERVER['HTTP_HOST']) && !Configure::read('App.fullBaseUrl')) {
-    Configure::write('App.fullBaseUrl', 'http://localhost');
+// ----------------------------------------------------------------------
+// Isolate test suite cache to avoid permission conflicts with web server
+// Processes (http user) that may create cache files the test user (patrick)
+// cannot modify. We redirect the 'model' cache to a test-only directory.
+// ----------------------------------------------------------------------
+try {
+    $testCacheBase = TMP . 'tests' . DS . 'cache' . DS;
+    $modelCacheDir = $testCacheBase . 'models' . DS;
+    if (!is_dir($modelCacheDir)) {
+        mkdir($modelCacheDir, 0775, true);
+    }
+    $existing = Cache::getConfig('model');
+    if ($existing) {
+        Cache::setConfig('model', $existing + ['path' => $modelCacheDir]);
+    }
+} catch (Throwable $t) {
+    // Non-fatal: if isolation fails, continue with shared cache (may emit warnings)
 }
-
-// DebugKit skips settings these connection config if PHP SAPI is CLI / PHPDBG.
-// But since PagesControllerTest is run with debug enabled and DebugKit is loaded
-// in application, without setting up these config DebugKit errors out.
-ConnectionManager::setConfig('test_debug_kit', [
-    'className' => 'Cake\Database\Connection',
-    'driver' => 'Cake\Database\Driver\Sqlite',
-    'database' => TMP . 'debug_kit.sqlite',
-    'encoding' => 'utf8',
-    'cacheMetadata' => true,
-    'quoteIdentifiers' => false,
-]);
-
-ConnectionManager::alias('test_debug_kit', 'debug_kit');
-
-// Fixate now to avoid one-second-leap-issues
-Chronos::setTestNow(Chronos::now());
-
-// Fixate sessionid early on, as php7.2+
-// does not allow the sessionid to be set after stdout
-// has been written to.
-session_id('cli');
-
-// Connection aliasing needs to happen before migrations are run.
-// Otherwise, table objects inside migrations would use the default datasource
-ConnectionHelper::addTestAliases();
-
-// Use migrations to build test database schema.
-//
-// Will rebuild the database if the migration state differs
-// from the migration history in files.
-//
-// If you are not using CakePHP's migrations you can
-// hook into your migration tool of choice here or
-// load schema from a SQL dump file with
-// use Cake\TestSuite\Fixture\SchemaLoader;
-// (new SchemaLoader())->loadSqlFiles('./tests/schema.sql', 'test');
-
-use Cake\TestSuite\Fixture\SchemaLoader;
 
 try {
     (new Migrator())->run();
-} catch (\Exception $e) {
+} catch (Exception $e) {
     // If migrations fail, try to use schema loader as fallback
     if (file_exists('./tests/schema.sql')) {
         (new SchemaLoader())->loadSqlFiles('./tests/schema.sql', 'test');
@@ -84,4 +59,44 @@ try {
         // If no schema file, re-throw the original exception
         throw $e;
     }
+}
+
+// Global baseline seed for critical tables (Users, SiteOptions) – kept minimal to reduce runtime.
+try {
+    $users = TableRegistry::getTableLocator()->get('Users');
+    if ($users->find()->count() === 0) {
+        $baselineUsers = [
+            [
+                'id' => 1,
+                'username' => 'admin',
+                'email' => 'admin@example.com',
+                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
+                'role' => 'admin',
+                'status' => 'active',
+            ],
+            [
+                'id' => 2,
+                'username' => 'user',
+                'email' => 'user@example.com',
+                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
+                'role' => 'user',
+                'status' => 'inactive',
+            ],
+        ];
+        foreach ($baselineUsers as $row) {
+            $entity = $users->newEntity($row, ['accessibleFields' => ['*' => true]]);
+            $users->saveOrFail($entity);
+        }
+    }
+    $siteOptions = TableRegistry::getTableLocator()->get('SiteOptions');
+    $registration = $siteOptions->find()->where(['option_key' => 'registration'])->first();
+    if (!$registration) {
+        $registration = $siteOptions->newEntity([
+            'option_key' => 'registration',
+            'value' => 'true',
+        ], ['accessibleFields' => ['*' => true]]);
+        $siteOptions->saveOrFail($registration);
+    }
+} catch (Throwable $t) {
+    // ignore seeding issues
 }

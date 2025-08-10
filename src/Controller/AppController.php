@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Controller\Controller;
+use Cake\Event\EventInterface;
 
 /**
  * Application Controller
@@ -42,7 +43,6 @@ class AppController extends Controller
         parent::initialize();
 
         $this->loadComponent('Flash');
-        $this->loadComponent('FormProtection');
 
         // Only load authentication for admin controllers and user-related actions
         // This prevents authentication from being enforced on all public pages
@@ -50,6 +50,7 @@ class AppController extends Controller
         $isUsersController = $this->getRequest()->getParam('controller') === 'Users';
 
         if (!($this instanceof ErrorController) && ($isAdminController || $isUsersController)) {
+            $this->loadComponent('FormProtection');
             $this->loadComponent('Authentication.Authentication');
         }
     }
@@ -60,7 +61,7 @@ class AppController extends Controller
      * @param \Cake\Event\EventInterface $event The beforeFilter event.
      * @return void
      */
-    public function beforeFilter(\Cake\Event\EventInterface $event): void
+    public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
 

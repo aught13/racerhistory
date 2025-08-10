@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use Cake\Event\EventInterface;
+use Cake\Http\Response;
 
 /**
  * Admin Users Controller
@@ -38,8 +39,8 @@ class UsersController extends AppController
     {
         parent::beforeFilter($event);
 
-        // Allow login action without authentication
-        $this->Authentication->allowUnauthenticated(['login']);
+    // Allow login action without authentication
+        $this->Authentication->addUnauthenticatedActions(['login']);
     }
 
     /**
@@ -93,7 +94,7 @@ class UsersController extends AppController
      * @param string $id User ID
      * @return \Cake\Http\Response|null
      */
-    public function edit($id)
+    public function edit(string $id)
     {
         if ($this->request->is(['post', 'put', 'patch'])) {
             return $this->UserManager->updateUser($this, $id, $this->request->getData());
@@ -110,7 +111,7 @@ class UsersController extends AppController
      * @param string $id User ID
      * @return void
      */
-    public function manage($id)
+    public function manage(string $id)
     {
         $user = $this->Users->get($id);
         $this->set(compact('user'));
@@ -122,7 +123,7 @@ class UsersController extends AppController
      * @param string $id User ID
      * @return \Cake\Http\Response
      */
-    public function approve($id)
+    public function approve(string $id)
     {
         return $this->UserManager->approveUser($this, $id);
     }
@@ -133,7 +134,7 @@ class UsersController extends AppController
      * @param string $id User ID
      * @return \Cake\Http\Response
      */
-    public function delete($id)
+    public function delete(string $id)
     {
         return $this->UserManager->deleteUser($this, $id);
     }
@@ -167,19 +168,39 @@ class UsersController extends AppController
     {
         $siteOptionsTable = $this->fetchTable('SiteOptions');
         $siteOption = $siteOptionsTable->find()->where(['option_key' => 'registration'])->first();
-        $newValue = ($siteOption && $siteOption->value === 'false') ? 'true' : 'false';
+        $newValue = $siteOption && $siteOption->value === 'false' ? 'true' : 'false';
         if ($siteOption) {
             $siteOption->value = $newValue;
             $siteOptionsTable->save($siteOption);
         } else {
             $siteOption = $siteOptionsTable->newEntity([
                 'option_key' => 'registration',
-                'value' => $newValue
+                'value' => $newValue,
             ]);
             $siteOptionsTable->save($siteOption);
         }
         $msg = $newValue === 'true' ? 'Registration enabled.' : 'Registration disabled.';
         $this->Flash->success($msg);
+
+        return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Bulk action dispatcher (activate/delete) for route /admin/users/bulk used in tests.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function bulk(): Response
+    {
+        $action = $this->request->getData('bulk_action');
+        if ($action === 'activate') {
+            return $this->bulkActivate();
+        }
+        if ($action === 'delete') {
+            return $this->bulkDelete();
+        }
+        $this->Flash->error('Invalid bulk action.');
+
         return $this->redirect(['action' => 'index']);
     }
 }

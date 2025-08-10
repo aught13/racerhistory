@@ -1,10 +1,19 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Model\Table;
 
+use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
 
 class OpponentsTable extends Table
 {
+    /**
+     * Initialize table configuration and associations.
+     *
+     * @param array $config Runtime configuration for this table.
+     * @return void
+     */
     public function initialize(array $config): void
     {
         parent::initialize($config);
@@ -28,9 +37,12 @@ class OpponentsTable extends Table
     }
 
     /**
-     * Validates that opponent_current is not itself and exists in the table
+     * Validate that opponent_current references a different existing opponent or is null.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity Opponent entity.
+     * @return bool True if valid, false otherwise.
      */
-    public function validateOpponentCurrent($entity)
+    public function validateOpponentCurrent(EntityInterface $entity): bool
     {
         $currentId = $entity->opponent_current;
         if ($currentId === null) {
@@ -39,7 +51,7 @@ class OpponentsTable extends Table
         if ($entity->id && $currentId == $entity->id) {
             return false; // Cannot reference itself
         }
-        $exists = $this->exists(['id' => $currentId]);
-        return $exists;
+
+        return $this->exists(['id' => $currentId]);
     }
 }

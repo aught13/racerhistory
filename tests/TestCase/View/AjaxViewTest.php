@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\View;
 
 use App\View\AjaxView;
+use App\View\AppView;
 use Cake\TestSuite\TestCase;
 
 /**
@@ -60,7 +61,7 @@ class AjaxViewTest extends TestCase
      */
     public function testExtendsAppView(): void
     {
-        $this->assertInstanceOf(\App\View\AppView::class, $this->AjaxView);
+        $this->assertInstanceOf(AppView::class, $this->AjaxView);
     }
 
     /**

@@ -85,7 +85,7 @@ class UsersTableTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password123',
             'role' => 'user',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $user = $this->Users->newEntity($data);
@@ -102,7 +102,7 @@ class UsersTableTest extends TestCase
         $data = [
             'username' => 'ab', // Too short
             'email' => 'test@example.com',
-            'password' => 'password123'
+            'password' => 'password123',
         ];
 
         $user = $this->Users->newEntity($data);
@@ -120,7 +120,7 @@ class UsersTableTest extends TestCase
         $data = [
             'username' => 'testuser',
             'email' => 'invalid-email',
-            'password' => 'password123'
+            'password' => 'password123',
         ];
 
         $user = $this->Users->newEntity($data);
@@ -138,7 +138,7 @@ class UsersTableTest extends TestCase
         $data = [
             'username' => 'testuser',
             'email' => 'test@example.com',
-            'password' => '123' // Too short
+            'password' => '123', // Too short
         ];
 
         $user = $this->Users->newEntity($data);
@@ -158,7 +158,7 @@ class UsersTableTest extends TestCase
             'email' => 'hash@example.com',
             'password' => 'plaintext123',
             'role' => 'user',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $user = $this->Users->newEntity($data);
@@ -194,7 +194,7 @@ class UsersTableTest extends TestCase
             'email' => 'newuser@example.com',
             'password' => 'password123',
             'role' => 'user',
-            'status' => 'active'
+            'status' => 'active',
         ];
 
         $result = $this->Users->createUser($data);
@@ -214,7 +214,7 @@ class UsersTableTest extends TestCase
         $data = [
             'username' => 'ab', // Invalid - too short
             'email' => 'invalid-email',
-            'password' => '123'
+            'password' => '123',
         ];
 
         $result = $this->Users->createUser($data);

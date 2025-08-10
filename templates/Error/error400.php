@@ -49,6 +49,7 @@ endif;
 <?php if (!Configure::read('debug')): ?>
 <div class="error-container">
     <h1>400 - Bad Request</h1>
+    <p><strong>Error:</strong> Bad Request</p>
     <p>The request could not be understood by the server.</p>
     <p><a href="<?= $this->Url->build('/') ?>">Return to Home</a></p>
 </div>

@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use ArrayObject;
+use Authentication\PasswordHasher\DefaultPasswordHasher;
+use Cake\Datasource\EntityInterface;
+use Cake\Event\EventInterface;
+use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
-use Authentication\PasswordHasher\DefaultPasswordHasher;
-use Cake\Event\EventInterface;
-use Cake\Datasource\EntityInterface;
 
 /**
  * Users Model
@@ -41,12 +43,12 @@ class UsersTable extends Table
     {
         parent::initialize($config);
         $this->setTable('users');
-        $this->setDisplayField('username');  // Changed from 'email' to 'username' since that's what we're using for login
+        $this->setDisplayField('username'); // Changed from 'email' to 'username' since that's what we're using for login
         $this->setPrimaryKey('id');
 
         $this->addBehavior('Timestamp', [
-            'created' => 'created',    // Fixed: use 'created' not 'created_at'
-            'modified' => 'modified',  // Fixed: use 'modified' not 'updated_at'
+            'created' => 'created', // Fixed: use 'created' not 'created_at'
+            'modified' => 'modified', // Fixed: use 'modified' not 'updated_at'
         ]);
     }
 
@@ -68,7 +70,7 @@ class UsersTable extends Table
             ->add('username', 'unique', [
                 'rule' => 'validateUnique',
                 'provider' => 'table',
-                'message' => 'This username is already taken.'
+                'message' => 'This username is already taken.',
             ])
 
             ->email('email')
@@ -77,7 +79,7 @@ class UsersTable extends Table
             ->add('email', 'unique', [
                 'rule' => 'validateUnique',
                 'provider' => 'table',
-                'message' => 'This email is already registered.'
+                'message' => 'This email is already registered.',
             ])
 
             ->requirePresence('password', 'create')
@@ -97,7 +99,7 @@ class UsersTable extends Table
      * @param \ArrayObject $options Additional options.
      * @return void
      */
-    public function beforeSave(EventInterface $event, EntityInterface $entity, \ArrayObject $options): void
+    public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
     {
         if (!empty($entity->password) && $entity->isDirty('password')) {
             $entity->password = (new DefaultPasswordHasher())->hash($entity->password);
@@ -107,11 +109,11 @@ class UsersTable extends Table
     /**
      * Find active users.
      *
-     * @param \Cake\ORM\Query $query The query to modify.
+     * @param \Cake\ORM\Query\SelectQuery $query The query to modify.
      * @param array $options Options for the find.
-     * @return \Cake\ORM\Query
+     * @return \Cake\ORM\Query\SelectQuery
      */
-    public function findActive($query, $options)
+    public function findActive(SelectQuery $query, array $options): SelectQuery
     {
         return $query->where(['active' => true]);
     }
@@ -128,6 +130,7 @@ class UsersTable extends Table
         if ($this->save($user)) {
             return $user;
         }
+
         return null;
     }
 }

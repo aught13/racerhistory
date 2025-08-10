@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Test\TestCase\Controller\Admin;
 
-use App\Controller\Admin\UsersController;
+use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -12,27 +14,52 @@ use Cake\TestSuite\TestCase;
 class UsersControllerTest extends TestCase
 {
     use IntegrationTestTrait;
-    protected array $fixtures = [
-        'app.Users',
-        'app.SiteOptions',
-    ];
+    use AuthTestTrait;
+
+    // Fixtures removed: manual deterministic seeding in setUp()
 
     public function setUp(): void
     {
         parent::setUp();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // Deterministic baseline seeding (fixture extension removed). Ensure IDs 1 & 2 + registration option.
+        $users = $this->getTableLocator()->get('Users');
+        $users->deleteAll([]);
+        $baseline = [
+            [
+                'id' => 1,
+                'username' => 'admin',
+                'email' => 'admin@example.com',
+                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
+                'role' => 'admin',
+                'status' => 'active',
+            ],
+            [
+                'id' => 2,
+                'username' => 'user',
+                'email' => 'user@example.com',
+                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
+                'role' => 'user',
+                'status' => 'inactive',
+            ],
+        ];
+        foreach ($baseline as $row) {
+            $entity = $users->newEntity($row, ['accessibleFields' => ['*' => true]]);
+            $users->saveOrFail($entity);
+        }
+        $siteOptions = $this->getTableLocator()->get('SiteOptions');
+        $siteOptions->deleteAll(['option_key' => 'registration']);
+        $option = $siteOptions->newEntity([
+            'option_key' => 'registration',
+            'value' => 'true',
+        ], ['accessibleFields' => ['*' => true]]);
+        $siteOptions->saveOrFail($option);
     }
 
     private function loginAsAdmin(): void
     {
-        $this->session([
-            'Auth' => [
-                'id' => 1,
-                'username' => 'admin',
-                'role' => 'admin',
-                'email' => 'admin@example.com',
-                'status' => 'active'
-            ],
-        ]);
+        $this->mockIdentity();
     }
 
     public function testIndex(): void
@@ -45,6 +72,7 @@ class UsersControllerTest extends TestCase
 
     public function testLoginGet(): void
     {
+        $this->session(['Auth' => null]); // explicit clear
         $this->get('/admin/users/login');
         $this->assertResponseOk();
         $this->assertResponseContains('Admin Login');
@@ -52,6 +80,7 @@ class UsersControllerTest extends TestCase
 
     public function testLoginPostInvalid(): void
     {
+        $this->session(['Auth' => null]);
         $this->enableCsrfToken();
         $this->enableSecurityToken();
         $this->post('/admin/users/login', [
@@ -91,8 +120,8 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/users/approve/1');
-        $this->assertRedirect();
+        $this->post('/admin/users/approve/2');
+        $this->assertRedirect('/admin/users');
     }
 
     public function testDelete(): void
@@ -100,8 +129,8 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/users/delete/1');
-        $this->assertRedirect();
+        $this->post('/admin/users/delete/2');
+        $this->assertRedirect('/admin/users');
     }
 
     public function testBulkActivate(): void
@@ -109,8 +138,11 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/users/bulkActivate');
-        $this->assertRedirect();
+        $this->post('/admin/users/bulk', [
+            'bulk_action' => 'activate',
+            'user_ids' => [2],
+        ]);
+        $this->assertRedirect('/admin/users');
     }
 
     public function testBulkDelete(): void
@@ -118,8 +150,11 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/users/bulkDelete');
-        $this->assertRedirect();
+        $this->post('/admin/users/bulk', [
+            'bulk_action' => 'delete',
+            'user_ids' => [2],
+        ]);
+        $this->assertRedirect('/admin/users');
     }
 
     public function testToggleRegistration(): void
@@ -127,9 +162,89 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/users/toggleRegistration');
-        $this->assertRedirect();
+        $this->post('/admin/users/toggle-registration');
+        $this->assertRedirect('/admin/users');
     }
 
-    // Add more tests for add, edit, delete, bulk actions, etc.
+    public function testBulkInvalidAction(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/users/bulk', [
+            'bulk_action' => 'unknown',
+            'user_ids' => [2],
+        ]);
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('Invalid bulk action.', 'Flash.flash.0.message');
+    }
+
+    public function testBulkActivateNoSelection(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/users/bulk', [
+            'bulk_action' => 'activate',
+            'user_ids' => [],
+        ]);
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('No users selected.', 'Flash.flash.0.message');
+    }
+
+    public function testBulkDeleteNoSelection(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/users/bulk', [
+            'bulk_action' => 'delete',
+            'user_ids' => [],
+        ]);
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('No users selected.', 'Flash.flash.0.message');
+    }
+
+    public function testToggleRegistrationDisables(): void
+    {
+        // Starts true in fixture, first toggle should disable
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/users/toggle-registration');
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('Registration disabled.', 'Flash.flash.0.message');
+    }
+
+    public function testToggleRegistrationEnables(): void
+    {
+        // Force current value to false then toggle to enable
+        $table = $this->getTableLocator()->get('SiteOptions');
+        $option = $table->find()->where(['option_key' => 'registration'])->first();
+        $option->value = 'false';
+        $table->save($option);
+
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/users/toggle-registration');
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('Registration enabled.', 'Flash.flash.0.message');
+    }
+
+    public function testToggleRegistrationCreatesWhenMissing(): void
+    {
+        $table = $this->getTableLocator()->get('SiteOptions');
+        $table->deleteAll(['option_key' => 'registration']);
+
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/users/toggle-registration');
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('Registration disabled.', 'Flash.flash.0.message');
+        $created = $table->find()->where(['option_key' => 'registration'])->first();
+        $this->assertNotEmpty($created);
+        $this->assertSame('false', $created->value); // logic creates disabled entry when missing
+    }
 }

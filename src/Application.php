@@ -1,5 +1,5 @@
 <?php
-declare (strict_types = 1);
+declare(strict_types=1);
 
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
@@ -16,24 +16,22 @@ declare (strict_types = 1);
  */
 namespace App;
 
-use Cake\Core\Configure;
+use Authentication\AuthenticationService;
 use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
-use Authentication\AuthenticationService;
 use Authentication\Middleware\AuthenticationMiddleware;
-use Cake\Http\Exception\ForbiddenException;
-use Cake\Http\Exception\UnauthorizedException;
-use Psr\Http\Message\ServerRequestInterface;
+use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Datasource\FactoryLocator;
 use Cake\Error\Middleware\ErrorHandlerMiddleware;
 use Cake\Http\BaseApplication;
-use Cake\Http\MiddlewareQueue;
 use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Middleware\CsrfProtectionMiddleware;
+use Cake\Http\MiddlewareQueue;
 use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Application setup class.
@@ -100,7 +98,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // This middleware will handle authentication and set the identity
             // on the request object.
             // It should be added before any middleware that requires authentication.
-            ->add(new \Authentication\Middleware\AuthenticationMiddleware($this));
+            ->add(new AuthenticationMiddleware($this));
 
         return $middlewareQueue;
     }
@@ -115,36 +113,32 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     public function services(ContainerInterface $container): void
     {
     }
+
     /**
      * Returns a configured authentication service instance.
      *
-     * @param ServerRequestInterface $request
-     * @return AuthenticationServiceInterface
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @return \Authentication\AuthenticationServiceInterface
      */
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
+    // NOTE Authentication config pattern:
+    // We inline the identifier configuration inside the Form authenticator instead of
+    // supplying a top-level 'identifiers' key. The Authentication plugin (>=3.3) deprecates
+    // the implicit loadIdentifier() path that is triggered when global identifiers are
+    // declared. Embedding the identifier array here prevents the deprecated method call
+    // and keeps construction quiet during tests & runtime. If additional authenticators
+    // need to share this identifier later, extract it to a variable and reference the
+    // same array (still inline) rather than reinstating the global 'identifiers' option.
         $service = new AuthenticationService([
             'unauthenticatedRedirect' => '/users/login',
             'queryParam' => 'redirect',
         ]);
 
-        // Load the Password identifier
-        $service->loadIdentifier('Authentication.Password', [
-            'fields' => [
-                'username' => 'username',
-                'password' => 'password',
-            ],
-            'passwordHasher' => 'Authentication.Default',
-        ]);
-
-        // Load Session authenticator for persistence
-        $service->loadAuthenticator('Authentication.Session', [
-            'sessionKey' => 'Auth',
-            'identify' => true
-        ]);
-
-        // Load Form authenticator for login forms
+        // Authenticators: session then form (inline identifier config to avoid deprecated loadIdentifier()).
+        $service->loadAuthenticator('Authentication.Session');
         $service->loadAuthenticator('Authentication.Form', [
+            'identifier' => 'Authentication.Password',
             'fields' => [
                 'username' => 'username',
                 'password' => 'password',

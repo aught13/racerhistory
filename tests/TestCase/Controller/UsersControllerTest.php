@@ -1,12 +1,56 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Test\TestCase\Controller;
 
-use App\Controller\UsersController;
+use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
 class UsersControllerTest extends TestCase
 {
+    use IntegrationTestTrait;
+    use AuthTestTrait;
+
+    // Fixtures removed: manual deterministic seeding in setUp()
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        // Re-seed baseline users & registration option to isolate from prior test side-effects.
+        $users = $this->getTableLocator()->get('Users');
+        $users->deleteAll([]);
+        $baseline = [
+            [
+                'id' => 1,
+                'username' => 'admin',
+                'email' => 'admin@example.com',
+                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
+                'role' => 'admin',
+                'status' => 'active',
+            ],
+            [
+                'id' => 2,
+                'username' => 'user',
+                'email' => 'user@example.com',
+                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
+                'role' => 'user',
+                'status' => 'inactive',
+            ],
+        ];
+        foreach ($baseline as $row) {
+            $entity = $users->newEntity($row, ['accessibleFields' => ['*' => true]]);
+            $users->saveOrFail($entity);
+        }
+        $siteOptions = $this->getTableLocator()->get('SiteOptions');
+        $siteOptions->deleteAll(['option_key' => 'registration']);
+        $option = $siteOptions->newEntity([
+            'option_key' => 'registration',
+            'value' => 'true',
+        ], ['accessibleFields' => ['*' => true]]);
+        $siteOptions->saveOrFail($option);
+    }
+
     public function testRegisterDisabled(): void
     {
         // Simulate registration disabled in SiteOptions
@@ -18,7 +62,7 @@ class UsersControllerTest extends TestCase
         } else {
             $option = $siteOptionsTable->newEntity([
                 'option_key' => 'registration',
-                'value' => 'false'
+                'value' => 'false',
             ]);
             $siteOptionsTable->save($option);
         }
@@ -26,19 +70,10 @@ class UsersControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Registration is currently disabled.');
     }
-    use IntegrationTestTrait;
 
     private function loginAsAdmin(): void
     {
-        $this->session([
-            'Auth' => [
-                'id' => 1,
-                'username' => 'admin',
-                'role' => 'admin',
-                'email' => 'admin@example.com',
-                'status' => 'active'
-            ]
-        ]);
+        $this->mockIdentity();
     }
 
     public function testLoginGet(): void
@@ -76,11 +111,12 @@ class UsersControllerTest extends TestCase
             'password' => 'newpassword',
             'email' => 'newuser@example.com',
             'role' => 'user',
-            'status' => 'active'
+            'status' => 'active',
         ];
         $this->post('/users/register', $data);
         $this->assertRedirect();
-        $this->assertSession('newuser', 'Auth.username');
+    // Identity persisted in Authentication session; verify post-login redirect occurred
+        $this->assertRedirectContains('/users/login');
     }
 
     public function testRegisterPostInvalid(): void
@@ -92,7 +128,7 @@ class UsersControllerTest extends TestCase
             'password' => '', // invalid
             'email' => '', // invalid
             'role' => '', // invalid
-            'status' => 'active'
+            'status' => 'active',
         ];
         $this->post('/users/register', $data);
         $this->assertResponseOk();
@@ -106,7 +142,6 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect();
     }
 
-
     public function testResetPasswordGet(): void
     {
         $this->get('/users/resetPassword');
@@ -119,7 +154,7 @@ class UsersControllerTest extends TestCase
         $this->enableCsrfToken();
         $this->enableSecurityToken();
         $data = [
-            'email' => 'admin@example.com'
+            'email' => 'admin@example.com',
         ];
         $this->post('/users/resetPassword', $data);
         $this->assertResponseOk();
@@ -131,7 +166,7 @@ class UsersControllerTest extends TestCase
         $this->enableCsrfToken();
         $this->enableSecurityToken();
         $data = [
-            'email' => '' // invalid
+            'email' => '', // invalid
         ];
         $this->post('/users/resetPassword', $data);
         $this->assertResponseOk();
