@@ -112,6 +112,10 @@ jobs:
           find config/Migrations -name "*.php" -exec basename {} \;
           echo "=== Checking for BaseMigration references ==="
           grep -r "BaseMigration" config/Migrations/ || echo "No BaseMigration references found"
+          echo "=== Migrations version ==="
+          composer show cakephp/migrations
+          echo "=== Check AbstractMigration autoId property ==="
+          grep -A 3 -B 3 "autoId" vendor/cakephp/migrations/src/AbstractMigration.php || echo "autoId property not found"
           echo "=== PHPUnit version ==="
           vendor/bin/phpunit --version
 
