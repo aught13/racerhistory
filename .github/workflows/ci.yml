@@ -221,7 +221,22 @@ jobs:
               sed -i '/<extensions>/,/<\/extensions>/d' phpunit-12x.xml
               vendor/bin/phpunit --configuration phpunit-12x.xml tests/TestCase/ApplicationTest.php || {
                 echo "Extension-less failed, trying original config with single test..."
-                vendor/bin/phpunit --configuration phpunit.xml.dist tests/TestCase/ApplicationTest.php || echo "All PHPUnit 12.x strategies failed"
+                vendor/bin/phpunit --configuration phpunit.xml.dist tests/TestCase/ApplicationTest.php ||             echo "All PHPUnit 12.x strategies failed"
+            echo "=== Final diagnostic: Testing with direct test execution ==="
+            # Try to identify what PHPUnit 12.x is choking on
+            echo "Checking if this is a CakePHP TestSuite compatibility issue..."
+            
+            # Test if we can at least get test execution to start
+            echo "Testing minimal PHPUnit execution..."
+            vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/TestCase/ApplicationTest.php || echo "Minimal execution failed"
+            
+            # Check if there are any hidden errors in the logs
+            echo "Checking for any error output..."
+            find logs/ -name "*.log" -type f -exec echo "=== {} ===" \; -exec tail -10 {} \; 2>/dev/null || echo "No log files to check"
+            
+            # Final attempt: downgrade strategy - use older compatible flags
+            echo "Final attempt with PHPUnit 12.x legacy compatibility..."
+            vendor/bin/phpunit --configuration phpunit.xml.dist --no-progress --no-results-cache tests/TestCase/ApplicationTest.php || echo "Legacy compatibility failed"
               }
             }
           else
