@@ -16,8 +16,8 @@ use Cake\ORM\Entity;
  * @property string $password
  * @property string $role
  * @property string $status
- * @property \Cake\I18n\FrozenTime|null $created
- * @property \Cake\I18n\FrozenTime|null $modified
+ * @property \Cake\I18n\DateTime|null $created
+ * @property \Cake\I18n\DateTime|null $modified
  */
 class User extends Entity
 {
