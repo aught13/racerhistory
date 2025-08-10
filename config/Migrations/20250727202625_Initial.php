@@ -5,9 +5,13 @@ use Migrations\AbstractMigration;
 
 class Initial extends AbstractMigration
 {
-    // Property compatibility with different Migrations versions
-    // Newer versions require explicit bool type, older versions don't
-    public bool $autoId = false;
+    /**
+     * Auto ID property - declaration matches parent class for compatibility
+     * 
+     * Note: Different versions of Migrations\AbstractMigration have different
+     * type declaration requirements. We need to match the parent exactly.
+     */
+    public $autoId = false;
 
     /**
      * Up Method.
