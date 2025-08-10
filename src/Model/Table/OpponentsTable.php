@@ -6,6 +6,11 @@ namespace App\Model\Table;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
 
+/**
+ * @method \App\Model\Entity\Opponent newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\Opponent get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Opponent patchEntity(\App\Model\Entity\Opponent $entity, array $data, array $options = [])
+ */
 class OpponentsTable extends Table
 {
     /**
@@ -44,11 +49,14 @@ class OpponentsTable extends Table
      */
     public function validateOpponentCurrent(EntityInterface $entity): bool
     {
-        $currentId = $entity->opponent_current;
+        /** @var int|null $currentId */
+        $currentId = $entity->opponent_current ?? null;
         if ($currentId === null) {
             return true;
         }
-        if ($entity->id && $currentId == $entity->id) {
+        /** @var int|null $entityId */
+        $entityId = $entity->id ?? null;
+        if ($entityId !== null && $currentId == $entityId) {
             return false; // Cannot reference itself
         }
 

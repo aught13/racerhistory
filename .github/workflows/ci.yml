@@ -231,6 +231,6 @@ jobs:
 
       - name: Run PHPStan
         if: always()
-        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=512M
         env:
           SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144

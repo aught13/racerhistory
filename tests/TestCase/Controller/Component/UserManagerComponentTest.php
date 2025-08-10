@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Component;
 
 use App\Controller\Component\UserManagerComponent;
-use Cake\ORM\TableRegistry;
 use Authentication\Authenticator\ResultInterface;
 use Authentication\IdentityInterface;
 use Cake\Controller\Component\FlashComponent;
 use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 class UserManagerComponentTest extends TestCase
@@ -24,11 +24,25 @@ class UserManagerComponentTest extends TestCase
      */
     public array $fixtures = ['app.Users'];
 
-    /** @var StubController */
+    /**
+     * Stub controller instance.
+     *
+     * @var \App\Test\TestCase\Controller\Component\StubController
+     */
     public $controller;
-    /** @var \App\Controller\Component\UserManagerComponent */
+
+    /**
+     * Component under test.
+     *
+     * @var \App\Controller\Component\UserManagerComponent
+     */
     public $component;
-    /** @var \App\Model\Table\UsersTable */
+
+    /**
+     * Users table reference.
+     *
+     * @var \App\Model\Table\UsersTable
+     */
     public $Users;
 
     public function setUp(): void
@@ -61,13 +75,11 @@ class UserManagerComponentTest extends TestCase
         }
         $request = new ServerRequest();
         $this->controller = new StubController($request);
-
-    // Use test fixture-backed table locator
-    $this->Users = $this->getTableLocator()->get('Users');
-    // Ensure controller uses the same locator so fetchTable() hits fixture data
-    $this->controller->setTableLocator($this->getTableLocator());
-    $this->controller->Users = $this->Users;
-
+        // Use test fixture-backed table locator
+        $this->Users = $this->getTableLocator()->get('Users');
+        // Ensure controller uses the same locator so fetchTable() hits fixture data
+        $this->controller->setTableLocator($this->getTableLocator());
+        $this->controller->Users = $this->Users;
 
         // Shared ComponentRegistry
         $componentRegistry = new ComponentRegistry();
