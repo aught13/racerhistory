@@ -26,6 +26,9 @@ Thumbs.db
 .phpunit.cache
 tests.sqlite
 test-results.xml
+coverage.xml
+tmp/coverage/
+server.log
 # vim
 *~
 *.swp
