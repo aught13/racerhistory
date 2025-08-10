@@ -7,11 +7,11 @@ class Initial extends AbstractMigration
 {
     /**
      * Auto ID property - declaration matches parent class for compatibility
-     * 
+     *
      * Note: Different versions of Migrations\AbstractMigration have different
      * type declaration requirements. We need to match the parent exactly.
      */
-    public $autoId = false;
+    public bool $autoId = false;
 
     /**
      * Up Method.
