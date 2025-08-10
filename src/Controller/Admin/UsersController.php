@@ -83,6 +83,8 @@ class UsersController extends AppController
         }
         $user = $this->Users->newEmptyEntity();
         $this->set(compact('user'));
+        
+        return null;
     }
 
     /**
@@ -98,6 +100,8 @@ class UsersController extends AppController
         }
         $user = $this->Users->get($id);
         $this->set(compact('user'));
+        
+        return null;
     }
 
     /**

@@ -44,7 +44,7 @@ class UserManagerComponent extends Component
 
         if (!$result->isValid()) {
             // Authentication failed - let the form handle the error display
-            return;
+            return null;
         }
 
         // Get identity
@@ -57,7 +57,7 @@ class UserManagerComponent extends Component
 
         if (!$user) {
             $controller->Flash->error('Authentication succeeded but no user identity found.');
-            return;
+            return null;
         }
 
         if ($user->get('status') !== 'active') {
@@ -67,7 +67,7 @@ class UserManagerComponent extends Component
                 $controller->getRequest()->getSession()->delete('Auth');
             }
             $controller->Flash->error('Your account is not active. Please contact an administrator.');
-            return;
+            return null;
         }
 
         // Redirect logic

@@ -79,6 +79,7 @@ class UsersController extends AppController
             $this->Flash->error('Registration is currently disabled.');
         }
         $data = $this->request->is('post') ? $this->request->getData() : [];
+        $user = null;
         if ($this->request->is('post') && $registrationEnabled) {
             $data['role'] = 'user';
             $data['status'] = 'active';
@@ -86,12 +87,14 @@ class UsersController extends AppController
             $user = $usersTable->newEmptyEntity();
             $user = $usersTable->patchEntity($user, $data);
             if ($usersTable->save($user)) {
-                $this->request->getSession()->write('Auth.username', $user->username);
+                $this->request->getSession()->write('Auth.username', $user->get('username'));
                 return $this->redirect(['action' => 'login']);
             }
             $this->Flash->error('Unable to register user');
         }
-        $this->set('user', isset($user) ? $user : null);
+        $this->set('user', $user);
+        
+        return null;
     }
 
     /**
