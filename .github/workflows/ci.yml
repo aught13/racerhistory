@@ -127,7 +127,14 @@ jobs:
 
       - name: Run PHPUnit (without coverage)
         if: ${{ matrix.coverage == false }}
-        run: vendor/bin/phpunit
+        run: |
+          echo "=== Running PHPUnit without coverage ==="
+          echo "Test directory contents:"
+          find tests/TestCase -name "*.php" | head -10
+          echo "=== PHPUnit dry run to check test discovery ==="
+          vendor/bin/phpunit --list-tests || echo "Test listing failed"
+          echo "=== Running actual tests ==="
+          vendor/bin/phpunit
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
