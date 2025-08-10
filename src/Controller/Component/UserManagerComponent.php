@@ -276,10 +276,10 @@ class UserManagerComponent extends Component
      */
     public function approveUser(Controller $controller, string|int $id): Response
     {
-    $usersTable = $controller->fetchTable('Users');
-    /** @var \App\Model\Entity\User $user */
-    $user = $usersTable->get($id);
-    $user->status = 'active';
+        $usersTable = $controller->fetchTable('Users');
+        /** @var \App\Model\Entity\User $user */
+        $user = $usersTable->get($id);
+        $user->status = 'active';
 
         if ($usersTable->save($user)) {
             $controller->Flash->success('User has been approved successfully.');
