@@ -94,6 +94,23 @@ jobs:
           # Ensure test database exists and user has permissions
           mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS racerhistory_test; GRANT ALL PRIVILEGES ON racerhistory_test.* TO 'test_user'@'%';"
 
+      - name: Fix migration compatibility
+        run: |
+          echo "=== Checking AbstractMigration autoId property declaration ==="
+          PARENT_DECLARATION=$(grep -A 1 -B 1 "autoId" vendor/cakephp/migrations/src/AbstractMigration.php | grep "public" || echo "not found")
+          echo "Parent class has: $PARENT_DECLARATION"
+          
+          if echo "$PARENT_DECLARATION" | grep -q "bool.*autoId"; then
+            echo "Parent requires bool type, updating migration..."
+            sed -i 's/public $autoId = false;/public bool $autoId = false;/' config/Migrations/20250727202625_Initial.php
+          else
+            echo "Parent requires no type, keeping current declaration..."
+            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250727202625_Initial.php
+          fi
+          
+          echo "=== Final migration property ==="
+          grep -A 1 -B 1 "autoId" config/Migrations/20250727202625_Initial.php
+
       - name: Run database migrations
         run: |
           bin/cake migrations migrate
@@ -162,14 +179,17 @@ jobs:
           try {
             \$connection = ConnectionManager::get('test');
             echo 'Test connection configured: ' . get_class(\$connection) . PHP_EOL;
-            \$connection->connect();
+            \$result = \$connection->execute('SELECT 1 as test');
             echo 'Test connection successful' . PHP_EOL;
           } catch (Exception \$e) {
             echo 'Test connection error: ' . \$e->getMessage() . PHP_EOL;
           }
           "
           echo "=== Running actual tests with verbose output ==="
-          vendor/bin/phpunit --debug
+          echo "Testing bootstrap directly..."
+          php tests/bootstrap.php && echo "Bootstrap successful" || echo "Bootstrap failed"
+          echo "Running PHPUnit with debug output..."
+          vendor/bin/phpunit --debug --stop-on-error
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
