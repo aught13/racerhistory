@@ -15,14 +15,10 @@ declare(strict_types=1);
  * @license   https://opensource.org/licenses/mit-license.php MIT License
  */
 
-use Cake\Datasource\ConnectionManager;
 use Cake\Cache\Cache;
-use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\Fixture\SchemaLoader;
 use Migrations\TestSuite\Migrator;
-use App\Test\Fixture\UsersFixture;
-use App\Test\Fixture\SiteOptionsFixture;
 
 // Ensure Composer autoloader is loaded first
 require dirname(__DIR__) . '/vendor/autoload.php';

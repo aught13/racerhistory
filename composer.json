@@ -3,7 +3,6 @@
     "description": "CakePHP skeleton app",
     "license": "MIT",
     "type": "project",
-    "version": "0.1.0-alpha",
     "homepage": "https://cakephp.org",
     "require": {
         "php": ">=8.1",
