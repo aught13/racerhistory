@@ -6,7 +6,6 @@ class CreateSiteOptionsTable extends AbstractMigration
 {
     public function change(): void
     {
-        $driver = $this->getAdapter()->getAdapterType();
         $table = $this->table('site_options');
         $table
             ->addColumn('option_key', 'string', [
@@ -17,12 +16,13 @@ class CreateSiteOptionsTable extends AbstractMigration
             ->addColumn('value', 'text', [
                 'null' => true
             ])
-            ->addColumn('created', $driver === 'sqlite' ? 'text' : 'datetime', [
-                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
+            # Use datetime for compatibility with Cake's TimestampBehavior across drivers
+            ->addColumn('created', 'datetime', [
+                'default' => null,
                 'null' => false
             ])
-            ->addColumn('modified', $driver === 'sqlite' ? 'text' : 'datetime', [
-                'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
+            ->addColumn('modified', 'datetime', [
+                'default' => null,
                 'null' => false
             ])
             ->create();
