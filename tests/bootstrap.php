@@ -16,15 +16,69 @@ declare(strict_types=1);
  */
 
 use Cake\Cache\Cache;
-use Cake\ORM\TableRegistry;
+use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\SchemaLoader;
 use Migrations\TestSuite\Migrator;
+use function Cake\Core\env;
 
 // Ensure Composer autoloader is loaded first
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 // Load application bootstrap (defines ROOT, paths, config, etc.) before migrations
 require dirname(__DIR__) . '/config/bootstrap.php';
+
+// ----------------------------------------------------------------------
+// APP_ENV guard & deterministic in-memory test DB
+// ----------------------------------------------------------------------
+if (env('APP_ENV') === 'production') {
+    fwrite(STDERR, '[tests bootstrap] FATAL: APP_ENV=production – refusing to run tests against production environment.' . "\n");
+    exit(1);
+}
+
+// Decide which backend to use for tests:
+//  - If FORCE_MYSQL_TEST=1 and a test config file exists, use that MySQL config (must include a 'test' db name containing 'test').
+//  - Otherwise default to in-memory SQLite for maximum isolation + speed.
+try {
+    $useMysql = env('FORCE_MYSQL_TEST') === '1';
+    $testConfigFile = dirname(__DIR__) . '/config/app_local.test.php';
+    if ($useMysql && file_exists($testConfigFile)) {
+        $cfgArr = include $testConfigFile;
+        $sources = $cfgArr['Datasources'] ?? [];
+        $primary = $sources['test'] ?? ($sources['default'] ?? []);
+        if (empty($primary)) {
+            throw new RuntimeException('No test datasource found in app_local.test.php');
+        }
+        if (!isset($primary['database']) || !str_contains((string)$primary['database'], 'test')) {
+            throw new RuntimeException('MySQL test database name must contain "test"');
+        }
+        foreach (['default', 'test'] as $alias) {
+            if (ConnectionManager::getConfig($alias)) {
+                ConnectionManager::drop($alias);
+            }
+        }
+        ConnectionManager::setConfig('test', $primary);
+        // Alias 'default' to 'test' so ORM defaultConnectionName tables use migrated schema
+        ConnectionManager::alias('test', 'default');
+    } else {
+        // In-memory SQLite fallback (stateless per test process)
+        foreach (['default', 'test'] as $alias) {
+            if (ConnectionManager::getConfig($alias)) {
+                ConnectionManager::drop($alias);
+            }
+        }
+        $sqliteCfg = [
+            'className' => 'Cake\\Database\\Connection',
+            'driver' => 'Cake\\Database\\Driver\\Sqlite',
+            'database' => ':memory:',
+            'cacheMetadata' => true,
+        ];
+        ConnectionManager::setConfig('test', $sqliteCfg);
+        ConnectionManager::alias('test', 'default');
+    }
+} catch (Throwable $t) {
+    fwrite(STDERR, '[tests bootstrap] FATAL: Unable to establish isolated test connection: ' . $t->getMessage() . "\n");
+    exit(1);
+}
 
 // ----------------------------------------------------------------------
 // Isolate test suite cache to avoid permission conflicts with web server
@@ -46,7 +100,8 @@ try {
 }
 
 try {
-    (new Migrator())->run();
+    // Always run migrations against the test connection explicitly
+    (new Migrator())->run(['connection' => 'test']);
 } catch (Exception $e) {
     // If migrations fail, try to use schema loader as fallback
     if (file_exists('./tests/schema.sql')) {
@@ -57,42 +112,4 @@ try {
     }
 }
 
-// Global baseline seed for critical tables (Users, SiteOptions) – kept minimal to reduce runtime.
-try {
-    $users = TableRegistry::getTableLocator()->get('Users');
-    if ($users->find()->count() === 0) {
-        $baselineUsers = [
-            [
-                'id' => 1,
-                'username' => 'admin',
-                'email' => 'admin@example.com',
-                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
-                'role' => 'admin',
-                'status' => 'active',
-            ],
-            [
-                'id' => 2,
-                'username' => 'user',
-                'email' => 'user@example.com',
-                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
-                'role' => 'user',
-                'status' => 'inactive',
-            ],
-        ];
-        foreach ($baselineUsers as $row) {
-            $entity = $users->newEntity($row, ['accessibleFields' => ['*' => true]]);
-            $users->saveOrFail($entity);
-        }
-    }
-    $siteOptions = TableRegistry::getTableLocator()->get('SiteOptions');
-    $registration = $siteOptions->find()->where(['option_key' => 'registration'])->first();
-    if (!$registration) {
-        $registration = $siteOptions->newEntity([
-            'option_key' => 'registration',
-            'value' => 'true',
-        ], ['accessibleFields' => ['*' => true]]);
-        $siteOptions->saveOrFail($registration);
-    }
-} catch (Throwable $t) {
-    // ignore seeding issues
-}
+// NOTE: Manual baseline seeding removed. Rely on fixtures declared per test case.

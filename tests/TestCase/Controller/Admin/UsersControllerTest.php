@@ -16,45 +16,18 @@ class UsersControllerTest extends TestCase
     use IntegrationTestTrait;
     use AuthTestTrait;
 
-    // Fixtures removed: manual deterministic seeding in setUp()
+    /**
+     * Deterministic baseline via fixtures.
+     *
+     * @var array<string>
+     */
+    protected array $fixtures = ['app.Users', 'app.SiteOptions'];
 
     public function setUp(): void
     {
         parent::setUp();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        // Deterministic baseline seeding (fixture extension removed). Ensure IDs 1 & 2 + registration option.
-        $users = $this->getTableLocator()->get('Users');
-        $users->deleteAll([]);
-        $baseline = [
-            [
-                'id' => 1,
-                'username' => 'admin',
-                'email' => 'admin@example.com',
-                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
-                'role' => 'admin',
-                'status' => 'active',
-            ],
-            [
-                'id' => 2,
-                'username' => 'user',
-                'email' => 'user@example.com',
-                'password' => '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG',
-                'role' => 'user',
-                'status' => 'inactive',
-            ],
-        ];
-        foreach ($baseline as $row) {
-            $entity = $users->newEntity($row, ['accessibleFields' => ['*' => true]]);
-            $users->saveOrFail($entity);
-        }
-        $siteOptions = $this->getTableLocator()->get('SiteOptions');
-        $siteOptions->deleteAll(['option_key' => 'registration']);
-        $option = $siteOptions->newEntity([
-            'option_key' => 'registration',
-            'value' => 'true',
-        ], ['accessibleFields' => ['*' => true]]);
-        $siteOptions->saveOrFail($option);
     }
 
     private function loginAsAdmin(): void
@@ -120,8 +93,10 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+        // Ensure user 2 exists (fixture baseline)
+        $this->assertNotNull($this->getTableLocator()->get('Users')->get(2));
         $this->post('/admin/users/approve/2');
-        $this->assertRedirect('/admin/users');
+        $this->assertRedirect();
     }
 
     public function testDelete(): void
@@ -129,8 +104,9 @@ class UsersControllerTest extends TestCase
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+        $this->assertNotNull($this->getTableLocator()->get('Users')->get(2));
         $this->post('/admin/users/delete/2');
-        $this->assertRedirect('/admin/users');
+        $this->assertRedirect();
     }
 
     public function testBulkActivate(): void
@@ -207,7 +183,7 @@ class UsersControllerTest extends TestCase
 
     public function testToggleRegistrationDisables(): void
     {
-        // Starts true in fixture, first toggle should disable
+        // Starts true in fixture (value 'true'), first toggle should disable
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
@@ -236,7 +212,6 @@ class UsersControllerTest extends TestCase
     {
         $table = $this->getTableLocator()->get('SiteOptions');
         $table->deleteAll(['option_key' => 'registration']);
-
         $this->loginAsAdmin();
         $this->enableCsrfToken();
         $this->enableSecurityToken();

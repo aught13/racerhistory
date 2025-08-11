@@ -13,7 +13,7 @@ class SiteOptionsFixture extends TestFixture
             [
                 'id' => 1,
                 'option_key' => 'registration',
-                'value' => 'true',
+                'value' => 'true', // registration enabled by default so tests expecting registration work
                 'created' => '2024-01-01 00:00:00',
                 'modified' => '2024-01-01 00:00:00',
             ],
