@@ -12,6 +12,24 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - (placeholder) Additional domain models and admin features.
 - (placeholder) Extended test coverage and performance improvements.
 
+### Added (Unreleased)
+
+- Migration `20250811120000_CreateUsersTable` providing dedicated `users` table schema with adapter-aware datetime defaults.
+
+### Changed (Unreleased)
+
+- Test bootstrap now aliases `default` to isolated `test` connection; removed manual seeding in favor of fixtures only.
+- Refactored `UsersController::register()` formatting for standards compliance.
+
+### Fixed (Unreleased)
+
+- Eliminated production DB leakage into tests by enforcing in-memory SQLite (unless explicitly forcing MySQL).
+- Resolved PHPCS violations across controllers, tables, and test cases; suite now standards-clean.
+
+### Security (Unreleased)
+
+- Removed redundant manual seed path reducing risk of unintended data mutation in alternate environments.
+
 ## [0.1.0-alpha] - 2025-08-10
 
 ### Added
