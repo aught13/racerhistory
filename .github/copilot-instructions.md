@@ -102,3 +102,32 @@ vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/Test
 -   **Test Discovery**: Should find all 78+ tests across the test suite
 
 When adding new tests, ensure they follow these patterns and are compatible with the minimal execution approach used in CI.
+
+## Unit Test Constraints & Guardrails
+
+To keep the test suite stable across local and CI runs, follow these non-negotiable constraints:
+
+1. Migrations & TimestampBehavior
+    - Any table that uses Cake's TimestampBehavior must define `created` and `modified` columns as `datetime` (not `timestamp` or `text`). This avoids type mismatches (DateTimeType) that break saves and cause controller tests to fail.
+    - Do not use adapter-specific TEXT fallbacks for these columns; rely on TimestampBehavior to populate values at save time.
+    - Always include reversible `up()` and `down()` methods when changing schema.
+
+2. Migrations `autoId` Property
+    - The `$autoId` property declaration in migrations must exactly match the parent `Migrations\AbstractMigration` signature used by the installed version.
+    - If the parent is typed, use: `public bool $autoId = false;`
+    - If the parent is untyped, use: `public $autoId = false;`
+    - When in doubt, check `vendor/cakephp/migrations/src/AbstractMigration.php` and update all new migrations consistently to avoid CI fatals.
+
+3. Controller Action Outcomes in Tests
+    - Admin POST actions (approve/delete/bulk/toggle) must return a redirect response with a `Location` header (typically back to the index). Tests assert redirects via `assertRedirect()` or `assertRedirect('/admin/users')` and expect a flash message.
+    - For POST requests in tests, always include CSRF and Security tokens: use `$this->enableCsrfToken(); $this->enableSecurityToken();`.
+
+4. Authentication in Integration Tests
+    - Inject authenticated users using the legacy `Auth` session array only (as done in `AuthTestTrait`). Avoid injecting request attributes to prevent intermittent FormProtection issues in CI.
+
+5. Fixtures, Not Seeding
+    - Do not seed data in test bootstrap. Use fixtures for deterministic baselines.
+    - SiteOptions fixture must include `option_key = 'registration'` with `value = 'true'` as the default baseline; tests may toggle this value.
+
+6. DB Environment Assumptions
+    - CI runs tests on MySQL 8.0. Local test bootstrap defaults to in-memory SQLite unless explicitly forced to MySQL via environment. Keep schema and code adapter-agnostic and avoid DB-specific defaults where possible.
