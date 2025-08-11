@@ -19,7 +19,10 @@ class SiteOptionsTable extends Table
         parent::initialize($config);
         $this->setTable('site_options');
         $this->setPrimaryKey('id');
-    // Not using Timestamp behavior because under sqlite migration uses TEXT columns
+        // Enable Timestamp behavior. Even though sqlite uses TEXT columns via migration,
+        // Cake will still populate them with datetime strings; this avoids NOT NULL issues
+        // in MySQL where defaults are not applied automatically when inserting without values.
+        $this->addBehavior('Timestamp');
     }
 
     /**

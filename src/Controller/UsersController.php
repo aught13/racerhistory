@@ -76,6 +76,7 @@ class UsersController extends AppController
         if (!$registrationEnabled) {
             $this->Flash->error('Registration is currently disabled.');
         }
+
         $data = $this->request->is('post') ? $this->request->getData() : [];
         $user = null;
         if ($this->request->is('post') && $registrationEnabled) {
@@ -86,13 +87,15 @@ class UsersController extends AppController
             $user = $usersTable->patchEntity($user, $data);
             if ($usersTable->save($user)) {
                 $this->request->getSession()->write('Auth.username', $user->get('username'));
+                $this->Flash->success('Registration successful.');
 
-                return $this->redirect(['action' => 'login']); // Tests expect redirect
+                return $this->redirect(['action' => 'login']); // Tests expect redirect to login
             }
             $this->Flash->error('Unable to register user');
         }
         $this->set('user', $user);
-    // Return null to render view with flash messages; registration disabled still returns 200
+
+        // Return null to render view with flash messages; registration disabled still returns 200
         return null;
     }
 
