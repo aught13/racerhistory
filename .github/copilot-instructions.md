@@ -28,7 +28,12 @@ When creating or modifying CakePHP migrations:
 
 ### Test Execution Strategy
 
-This project uses **PHPUnit 12.x**.
+This project uses multiple PHPUnit majors across the CI matrix:
+
+- PHP 8.1 (lowest deps, coverage job) installs **PHPUnit 10.x**.
+- PHP 8.2 / 8.3 (highest deps) install **PHPUnit 11.x/12.x** (whichever the resolver selects within the composer constraint).
+
+Author tests so they are compatible with PHPUnit 10 features (avoid 11/12-only XML config elements or attributes). Do not rely on deprecated 9.x syntax.
 
 Primary local command (auto-discovers tests via `phpunit.xml.dist`):
 
@@ -76,13 +81,14 @@ vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/Test
 
 ### CI Compatibility Notes
 
-1. **PHPUnit 12.x Compatibility**:
+1. **PHPUnit Multi-Version Compatibility (10–12)**:
 
-    - Avoid complex PHPUnit configurations in CI
-    - Local runs: just `vendor/bin/phpunit` (no coverage by default)
-    - CI coverage matrix: `vendor/bin/phpunit --configuration phpunit.ci.xml`
-    - Core tests (Application, View, Model, Component) must pass
-    - Integration tests may have expected failures in CI due to environment differences
+    - Keep XML configs limited to syntax valid in PHPUnit 10 (phpunit.ci.xml uses a 10.x schema; phpunit.xml may target 12.x but must not introduce incompatible constructs needed by shared tests).
+    - Local quick run: `vendor/bin/phpunit` (uses phpunit.xml).
+    - Coverage run (CI only): `vendor/bin/phpunit --configuration phpunit.ci.xml` (generates coverage.xml using `<coverage><report>` block).
+    - Do not add `<coverage>` inside `<logging>` in phpunit.ci.xml (10.x warning trigger).
+    - Core tests (Application, View, Model, Component) must always pass in every matrix job.
+    - Integration tests should also pass; do not intentionally rely on environment-specific skips.
 
 2. **Database Setup**:
 
