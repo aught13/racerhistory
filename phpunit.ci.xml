@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.0/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
          cacheDirectory=".phpunit.cache"
          colors="true">
+    <!-- NOTE: Using PHPUnit 10.x compatible schema and coverage configuration.
+        For PHPUnit 11/12 the coverage <report> format remains backward compatible.
+        If upgrading schema, ensure the <coverage><report> placement matches the target version.
+    -->
     <php>
         <ini name="memory_limit" value="-1"/>
         <ini name="apc.enable_cli" value="1"/>
@@ -24,11 +28,13 @@
             <directory>src/Console</directory>
         </exclude>
     </source>
-    <logging>
-        <junit outputFile="test-results.xml"/>
-        <coverage>
+    <coverage>
+        <report>
             <clover outputFile="coverage.xml"/>
             <html outputDirectory="tmp/coverage"/>
-        </coverage>
+        </report>
+    </coverage>
+    <logging>
+        <junit outputFile="test-results.xml"/>
     </logging>
 </phpunit>
