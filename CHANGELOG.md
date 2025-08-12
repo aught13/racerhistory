@@ -14,15 +14,25 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ### Added (Unreleased)
 
+- **Admin Sports Management**: Complete CRUD functionality for managing sports
+  - New `Admin\SportsController` with index, view, add, edit, delete, and bulk operations
+  - DataTables integration for responsive sports listing with search and pagination
+  - Bootstrap 5.3.2 compatible templates with form validation
+  - "Manage Sports" navigation link in admin interface
+- Enhanced `SportsTable` with validation rules (required, max length, unique sport names)
+- Comprehensive test suite for Sports admin functionality (19 tests, 57 assertions)
 - Migration `20250811120000_CreateUsersTable` providing dedicated `users` table schema with adapter-aware datetime defaults.
 
 ### Changed (Unreleased)
 
+- **Code Quality Improvements**: All Sports-related files now pass PHPCS and PHPStan validation
+- Enhanced `Sport` entity with proper property type annotations for better static analysis
 - Test bootstrap now aliases `default` to isolated `test` connection; removed manual seeding in favor of fixtures only.
 - Refactored `UsersController::register()` formatting for standards compliance.
 
 ### Fixed (Unreleased)
 
+- **Form Security**: Resolved CSRF/Security token conflicts in admin forms by separating edit and delete actions
 - Eliminated production DB leakage into tests by enforcing in-memory SQLite (unless explicitly forcing MySQL).
 - Resolved PHPCS violations across controllers, tables, and test cases; suite now standards-clean.
 

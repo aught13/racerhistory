@@ -23,7 +23,7 @@ This project powers the racerhistory.com website, providing features for:
 
 - **User Authentication** - Secure registration, login, and password management
 - **Admin Dashboard** - Administrative interface for user and content management
-- **Historical Game Data** - Management system for racing game historical data
+- **Historical Game Data** - Management system for sports historical data
 - **Responsive Design** - Mobile-first Bootstrap 5.3.2 interface
 
 Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web development.
