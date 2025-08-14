@@ -19,14 +19,24 @@ and this project adheres (at the moment) to semantic versioning *starting with p
   - DataTables integration for responsive sports listing with search and pagination
   - Bootstrap 5.3.2 compatible templates with form validation
   - "Manage Sports" navigation link in admin interface
+- **Admin Teams Management**: Complete CRUD functionality for managing teams
+  - New `Admin\TeamsController` with index, view, add, edit, delete, and bulk operations
+  - Team-to-Sport association management with dropdown selection
+  - Gender classification support (Male/Female/Co-ed) with validation
+  - Bootstrap 5.3.2 compatible templates with responsive design
+  - "Manage Teams" navigation link in admin interface
 - Enhanced `SportsTable` with validation rules (required, max length, unique sport names)
+- Enhanced `TeamsTable` with comprehensive validation rules and Sports association
+- Enhanced `Team` entity with proper type declarations and accessible fields
 - Comprehensive test suite for Sports admin functionality (19 tests, 57 assertions)
+- Comprehensive test suite for Teams admin functionality (15 tests, 35 assertions)
 - Migration `20250811120000_CreateUsersTable` providing dedicated `users` table schema with adapter-aware datetime defaults.
 
 ### Changed (Unreleased)
 
-- **Code Quality Improvements**: All Sports-related files now pass PHPCS and PHPStan validation
+- **Code Quality Improvements**: All Sports and Teams-related files now pass PHPCS and PHPStan validation
 - Enhanced `Sport` entity with proper property type annotations for better static analysis
+- Enhanced `Team` entity with proper property type annotations for better static analysis
 - Test bootstrap now aliases `default` to isolated `test` connection; removed manual seeding in favor of fixtures only.
 - Refactored `UsersController::register()` formatting for standards compliance.
 

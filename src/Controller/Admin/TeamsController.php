@@ -1,0 +1,165 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Controller\Admin;
+
+use Cake\Http\Response;
+
+/**
+ * Admin Teams Controller
+ *
+ * Handles administrative teams management operations.
+ * Provides functionality for teams administration and CRUD operations.
+ *
+ * @property \App\Model\Table\TeamsTable $Teams
+ */
+class TeamsController extends AppController
+{
+    /**
+     * List all teams for administration.
+     *
+     * @return void
+     */
+    public function index(): void
+    {
+        $teams = $this->Teams->find()
+            ->contain(['Sports'])
+            ->all();
+        $this->set(compact('teams'));
+    }
+
+    /**
+     * View a single team.
+     *
+     * @param string $id Team ID
+     * @return void
+     */
+    public function view(string $id): void
+    {
+        $team = $this->Teams->get($id, contain: ['Sports']);
+        $this->set(compact('team'));
+    }
+
+    /**
+     * Add new team form and processing.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function add(): ?Response
+    {
+        $team = $this->Teams->newEmptyEntity();
+
+        if ($this->request->is('post')) {
+            $team = $this->Teams->patchEntity($team, $this->request->getData());
+
+            if ($this->Teams->save($team)) {
+                $this->Flash->success(__('The team has been saved.'));
+
+                return $this->redirect(['action' => 'index']);
+            }
+            $this->Flash->error(__('The team could not be saved. Please, try again.'));
+        }
+
+        $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
+        $this->set(compact('team', 'sports'));
+
+        return null;
+    }
+
+    /**
+     * Edit team form and processing.
+     *
+     * @param string $id Team ID
+     * @return \Cake\Http\Response|null
+     */
+    public function edit(string $id): ?Response
+    {
+        $team = $this->Teams->get($id);
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $team = $this->Teams->patchEntity($team, $this->request->getData());
+
+            if ($this->Teams->save($team)) {
+                $this->Flash->success(__('The team has been saved.'));
+
+                return $this->redirect(['action' => 'index']);
+            }
+            $this->Flash->error(__('The team could not be saved. Please, try again.'));
+        }
+
+        $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
+        $this->set(compact('team', 'sports'));
+
+        return null;
+    }
+
+    /**
+     * Delete a team.
+     *
+     * @param string $id Team ID
+     * @return \Cake\Http\Response
+     */
+    public function delete(string $id): Response
+    {
+        $this->request->allowMethod(['post', 'delete']);
+        $team = $this->Teams->get($id);
+
+        if ($this->Teams->delete($team)) {
+            $this->Flash->success(__('The team has been deleted.'));
+        } else {
+            $this->Flash->error(__('The team could not be deleted. Please, try again.'));
+        }
+
+        return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Bulk delete multiple teams.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function bulkDelete(): Response
+    {
+        $this->request->allowMethod(['post']);
+        $teamIds = $this->request->getData('team_ids');
+
+        if (empty($teamIds)) {
+            $this->Flash->error('No teams selected for deletion.');
+
+            return $this->redirect(['action' => 'index']);
+        }
+
+        $deletedCount = 0;
+        foreach ($teamIds as $id) {
+            $team = $this->Teams->get($id);
+            if ($this->Teams->delete($team)) {
+                $deletedCount++;
+            }
+        }
+
+        if ($deletedCount > 0) {
+            $this->Flash->success(__('Deleted {0} team(s).', $deletedCount));
+        } else {
+            $this->Flash->error('No teams could be deleted.');
+        }
+
+        return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Bulk action dispatcher for teams.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function bulk(): Response
+    {
+        $action = $this->request->getData('bulk_action');
+        if ($action === 'delete') {
+            return $this->bulkDelete();
+        }
+
+        $this->Flash->error('Invalid bulk action.');
+
+        return $this->redirect(['action' => 'index']);
+    }
+}

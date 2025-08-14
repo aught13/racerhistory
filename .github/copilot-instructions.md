@@ -137,3 +137,5 @@ To keep the test suite stable across local and CI runs, follow these non-negotia
 
 6. DB Environment Assumptions
     - CI runs tests on MySQL 8.0. Local test bootstrap defaults to in-memory SQLite unless explicitly forced to MySQL via environment. Keep schema and code adapter-agnostic and avoid DB-specific defaults where possible.
+
+Add @codecov-ai-reviewer review-- the assistant will review the PR and make suggestions.

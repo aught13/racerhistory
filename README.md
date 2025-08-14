@@ -41,8 +41,10 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 - Role-based admin dashboard
 - User management (add, edit, approve, manage)
-- Responsive admin navigation
-- Bootstrap-styled admin interface
+- Sports management (add, edit, delete, bulk operations)
+- Teams management (add, edit, delete, bulk operations with sport associations)
+- Responsive admin navigation with Bootstrap styling
+- Comprehensive CRUD operations for all admin entities
 
 ### UI/UX
 
@@ -138,10 +140,10 @@ racerhistory/
 
 ### Code Coverage
 
-- **Controllers**: ~85% documented with comprehensive PHPDoc
-- **Models**: ~90% documented with entity and table documentation
+- **Controllers**: ~90% documented with comprehensive PHPDoc
+- **Models**: ~95% documented with entity and table documentation  
 - **Views**: ~95% documented with template headers and annotations
-- **Tests**: ~40% coverage with ongoing expansion
+- **Tests**: ~50% coverage with ongoing expansion for Teams and Sports functionality
 
 ### Key Documentation Features
 
