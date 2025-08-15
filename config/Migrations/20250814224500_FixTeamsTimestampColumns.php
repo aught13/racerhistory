@@ -22,16 +22,12 @@ class FixTeamsTimestampColumns extends AbstractMigration
     {
         $table = $this->table('teams');
         
-        // Remove the old timestamp columns
-        $table->removeColumn('created_at');
-        $table->removeColumn('updated_at');
-        
-        // Add new datetime columns with the same names
-        $table->addColumn('created_at', 'datetime', [
+        // Change existing timestamp columns to datetime type
+        $table->changeColumn('created_at', 'datetime', [
             'default' => null,
             'null' => false,
         ]);
-        $table->addColumn('updated_at', 'datetime', [
+        $table->changeColumn('updated_at', 'datetime', [
             'default' => null,
             'null' => false,
         ]);
@@ -48,18 +44,14 @@ class FixTeamsTimestampColumns extends AbstractMigration
     {
         $table = $this->table('teams');
         
-        // Remove the datetime columns
-        $table->removeColumn('created_at');
-        $table->removeColumn('updated_at');
-        
         // Restore the original timestamp columns
         $driver = $this->getAdapter()->getAdapterType();
-        $table->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+        $table->changeColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
             'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
             'limit' => null,
             'null' => true,
         ]);
-        $table->addColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
+        $table->changeColumn('updated_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
             'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : null,
             'limit' => null,
             'null' => true,
