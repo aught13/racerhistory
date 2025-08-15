@@ -3,8 +3,14 @@
     <div class="row mb-3">
         <div class="col">
             <h1 class="mb-3">Teams Management</h1>
+            <p class="text-muted mb-3">
+                Manage competitive teams for all sports. Teams represent individual units that compete within a specific sport category.
+                Each team must be assigned to a sport and classified by gender (Male, Female, or Co-ed).
+            </p>
             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'add']) ?>"
-                class="btn btn-success mb-3">Add New Team</a>
+                class="btn btn-success mb-3">
+                <i class="bi bi-plus-circle"></i> Add New Team
+            </a>
         </div>
     </div>
 
@@ -26,10 +32,10 @@
                     <thead class="table-dark">
                         <tr>
                             <th><input type="checkbox" id="select-all-teams"></th>
-                            <th>Team Name</th>
-                            <th>Sport</th>
-                            <th>Abbreviation</th>
-                            <th>Gender</th>
+                            <th>Team Name <small class="text-light">(Short Name)</small></th>
+                            <th>Sport <small class="text-light">(Category)</small></th>
+                            <th>Abbreviation <small class="text-light">(5 chars max)</small></th>
+                            <th>Gender <small class="text-light">(M/F/Co-ed)</small></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -124,14 +130,14 @@
                     if (confirm(`Are you sure you want to delete ${checkedBoxes.length} team(s)?`)) {
                         // Update form action and submit
                         this.action = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulk']) ?>';
-                        
+
                         // Add bulk_action field
                         const bulkActionInput = document.createElement('input');
                         bulkActionInput.type = 'hidden';
                         bulkActionInput.name = 'bulk_action';
                         bulkActionInput.value = 'delete';
                         this.appendChild(bulkActionInput);
-                        
+
                         this.submit();
                     }
                 }

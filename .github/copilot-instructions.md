@@ -124,6 +124,29 @@ To keep the test suite stable across local and CI runs, follow these non-negotia
     - If the parent is untyped, use: `public $autoId = false;`
     - When in doubt, check `vendor/cakephp/migrations/src/AbstractMigration.php` and update all new migrations consistently to avoid CI fatals.
 
+## Testing gotchas we've seen in this repo
+
+Two recurring small test flakiness sources have shown up in the test suite: 1) flash messages consumed by the view and 2) timestamp fields being strings in some test contexts. Below are concrete mitigations to use when writing controllers, views and tests:
+
+- Flash messages are stored in session and the view/FlashHelper will "consume" them during render. When a test needs to assert on a flash after rendering (not after a redirect), enable flash retention in the test:
+
+    - In integration tests: call `$this->enableRetainFlashMessages();` before making the request. This prevents the test harness from discarding consumed messages and allows `assertFlashMessage()` to find them.
+
+- Prefer explicit, test-friendly timestamp handling:
+
+    - Fixtures and migrations should provide DateTime-compatible values where possible (use DateTime objects in factories or ensure the migration default types are `datetime` and not strings). This keeps templates that call `$entity->created_at->format()` safe.
+    - In templates, defensively handle timestamp fields in case they are strings in some test scenarios. For example:
+
+        ```php
+        if ($entity->created_at instanceof \DateTimeInterface) {
+                echo h($entity->created_at->format('M j, Y g:i A'));
+        } else {
+                echo h($entity->created_at);
+        }
+        ```
+
+These two patterns (use `enableRetainFlashMessages()` in tests and guard DateTime usage in templates) are low-cost and have stabilized our CI runs.
+
 3. Controller Action Outcomes in Tests
     - Admin POST actions (approve/delete/bulk/toggle) must return a redirect response with a `Location` header (typically back to the index). Tests assert redirects via `assertRedirect()` or `assertRedirect('/admin/users')` and expect a flash message.
     - For POST requests in tests, always include CSRF and Security tokens: use `$this->enableCsrfToken(); $this->enableSecurityToken();`.

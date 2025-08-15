@@ -6,10 +6,35 @@ namespace App\Model\Table;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * Sports Model
+ *
+ * Manages sports data for the racing system.
+ *
+ * @method \App\Model\Entity\Sport newEmptyEntity()
+ * @method \App\Model\Entity\Sport newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\Sport[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Sport get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Sport findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Sport patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Sport[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Sport|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Sport saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ *
+ * Table Fields:
+ * - id: Primary key, auto-increment integer
+ * - sport_name: Name of the sport (max 162 chars, unique, required)
+ * - created_at: Timestamp when record was created
+ * - updated_at: Timestamp when record was last modified
+ */
 class SportsTable extends Table
 {
     /**
-     * Initialize table configuration.
+     * Initialize table configuration and associations.
      *
      * @param array $config Runtime configuration for this table.
      * @return void
@@ -23,6 +48,12 @@ class SportsTable extends Table
         $this->addBehavior('Timestamp', [
             'created' => 'created_at',
             'modified' => 'updated_at',
+        ]);
+
+        // Associations
+        $this->hasMany('Teams', [
+            'foreignKey' => 'sport_id',
+            'dependent' => true,
         ]);
     }
 

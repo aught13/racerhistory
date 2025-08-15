@@ -17,12 +17,11 @@
                     <table class="table table-borderless">
                         <tbody>
                             <tr>
-                                <th class="w-25">ID:</th>
-                                <td><?= h($sport->id) ?></td>
-                            </tr>
-                            <tr>
                                 <th>Sport Name:</th>
-                                <td><?= h($sport->sport_name) ?></td>
+                                <td>
+                                    <?= h($sport->sport_name) ?>
+                                    <small class="text-muted d-block">Competition category name (unique, max 162 characters)</small>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

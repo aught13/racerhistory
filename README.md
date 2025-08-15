@@ -141,7 +141,7 @@ racerhistory/
 ### Code Coverage
 
 - **Controllers**: ~90% documented with comprehensive PHPDoc
-- **Models**: ~95% documented with entity and table documentation  
+- **Models**: ~95% documented with entity and table documentation
 - **Views**: ~95% documented with template headers and annotations
 - **Tests**: ~50% coverage with ongoing expansion for Teams and Sports functionality
 
