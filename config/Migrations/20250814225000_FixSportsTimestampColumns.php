@@ -5,10 +5,6 @@ use Migrations\AbstractMigration;
 
 class FixSportsTimestampColumns extends AbstractMigration
 {
-    /**
-     * Auto ID property - declaration matches parent class for compatibility
-     */
-    public bool $autoId = false;
 
     /**
      * Up Method.
