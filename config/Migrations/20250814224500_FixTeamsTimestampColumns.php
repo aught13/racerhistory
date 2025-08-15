@@ -25,11 +25,11 @@ class FixTeamsTimestampColumns extends AbstractMigration
         // Change existing timestamp columns to datetime type
         $table->changeColumn('created_at', 'datetime', [
             'default' => null,
-            'null' => false,
+            'null' => true,
         ]);
         $table->changeColumn('updated_at', 'datetime', [
             'default' => null,
-            'null' => false,
+            'null' => true,
         ]);
         
         $table->update();
