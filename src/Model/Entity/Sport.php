@@ -8,12 +8,40 @@ use Cake\ORM\Entity;
 /**
  * Sport Entity
  *
- * @property int $id
- * @property string $sport_name
- * @property \Cake\I18n\DateTime|null $created_at
- * @property \Cake\I18n\DateTime|null $updated_at
+ * Represents a sport category in the racing system.
+ * Sports are the foundation categories that teams compete in.
+ *
+ * @property int $id Unique identifier
+ * @property string $sport_name Name of the sport (unique, max 162 chars)
+ * @property \Cake\I18n\DateTime|null $created_at Creation timestamp
+ * @property \Cake\I18n\DateTime|null $updated_at Last modification timestamp
+ *
+ * @property \App\Model\Entity\Team[] $teams Teams that compete in this sport
  */
 class Sport extends Entity
 {
-    // Add custom methods or virtual fields if needed
+    /**
+     * Fields that can be mass assigned using newEntity() or patchEntity().
+     *
+     * Note that when '*' is set to true, this allows all unspecified fields to
+     * be mass assigned. For security purposes, it is advised to set '*' to false
+     * (or remove it), and explicitly make individual fields accessible as needed.
+     *
+     * @var array<string, bool>
+     */
+    protected array $_accessible = [
+        'sport_name' => true,
+        'created_at' => true,
+        'updated_at' => true,
+    ];
+
+    /**
+     * Get display name for this sport
+     *
+     * @return string
+     */
+    public function getDisplayName(): string
+    {
+        return $this->sport_name ?? 'Unknown Sport';
+    }
 }

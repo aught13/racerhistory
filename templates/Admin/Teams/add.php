@@ -11,6 +11,9 @@
                 </ol>
             </nav>
             <h1 class="mb-3">Add New Team</h1>
+            <p class="text-muted">
+                Create a new team for competition. All teams must be assigned to a sport and have a gender classification.
+            </p>
         </div>
     </div>
 
@@ -22,7 +25,7 @@
                 </div>
                 <div class="card-body">
                     <?= $this->Form->create($team, ['novalidate' => true]) ?>
-                    
+
                     <div class="mb-3">
                         <?= $this->Form->control('sport_id', [
                             'type' => 'select',
@@ -32,6 +35,7 @@
                             'label' => ['class' => 'form-label', 'text' => 'Sport *'],
                             'required' => true
                         ]) ?>
+                        <div class="form-text">Select the sport category this team will compete in.</div>
                     </div>
 
                     <div class="mb-3">
@@ -39,21 +43,23 @@
                             'type' => 'text',
                             'class' => 'form-control',
                             'label' => ['class' => 'form-label', 'text' => 'Team Name *'],
-                            'placeholder' => 'Enter team name',
+                            'placeholder' => 'Enter team name (e.g., Women\'s Basketball)',
                             'maxlength' => 162,
                             'required' => true
                         ]) ?>
+                        <div class="form-text">Short display name of the team (maximum 162 characters).</div>
                     </div>
 
                     <div class="mb-3">
                         <?= $this->Form->control('team_description', [
                             'type' => 'textarea',
                             'class' => 'form-control',
-                            'label' => ['class' => 'form-label', 'text' => 'Description'],
-                            'placeholder' => 'Enter team description (optional)',
+                            'label' => ['class' => 'form-label', 'text' => 'Long Name'],
+                            'placeholder' => 'Enter full team name (e.g., Murray St Racers Women\'s Basketball)',
                             'rows' => 3,
                             'maxlength' => 240
                         ]) ?>
+                        <div class="form-text">Full official name including institution and sport (maximum 240 characters).</div>
                     </div>
 
                     <div class="mb-3">
@@ -61,11 +67,11 @@
                             'type' => 'text',
                             'class' => 'form-control',
                             'label' => ['class' => 'form-label', 'text' => 'Abbreviation *'],
-                            'placeholder' => 'Enter team abbreviation',
+                            'placeholder' => 'Enter team abbreviation (e.g., WBB)',
                             'maxlength' => 5,
                             'required' => true
                         ]) ?>
-                        <div class="form-text">Maximum 5 characters (e.g., "LAK" for Lakers)</div>
+                        <div class="form-text">Short abbreviation for compact display (maximum 5 characters, e.g., "WBB" for Women's Basketball).</div>
                     </div>
 
                     <div class="mb-3">
@@ -76,11 +82,12 @@
                                 'F' => 'Female',
                                 'C' => 'Co-ed'
                             ],
-                            'empty' => 'Select Gender',
+                            'empty' => 'Select Gender Classification',
                             'class' => 'form-control',
-                            'label' => ['class' => 'form-label', 'text' => 'Gender *'],
+                            'label' => ['class' => 'form-label', 'text' => 'Gender Classification *'],
                             'required' => true
                         ]) ?>
+                        <div class="form-text">Specify whether this is a Male, Female, or Co-ed team for proper competition classification.</div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -109,7 +116,7 @@
                         <li><strong>Abbreviation:</strong> Short code for the team (max 5 chars)</li>
                         <li><strong>Gender:</strong> Team gender classification</li>
                     </ul>
-                    
+
                     <h6 class="mt-3">Optional Fields</h6>
                     <ul class="list-unstyled">
                         <li><strong>Description:</strong> Additional information about the team</li>

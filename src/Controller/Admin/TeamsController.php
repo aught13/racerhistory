@@ -4,12 +4,20 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use Cake\Http\Response;
+use Cake\Log\Log;
 
 /**
  * Admin Teams Controller
  *
  * Handles administrative teams management operations.
  * Provides functionality for teams administration and CRUD operations.
+ *
+ * Teams represent individual competitive units within a sport. Each team
+ * belongs to a specific sport and has classification information including:
+ * - Team name and optional description
+ * - Sport association (required)
+ * - Abbreviation for compact display
+ * - Gender classification (Male, Female, or Co-ed)
  *
  * @property \App\Model\Table\TeamsTable $Teams
  */
@@ -36,7 +44,8 @@ class TeamsController extends AppController
      */
     public function view(string $id): void
     {
-        $team = $this->Teams->get($id, contain: ['Sports']);
+    // Use named arguments for get() to avoid deprecation warnings
+    $team = $this->Teams->get($id, contain: ['Sports']);
         $this->set(compact('team'));
     }
 

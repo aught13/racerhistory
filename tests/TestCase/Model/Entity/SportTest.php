@@ -83,8 +83,8 @@ class SportTest extends TestCase
         $this->assertTrue($this->Sport->isAccessible('created_at'));
         $this->assertTrue($this->Sport->isAccessible('updated_at'));
 
-        // ID is accessible by default in CakePHP entities
-        $this->assertTrue($this->Sport->isAccessible('id'));
+        // ID should NOT be accessible for security reasons
+        $this->assertFalse($this->Sport->isAccessible('id'));
     }
 
     /**

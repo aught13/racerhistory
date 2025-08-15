@@ -6,6 +6,35 @@ namespace App\Model\Table;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * Teams Model
+ *
+ * Manages team data for various sports in the racing system.
+ *
+ * @method \App\Model\Entity\Team newEmptyEntity()
+ * @method \App\Model\Entity\Team newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\Team[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Team get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Team findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Team patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Team[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Team|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Team saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ *
+ * Table Fields:
+ * - id: Primary key, auto-increment integer
+ * - sport_id: Foreign key to sports table (required)
+ * - team_name: Short display name of the team (max 162 chars, required)
+ * - team_description: Full official name including institution and sport (max 240 chars)
+ * - abbr: Team abbreviation for display (max 5 chars, required)
+ * - gender: Gender classification - M (Male), F (Female), C (Co-ed) (required)
+ * - created_at: Timestamp when record was created
+ * - updated_at: Timestamp when record was last modified
+ */
 class TeamsTable extends Table
 {
     /**

@@ -5,6 +5,9 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="mb-0">Edit Sport</h2>
+                    <p class="text-muted mb-0 mt-2">
+                        Update sport category information. Sport names must remain unique across the system.
+                    </p>
                 </div>
                 <div class="card-body">
                     <?= $this->Form->create($sport, [
@@ -17,10 +20,15 @@
                         <?= $this->Form->control('sport_name', [
                             'type' => 'text',
                             'class' => 'form-control',
-                            'label' => ['text' => 'Sport Name', 'class' => 'form-label'],
+                            'label' => ['text' => 'Sport Name *', 'class' => 'form-label'],
+                            'placeholder' => 'Enter sport name (e.g., Basketball, Football, Soccer)',
                             'required' => true,
                             'maxlength' => 162
                         ]) ?>
+                        <div class="form-text">
+                            Name of the sport category (maximum 162 characters). Must be unique across all sports.
+                            Examples: Basketball, Football, Soccer, Tennis, etc.
+                        </div>
                         <div class="invalid-feedback">
                             Please provide a valid sport name.
                         </div>

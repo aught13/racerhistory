@@ -27,10 +27,11 @@
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-sm-3">
-                            <strong>Sport:</strong>
+                            <strong>Sport Category:</strong>
                         </div>
                         <div class="col-sm-9">
                             <?= h($team->sport ? $team->sport->sport_name : 'N/A') ?>
+                            <br><small class="text-muted">Competition category for this team</small>
                         </div>
                     </div>
 
@@ -40,16 +41,18 @@
                         </div>
                         <div class="col-sm-9">
                             <?= h($team->team_name) ?>
+                            <br><small class="text-muted">Short display name (max 162 characters)</small>
                         </div>
                     </div>
 
                     <?php if (!empty($team->team_description)): ?>
                     <div class="row mb-3">
                         <div class="col-sm-3">
-                            <strong>Description:</strong>
+                            <strong>Long Name:</strong>
                         </div>
                         <div class="col-sm-9">
                             <?= h($team->team_description) ?>
+                            <br><small class="text-muted">Full official name including institution and sport (max 240 characters)</small>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -60,18 +63,21 @@
                         </div>
                         <div class="col-sm-9">
                             <?= h($team->abbr) ?>
+                            <br><small class="text-muted">Short code for compact display (max 5 characters)</small>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-sm-3">
-                            <strong>Gender:</strong>
+                            <strong>Gender Classification:</strong>
                         </div>
                         <div class="col-sm-9">
                             <?php
                             $genderLabels = ['M' => 'Male', 'F' => 'Female', 'C' => 'Co-ed'];
-                            echo h($genderLabels[$team->gender] ?? $team->gender);
+                            $genderLabel = $genderLabels[$team->gender] ?? $team->gender;
                             ?>
+                            <?= h($genderLabel) ?>
+                            <br><small class="text-muted">Competition gender category</small>
                         </div>
                     </div>
 
@@ -81,7 +87,14 @@
                             <strong>Created:</strong>
                         </div>
                         <div class="col-sm-9">
-                            <?= $team->created_at->format('Y-m-d H:i:s') ?>
+                            <?php
+                            $created = $team->created_at;
+                            if ($created instanceof \DateTimeInterface) {
+                                echo h($created->format('M j, Y g:i A'));
+                            } else {
+                                echo h($created);
+                            }
+                            ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -92,10 +105,25 @@
                             <strong>Last Updated:</strong>
                         </div>
                         <div class="col-sm-9">
-                            <?= $team->updated_at->format('Y-m-d H:i:s') ?>
+                            <?php
+                            $updated = $team->updated_at;
+                            if ($updated instanceof \DateTimeInterface) {
+                                echo h($updated->format('M j, Y g:i A'));
+                            } else {
+                                echo h($updated);
+                            }
+                            ?>
                         </div>
                     </div>
                     <?php endif; ?>
+
+                    <div class="mt-4">
+                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                           class="btn btn-primary">Edit Team</a>
+                        <?= $this->Form->postLink('Delete Team',
+                            ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id],
+                            ['class' => 'btn btn-danger', 'confirm' => 'Are you sure you want to delete this team?']) ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -103,23 +131,12 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Actions</h5>
+                    <h5 class="card-title mb-0">Quick Info</h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
-                            class="btn btn-primary">Edit Team</a>
-                        
-                        <?= $this->Form->postLink('Delete Team',
-                            ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id],
-                            [
-                                'class' => 'btn btn-danger',
-                                'confirm' => 'Are you sure you want to delete this team? This action cannot be undone.',
-                                'data-bs-toggle' => 'tooltip',
-                                'title' => 'Delete this team permanently'
-                            ]
-                        ) ?>
-                    </div>
+                    <p><strong>Sport:</strong> <?= h($team->sport ? $team->sport->sport_name : 'N/A') ?></p>
+                    <p><strong>Gender:</strong> <?= h($genderLabel) ?></p>
+                    <p><strong>Abbreviation:</strong> <?= h($team->abbr) ?></p>
                 </div>
             </div>
         </div>

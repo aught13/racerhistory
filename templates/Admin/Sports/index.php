@@ -3,8 +3,14 @@
     <div class="row mb-3">
         <div class="col">
             <h1 class="mb-3">Sports Management</h1>
+            <p class="text-muted mb-3">
+                Manage sport categories that teams compete in. Sports are the foundation of the system - each team must be assigned to a sport.
+                Sport names must be unique across the system.
+            </p>
             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'add']) ?>"
-                class="btn btn-success mb-3">Add New Sport</a>
+                class="btn btn-success mb-3">
+                <i class="bi bi-plus-circle"></i> Add New Sport
+            </a>
         </div>
     </div>
 
@@ -26,7 +32,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th><input type="checkbox" id="select-all-sports"></th>
-                            <th>Sport Name</th>
+                            <th>Sport Name <small class="text-light">(Unique, 162 chars max)</small></th>
                             <th>Actions</th>
                         </tr>
                     </thead>

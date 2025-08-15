@@ -124,6 +124,7 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+    $this->enableRetainFlashMessages();
 
         $data = [
             'team_name' => '', // Required field missing
@@ -180,6 +181,7 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+    $this->enableRetainFlashMessages();
 
         $data = [
             'team_name' => '', // Required field empty
