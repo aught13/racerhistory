@@ -17,6 +17,14 @@
             <?php if ($hasInactive): ?>
             <h2 class="mb-3">Pending Users</h2>
             <form id="bulk-action-form" method="post">
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete'], 'id' => 'delete-form-users-bulk', 'style' => 'display:none']) ?>
+                <?php
+                    $this->Form->unlockField('user_ids');
+                    $this->Form->unlockField('bulk_action');
+                ?>
+                <?= $this->Form->hidden('user_ids[]', ['value' => '']) ?>
+                <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
+                <?= $this->Form->end() ?>
                 <div class="mb-2 d-flex align-items-center gap-2">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
                     <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto">
@@ -47,9 +55,16 @@
                             <td>
                                 <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'approve', $user->id]) ?>"
                                     class="btn btn-sm btn-success">Approve</a>
-                                <?= $this->Form->postLink('Delete',
-                                    ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'delete', $user->id],
-                                    ['class' => 'btn btn-sm btn-danger', 'confirm' => 'Are you sure you want to delete this user?']) ?>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                                    data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'delete', $user->id]) ?>"
+                                    data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'manage', $user->id]) ?>"
+                                    data-item-type="user"
+                                    data-associated='<?= json_encode([['label' => $user->username, 'detail' => $user->email, 'id' => $user->id]]) ?>'
+                                    data-form-id="delete-form-user-<?= $user->id ?>">
+                                    Delete
+                                </button>
+                                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'delete', $user->id], 'id' => 'delete-form-user-' . $user->id, 'style' => 'display:none']) ?>
+                                <?= $this->Form->end() ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -147,12 +162,30 @@ $(document).ready(function() {
             form.attr('action',
                 "<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkActivate']) ?>"
             );
+            this.submit();
         } else if (action === 'delete') {
-            form.attr('action',
-                "<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete']) ?>"
-            );
+            // collect selected IDs and names
+            var checked = $('.user-checkbox:checked');
+            var ids = checked.map(function() { return $(this).val(); }).get();
+            var names = checked.map(function() { return $(this).closest('tr').find('td:nth-child(2)').text().trim(); }).get();
+
+            // create a temporary trigger to open modal with data-ids and associated names
+            var modalTrigger = $('<button/>', {
+                type: 'button',
+                'data-bs-toggle': 'modal',
+                'data-bs-target': '#confirm-delete-modal',
+                'data-delete-url': "<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete']) ?>",
+                'data-item-type': 'users (bulk)',
+                'data-associated': JSON.stringify(names),
+                'data-ids': JSON.stringify(ids),
+                'data-ids-name': 'user_ids[]',
+                'data-bulk-action': 'delete',
+                'data-form-id': 'delete-form-users-bulk'
+            }).appendTo('body');
+            modalTrigger.trigger('click');
+            setTimeout(function() { modalTrigger.remove(); }, 1000);
         }
-        this.submit();
     });
 });
 </script>
+<?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'user']) ?>

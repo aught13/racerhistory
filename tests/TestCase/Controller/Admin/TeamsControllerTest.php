@@ -88,6 +88,9 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams/add');
         $this->assertResponseOk();
+        $this->assertResponseContains('Add New Sport');
+        $this->assertResponseContains('hidden-sport-form');
+        $this->assertResponseContains('_Token');
     }
 
     /**
@@ -133,6 +136,23 @@ class TeamsControllerTest extends TestCase
         $this->post('/admin/teams/add', $data);
         $this->assertResponseOk();
         $this->assertFlashMessage('The team could not be saved. Please, try again.');
+    }
+
+    /**
+     * Test add method GET with sport_id parameter
+     *
+     * @return void
+     */
+    public function testAddGetWithSportId(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams/add?sport_id=1');
+        $this->assertResponseOk();
+
+        // Check that the sport_id is pre-populated in the view variable
+        $viewVars = $this->viewVariable('team');
+        $this->assertNotNull($viewVars);
+        $this->assertEquals(1, $viewVars->sport_id);
     }
 
     /**
@@ -263,6 +283,38 @@ class TeamsControllerTest extends TestCase
     }
 
     /**
+     * Bulk delete with invalid identifiers should be sanitized to empty selection.
+     */
+    public function testBulkDeleteAllInvalidIds(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/teams/bulk', [
+            'bulk_action' => 'delete',
+            'team_ids' => ['abc', '', null],
+        ]);
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']);
+        $this->assertFlashMessage('No teams selected for deletion.');
+    }
+
+    /**
+     * Bulk delete with only non-existing numeric id after sanitization -> zero deletions.
+     */
+    public function testBulkDeleteNonExistingAfterSanitize(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/teams/bulk', [
+            'bulk_action' => 'delete',
+            'team_ids' => ['xyz', '9999', ''],
+        ]);
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']);
+        $this->assertFlashMessage('No teams could be deleted.');
+    }
+
+    /**
      * Test bulk action with invalid action
      *
      * @return void
@@ -281,5 +333,16 @@ class TeamsControllerTest extends TestCase
         $this->post('/admin/teams/bulk', $data);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']);
         $this->assertFlashMessage('Invalid bulk action.');
+    }
+
+    /**
+     * Index should include confirm delete modal element.
+     */
+    public function testIndexIncludesConfirmDeleteModal(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="confirm-delete-modal"');
     }
 }

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 
 /**
@@ -26,7 +27,9 @@ class SportsController extends AppController
      */
     public function index()
     {
-        $sports = $this->Sports->find()->all();
+        // Include Teams so templates can surface associated record counts in delete confirmations
+        $sports = $this->Sports->find()->contain(['Teams'])->all();
+
         $this->set(compact('sports'));
     }
 
@@ -38,7 +41,7 @@ class SportsController extends AppController
      */
     public function view(string $id)
     {
-        $sport = $this->Sports->get($id);
+        $sport = $this->Sports->get($id, contain: ['Teams']);
         $this->set(compact('sport'));
     }
 
@@ -75,7 +78,8 @@ class SportsController extends AppController
      */
     public function edit(string $id)
     {
-        $sport = $this->Sports->get($id);
+        // Contain Teams so we can show associated record counts in the confirmation modal
+        $sport = $this->Sports->get($id, contain: ['Teams']);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
             $sport = $this->Sports->patchEntity($sport, $this->request->getData());
@@ -121,7 +125,10 @@ class SportsController extends AppController
     public function bulkDelete()
     {
         $this->request->allowMethod(['post']);
-        $sportIds = $this->request->getData('sport_ids');
+        $sportIds = (array)$this->request->getData('sport_ids');
+        $sportIds = array_values(array_filter($sportIds, function ($v) {
+            return $v !== '' && $v !== null && ctype_digit((string)$v);
+        }));
 
         if (empty($sportIds)) {
             $this->Flash->error('No sports selected for deletion.');
@@ -131,9 +138,14 @@ class SportsController extends AppController
 
         $deletedCount = 0;
         foreach ($sportIds as $id) {
-            $sport = $this->Sports->get($id);
-            if ($this->Sports->delete($sport)) {
-                $deletedCount++;
+            try {
+                $sport = $this->Sports->get($id);
+
+                if ($this->Sports->delete($sport)) {
+                    $deletedCount++;
+                }
+            } catch (RecordNotFoundException $e) {
+                continue;
             }
         }
 
@@ -161,5 +173,51 @@ class SportsController extends AppController
         $this->Flash->error('Invalid bulk action.');
 
         return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * AJAX endpoint for adding sports from popup forms.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxAdd(): Response
+    {
+        $sport = $this->Sports->newEmptyEntity();
+
+        if ($this->request->is('post')) {
+            $sport = $this->Sports->patchEntity($sport, $this->request->getData());
+
+            if ($this->Sports->save($sport)) {
+                $response = [
+                    'success' => true,
+                    'message' => 'Sport has been added successfully.',
+                    'newOption' => [
+                        'value' => $sport->id,
+                        'text' => $sport->sport_name,
+                    ],
+                ];
+            } else {
+                $errors = [];
+                foreach ($sport->getErrors() as $field => $fieldErrors) {
+                    foreach ($fieldErrors as $error) {
+                        $errors[] = ucfirst($field) . ': ' . $error;
+                    }
+                }
+
+                $response = [
+                    'success' => false,
+                    'errors' => $errors ?: ['Unable to save sport. Please try again.'],
+                ];
+            }
+        } else {
+            $response = [
+                'success' => false,
+                'errors' => ['Invalid request method.'],
+            ];
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode($response));
     }
 }

@@ -133,6 +133,23 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect('/admin/users');
     }
 
+    /**
+     * Bulk delete with mixed invalid ids should only delete valid numeric.
+     */
+    public function testBulkDeleteSanitizesIds(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // user 2 exists; others invalid -> expect exactly 1 deletion
+        $this->post('/admin/users/bulk', [
+            'bulk_action' => 'delete',
+            'user_ids' => ['', 'xyz', '2', 'notanumber'],
+        ]);
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('1 user(s) have been deleted.', 'Flash.flash.0.message');
+    }
+
     public function testToggleRegistration(): void
     {
         $this->loginAsAdmin();
@@ -179,6 +196,17 @@ class UsersControllerTest extends TestCase
         ]);
         $this->assertRedirect('/admin/users');
         $this->assertSession('No users selected.', 'Flash.flash.0.message');
+    }
+
+    /**
+     * Users index contains confirm delete modal element.
+     */
+    public function testIndexContainsConfirmDeleteModal(): void
+    {
+        $this->loginAsAdmin();
+        $this->get('/admin/users');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="confirm-delete-modal"');
     }
 
     public function testToggleRegistrationDisables(): void

@@ -58,15 +58,31 @@
                                     class="btn btn-sm btn-info">View</a>
                                 <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                     class="btn btn-sm btn-primary">Edit</a>
-                                <?= $this->Form->postLink('Delete',
-                                    ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id],
-                                    ['class' => 'btn btn-sm btn-danger', 'confirm' => 'Are you sure you want to delete this team?']) ?>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                                    data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
+                                    data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                                    data-item-type="team"
+                                    data-associated='<?= json_encode([$team->team_name, $team->abbr]) ?>'
+                                    data-form-id="delete-form-team-<?= $team->id ?>">
+                                    Delete
+                                </button>
+                                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id], 'id' => 'delete-form-team-' . $team->id, 'style' => 'display:none']) ?>
+                                <?= $this->Form->end() ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </form>
+            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none']) ?>
+            <?php
+                // These fields will be injected client-side; unlock them so FormProtection allows their values to change.
+                $this->Form->unlockField('team_ids');
+                $this->Form->unlockField('bulk_action');
+            ?>
+            <?= $this->Form->hidden('team_ids[]', ['value' => '']) ?>
+            <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
+            <?= $this->Form->end() ?>
             <?php else: ?>
             <div class="alert alert-info">
                 <p>No teams found.</p>
@@ -127,21 +143,23 @@
 
                 if (action === 'delete') {
                     e.preventDefault();
-                    if (confirm(`Are you sure you want to delete ${checkedBoxes.length} team(s)?`)) {
-                        // Update form action and submit
-                        this.action = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulk']) ?>';
-
-                        // Add bulk_action field
-                        const bulkActionInput = document.createElement('input');
-                        bulkActionInput.type = 'hidden';
-                        bulkActionInput.name = 'bulk_action';
-                        bulkActionInput.value = 'delete';
-                        this.appendChild(bulkActionInput);
-
-                        this.submit();
-                    }
+                    // Collect selected team names and ids to show in modal
+                    var names = Array.from(checkedBoxes).map(cb => cb.closest('tr').querySelector('td:nth-child(2)').textContent.trim());
+                    var ids = Array.from(checkedBoxes).map(cb => cb.value);
+                    // Call the confirm helper directly to avoid relying on delegated click handling
+                    window.showConfirmDelete && window.showConfirmDelete({
+                        deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete']) ?>',
+                        itemType: 'teams (bulk)',
+                        associated: JSON.stringify(names),
+                        ids: JSON.stringify(ids),
+                        idsName: 'team_ids[]',
+                        formId: 'delete-form-teams-bulk',
+                        bulkAction: 'delete'
+                    });
                 }
             });
         }
     });
 </script>
+
+<?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team']) ?>

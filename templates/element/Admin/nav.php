@@ -44,17 +44,17 @@
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index']) ?>">Manage
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index']) ?>">
                         Users</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>">Manage
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>">
                         Sports</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>">Manage
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>">
                         Teams</a>
                 </li>
                 <!-- Add more admin links here -->

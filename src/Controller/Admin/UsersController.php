@@ -62,6 +62,8 @@ class UsersController extends AppController
     {
         $users = $this->Users->find()->where(['status !=' => 'active'])->all();
         $hasInactive = !$users->isEmpty();
+
+    // Include future associations for delete confirmation counts if needed (placeholder)
         $allUsers = $this->Users->find()->all();
 
         // Fetch registration option
@@ -156,6 +158,15 @@ class UsersController extends AppController
      */
     public function bulkDelete()
     {
+        // Sanitize incoming IDs before delegating
+        $data = $this->request->getData();
+        if (isset($data['user_ids'])) {
+            $data['user_ids'] = array_values(array_filter((array)$data['user_ids'], function ($v) {
+                return $v !== '' && $v !== null && ctype_digit((string)$v);
+            }));
+            $this->request = $this->request->withParsedBody($data);
+        }
+
         return $this->UserManager->bulkDelete($this);
     }
 
