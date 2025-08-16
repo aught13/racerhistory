@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use Cake\Http\Response;
-use Cake\Log\Log;
 
 /**
  * Admin Teams Controller
@@ -45,7 +44,7 @@ class TeamsController extends AppController
     public function view(string $id): void
     {
     // Use named arguments for get() to avoid deprecation warnings
-    $team = $this->Teams->get($id, contain: ['Sports']);
+        $team = $this->Teams->get($id, contain: ['Sports']);
         $this->set(compact('team'));
     }
 
