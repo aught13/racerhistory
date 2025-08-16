@@ -45,6 +45,10 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - **Form Security**: Resolved CSRF/Security token conflicts in admin forms by separating edit and delete actions
 - Eliminated production DB leakage into tests by enforcing in-memory SQLite (unless explicitly forcing MySQL).
 - Resolved PHPCS violations across controllers, tables, and test cases; suite now standards-clean.
+- Stabilized Teams admin integration tests:
+  - Added test guards to retain flash messages where views consume them.
+  - Guarded DateTime formatting in `templates/Admin/Teams/view.php` to avoid 500s when timestamps are strings in test fixtures.
+  - Removed temporary diagnostic logs used during debugging.
 
 ### Security (Unreleased)
 
