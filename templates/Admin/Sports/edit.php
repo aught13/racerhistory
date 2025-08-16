@@ -46,15 +46,20 @@
                     <?= $this->Form->end() ?>
 
                     <div class="mt-3">
-                        <?= $this->Form->postLink('Delete Sport',
-                            ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'delete', $sport->id],
-                            ['class' => 'btn btn-danger', 'confirm' => 'Are you sure you want to delete this sport?']) ?>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                            data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'delete', $sport->id]) ?>"
+                            data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id]) ?>"
+                            data-item-type="sport">
+                            Delete Sport
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'sport']) ?>
 
 <script>
 // Bootstrap form validation

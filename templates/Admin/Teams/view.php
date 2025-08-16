@@ -120,9 +120,19 @@
                     <div class="mt-4">
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                            class="btn btn-primary">Edit Team</a>
-                        <?= $this->Form->postLink('Delete Team',
-                            ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id],
-                            ['class' => 'btn btn-danger', 'confirm' => 'Are you sure you want to delete this team?']) ?>
+                        <?php
+                            // Placeholder for future associations (e.g., events, seasons, athletes)
+                            $associatedData = [
+                                ['label' => 'Related Records', 'count' => 0],
+                            ];
+                        ?>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                            data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
+                            data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                            data-item-type="team"
+                            data-associated='<?= json_encode($associatedData) ?>'>
+                            Delete Team
+                        </button>
                     </div>
                 </div>
             </div>
@@ -142,3 +152,5 @@
         </div>
     </div>
 </div>
+
+<?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team']) ?>

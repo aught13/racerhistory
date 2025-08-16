@@ -5,14 +5,15 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>">Teams</a>
+                        <a
+                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>">Teams</a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">Add Team</li>
                 </ol>
             </nav>
             <h1 class="mb-3">Add New Team</h1>
             <p class="text-muted">
-                Create a new team for competition. All teams must be assigned to a sport and have a gender classification.
+                Create a new team. All teams must be assigned to a sport and have a gender classification.
             </p>
         </div>
     </div>
@@ -27,15 +28,26 @@
                     <?= $this->Form->create($team, ['novalidate' => true]) ?>
 
                     <div class="mb-3">
-                        <?= $this->Form->control('sport_id', [
-                            'type' => 'select',
-                            'options' => $sports,
-                            'empty' => 'Select a Sport',
-                            'class' => 'form-control',
-                            'label' => ['class' => 'form-label', 'text' => 'Sport *'],
-                            'required' => true
-                        ]) ?>
-                        <div class="form-text">Select the sport category this team will compete in.</div>
+                        <label for="sport-id" class="form-label">Sport *</label>
+                        <div class="input-group d-flex align-items-stretch">
+                            <div class="flex-grow-1">
+                                <?= $this->Form->control('sport_id', [
+                                    'type' => 'select',
+                                    'options' => $sports,
+                                    'empty' => 'Select a Sport',
+                                    // Use Bootstrap 5 select sizing so it matches buttons in input-group
+                                    'class' => 'form-select h-100',
+                                    'label' => false,
+                                    'required' => true,
+                                    'id' => 'sport-id'
+                                ]) ?>
+                            </div>
+                            <button type="button" class="btn btn-success h-100 border-0" data-bs-toggle="modal"
+                                data-bs-target="#add-sport-modal" title="Add New Sport" aria-label="Add new sport">
+                                <i class="bi bi-plus-circle"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Select the sport for this team or add a new sport.</div>
                     </div>
 
                     <div class="mb-3">
@@ -59,7 +71,8 @@
                             'rows' => 3,
                             'maxlength' => 240
                         ]) ?>
-                        <div class="form-text">Full official name including institution and sport (maximum 240 characters).</div>
+                        <div class="form-text">Full official name including institution and sport (maximum 240
+                            characters).</div>
                     </div>
 
                     <div class="mb-3">
@@ -71,7 +84,8 @@
                             'maxlength' => 5,
                             'required' => true
                         ]) ?>
-                        <div class="form-text">Short abbreviation for compact display (maximum 5 characters, e.g., "WBB" for Women's Basketball).</div>
+                        <div class="form-text">Short abbreviation for compact display (maximum 5 characters, e.g., "WBB"
+                            for Women's Basketball).</div>
                     </div>
 
                     <div class="mb-3">
@@ -87,7 +101,8 @@
                             'label' => ['class' => 'form-label', 'text' => 'Gender Classification *'],
                             'required' => true
                         ]) ?>
-                        <div class="form-text">Specify whether this is a Male, Female, or Co-ed team for proper competition classification.</div>
+                        <div class="form-text">Specify whether this is a Male, Female, or Co-ed team for proper
+                            competition classification.</div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -126,3 +141,46 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden form to generate FormProtection tokens for AJAX sport creation -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-sport-form'
+    ]) ?>
+    <?= $this->Form->control('sport_name', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
+
+<?php
+// Add Sport Popup Form
+echo $this->element('Admin/popup_form', [
+    'popupId' => 'add-sport-modal',
+    'title' => 'Add New Sport',
+    'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd']),
+    'targetSelectId' => 'sport-id',
+    'successCallback' => 'handleSportAdded',
+    'fields' => [
+        [
+            'name' => 'sport_name',
+            'type' => 'text',
+            'label' => 'Sport Name',
+            'placeholder' => 'Enter sport name (e.g., Basketball)',
+            'required' => true,
+            'attributes' => [
+                'maxlength' => 162
+            ]
+        ]
+    ]
+]);
+?>
+
+<script>
+function handleSportAdded(data) {
+    // Custom callback for when a sport is successfully added
+    console.log('Sport added successfully:', data);
+
+    // You can add additional logic here if needed
+    // For example, updating other UI elements or analytics tracking
+}
+</script>

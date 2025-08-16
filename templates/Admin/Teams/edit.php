@@ -118,13 +118,12 @@
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $team->id]) ?>"
                             class="btn btn-info">View Team</a>
 
-                        <?= $this->Form->postLink('Delete Team',
-                            ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id],
-                            [
-                                'class' => 'btn btn-danger',
-                                'confirm' => 'Are you sure you want to delete this team? This action cannot be undone.'
-                            ]
-                        ) ?>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                                data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
+                                data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                                data-item-type="team">
+                            Delete Team
+                        </button>
                     </div>
                 </div>
             </div>
@@ -151,3 +150,5 @@
         </div>
     </div>
 </div>
+
+<?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team']) ?>

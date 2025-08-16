@@ -15,6 +15,7 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\Sport newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\Sport[] newEntities(array $data, array $options = [])
  * @method \App\Model\Entity\Sport get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Sport get($primaryKey, $contain = [])
  * @method \App\Model\Entity\Sport findOrCreate($search, ?callable $callback = null, $options = [])
  * @method \App\Model\Entity\Sport patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\Sport[] patchEntities(iterable $entities, array $data, array $options = [])

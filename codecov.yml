@@ -21,7 +21,7 @@ ignore:
   - "tmp/"
   - "logs/"
   - "config/Migrations/"
-  - "webroot/"
+
 
 flag_management:
   default_rules:
@@ -31,4 +31,8 @@ flags:
   unittests:
     paths:
       - src/
+    carryforward: true
+  jstests:
+    paths:
+      - webroot/js/
     carryforward: true

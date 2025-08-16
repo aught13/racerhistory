@@ -1,0 +1,30 @@
+{
+    "name": "racerhistory-admin-js",
+    "private": true,
+    "type": "commonjs",
+    "devDependencies": {
+        "jest": "^29.7.0",
+        "jest-environment-jsdom": "^29.7.0",
+        "jsdom": "^24.0.0"
+    },
+    "scripts": {
+        "test:js": "jest --env=jsdom --colors",
+        "test:js:watch": "jest --env=jsdom --watch"
+    },
+    "jest": {
+        "testMatch": [
+            "**/webroot/js/tests/**/*.test.js"
+        ],
+        "collectCoverage": true,
+        "collectCoverageFrom": [
+            "webroot/js/**/*.js",
+            "!webroot/js/tests/**"
+        ],
+        "coverageDirectory": "coverage-js",
+        "coverageReporters": [
+            "clover",
+            "lcov",
+            "text-summary"
+        ]
+    }
+}

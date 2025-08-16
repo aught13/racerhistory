@@ -32,6 +32,14 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Comprehensive test suite for Teams admin functionality (15 tests, 35 assertions)
 - Migration `20250811120000_CreateUsersTable` providing dedicated `users` table schema with adapter-aware datetime defaults.
 
+### Added (Unreleased) - Frontend & CI
+
+- Extracted shared admin JavaScript into `webroot/js/admin.js` to centralize confirm-delete and toast helpers.
+- Added Jest-based frontend tests under `webroot/js/tests/` covering confirm-delete modal behavior, fallback paths, invalid JSON handling, and toast helpers.
+- Added `package.json` and npm dev tooling for JS tests, plus `.gitignore` entries for `node_modules` and JS coverage output.
+- Introduced a combined GitHub Actions workflow `.github/workflows/combined-tests.yml` to run PHP unit tests (with coverage) and JS tests, then upload coverage artifacts to Codecov (PHP and JS flags).
+
+
 ### Changed (Unreleased)
 
 - **Code Quality Improvements**: All Sports and Teams-related files now pass PHPCS and PHPStan validation

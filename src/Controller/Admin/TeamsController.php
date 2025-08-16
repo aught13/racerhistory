@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 
 /**
@@ -30,7 +31,7 @@ class TeamsController extends AppController
     public function index(): void
     {
         $teams = $this->Teams->find()
-            ->contain(['Sports'])
+            ->contain(['Sports']) // already needed for listing
             ->all();
         $this->set(compact('teams'));
     }
@@ -45,6 +46,7 @@ class TeamsController extends AppController
     {
     // Use named arguments for get() to avoid deprecation warnings
         $team = $this->Teams->get($id, contain: ['Sports']);
+
         $this->set(compact('team'));
     }
 
@@ -56,6 +58,11 @@ class TeamsController extends AppController
     public function add(): ?Response
     {
         $team = $this->Teams->newEmptyEntity();
+
+        // Pre-populate sport_id if provided in query string
+        if ($this->request->getQuery('sport_id')) {
+            $team->sport_id = (int)$this->request->getQuery('sport_id');
+        }
 
         if ($this->request->is('post')) {
             $team = $this->Teams->patchEntity($team, $this->request->getData());
@@ -82,7 +89,7 @@ class TeamsController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $team = $this->Teams->get($id);
+        $team = $this->Teams->get($id, contain: ['Sports']);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
             $team = $this->Teams->patchEntity($team, $this->request->getData());
@@ -129,7 +136,11 @@ class TeamsController extends AppController
     public function bulkDelete(): Response
     {
         $this->request->allowMethod(['post']);
-        $teamIds = $this->request->getData('team_ids');
+        $teamIds = (array)$this->request->getData('team_ids');
+        // Remove empty/null/invalid values that can be introduced by placeholder hidden inputs
+        $teamIds = array_values(array_filter($teamIds, function ($v) {
+            return $v !== '' && $v !== null && ctype_digit((string)$v);
+        }));
 
         if (empty($teamIds)) {
             $this->Flash->error('No teams selected for deletion.');
@@ -139,9 +150,15 @@ class TeamsController extends AppController
 
         $deletedCount = 0;
         foreach ($teamIds as $id) {
-            $team = $this->Teams->get($id);
-            if ($this->Teams->delete($team)) {
-                $deletedCount++;
+            try {
+                $team = $this->Teams->get($id);
+
+                if ($this->Teams->delete($team)) {
+                    $deletedCount++;
+                }
+            } catch (RecordNotFoundException $e) {
+                // Skip invalid id silently; could log if needed
+                continue;
             }
         }
 

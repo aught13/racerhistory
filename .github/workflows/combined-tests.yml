@@ -1,0 +1,66 @@
+name: Combined PHP & JS Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c064b13686d4e4986af9fe9b240d85951c4452e1
+        with:
+          php-version: '8.1'
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Install Composer deps
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run PHPUnit (coverage)
+        run: vendor/bin/phpunit --configuration phpunit.ci.xml
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM deps
+        run: npm install --no-audit --no-fund
+
+      - name: Run Jest
+        run: npm run test:js -- --ci
+
+      - name: Upload PHP coverage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: php-coverage
+          path: coverage.xml
+
+      - name: Upload JS coverage artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: js-coverage
+          path: coverage-js
+
+      - name: Upload coverage to Codecov (PHP)
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
+        with:
+            files: coverage.xml
+            flags: unittests
+            fail_ci_if_error: false
+
+      - name: Upload coverage to Codecov (JS)
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
+        with:
+            files: coverage-js/clover.xml
+            flags: jstests
+            fail_ci_if_error: false
