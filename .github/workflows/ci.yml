@@ -243,3 +243,29 @@ jobs:
         run: vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=512M
         env:
           SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
+
+  js-tests:
+    name: JavaScript Tests
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Run JS tests
+        run: npm run test:js -- --ci
+
+      - name: Upload JS coverage artifact
+        uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8
+        if: always()
+        with:
+          name: js-coverage
+          path: coverage-js

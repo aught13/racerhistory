@@ -369,6 +369,7 @@ class Initial extends AbstractMigration
             )
             ->create();
 
+
         $this->table('seasons')
             ->addColumn('id', 'integer', [
                 'autoIncrement' => true,
