@@ -39,7 +39,6 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Added `package.json` and npm dev tooling for JS tests, plus `.gitignore` entries for `node_modules` and JS coverage output.
 - Introduced a combined GitHub Actions workflow `.github/workflows/combined-tests.yml` to run PHP unit tests (with coverage) and JS tests, then upload coverage artifacts to Codecov (PHP and JS flags).
 
-
 ### Changed (Unreleased)
 
 - **Code Quality Improvements**: All Sports and Teams-related files now pass PHPCS and PHPStan validation
