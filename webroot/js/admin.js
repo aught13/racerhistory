@@ -130,17 +130,33 @@
                 if (context.ids && context.idsName) {
                     let idsArr = [];
                     if (typeof context.ids === 'string') {
-                        try { idsArr = JSON.parse(context.ids); } catch (e) { idsArr = [context.ids]; }
-                    } else if (Array.isArray(context.ids)) idsArr = context.ids; else if (context.ids) idsArr = [context.ids];
+                        try {
+                            idsArr = JSON.parse(context.ids);
+                        } catch (e) {
+                            // Accept a single numeric id fallback; otherwise treat as invalid (no injection)
+                            if (/^\s*\d+\s*$/.test(context.ids)) {
+                                idsArr = [context.ids.trim()];
+                            } else {
+                                idsArr = [];
+                            }
+                        }
+                    } else if (Array.isArray(context.ids)) {
+                        idsArr = context.ids;
+                    } else if (context.ids) {
+                        idsArr = [context.ids];
+                    }
                     idsArr.forEach(id => extra.push({ name: context.idsName, value: id }));
                 }
                 if (context.bulkAction) extra.push({ name: 'bulk_action', value: context.bulkAction });
 
                 // If a source form exists, prefer injecting into and submitting that form so tests
                 // and server-side FormProtection tokens align. Otherwise fallback to a temporary form.
-                let postAction = context.deleteUrl;
+                // Prefer provided deleteUrl; only override with existing form action if the attribute is explicitly set.
+                let postAction = context.deleteUrl || '#';
                 try {
-                    if (source && source.action) postAction = source.action;
+                    if (source && typeof source.getAttribute === 'function' && source.getAttribute('action')) {
+                        postAction = source.action;
+                    }
                 } catch (e) { }
                 console.log('confirm-delete final post action:', postAction, 'source form id=', source && source.id);
 

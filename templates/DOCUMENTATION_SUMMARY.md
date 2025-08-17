@@ -23,15 +23,15 @@
 - ✅ `Admin/Teams/index.php` - Teams listing with bulk & modal deletion
 - ✅ `Admin/Teams/view.php` - Team detail view
 - ✅ `Admin/Users/index.php` - User management with bulk activate/delete & modal confirm
- - ✅ `Admin/Seasons/index.php` - Seasons listing with bulk delete, DataTables integration, and accessible delete confirmations
- - ✅ `Admin/Seasons/view.php` - Season detail view showing associated team seasons and quick actions
- - ✅ `Admin/Seasons/add.php` - Add season form with hidden FormProtection form for AJAX popup creation
- - ✅ `Admin/Seasons/edit.php` - Edit season form with associated record warnings and timestamps
+- ✅ `Admin/Seasons/index.php` - Seasons listing with bulk delete, DataTables integration, and accessible delete confirmations
+- ✅ `Admin/Seasons/view.php` - Season detail view showing associated team seasons and quick actions
+- ✅ `Admin/Seasons/add.php` - Add season form with hidden FormProtection form for AJAX popup creation
+- ✅ `Admin/Seasons/edit.php` - Edit season form with associated record warnings and timestamps
 
- - ✅ `Admin/TeamSeasons/index.php` - TeamSeasons listing with bulk actions and DataTables
- - ✅ `Admin/TeamSeasons/view.php` - TeamSeason detail view with league information, preview, and recap sections
- - ✅ `Admin/TeamSeasons/add.php` - Add team season form with popup helpers for creating teams/seasons via AJAX
- - ✅ `Admin/TeamSeasons/edit.php` - Edit team season form with validation-friendly inputs
+- ✅ `Admin/TeamSeasons/index.php` - TeamSeasons listing with bulk actions and DataTables
+- ✅ `Admin/TeamSeasons/view.php` - TeamSeason detail view with league information, preview, and recap sections
+- ✅ `Admin/TeamSeasons/add.php` - Add team season form with popup helpers for creating teams/seasons via AJAX
+- ✅ `Admin/TeamSeasons/edit.php` - Edit team season form with validation-friendly inputs
 
 ## Flash Message Elements
 
