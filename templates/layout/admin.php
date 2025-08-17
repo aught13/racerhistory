@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Admin Layout Template
  *
@@ -56,6 +57,13 @@
             <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory Admin</span>
         </div>
     </footer>
+    <script>
+        // Small runtime check to help debug whether the admin layout and admin.js are executing.
+        try {
+            console.log('admin layout loaded — URL:', window.location.href);
+            console.log('showConfirmDelete present:', typeof window.showConfirmDelete);
+        } catch (e) { /* ignore */ }
+    </script>
 </body>
 
 </html>

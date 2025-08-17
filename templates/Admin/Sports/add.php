@@ -1,4 +1,6 @@
-<?php $this->assign('title', 'Add Sport'); ?>
+<?php
+
+$this->assign('title', 'Add Sport'); ?>
 <div class="container py-4">
     <div class="row">
         <div class="col-md-8 offset-md-2">

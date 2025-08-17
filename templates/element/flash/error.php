@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Error Flash Message Element
  *

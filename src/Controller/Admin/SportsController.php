@@ -12,7 +12,7 @@ use Cake\Http\Response;
  * Handles administrative sports management operations.
  * Provides functionality for sports administration and CRUD operations.
  *
- * Sports are the foundation of the racing system, representing different
+ * Sports are the foundation of the application's historical sports information and statistics, representing different
  * types of competitive activities (e.g., Basketball, Football, Soccer).
  * Each sport can have multiple teams associated with it.
  *

@@ -8,7 +8,7 @@ use Cake\ORM\Entity;
 /**
  * Sport Entity
  *
- * Represents a sport category in the racing system.
+ * Represents a sport category in the application's historical sports information and statistics.
  * Sports are the foundation categories that teams compete in.
  *
  * @property int $id Unique identifier

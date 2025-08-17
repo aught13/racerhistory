@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Concise reusable confirm delete modal.
  * Keep logic minimal; heavy JS previously bloated file size.
@@ -10,6 +11,7 @@
  *  - data-form-id (optional existing form to submit)
  *  - data-bulk-action (optional)
  */
+
 $modalId = $modalId ?? 'confirm-delete-modal';
 ?>
 <div class="modal fade" id="<?= h($modalId) ?>" tabindex="-1" aria-hidden="true">

@@ -1,4 +1,6 @@
-<?php // templates/Admin/Users/add.php
+<?php
+
+// templates/Admin/Users/add.php
 ?>
 <div class="container mt-4">
     <h2>Add New User</h2>

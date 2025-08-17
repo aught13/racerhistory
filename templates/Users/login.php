@@ -27,7 +27,7 @@
  */
 
 $this->assign('title', 'Login'); ?>
-<?php if (isset($dbInfo)): ?>
+<?php if (isset($dbInfo)) : ?>
 <div style="background:#ffe;border:1px solid #cc0;padding:8px;margin-bottom:12px;">
     <strong>Database Info:</strong><br>
     Driver: <?= h($dbInfo['driver']) ?><br>

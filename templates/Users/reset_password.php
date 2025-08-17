@@ -1,4 +1,6 @@
-<?php $this->assign('title', 'Reset Password'); ?>
+<?php
+
+$this->assign('title', 'Reset Password'); ?>
 <div class="users reset-password">
     <h1>Reset Password</h1>
     <?= $this->Form->create(null); ?>

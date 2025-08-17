@@ -25,6 +25,9 @@
             "clover",
             "lcov",
             "text-summary"
+        ],
+        "setupFilesAfterEnv": [
+            "<rootDir>/jest.setup.js"
         ]
     }
 }

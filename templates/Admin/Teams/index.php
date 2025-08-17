@@ -17,7 +17,7 @@
     <div class="row">
         <div class="col">
             <h2 class="mb-3">All Teams</h2>
-            <?php if (!$teams->isEmpty()): ?>
+            <?php if (!$teams->isEmpty()) : ?>
             <form id="bulk-action-form" method="post">
                 <div class="mb-2 d-flex align-items-center gap-2">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
@@ -40,7 +40,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($teams as $team): ?>
+                        <?php foreach ($teams as $team) : ?>
                         <tr>
                             <td><input type="checkbox" name="team_ids[]" value="<?= $team->id ?>" class="team-checkbox">
                             </td>
@@ -74,16 +74,16 @@
                     </tbody>
                 </table>
             </form>
-            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none']) ?>
-            <?php
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none']) ?>
+                <?php
                 // These fields will be injected client-side; unlock them so FormProtection allows their values to change.
                 $this->Form->unlockField('team_ids');
                 $this->Form->unlockField('bulk_action');
-            ?>
-            <?= $this->Form->hidden('team_ids[]', ['value' => '']) ?>
-            <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
-            <?= $this->Form->end() ?>
-            <?php else: ?>
+                ?>
+                <?= $this->Form->hidden('team_ids[]', ['value' => '']) ?>
+                <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
+                <?= $this->Form->end() ?>
+            <?php else : ?>
             <div class="alert alert-info">
                 <p>No teams found.</p>
                 <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'add']) ?>"
