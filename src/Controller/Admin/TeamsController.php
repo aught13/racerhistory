@@ -187,4 +187,50 @@ class TeamsController extends AppController
 
         return $this->redirect(['action' => 'index']);
     }
+
+    /**
+     * AJAX endpoint for adding teams from popup forms.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxAdd(): Response
+    {
+        $team = $this->Teams->newEmptyEntity();
+
+        if ($this->request->is('post')) {
+            $team = $this->Teams->patchEntity($team, $this->request->getData());
+
+            if ($this->Teams->save($team)) {
+                $response = [
+                    'success' => true,
+                    'message' => 'Team has been added successfully.',
+                    'newOption' => [
+                        'value' => $team->id,
+                        'text' => $team->team_name,
+                    ],
+                ];
+            } else {
+                $errors = [];
+                foreach ($team->getErrors() as $field => $fieldErrors) {
+                    foreach ($fieldErrors as $error) {
+                        $errors[] = ucfirst($field) . ': ' . $error;
+                    }
+                }
+
+                $response = [
+                    'success' => false,
+                    'errors' => $errors ?: ['Unable to save team. Please try again.'],
+                ];
+            }
+        } else {
+            $response = [
+                'success' => false,
+                'errors' => ['Invalid request method.'],
+            ];
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode($response));
+    }
 }

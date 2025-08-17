@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Admin Dashboard Index Template
  *
@@ -29,6 +30,7 @@
  * Note: Remove the namespace declaration below - it's incorrectly placed in a template file
  * Templates should not contain namespace declarations
  */
+
 // TODO: Remove the following lines - they belong in a PHP class file, not a template
 // namespace App\Controller;
 

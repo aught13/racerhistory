@@ -1,4 +1,6 @@
-<?php $this->assign('title', 'Manage ' . h($user->username)); ?>
+<?php
+
+$this->assign('title', 'Manage ' . h($user->username)); ?>
 <!-- Manage User test string for integration test -->
 <span style="display:none">Manage User</span>
 <div class="container py-4">

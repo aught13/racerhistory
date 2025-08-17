@@ -1,4 +1,5 @@
 <?php
+
 /**
  * User Registration Template
  *

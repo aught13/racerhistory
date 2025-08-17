@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,6 +12,8 @@ declare(strict_types=1);
  * @since     0.2.9
  * @license   https://opensource.org/licenses/mit-license.php MIT License
  */
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use Cake\Controller\Controller;
@@ -50,7 +50,9 @@ class AppController extends Controller
         $isUsersController = $this->getRequest()->getParam('controller') === 'Users';
 
         if (!($this instanceof ErrorController) && ($isAdminController || $isUsersController)) {
-            $this->loadComponent('FormProtection');
+            // Treat the CSRF token as an unlocked field so FormProtector does not
+            // expect it in the POST body (CsrfProtectionMiddleware removes it).
+            $this->loadComponent('FormProtection', ['unlockedFields' => ['_csrfToken']]);
             $this->loadComponent('Authentication.Authentication');
         }
     }

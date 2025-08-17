@@ -40,7 +40,7 @@
                             </a>
                         </div>
 
-                        <?php if (!empty($sport->teams)): ?>
+                        <?php if (!empty($sport->teams)) : ?>
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover">
                                     <thead class="table-dark">
@@ -53,7 +53,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($sport->teams as $team): ?>
+                                        <?php foreach ($sport->teams as $team) : ?>
                                             <tr>
                                                 <td>
                                                     <strong><?= h($team->team_name) ?></strong>
@@ -101,7 +101,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                        <?php else: ?>
+                        <?php else : ?>
                             <div class="alert alert-info" role="alert">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-info-circle me-2"></i>

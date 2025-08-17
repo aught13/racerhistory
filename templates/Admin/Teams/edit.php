@@ -1,4 +1,6 @@
-<?php $this->assign('title', 'Edit Team'); ?>
+<?php
+
+$this->assign('title', 'Edit Team'); ?>
 <div class="container py-4">
     <div class="row mb-3">
         <div class="col">

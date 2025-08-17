@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Success Flash Message Element
  *

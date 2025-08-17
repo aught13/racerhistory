@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Warning Flash Message Element
  *

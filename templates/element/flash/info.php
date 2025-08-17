@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Info Flash Message Element
  *

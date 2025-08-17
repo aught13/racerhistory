@@ -32,6 +32,21 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Comprehensive test suite for Teams admin functionality (15 tests, 35 assertions)
 - Migration `20250811120000_CreateUsersTable` providing dedicated `users` table schema with adapter-aware datetime defaults.
 
+- **Admin Seasons Management**: Full CRUD and bulk operations for seasons
+  - New `Admin\\SeasonsController` with index, view, add, edit, delete, bulk and AJAX add endpoints
+  - Templates: `templates/Admin/Seasons/{index,view,add,edit}.php` with Bootstrap 5.3.2-compatible markup and accessible elements
+  - Tests: `tests/TestCase/Controller/Admin/SeasonsControllerTest.php` plus `Seasons` fixture
+
+- **Admin TeamSeasons Management**: Full CRUD linking teams to seasons
+  - New `Admin\\TeamSeasonsController` with index, view, add, edit, delete and bulk operations
+  - `TeamSeasonsTable` improvements: validation, associations, and Timestamp behavior using `created_at`/`updated_at`
+  - Templates: `templates/Admin/TeamSeasons/{index,view,add,edit}.php` and popup helpers for adding teams/seasons
+  - Tests: `tests/TestCase/Controller/Admin/TeamSeasonsControllerTest.php` plus `TeamSeasons` fixture
+
+- **Testing & Fixtures**: Added fixtures for `Seasons` and `TeamSeasons` (table `team_season`), and integration tests covering admin flows (index/view/add/edit/delete/bulk/ajax).
+
+- **Frontend & Tooling**: Added `jest.setup.js` to provide a DOM shim for `HTMLFormElement.requestSubmit()` in JS tests, and a `security-report.json` placeholder produced by the audit tooling.
+
 ### Added (Unreleased) - Frontend & CI
 
 - Extracted shared admin JavaScript into `webroot/js/admin.js` to centralize confirm-delete and toast helpers.

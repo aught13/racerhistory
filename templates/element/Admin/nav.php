@@ -57,17 +57,27 @@
                         href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>">
                         Teams</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>">
+                        Seasons</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">
+                        Team Seasons</a>
+                </li>
                 <!-- Add more admin links here -->
             </ul>
             <ul class="navbar-nav ms-auto">
-                <?php if ($this->getRequest()->getAttribute('identity')): ?>
+                <?php if ($this->getRequest()->getAttribute('identity')) : ?>
                 <li class="nav-item d-flex align-items-center">
                     <span class="navbar-text me-2">Logged in as:
                         <?= h($this->getRequest()->getAttribute('identity')->get('username')) ?></span>
                     <a class="nav-link"
                         href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'logout']) ?>">Logout</a>
                 </li>
-                <?php else: ?>
+                <?php else : ?>
                 <li class="nav-item">
                     <a class="nav-link"
                         href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'login']) ?>">Login</a>

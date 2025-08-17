@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 500 Internal Server Error Template
  *
@@ -28,16 +29,17 @@ if (Configure::read('debug')) {
 }
 ?>
 
-<?php if (Configure::read('debug')): ?>
+<?php if (Configure::read('debug')) : ?>
     <div class="error-debug" role="alert" aria-live="assertive">
         <h2><?= __d('cake', 'An Internal Error Has Occurred.') ?></h2>
         <p><strong><?= __d('cake', 'Error') ?>:</strong> <?= h($message) ?></p>
-        <?php if (isset($error) && $error instanceof \Throwable): ?>
-            <?php $file = $error->getFile(); $line = $error->getLine(); ?>
+        <?php if (isset($error) && $error instanceof \Throwable) : ?>
+            <?php $file = $error->getFile();
+            $line = $error->getLine(); ?>
             <p><strong>Location:</strong> <?= $this->Html->link(sprintf('%s, line %s', Debugger::trimPath($file), $line), Debugger::editorUrl($file, $line)); ?></p>
         <?php endif; ?>
     </div>
-<?php else: ?>
+<?php else : ?>
     <div class="error-container" role="alert" aria-live="assertive">
         <h1>500 - Internal Server Error</h1>
         <p><strong>Error:</strong> An unexpected error occurred.</p>

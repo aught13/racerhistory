@@ -60,7 +60,7 @@ describe('admin.js additional scenarios', () => {
         form.submit = jest.fn();
         expect(() => showConfirmDelete({ deleteUrl: '/bad', associated: 'not-json', ids: 'nope', idsName: 'sport_ids[]', formId: 'delete-form-sample' })).not.toThrow();
         document.getElementById('confirm-delete-modal-delete-btn').click();
-        expect(form.querySelectorAll('.injected-delete').length).toBe(0);
+        expect(form.querySelectorAll('.injected-delete').length).toBe(0); // Ensure no inputs are injected
     });
 
     test('AdminToast creates and removes alert with default info type', () => {
@@ -83,5 +83,16 @@ describe('admin.js additional scenarios', () => {
         const alert = document.querySelector('.alert');
         expect(alert).not.toBeNull();
         expect(alert.className).toContain('alert-warning');
+    });
+
+    Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+        value: jest.fn(function () {
+            console.log('Forced mock requestSubmit called in admin.extra.test.js');
+            if (this.submit) {
+                this.submit();
+            }
+        }),
+        configurable: true,
+        writable: true
     });
 });

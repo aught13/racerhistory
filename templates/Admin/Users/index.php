@@ -14,7 +14,7 @@
     </div>
     <div class="row">
         <div class="col">
-            <?php if ($hasInactive): ?>
+            <?php if ($hasInactive) : ?>
             <h2 class="mb-3">Pending Users</h2>
             <form id="bulk-action-form" method="post">
                 <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete'], 'id' => 'delete-form-users-bulk', 'style' => 'display:none']) ?>
@@ -45,7 +45,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($users as $user): ?>
+                        <?php foreach ($users as $user) : ?>
                         <tr>
                             <td><input type="checkbox" name="user_ids[]" value="<?= $user->id ?>" class="user-checkbox">
                             </td>
@@ -71,7 +71,7 @@
                     </tbody>
                 </table>
             </form>
-            <?php else: ?>
+            <?php else : ?>
             <div class="alert alert-info">There are no inactive users to approve.</div>
             <?php endif; ?>
         </div>
@@ -90,8 +90,8 @@
                 <tbody>
                     <?php
                     // Use $allUsers as a view variable (array or collection)
-                    if (isset($allUsers) && is_iterable($allUsers) && count($allUsers)):
-                        foreach ($allUsers as $user): ?>
+                    if (isset($allUsers) && is_iterable($allUsers) && count($allUsers)) :
+                        foreach ($allUsers as $user) : ?>
                     <tr>
                         <td><?= h($user->username) ?></td>
                         <td><?= h($user->email) ?></td>
@@ -100,8 +100,8 @@
                                 class="btn btn-sm btn-primary">Manage</a>
                         </td>
                     </tr>
-                    <?php endforeach;
-                    else: ?>
+                        <?php endforeach;
+                    else : ?>
                     <tr>
                         <td colspan="3" class="text-center">No users found.</td>
                     </tr>

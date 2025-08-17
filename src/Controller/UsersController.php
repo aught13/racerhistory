@@ -25,6 +25,7 @@ class UsersController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+    // FormProtection is configured in AppController; do not load it twice here.
         $this->loadComponent('UserManager');
     }
 

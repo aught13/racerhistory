@@ -18,7 +18,7 @@
     <div class="row">
         <div class="col">
             <h2 class="mb-3">All Sports</h2>
-            <?php if (!$sports->isEmpty()): ?>
+            <?php if (!$sports->isEmpty()) : ?>
             <form id="bulk-action-form" method="post">
                 <div class="mb-2 d-flex align-items-center gap-2" id="sports-bulk-action-bar">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
@@ -38,7 +38,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($sports as $sport): ?>
+                        <?php foreach ($sports as $sport) : ?>
                         <tr>
                             <td><input type="checkbox" name="sport_ids[]" value="<?= $sport->id ?>"
                                     class="sport-checkbox">
@@ -59,7 +59,7 @@
                                     data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'delete', $sport->id]) ?>"
                                     data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id]) ?>"
                                     data-item-type="sport" data-associated='<?= $associated ?>'
-                                    data-form-id="delete-form-sport-<?= $sport->id ?>' aria-label="Delete sport <?= h($sport->sport_name) ?>">Delete</button>
+                                    data-form-id="<?= 'delete-form-sport-' . $sport->id ?>" aria-label="Delete sport <?= h($sport->sport_name) ?>">Delete</button>
                                 <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'delete', $sport->id], 'id' => 'delete-form-sport-' . $sport->id, 'style' => 'display:none']) ?>
                                 <?= $this->Form->end() ?>
                             </td>
@@ -68,19 +68,19 @@
                     </tbody>
                 </table>
             </form>
-            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete'], 'id' => 'delete-form-sports-bulk', 'style' => 'display:none']) ?>
-            <?php
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete'], 'id' => 'delete-form-sports-bulk', 'style' => 'display:none']) ?>
+                <?php
                 // Unlock dynamic fields for FormProtection
                 $this->Form->unlockField('sport_ids');
                 $this->Form->unlockField('bulk_action');
-            ?>
-            <?= $this->Form->hidden('sport_ids[]', ['value' => '']) ?>
-            <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
-            <?= $this->Form->end() ?>
-            <?php else: ?>
+                ?>
+                <?= $this->Form->hidden('sport_ids[]', ['value' => '']) ?>
+                <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
+                <?= $this->Form->end() ?>
+            <?php else : ?>
             <div class=" alert alert-info">No sports have been created yet.
         </div>
-        <?php endif; ?>
+            <?php endif; ?>
     </div>
 </div>
 </div>

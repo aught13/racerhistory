@@ -72,14 +72,14 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <?php if ($this->getRequest()->getAttribute('identity')): ?>
+                    <?php if ($this->getRequest()->getAttribute('identity')) : ?>
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text me-2">Logged in as:
                             <?= h($this->getRequest()->getAttribute('identity')->get('username')) ?></span>
                         <a class="nav-link"
                             href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'logout']) ?>">Logout</a>
                     </li>
-                    <?php else: ?>
+                    <?php else : ?>
                     <li class="nav-item">
                         <a class="nav-link"
                             href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'login']) ?>">Login</a>

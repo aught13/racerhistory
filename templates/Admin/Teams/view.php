@@ -45,7 +45,7 @@
                         </div>
                     </div>
 
-                    <?php if (!empty($team->team_description)): ?>
+                    <?php if (!empty($team->team_description)) : ?>
                     <div class="row mb-3">
                         <div class="col-sm-3">
                             <strong>Long Name:</strong>
@@ -81,7 +81,7 @@
                         </div>
                     </div>
 
-                    <?php if ($team->created_at): ?>
+                    <?php if ($team->created_at) : ?>
                     <div class="row mb-3">
                         <div class="col-sm-3">
                             <strong>Created:</strong>
@@ -99,7 +99,7 @@
                     </div>
                     <?php endif; ?>
 
-                    <?php if ($team->updated_at): ?>
+                    <?php if ($team->updated_at) : ?>
                     <div class="row mb-3">
                         <div class="col-sm-3">
                             <strong>Last Updated:</strong>
@@ -125,7 +125,7 @@
                             $associatedData = [
                                 ['label' => 'Related Records', 'count' => 0],
                             ];
-                        ?>
+                            ?>
                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
                             data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
                             data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"

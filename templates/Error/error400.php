@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 400 Bad Request Error Template
  *
@@ -41,12 +42,12 @@ if (Configure::read('debug')) :
     $this->start('file');
     echo $this->element('auto_table_warning');
     $this->end();
-else:
+else :
     $this->assign('title', 'Bad Request');
 endif;
 ?>
 
-<?php if (!Configure::read('debug')): ?>
+<?php if (!Configure::read('debug')) : ?>
 <div class="error-container">
     <h1>400 - Bad Request</h1>
     <p><strong>Error:</strong> Bad Request</p>

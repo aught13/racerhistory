@@ -9,7 +9,7 @@ use Cake\Validation\Validator;
 /**
  * Teams Model
  *
- * Manages team data for various sports in the racing system.
+ * Manages team data for various sports in the application's historical sports information and statistics.
  *
  * @method \App\Model\Entity\Team newEmptyEntity()
  * @method \App\Model\Entity\Team newEntity(array $data, array $options = [])
