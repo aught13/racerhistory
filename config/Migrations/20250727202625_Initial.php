@@ -316,6 +316,11 @@ class Initial extends AbstractMigration
                 'limit' => 162,
                 'null' => true,
             ])
+            ->addColumn('bio', 'text', [
+                'default' => null,
+                'null' => true,
+                'limit' => null,
+            ])
             ->addColumn('created_at', $driver === 'sqlite' ? 'text' : 'timestamp', [
                 'default' => $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'current_timestamp()',
                 'limit' => null,
