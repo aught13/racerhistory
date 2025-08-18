@@ -67,6 +67,11 @@
                         href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">
                         Team Seasons</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>">
+                        Persons</a>
+                </li>
                 <!-- Add more admin links here -->
             </ul>
             <ul class="navbar-nav ms-auto">
