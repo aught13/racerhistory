@@ -8,6 +8,10 @@ use Migrations\AbstractMigration;
  */
 class AddBioToPersons extends AbstractMigration
 {
+    /**
+    * Match parent property signature (CakePHP Migrations 4+/5+ compatibility)
+    */
+    public bool $autoId = false;
 
     public function up(): void
     {
