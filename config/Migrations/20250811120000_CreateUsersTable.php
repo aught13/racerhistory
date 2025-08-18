@@ -13,7 +13,7 @@ use Migrations\AbstractMigration;
 class CreateUsersTable extends AbstractMigration
 {
     /**
-     * Match parent property signature (CakePHP Migrations 4+/5+ compatibility)
+     * Disable automatic id field; we add primary key manually.
      */
     public bool $autoId = false;
 

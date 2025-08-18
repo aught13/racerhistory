@@ -8,7 +8,6 @@ use Migrations\AbstractMigration;
  */
 class AddBioToPersons extends AbstractMigration
 {
-    public bool $autoId = false;
 
     public function up(): void
     {

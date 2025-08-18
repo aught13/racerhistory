@@ -8,12 +8,23 @@ use Migrations\AbstractMigration;
  */
 class CreateImageUsagesTable extends AbstractMigration
 {
+    /**
+     * Disable automatic id field; we define it manually.
+     */
     public bool $autoId = false;
-
+    /**
+     * Apply migration: create image_usages table.
+     */
     public function up(): void
     {
         if (!$this->hasTable('image_usages')) {
             $this->table('image_usages')
+                ->addColumn('id', 'integer', [
+                    'autoIncrement' => true,
+                    'null' => false,
+                    'signed' => false,
+                ])
+                ->addPrimaryKey(['id'])
                 ->addColumn('image_id', 'integer', ['null' => false])
                 ->addColumn('model', 'string', ['limit' => 120, 'null' => false])
                 ->addColumn('foreign_key', 'integer', ['null' => false])
@@ -25,6 +36,9 @@ class CreateImageUsagesTable extends AbstractMigration
         }
     }
 
+    /**
+     * Revert migration.
+     */
     public function down(): void
     {
         if ($this->hasTable('image_usages')) {

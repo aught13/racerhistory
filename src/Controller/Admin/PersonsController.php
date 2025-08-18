@@ -180,7 +180,8 @@ class PersonsController extends AppController
                         // Cast for static analysis clarity
                         // @phpstan-ignore-next-line dynamic entity property
                         'value' => (int)$person->id,
-                        'text' => $person->display ?? $person->full ?? trim(($person->first ?? '') . ' ' . ($person->last ?? '')),
+                        'text' => $person->display ?? $person->full ??
+                        trim(($person->first ?? '') . ' ' . ($person->last ?? '')),
                     ],
                 ];
             } else {
