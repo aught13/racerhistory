@@ -57,7 +57,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // The bake plugin requires fallback table classes to work properly
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
-        
+
         // Image variants configuration (central place)
         \Cake\Core\Configure::write('Images.variants', [
             'thumb' => ['fit' => [150,150]],
