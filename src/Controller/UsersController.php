@@ -48,7 +48,29 @@ class UsersController extends AppController
      */
     public function login()
     {
-        return $this->UserManager->login($this);
+        $response = $this->UserManager->login($this);
+        if ($response instanceof \Cake\Http\Response) {
+            return $response;
+        }
+        // If already authenticated (identity exists) honor redirect param even on GET
+        $identity = $this->Authentication->getIdentity();
+        if ($identity) {
+            $redirect = $this->request->getQuery('redirect') ?: $this->request->getData('redirect');
+            if ($redirect && str_starts_with($redirect, '/')) {
+                return $this->redirect($redirect);
+            }
+        }
+        // Fallback: if POST and identity resolved but component provided no redirect, honor ?redirect query
+        if ($this->request->is('post')) {
+            if ($identity) {
+                $redirect = $this->request->getQuery('redirect') ?: $this->request->getData('redirect');
+                if ($redirect && str_starts_with($redirect, '/')) {
+                    return $this->redirect($redirect);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
