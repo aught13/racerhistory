@@ -60,6 +60,18 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Invalid username or password');
     }
 
+    public function testLoginRedirectsToAdminWhenRedirectParamPresent(): void
+    {
+        // Inject authenticated session (bypass credential flow for deterministic redirect test)
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/users/login?redirect=/admin', [
+            'redirect' => '/admin',
+        ]);
+        $this->assertRedirect('/admin');
+    }
+
     public function testRegisterGet(): void
     {
         $this->get('/users/register');
