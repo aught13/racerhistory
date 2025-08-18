@@ -40,7 +40,11 @@ $this->assign('title', 'Login'); ?>
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h2 class="card-title text-center mb-4">Sign In</h2>
+                    <?php $redirect = $this->getRequest()->getQuery('redirect'); ?>
                     <?= $this->Form->create(null, ['url' => ['controller' => 'Users', 'action' => 'login'], 'class' => 'needs-validation', 'novalidate' => true]) ?>
+                    <?php if ($redirect): ?>
+                    <?= $this->Form->hidden('redirect', ['value' => $redirect]) ?>
+                    <?php endif; ?>
                     <div class="mb-3">
                         <?= $this->Form->control('username', [
                             'label' => ['text' => 'Username', 'class' => 'form-label'],
@@ -62,7 +66,8 @@ $this->assign('title', 'Login'); ?>
                                 'autocomplete' => 'current-password',
                             ]) ?>
                             <span class="input-group-text p-0">
-                                <button type="button" class="btn border-0 bg-transparent px-2" id="toggle-user-password" tabindex="-1" style="box-shadow:none;">
+                                <button type="button" class="btn border-0 bg-transparent px-2" id="toggle-user-password"
+                                    tabindex="-1" style="box-shadow:none;">
                                     <span class="bi bi-eye"></span>
                                 </button>
                             </span>
@@ -73,7 +78,9 @@ $this->assign('title', 'Login'); ?>
                             var input = document.getElementById('user-password');
                             btn.addEventListener('click', function() {
                                 input.type = input.type === 'password' ? 'text' : 'password';
-                                btn.innerHTML = input.type === 'password' ? '<span class="bi bi-eye"></span>' : '<span class="bi bi-eye-slash"></span>';
+                                btn.innerHTML = input.type === 'password' ?
+                                    '<span class="bi bi-eye"></span>' :
+                                    '<span class="bi bi-eye-slash"></span>';
                             });
                         });
                         </script>

@@ -45,17 +45,22 @@ class UserManagerComponent extends Component
     public function processLogin(Controller $controller)
     {
         $result = $this->obtainAuthResult($controller);
-        if (!$this->validateAuthResult($controller, $result)) {
+        if (!$result || !method_exists($result, 'isValid') || !$result->isValid()) {
+            $controller->Flash->error('Invalid username or password');
+            if (Configure::read('debug')) {
+                Log::debug('[Login] Authentication failed');
+            }
+
             return null;
         }
 
         $user = $this->resolveIdentity($controller);
         if (!$user) {
-            return null; // Flash + log handled inside helper
+            return null; // resolveIdentity already flashed/logged
         }
 
         if (!$this->ensureUserIsActive($controller, $user)) {
-            return null;
+            return null; // inactive handled
         }
 
         return $this->determineLoginRedirect($controller);
@@ -78,31 +83,7 @@ class UserManagerComponent extends Component
         return $service ? $service->authenticate($controller->getRequest()) : null;
     }
 
-    /**
-     * Validate authentication result and set flashes/logging when invalid.
-     *
-     * @param \Cake\Controller\Controller $controller Controller
-     * @param mixed $result Auth result
-     * @return bool True when valid
-     */
-    protected function validateAuthResult(Controller $controller, mixed $result): bool
-    {
-        if ($result && method_exists($result, 'isValid') && $result->isValid()) {
-            return true;
-        }
-
-        if (Configure::read('debug')) {
-            $errors = $result && method_exists($result, 'getErrors') ? $result->getErrors() : [];
-            Log::debug('[Login] Authentication failed', [
-                'data' => $controller->getRequest()->getData(),
-                'errors' => $errors,
-                'status' => $result && method_exists($result, 'getStatus') ? $result->getStatus() : null,
-            ]);
-        }
-        $controller->Flash->error('Invalid username or password');
-
-        return false;
-    }
+    // (validateAuthResult removed; logic inlined in processLogin)
 
     /**
      * Resolve the authenticated user identity.
@@ -169,7 +150,11 @@ class UserManagerComponent extends Component
      */
     protected function determineLoginRedirect(Controller $controller): Response
     {
+        // Allow redirect to be supplied via query (preferred) or POST data (hidden field fallback)
         $redirect = $controller->getRequest()->getQuery('redirect');
+        if (!$redirect) {
+            $redirect = $controller->getRequest()->getData('redirect');
+        }
         if ($redirect && strpos((string)$redirect, '/') === 0) {
             if (Configure::read('debug')) {
                 Log::debug('[Login] Redirecting to user-supplied redirect parameter', ['redirect' => $redirect]);
@@ -188,7 +173,7 @@ class UserManagerComponent extends Component
         }
 
         if (Configure::read('debug')) {
-            Log::debug('[Login] Redirecting standard user to home');
+            Log::debug('[Login] Redirecting user to home (no redirect param, non-admin route)');
         }
 
         return $controller->redirect(['controller' => 'Pages', 'action' => 'display', 'home']);
