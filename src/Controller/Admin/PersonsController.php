@@ -26,6 +26,7 @@ class PersonsController extends AppController
      */
     public function index(): void
     {
+        /** @var \Cake\ORM\ResultSet<\App\Model\Entity\Person> $persons */
         $persons = $this->Persons->find()->all();
         $this->set(compact('persons'));
     }
@@ -49,8 +50,10 @@ class PersonsController extends AppController
      */
     public function add(): ?Response
     {
+        /** @var \App\Model\Entity\Person $person */
         $person = $this->Persons->newEmptyEntity();
         if ($this->request->is('post')) {
+            /** @var \App\Model\Entity\Person $person */
             $person = $this->Persons->patchEntity($person, $this->request->getData());
             if ($this->Persons->save($person)) {
                 $this->Flash->success(__('The person has been saved.'));
@@ -174,8 +177,10 @@ class PersonsController extends AppController
                     'success' => true,
                     'message' => 'Person has been added successfully.',
                     'newOption' => [
-                        'value' => $person->id,
-                        'text' => $person->display ?? $person->full ?? ($person->first . ' ' . $person->last),
+                        // Cast for static analysis clarity
+                        // @phpstan-ignore-next-line dynamic entity property
+                        'value' => (int)$person->id,
+                        'text' => $person->display ?? $person->full ?? trim(($person->first ?? '') . ' ' . ($person->last ?? '')),
                     ],
                 ];
             } else {
