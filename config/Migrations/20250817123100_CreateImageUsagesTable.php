@@ -1,0 +1,34 @@
+<?php
+declare(strict_types=1);
+
+use Migrations\AbstractMigration;
+
+/**
+ * CreateImageUsagesTable migration
+ */
+class CreateImageUsagesTable extends AbstractMigration
+{
+    public bool $autoId = false;
+
+    public function up(): void
+    {
+        if (!$this->hasTable('image_usages')) {
+            $this->table('image_usages')
+                ->addColumn('image_id', 'integer', ['null' => false])
+                ->addColumn('model', 'string', ['limit' => 120, 'null' => false])
+                ->addColumn('foreign_key', 'integer', ['null' => false])
+                ->addColumn('field', 'string', ['limit' => 60, 'null' => false])
+                ->addColumn('created', 'datetime', ['null' => false])
+                ->addIndex(['image_id'])
+                ->addIndex(['model', 'foreign_key'])
+                ->create();
+        }
+    }
+
+    public function down(): void
+    {
+        if ($this->hasTable('image_usages')) {
+            $this->table('image_usages')->drop()->save();
+        }
+    }
+}

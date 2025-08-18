@@ -1,0 +1,71 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Model\Table;
+
+use Cake\Datasource\EntityInterface;
+use Cake\Event\EventInterface;
+use Cake\ORM\RulesChecker;
+use Cake\ORM\Table;
+use Cake\Utility\Text;
+use Cake\Validation\Validator;
+
+class ImagesTable extends Table
+{
+    /**
+     * Initialize table.
+     *
+     * @param array<string,mixed> $config Config.
+     */
+    public function initialize(array $config): void
+    {
+        parent::initialize($config);
+        $this->setTable('images');
+        $this->setPrimaryKey('id');
+        $this->addBehavior('Timestamp');
+        $this->hasMany('ImageUsages', ['foreignKey' => 'image_id']);
+    }
+
+    /**
+     * Validation rules.
+     */
+    public function validationDefault(Validator $validator): Validator
+    {
+        $validator
+            ->scalar('filename')->maxLength('filename', 255)->notEmptyString('filename')
+            ->scalar('original_name')->allowEmptyString('original_name')
+            ->scalar('mime')->maxLength('mime', 100)->notEmptyString('mime')
+            ->scalar('ext')->allowEmptyString('ext')
+            ->integer('byte_size')->notEmptyString('byte_size')
+            ->integer('width')->allowEmptyString('width')
+            ->integer('height')->allowEmptyString('height')
+            ->scalar('hash')->maxLength('hash', 64)->notEmptyString('hash')
+            ->scalar('status')->maxLength('status', 20)->notEmptyString('status');
+
+        return $validator;
+    }
+
+    /**
+     * Rules checker (unique hash).
+     */
+    public function buildRules(RulesChecker $rules): RulesChecker
+    {
+        $rules->add($rules->isUnique(['hash'], 'Duplicate image already exists.'));
+
+        return $rules;
+    }
+
+    /**
+     * Before save hook.
+     *
+     * @param \Cake\Event\EventInterface $event Event.
+     * @param \Cake\Datasource\EntityInterface $entity Entity.
+     * @param array<string,mixed> $options Options.
+     */
+    public function beforeSave(EventInterface $event, EntityInterface $entity, array $options): void
+    {
+        if ($entity->isNew() && !$entity->get('filename')) {
+            $entity->set('filename', Text::uuid());
+        }
+    }
+}
