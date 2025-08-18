@@ -8,12 +8,23 @@ use Migrations\AbstractMigration;
  */
 class CreateImagesTable extends AbstractMigration
 {
+    /**
+     * Disable automatic id field; we add it manually for portability.
+     */
     public bool $autoId = false;
-
+    /**
+     * Apply migration: create images table.
+     */
     public function up(): void
     {
         if (!$this->hasTable('images')) {
             $this->table('images')
+                ->addColumn('id', 'integer', [
+                    'autoIncrement' => true,
+                    'null' => false,
+                    'signed' => false,
+                ])
+                ->addPrimaryKey(['id'])
                 ->addColumn('filename', 'string', ['limit' => 255, 'null' => false])
                 ->addColumn('original_name', 'string', ['limit' => 255, 'null' => true])
                 ->addColumn('mime', 'string', ['limit' => 100, 'null' => false])
@@ -32,6 +43,9 @@ class CreateImagesTable extends AbstractMigration
         }
     }
 
+    /**
+     * Revert migration.
+     */
     public function down(): void
     {
         if ($this->hasTable('images')) {
