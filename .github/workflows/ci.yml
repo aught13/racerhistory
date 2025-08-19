@@ -108,12 +108,24 @@ jobs:
             sed -i 's/public $autoId = false;/public bool $autoId = false;/' config/Migrations/20250727202625_Initial.php || true
             # Users table migration (newer)
             sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250811120000_CreateUsersTable.php || true
+            # Persons table migration (newer)
+            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250817120000_AddBioToPersons.php || true
+            # Images table migration
+            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250817123000_CreateImagesTable.php || true
+            # Image Usage table migration
+            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250817123100_CreateImageUsagesTable.php || true
           else
             echo "Parent requires no type, updating migrations to untyped..."
             # Initial migration
             sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250727202625_Initial.php || true
             # Users table migration (newer)
             sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250811120000_CreateUsersTable.php || true
+            # Persons table migration (newer)
+            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250817120000_AddBioToPersons.php || true
+            # Images table migration
+            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250817123000_CreateImagesTable.php || true
+            # Image Usage table migration
+            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250817123100_CreateImageUsagesTable.php || true          
           fi
 
           echo "=== Final migration property ==="
@@ -121,6 +133,12 @@ jobs:
           grep -A 1 -B 1 "autoId" config/Migrations/20250727202625_Initial.php || echo "no autoId in Initial"
           echo "-- 20250811120000_CreateUsersTable.php --"
           grep -A 1 -B 1 "autoId" config/Migrations/20250811120000_CreateUsersTable.php || echo "no autoId in CreateUsersTable"
+          echo "-- 20250727202625_Initial.php --"
+          grep -A 1 -B 1 "autoId" config/Migrations/20250817120000_AddBioToPersons.php || echo "no autoId in AddBioToPersons"
+          echo "-- 20250811120000_CreateUsersTable.php --"
+          grep -A 1 -B 1 "autoId" config/Migrations/20250817123000_CreateImagesTable.php || echo "no autoId in CreateImagesTable"
+          echo "-- 20250811120000_CreateUsersTable.php --"
+          grep -A 1 -B 1 "autoId" config/Migrations/20250817123100_CreateImageUsagesTable.php || echo "no autoId in CreateImageUsagesTable"
 
       - name: Run database migrations
         run: |
