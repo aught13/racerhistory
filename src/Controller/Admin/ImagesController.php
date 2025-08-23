@@ -41,11 +41,13 @@ class ImagesController extends AppController
         $existing = $images->find()->where(['hash' => $hash])->first();
         if ($existing) {
             $this->maybeRecordUsage($existing->id);
+
             return $this->json(['success' => true, 'image' => $this->serializeImage($existing)]);
         }
         $ext = pathinfo($file->getClientFilename() ?? '', PATHINFO_EXTENSION) ?: $processed['original']['ext'];
         $uuid = Text::uuid();
-        $storageDir = ROOT . DS . 'storage' . DS . 'images' . DS . date('Y') . DS . date('m') . DS; // non-public
+        $subdir = date('Y') . '/' . date('m');
+        $storageDir = ROOT . DS . 'storage' . DS . 'images' . DS . $subdir . DS; // non-public
         if (!is_dir($storageDir)) {
             mkdir($storageDir, 0770, true);
         }
@@ -64,6 +66,7 @@ class ImagesController extends AppController
         }
         $image = $images->newEntity([
             'filename' => $filename,
+            'storage_subdir' => $subdir,
             'original_name' => $file->getClientFilename(),
             'mime' => $mime,
             'ext' => $ext,
@@ -76,6 +79,7 @@ class ImagesController extends AppController
         ]);
         if ($images->save($image)) {
             $this->maybeRecordUsage($image->id);
+
             return $this->json(['success' => true, 'image' => $this->serializeImage($image)]);
         }
 
@@ -95,7 +99,8 @@ class ImagesController extends AppController
             throw new RecordNotFoundException('Image not found');
         }
         $variant = $this->request->getQuery('variant');
-        $baseDir = ROOT . DS . 'storage' . DS . 'images' . DS . date('Y') . DS . date('m') . DS; // NOTE: simplification; ideally store path on entity
+        $subdir = $image->storage_subdir ?? (date('Y') . '/' . date('m'));
+        $baseDir = ROOT . DS . 'storage' . DS . 'images' . DS . $subdir . DS;
         $path = $baseDir . $image->filename;
         if ($variant) {
             $raw = is_string($image->variants) ? json_decode($image->variants, true) : $image->variants;
@@ -107,6 +112,7 @@ class ImagesController extends AppController
             throw new RecordNotFoundException('File missing');
         }
         $contents = file_get_contents($path) ?: '';
+
         return $this->response->withType($image->mime)->withStringBody($contents);
     }
 
@@ -119,6 +125,7 @@ class ImagesController extends AppController
         $images = $this->fetchTable('Images')->find()->orderDesc('id')->limit(100)->all();
         $this->set(compact('images'));
         $this->viewBuilder()->setOption('serialize', []);
+
         return $this->response; // normal template render (templates/Admin/Images/index.php expected)
     }
 
@@ -133,11 +140,13 @@ class ImagesController extends AppController
             $images->patchEntity($image, $this->request->getData(), ['fields' => ['original_name','status']]);
             if ($images->save($image)) {
                 $this->Flash->success('Image updated');
+
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error('Could not update image');
         }
         $this->set(compact('image'));
+
         return $this->response;
     }
 
@@ -154,7 +163,7 @@ class ImagesController extends AppController
         }
         /** @var \App\Model\Table\ImageUsagesTable $usages */
         $usages = TableRegistry::getTableLocator()->get('ImageUsages');
-        $existing = $usages->find()->where(compact('imageId','model','foreign','field'))->first();
+        $existing = $usages->find()->where(compact('imageId', 'model', 'foreign', 'field'))->first();
         if ($existing) {
             return; // already recorded
         }
@@ -202,6 +211,7 @@ class ImagesController extends AppController
         }
         // Provide signed/parameterized URL (for now simple route) to serve original
         $baseUrl = '/admin/images/serve/' . $image->id;
+
         return [
             'id' => $image->id,
             'filename' => $image->filename,

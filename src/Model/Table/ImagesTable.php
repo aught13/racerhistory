@@ -33,6 +33,7 @@ class ImagesTable extends Table
     {
         $validator
             ->scalar('filename')->maxLength('filename', 255)->notEmptyString('filename')
+            ->scalar('storage_subdir')->maxLength('storage_subdir', 16)->notEmptyString('storage_subdir')
             ->scalar('original_name')->allowEmptyString('original_name')
             ->scalar('mime')->maxLength('mime', 100)->notEmptyString('mime')
             ->scalar('ext')->allowEmptyString('ext')
