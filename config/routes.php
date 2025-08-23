@@ -39,6 +39,9 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/', ['controller' => 'Dashboard', 'action' => 'index']); // Admin root route
         $routes->connect('/login', ['controller' => 'Users', 'action' => 'login']); // Admin login route
         $routes->connect('/users', ['controller' => 'Users', 'action' => 'index']);
+        $routes->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\d+']);
         $routes->fallbacks(DashedRoute::class);
     });
     /*
