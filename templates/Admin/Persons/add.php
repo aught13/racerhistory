@@ -46,19 +46,52 @@
         </div>
     </div>
 <?php
-// Load CKEditor (Classic) via CDN & initialize the bio textarea progressively.
-echo $this->Html->script('https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js', ['block' => true]);
+// Load self-hosted TinyMCE (installed via composer tinymce/tinymce) and initialize.
+// We expect the TinyMCE distribution to be published under /js/tinymce/ (see deployment notes).
+echo $this->Html->script('/js/tinymce/tinymce.min.js', ['block' => true]);
 echo $this->Html->scriptBlock(<<<JS
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var el = document.getElementById('bio-editor');
-    if (!el) return;
-    ClassicEditor.create(el, {
-        toolbar: {
-            items: [
-                'heading','|','bold','italic','underline','link','bulletedList','numberedList','blockQuote','|','undo','redo'
-            ]
+    if (!el || typeof tinymce === 'undefined') { return; }
+    tinymce.init({
+        selector: '#bio-editor',
+        menubar: false,
+        plugins: 'image code lists liststyles media preview quickbars save visualblocks visualchars',
+        toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview | save',
+        quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
+        image_title: true,
+        automatic_uploads: true,
+        images_upload_url: '/admin/images/upload',
+        images_upload_credentials: true,
+        convert_urls: false,
+        setup: function (editor) {
+            editor.on('BeforeUpload', function(e){ /* hook if needed */ });
+        },
+        images_upload_handler: function (blobInfo, progress) {
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/admin/images/upload');
+                xhr.withCredentials = true;
+                xhr.upload.onprogress = function (e) {
+                    if (e.lengthComputable) {
+                        progress(e.loaded / e.total * 100);
+                    }
+                };
+                xhr.onload = function () {
+                    if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
+                    var json;
+                    try { json = JSON.parse(xhr.responseText); } catch (err) { return reject('Invalid JSON'); }
+                    if (!json.success || !json.image || !json.image.url) { return reject(json.error || 'Upload failed'); }
+                    resolve(json.image.url);
+                };
+                xhr.onerror = function () { reject('Image upload failed'); };
+                var formData = new FormData();
+                formData.append('upload', blobInfo.blob(), blobInfo.filename());
+                xhr.setRequestHeader('X-CSRF-Token', document.querySelector('meta[name="csrfToken"]').getAttribute('content'));
+                xhr.send(formData);
+            });
         }
-    }).catch(function(error){ console.error('CKEditor init failed', error); });
+    });
 });
 JS, ['block' => true]);
 ?>
