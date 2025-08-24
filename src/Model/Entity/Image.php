@@ -19,6 +19,8 @@ use Cake\ORM\Entity;
  * @property array|string|null $variants
  * @property string $hash
  * @property string $status
+ * @property string|null $storage_subdir
+ * @property string|null $storage_path
  * @property mixed $created
  * @property mixed $modified
  */
@@ -26,6 +28,8 @@ class Image extends Entity
 {
     protected array $_accessible = [
         'filename' => true,
+    'storage_subdir' => true,
+    'storage_path' => true,
         'original_name' => true,
         'mime' => true,
         'ext' => true,

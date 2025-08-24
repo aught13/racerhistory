@@ -18,13 +18,26 @@
         "collectCoverage": true,
         "collectCoverageFrom": [
             "webroot/js/**/*.js",
-            "!webroot/js/tests/**"
+            "!webroot/js/tests/**",
+            "!webroot/js/tinymce/**",
+            "!vendor/**"
         ],
         "coverageDirectory": "coverage-js",
         "coverageReporters": [
             "clover",
             "lcov",
             "text-summary"
+        ],
+        "testPathIgnorePatterns": [
+            "<rootDir>/vendor/"
+        ],
+        "modulePathIgnorePatterns": [
+            "<rootDir>/vendor/"
+        ],
+        "coveragePathIgnorePatterns": [
+            "/vendor/",
+            "/webroot/js/tinymce/",
+            "/webroot/js/tests/"
         ],
         "setupFilesAfterEnv": [
             "<rootDir>/jest.setup.js"

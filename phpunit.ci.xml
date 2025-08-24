@@ -26,6 +26,8 @@
         <exclude>
             <file>src/Console/Installer.php</file>
             <directory>src/Console</directory>
+            <directory>vendor</directory>
+            <directory>webroot/js/tinymce</directory>
         </exclude>
     </source>
     <coverage>
