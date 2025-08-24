@@ -40,7 +40,12 @@
                         <tr>
                             <td><input type="checkbox" name="person_ids[]" value="<?= $person->id ?>"
                                     class="person-checkbox"></td>
-                            <td><?= h($person->display ?? ($person->first . ' ' . $person->last)) ?></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <?= $this->element('person_image', ['person' => $person, 'size' => 'small', 'class' => 'me-2']) ?>
+                                    <?= h($person->display ?? ($person->first . ' ' . $person->last)) ?>
+                                </div>
+                            </td>
                             <td><?= h($person->first) ?></td>
                             <td><?= h($person->last) ?></td>
                             <td><?= h($person->birth) ?></td>

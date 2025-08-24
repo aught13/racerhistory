@@ -33,7 +33,8 @@ class ImagesTable extends Table
     {
         $validator
             ->scalar('filename')->maxLength('filename', 255)->notEmptyString('filename')
-            ->scalar('storage_subdir')->maxLength('storage_subdir', 16)->notEmptyString('storage_subdir')
+            ->scalar('storage_subdir')->maxLength('storage_subdir', 16)->allowEmptyString('storage_subdir')
+            ->scalar('storage_path')->maxLength('storage_path', 190)->notEmptyString('storage_path')
             ->scalar('original_name')->allowEmptyString('original_name')
             ->scalar('mime')->maxLength('mime', 100)->notEmptyString('mime')
             ->scalar('ext')->allowEmptyString('ext')
@@ -61,9 +62,10 @@ class ImagesTable extends Table
      *
      * @param \Cake\Event\EventInterface $event Event.
      * @param \Cake\Datasource\EntityInterface $entity Entity.
-     * @param array<string,mixed> $options Options.
+     * @param mixed $options Options (Cake core may pass ArrayObject)
+     * @phpcsSuppress SlevomatCodingStandard\TypeHints\ParameterTypeHint.MissingNativeTypeHint
      */
-    public function beforeSave(EventInterface $event, EntityInterface $entity, array $options): void
+    public function beforeSave(EventInterface $event, EntityInterface $entity, mixed $options): void
     {
         if ($entity->isNew() && !$entity->get('filename')) {
             $entity->set('filename', Text::uuid());

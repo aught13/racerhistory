@@ -5,16 +5,17 @@ $this->assign('title', 'Edit Image');
   <h1 class="mb-4">Edit Image #<?= h($image->id) ?></h1>
   <div class="row g-4">
     <div class="col-md-4">
+      <?php $serveBase = '/images/serve/' . $image->id; ?>
       <figure>
-        <img src="<?= $this->Url->build(['prefix'=>'Admin','controller'=>'Images','action'=>'serve',$image->id]) ?>" alt="Preview" class="img-fluid rounded border" />
-        <figcaption class="mt-2 small text-muted">Original</figcaption>
+        <img src="<?= h($serveBase) ?>" alt="Preview" class="img-fluid rounded border" />
+        <figcaption class="mt-2 small text-muted">Original (public)</figcaption>
       </figure>
       <?php $variants = is_string($image->variants) ? json_decode($image->variants,true) : (array)$image->variants; ?>
       <?php if ($variants): ?>
         <div class="row g-2">
-          <?php foreach ($variants as $name => $meta): ?>
+      <?php foreach ($variants as $name => $meta): ?>
             <div class="col-4 text-center">
-              <img src="<?= $this->Url->build(['prefix'=>'Admin','controller'=>'Images','action'=>'serve',$image->id,'?'=>['variant'=>$name]]) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
+        <img src="<?= h($serveBase . '?variant=' . rawurlencode($name)) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
               <div class="small mt-1"><?= h($name) ?></div>
             </div>
           <?php endforeach; ?>

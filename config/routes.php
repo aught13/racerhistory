@@ -64,6 +64,10 @@ return function (RouteBuilder $routes): void {
     $routes->setRouteClass(DashedRoute::class);
 
     $routes->scope('/', function (RouteBuilder $builder): void {
+        // Public image serve (unauthenticated)
+        $builder->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
         /*
          * Here, we are connecting '/' (base path) to a controller called 'Pages',
          * its action called 'display', and we pass a param to select the view file
