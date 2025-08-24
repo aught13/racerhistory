@@ -16,6 +16,11 @@ These are optional follow-up tasks focusing on the image management feature and 
   - Use `$this->enableCsrfToken(); $this->enableSecurityToken();` for POST.
 - Edge cases: duplicate filename different content (new hash), very large dimensions (ensure resizing not crashing), truncated/invalid image.
 
+  Status: initial fixtures and a basic `ImagesControllerTest` have been added to the codebase to cover upload and browse happy paths. Remaining work:
+
+  - Expand tests to cover dedupe behavior (identical hash), oversized files, zero-byte files, and malformed image uploads.
+  - Add assertions for variants JSON structure and database row counts.
+
 ## 2. Image Picker Integration (Persons & TeamSeasons Forms)
 
 - Create element `templates/element/Admin/image_picker.php`:
@@ -28,16 +33,18 @@ These are optional follow-up tasks focusing on the image management feature and 
   2. Use polymorphic `image_usages` (already scaffolded) and resolve primary image via finder.
 - Update table classes (`PersonsTable`, `TeamSeasonsTable`) for chosen association.
 - After save (if using usages), insert usage row (`model`, `foreign_key`, `field`).
-- Accessibility: aria-label on buttons, focus trap inside modal, keyboard navigation for thumbnails.
+  - Accessibility: aria-label on buttons, focus trap inside modal, keyboard navigation for thumbnails.
 
+  Status: basic element and picker JS exist (`templates/element/person_image.php`, `webroot/js/person-image.js`) and are wired into Persons templates. Remaining: accessibility improvements, modal keyboard support, and server-side persistence of usage during create/edit flows.
 ## 3. TinyMCE Integration & Image Upload
 
 - (DONE) Replace CKEditor with self-hosted TinyMCE including plugins: image, code, lists, liststyles, media, preview, quickbars, save, visualblocks, visualchars.
 - Serve TinyMCE assets from `/js/tinymce/` (copy from `vendor/tinymce/tinymce` into webroot on deploy/build step or symlink for dev).
 - Ensure upload flow uses `images_upload_handler` hitting `/admin/images/upload` (already implemented) and inserts returned `image.url`.
 - Add integration test simulating TinyMCE image upload via XMLHttpRequest (POST file, assert JSON schema, ensure 200 and success true).
-- Consider adding custom toolbar buttons for variant selection (e.g., Insert thumb vs original) using variant metadata.
+  - Consider adding custom toolbar buttons for variant selection (e.g., Insert thumb vs original) using variant metadata.
 
+  Status: TinyMCE assets are referenced under `webroot/js/tinymce/`. Upload handler is present and returns variant metadata. Remaining: add integration test and toolbar customization.
 ## 4. ImageUsages Logic Enhancements
 
 - Extend `upload()` to accept optional context params (`model`, `foreign_key`, `field`) and auto-create usage when provided.

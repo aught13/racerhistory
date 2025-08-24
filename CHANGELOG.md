@@ -54,6 +54,13 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Added `package.json` and npm dev tooling for JS tests, plus `.gitignore` entries for `node_modules` and JS coverage output.
 - Introduced a combined GitHub Actions workflow `.github/workflows/combined-tests.yml` to run PHP unit tests (with coverage) and JS tests, then upload coverage artifacts to Codecov (PHP and JS flags).
 
+### Added (Unreleased) - Images
+
+- Public image storage: new public storage path `webroot/img/storage/{YYYY}/{MM}/UUID.ext` and accompanying controller/service support. JSON responses include both `url` (serve action) and `direct_url` (public file path).
+- Image upload endpoints, `ImageProcessor` and `ImagesTable` improvements: variant generation metadata and stricter mime validation.
+- Admin image templates and JS helpers for browsing/picking images (templates and `webroot/js/person-image.js` present). Basic Jest tests for frontend image picker utilities added under `webroot/js/tests/`.
+- Fixtures and basic controller tests for images: `tests/Fixture/ImagesFixture.php` and `tests/TestCase/Controller/Admin/ImagesControllerTest.php` (initial coverage for upload/browse flows).
+
 ### Changed (Unreleased)
 
 - **Code Quality Improvements**: All Sports and Teams-related files now pass PHPCS and PHPStan validation
@@ -61,6 +68,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Enhanced `Team` entity with proper property type annotations for better static analysis
 - Test bootstrap now aliases `default` to isolated `test` connection; removed manual seeding in favor of fixtures only.
 - Refactored `UsersController::register()` formatting for standards compliance.
+- Routes and installer tweaks: `config/routes.php` and `src/Console/Installer.php` updated to reflect new image-serving routes and setup steps.
 
 ### Fixed (Unreleased)
 
@@ -71,6 +79,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
   - Added test guards to retain flash messages where views consume them.
   - Guarded DateTime formatting in `templates/Admin/Teams/view.php` to avoid 500s when timestamps are strings in test fixtures.
   - Removed temporary diagnostic logs used during debugging.
+  - Image storage path: removed obsolete migrations that attempted to add a non-portable storage subdir; migrations cleaned to use a single `CreateImagesTable` migration and the autoId declaration adjusted for compatibility.
 
 ### Security (Unreleased)
 
