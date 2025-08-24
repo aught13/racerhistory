@@ -45,6 +45,27 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseContains('Sample biography for John Doe.');
     }
 
+    public function testViewShowsPersonImageWhenSet(): void
+    {
+        $this->mockIdentity();
+        // Create a person with a person_image id referencing fixture image id 1
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->newEmptyEntity();
+        $person = $persons->patchEntity($person, [
+            'first' => 'Pic', 'last' => 'Owner', 'display' => 'Pic Owner', 'person_image' => 1,
+        ]);
+        $saved = $persons->save($person);
+        if ($saved === false) {
+            $errors = $person->getErrors();
+            $this->fail('Failed to save person: ' . json_encode($errors));
+        }
+        $this->get('/admin/persons/view/' . $person->id);
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('<img', $body);
+        $this->assertStringContainsString('/images/serve/1', $body);
+    }
+
     public function testAddGet(): void
     {
         $this->mockIdentity();

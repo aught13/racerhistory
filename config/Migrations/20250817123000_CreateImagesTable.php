@@ -26,6 +26,8 @@ class CreateImagesTable extends AbstractMigration
                 ])
                 ->addPrimaryKey(['id'])
                 ->addColumn('filename', 'string', ['limit' => 255, 'null' => false])
+                ->addColumn('storage_subdir', 'string', ['limit' => 16, 'null' => true, 'default' => null, 'comment' => 'Legacy year/month subdir (deprecated)'])
+                ->addColumn('storage_path', 'string', ['limit' => 190, 'null' => false, 'default' => '', 'comment' => 'Relative path: year/month/filename'])
                 ->addColumn('original_name', 'string', ['limit' => 255, 'null' => true])
                 ->addColumn('mime', 'string', ['limit' => 100, 'null' => false])
                 ->addColumn('ext', 'string', ['limit' => 12, 'null' => true])

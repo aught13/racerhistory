@@ -21,7 +21,11 @@ $this->assign('title', 'Images');
       <tr>
         <td><?= h($img->id) ?></td>
         <td>
-          <img src="<?= $this->Url->build(['prefix'=>'Admin','controller'=>'Images','action'=>'serve',$img->id,'?'=>['variant'=>'thumb']]) ?>" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" />
+          <?php
+          // Build public serve URL (prefer variant) and fallback to direct file if exists
+          $thumbUrl = '/images/serve/' . $img->id . '?variant=thumb';
+          ?>
+          <img src="<?= h($thumbUrl) ?>" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" />
         </td>
         <td><?= h($img->original_name ?: $img->filename) ?></td>
         <td><code><?= h($img->mime) ?></code></td>

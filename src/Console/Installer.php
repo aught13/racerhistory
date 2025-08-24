@@ -46,6 +46,7 @@ class Installer
         'tmp/cache/views',
         'tmp/sessions',
         'tmp/tests',
+    'webroot/img/storage',
     ];
 
     /**

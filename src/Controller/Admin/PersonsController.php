@@ -53,8 +53,16 @@ class PersonsController extends AppController
         /** @var \App\Model\Entity\Person $person */
         $person = $this->Persons->newEmptyEntity();
         if ($this->request->is('post')) {
+            $data = $this->request->getData();
+
+            // Handle person_image as direct image ID
+            $personImage = $data['person_image'] ?? null;
+            if (is_numeric($personImage)) {
+                $data['person_image'] = (int)$personImage;
+            }
+
             /** @var \App\Model\Entity\Person $person */
-            $person = $this->Persons->patchEntity($person, $this->request->getData());
+            $person = $this->Persons->patchEntity($person, $data);
             if ($this->Persons->save($person)) {
                 $this->Flash->success(__('The person has been saved.'));
 
@@ -77,7 +85,15 @@ class PersonsController extends AppController
     {
         $person = $this->Persons->get($id);
         if ($this->request->is(['patch','post','put'])) {
-            $person = $this->Persons->patchEntity($person, $this->request->getData());
+            $data = $this->request->getData();
+
+            // Handle person_image as direct image ID
+            $personImage = $data['person_image'] ?? null;
+            if (is_numeric($personImage)) {
+                $data['person_image'] = (int)$personImage;
+            }
+
+            $person = $this->Persons->patchEntity($person, $data);
             if ($this->Persons->save($person)) {
                 $this->Flash->success(__('The person has been saved.'));
 

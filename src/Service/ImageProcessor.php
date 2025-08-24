@@ -11,7 +11,7 @@ class ImageProcessor
     /**
      * Intervention Image manager instance.
      */
-    private ImageManager $manager;
+    private ?ImageManager $manager = null;
 
     /**
      * @param \Intervention\Image\ImageManager|null $manager Optional pre-configured image manager (for testing / DI).
@@ -24,18 +24,25 @@ class ImageProcessor
             $this->manager = $manager;
         } else {
             try {
-                // Try static factory (v3 style)
-                if (method_exists(ImageManager::class, 'gd')) {
-                    /** @var \Intervention\Image\ImageManager $mgr */
-                    $mgr = ImageManager::gd();
-                    $this->manager = $mgr;
-                } else {
-                    // Fallback older signature expecting driver string
-                    $this->manager = new ImageManager('gd');
+                if (class_exists(ImageManager::class)) {
+                    if (method_exists(ImageManager::class, 'gd')) {
+                        $this->manager = ImageManager::gd();
+                    } else {
+                        // Try array config (v3) then legacy string
+                        try {
+                            if (class_exists('Intervention\\Image\\Drivers\\Gd\\Driver')) {
+                                $driver = new \Intervention\Image\Drivers\Gd\Driver();
+                                $this->manager = new ImageManager($driver);
+                            } else {
+                                $this->manager = new ImageManager('gd');
+                            }
+                        } catch (\Throwable $inner) {
+                            $this->manager = null; // will degrade
+                        }
+                    }
                 }
             } catch (\Throwable $e) {
-                // Absolute fallback
-                $this->manager = new ImageManager('gd');
+                $this->manager = null; // operate in degraded mode
             }
         }
     }
@@ -55,7 +62,59 @@ class ImageProcessor
     {
         $stream = $file->getStream();
         $contents = $stream->getContents();
-        $image = $this->manager->read($contents);
+        if ($this->manager) {
+            try {
+                $image = $this->manager->read($contents);
+            } catch (\Throwable $e) {
+                $image = null; // degrade
+            }
+        } else {
+            $image = null;
+        }
+
+        if ($image === null) {
+            $mime = $file->getClientMediaType() ?: 'image/png';
+            $width = 1;
+            $height = 1;
+            if (function_exists('imagecreatefromstring')) {
+                $prevHandler = set_error_handler(static function () {
+                    // Swallow imagecreatefromstring warnings and continue degraded.
+                    return true;
+                });
+                $tmp = imagecreatefromstring($contents);
+                if ($prevHandler !== null) {
+                    set_error_handler($prevHandler);
+                } else {
+                    restore_error_handler();
+                }
+                if ($tmp !== false) {
+                    $width = imagesx($tmp);
+                    $height = imagesy($tmp);
+                    imagedestroy($tmp);
+                }
+            }
+            $variants = [];
+            foreach ($variantConfig as $name => $cfg) {
+                $variants[$name] = [
+                    'data' => $contents,
+                    'width' => $width,
+                    'height' => $height,
+                    'mime' => $mime,
+                    'ext' => $this->inferExtension($mime),
+                ];
+            }
+
+            return [
+                'original' => [
+                    'data' => $contents,
+                    'width' => $width,
+                    'height' => $height,
+                    'mime' => $mime,
+                    'ext' => $this->inferExtension($mime),
+                ],
+                'variants' => $variants,
+            ];
+        }
         $width = $image->width();
         $height = $image->height();
         $variants = [];
