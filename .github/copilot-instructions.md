@@ -96,6 +96,22 @@ vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/Test
     - Ensure `DATABASE_TEST_URL` environment variable is properly configured
     - Bootstrap must successfully establish database connections
 
+### Pre-commit PHPCS
+
+Before committing code that changes PHP files, run the same PHPCS check the CI uses so issues are caught locally early. The CI pipeline runs PHPCS and pipes the checkstyle output to `cs2pr`; replicate that locally with:
+
+```bash
+vendor/bin/phpcs --report=checkstyle | cs2pr
+```
+
+If you want to auto-fix trivial issues first, run:
+
+```bash
+vendor/bin/phpcbf --standard=phpcs.xml
+```
+
+Run PHPCS and fix any remaining issues (or follow the `cs2pr` output) before committing. This keeps local commits aligned with CI expectations.
+
 3. **Deprecation Handling**:
     - CakePHP 5.x may show deprecation warnings - these are acceptable
     - Use `patch()` instead of `set()` for entity updates to avoid deprecations
