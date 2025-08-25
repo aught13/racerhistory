@@ -16,6 +16,12 @@ class ImagesControllerTest extends TestCase
         'app.Images',
     ];
 
+    /**
+     * Collect created image IDs during tests so we can cleanup files on tearDown
+     * @var int[]
+     */
+    protected array $createdImageIds = [];
+
     public function setUp(): void
     {
         parent::setUp();
@@ -49,7 +55,8 @@ class ImagesControllerTest extends TestCase
             fwrite(STDERR, 'Upload debug JSON: ' . json_encode($json) . "\n");
         }
         $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
-        $this->assertNotEmpty($json['image']['id'] ?? null);
+    $this->assertNotEmpty($json['image']['id'] ?? null);
+    $this->createdImageIds[] = (int)$json['image']['id'];
         $this->assertNotEmpty($json['image']['url'] ?? null);
 
     // Verify DB record has storage_path populated
@@ -151,8 +158,9 @@ class ImagesControllerTest extends TestCase
             ],
         ]);
         $json = json_decode((string)$this->_response->getBody(), true);
-        $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
-        $id = $json['image']['id'];
+    $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
+    $id = (int)$json['image']['id'];
+    $this->createdImageIds[] = $id;
         // Public original
         $this->get('/images/serve/' . $id);
         $this->assertResponseOk();
@@ -186,5 +194,44 @@ class ImagesControllerTest extends TestCase
         $this->get('/admin/images/edit/1');
         $this->assertResponseOk();
         $this->assertStringContainsString('<form', (string)$this->_response->getBody(), 'Edit form should render');
+    }
+
+    protected function tearDown(): void
+    {
+        // Remove any files created in webroot/img/storage during tests
+        if (!empty($this->createdImageIds)) {
+            $images = $this->getTableLocator()->get('Images');
+            foreach ($this->createdImageIds as $id) {
+                try {
+                    $record = $images->get($id);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+                $storagePath = $record->storage_path ?? null;
+                if ($storagePath) {
+                    $base = WWW_ROOT . 'img' . DS . 'storage' . DS;
+                    // sanitize path to avoid directory traversal or backslash issues
+                    $sanitized = str_replace(['..', '\\'], '', $storagePath);
+                    $full = $base . ltrim($sanitized, '/\\');
+                    if (is_file($full)) {
+                        @unlink($full);
+                    }
+                    // try variants
+                    $variants = is_string($record->variants) ? json_decode($record->variants, true) : $record->variants;
+                    if (is_array($variants)) {
+                        foreach ($variants as $v) {
+                            if (!empty($v['file'])) {
+                                $vf = dirname($full) . DS . $v['file'];
+                                if (is_file($vf)) {
+                                    @unlink($vf);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        parent::tearDown();
     }
 }
