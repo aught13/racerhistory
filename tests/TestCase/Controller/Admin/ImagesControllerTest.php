@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller\Admin;
@@ -18,6 +19,7 @@ class ImagesControllerTest extends TestCase
 
     /**
      * Collect created image IDs during tests so we can cleanup files on tearDown
+     *
      * @var int[]
      */
     protected array $createdImageIds = [];
@@ -55,8 +57,8 @@ class ImagesControllerTest extends TestCase
             fwrite(STDERR, 'Upload debug JSON: ' . json_encode($json) . "\n");
         }
         $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
-    $this->assertNotEmpty($json['image']['id'] ?? null);
-    $this->createdImageIds[] = (int)$json['image']['id'];
+        $this->assertNotEmpty($json['image']['id'] ?? null);
+        $this->createdImageIds[] = (int)$json['image']['id'];
         $this->assertNotEmpty($json['image']['url'] ?? null);
 
     // Verify DB record has storage_path populated
@@ -158,9 +160,9 @@ class ImagesControllerTest extends TestCase
             ],
         ]);
         $json = json_decode((string)$this->_response->getBody(), true);
-    $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
-    $id = (int)$json['image']['id'];
-    $this->createdImageIds[] = $id;
+        $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
+        $id = (int)$json['image']['id'];
+        $this->createdImageIds[] = $id;
         // Public original
         $this->get('/images/serve/' . $id);
         $this->assertResponseOk();

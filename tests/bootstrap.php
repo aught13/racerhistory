@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -19,6 +20,7 @@ use Cake\Cache\Cache;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\SchemaLoader;
 use Migrations\TestSuite\Migrator;
+
 use function Cake\Core\env;
 
 // Ensure Composer autoloader is loaded first

@@ -1,8 +1,10 @@
 <?php
+
 /**
  * Test-specific configuration
  * This file is used during automated testing
  */
+
 return [
     'debug' => true,
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Migrations\AbstractMigration;
@@ -8,7 +9,6 @@ use Migrations\AbstractMigration;
  */
 class AddBioToPersons extends AbstractMigration
 {
-
     public function up(): void
     {
         if ($this->hasTable('persons')) {
