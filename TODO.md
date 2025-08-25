@@ -36,6 +36,7 @@ These are optional follow-up tasks focusing on the image management feature and 
   - Accessibility: aria-label on buttons, focus trap inside modal, keyboard navigation for thumbnails.
 
   Status: basic element and picker JS exist (`templates/element/person_image.php`, `webroot/js/person-image.js`) and are wired into Persons templates. Remaining: accessibility improvements, modal keyboard support, and server-side persistence of usage during create/edit flows.
+
 ## 3. TinyMCE Integration & Image Upload
 
 - (DONE) Replace CKEditor with self-hosted TinyMCE including plugins: image, code, lists, liststyles, media, preview, quickbars, save, visualblocks, visualchars.
@@ -45,6 +46,7 @@ These are optional follow-up tasks focusing on the image management feature and 
   - Consider adding custom toolbar buttons for variant selection (e.g., Insert thumb vs original) using variant metadata.
 
   Status: TinyMCE assets are referenced under `webroot/js/tinymce/`. Upload handler is present and returns variant metadata. Remaining: add integration test and toolbar customization.
+
 ## 4. ImageUsages Logic Enhancements
 
 - Extend `upload()` to accept optional context params (`model`, `foreign_key`, `field`) and auto-create usage when provided.
