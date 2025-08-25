@@ -13,7 +13,6 @@
  * @since     0.2.9
  * @license   https://opensource.org/licenses/mit-license.php MIT License
  */
-
 declare(strict_types=1);
 
 namespace App\Controller;

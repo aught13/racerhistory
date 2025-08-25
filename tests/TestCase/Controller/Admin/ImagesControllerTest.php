@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller\Admin;
@@ -216,7 +215,11 @@ class ImagesControllerTest extends TestCase
                     $sanitized = str_replace(['..', '\\'], '', $storagePath);
                     $full = $base . ltrim($sanitized, '/\\');
                     if (is_file($full)) {
-                        @unlink($full);
+                        try {
+                            unlink($full);
+                        } catch (\Throwable $e) {
+                            // best-effort cleanup; ignore any unlink failures
+                        }
                     }
                     // try variants
                     $variants = is_string($record->variants) ? json_decode($record->variants, true) : $record->variants;
@@ -225,7 +228,11 @@ class ImagesControllerTest extends TestCase
                             if (!empty($v['file'])) {
                                 $vf = dirname($full) . DS . $v['file'];
                                 if (is_file($vf)) {
-                                    @unlink($vf);
+                                    try {
+                                        unlink($vf);
+                                    } catch (\Throwable $e) {
+                                        // ignore cleanup failure
+                                    }
                                 }
                             }
                         }
