@@ -48,12 +48,19 @@
                                     class="team-season-checkbox">
                             </td>
                             <td>
-                                <?php if (isset($teamSeason->team)) : ?>
-                                    <?= h($teamSeason->team->team_name) ?>
-                                    <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
-                                <?php else : ?>
-                                    <em>Team not loaded</em>
-                                <?php endif; ?>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        <?= $this->element('team_season_image', ['teamSeason' => $teamSeason, 'size' => 'small']) ?>
+                                    </div>
+                                    <div>
+                                    <?php if (isset($teamSeason->team)) : ?>
+                                        <?= h($teamSeason->team->team_name) ?>
+                                        <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
+                                    <?php else : ?>
+                                        <em>Team not loaded</em>
+                                    <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <?php if (isset($teamSeason->season)) : ?>

@@ -187,16 +187,26 @@ $this->assign('title', 'Add Team Season'); ?>
                     </div>
 
                     <div class="mb-3">
-                        <label for="team-season-image" class="form-label">Season Image</label>
-                        <?= $this->Form->control('team_season_image', [
-                            'type' => 'text',
-                            'class' => 'form-control',
-                            'label' => false,
-                            'id' => 'team-season-image',
-                            'maxlength' => 162,
-                            'placeholder' => 'image.jpg'
-                        ]) ?>
-                        <div class="form-text">Filename for season-specific image (max 162 characters).</div>
+                        <label for="team-season-image" class="form-label">Season Image (ID)</label>
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <?= $this->Form->control('team_season_image', [
+                                    'type' => 'text',
+                                    'class' => 'form-control',
+                                    'label' => false,
+                                    'id' => 'team-season-image',
+                                    'maxlength' => 162,
+                                    'placeholder' => 'Numeric image id after upload'
+                                ]) ?>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-secondary w-100" id="select-team-season-image">Select / Upload</button>
+                            </div>
+                        </div>
+                        <div id="team-season-image-preview" class="mt-2" style="display:none;">
+                            <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
+                        </div>
+                        <div class="form-text">Upload an image; its numeric ID will be stored.</div>
                     </div>
 
                     <div class="mb-3">
@@ -206,10 +216,13 @@ $this->assign('title', 'Add Team Season'); ?>
                             'class' => 'form-control',
                             'label' => false,
                             'id' => 'team-season-preview',
-                            'rows' => 4,
-                            'placeholder' => 'Preview text for the upcoming season...'
+                            'rows' => 8,
+                            'placeholder' => 'Preview text for the upcoming season...',
+                            'templates' => [
+                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
+                            ]
                         ]) ?>
-                        <div class="form-text">Pre-season preview or expectations.</div>
+                        <div class="form-text">Pre-season preview or expectations. Rich text supported.</div>
                     </div>
 
                     <div class="mb-3">
@@ -219,10 +232,13 @@ $this->assign('title', 'Add Team Season'); ?>
                             'class' => 'form-control',
                             'label' => false,
                             'id' => 'team-season-recap',
-                            'rows' => 4,
-                            'placeholder' => 'Summary of the completed season...'
+                            'rows' => 8,
+                            'placeholder' => 'Summary of the completed season...',
+                            'templates' => [
+                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
+                            ]
                         ]) ?>
-                        <div class="form-text">Post-season recap or summary.</div>
+                        <div class="form-text">Post-season recap or summary. Rich text supported.</div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -334,6 +350,77 @@ $this->assign('title', 'Add Team Season'); ?>
         ]
     ]
 ]) ?>
+
+<?php
+echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
+echo $this->Html->scriptBlock(<<<JS
+document.addEventListener('DOMContentLoaded', function(){
+    function initEditor(id){
+        if (!document.getElementById(id) || typeof tinymce === 'undefined') return;
+        tinymce.init({
+            license_key: 'gpl',
+            selector: '#' + id,
+            menubar: false,
+            plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars',
+            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview',
+            quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
+            image_title: true,
+            automatic_uploads: true,
+            images_upload_url: '/admin/images/upload',
+            images_upload_credentials: true,
+            convert_urls: false,
+            images_upload_handler: function (blobInfo, progress) {
+                return new Promise(function (resolve, reject) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/admin/images/upload');
+                        xhr.withCredentials = true;
+                        xhr.upload.onprogress = function (e) { if (e.lengthComputable) { progress(e.loaded / e.total * 100); } };
+                        xhr.onload = function () {
+                                if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
+                                var raw = xhr.responseText; var json;
+                                try { json = JSON.parse(raw); } catch(err){ return reject('Invalid JSON'); }
+                                if (!json.success || !json.image || !json.image.url) { return reject(json.error || 'Upload failed'); }
+                                resolve(json.image.url);
+                        };
+                        xhr.onerror = function(){ reject('Image upload failed'); };
+                        var formData = new FormData();
+                        formData.append('upload', blobInfo.blob(), blobInfo.filename());
+                        var csrf = document.querySelector('meta[name="csrfToken"]');
+                        if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf.getAttribute('content'));
+                        xhr.send(formData);
+                });
+            }
+        });
+    }
+    initEditor('team-season-preview');
+    initEditor('team-season-recap');
+
+    const btn = document.getElementById('select-team-season-image');
+    const field = document.getElementById('team-season-image');
+    const previewWrap = document.getElementById('team-season-image-preview');
+    if (btn && field) {
+        btn.addEventListener('click', function(e){
+            e.preventDefault();
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*';
+            input.onchange = function(){
+                if (!input.files || !input.files[0]) return;
+                const file = input.files[0];
+                const formData = new FormData(); formData.append('upload', file);
+                btn.disabled = true; btn.textContent = 'Uploading...';
+                fetch('/admin/images/upload', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').getAttribute('content') } })
+                .then(r => r.json())
+                .then(data => { if (!data.success || !data.image) { alert('Upload failed: ' + (data.error || 'Unknown error')); return; } field.value = data.image.id; const img = previewWrap.querySelector('img'); img.src = data.image.url; previewWrap.style.display = 'block'; })
+                .catch(err => { console.error(err); alert('Upload failed: ' + err.message); })
+                .finally(()=>{ btn.disabled = false; btn.textContent = 'Select / Upload'; });
+            };
+            input.click();
+        });
+        if (field.value && !isNaN(parseInt(field.value))) { const img = previewWrap.querySelector('img'); img.src = '/images/serve/' + field.value; previewWrap.style.display = 'block'; }
+    }
+});
+JS, ['block' => true]);
+?>
 
 <?= $this->element('Admin/popup_form', [
     'popupId' => 'add-season-modal',

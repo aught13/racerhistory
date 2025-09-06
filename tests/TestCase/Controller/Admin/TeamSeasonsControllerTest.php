@@ -17,6 +17,7 @@ class TeamSeasonsControllerTest extends TestCase
         'app.Seasons',
         'app.Teams',
         'app.Users',
+    'app.Images',
     ];
 
     public function testIndex(): void
@@ -32,6 +33,8 @@ class TeamSeasonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-seasons/view/1');
         $this->assertResponseOk();
+    // Should include image element debug comment now that fixture sets team_season_image
+        $this->assertResponseContains('team_season_image =');
     }
 
     public function testAddGet(): void
@@ -41,6 +44,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('hidden-team-form');
         $this->assertResponseContains('hidden-season-form');
+    // Rich text editors textareas present
+        $this->assertResponseContains('team-season-preview');
+        $this->assertResponseContains('team-season-recap');
     }
 
     public function testAddPostValid(): void

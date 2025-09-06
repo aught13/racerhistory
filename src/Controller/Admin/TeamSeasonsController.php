@@ -68,7 +68,12 @@ class TeamSeasonsController extends AppController
         }
 
         if ($this->request->is('post')) {
-            $teamSeason = $this->TeamSeasons->patchEntity($teamSeason, $this->request->getData());
+            $data = $this->request->getData();
+            // Mirror PersonsController pattern: allow numeric direct image ID storage
+            if (isset($data['team_season_image']) && is_numeric($data['team_season_image'])) {
+                $data['team_season_image'] = (int)$data['team_season_image'];
+            }
+            $teamSeason = $this->TeamSeasons->patchEntity($teamSeason, $data);
 
             if ($this->TeamSeasons->save($teamSeason)) {
                 $this->Flash->success(__('The team season has been saved.'));
@@ -109,7 +114,11 @@ class TeamSeasonsController extends AppController
         $teamSeason = $this->TeamSeasons->get($id, contain: ['Teams', 'Seasons']);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $teamSeason = $this->TeamSeasons->patchEntity($teamSeason, $this->request->getData());
+            $data = $this->request->getData();
+            if (isset($data['team_season_image']) && is_numeric($data['team_season_image'])) {
+                $data['team_season_image'] = (int)$data['team_season_image'];
+            }
+            $teamSeason = $this->TeamSeasons->patchEntity($teamSeason, $data);
 
             if ($this->TeamSeasons->save($teamSeason)) {
                 $this->Flash->success(__('The team season has been saved.'));
