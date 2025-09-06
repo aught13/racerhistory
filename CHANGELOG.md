@@ -61,6 +61,13 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Admin image templates and JS helpers for browsing/picking images (templates and `webroot/js/person-image.js` present). Basic Jest tests for frontend image picker utilities added under `webroot/js/tests/`.
 - Fixtures and basic controller tests for images: `tests/Fixture/ImagesFixture.php` and `tests/TestCase/Controller/Admin/ImagesControllerTest.php` (initial coverage for upload/browse flows).
 
+- **TeamSeasons Rich Content & Images**:
+  - Added TinyMCE editors to Team Seasons add/edit (`team_season_preview`, `team_season_recap`) matching Persons bio configuration (self-hosted TinyMCE, image upload handler).
+  - Added image upload/selection field with live preview on Team Seasons add/edit mirroring Persons image handling.
+  - New element `templates/element/team_season_image.php` for consistent thumbnail rendering (used in index & view pages) with debug comments to aid test diagnostics.
+  - Updated Team Seasons index to display thumbnail alongside team name; view now renders sanitized rich HTML for preview & recap (script/style stripped) and shows season image via serve endpoint.
+  - Extended fixtures (`TeamSeasonsFixture`) with `team_season_image` sample and tests asserting presence of image element & rich text fields.
+
 ### Changed (Unreleased)
 
 - **Code Quality Improvements**: All Sports and Teams-related files now pass PHPCS and PHPStan validation

@@ -35,7 +35,7 @@ These are optional follow-up tasks focusing on the image management feature and 
 - After save (if using usages), insert usage row (`model`, `foreign_key`, `field`).
   - Accessibility: aria-label on buttons, focus trap inside modal, keyboard navigation for thumbnails.
 
-  Status: basic element and picker JS exist (`templates/element/person_image.php`, `webroot/js/person-image.js`) and are wired into Persons templates. Remaining: accessibility improvements, modal keyboard support, and server-side persistence of usage during create/edit flows.
+  Status: basic person image element (`person_image.php`) and JS exist. TeamSeasons now has parallel lightweight handling (`team_season_image.php`) with direct upload + numeric ID field and preview (mirrors Persons pattern). Remaining: shared reusable picker component, accessibility improvements (focus trap, ARIA roles), modal keyboard support, and server-side persistence of usage (or FK migration) during create/edit flows.
 
 ## 3. TinyMCE Integration & Image Upload
 
@@ -45,7 +45,7 @@ These are optional follow-up tasks focusing on the image management feature and 
 - Add integration test simulating TinyMCE image upload via XMLHttpRequest (POST file, assert JSON schema, ensure 200 and success true).
   - Consider adding custom toolbar buttons for variant selection (e.g., Insert thumb vs original) using variant metadata.
 
-  Status: TinyMCE assets are referenced under `webroot/js/tinymce/`. Upload handler is present and returns variant metadata. Remaining: add integration test and toolbar customization.
+  Status: TinyMCE assets referenced under `webroot/js/tinymce/`. Implemented on Persons (bio) and TeamSeasons (preview & recap) with working image upload handler. Remaining: add integration test (XHR simulation) and optional toolbar customization / variant insertion buttons.
 
 ## 4. ImageUsages Logic Enhancements
 

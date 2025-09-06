@@ -23,6 +23,7 @@ class TeamSeasonsFixture extends TestFixture
                 'season_id' => 1,
                 // Migrations define semester as integer; use 1 for Fall.
                 'semester' => 1,
+                'team_season_image' => 1,
                 'created_at' => '2025-08-01 00:00:00',
                 // Migration uses updated_at column name
                 'updated_at' => '2025-08-01 00:00:00',

@@ -145,7 +145,10 @@
                     <?php if ($teamSeason->team_season_image) : ?>
                     <div class="mt-3">
                         <h5>Season Image</h5>
-                        <p class="text-muted"><?= h($teamSeason->team_season_image) ?></p>
+                        <div class="mb-2">
+                            <?= $this->element('team_season_image', ['teamSeason' => $teamSeason, 'size' => 'medium']) ?>
+                        </div>
+                        <p class="text-muted small mb-0">Stored ID/Value: <?= h($teamSeason->team_season_image) ?></p>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -160,8 +163,13 @@
                     <?php if ($teamSeason->team_season_preview) : ?>
                     <div class="mb-4">
                         <h5>Season Preview</h5>
-                        <div class="p-3 bg-light rounded">
-                            <?= nl2br(h($teamSeason->team_season_preview)) ?>
+                        <div class="p-3 bg-light rounded team-season-preview">
+                            <?php
+                                $html = (string)$teamSeason->team_season_preview;
+                                // Strip script/style tags for safety
+                                $clean = preg_replace('#<(script|style)[^>]*>.*?</\1>#is', '', $html);
+                                echo $clean; // Already sanitized minimally; assumes trusted admin input
+                            ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -169,8 +177,12 @@
                     <?php if ($teamSeason->team_season_recap) : ?>
                     <div>
                         <h5>Season Recap</h5>
-                        <div class="p-3 bg-light rounded">
-                            <?= nl2br(h($teamSeason->team_season_recap)) ?>
+                        <div class="p-3 bg-light rounded team-season-recap">
+                            <?php
+                                $html = (string)$teamSeason->team_season_recap;
+                                $clean = preg_replace('#<(script|style)[^>]*>.*?</\1>#is', '', $html);
+                                echo $clean;
+                            ?>
                         </div>
                     </div>
                     <?php endif; ?>
