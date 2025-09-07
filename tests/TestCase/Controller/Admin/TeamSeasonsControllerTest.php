@@ -77,6 +77,10 @@ class TeamSeasonsControllerTest extends TestCase
     public function testViewWithNoRosterEntriesShowsEmptyMessage(): void
     {
         $this->mockIdentity();
+        // Ensure no roster entries exist for a deterministic empty-state assertion
+        $rosters = $this->getTableLocator()->get('TeamSeasonRosters');
+        $rosters->deleteAll(['team_season_id' => 1]);
+
         $this->get('/admin/team-seasons/view/1');
         $this->assertResponseOk();
         // Should show empty message when no rosters exist
@@ -188,7 +192,7 @@ class TeamSeasonsControllerTest extends TestCase
 
         // Should redirect back to team season view
         $this->assertRedirectContains('/admin/team-seasons/view/1');
-        
+
         // Verify rosters were deleted
         $remaining = $rostersTable->find()->where(['id IN' => [$roster1->id, $roster2->id]])->count();
         $this->assertEquals(0, $remaining);

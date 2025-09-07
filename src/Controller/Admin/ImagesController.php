@@ -19,7 +19,8 @@ class ImagesController extends AppController
     private ?string $lastPersistError = null;
 
     /**
-     * Controller initialization: unlock the 'upload' action from FormProtection (multipart XHR without Cake token fields).
+     * Controller initialization: unlock the 'upload' action from FormProtection.
+     * This allows multipart XHR requests without Cake token fields.
      */
     public function initialize(): void
     {
@@ -62,12 +63,12 @@ class ImagesController extends AppController
                     : (string)$ownerUid;
                 $suggest = 'chgrp -R www-data ' . $baseStorage . ' && chmod -R 775 ' . $baseStorage;
 
+                $msg = 'Storage base not writable: ' . $baseStorage . ' (owner=' . $ownerName . ').';
+                $msg .= ' Run (as root): ' . $suggest;
+
                 return $this->json([
                     'success' => false,
-                    'error' => (
-                        'Storage base not writable: ' . $baseStorage . ' (owner=' . $ownerName . '). ' .
-                        'Run (as root): ' . $suggest
-                    ),
+                    'error' => $msg,
                 ]);
             }
             $file = $this->extractUploaded();
@@ -355,10 +356,10 @@ class ImagesController extends AppController
                 } catch (\Throwable $e) {
                     \Cake\Log\Log::warning('Failed to chmod storage directory: ' . $e->getMessage(), [
                         'storage_dir' => $storageDir,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
-                
+
                 if (!is_writable($storageDir)) {
                     $writeErrors[] = 'Storage directory exists but not writable: ' . $storageDir;
                     \Cake\Log\Log::error(end($writeErrors));
@@ -387,7 +388,7 @@ class ImagesController extends AppController
             try {
                 $parentGroupId = filegroup($parent);
                 $dirGroupId = filegroup($storageDir);
-                
+
                 if ($parentGroupId !== false && $dirGroupId !== false && $parentGroupId !== $dirGroupId) {
                     if (function_exists('posix_getgrgid')) {
                         try {
@@ -399,7 +400,7 @@ class ImagesController extends AppController
                             \Cake\Log\Log::info('Could not change group ownership of storage directory', [
                                 'storage_dir' => $storageDir,
                                 'parent_group_id' => $parentGroupId,
-                                'error' => $e->getMessage()
+                                'error' => $e->getMessage(),
                             ]);
                         }
                     }
@@ -408,18 +409,18 @@ class ImagesController extends AppController
                 \Cake\Log\Log::info('Could not get file group information for storage directory setup', [
                     'storage_dir' => $storageDir,
                     'parent_dir' => $parent,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
-        
+
         // After recursive creation, enforce expected permissions (best effort)
         try {
             chmod($storageDir, 0775);
         } catch (\Throwable $e) {
             \Cake\Log\Log::warning('Could not set final permissions on storage directory', [
                 'storage_dir' => $storageDir,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
         if (!is_writable($storageDir)) {
@@ -460,13 +461,22 @@ class ImagesController extends AppController
                     $writeErrors[] = 'Target directory not writable at write time: ' . $storageDir;
                 }
                 $data = $processed['original']['data'] ?? '';
-                
+
                 try {
                     $result = file_put_contents($target, $data);
                     if ($result === false) {
                         $err = error_get_last();
-                        $writeErrors[] = 'Failed to write original image (path=' . $target . ', writable=' . (is_writable($storageDir) ? 'yes' : 'no') . ', bytes=' . strlen((string)$data) . ', error=' . ($err['message'] ?? 'n/a') . ')';
-                        
+                        $w = is_writable($storageDir) ? 'yes' : 'no';
+                        $errMsg = $err['message'] ?? 'n/a';
+                        $bytes = strlen((string)$data);
+                        $writeErrors[] = sprintf(
+                            'Failed to write original image (path=%s, writable=%s, bytes=%d, error=%s)',
+                            $target,
+                            $w,
+                            $bytes,
+                            $errMsg
+                        );
+
                         // Attempt fallback low-level write
                         try {
                             $fh = fopen($target, 'wb');
@@ -477,7 +487,7 @@ class ImagesController extends AppController
                                     $writeErrors[] = 'Fallback fwrite also failed for original image: ' . $target;
                                 } else {
                                     // Remove failure marker if fallback succeeded
-                                    $writeErrors[] = 'Fallback fwrite succeeded after file_put_contents failure for original image';
+                                                $writeErrors[] = 'Fallback fwrite succeeded for original image';
                                 }
                             } else {
                                 $writeErrors[] = 'Could not open file for fallback write: ' . $target;
@@ -497,12 +507,18 @@ class ImagesController extends AppController
             $vf = $uuid . '_' . $name . '.' . $v['ext'];
             $this->withCapturedWarnings(function () use ($storageDir, $vf, $v, &$writeErrors) {
                 $vTarget = $storageDir . $vf;
-                
+
                 try {
                     $vResult = file_put_contents($vTarget, $v['data']);
                     if ($vResult === false) {
                         $err = error_get_last();
-                        $writeErrors[] = 'Failed to write variant ' . $vf . ' (path=' . $vTarget . ', error=' . ($err['message'] ?? 'n/a') . ')';
+                        $vErrMsg = $err['message'] ?? 'n/a';
+                        $writeErrors[] = sprintf(
+                            'Failed to write variant %s (path=%s, error=%s)',
+                            $vf,
+                            $vTarget,
+                            $vErrMsg
+                        );
                     }
                 } catch (\Throwable $e) {
                     $writeErrors[] = 'Exception during variant image write (' . $vf . '): ' . $e->getMessage();
