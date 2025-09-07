@@ -168,6 +168,16 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseOk();
         $body = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($body['success']);
-        $this->assertEquals('Person has been added successfully.', $body['message']);
+        $this->assertEquals('The person has been saved.', $body['message']);
+    }
+
+    public function testAjaxSearch(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/ajaxSearch?q=John');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertArrayHasKey('results', $data);
     }
 }

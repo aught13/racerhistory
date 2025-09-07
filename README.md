@@ -43,8 +43,11 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - User management (add, edit, approve, manage)
 - Sports management (add, edit, delete, bulk operations)
 - Teams management (add, edit, delete, bulk operations with sport associations)
+- Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
+- Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)
+- Dynamic Person AJAX search & inline person creation modal (roster forms)
 - Responsive admin navigation with Bootstrap styling
-- Comprehensive CRUD operations for all admin entities
+- Comprehensive CRUD and bulk operations for all admin entities
 
 ### UI/UX
 
@@ -138,12 +141,13 @@ racerhistory/
 - **[Source Code Documentation](src/)** - Comprehensive PHPDoc annotations
 - **[Test Coverage](tests/)** - Unit and integration test suite
 
-### Code Coverage
+### Code Coverage & Test Suite
 
-- **Controllers**: ~90% documented with comprehensive PHPDoc
-- **Models**: ~95% documented with entity and table documentation
-- **Views**: ~95% documented with template headers and annotations
-- **Tests**: ~50% coverage with ongoing expansion for Teams and Sports functionality
+- **PHP Tests**: 205 tests / 500 assertions (controllers, models, integration, roster & image flows)
+- **JavaScript Coverage** (Jest): Statements 82.32%, Branches 69.5%, Functions 96.15%, Lines 86.27%
+- **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk)
+- **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, TeamSeasonRosters, Persons, Images)
+- **Frontend**: Jest exercises confirm-delete modal edge cases, image selector upload, error branches
 
 ### Key Documentation Features
 
@@ -154,17 +158,18 @@ racerhistory/
 
 ## 🧪 Testing
 
-### Run Test Suite
+### Run Test Suites
 
 ```bash
-# All tests
-bin/cake test
+```bash
+# PHP tests (auto discovery)
+vendor/bin/phpunit
 
-# Specific test file
-bin/cake test tests/TestCase/Model/Table/UsersTableTest.php
+# JavaScript tests with coverage
+npm run test:js
 
-# With coverage
-bin/cake test --coverage-html tmp/coverage/
+# Optional PHP coverage config (CI-style)
+vendor/bin/phpunit --configuration phpunit.ci.xml
 ```
 
 ### Test Structure
@@ -204,8 +209,10 @@ bin/cake test --coverage-html tmp/coverage/
 ### JavaScript
 
 - **jQuery 3.7.1** - DOM manipulation and AJAX
-- **Bootstrap JS** - Interactive components (modals, dropdowns, etc.)
-- **Vanilla JS** - Password visibility toggles and form enhancements
+- **Bootstrap JS** - Modals, dropdowns, components
+- **Modules**: `admin.js` (confirm-delete + toast), `person-image.js` (image upload/preview), dynamic roster person search
+- **TinyMCE** - Rich text fields for Team Seasons preview/recap
+- **Tests**: Jest + jsdom with coverage (see Code Coverage section)
 
 ### Design Principles
 

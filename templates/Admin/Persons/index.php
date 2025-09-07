@@ -97,7 +97,7 @@
             $('#persons-table').DataTable({
                 pagingType: 'simple_numbers',
                 order: [
-                    [1, 'asc']
+                    [3, 'asc']
                 ],
                 language: {
                     search: 'Search persons:'

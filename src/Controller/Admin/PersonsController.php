@@ -185,19 +185,20 @@ class PersonsController extends AppController
      */
     public function ajaxAdd(): Response
     {
+        /** @var \App\Model\Entity\Person $person */
         $person = $this->Persons->newEmptyEntity();
         if ($this->request->is('post')) {
             $person = $this->Persons->patchEntity($person, $this->request->getData());
             if ($this->Persons->save($person)) {
+                // Use known fields for label (display OR first+last) to avoid undefined virtuals
+                $label = $person->display ?? trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? ''));
+                $personId = (int)($person->get('id'));
                 $response = [
                     'success' => true,
-                    'message' => 'Person has been added successfully.',
+                    'message' => __('The person has been saved.'),
                     'newOption' => [
-                        // Cast for static analysis clarity
-                        // @phpstan-ignore-next-line dynamic entity property
-                        'value' => (int)$person->id,
-                        'text' => $person->display ?? $person->full ??
-                        trim(($person->first ?? '') . ' ' . ($person->last ?? '')),
+                        'value' => $personId,
+                        'text' => $label,
                     ],
                 ];
             } else {
@@ -222,5 +223,45 @@ class PersonsController extends AppController
         return $this->response
             ->withType('application/json')
             ->withStringBody(json_encode($response));
+    }
+
+    /**
+     * AJAX search persons for dynamic select (debounced client queries).
+     * Accepts query param 'q'. Returns limited JSON list of id/text pairs.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxSearch(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $q = trim((string)$this->request->getQuery('q'));
+        $query = $this->Persons->find();
+        if ($q !== '') {
+            $like = '%' . str_replace(['%','_'], ['\\%','\\_'], $q) . '%';
+            $query->where([
+                'OR' => [
+                    'Persons.display LIKE' => $like,
+                    'Persons.first LIKE' => $like,
+                    'Persons.last LIKE' => $like,
+                    'Persons.full LIKE' => $like,
+                ],
+            ]);
+        }
+        $query->select(['id','display','first','last'])
+            ->orderByAsc('display')
+            ->limit(30);
+
+        $results = [];
+        foreach ($query as $p) {
+            $label = $p->display ?: trim(($p->first ?? '') . ' ' . ($p->last ?? ''));
+            $results[] = [ 'value' => $p->id, 'text' => $label ];
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => true,
+                'results' => $results,
+            ]));
     }
 }

@@ -90,9 +90,21 @@ These are optional follow-up tasks focusing on the image management feature and 
 - Upload & browse endpoints fully tested (success + failure).
 - Image selection UX integrated into Person & TeamSeason workflows.
 - TinyMCE can insert uploaded images seamlessly.
-- No regression: all existing 182 tests remain green; new tests increase assertion count.
+- No regression: all existing 205 tests remain green; new tests increase assertion count.
 
 ## Ordering Recommendation
+
+### Newly Identified Optional Follow-ups (Post Roster & Person Search Integration)
+
+1. Refactor `TeamSeasonRostersController::ajaxAdd` to reduce duplication (extract person label builder helper)
+2. Add PHPUnit integration tests for TeamSeasons view to assert roster management element presence & bulk delete flow
+3. Expand JS coverage to >80% branches (current 69.5%) by exercising:
+
+- admin.js: toast paths, dismiss logic, duplicate modal opens
+- person-image.js: error branches (upload failure, invalid mime, empty file)
+
+4. Introduce accessibility audit (axe-core) for roster management element within Jest + jsdom
+5. Replace error suppression (@) in ImagesController with explicit try/catch and structured logging
 
 1. Controller & service unit tests (safety net)
 2. Schema (FK columns or finalize usage model approach)
