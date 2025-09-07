@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Utility\PersonLabelHelper;
 use Cake\Http\Response;
 
 /**
@@ -218,19 +219,9 @@ class TeamSeasonRostersController extends AppController
         if ($this->request->is('post')) {
             $teamSeasonRoster = $this->TeamSeasonRosters->patchEntity($teamSeasonRoster, $this->request->getData());
             if ($this->TeamSeasonRosters->save($teamSeasonRoster)) {
-                // Ensure person association loaded (may not auto-populate on first save)
+                // Build person label using the helper
                 $personId = (int)$teamSeasonRoster->get('person_id');
-                $personLabel = 'Person #' . $personId;
-                try {
-                    /** @var \App\Model\Entity\Person $person */
-                    $person = $this->fetchTable('Persons')->get($personId);
-                    $display = $person->get('display');
-                    $first = property_exists($person, 'first') ? $person->first : '';
-                    $last = property_exists($person, 'last') ? $person->last : '';
-                    $personLabel = $display ?: trim((string)$first . ' ' . (string)$last) ?: $personLabel;
-                } catch (\Throwable $e) {
-                    // ignore – fall back to generic label
-                }
+                $personLabel = PersonLabelHelper::buildLabelFromId($personId, $this->fetchTable('Persons'));
                 $response = [
                     'success' => true,
                     'message' => 'Team season roster has been added successfully.',
