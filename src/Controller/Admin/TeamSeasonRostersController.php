@@ -29,7 +29,13 @@ class TeamSeasonRostersController extends AppController
      */
     public function view(string $id): void
     {
-        $teamSeasonRoster = $this->TeamSeasonRosters->get($id, contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']);
+        $teamSeasonRoster = $this->TeamSeasonRosters->get(
+            $id,
+            contain: [
+                'TeamSeasons' => ['Teams', 'Seasons'],
+                'Persons',
+            ]
+        );
         $this->set(compact('teamSeasonRoster'));
     }
 
@@ -45,7 +51,10 @@ class TeamSeasonRostersController extends AppController
 
         // Pre-populate team_season_id if provided in query string
         if ($this->request->getQuery('team_season_id')) {
-            $teamSeasonRoster = $teamSeasonRoster->set('team_season_id', (int)$this->request->getQuery('team_season_id'));
+            $teamSeasonRoster = $teamSeasonRoster->set(
+                'team_season_id',
+                (int)$this->request->getQuery('team_season_id')
+            );
         }
 
         if ($this->request->is('post')) {
@@ -70,7 +79,9 @@ class TeamSeasonRostersController extends AppController
 
         $teamSeasonsList = [];
         foreach ($teamSeasonsQuery as $teamSeason) {
-            $teamSeasonsList[$teamSeason->get('id')] = $teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')';
+            $teamName = $teamSeason->team->team_name;
+            $seasonRange = $teamSeason->season->start . '-' . $teamSeason->season->end;
+            $teamSeasonsList[$teamSeason->get('id')] = $teamName . ' (' . $seasonRange . ')';
         }
         $persons = $this->fetchTable('Persons')->find('list', limit: 200)->all();
         $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
@@ -89,7 +100,13 @@ class TeamSeasonRostersController extends AppController
     public function edit(string $id): ?Response
     {
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
-        $teamSeasonRoster = $this->TeamSeasonRosters->get($id, contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']);
+        $teamSeasonRoster = $this->TeamSeasonRosters->get(
+            $id,
+            contain: [
+                'TeamSeasons' => ['Teams', 'Seasons'],
+                'Persons',
+            ]
+        );
 
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
@@ -113,7 +130,9 @@ class TeamSeasonRostersController extends AppController
 
         $teamSeasonsList = [];
         foreach ($teamSeasonsQuery as $teamSeason) {
-            $teamSeasonsList[$teamSeason->get('id')] = $teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')';
+            $teamName = $teamSeason->team->team_name;
+            $seasonRange = $teamSeason->season->start . '-' . $teamSeason->season->end;
+            $teamSeasonsList[$teamSeason->get('id')] = $teamName . ' (' . $seasonRange . ')';
         }
         $persons = $this->fetchTable('Persons')->find('list', limit: 200)->all()->toArray();
         $personIdExisting = $teamSeasonRoster->get('person_id');

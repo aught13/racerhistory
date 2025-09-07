@@ -44,7 +44,7 @@ class PersonLabelHelperTest extends TestCase
             ['first', 'Mock'],
             ['last', 'Person'],
         ]);
-        
+
         $result = PersonLabelHelper::buildLabel($mockEntity);
         $this->assertEquals('Mock Person', $result);
     }
@@ -58,12 +58,12 @@ class PersonLabelHelperTest extends TestCase
             ['first', 'Database'],
             ['last', 'Person'],
         ]);
-        
+
         $mockTable->expects($this->once())
             ->method('get')
             ->with(456)
             ->willReturn($mockPerson);
-        
+
         $result = PersonLabelHelper::buildLabelFromId(456, $mockTable);
         $this->assertEquals('Database Person', $result);
     }
@@ -75,7 +75,7 @@ class PersonLabelHelperTest extends TestCase
             ->method('get')
             ->with(999)
             ->willThrowException(new \Exception('Not found'));
-        
+
         $result = PersonLabelHelper::buildLabelFromId(999, $mockTable);
         $this->assertEquals('Person #999', $result);
     }
