@@ -18,6 +18,9 @@ class TeamSeasonsControllerTest extends TestCase
         'app.Teams',
         'app.Users',
         'app.Images',
+        'app.TeamSeasonRosters',
+        'app.Persons',
+        'app.Sports',
     ];
 
     public function testIndex(): void
@@ -33,9 +36,52 @@ class TeamSeasonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-seasons/view/1');
         $this->assertResponseOk();
-    // Should include image element debug comment now that fixture sets team_season_image
-    // Image presence now handled client-side; ensure basic page content loads instead
+        // Should include image element debug comment now that fixture sets team_season_image
+        // Image presence now handled client-side; ensure basic page content loads instead
         $this->assertResponseContains('Basic Information');
+    }
+
+    public function testViewContainsRosterManagementElement(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-seasons/view/1');
+        $this->assertResponseOk();
+        // Assert roster management element is present
+        $this->assertResponseContains('Team Roster');
+        $this->assertResponseContains('Add Roster Entry');
+        $this->assertResponseContains('bulk-action-form-rosters');
+        $this->assertResponseContains('rosters-table');
+    }
+
+    public function testViewWithRosterEntriesShowsTable(): void
+    {
+        $this->mockIdentity();
+        // First create a roster entry
+        $rostersTable = $this->getTableLocator()->get('TeamSeasonRosters');
+        $roster = $rostersTable->newEntity([
+            'team_season_id' => 1,
+            'person_id' => 1,
+            'roster_number' => '10',
+            'roster_position' => 'Forward',
+        ]);
+        $rostersTable->save($roster);
+
+        $this->get('/admin/team-seasons/view/1');
+        $this->assertResponseOk();
+        // Should show the roster table with data
+        $this->assertResponseContains('rosters-table');
+        $this->assertResponseContains('roster-checkbox');
+        $this->assertResponseContains('select-all-rosters');
+    }
+
+    public function testViewWithNoRosterEntriesShowsEmptyMessage(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-seasons/view/1');
+        $this->assertResponseOk();
+        // Should show empty message when no rosters exist
+        $this->assertResponseContains('No roster entries have been created for this team season yet');
+        $this->assertResponseContains('Add the first roster entry');
     }
 
     public function testAddGet(): void
@@ -119,5 +165,50 @@ class TeamSeasonsControllerTest extends TestCase
         $this->post('/admin/team-seasons/bulk', ['bulk_action' => 'nope', 'team_season_ids' => [1]]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
         $this->assertFlashMessage('Invalid bulk action.');
+    }
+
+    public function testRosterBulkDeleteThroughTeamSeasonsView(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        // Create roster entries to delete
+        $rostersTable = $this->getTableLocator()->get('TeamSeasonRosters');
+        $roster1 = $rostersTable->newEntity(['team_season_id' => 1, 'person_id' => 1]);
+        $roster2 = $rostersTable->newEntity(['team_season_id' => 1, 'person_id' => 1]);
+        $rostersTable->save($roster1);
+        $rostersTable->save($roster2);
+
+        // Perform bulk delete via TeamSeasonRosters bulk action
+        $this->post('/admin/team-season-rosters/bulk', [
+            'bulk_action' => 'delete',
+            'team_season_roster_ids' => [$roster1->id, $roster2->id],
+        ]);
+
+        // Should redirect back to team season view
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+        
+        // Verify rosters were deleted
+        $remaining = $rostersTable->find()->where(['id IN' => [$roster1->id, $roster2->id]])->count();
+        $this->assertEquals(0, $remaining);
+    }
+
+    public function testRosterBulkDeleteEmptySelectionThroughTeamSeasonsView(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        // Try bulk delete with no selections
+        $this->post('/admin/team-season-rosters/bulk', [
+            'bulk_action' => 'delete',
+            'team_season_roster_ids' => [''],
+        ]);
+
+        // Should redirect and show error message
+        $this->assertRedirect();
+        $this->assertFlashMessage('No team season rosters selected for deletion.');
     }
 }
