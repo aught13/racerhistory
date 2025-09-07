@@ -178,8 +178,12 @@
                                 <button type="button" class="btn btn-secondary w-100" id="select-team-season-image">Select / Upload</button>
                             </div>
                         </div>
-                        <div id="team-season-image-preview" class="mt-2" style="display:none;">
-                            <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
+                        <div id="team-season-image-preview" class="mt-2" style="<?= empty($teamSeason->team_season_image_entity) ? 'display:none;' : '' ?>">
+                            <?php if (!empty($teamSeason->team_season_image_entity)): ?>
+                                <img src="<?= $this->Url->build('/images/serve/' . $teamSeason->team_season_image_entity->id . '?variant=thumb') ?>" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
+                            <?php else: ?>
+                                <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
+                            <?php endif; ?>
                         </div>
                         <div class="form-text">Upload an image and store its numeric ID.</div>
                     </div>

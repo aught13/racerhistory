@@ -89,6 +89,8 @@
                                     class="btn btn-sm btn-info">View</a>
                                 <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
                                     class="btn btn-sm btn-primary">Edit</a>
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                                    class="btn btn-sm btn-success">Add Roster</a>
                                 <button
                                     type="button"
                                     class="btn btn-sm btn-danger"
@@ -100,20 +102,9 @@
                                         'action' => 'delete',
                                         $teamSeason->id
                                     ]) ?>"
-                                    data-edit-url="<?= $this->Url->build([
-                                        'prefix' => 'Admin',
-                                        'controller' => 'TeamSeasons',
-                                        'action' => 'edit',
-                                        $teamSeason->id
-                                    ]) ?>"
                                     data-item-type="team season"
-                                    data-associated='[]'
-                                    data-form-id="delete-form-team-season-<?= $teamSeason->id ?>"
-                                    aria-label="Delete team season">
-                                    Delete
-                                </button>
-                                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id], 'id' => 'delete-form-team-season-' . $teamSeason->id, 'style' => 'display:none']) ?>
-                                <?= $this->Form->end() ?>
+                                    data-item-name="<?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>"
+                                    aria-label="Delete team season for <?= h($teamSeason->team->team_name) ?>">Delete</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>

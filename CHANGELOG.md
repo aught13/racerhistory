@@ -54,6 +54,29 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Added `package.json` and npm dev tooling for JS tests, plus `.gitignore` entries for `node_modules` and JS coverage output.
 - Introduced a combined GitHub Actions workflow `.github/workflows/combined-tests.yml` to run PHP unit tests (with coverage) and JS tests, then upload coverage artifacts to Codecov (PHP and JS flags).
 
+### Added (Unreleased) - Team Season Rosters & Person Search
+
+- **Team Season Rosters Management**:
+  - New `Admin\\TeamSeasonRostersController` with add, edit, delete, bulk delete, AJAX add, and view actions
+  - Dynamic roster management element (`templates/element/Admin/roster_management.php`) embedded in Team Seasons view for inline roster oversight
+  - Roster add/edit forms support on‑the‑fly person creation via modal popup (re-usable popup form element)
+  - Added `TeamSeasonRostersTable`, entity, fixture and comprehensive controller & table tests
+  - Admin navigation updated with "Team Season Rosters" link
+- **AJAX Person Search**:
+  - Added `PersonsController::ajaxSearch()` endpoint providing debounced JSON search (display/first/last/full) limited to 30 results
+  - Roster add/edit forms upgraded to hybrid input+select with client-side debounced search and preservation of current selection
+  - Persons `ajaxAdd` response normalized message text ("The person has been saved.") and returns canonical `full_name`/display value
+- **Team Season Images (View/Edit)**:
+  - View page now loads season image dynamically (JS) mirroring edit page preview logic
+  - Edit page pre-populates preview when existing image id present; includes variant (thumb) serving
+- **Reusable Image Element**: `element/image_with_fallback.php` for robust image rendering with direct_url or fallback.
+
+### Added (Unreleased) - Test Coverage & JS
+
+- Expanded Jest test suites (`admin.more.test.js`, `person-image.extra.test.js`) increasing JS coverage to: Statements 82.32%, Branches 69.5%, Functions 96.15%, Lines 86.27%
+- Added coverage of confirm-delete modal edge cases (single id, array ids, missing ids, temp form fallback, Bootstrap show event) and image selector upload preview path
+- New PHPUnit tests for Team Season Rosters (controller + table) raising overall PHP test count to 205 tests / 500 assertions
+
 ### Added (Unreleased) - Images
 
 - Public image storage: new public storage path `webroot/img/storage/{YYYY}/{MM}/UUID.ext` and accompanying controller/service support. JSON responses include both `url` (serve action) and `direct_url` (public file path).
@@ -76,6 +99,16 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Test bootstrap now aliases `default` to isolated `test` connection; removed manual seeding in favor of fixtures only.
 - Refactored `UsersController::register()` formatting for standards compliance.
 - Routes and installer tweaks: `config/routes.php` and `src/Console/Installer.php` updated to reflect new image-serving routes and setup steps.
+- **ImagesController Diagnostics**: Strengthened storage directory creation & permission repair logic (writability checks, umask handling, group inheritance, verbose error logging, fallback low-level write) for more reliable image uploads across environments.
+- **TeamSeasons View**: Reworked roster integration to use dedicated element with bulk actions & DataTables sorting.
+- **Admin Navigation**: Added Team Season Rosters link; reorganized for new domains.
+
+### Fixed (Unreleased) - Recent
+
+- Null access warnings in `TeamSeasonRostersController::ajaxAdd` (person display construction) resolved via post-save person fetch & null-safe assembly
+- `admin.js` single numeric id handling normalized (array coercion) preventing TypeError in tests
+- Persons AJAX add response message aligned with Cake convention ("The person has been saved.") and tests updated accordingly
+- Team Seasons view image display stabilized with client-side deferred load (prevents brittle server assertions)
 
 ### Fixed (Unreleased)
 
@@ -87,6 +120,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
   - Guarded DateTime formatting in `templates/Admin/Teams/view.php` to avoid 500s when timestamps are strings in test fixtures.
   - Removed temporary diagnostic logs used during debugging.
   - Image storage path: removed obsolete migrations that attempted to add a non-portable storage subdir; migrations cleaned to use a single `CreateImagesTable` migration and the autoId declaration adjusted for compatibility.
+  *Note*: Legacy fixes retained above; new fixes listed in "Fixed (Unreleased) - Recent" subsection.
 
 ### Security (Unreleased)
 

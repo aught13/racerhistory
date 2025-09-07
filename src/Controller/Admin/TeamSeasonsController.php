@@ -20,9 +20,14 @@ use Cake\Http\Response;
  * - Competition results and finishing positions
  *
  * @property \App\Model\Table\TeamSeasonsTable $TeamSeasons
+ * @property \App\Model\Entity\Image|null $team_season_image_entity
  */
 class TeamSeasonsController extends AppController
 {
+    /**
+     * @property \App\Model\Entity\Image|null $team_season_image_entity (runtime-assigned in edit())
+     */
+
     /**
      * List all team seasons for administration.
      *
@@ -45,7 +50,11 @@ class TeamSeasonsController extends AppController
     public function view(string $id): void
     {
         $teamSeason = $this->TeamSeasons->get($id, contain: ['Teams', 'Seasons']);
-        $this->set(compact('teamSeason'));
+        $teamSeasonRosters = $this->fetchTable('TeamSeasonRosters')->find()
+            ->where(['team_season_id' => $id])
+            ->contain(['Persons'])
+            ->all();
+        $this->set(compact('teamSeason', 'teamSeasonRosters'));
     }
 
     /**
@@ -112,6 +121,15 @@ class TeamSeasonsController extends AppController
     public function edit(string $id): ?Response
     {
         $teamSeason = $this->TeamSeasons->get($id, contain: ['Teams', 'Seasons']);
+        $teamSeason = $teamSeason->set('team_season_image_entity', null);
+        if ($teamSeason->team_season_image) {
+            try {
+                $imageEntity = $this->fetchTable('Images')->get($teamSeason->team_season_image);
+                $teamSeason = $teamSeason->set('team_season_image_entity', $imageEntity);
+            } catch (RecordNotFoundException $e) {
+                // Image ID exists but record is missing. Silently ignore.
+            }
+        }
 
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();

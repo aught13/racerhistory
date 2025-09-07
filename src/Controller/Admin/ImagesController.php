@@ -347,14 +347,50 @@ class ImagesController extends AppController
     private function createStorageDir(string $storageDir, array &$writeErrors): bool
     {
         if (is_dir($storageDir)) {
+            // Extra safety: ensure directory is writable; attempt permission fix if not.
+            if (!is_writable($storageDir)) {
+                // Try to chmod; suppress warnings but record if still not writable.
+                @chmod($storageDir, 0775);
+                if (!is_writable($storageDir)) {
+                    $writeErrors[] = 'Storage directory exists but not writable: ' . $storageDir;
+                    \Cake\Log\Log::error(end($writeErrors));
+
+                    return false;
+                }
+            }
+
             return true;
         }
         $mkdirOk = false;
         $this->withCapturedWarnings(function () use ($storageDir, &$mkdirOk) {
+            $oldUmask = umask(0002); // ensure group write bit preserved
             $mkdirOk = mkdir($storageDir, 0775, true);
+            umask($oldUmask);
         }, $writeErrors);
         if (!$mkdirOk && !is_dir($storageDir)) {
             $writeErrors[] = 'Failed to create storage directory: ' . $storageDir;
+            \Cake\Log\Log::error(end($writeErrors));
+
+            return false;
+        }
+        // Inherit parent group if possible so web server user (same group) can write future subdirs
+        $parent = dirname(rtrim($storageDir, DIRECTORY_SEPARATOR));
+        if (is_dir($parent)) {
+            $parentGroupId = @filegroup($parent);
+            $dirGroupId = @filegroup($storageDir);
+            if ($parentGroupId !== false && $dirGroupId !== false && $parentGroupId !== $dirGroupId) {
+                if (function_exists('posix_getgrgid')) {
+                    $grp = @posix_getgrgid($parentGroupId);
+                    if ($grp && isset($grp['name'])) {
+                        @chgrp($storageDir, $grp['name']);
+                    }
+                }
+            }
+        }
+        // After recursive creation, enforce expected permissions (best effort)
+        @chmod($storageDir, 0775);
+        if (!is_writable($storageDir)) {
+            $writeErrors[] = 'Created storage directory but not writable: ' . $storageDir;
             \Cake\Log\Log::error(end($writeErrors));
 
             return false;
@@ -383,9 +419,30 @@ class ImagesController extends AppController
         $filename = $uuid . '.' . $ext;
         $this->withCapturedWarnings(
             function () use ($storageDir, $filename, $processed, &$writeErrors) {
-                $result = file_put_contents($storageDir . $filename, $processed['original']['data']);
+                $target = $storageDir . $filename;
+                // Pre-flight directory writability check (defensive)
+                if (!is_dir($storageDir)) {
+                    $writeErrors[] = 'Target directory missing at write time: ' . $storageDir;
+                } elseif (!is_writable($storageDir)) {
+                    $writeErrors[] = 'Target directory not writable at write time: ' . $storageDir;
+                }
+                $data = $processed['original']['data'] ?? '';
+                $result = @file_put_contents($target, $data);
                 if ($result === false) {
-                    $writeErrors[] = 'Failed to write original image';
+                    $err = error_get_last();
+                    $writeErrors[] = 'Failed to write original image (path=' . $target . ', writable=' . (is_writable($storageDir) ? 'yes' : 'no') . ', bytes=' . strlen((string)$data) . ', error=' . ($err['message'] ?? 'n/a') . ')';
+                    // Attempt fallback low-level write
+                    $fh = @fopen($target, 'wb');
+                    if ($fh) {
+                        $written = @fwrite($fh, $data);
+                        @fclose($fh);
+                        if ($written === false) {
+                            $writeErrors[] = 'Fallback fwrite also failed for original image: ' . $target;
+                        } else {
+                            // Remove failure marker if fallback succeeded
+                            $writeErrors[] = 'Fallback fwrite succeeded after file_put_contents failure for original image';
+                        }
+                    }
                 }
             },
             $writeErrors
@@ -394,9 +451,11 @@ class ImagesController extends AppController
         foreach ($processed['variants'] as $name => $v) {
             $vf = $uuid . '_' . $name . '.' . $v['ext'];
             $this->withCapturedWarnings(function () use ($storageDir, $vf, $v, &$writeErrors) {
-                $result = file_put_contents($storageDir . $vf, $v['data']);
-                if ($result === false) {
-                    $writeErrors[] = 'Failed to write variant ' . $vf;
+                $vTarget = $storageDir . $vf;
+                $vResult = @file_put_contents($vTarget, $v['data']);
+                if ($vResult === false) {
+                    $err = error_get_last();
+                    $writeErrors[] = 'Failed to write variant ' . $vf . ' (path=' . $vTarget . ', error=' . ($err['message'] ?? 'n/a') . ')';
                 }
             }, $writeErrors);
                 $variantMeta[$name] = [

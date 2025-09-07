@@ -131,7 +131,12 @@
                     let idsArr = [];
                     if (typeof context.ids === 'string') {
                         try {
-                            idsArr = JSON.parse(context.ids);
+                            const parsed = JSON.parse(context.ids);
+                            if (Array.isArray(parsed)) {
+                                idsArr = parsed;
+                            } else if (parsed !== null && parsed !== undefined) {
+                                idsArr = [parsed];
+                            }
                         } catch (e) {
                             // Accept a single numeric id fallback; otherwise treat as invalid (no injection)
                             if (/^\s*\d+\s*$/.test(context.ids)) {
@@ -145,7 +150,8 @@
                     } else if (context.ids) {
                         idsArr = [context.ids];
                     }
-                    idsArr.forEach(id => extra.push({ name: context.idsName, value: id }));
+                    // Final normalization: ensure primitive values converted to strings
+                    idsArr.filter(v => v !== null && v !== undefined && v !== '').forEach(id => extra.push({ name: context.idsName, value: String(id) }));
                 }
                 if (context.bulkAction) extra.push({ name: 'bulk_action', value: context.bulkAction });
 
