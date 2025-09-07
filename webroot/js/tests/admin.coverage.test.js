@@ -5,6 +5,11 @@ describe('admin.js branch coverage improvement', () => {
     beforeEach(() => {
         jest.resetModules();
         document.body.innerHTML = '';
+        // Clear any global admin.js state
+        if (typeof window !== 'undefined') {
+            delete window.showConfirmDelete;
+            delete window.AdminToast;
+        }
         global.bootstrap = {
             Modal: {
                 getOrCreateInstance: jest.fn(() => ({ show: jest.fn() }))
@@ -117,8 +122,16 @@ describe('admin.js branch coverage improvement', () => {
         const form = document.getElementById('delete-form-sample');
         
         // Ensure form has no action attribute to trigger fallback
-        form.action = '';
+        // Clear both the attribute and property completely
         form.removeAttribute('action');
+        // Force the action property to be empty, which in browsers becomes the current page URL
+        Object.defineProperty(form, 'action', {
+            value: '',
+            writable: true,
+            configurable: true
+        });
+        // Double check that getAttribute returns null (not just an empty string)
+        expect(form.getAttribute('action')).toBeNull();
         form.submit = jest.fn();
         
         showConfirmDelete({
