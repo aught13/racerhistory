@@ -6,3 +6,4 @@ logs/
 coverage-js/
 *.min.js
 webroot/js/tinymce/
+webroot/js/.gitkeep

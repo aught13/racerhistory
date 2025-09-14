@@ -1,3 +1,4 @@
+/* eslint-env jest, browser */
 if (!HTMLFormElement.prototype.requestSubmit) {
     Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
         value: jest.fn(function () {

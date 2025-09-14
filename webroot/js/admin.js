@@ -34,8 +34,11 @@
             try {
                 list = JSON.parse(associated);
             } catch (e) {
+                console.error('Error parsing associated:', e);
+                window.AdminToast && window.AdminToast('Error parsing associated items', 'danger');
                 list = [associated];
             }
+            // ...existing code...
         } else if (Array.isArray(associated)) {
             list = associated;
         } else if (associated) {
@@ -60,7 +63,10 @@
         context = opts || {};
         try {
             console.log('confirm-delete setContext', context);
-        } catch {}
+        } catch (e) {
+            console.error('Error in setContext:', e);
+            window.AdminToast && window.AdminToast('Error setting context', 'danger');
+        }
         renderAssociated(findModal(), context.associated);
     }
 
@@ -121,12 +127,16 @@
                 action: temp.action,
                 inputs: temp.querySelectorAll('input').length,
             });
-        } catch (e) {}
+        } catch (e) {
+            console.error('Error preparing temp form:', e);
+            window.AdminToast && window.AdminToast('Error preparing temp form', 'danger');
+        }
         try {
             if (typeof temp.requestSubmit === 'function') temp.requestSubmit();
             else temp.submit();
         } catch (e) {
-            console.log('error submitting temp form', e);
+            console.error('Error submitting temp form:', e);
+            window.AdminToast && window.AdminToast('Error submitting temp form', 'danger');
         }
     }
 
@@ -135,8 +145,16 @@
          * Runs a function when DOM is ready.
          * @param {Function} fn
          */
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
-        else fn();
+        try {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fn);
+            } else {
+                fn();
+            }
+        } catch (e) {
+            console.error('Error in onDomReady:', e);
+            window.AdminToast && window.AdminToast('Error initializing admin UI', 'danger');
+        }
     }
 
     onDomReady(function () {
@@ -154,7 +172,6 @@
             modal.addEventListener('show.bs.modal', function (ev) {
                 try {
                     const trigger = ev && ev.relatedTarget;
-                    console.log('confirm-delete modal show event, relatedTarget=', trigger);
                     if (trigger) {
                         setContext({
                             deleteUrl: trigger.dataset.deleteUrl,
@@ -166,7 +183,8 @@
                         });
                     }
                 } catch (e) {
-                    console.log('error in show.bs.modal handler', e);
+                    console.error('Error in show.bs.modal handler:', e);
+                    window.AdminToast && window.AdminToast('Error opening modal', 'danger');
                 }
             });
         }
@@ -206,12 +224,26 @@
                 // Determine token source: prefer referenced formId, else modal hidden form
                 let source = null;
                 try {
-                    source =
-                        context && context.formId
-                            ? document.getElementById(context.formId)
-                            : findModal()
-                              ? findModal().querySelector('#' + MODAL_ID + '-hidden-form')
-                              : null;
+                    try {
+                        try {
+                            source =
+                                context && context.formId
+                                    ? document.getElementById(context.formId)
+                                    : findModal()
+                                      ? findModal().querySelector('#' + MODAL_ID + '-hidden-form')
+                                      : null;
+                        } catch (e) {
+                            console.error('Error finding source form:', e);
+                            window.AdminToast &&
+                                window.AdminToast('Error finding source form', 'danger');
+                            source = null;
+                        }
+                    } catch (e) {
+                        console.error('Error finding source form:', e);
+                        window.AdminToast &&
+                            window.AdminToast('Error finding source form', 'danger');
+                        source = null;
+                    }
                 } catch {
                     source = null;
                 }
@@ -221,6 +253,7 @@
                 if (context.ids && context.idsName) {
                     let idsArr = [];
                     if (typeof context.ids === 'string') {
+                        const trimmed = context.ids.trim();
                         try {
                             const parsed = JSON.parse(context.ids);
                             if (Array.isArray(parsed)) {
@@ -228,10 +261,16 @@
                             } else if (parsed !== null && parsed !== undefined) {
                                 idsArr = [parsed];
                             }
-                        } catch {
-                            // Accept a single numeric id fallback; otherwise treat as invalid (no injection)
-                            if (/^\s*\d+\s*$/.test(context.ids)) {
-                                idsArr = [context.ids.trim()];
+                        } catch (e) {
+                            console.error('Error parsing context.ids JSON:', e);
+                            // Fallback: accept a single numeric id string and parse it explicitly with radix 10
+                            if (/^\s*[+-]?\d+\s*$/.test(trimmed)) {
+                                try {
+                                    idsArr = [parseInt(trimmed, 10)];
+                                } catch (pe) {
+                                    console.error('parseInt error:', pe);
+                                    idsArr = [];
+                                }
                             } else {
                                 idsArr = [];
                             }
@@ -242,12 +281,20 @@
                         idsArr = [context.ids];
                     }
                     // Final normalization: ensure primitive values converted to strings
-                    idsArr
-                        .filter((v) => v !== null && v !== undefined && v !== '')
-                        .forEach((id) => extra.push({ name: context.idsName, value: String(id) }));
+                    try {
+                        idsArr
+                            .filter((v) => v !== null && v !== undefined && v !== '')
+                            .forEach((id) =>
+                                extra.push({ name: context.idsName, value: String(id) })
+                            );
+                    } catch (e) {
+                        console.error('Error normalizing ids:', e);
+                        window.AdminToast && window.AdminToast('Error normalizing ids', 'danger');
+                    }
+                    if (context.bulkAction) {
+                        extra.push({ name: 'bulk_action', value: context.bulkAction });
+                    }
                 }
-                if (context.bulkAction)
-                    extra.push({ name: 'bulk_action', value: context.bulkAction });
 
                 // If a source form exists, prefer injecting into and submitting that form so tests
                 // and server-side FormProtection tokens align. Otherwise fallback to a temporary form.
@@ -261,7 +308,9 @@
                     ) {
                         postAction = source.action;
                     }
-                } catch {}
+                } catch (err) {
+                    console.error('Error determining postAction from source form:', err);
+                }
                 console.log(
                     'confirm-delete final post action:',
                     postAction,
@@ -321,12 +370,28 @@
     }
     window.AdminToast = toast;
 
-    // For Jest testing
-    // For Jest testing (Node only)
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = {
-            showConfirmDelete: window.showConfirmDelete,
-            AdminToast: window.AdminToast,
-        };
+    // For Jest testing (Node/CommonJS) - export functions when `module.exports` is available.
+    // Use `typeof module !== 'undefined'` check so this remains safe in browser globals.
+    /* eslint-disable no-undef */
+    if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+        try {
+            // Export internals to allow focused unit tests to exercise branches
+            module.exports = {
+                showConfirmDelete:
+                    typeof window !== 'undefined' ? window.showConfirmDelete : undefined,
+                AdminToast: typeof window !== 'undefined' ? window.AdminToast : undefined,
+                // Internals
+                __internals: {
+                    findModal,
+                    renderAssociated,
+                    setContext,
+                    submitTempForm,
+                },
+            };
+        } catch (e) {
+            // If assignment fails, log for debugging
+            console.error('Error assigning module.exports in admin.js:', e);
+        }
     }
+    /* eslint-enable no-undef */
 })();

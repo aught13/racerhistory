@@ -10,7 +10,7 @@
                     <?= $this->Form->create($person, [
                         'url' => ['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'add'],
                         'class' => 'needs-validation',
-                        'novalidate' => true
+                        'novalidate' => true,
                     ]) ?>
 
                     <div class="row g-3">
@@ -39,7 +39,7 @@
                                         'class' => 'form-control',
                                         'label' => ['text' => 'Image ID', 'class' => 'form-label'],
                                         'maxlength' => 162,
-                                        'id' => 'person-image-field'
+                                        'id' => 'person-image-field',
                                     ]); ?>
                                 </div>
                                 <div class="col-md-4">
@@ -65,8 +65,8 @@
                                 'label' => ['text' => 'Biography', 'class' => 'form-label'],
                                 'templates' => [
                                     // Ensure we keep the textarea markup simple for JS replacement
-                                    'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
-                                ]
+                                    'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
+                                ],
                             ]); ?>
                         </div>
                     </div>
@@ -85,8 +85,8 @@
     <?php
 // Load self-hosted TinyMCE (installed via composer tinymce/tinymce) and initialize.
 // We expect the TinyMCE distribution to be published under /js/tinymce/ (see deployment notes).
-echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
-echo $this->Html->scriptBlock(<<<JS
+    echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
+    echo $this->Html->scriptBlock(<<<JS
 document.addEventListener('DOMContentLoaded', function () {
     var el = document.getElementById('bio-editor');
     if (!el || typeof tinymce === 'undefined') { return; }
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show preview if image ID is already set
         if (imageField.value) {
             const imageId = imageField.value.trim();
-            if (imageId && !isNaN(parseInt(imageId))) {
+            if (imageId && !isNaN(parseInt(imageId, 10))) {
                 const previewImg = imagePreview.querySelector('img');
                 previewImg.src = `/images/serve/\${imageId}`;
                 imagePreview.style.display = 'block';
@@ -211,5 +211,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 JS, ['block' => true]);
-?>
+    ?>
 </div>

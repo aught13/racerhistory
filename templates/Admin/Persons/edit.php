@@ -10,7 +10,7 @@
                     <?= $this->Form->create($person, [
                         'url' => ['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'edit', $person->id],
                         'class' => 'needs-validation',
-                        'novalidate' => true
+                        'novalidate' => true,
                     ]) ?>
 
                     <div class="row g-3">
@@ -39,7 +39,7 @@
                                         'class' => 'form-control',
                                         'label' => ['text' => 'Image ID', 'class' => 'form-label'],
                                         'maxlength' => 162,
-                                        'id' => 'person-image-field'
+                                        'id' => 'person-image-field',
                                     ]); ?>
                                 </div>
                                 <div class="col-md-4">
@@ -64,8 +64,8 @@
                                 'id' => 'bio-editor',
                                 'label' => ['text' => 'Biography', 'class' => 'form-label'],
                                 'templates' => [
-                                    'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
-                                ]
+                                    'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
+                                ],
                             ]); ?>
                         </div>
                     </div>
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show preview if image ID is already set
         if (imageField.value) {
             const imageId = imageField.value.trim();
-            if (imageId && !isNaN(parseInt(imageId))) {
+            if (imageId && !isNaN(parseInt(imageId, 10))) {
                 const previewImg = imagePreview.querySelector('img');
                 previewImg.src = `/images/serve/\${imageId}`;
                 imagePreview.style.display = 'block';
