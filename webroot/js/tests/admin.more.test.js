@@ -3,8 +3,8 @@
 
 global.bootstrap = {
     Modal: {
-        getOrCreateInstance: jest.fn(() => ({ show: jest.fn() }))
-    }
+        getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
+    },
 };
 
 describe('admin.js more branches', () => {
@@ -21,7 +21,11 @@ describe('admin.js more branches', () => {
         `;
         // ensure requestSubmit stub
         Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
-            value: jest.fn(function () { if (this.submit) this.submit(); }), configurable: true, writable: true
+            value: jest.fn(function () {
+                if (this.submit) this.submit();
+            }),
+            configurable: true,
+            writable: true,
         });
         exports = require('../admin.js');
     });
@@ -29,7 +33,12 @@ describe('admin.js more branches', () => {
     test('single numeric id string injects one input', () => {
         const form = document.getElementById('delete-form-sample');
         form.submit = jest.fn();
-        exports.showConfirmDelete({ deleteUrl: '/del', ids: '15', idsName: 'sport_ids[]', formId: 'delete-form-sample' });
+        exports.showConfirmDelete({
+            deleteUrl: '/del',
+            ids: '15',
+            idsName: 'sport_ids[]',
+            formId: 'delete-form-sample',
+        });
         document.getElementById('confirm-delete-modal-delete-btn').click();
         const injected = form.querySelectorAll('.injected-delete');
         expect(injected.length).toBe(1);
@@ -40,9 +49,16 @@ describe('admin.js more branches', () => {
     test('ids as array injects multiple inputs', () => {
         const form = document.getElementById('delete-form-sample');
         form.submit = jest.fn();
-        exports.showConfirmDelete({ deleteUrl: '/del2', ids: [3, 4], idsName: 'sport_ids[]', formId: 'delete-form-sample' });
+        exports.showConfirmDelete({
+            deleteUrl: '/del2',
+            ids: [3, 4],
+            idsName: 'sport_ids[]',
+            formId: 'delete-form-sample',
+        });
         document.getElementById('confirm-delete-modal-delete-btn').click();
-        const ids = Array.from(form.querySelectorAll('.injected-delete')).filter(i => i.name === 'sport_ids[]').map(i => i.value);
+        const ids = Array.from(form.querySelectorAll('.injected-delete'))
+            .filter((i) => i.name === 'sport_ids[]')
+            .map((i) => i.value);
         expect(ids).toEqual(['3', '4']);
     });
 
@@ -60,7 +76,9 @@ describe('admin.js more branches', () => {
         document.getElementById('delete-form-sample').remove();
         exports.showConfirmDelete({ deleteUrl: '/fallback', ids: '[9]', idsName: 'sport_ids[]' });
         document.getElementById('confirm-delete-modal-delete-btn').click();
-        const temp = Array.from(document.querySelectorAll('form')).find(f => f.action.includes('/fallback'));
+        const temp = Array.from(document.querySelectorAll('form')).find((f) =>
+            f.action.includes('/fallback')
+        );
         expect(temp).toBeTruthy();
         const hidden = temp ? temp.querySelectorAll('input[type="hidden"]').length : 0;
         expect(hidden).toBeGreaterThanOrEqual(1);
@@ -84,7 +102,9 @@ describe('admin.js more branches', () => {
         const form = document.getElementById('delete-form-sample');
         form.submit = jest.fn();
         document.getElementById('confirm-delete-modal-delete-btn').click();
-        const ids = Array.from(form.querySelectorAll('.injected-delete')).filter(i => i.name === 'sport_ids[]');
+        const ids = Array.from(form.querySelectorAll('.injected-delete')).filter(
+            (i) => i.name === 'sport_ids[]'
+        );
         expect(ids.length).toBe(1);
         expect(ids[0].value).toBe('42');
         const assocList = document.getElementById('confirm-delete-modal-assoc');

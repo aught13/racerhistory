@@ -41,15 +41,29 @@ describe('admin.js additional scenarios', () => {
         const form = document.getElementById('delete-form-sample');
         form.submit = jest.fn();
         // first invocation
-        showConfirmDelete({ deleteUrl: '/x', ids: JSON.stringify([1, 2]), idsName: 'sport_ids[]', formId: 'delete-form-sample', bulkAction: 'delete' });
+        showConfirmDelete({
+            deleteUrl: '/x',
+            ids: JSON.stringify([1, 2]),
+            idsName: 'sport_ids[]',
+            formId: 'delete-form-sample',
+            bulkAction: 'delete',
+        });
         document.getElementById('confirm-delete-modal-delete-btn').click();
         expect(form.querySelectorAll('.injected-delete').length).toBe(3); // 2 ids + bulk
         // second invocation with different ids
-        showConfirmDelete({ deleteUrl: '/x2', ids: JSON.stringify([7]), idsName: 'sport_ids[]', formId: 'delete-form-sample', bulkAction: 'delete' });
+        showConfirmDelete({
+            deleteUrl: '/x2',
+            ids: JSON.stringify([7]),
+            idsName: 'sport_ids[]',
+            formId: 'delete-form-sample',
+            bulkAction: 'delete',
+        });
         document.getElementById('confirm-delete-modal-delete-btn').click();
         const injected = form.querySelectorAll('.injected-delete');
         expect(injected.length).toBe(2); // 1 id + bulk
-        const idValues = Array.from(injected).filter(i => i.name === 'sport_ids[]').map(i => i.value);
+        const idValues = Array.from(injected)
+            .filter((i) => i.name === 'sport_ids[]')
+            .map((i) => i.value);
         expect(idValues).toEqual(['7']);
     });
 
@@ -58,7 +72,15 @@ describe('admin.js additional scenarios', () => {
         const { showConfirmDelete } = require('../admin.js');
         const form = document.getElementById('delete-form-sample');
         form.submit = jest.fn();
-        expect(() => showConfirmDelete({ deleteUrl: '/bad', associated: 'not-json', ids: 'nope', idsName: 'sport_ids[]', formId: 'delete-form-sample' })).not.toThrow();
+        expect(() =>
+            showConfirmDelete({
+                deleteUrl: '/bad',
+                associated: 'not-json',
+                ids: 'nope',
+                idsName: 'sport_ids[]',
+                formId: 'delete-form-sample',
+            })
+        ).not.toThrow();
         document.getElementById('confirm-delete-modal-delete-btn').click();
         expect(form.querySelectorAll('.injected-delete').length).toBe(0); // Ensure no inputs are injected
     });
@@ -93,6 +115,6 @@ describe('admin.js additional scenarios', () => {
             }
         }),
         configurable: true,
-        writable: true
+        writable: true,
     });
 });
