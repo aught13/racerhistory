@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Utility\PersonLabelHelper;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 
@@ -189,10 +188,11 @@ class PersonsController extends AppController
         /** @var \App\Model\Entity\Person $person */
         $person = $this->Persons->newEmptyEntity();
         if ($this->request->is('post')) {
+            /** @var \App\Model\Entity\Person $person */
             $person = $this->Persons->patchEntity($person, $this->request->getData());
             if ($this->Persons->save($person)) {
-                // Use helper to build consistent person label
-                $label = PersonLabelHelper::buildLabel($person, (int)$person->get('id'));
+                // Use public method for label
+                $label = $person->getLabel();
                 $personId = (int)($person->get('id'));
                 $response = [
                     'success' => true,
@@ -253,8 +253,9 @@ class PersonsController extends AppController
             ->limit(30);
 
         $results = [];
+        /** @var \App\Model\Entity\Person $p */
         foreach ($query as $p) {
-            $label = PersonLabelHelper::buildLabel($p);
+            $label = $p->getLabel();
             $results[] = [ 'value' => $p->id, 'text' => $label ];
         }
 
