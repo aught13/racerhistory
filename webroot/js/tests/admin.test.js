@@ -3,8 +3,8 @@
 
 global.bootstrap = {
     Modal: {
-        getOrCreateInstance: jest.fn(() => ({ show: jest.fn() }))
-    }
+        getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
+    },
 };
 
 document.body.innerHTML = `
@@ -26,7 +26,7 @@ Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
         }
     }),
     configurable: true,
-    writable: true
+    writable: true,
 });
 
 describe('admin.js showConfirmDelete', () => {
@@ -39,7 +39,7 @@ describe('admin.js showConfirmDelete', () => {
             ids,
             idsName: 'sport_ids[]',
             formId: 'delete-form-sample',
-            bulkAction: 'delete'
+            bulkAction: 'delete',
         });
         const list = document.getElementById('confirm-delete-modal-assoc');
         expect(list.children.length).toBe(2);
@@ -51,7 +51,7 @@ describe('admin.js showConfirmDelete', () => {
         expect(form.action).toContain('/admin/delete/bulk');
         const injected = form.querySelectorAll('.injected-delete');
         expect(injected.length).toBe(3); // 2 ids + bulk_action
-        const bulk = Array.from(injected).find(i => i.name === 'bulk_action');
+        const bulk = Array.from(injected).find((i) => i.name === 'bulk_action');
         expect(bulk.value).toBe('delete');
     });
 });

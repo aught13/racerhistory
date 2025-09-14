@@ -1,6 +1,5 @@
 /** @jest-environment jsdom */
-const fs = require('fs');
-const path = require('path');
+// ...existing code...
 const personImage = require('../person-image.js');
 
 describe('person-image module', () => {
@@ -19,9 +18,17 @@ describe('person-image module', () => {
     });
 
     test('uploadFile parses JSON response', async () => {
-        global.fetch = jest.fn(() => Promise.resolve({
-            text: () => Promise.resolve(JSON.stringify({ success: true, image: { id: 10, url: '/images/serve/10' } })),
-        }));
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                text: () =>
+                    Promise.resolve(
+                        JSON.stringify({
+                            success: true,
+                            image: { id: 10, url: '/images/serve/10' },
+                        })
+                    ),
+            })
+        );
         const blob = new Blob(['x'], { type: 'image/png' });
         const res = await personImage.uploadFile(new File([blob], 'f.png'));
         expect(res.success).toBe(true);

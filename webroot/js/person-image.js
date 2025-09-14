@@ -8,7 +8,7 @@
     } else {
         root.PersonImage = factory();
     }
-}(this, function () {
+})(this, function () {
     'use strict';
 
     async function uploadFile(file, uploadUrl = '/admin/images/upload', csrfToken = null) {
@@ -31,7 +31,7 @@
         const text = await response.text();
         try {
             return JSON.parse(text);
-        } catch (err) {
+        } catch {
             throw new Error('Invalid JSON response');
         }
     }
@@ -67,18 +67,22 @@
                 selectBtn.disabled = true;
                 const file = input.files[0];
                 try {
-                    const json = await uploadFile(file, opts.uploadUrl || '/admin/images/upload', csrf);
+                    const json = await uploadFile(
+                        file,
+                        opts.uploadUrl || '/admin/images/upload',
+                        csrf
+                    );
                     if (json && json.success && json.image) {
                         imageField.value = json.image.id;
                         const img = preview.querySelector('img');
-                        if (img) { setPreviewFromId(json.image.id, img, opts.variant || null); }
+                        if (img) {
+                            setPreviewFromId(json.image.id, img, opts.variant || null);
+                        }
                     } else {
-                        // eslint-disable-next-line no-console
                         console.error('Upload failed', json);
                         alert('Upload failed');
                     }
                 } catch (err) {
-                    // eslint-disable-next-line no-console
                     console.error('Upload error', err);
                     alert('Upload failed: ' + err.message);
                 } finally {
@@ -95,4 +99,4 @@
         setPreviewFromId,
         initPersonImageSelector,
     };
-}));
+});

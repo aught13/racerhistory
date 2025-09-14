@@ -11,13 +11,11 @@ When generating templates, ensure they are compatible with Bootstrap 5.3.2 and f
 When creating or modifying CakePHP migrations:
 
 1. **Property Type Declarations**: Always check the parent AbstractMigration class for property type requirements:
-
     - Use `public bool $autoId = false;` for CakePHP migrations 4.x+ compatibility
     - Use `public $autoId = false;` for older versions
     - Check `vendor/cakephp/migrations/src/AbstractMigration.php` for current declaration
 
 2. **Database Compatibility**: Ensure migrations work across different MySQL versions:
-
     - Use standard SQL data types
     - Avoid version-specific features unless necessary
     - Test with MySQL 8.0 (current CI environment)
@@ -56,21 +54,18 @@ vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/Test
 ### Test Writing Standards
 
 1. **Controller Tests**:
-
     - Use CakePHP's `IntegrationTestTrait` for HTTP testing
     - Handle authentication requirements in CI environments
     - Expect redirects for unauthenticated admin access
     - Include CSRF token handling for POST requests
 
 2. **Model Tests**:
-
     - Test validation rules thoroughly
     - Test custom finder methods
     - Use fixtures for consistent test data
     - Test entity accessor/mutator methods
 
 3. **Component Tests**:
-
     - Mock external dependencies
     - Test all public methods
     - Test error conditions and edge cases
@@ -82,7 +77,6 @@ vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/Test
 ### CI Compatibility Notes
 
 1. **PHPUnit Multi-Version Compatibility (10–12)**:
-
     - Keep XML configs limited to syntax valid in PHPUnit 10 (phpunit.ci.xml uses a 10.x schema; phpunit.xml may target 12.x but must not introduce incompatible constructs needed by shared tests).
     - Local quick run: `vendor/bin/phpunit` (uses phpunit.xml).
     - Coverage run (CI only): `vendor/bin/phpunit --configuration phpunit.ci.xml` (generates coverage.xml using `<coverage><report>` block).
@@ -91,7 +85,6 @@ vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/Test
     - Integration tests should also pass; do not intentionally rely on environment-specific skips.
 
 2. **Database Setup**:
-
     - Tests use MySQL 8.0 in CI with test database `racerhistory_test`
     - Ensure `DATABASE_TEST_URL` environment variable is properly configured
     - Bootstrap must successfully establish database connections
@@ -119,9 +112,9 @@ Run PHPCS and fix any remaining issues (or follow the `cs2pr` output) before com
 
 ### Test Organization
 
--   **Core Tests**: Application, View, Model, Component (must pass 100%)
--   **Integration Tests**: Controller tests (may have CI-specific failures)
--   **Test Discovery**: Should find all 78+ tests across the test suite
+- **Core Tests**: Application, View, Model, Component (must pass 100%)
+- **Integration Tests**: Controller tests (may have CI-specific failures)
+- **Test Discovery**: Should find all 78+ tests across the test suite
 
 When adding new tests, ensure they follow these patterns and are compatible with the minimal execution approach used in CI.
 
@@ -145,11 +138,9 @@ To keep the test suite stable across local and CI runs, follow these non-negotia
 Two recurring small test flakiness sources have shown up in the test suite: 1) flash messages consumed by the view and 2) timestamp fields being strings in some test contexts. Below are concrete mitigations to use when writing controllers, views and tests:
 
 - Flash messages are stored in session and the view/FlashHelper will "consume" them during render. When a test needs to assert on a flash after rendering (not after a redirect), enable flash retention in the test:
-
     - In integration tests: call `$this->enableRetainFlashMessages();` before making the request. This prevents the test harness from discarding consumed messages and allows `assertFlashMessage()` to find them.
 
 - Prefer explicit, test-friendly timestamp handling:
-
     - Fixtures and migrations should provide DateTime-compatible values where possible (use DateTime objects in factories or ensure the migration default types are `datetime` and not strings). This keeps templates that call `$entity->created_at->format()` safe.
     - In templates, defensively handle timestamp fields in case they are strings in some test scenarios. For example:
 
@@ -178,3 +169,24 @@ These two patterns (use `enableRetainFlashMessages()` in tests and guard DateTim
     - CI runs tests on MySQL 8.0. Local test bootstrap defaults to in-memory SQLite unless explicitly forced to MySQL via environment. Keep schema and code adapter-agnostic and avoid DB-specific defaults where possible.
 
 Add @codecov-ai-reviewer review-- the assistant will review the PR and make suggestions.
+
+## JavaScript Workflow & Tooling
+
+This project enforces modern JavaScript standards for all custom JS code (excluding third-party libraries like TinyMCE):
+
+- **Linting:** All JS files in `webroot/js/` (except `webroot/js/tinymce/`) must pass ESLint checks using the config in `eslint.config.js`.
+- **Formatting:** Prettier is required for consistent code style. See `.prettierrc` and `.prettierignore`.
+- **Testing:** Jest is used for unit and coverage testing of JS. All new JS features should include corresponding tests in `webroot/js/tests/`.
+- **Coverage Targets:** Minimum coverage enforced: 88% for JS (lines), 80% for JS branch coverage. See `codecov.yml` and VS Code settings.
+- **Pre-commit:** All JS code must pass lint, format, and test checks before commit (see `.git/hooks/pre-commit`).
+
+## VS Code Configuration
+
+- **Recommended Extensions:** See `.vscode/extensions.json` for required PHP/JS tooling (ESLint, Prettier, Jest, PHPCS, PHPStan, PHPUnit, Intelephense).
+- **Settings:** `.vscode/settings.json` enforces linter/fixer ignores, coverage thresholds, and PHP/JS integration.
+- **Tasks:** `.vscode/tasks.json` provides build/test/lint/format tasks for both PHP and JS. Use these for consistent local workflow.
+
+## Commit & Branching Guidelines
+
+- Use clear, descriptive commit messages (e.g., `fix: correct image upload preview`, `feat: add admin bulk delete`).
+- Prefer feature branches for new work; open pull requests for review and CI validation.

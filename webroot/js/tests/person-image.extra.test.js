@@ -10,7 +10,9 @@ describe('person-image extra coverage', () => {
     test('uploadFile invalid JSON throws', async () => {
         global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve('not json') }));
         const blob = new Blob(['x'], { type: 'image/png' });
-        await expect(personImage.uploadFile(new File([blob], 'bad.png'))).rejects.toThrow('Invalid JSON response');
+        await expect(personImage.uploadFile(new File([blob], 'bad.png'))).rejects.toThrow(
+            'Invalid JSON response'
+        );
     });
 
     test('setPreviewFromId early return with missing element', () => {
@@ -25,7 +27,17 @@ describe('person-image extra coverage', () => {
           <button id="select-btn">Select</button>
         `;
         // Mock fetch for uploadFile inside init
-        global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(JSON.stringify({ success: true, image: { id: 77, url: '/images/serve/77' } })) }));
+        global.fetch = jest.fn(() =>
+            Promise.resolve({
+                text: () =>
+                    Promise.resolve(
+                        JSON.stringify({
+                            success: true,
+                            image: { id: 77, url: '/images/serve/77' },
+                        })
+                    ),
+            })
+        );
         // Monkey patch window.File / Blob if needed (jsdom provides basic)
         const fileBlob = new Blob(['data'], { type: 'image/png' });
         // Simulate selection: intercept created input
@@ -36,16 +48,24 @@ describe('person-image extra coverage', () => {
             if (tag === 'input') {
                 // override click to directly trigger onchange with a fake file list
                 el.click = function () {
-                    Object.defineProperty(el, 'files', { value: [new File([fileBlob], 'a.png', { type: 'image/png' })], configurable: true });
+                    Object.defineProperty(el, 'files', {
+                        value: [new File([fileBlob], 'a.png', { type: 'image/png' })],
+                        configurable: true,
+                    });
                     setTimeout(() => el.onchange && el.onchange());
                 };
                 clickSpies.push(el);
             }
             return el;
         };
-        personImage.initPersonImageSelector({ selectBtnId: 'select-btn', fieldId: 'img-field', previewId: 'preview', uploadUrl: '/admin/images/upload' });
+        personImage.initPersonImageSelector({
+            selectBtnId: 'select-btn',
+            fieldId: 'img-field',
+            previewId: 'preview',
+            uploadUrl: '/admin/images/upload',
+        });
         document.getElementById('select-btn').click();
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise((r) => setTimeout(r, 0));
         const field = document.getElementById('img-field');
         expect(field.value).toBe('77');
         const img = document.getElementById('pvimg');

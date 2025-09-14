@@ -1,27 +1,24 @@
 coverage:
   status:
     project:
-      default:
-        target: 50%
-        threshold: 5%
-        informational: true
-    patch:
-      default:
-        target: 80%
-        threshold: 10%
+      php:
+        target: 98
+      js:
+        target: 88
+      branches:
+        target: 80
 
 comment:
-  layout: "header, diff, flags, files"
+  layout: 'header, diff, flags, files'
   behavior: default
   require_changes: false
 
 ignore:
-  - "tests/"
-  - "vendor/"
-  - "tmp/"
-  - "logs/"
-  - "config/Migrations/"
-
+  - 'tests/'
+  - 'vendor/'
+  - 'tmp/'
+  - 'logs/'
+  - 'config/Migrations/'
 
 flag_management:
   default_rules:

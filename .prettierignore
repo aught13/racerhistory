@@ -1,0 +1,8 @@
+# Prettier ignore file
+node_modules/
+vendor/
+tmp/
+logs/
+coverage-js/
+*.min.js
+webroot/js/tinymce/
