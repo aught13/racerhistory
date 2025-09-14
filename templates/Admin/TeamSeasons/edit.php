@@ -46,7 +46,7 @@
                             'class' => 'form-select',
                             'label' => false,
                             'required' => true,
-                            'id' => 'team-id'
+                            'id' => 'team-id',
                         ]) ?>
                         <div class="form-text">The team for this season participation.</div>
                     </div>
@@ -60,7 +60,7 @@
                             'class' => 'form-select',
                             'label' => false,
                             'required' => true,
-                            'id' => 'season-id'
+                            'id' => 'season-id',
                         ]) ?>
                         <div class="form-text">The season for this team participation.</div>
                     </div>
@@ -74,7 +74,7 @@
                             'required' => true,
                             'id' => 'semester',
                             'min' => 1,
-                            'max' => 4
+                            'max' => 4,
                         ]) ?>
                         <div class="form-text">Semester number (1-4) for this team season.</div>
                     </div>
@@ -88,7 +88,7 @@
                                     'class' => 'form-control',
                                     'label' => false,
                                     'id' => 'league',
-                                    'maxlength' => 240
+                                    'maxlength' => 240,
                                 ]) ?>
                                 <div class="form-text">League or conference name (max 240 characters).</div>
                             </div>
@@ -101,7 +101,7 @@
                                     'class' => 'form-control',
                                     'label' => false,
                                     'id' => 'league-abbr',
-                                    'maxlength' => 10
+                                    'maxlength' => 10,
                                 ]) ?>
                                 <div class="form-text">League abbreviation (max 10 characters).</div>
                             </div>
@@ -117,7 +117,7 @@
                                     'class' => 'form-control',
                                     'label' => false,
                                     'id' => 'league-finish',
-                                    'maxlength' => 240
+                                    'maxlength' => 240,
                                 ]) ?>
                                 <div class="form-text">Final position or record in league play.</div>
                             </div>
@@ -130,7 +130,7 @@
                                     'class' => 'form-control',
                                     'label' => false,
                                     'id' => 'league-tournament-finish',
-                                    'maxlength' => 240
+                                    'maxlength' => 240,
                                 ]) ?>
                                 <div class="form-text">Tournament finish position.</div>
                             </div>
@@ -144,7 +144,7 @@
                             'class' => 'form-control',
                             'label' => false,
                             'id' => 'last-post-game',
-                            'maxlength' => 240
+                            'maxlength' => 240,
                         ]) ?>
                         <div class="form-text">Information about the final game or post-season activities.</div>
                     </div>
@@ -156,7 +156,7 @@
                             'class' => 'form-control',
                             'label' => false,
                             'id' => 'team-season-notes',
-                            'maxlength' => 240
+                            'maxlength' => 240,
                         ]) ?>
                         <div class="form-text">General notes about this team season (max 240 characters).</div>
                     </div>
@@ -171,7 +171,7 @@
                                     'label' => false,
                                     'id' => 'team-season-image',
                                     'maxlength' => 162,
-                                    'placeholder' => 'Numeric image id'
+                                    'placeholder' => 'Numeric image id',
                                 ]) ?>
                             </div>
                             <div class="col-md-4">
@@ -179,9 +179,9 @@
                             </div>
                         </div>
                         <div id="team-season-image-preview" class="mt-2" style="<?= empty($teamSeason->team_season_image_entity) ? 'display:none;' : '' ?>">
-                            <?php if (!empty($teamSeason->team_season_image_entity)): ?>
+                            <?php if (!empty($teamSeason->team_season_image_entity)) : ?>
                                 <img src="<?= $this->Url->build('/images/serve/' . $teamSeason->team_season_image_entity->id . '?variant=thumb') ?>" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
-                            <?php else: ?>
+                            <?php else : ?>
                                 <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
                             <?php endif; ?>
                         </div>
@@ -197,8 +197,8 @@
                             'id' => 'team-season-preview',
                             'rows' => 8,
                             'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
-                            ]
+                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
+                            ],
                         ]) ?>
                         <div class="form-text">Pre-season preview or expectations. Rich text supported.</div>
                     </div>
@@ -212,8 +212,8 @@
                             'id' => 'team-season-recap',
                             'rows' => 8,
                             'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
-                            ]
+                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
+                            ],
                         ]) ?>
                         <div class="form-text">Post-season recap or summary. Rich text supported.</div>
                     </div>
@@ -221,7 +221,7 @@
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Update Team Season'), [
                             'type' => 'submit',
-                            'class' => 'btn btn-primary'
+                            'class' => 'btn btn-primary',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>"
                             class="btn btn-secondary">Cancel</a>
@@ -360,7 +360,11 @@
                             };
                             input.click();
                         });
-                        if (field.value && !isNaN(parseInt(field.value))) { const img = previewWrap.querySelector('img'); img.src = '/images/serve/' + field.value; previewWrap.style.display = 'block'; }
+                        if (field.value && !isNaN(parseInt(field.value, 10))) {
+                            const img = previewWrap.querySelector('img');
+                            img.src = '/images/serve/' + field.value;
+                            previewWrap.style.display = 'block';
+                        }
                     }
                 });
                 JS, ['block' => true]);

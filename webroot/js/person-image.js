@@ -1,14 +1,17 @@
+/* global module */
 /**
  * Utilities to support the person image selector used in admin person forms.
  * Exported so we can unit test the upload and preview logic.
  */
 (function (root, factory) {
-    if (typeof module === 'object' && module.exports) {
+    if (typeof module !== 'undefined' && module && module.exports) {
+        // Node/CommonJS (Jest) environment
         module.exports = factory();
     } else {
+        // Browser global
         root.PersonImage = factory();
     }
-})(this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
     'use strict';
 
     async function uploadFile(file, uploadUrl = '/admin/images/upload', csrfToken = null) {

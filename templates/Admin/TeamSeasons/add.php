@@ -40,7 +40,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'class' => 'form-select h-100',
                                     'label' => false,
                                     'required' => true,
-                                    'id' => 'team-id'
+                                    'id' => 'team-id',
                                 ]) ?>
                             </div>
                             <button
@@ -67,7 +67,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'class' => 'form-select h-100',
                                     'label' => false,
                                     'required' => true,
-                                    'id' => 'season-id'
+                                    'id' => 'season-id',
                                 ]) ?>
                             </div>
                             <button
@@ -93,7 +93,7 @@ $this->assign('title', 'Add Team Season'); ?>
                             'id' => 'semester',
                             'min' => 1,
                             'max' => 4,
-                            'placeholder' => 'e.g., 1'
+                            'placeholder' => 'e.g., 1',
                         ]) ?>
                         <div class="form-text">Semester number (1-4) for this team season.</div>
                     </div>
@@ -108,7 +108,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'id' => 'league',
                                     'maxlength' => 240,
-                                    'placeholder' => 'e.g., NCAA Division I'
+                                    'placeholder' => 'e.g., NCAA Division I',
                                 ]) ?>
                                 <div class="form-text">League or conference name (max 240 characters).</div>
                             </div>
@@ -122,7 +122,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'id' => 'league-abbr',
                                     'maxlength' => 10,
-                                    'placeholder' => 'e.g., NCAA'
+                                    'placeholder' => 'e.g., NCAA',
                                 ]) ?>
                                 <div class="form-text">League abbreviation (max 10 characters).</div>
                             </div>
@@ -139,7 +139,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'id' => 'league-finish',
                                     'maxlength' => 240,
-                                    'placeholder' => 'e.g., 1st Place, 3-5'
+                                    'placeholder' => 'e.g., 1st Place, 3-5',
                                 ]) ?>
                                 <div class="form-text">Final position or record in league play.</div>
                             </div>
@@ -153,7 +153,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'id' => 'league-tournament-finish',
                                     'maxlength' => 240,
-                                    'placeholder' => 'e.g., Champion, Semi-Finals'
+                                    'placeholder' => 'e.g., Champion, Semi-Finals',
                                 ]) ?>
                                 <div class="form-text">Tournament finish position.</div>
                             </div>
@@ -168,7 +168,7 @@ $this->assign('title', 'Add Team Season'); ?>
                             'label' => false,
                             'id' => 'last-post-game',
                             'maxlength' => 240,
-                            'placeholder' => 'Final game or post-season information'
+                            'placeholder' => 'Final game or post-season information',
                         ]) ?>
                         <div class="form-text">Information about the final game or post-season activities.</div>
                     </div>
@@ -181,7 +181,7 @@ $this->assign('title', 'Add Team Season'); ?>
                             'label' => false,
                             'id' => 'team-season-notes',
                             'maxlength' => 240,
-                            'placeholder' => 'Additional notes about this season'
+                            'placeholder' => 'Additional notes about this season',
                         ]) ?>
                         <div class="form-text">General notes about this team season (max 240 characters).</div>
                     </div>
@@ -196,7 +196,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'id' => 'team-season-image',
                                     'maxlength' => 162,
-                                    'placeholder' => 'Numeric image id after upload'
+                                    'placeholder' => 'Numeric image id after upload',
                                 ]) ?>
                             </div>
                             <div class="col-md-4">
@@ -219,8 +219,8 @@ $this->assign('title', 'Add Team Season'); ?>
                             'rows' => 8,
                             'placeholder' => 'Preview text for the upcoming season...',
                             'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
-                            ]
+                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
+                            ],
                         ]) ?>
                         <div class="form-text">Pre-season preview or expectations. Rich text supported.</div>
                     </div>
@@ -235,8 +235,8 @@ $this->assign('title', 'Add Team Season'); ?>
                             'rows' => 8,
                             'placeholder' => 'Summary of the completed season...',
                             'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>'
-                            ]
+                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
+                            ],
                         ]) ?>
                         <div class="form-text">Post-season recap or summary. Rich text supported.</div>
                     </div>
@@ -244,7 +244,7 @@ $this->assign('title', 'Add Team Season'); ?>
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Save Team Season'), [
                             'type' => 'submit',
-                            'class' => 'btn btn-success'
+                            'class' => 'btn btn-success',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>"
                             class="btn btn-secondary">Cancel</a>
@@ -296,7 +296,7 @@ $this->assign('title', 'Add Team Season'); ?>
 <div style="display: none;">
     <?= $this->Form->create(null, [
         'url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'ajaxAdd'],
-        'id' => 'hidden-team-form'
+        'id' => 'hidden-team-form',
     ]) ?>
     <?= $this->Form->control('sport_id', ['type' => 'select']) ?>
     <?= $this->Form->control('team_name', ['type' => 'text']) ?>
@@ -308,7 +308,7 @@ $this->assign('title', 'Add Team Season'); ?>
 <div style="display: none;">
     <?= $this->Form->create(null, [
         'url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'ajaxAdd'],
-        'id' => 'hidden-season-form'
+        'id' => 'hidden-season-form',
     ]) ?>
     <?= $this->Form->control('start', ['type' => 'text']) ?>
     <?= $this->Form->control('end', ['type' => 'text']) ?>
@@ -327,28 +327,28 @@ $this->assign('title', 'Add Team Season'); ?>
             'type' => 'select',
             'label' => 'Sport',
             'required' => true,
-            'options' => $sports ?? []
+            'options' => $sports ?? [],
         ],
         [
             'name' => 'team_name',
             'type' => 'text',
             'label' => 'Team Name',
-            'required' => true
+            'required' => true,
         ],
         [
             'name' => 'abbr',
             'type' => 'text',
             'label' => 'Abbreviation',
-            'required' => true
+            'required' => true,
         ],
         [
             'name' => 'gender',
             'type' => 'select',
             'label' => 'Gender',
             'required' => true,
-            'options' => ['M' => 'Male', 'F' => 'Female', 'C' => 'Co-ed']
-        ]
-    ]
+            'options' => ['M' => 'Male', 'F' => 'Female', 'C' => 'Co-ed'],
+        ],
+    ],
 ]) ?>
 
 <?php
@@ -416,7 +416,11 @@ document.addEventListener('DOMContentLoaded', function(){
             };
             input.click();
         });
-        if (field.value && !isNaN(parseInt(field.value))) { const img = previewWrap.querySelector('img'); img.src = '/images/serve/' + field.value; previewWrap.style.display = 'block'; }
+        if (field.value && !isNaN(parseInt(field.value, 10))) {
+            const img = previewWrap.querySelector('img');
+            img.src = '/images/serve/' + field.value;
+            previewWrap.style.display = 'block';
+        }
     }
 });
 JS, ['block' => true]);
@@ -433,13 +437,13 @@ JS, ['block' => true]);
             'name' => 'start',
             'type' => 'text',
             'label' => 'Start Year',
-            'required' => true
+            'required' => true,
         ],
         [
             'name' => 'end',
             'type' => 'text',
             'label' => 'End Year',
-            'required' => true
-        ]
-    ]
+            'required' => true,
+        ],
+    ],
 ]) ?>
