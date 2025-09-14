@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Utility\PersonLabelHelper;
 use Cake\Http\Response;
 
 /**
@@ -238,9 +237,12 @@ class TeamSeasonRostersController extends AppController
         if ($this->request->is('post')) {
             $teamSeasonRoster = $this->TeamSeasonRosters->patchEntity($teamSeasonRoster, $this->request->getData());
             if ($this->TeamSeasonRosters->save($teamSeasonRoster)) {
-                // Build person label using the helper
+                // Build person label using entity virtual field
                 $personId = (int)$teamSeasonRoster->get('person_id');
-                $personLabel = PersonLabelHelper::buildLabelFromId($personId, $this->fetchTable('Persons'));
+                $personsTable = (new \Cake\ORM\Locator\TableLocator())->get('Persons');
+                /** @var \App\Model\Entity\Person $person */
+                $person = $personsTable->get($personId);
+                $personLabel = $person->getLabel();
                 $response = [
                     'success' => true,
                     'message' => 'Team season roster has been added successfully.',
