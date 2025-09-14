@@ -1,12 +1,13 @@
-/* global module */
 /**
  * Utilities to support the person image selector used in admin person forms.
  * Exported so we can unit test the upload and preview logic.
  */
 (function (root, factory) {
+    /* eslint-disable no-undef */
     if (typeof module !== 'undefined' && module && module.exports) {
         // Node/CommonJS (Jest) environment
         module.exports = factory();
+        /* eslint-enable no-undef */
     } else {
         // Browser global
         root.PersonImage = factory();
