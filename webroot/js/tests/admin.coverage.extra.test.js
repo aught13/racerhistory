@@ -31,12 +31,21 @@ describe('admin.js extra coverage targets', () => {
         expect(modal.style.display === 'block' || modal.style.display === '').toBeTruthy();
     });
 
-    test('renderAssociated handles non-JSON associated gracefully and shows toast', () => {
-        document.body.innerHTML =
-            '<div id="confirm-delete-modal"><ul id="confirm-delete-modal-assoc"></ul></div>';
+    test('JSON parse error fallback - createList should not throw', () => {
+        // Create DOM structure safely without innerHTML
+        const modal = document.createElement('div');
+        modal.id = 'confirm-delete-modal';
+        const assocList = document.createElement('ul');
+        assocList.id = 'confirm-delete-modal-assoc';
+        modal.appendChild(assocList);
+        document.body.appendChild(modal);
+
         const { showConfirmDelete } = require('../admin.js');
         // ensure AdminToast exists and works
-        document.body.innerHTML += '<div id="root"></div>';
+        const root = document.createElement('div');
+        root.id = 'root';
+        document.body.appendChild(root);
+
         // call with invalid JSON - should not throw and should create list item
         expect(() => showConfirmDelete({ associated: 'not json' })).not.toThrow();
         const assoc = document.getElementById('confirm-delete-modal-assoc');
