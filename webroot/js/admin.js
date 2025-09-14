@@ -1,4 +1,3 @@
-/* global module */
 (function () {
     /**
      * admin.js - Handles confirm delete modal logic for admin UI.
@@ -373,6 +372,7 @@
 
     // For Jest testing (Node/CommonJS) - export functions when `module.exports` is available.
     // Use `typeof module !== 'undefined'` check so this remains safe in browser globals.
+    /* eslint-disable no-undef */
     if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
         try {
             // Export internals to allow focused unit tests to exercise branches
@@ -393,4 +393,5 @@
             console.error('Error assigning module.exports in admin.js:', e);
         }
     }
+    /* eslint-enable no-undef */
 })();
