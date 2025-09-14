@@ -1,3 +1,4 @@
+/* eslint-env node */
 // @ts-check
 
 const eslint = require('@eslint/js');
@@ -5,8 +6,10 @@ const eslint = require('@eslint/js');
 module.exports = [
     eslint.configs.recommended,
     {
-        // Ignore third-party libraries and vendor files
+        // Ignore third-party libraries, config and vendor files
         ignores: [
+            'eslint.config.js',
+            'jest.setup.js',
             'webroot/js/tinymce/**',
             'vendor/**',
             'node_modules/**',

@@ -37,7 +37,7 @@ $this->assign('title', 'Add Season'); ?>
                             'label' => false,
                             'required' => true,
                             'id' => 'start-year',
-                            'placeholder' => 'e.g., 2023'
+                            'placeholder' => 'e.g., 2023',
                         ]) ?>
                         <div class="form-text">The starting year of the season (e.g., 2023 for 2023-2024 season).</div>
                     </div>
@@ -50,7 +50,7 @@ $this->assign('title', 'Add Season'); ?>
                             'label' => false,
                             'required' => true,
                             'id' => 'end-year',
-                            'placeholder' => 'e.g., 2024'
+                            'placeholder' => 'e.g., 2024',
                         ]) ?>
                         <div class="form-text">The ending year of the season (e.g., 2024 for 2023-2024 season).</div>
                     </div>
@@ -58,7 +58,7 @@ $this->assign('title', 'Add Season'); ?>
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Save Season'), [
                             'type' => 'submit',
-                            'class' => 'btn btn-success'
+                            'class' => 'btn btn-success',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>"
                             class="btn btn-secondary">Cancel</a>
@@ -103,7 +103,7 @@ $this->assign('title', 'Add Season'); ?>
 $(document).ready(function() {
     // Auto-populate end year when start year is entered
     $('#start-year').on('blur', function() {
-        var startYear = parseInt($(this).val());
+    var startYear = parseInt($(this).val(), 10);
         var endYearField = $('#end-year');
 
         if (startYear && !endYearField.val()) {
@@ -117,7 +117,7 @@ $(document).ready(function() {
 <div style="display: none;">
     <?= $this->Form->create(null, [
         'url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'ajaxAdd'],
-        'id' => 'hidden-season-form'
+        'id' => 'hidden-season-form',
     ]) ?>
     <?= $this->Form->control('start', ['type' => 'text']) ?>
     <?= $this->Form->control('end', ['type' => 'text']) ?>
