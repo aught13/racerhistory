@@ -19,8 +19,32 @@ use Cake\ORM\Entity;
  * @property mixed $death
  * @property mixed $created_at
  * @property mixed $updated_at
+ * @property string $label
  */
 class Person extends Entity
 {
-    // Customizations placeholder
+    protected array $_virtual = ['label'];
+
+    /**
+     * Returns a display label for the person (public for PHPStan compliance).
+     *
+     * @return string
+     */
+    public function getLabel(): string
+    {
+        if (!empty($this->display)) {
+            return $this->display;
+        }
+        $first = $this->first ?? '';
+        $last = $this->last ?? '';
+        $fullName = trim((string)$first . ' ' . (string)$last);
+        if ($fullName) {
+            return $fullName;
+        }
+        if (!empty($this->id)) {
+            return 'Person #' . $this->id;
+        }
+
+        return 'Unknown Person';
+    }
 }
