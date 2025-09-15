@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Ensure we run from the repo root
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+# If PHPStan isn't installed, skip gracefully
+if [ ! -x "vendor/bin/phpstan" ]; then
+  echo "[pre-commit] vendor/bin/phpstan not found; skipping PHPStan check"
+  exit 0
+fi
+
+PHP_BIN="${PHP:-php}"
+
+echo "[pre-commit] Running PHPStan with increased memory..."
+
+# Force higher PHP memory for the process and pass PHPStan's own memory flag as well
+"$PHP_BIN" -d memory_limit=1G vendor/bin/phpstan analyse \
+  --configuration=phpstan.neon \
+  --no-progress \
+  --memory-limit=1G
+
+echo "[pre-commit] PHPStan OK"
+
+exit 0
