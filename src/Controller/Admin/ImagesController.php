@@ -10,6 +10,14 @@ use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 
+/**
+ * Admin Images Controller
+ *
+ * Handles image upload, storage, and serving for the admin interface.
+ *
+ * @property \App\Model\Table\ImagesTable $Images
+ * @property \App\Model\Table\ImageUsagesTable $ImageUsages
+ */
 class ImagesController extends AppController
 {
     /**

@@ -9,5 +9,4 @@ parameters:
     ignoreErrors:
         # Allow CakePHP magic properties
         - '#Access to an undefined property.*::\$Authentication#'
-        - '#Access to an undefined property.*::\$Users#'
         # Allow using named-argument 'contain' with Table::get() (removed if not needed)
