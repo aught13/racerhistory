@@ -11,6 +11,10 @@ use Cake\Event\EventInterface;
  *
  * All admin controllers should extend this class.
  * This controller enforces admin authentication and role checking.
+ *
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
+ * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
  */
 class AppController extends BaseController
 {
@@ -56,7 +60,9 @@ class AppController extends BaseController
         }
 
         // Check if user is active
-        if ($identity->get('status') !== 'active') {
+        /** @var \App\Model\Entity\User $user */
+        $user = $identity->getOriginalData();
+        if ($user->status !== 'active') {
             $this->Authentication->logout();
             $this->Flash->error('Your account is not active. Please contact an administrator.');
             $response = $this->redirect([
@@ -70,7 +76,7 @@ class AppController extends BaseController
         }
 
         // Check if user has admin role
-        if ($identity->get('role') !== 'admin') {
+        if ($user->role !== 'admin') {
             $this->Flash->error('You do not have permission to access the admin area.');
             $response = $this->redirect([
                 'controller' => 'Users',

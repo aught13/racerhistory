@@ -26,6 +26,9 @@ use Cake\Event\EventInterface;
  * Add your application-wide methods in the class below, your controllers
  * will inherit them.
  *
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
+ * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
  * @link https://book.cakephp.org/5/en/controllers.html#the-app-controller
  */
 class AppController extends Controller
