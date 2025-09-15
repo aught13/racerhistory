@@ -23,4 +23,16 @@ echo "[pre-commit] Running PHPStan with increased memory..."
 
 echo "[pre-commit] PHPStan OK"
 
+# Run PHPUnit to ensure the PHP test suite passes before committing
+if [ -x "vendor/bin/phpunit" ]; then
+  echo "[pre-commit] Running PHPUnit..."
+  if ! vendor/bin/phpunit; then
+    echo "[pre-commit] PHPUnit failed. Aborting commit." >&2
+    exit 1
+  fi
+  echo "[pre-commit] PHPUnit OK"
+else
+  echo "[pre-commit] vendor/bin/phpunit not found; skipping PHPUnit"
+fi
+
 exit 0
