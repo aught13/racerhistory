@@ -13,6 +13,7 @@ use Cake\Http\Response;
  * Provides functionality for user administration, approval, and bulk operations.
  *
  * @property \App\Controller\Component\UserManagerComponent $UserManager
+ * @property \App\Model\Table\UsersTable $Users
  */
 class UsersController extends AppController
 {

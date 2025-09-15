@@ -6,6 +6,11 @@ namespace App\Controller;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 
+/**
+ * Public Images Controller
+ *
+ * @property \App\Model\Table\ImagesTable $Images
+ */
 class ImagesController extends AppController
 {
     /**
