@@ -42,8 +42,20 @@ class SeasonsController extends AppController
      */
     public function view(string $id)
     {
-        $season = $this->Seasons->get($id, contain: ['TeamSeasons']);
-        $this->set(compact('season'));
+        $season = $this->Seasons->get($id, contain: ['TeamSeasons' => ['Teams']]);
+
+        // Find previous and next seasons ordered by end year
+        $previousSeason = $this->Seasons->find()
+            ->where(['end <' => $season->end])
+            ->orderByDesc('end')
+            ->first();
+
+        $nextSeason = $this->Seasons->find()
+            ->where(['end >' => $season->end])
+            ->orderByAsc('end')
+            ->first();
+
+        $this->set(compact('season', 'previousSeason', 'nextSeason'));
     }
 
     /**
