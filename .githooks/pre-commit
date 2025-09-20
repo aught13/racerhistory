@@ -23,6 +23,30 @@ echo "[pre-commit] Running PHPStan with increased memory..."
 
 echo "[pre-commit] PHPStan OK"
 
+# Run PHPCS to ensure coding standards compliance
+if [ -x "vendor/bin/phpcs" ]; then
+  echo "[pre-commit] Running PHPCS..."
+  if ! vendor/bin/phpcs --standard=phpcs.xml src/ tests/; then
+    echo "[pre-commit] PHPCS failed. Run 'vendor/bin/phpcbf --standard=phpcs.xml src/ tests/' to auto-fix issues." >&2
+    exit 1
+  fi
+  echo "[pre-commit] PHPCS OK"
+else
+  echo "[pre-commit] vendor/bin/phpcs not found; skipping PHPCS"
+fi
+
+# Run Jest to ensure JavaScript tests pass
+if command -v npx >/dev/null 2>&1 && [ -f "package.json" ]; then
+  echo "[pre-commit] Running Jest..."
+  if ! npx jest --passWithNoTests; then
+    echo "[pre-commit] Jest failed. Fix JavaScript tests before committing." >&2
+    exit 1
+  fi
+  echo "[pre-commit] Jest OK"
+else
+  echo "[pre-commit] Jest not available; skipping JavaScript tests"
+fi
+
 # Run PHPUnit to ensure the PHP test suite passes before committing
 if [ -x "vendor/bin/phpunit" ]; then
   echo "[pre-commit] Running PHPUnit..."
@@ -35,4 +59,5 @@ else
   echo "[pre-commit] vendor/bin/phpunit not found; skipping PHPUnit"
 fi
 
+echo "[pre-commit] All checks passed!"
 exit 0
