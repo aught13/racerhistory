@@ -12,7 +12,32 @@
                 </ol>
             </nav>
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h1 class="mb-0">Season: <?= h($season->start . '-' . $season->end) ?></h1>
+                <div class="d-flex align-items-center">
+                    <div class="btn-group me-3">
+                        <?php if (isset($previousSeason)) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'view', $previousSeason->id]) ?>"
+                                class="btn btn-outline-secondary btn-sm" title="Previous Season: <?= h($previousSeason->start . '-' . $previousSeason->end) ?>">
+                                <i class="bi bi-chevron-left"></i> <?= h($previousSeason->start . '-' . $previousSeason->end) ?>
+                            </a>
+                        <?php else : ?>
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </button>
+                        <?php endif; ?>
+
+                        <?php if (isset($nextSeason)) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'view', $nextSeason->id]) ?>"
+                                class="btn btn-outline-secondary btn-sm" title="Next Season: <?= h($nextSeason->start . '-' . $nextSeason->end) ?>">
+                                <?= h($nextSeason->start . '-' . $nextSeason->end) ?> <i class="bi bi-chevron-right"></i>
+                            </a>
+                        <?php else : ?>
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                Next <i class="bi bi-chevron-right"></i>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <h1 class="mb-0">Season: <?= h($season->start . '-' . $season->end) ?></h1>
+                </div>
                 <div class="btn-group">
                     <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
                         class="btn btn-primary">
