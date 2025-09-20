@@ -19,15 +19,40 @@
                 </ol>
             </nav>
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h1 class="mb-0">
-                    <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
-                    <?= h($teamSeason->team->team_name) ?>
-                    <small
-                        class="text-muted"><?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?></small>
-                    <?php else : ?>
-                    Team Season Details
-                    <?php endif; ?>
-                </h1>
+                <div class="d-flex align-items-center">
+                    <div class="btn-group me-3">
+                        <?php if (isset($previousTeamSeason)) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $previousTeamSeason->id]) ?>"
+                                class="btn btn-outline-secondary btn-sm" title="Previous: <?= h($previousTeamSeason->team->team_name . ' (' . $previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end . ')') ?>">
+                                <i class="bi bi-chevron-left"></i> <?= h($previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end) ?>
+                            </a>
+                        <?php else : ?>
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </button>
+                        <?php endif; ?>
+
+                        <?php if (isset($nextTeamSeason)) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $nextTeamSeason->id]) ?>"
+                                class="btn btn-outline-secondary btn-sm" title="Next: <?= h($nextTeamSeason->team->team_name . ' (' . $nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end . ')') ?>">
+                                <?= h($nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end) ?> <i class="bi bi-chevron-right"></i>
+                            </a>
+                        <?php else : ?>
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                Next <i class="bi bi-chevron-right"></i>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <h1 class="mb-0">
+                        <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
+                        <?= h($teamSeason->team->team_name) ?>
+                        <small
+                            class="text-muted"><?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?></small>
+                        <?php else : ?>
+                        Team Season Details
+                        <?php endif; ?>
+                    </h1>
+                </div>
                 <div class="btn-group">
                     <a href="<?= $this->Url->build([
                             'prefix' => 'Admin',
