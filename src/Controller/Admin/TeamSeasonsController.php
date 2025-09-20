@@ -54,7 +54,34 @@ class TeamSeasonsController extends AppController
             ->where(['team_season_id' => $id])
             ->contain(['Persons'])
             ->all();
-        $this->set(compact('teamSeason', 'teamSeasonRosters'));
+
+        // Find previous and next team seasons of the same sport, ordered by season end year
+        $currentSportId = $teamSeason->team->sport_id;
+        $currentSeasonEnd = $teamSeason->season->end;
+
+        $previousTeamSeason = $this->TeamSeasons->find()
+            ->contain(['Teams', 'Seasons'])
+            ->matching('Teams', function ($q) use ($currentSportId) {
+                return $q->where(['Teams.sport_id' => $currentSportId]);
+            })
+            ->matching('Seasons', function ($q) use ($currentSeasonEnd) {
+                return $q->where(['Seasons.end <' => $currentSeasonEnd]);
+            })
+            ->orderByDesc('Seasons.end')
+            ->first();
+
+        $nextTeamSeason = $this->TeamSeasons->find()
+            ->contain(['Teams', 'Seasons'])
+            ->matching('Teams', function ($q) use ($currentSportId) {
+                return $q->where(['Teams.sport_id' => $currentSportId]);
+            })
+            ->matching('Seasons', function ($q) use ($currentSeasonEnd) {
+                return $q->where(['Seasons.end >' => $currentSeasonEnd]);
+            })
+            ->orderByAsc('Seasons.end')
+            ->first();
+
+        $this->set(compact('teamSeason', 'teamSeasonRosters', 'previousTeamSeason', 'nextTeamSeason'));
     }
 
     /**
