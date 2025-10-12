@@ -21,6 +21,34 @@ use Cake\Http\Response;
 class SportsController extends AppController
 {
     /**
+     * Initialization hook method.
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+    }
+
+    /**
+     * Before filter callback.
+     *
+     * @param \Cake\Event\EventInterface $event An Event instance
+     * @return void
+     */
+    public function beforeFilter(\Cake\Event\EventInterface $event): void
+    {
+        parent::beforeFilter($event);
+
+        // Disable form protection for editConfigs due to dynamic form fields
+        if ($this->request->getParam('action') === 'editConfigs') {
+            if ($this->components()->has('FormProtection')) {
+                $this->FormProtection->setConfig('unlockedActions', ['editConfigs']);
+            }
+        }
+    }
+
+    /**
      * List all sports for administration.
      *
      * @return void
@@ -42,7 +70,13 @@ class SportsController extends AppController
     public function view(string $id)
     {
         $sport = $this->Sports->get($id, contain: ['Teams']);
-        $this->set(compact('sport'));
+
+        // Load sport configurations
+        /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
+        $sportConfigs = $this->getTableLocator()->get('SportConfigs');
+        $configs = $sportConfigs->getFormattedConfigsForSport((int)$id);
+
+        $this->set(compact('sport', 'configs'));
     }
 
     /**
@@ -219,5 +253,200 @@ class SportsController extends AppController
         return $this->response
             ->withType('application/json')
             ->withStringBody(json_encode($response));
+    }
+
+    /**
+     * View sport configurations
+     *
+     * @param string $id Sport ID
+     * @return \Cake\Http\Response|null Renders view
+     */
+    public function configs(string $id): ?Response
+    {
+        try {
+            $sport = $this->Sports->get($id);
+            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
+            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
+            $configs = $sportConfigs->getFormattedConfigsForSport((int)$id);
+
+            $this->set(compact('sport', 'configs'));
+
+            return null;
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error(__('Sport not found.'));
+
+            return $this->redirect(['action' => 'index']);
+        }
+    }
+
+    /**
+     * Edit sport configurations
+     *
+     * @param string $id Sport ID
+     * @return \Cake\Http\Response|null Renders view or redirects
+     */
+    public function editConfigs(string $id): ?Response
+    {
+        try {
+            $sport = $this->Sports->get($id);
+            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
+            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
+
+            if ($this->request->is(['patch', 'post', 'put'])) {
+                $configData = $this->request->getData('configs', []);
+
+                if ($sportConfigs->saveBulkConfigs((int)$id, $configData)) {
+                    $this->Flash->success(__('Sport configurations have been updated.'));
+
+                    return $this->redirect(['action' => 'configs', $id]);
+                } else {
+                    $this->Flash->error(__('Unable to update sport configurations. Please try again.'));
+                }
+            }
+
+            $configs = $sportConfigs->getFormattedConfigsForSport((int)$id);
+
+            // If no configs exist at all, initialize with defaults
+            if (empty($configs['period_names']) && empty($configs['officials']) && empty($configs['settings'])) {
+                // Add default template only if there are no configs at all
+                $defaultTemplate = $sportConfigs->getDefaultConfigTemplate();
+                foreach ($defaultTemplate as $key => $data) {
+                    if (str_starts_with($key, 'period_name_')) {
+                        $periods = str_replace('period_name_', '', $key);
+                        $configs['period_names'][$periods] = $data;
+                    } elseif ($key === 'officials') {
+                        $configs['officials'] = $data;
+                    } else {
+                        $configs['settings'][$key] = $data;
+                    }
+                }
+            } else {
+                // Ensure all sections have at least empty arrays/structures
+                if (empty($configs['officials'])) {
+                    $configs['officials'] = ['value' => '', 'description' => ''];
+                }
+            }
+
+            $this->set(compact('sport', 'configs'));
+
+            return null;
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error(__('Sport not found.'));
+
+            return $this->redirect(['action' => 'index']);
+        }
+    }
+
+    /**
+     * Add a new sport configuration
+     *
+     * @param string $id Sport ID
+     * @return \Cake\Http\Response|null Redirects
+     */
+    public function addConfig(string $id): ?Response
+    {
+        $this->request->allowMethod(['post']);
+
+        try {
+            // Verify sport exists (throws RecordNotFoundException if not)
+            $this->Sports->get($id);
+            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
+            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
+
+            $key = $this->request->getData('config_key');
+            $value = $this->request->getData('config_value');
+            $description = $this->request->getData('description');
+
+            if (empty($key)) {
+                $this->Flash->error(__('Configuration key is required.'));
+
+                return $this->redirect(['action' => 'editConfigs', $id]);
+            }
+
+            // Handle array values (like officials)
+            if (str_contains($value, ',')) {
+                $value = array_map('trim', explode(',', $value));
+            }
+
+            $result = $sportConfigs->setConfig((int)$id, $key, $value, $description);
+
+            if ($result) {
+                $this->Flash->success(__('Configuration added successfully.'));
+            } else {
+                $this->Flash->error(__('Unable to add configuration. Please try again.'));
+            }
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error(__('Sport not found.'));
+        }
+
+        return $this->redirect(['action' => 'editConfigs', $id]);
+    }
+
+    /**
+     * Delete a sport configuration
+     *
+     * @param string $id Sport ID
+     * @param string $configKey Configuration key
+     * @return \Cake\Http\Response Redirects
+     */
+    public function deleteConfig(string $id, string $configKey): Response
+    {
+        $this->request->allowMethod(['delete']);
+
+        try {
+            // Verify sport exists (throws RecordNotFoundException if not)
+            $this->Sports->get($id);
+            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
+            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
+
+            $config = $sportConfigs->find()
+                ->where(['sport_id' => $id, 'config_key' => $configKey])
+                ->first();
+
+            if ($config && $sportConfigs->delete($config)) {
+                $this->Flash->success(__('Configuration deleted successfully.'));
+            } else {
+                $this->Flash->error(__('Unable to delete configuration.'));
+            }
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error(__('Sport not found.'));
+        }
+
+        return $this->redirect(['action' => 'editConfigs', $id]);
+    }
+
+    /**
+     * Reset sport configurations to defaults
+     *
+     * @param string $id Sport ID
+     * @return \Cake\Http\Response Redirects
+     */
+    public function resetConfigs(string $id): Response
+    {
+        $this->request->allowMethod(['post']);
+
+        try {
+            // Verify sport exists (throws RecordNotFoundException if not)
+            $this->Sports->get($id);
+            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
+            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
+
+            // Delete existing configs
+            $sportConfigs->deleteAll(['sport_id' => $id]);
+
+            // Add default configs
+            $defaultTemplate = $sportConfigs->getDefaultConfigTemplate();
+            $success = $sportConfigs->saveBulkConfigs((int)$id, $defaultTemplate);
+
+            if ($success) {
+                $this->Flash->success(__('Sport configurations have been reset to defaults.'));
+            } else {
+                $this->Flash->error(__('Unable to reset configurations. Please try again.'));
+            }
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error(__('Sport not found.'));
+        }
+
+        return $this->redirect(['action' => 'editConfigs', $id]);
     }
 }

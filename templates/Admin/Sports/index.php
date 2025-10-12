@@ -49,6 +49,10 @@
                                     class="btn btn-sm btn-info">View</a>
                                 <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id]) ?>"
                                     class="btn btn-sm btn-primary">Edit</a>
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'configs', $sport->id]) ?>"
+                                    class="btn btn-sm btn-warning" title="Configure period names, officials, and settings">
+                                    <i class="fas fa-cog"></i> Config
+                                </a>
                                 <?php
                                     $teamCount = isset($sport->teams) ? count($sport->teams) : 0;
                                     $associated = json_encode([

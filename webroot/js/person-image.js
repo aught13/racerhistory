@@ -86,9 +86,9 @@
                         console.error('Upload failed', json);
                         alert('Upload failed');
                     }
-                } catch (err) {
-                    console.error('Upload error', err);
-                    alert('Upload failed: ' + err.message);
+                } catch (_err) {
+                    console.error('Upload error', _err);
+                    alert('Upload failed: ' + _err.message);
                 } finally {
                     selectBtn.disabled = false;
                     selectBtn.textContent = opts.buttonText || 'Select Image';

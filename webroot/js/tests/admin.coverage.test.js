@@ -2,10 +2,11 @@
 // Additional admin.js tests to increase branch coverage to >80%
 
 describe('admin.js branch coverage improvement', () => {
+    let origRequestSubmit;
+    let origSubmit;
     beforeEach(() => {
-        jest.resetModules();
+        // Reset DOM and globals
         document.body.innerHTML = '';
-        // Clear any global admin.js state
         if (typeof window !== 'undefined') {
             delete window.showConfirmDelete;
             delete window.AdminToast;
@@ -15,6 +16,41 @@ describe('admin.js branch coverage improvement', () => {
                 getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
             },
         };
+        // Save original descriptors
+        origRequestSubmit = Object.getOwnPropertyDescriptor(
+            HTMLFormElement.prototype,
+            'requestSubmit'
+        );
+        origSubmit = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'submit');
+        Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+            value: jest.fn(function () {
+                if (this.submit) this.submit();
+            }),
+            configurable: true,
+            writable: true,
+        });
+        Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+            value: jest.fn(),
+            configurable: true,
+            writable: true,
+        });
+        jest.resetModules();
+    });
+    afterEach(() => {
+        document.body.innerHTML = '';
+        delete global.bootstrap;
+        jest.clearAllMocks();
+        // Restore original descriptors
+        if (origRequestSubmit) {
+            Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', origRequestSubmit);
+        } else {
+            delete HTMLFormElement.prototype.requestSubmit;
+        }
+        if (origSubmit) {
+            Object.defineProperty(HTMLFormElement.prototype, 'submit', origSubmit);
+        } else {
+            delete HTMLFormElement.prototype.submit;
+        }
     });
 
     function setupModalDom() {
@@ -269,12 +305,5 @@ describe('admin.js branch coverage improvement', () => {
         expect(injected[0].value).toBe('123');
     });
 
-    // Mock HTMLFormElement.prototype for tests
-    Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
-        value: jest.fn(function () {
-            if (this.submit) this.submit();
-        }),
-        configurable: true,
-        writable: true,
-    });
+    // (No global prototype override here; handled in beforeEach/afterEach)
 });

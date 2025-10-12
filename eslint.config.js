@@ -49,12 +49,15 @@ module.exports = [
                 expect: 'readonly',
                 beforeEach: 'readonly',
                 afterEach: 'readonly',
+                beforeAll: 'readonly',
+                afterAll: 'readonly',
                 jest: 'readonly',
                 require: 'readonly',
                 global: 'readonly',
                 exports: 'readonly',
                 Event: 'readonly',
                 HTMLFormElement: 'readonly',
+                MouseEvent: 'readonly',
             }
         }
     }

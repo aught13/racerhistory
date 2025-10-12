@@ -55,6 +55,13 @@ class TeamSeasonsController extends AppController
             ->contain(['Persons'])
             ->all();
 
+        // Get games for this team season
+        $teamSeasonGames = $this->fetchTable('Games')->find()
+            ->where(['team_season_id' => $id])
+            ->contain(['GameTypes', 'Opponents', 'Sites' => ['Places'], 'Places'])
+            ->orderByDesc('game_date')
+            ->all();
+
         // Find previous and next team seasons of the same sport, ordered by season end year
         $currentSportId = $teamSeason->team->sport_id;
         $currentSeasonEnd = $teamSeason->season->end;
@@ -81,7 +88,13 @@ class TeamSeasonsController extends AppController
             ->orderByAsc('Seasons.end')
             ->first();
 
-        $this->set(compact('teamSeason', 'teamSeasonRosters', 'previousTeamSeason', 'nextTeamSeason'));
+        $this->set(compact(
+            'teamSeason',
+            'teamSeasonRosters',
+            'teamSeasonGames',
+            'previousTeamSeason',
+            'nextTeamSeason'
+        ));
     }
 
     /**

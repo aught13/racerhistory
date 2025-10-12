@@ -2,18 +2,6 @@
 // Additional tests: fallback (no bootstrap), multiple invocations cleanup, invalid JSON, toast helper
 
 describe('admin.js additional scenarios', () => {
-    beforeEach(() => {
-        jest.resetModules();
-        jest.useFakeTimers();
-        document.body.innerHTML = '';
-        delete global.bootstrap; // ensure fallback path by default; individual tests can override
-    });
-
-    afterEach(() => {
-        jest.runOnlyPendingTimers();
-        jest.useRealTimers();
-    });
-
     function setupModalDom() {
         document.body.innerHTML = `
       <div id="confirm-delete-modal" style="display:none">
@@ -24,6 +12,56 @@ describe('admin.js additional scenarios', () => {
       <form id="delete-form-sample" method="post"></form>
     `;
     }
+
+    let origRequestSubmit, origSubmit, origBootstrap;
+    beforeEach(() => {
+        // Reset DOM and globals
+        document.body.innerHTML = '';
+        origBootstrap = Object.prototype.hasOwnProperty.call(global, 'bootstrap')
+            ? global.bootstrap
+            : undefined;
+        global.bootstrap = undefined;
+        origRequestSubmit = Object.getOwnPropertyDescriptor(
+            HTMLFormElement.prototype,
+            'requestSubmit'
+        );
+        origSubmit = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'submit');
+        Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+            value: jest.fn(function () {
+                if (this.submit) this.submit();
+            }),
+            configurable: true,
+            writable: true,
+        });
+        Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+            value: jest.fn(),
+            configurable: true,
+            writable: true,
+        });
+        jest.resetModules();
+        jest.useFakeTimers();
+    });
+    afterEach(() => {
+        document.body.innerHTML = '';
+        if (origBootstrap !== undefined) {
+            global.bootstrap = origBootstrap;
+        } else {
+            delete global.bootstrap;
+        }
+        if (origRequestSubmit) {
+            Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', origRequestSubmit);
+        } else {
+            delete HTMLFormElement.prototype.requestSubmit;
+        }
+        if (origSubmit) {
+            Object.defineProperty(HTMLFormElement.prototype, 'submit', origSubmit);
+        } else {
+            delete HTMLFormElement.prototype.submit;
+        }
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
+        jest.clearAllMocks();
+    });
 
     test('fallback path without bootstrap shows modal by setting display:block', () => {
         setupModalDom();
@@ -107,14 +145,5 @@ describe('admin.js additional scenarios', () => {
         expect(alert.className).toContain('alert-warning');
     });
 
-    Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
-        value: jest.fn(function () {
-            console.log('Forced mock requestSubmit called in admin.extra.test.js');
-            if (this.submit) {
-                this.submit();
-            }
-        }),
-        configurable: true,
-        writable: true,
-    });
+    // (No global prototype override here; handled in beforeEach/afterEach)
 });

@@ -1,3 +1,11 @@
+/* eslint-env jest */
+
+beforeAll(() => {
+    if (typeof HTMLFormElement !== 'undefined') {
+        HTMLFormElement.prototype.submit = function () {};
+        HTMLFormElement.prototype.requestSubmit = function () {};
+    }
+});
 /** @jest-environment jsdom */
 // Accessibility audit tests for roster management element using axe-core
 
@@ -32,19 +40,19 @@ describe('Roster Management Accessibility Audit', () => {
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Team Roster</h3>
-                    <a href="/admin/team-season-rosters/add?team_season_id=1" 
+                    <a href="/admin/team-season-rosters/add?team_season_id=1"
                        class="btn btn-success btn-sm">
                         <i class="bi bi-plus-circle" aria-hidden="true"></i> Add Roster Entry
                     </a>
                 </div>
                 <div class="card-body">
-                    <form id="bulk-action-form-rosters" 
-                          action="/admin/team-season-rosters/bulk" 
+                    <form id="bulk-action-form-rosters"
+                          action="/admin/team-season-rosters/bulk"
                           method="post">
                         <div class="mb-2 d-flex align-items-center gap-2" id="rosters-bulk-action-bar">
                             <label for="bulk-action-select-rosters" class="form-label mb-0">With Selected:</label>
-                            <select id="bulk-action-select-rosters" name="bulk_action" 
-                                    class="form-select form-select-sm w-auto" 
+                            <select id="bulk-action-select-rosters" name="bulk_action"
+                                    class="form-select form-select-sm w-auto"
                                     aria-describedby="bulk-action-help">
                                 <option value="">Choose...</option>
                                 <option value="delete">Delete</option>
@@ -52,23 +60,23 @@ describe('Roster Management Accessibility Audit', () => {
                             <div id="bulk-action-help" class="visually-hidden">
                                 Select an action to perform on selected roster entries
                             </div>
-                            <button type="submit" class="btn btn-primary btn-sm" 
-                                    id="bulk-action-btn-rosters" 
-                                    disabled 
+                            <button type="submit" class="btn btn-primary btn-sm"
+                                    id="bulk-action-btn-rosters"
+                                    disabled
                                     aria-describedby="bulk-btn-help">Go</button>
                             <div id="bulk-btn-help" class="visually-hidden">
                                 Execute the selected action on checked roster entries
                             </div>
                         </div>
 
-                        <table class="table table-striped table-bordered" 
-                               id="rosters-table" 
-                               role="table" 
+                        <table class="table table-striped table-bordered"
+                               id="rosters-table"
+                               role="table"
                                aria-label="Team roster entries">
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">
-                                        <input type="checkbox" id="select-all-rosters" 
+                                        <input type="checkbox" id="select-all-rosters"
                                                aria-label="Select all roster entries">
                                     </th>
                                     <th scope="col">Person</th>
@@ -82,15 +90,15 @@ describe('Roster Management Accessibility Audit', () => {
                             <tbody>
                                 <tr>
                                     <td>
-                                        <input type="checkbox" name="team_season_roster_ids[]" 
+                                        <input type="checkbox" name="team_season_roster_ids[]"
                                                value="1" class="roster-checkbox"
                                                aria-label="Select roster entry for John Doe">
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <img src="/images/serve/1?variant=small" 
-                                                 alt="John Doe photo" 
-                                                 width="40" height="40" 
+                                            <img src="/images/serve/1?variant=small"
+                                                 alt="John Doe photo"
+                                                 width="40" height="40"
                                                  class="me-2">
                                             <a href="/admin/persons/view/1">John Doe</a>
                                         </div>
@@ -100,9 +108,9 @@ describe('Roster Management Accessibility Audit', () => {
                                     <td>6'2"</td>
                                     <td>180 lbs</td>
                                     <td>
-                                        <a href="/admin/team-season-rosters/edit/1" 
+                                        <a href="/admin/team-season-rosters/edit/1"
                                            class="btn btn-sm btn-primary">Edit</a>
-                                        <button type="button" class="btn btn-sm btn-danger" 
+                                        <button type="button" class="btn btn-sm btn-danger"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#confirm-delete-modal"
                                                 data-delete-url="/admin/team-season-rosters/delete/1"
@@ -111,15 +119,15 @@ describe('Roster Management Accessibility Audit', () => {
                                 </tr>
                                 <tr>
                                     <td>
-                                        <input type="checkbox" name="team_season_roster_ids[]" 
+                                        <input type="checkbox" name="team_season_roster_ids[]"
                                                value="2" class="roster-checkbox"
                                                aria-label="Select roster entry for Jane Smith">
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <img src="/images/serve/2?variant=small" 
-                                                 alt="Jane Smith photo" 
-                                                 width="40" height="40" 
+                                            <img src="/images/serve/2?variant=small"
+                                                 alt="Jane Smith photo"
+                                                 width="40" height="40"
                                                  class="me-2">
                                             <a href="/admin/persons/view/2">Jane Smith</a>
                                         </div>
@@ -129,9 +137,9 @@ describe('Roster Management Accessibility Audit', () => {
                                     <td>5'8"</td>
                                     <td>145 lbs</td>
                                     <td>
-                                        <a href="/admin/team-season-rosters/edit/2" 
+                                        <a href="/admin/team-season-rosters/edit/2"
                                            class="btn btn-sm btn-primary">Edit</a>
-                                        <button type="button" class="btn btn-sm btn-danger" 
+                                        <button type="button" class="btn btn-sm btn-danger"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#confirm-delete-modal"
                                                 data-delete-url="/admin/team-season-rosters/delete/2"
@@ -143,10 +151,10 @@ describe('Roster Management Accessibility Audit', () => {
                     </form>
                 </div>
             </div>
-            
+
             <!-- Confirm delete modal for context -->
-            <div id="confirm-delete-modal" class="modal" tabindex="-1" 
-                 role="dialog" aria-labelledby="confirm-delete-title" 
+            <div id="confirm-delete-modal" class="modal" tabindex="-1"
+                 role="dialog" aria-labelledby="confirm-delete-title"
                  aria-describedby="confirm-delete-description">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -283,7 +291,7 @@ describe('Roster Management Accessibility Audit', () => {
                 <div class="card mt-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title mb-0">Team Roster</h3>
-                        <a href="/admin/team-season-rosters/add?team_season_id=1" 
+                        <a href="/admin/team-season-rosters/add?team_season_id=1"
                            class="btn btn-success btn-sm">
                             <i class="bi bi-plus-circle" aria-hidden="true"></i> Add Roster Entry
                         </a>
@@ -291,7 +299,7 @@ describe('Roster Management Accessibility Audit', () => {
                     <div class="card-body">
                         <div class="alert alert-info" role="alert">
                             No roster entries have been created for this team season yet.
-                            <a href="/admin/team-season-rosters/add?team_season_id=1" 
+                            <a href="/admin/team-season-rosters/add?team_season_id=1"
                                class="alert-link">Add the first roster entry</a>.
                         </div>
                     </div>

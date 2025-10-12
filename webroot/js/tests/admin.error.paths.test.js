@@ -1,3 +1,11 @@
+/* eslint-env jest */
+
+beforeAll(() => {
+    if (typeof HTMLFormElement !== 'undefined') {
+        HTMLFormElement.prototype.submit = function () {};
+        HTMLFormElement.prototype.requestSubmit = function () {};
+    }
+});
 /** @jest-environment jsdom */
 
 describe('admin.js error-path branches', () => {
@@ -11,6 +19,21 @@ describe('admin.js error-path branches', () => {
         global.bootstrap = undefined;
     });
 
+    afterEach(() => {
+        // Clean up DOM and globals
+        document.body.innerHTML = '';
+        if (typeof window !== 'undefined') {
+            delete window.showConfirmDelete;
+            delete window.AdminToast;
+        }
+        global.bootstrap = undefined;
+        // Restore HTMLFormElement methods if patched
+        if (typeof HTMLFormElement !== 'undefined') {
+            HTMLFormElement.prototype.submit = function () {};
+            HTMLFormElement.prototype.requestSubmit = function () {};
+        }
+    });
+
     test('gracefully handles document.getElementById throwing when finding source', () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
@@ -21,53 +44,58 @@ describe('admin.js error-path branches', () => {
         `;
         const { showConfirmDelete } = require('../admin.js');
         const orig = document.getElementById;
-        // throw only for a specific id
-        document.getElementById = function (id) {
-            if (id === 'will-throw') throw new Error('boom');
-            return orig.call(document, id);
-        };
-        // call with a bad formId so the code will attempt to getElementById('will-throw')
-        expect(() =>
-            showConfirmDelete({
-                deleteUrl: '/x',
-                formId: 'will-throw',
-                ids: '[1]',
-                idsName: 'ids[]',
-            })
-        ).not.toThrow();
-        // click delete should not throw even though getElementById may throw inside handler
-        expect(() =>
-            document.getElementById('confirm-delete-modal-delete-btn').click()
-        ).not.toThrow();
-        // restore
-        document.getElementById = orig;
+        try {
+            // throw only for a specific id
+            document.getElementById = function (id) {
+                if (id === 'will-throw') throw new Error('boom');
+                return orig.call(document, id);
+            };
+            // call with a bad formId so the code will attempt to getElementById('will-throw')
+            expect(() =>
+                showConfirmDelete({
+                    deleteUrl: '/x',
+                    formId: 'will-throw',
+                    ids: '[1]',
+                    idsName: 'ids[]',
+                })
+            ).not.toThrow();
+            // click delete should not throw even though getElementById may throw inside handler
+            expect(() =>
+                document.getElementById('confirm-delete-modal-delete-btn').click()
+            ).not.toThrow();
+        } finally {
+            document.getElementById = orig;
+        }
     });
 
     test('parseInt throwing is caught and results in no ids injected', () => {
         document.body.innerHTML = `
-          <div id="confirm-delete-modal">
-            <ul id="confirm-delete-modal-assoc"></ul>
-            <form id="confirm-delete-modal-hidden-form"></form>
-            <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
-          </div>
-        `;
+                    <div id="confirm-delete-modal">
+                        <ul id="confirm-delete-modal-assoc"></ul>
+                        <form id="confirm-delete-modal-hidden-form"></form>
+                        <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
+                    </div>
+                `;
         const { showConfirmDelete } = require('../admin.js');
         const origParse = global.parseInt;
-        global.parseInt = function () {
-            throw new Error('parseInt boom');
-        };
-        showConfirmDelete({ deleteUrl: '/p', ids: ' 123 ', idsName: 'ids[]' });
-        // should not throw on click
-        expect(() =>
-            document.getElementById('confirm-delete-modal-delete-btn').click()
-        ).not.toThrow();
-        const temp = Array.from(document.querySelectorAll('form')).find(
-            (f) => f.action && f.action.includes('/p')
-        );
-        expect(temp).toBeTruthy();
-        // parsing failed; ensure temp form exists and click did not throw
-        expect(temp).toBeTruthy();
-        global.parseInt = origParse;
+        try {
+            global.parseInt = function () {
+                throw new Error('parseInt boom');
+            };
+            showConfirmDelete({ deleteUrl: '/p', ids: ' 123 ', idsName: 'ids[]' });
+            // should not throw on click
+            expect(() =>
+                document.getElementById('confirm-delete-modal-delete-btn').click()
+            ).not.toThrow();
+            const temp = Array.from(document.querySelectorAll('form')).find(
+                (f) => f.action && f.action.includes('/p')
+            );
+            expect(temp).toBeTruthy();
+            // parsing failed; ensure temp form exists and click did not throw
+            expect(temp).toBeTruthy();
+        } finally {
+            global.parseInt = origParse;
+        }
     });
 
     test('source.getAttribute throwing is caught and postAction falls back to deleteUrl', () => {

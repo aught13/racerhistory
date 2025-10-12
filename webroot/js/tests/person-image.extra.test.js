@@ -1,3 +1,11 @@
+/* eslint-env jest */
+
+beforeAll(() => {
+    if (typeof HTMLFormElement !== 'undefined') {
+        HTMLFormElement.prototype.submit = function () {};
+        HTMLFormElement.prototype.requestSubmit = function () {};
+    }
+});
 /** @jest-environment jsdom */
 const personImage = require('../person-image.js');
 

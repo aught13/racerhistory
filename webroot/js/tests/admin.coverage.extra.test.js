@@ -1,3 +1,11 @@
+/* eslint-env jest */
+
+beforeAll(() => {
+    if (typeof HTMLFormElement !== 'undefined') {
+        HTMLFormElement.prototype.submit = function () {};
+        HTMLFormElement.prototype.requestSubmit = function () {};
+    }
+});
 /** @jest-environment jsdom */
 // Extra admin tests to cover edge branches: bulkAction present/absent, missing modal, associated parse errors,
 // and temp form token copying fallback.
@@ -12,6 +20,21 @@ describe('admin.js extra coverage targets', () => {
             delete window.AdminToast;
         }
         global.bootstrap = undefined; // test fallback when bootstrap missing
+    });
+
+    afterEach(() => {
+        // Clean up DOM and globals
+        document.body.innerHTML = '';
+        if (typeof window !== 'undefined') {
+            delete window.showConfirmDelete;
+            delete window.AdminToast;
+        }
+        global.bootstrap = undefined;
+        // Restore HTMLFormElement methods if patched
+        if (typeof HTMLFormElement !== 'undefined') {
+            HTMLFormElement.prototype.submit = function () {};
+            HTMLFormElement.prototype.requestSubmit = function () {};
+        }
     });
 
     test('showConfirmDelete fallback displays modal when bootstrap absent', () => {

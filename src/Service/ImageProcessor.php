@@ -77,16 +77,15 @@ class ImageProcessor
             $width = 1;
             $height = 1;
             if (function_exists('imagecreatefromstring')) {
-                $prevHandler = set_error_handler(static function () {
+                set_error_handler(static function () {
                     // Swallow imagecreatefromstring warnings and continue degraded.
                     return true;
                 });
                 $tmp = imagecreatefromstring($contents);
-                if ($prevHandler !== null) {
-                    set_error_handler($prevHandler);
-                } else {
-                    restore_error_handler();
-                }
+                // Always restore the previous handler by popping the last
+                // installed handler so the error handler stack matches
+                // what it was before set_error_handler() was called.
+                restore_error_handler();
                 if ($tmp !== false) {
                     $width = imagesx($tmp);
                     $height = imagesy($tmp);

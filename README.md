@@ -41,13 +41,23 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 - Role-based admin dashboard
 - User management (add, edit, approve, manage)
-- Sports management (add, edit, delete, bulk operations)
+- Sports management (add, edit, delete, bulk operations with configurable sport settings)
 - Teams management (add, edit, delete, bulk operations with sport associations)
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
 - Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)
+- **Games Management** (add/edit/delete, bulk operations, sport-aware period/official tracking)
 - Dynamic Person AJAX search & inline person creation modal (roster forms)
 - Responsive admin navigation with Bootstrap styling
 - Comprehensive CRUD and bulk operations for all admin entities
+
+### Game Management System
+
+- **Smart Game Forms** - Sport-aware dynamic forms with AJAX loading of period/official fields
+- **Business Rule Validation** - Games enforce season date ranges and future games can't have scores
+- **Multi-Sport Support** - Basketball (halves/quarters), Football, Baseball with configurable periods/officials
+- **EAV Attribute System** - Flexible storage for sport-specific game data (period scores, officials, attendance)
+- **Cumulative Scoring** - Validates period totals match game totals for supported sports
+- **Legacy Compatibility** - Maintains backward compatibility with existing game data
 
 ### UI/UX
 
@@ -143,11 +153,12 @@ racerhistory/
 
 ### Code Coverage & Test Suite
 
-- **PHP Tests**: 205 tests / 500 assertions (controllers, models, integration, roster & image flows)
-- **JavaScript Coverage** (Jest): Statements 82.32%, Branches 69.5%, Functions 96.15%, Lines 86.27%
-- **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk)
-- **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, TeamSeasonRosters, Persons, Images)
-- **Frontend**: Jest exercises confirm-delete modal edge cases, image selector upload, error branches
+- **PHP Tests**: 288 tests / 761 assertions (controllers, models, integration, game flows & validation)
+- **JavaScript Coverage** (Jest): Statements 88%+, Branches 80%+, Functions 95%+, Lines 90%+
+- **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk, games management)
+- **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, Games, EAV, Persons, Images)
+- **Business Rules**: Comprehensive validation testing (season dates, cumulative scoring, future games)
+- **Frontend**: Jest exercises confirm-delete modal, image selector, sport-aware forms, error branches
 
 ### Key Documentation Features
 
@@ -211,8 +222,9 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **jQuery 3.7.1** - DOM manipulation and AJAX
 - **Bootstrap JS** - Modals, dropdowns, components
 - **Modules**: `admin.js` (confirm-delete + toast), `person-image.js` (image upload/preview), dynamic roster person search
+- **Sport-Aware Forms**: `games_sport_dynamic.js`, `sport-aware-game-form.js` - Dynamic form fields based on sport configuration
 - **TinyMCE** - Rich text fields for Team Seasons preview/recap
-- **Tests**: Jest + jsdom with coverage (see Code Coverage section)
+- **Tests**: Jest + jsdom with comprehensive coverage including edge cases and error paths
 
 ### Design Principles
 

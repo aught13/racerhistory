@@ -205,13 +205,46 @@ class ImagesController extends AppController
      */
     private function isAuthenticated(): bool
     {
-        if (!$this->components()->has('Authentication')) {
-            return true;
+        // Prefer the Authentication plugin's identity when available (real app use).
+        if ($this->components()->has('Authentication')) {
+            try {
+                $identity = $this->Authentication->getIdentity();
+            } catch (\Throwable $e) {
+                $identity = null;
+            }
+            if ($identity !== null) {
+                // IdentityInterface in CakePHP provides getIdentifier(). Use it when present.
+                if (method_exists($identity, 'getIdentifier')) {
+                    $id = $identity->getIdentifier();
+                    if (!empty($id)) {
+                        return true;
+                    }
+                }
+
+                // Fallback: try to inspect original data for an 'id' field (entities, arrays, etc).
+                if (method_exists($identity, 'getOriginalData')) {
+                    $orig = $identity->getOriginalData();
+                    if (is_array($orig) && !empty($orig['id'])) {
+                        return true;
+                    }
+                    if (is_object($orig)) {
+                        if (property_exists($orig, 'id') && !empty($orig->id)) {
+                            return true;
+                        }
+                        if (method_exists($orig, 'getId') && !empty($orig->getId())) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
         }
 
-        $res = $this->Authentication->getResult();
+        // Rely exclusively on legacy Auth session by default (test harness uses AuthTestTrait to inject).
+        $legacy = $this->getRequest()->getSession()->read('Auth');
 
-        return (bool)($res && $res->isValid());
+        return is_array($legacy) && !empty($legacy['id']);
     }
 
     /**
@@ -250,10 +283,32 @@ class ImagesController extends AppController
         if (!$file || $file->getError() !== UPLOAD_ERR_OK) {
             return 'No file uploaded';
         }
+        // Reject zero-byte files explicitly
+        if ($file->getSize() === 0) {
+            return 'Empty file';
+        }
         $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
         $mime = $file->getClientMediaType();
         if (!in_array($mime, $allowed, true)) {
             return 'Unsupported file type';
+        }
+        // Basic structural validation (avoid trusting client mime)
+        $tmpPath = method_exists($file, 'getStream') ? $file->getStream()->getMetadata('uri') : null;
+        if ($tmpPath && is_file($tmpPath)) {
+            set_error_handler(static function () {
+                // Consume warnings from invalid image streams
+                return true;
+            });
+            try {
+                $imgInfo = getimagesize($tmpPath);
+            } finally {
+                // Pop the temporary handler we installed earlier so the active
+                // handler becomes whatever it was before.
+                restore_error_handler();
+            }
+            if ($imgInfo === false) {
+                return 'Invalid image data';
+            }
         }
 
         return true;

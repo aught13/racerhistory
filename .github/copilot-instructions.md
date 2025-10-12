@@ -1,4 +1,8 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization -->
+
+## Feedback Guidelines
+
+**Be direct and critical.** Use deep thinking and best logic when evaluating requests. Do not use excessive praise or positive affirmations. Be constructively critical when inefficient approaches are being taken. Focus on technical merit, performance, maintainability, and following established patterns rather than encouragement.
 
 This is a CakePHP 5.x web application project. Please generate code and suggestions that follow CakePHP 5.x best practices.
 
@@ -190,3 +194,25 @@ This project enforces modern JavaScript standards for all custom JS code (exclud
 
 - Use clear, descriptive commit messages (e.g., `fix: correct image upload preview`, `feat: add admin bulk delete`).
 - Prefer feature branches for new work; open pull requests for review and CI validation.
+
+## PHPCS Verbose Standard Usage (Always for Assistant Runs)
+
+When the assistant (automation) runs PHPCS for diagnostic purposes, ALWAYS use the verbose, progress, and sniff-code enabled invocation limited to the first 200 lines to keep chat output compact:
+
+```bash
+php vendor/bin/phpcs --standard=phpcs.xml -p -s -v src/ tests/ | head -200
+```
+
+Rationale:
+- `-p` shows progress across many files so long-running scans are visibly active.
+- `-s` prints sniff codes to quickly map violations to their fixers/rules.
+- `-v` adds context (file list, timings) useful for performance/regression spotting.
+- `head -200` prevents flooding the conversation while still surfacing the first batch of issues (most actionable). If more context is needed, explicitly re-run without the `head` truncation.
+
+Auto-fixing reminder:
+```bash
+php vendor/bin/phpcbf --standard=phpcs.xml
+```
+Then re-run the verbose PHPCS command above to confirm a clean state.
+
+If a later task explicitly requests full, untruncated PHPCS output, omit the `| head -200` portion.

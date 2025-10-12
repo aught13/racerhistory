@@ -20,9 +20,20 @@ if (PHP_SAPI === 'cli-server') {
     $_SERVER['PHP_SELF'] = '/' . basename(__FILE__);
 
     $url = parse_url(urldecode($_SERVER['REQUEST_URI']));
-    $file = __DIR__ . $url['path'];
-    if (!str_contains($url['path'], '..') && str_contains($url['path'], '.') && is_file($file)) {
-        return false;
+    if ($url && isset($url['path'])) {
+        // More secure path validation to prevent directory traversal
+        $requestPath = $url['path'];
+
+        // Only allow files with extensions and ensure they're within webroot
+        if (!str_contains($requestPath, '..') && str_contains($requestPath, '.')) {
+            $file = realpath(__DIR__ . $requestPath);
+            $webroot = realpath(__DIR__);
+
+            // Ensure file is within webroot and exists
+            if ($file && $webroot && str_starts_with($file, $webroot) && is_file($file)) {
+                return false;
+            }
+        }
     }
 }
 require dirname(__DIR__) . '/vendor/autoload.php';
