@@ -49,6 +49,7 @@ class TeamSeasonsController extends AppController
      */
     public function view(string $id): void
     {
+        /** @var \App\Model\Entity\TeamSeason $teamSeason */
         $teamSeason = $this->TeamSeasons->get($id, contain: ['Teams', 'Seasons']);
         $teamSeasonRosters = $this->fetchTable('TeamSeasonRosters')->find()
             ->where(['team_season_id' => $id])
@@ -66,6 +67,7 @@ class TeamSeasonsController extends AppController
         $currentSportId = $teamSeason->team->sport_id;
         $currentSeasonEnd = $teamSeason->season->end;
 
+        /** @var \App\Model\Entity\TeamSeason|null $previousTeamSeason */
         $previousTeamSeason = $this->TeamSeasons->find()
             ->contain(['Teams', 'Seasons'])
             ->matching('Teams', function ($q) use ($currentSportId) {
@@ -77,6 +79,7 @@ class TeamSeasonsController extends AppController
             ->orderByDesc('Seasons.end')
             ->first();
 
+        /** @var \App\Model\Entity\TeamSeason|null $nextTeamSeason */
         $nextTeamSeason = $this->TeamSeasons->find()
             ->contain(['Teams', 'Seasons'])
             ->matching('Teams', function ($q) use ($currentSportId) {

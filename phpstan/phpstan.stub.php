@@ -11,10 +11,10 @@ namespace Cake\ORM {
         {
             /**
              * @param mixed $primaryKey
-             * @param array{contain?: array<string>}|null $options
+             * @param array<string>|array<string, mixed>|null $contain
              * @return \Cake\Datasource\EntityInterface|object|null
              */
-            public function get($primaryKey, $options = null) {}
+            public function get($primaryKey, $contain = null) {}
         }
     }
 }
