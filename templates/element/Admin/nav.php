@@ -69,6 +69,11 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>">
+                        Games</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
                         href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>">
                         Persons</a>
                 </li>

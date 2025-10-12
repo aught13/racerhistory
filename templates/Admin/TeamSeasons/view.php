@@ -300,6 +300,8 @@
     </div>
 
     <?= $this->element('Admin/roster_management', ['teamSeason' => $teamSeason, 'teamSeasonRosters' => $teamSeasonRosters]) ?>
+
+    <?= $this->element('Admin/games_management', ['teamSeason' => $teamSeason, 'teamSeasonGames' => $teamSeasonGames]) ?>
 </div>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team season']) ?>

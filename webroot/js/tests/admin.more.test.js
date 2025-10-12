@@ -1,16 +1,10 @@
 /** @jest-environment jsdom */
 // Additional coverage for admin.js: single id string, array ids, no ids, temp form fallback, show.bs.modal event
 
-global.bootstrap = {
-    Modal: {
-        getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
-    },
-};
-
 describe('admin.js more branches', () => {
     let exports;
     beforeEach(() => {
-        jest.resetModules();
+        // Reset DOM
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -19,7 +13,13 @@ describe('admin.js more branches', () => {
           </div>
           <form id="delete-form-sample" method="post"></form>
         `;
-        // ensure requestSubmit stub
+        // Reset global.bootstrap
+        global.bootstrap = {
+            Modal: {
+                getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
+            },
+        };
+        // Reset requestSubmit
         Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
             value: jest.fn(function () {
                 if (this.submit) this.submit();
@@ -27,7 +27,19 @@ describe('admin.js more branches', () => {
             configurable: true,
             writable: true,
         });
+        // Reset submit
+        Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+            value: jest.fn(),
+            configurable: true,
+            writable: true,
+        });
+        jest.resetModules();
         exports = require('../admin.js');
+    });
+    afterEach(() => {
+        document.body.innerHTML = '';
+        delete global.bootstrap;
+        jest.clearAllMocks();
     });
 
     test('single numeric id string injects one input', () => {

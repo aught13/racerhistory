@@ -18,6 +18,7 @@
         "format:js:check": "npx prettier --check 'webroot/js/**'"
     },
     "jest": {
+        "testEnvironment": "jsdom",
         "testMatch": [
             "**/webroot/js/tests/**/*.test.js"
         ],

@@ -1,3 +1,11 @@
+/* eslint-env jest */
+
+beforeAll(() => {
+    if (typeof HTMLFormElement !== 'undefined') {
+        HTMLFormElement.prototype.submit = function () {};
+        HTMLFormElement.prototype.requestSubmit = function () {};
+    }
+});
 /** @jest-environment jsdom */
 
 describe('admin.js additional targeted branches', () => {
@@ -9,6 +17,21 @@ describe('admin.js additional targeted branches', () => {
             delete window.AdminToast;
         }
         global.bootstrap = undefined;
+    });
+
+    afterEach(() => {
+        // Clean up DOM and globals
+        document.body.innerHTML = '';
+        if (typeof window !== 'undefined') {
+            delete window.showConfirmDelete;
+            delete window.AdminToast;
+        }
+        global.bootstrap = undefined;
+        // Restore HTMLFormElement methods if patched
+        if (typeof HTMLFormElement !== 'undefined') {
+            HTMLFormElement.prototype.submit = function () {};
+            HTMLFormElement.prototype.requestSubmit = function () {};
+        }
     });
 
     test('JSON numeric string ids parsed as number and added', () => {
@@ -108,6 +131,7 @@ describe('admin.js additional targeted branches', () => {
           </div>
         `;
         const { showConfirmDelete } = require('../admin.js');
+        // If this test ever overrides any global/prototype, use try/finally for restoration (none here).
         showConfirmDelete({ deleteUrl: '/none', ids: 'not-a-number', idsName: 'ids[]' });
         document.getElementById('confirm-delete-modal-delete-btn').click();
         // The code may inject into an existing hidden form; check both possibilities.

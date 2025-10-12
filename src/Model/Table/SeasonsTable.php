@@ -73,16 +73,37 @@ class SeasonsTable extends Table
             ->allowEmptyString('id', null, 'create');
 
         $validator
-            ->scalar('start')
-            ->maxLength('start', 255)
+            ->integer('start')
             ->requirePresence('start', 'create')
-            ->notEmptyString('start');
+            ->notEmptyString('start')
+            ->add('start', 'validYear', [
+                'rule' => function ($value, $context) {
+                    return $value >= 1900 && $value <= 3000;
+                },
+                'message' => 'Start must be a valid year.',
+            ]);
 
         $validator
-            ->scalar('end')
-            ->maxLength('end', 255)
+            ->integer('end')
             ->requirePresence('end', 'create')
-            ->notEmptyString('end');
+            ->notEmptyString('end')
+            ->add('end', 'validYear', [
+                'rule' => function ($value, $context) {
+                    return $value >= 1900 && $value <= 3000;
+                },
+                'message' => 'End must be a valid year.',
+            ])
+            ->add('end', 'afterStart', [
+                'rule' => function ($value, $context) {
+                    $start = $context['data']['start'] ?? null;
+                    if ($start === null) {
+                        return true;
+                    }
+
+                    return (int)$value >= (int)$start;
+                },
+                'message' => 'End year must be the same or after start year.',
+            ]);
 
         return $validator;
     }

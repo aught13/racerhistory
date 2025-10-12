@@ -43,6 +43,14 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
             ->setPass(['id'])
             ->setPatterns(['id' => '\d+']);
+
+
+        // Explicit route for AJAX sport-form-data endpoint (query param only)
+        $routes->connect('/games/sport-form-data', [
+            'controller' => 'Games',
+            'action' => 'ajaxGameEavMeta',
+        ]);
+
         $routes->fallbacks(DashedRoute::class);
     });
     /*

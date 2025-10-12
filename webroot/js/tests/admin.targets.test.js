@@ -1,3 +1,9 @@
+beforeAll(() => {
+    if (typeof HTMLFormElement !== 'undefined') {
+        HTMLFormElement.prototype.submit = function () {};
+        HTMLFormElement.prototype.requestSubmit = function () {};
+    }
+});
 /** @jest-environment jsdom */
 
 describe('admin.js targeted branch tests', () => {
@@ -14,6 +20,18 @@ describe('admin.js targeted branch tests', () => {
 
     afterEach(() => {
         jest.useRealTimers();
+        // Clean up DOM and globals
+        document.body.innerHTML = '';
+        if (typeof window !== 'undefined') {
+            delete window.showConfirmDelete;
+            delete window.AdminToast;
+        }
+        global.bootstrap = undefined;
+        // Restore HTMLFormElement methods if patched
+        if (typeof HTMLFormElement !== 'undefined') {
+            HTMLFormElement.prototype.submit = function () {};
+            HTMLFormElement.prototype.requestSubmit = function () {};
+        }
     });
 
     test('parses single numeric id string with whitespace using parseInt fallback', () => {

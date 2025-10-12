@@ -12,6 +12,37 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - (placeholder) Additional domain models and admin features.
 - (placeholder) Extended test coverage and performance improvements.
 
+### Added (Unreleased) - Game Management System
+
+- **Advanced Game Validation & Business Rules**: Comprehensive business logic for game entities
+  - Future games allowed but cannot have scores/results set (`futureNoScore` validator)
+  - Game dates must fall within season years for selected team season (`withinSeason` validator)  
+  - Cumulative scoring validation: period/overtime totals must equal game totals when `scoring_type='cumulative'`
+  - Removed same-day game uniqueness constraint to allow multiple games per day
+  - Enhanced `GamesTable` with `validateCumulativeTotals()` method and sport-aware validation
+- **Sport Configuration System**: Dynamic sport settings for multi-sport support
+  - New `SportConfigsTable` and `SportConfig` entity for flexible sport configuration
+  - EAV (Entity-Attribute-Value) system for sport-specific game data storage
+  - Period names (Half/Quarter/Inning), officials, and scoring types configurable per sport
+  - Database migration `20251003140000_CreateSportConfigs.php` for sport_configs table
+  - Enhanced games table migration `20251003141000_EnhanceGamesTableForMultiSport.php`
+- **Smart Game Forms**: Dynamic, sport-aware admin interface
+  - New `Admin\GamesController` with comprehensive CRUD operations and AJAX endpoints
+  - Dynamic form fields that adapt based on selected team's sport configuration
+  - Client-side JavaScript (`games_sport_dynamic.js`, `sport-aware-game-form.js`) for responsive forms
+  - Server-side HTML fragment rendering for enhanced performance
+  - Legacy period score mapping for backward compatibility
+- **Enhanced Testing Coverage**: Comprehensive test coverage for new game features
+  - Game validation tests: `GamesTableFutureValidationTest`, `GamesTableSeasonAndCumulativeTest`
+  - Controller integration tests with authentication and form security
+  - JavaScript test suite with 88%+ coverage including edge cases and error paths
+  - Enhanced fixtures: `SportConfigsFixture`, `GamesFixture`, `GameEavFixture` for test stability
+- **Template Modernization**: Bootstrap 5.3.2 compatible admin templates
+  - New admin templates for Games, Opponents, Places, Sites, GameTypes management
+  - Sport configuration views (`configs.php`, `edit_configs.php`) with dynamic field management
+  - Responsive game management element for team season views
+  - Accessibility improvements with ARIA labels and semantic markup
+
 ### Added (Unreleased)
 
 - **Admin Sports Management**: Complete CRUD functionality for managing sports

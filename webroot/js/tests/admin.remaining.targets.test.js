@@ -1,3 +1,4 @@
+let origSubmit, origRequestSubmit;
 /** @jest-environment jsdom */
 
 describe('admin.js remaining branch targets', () => {
@@ -9,6 +10,51 @@ describe('admin.js remaining branch targets', () => {
             delete window.AdminToast;
         }
         global.bootstrap = undefined;
+        // Save and patch HTMLFormElement.prototype
+        if (typeof HTMLFormElement !== 'undefined') {
+            origSubmit = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'submit');
+            origRequestSubmit = Object.getOwnPropertyDescriptor(
+                HTMLFormElement.prototype,
+                'requestSubmit'
+            );
+            Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+                value: function () {},
+                configurable: true,
+                writable: true,
+            });
+            Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+                value: function () {},
+                configurable: true,
+                writable: true,
+            });
+        }
+    });
+
+    afterEach(() => {
+        // Clean up DOM and globals
+        document.body.innerHTML = '';
+        if (typeof window !== 'undefined') {
+            delete window.showConfirmDelete;
+            delete window.AdminToast;
+        }
+        global.bootstrap = undefined;
+        // Restore HTMLFormElement methods
+        if (typeof HTMLFormElement !== 'undefined') {
+            if (origSubmit) {
+                Object.defineProperty(HTMLFormElement.prototype, 'submit', origSubmit);
+            } else {
+                delete HTMLFormElement.prototype.submit;
+            }
+            if (origRequestSubmit) {
+                Object.defineProperty(
+                    HTMLFormElement.prototype,
+                    'requestSubmit',
+                    origRequestSubmit
+                );
+            } else {
+                delete HTMLFormElement.prototype.requestSubmit;
+            }
+        }
     });
 
     test('delegated trigger click sets context from data attributes and renders associated', () => {
@@ -49,22 +95,24 @@ describe('admin.js remaining branch targets', () => {
           <div id="confirm-delete-modal"><ul id="confirm-delete-modal-assoc"></ul><form id="confirm-delete-modal-hidden-form"></form><button id="confirm-delete-modal-delete-btn" type="button">Delete</button></div>
         `;
         const origParse = global.parseInt;
-        global.parseInt = function () {
-            throw new Error('boom parse');
-        };
-        const { showConfirmDelete } = require('../admin.js');
-        // Use a string that JSON.parse will throw on (e.g., '+42'), but regex matches
-        showConfirmDelete({ deleteUrl: '/pz', ids: '+42', idsName: 'ids[]' });
-        // click should not throw even though parseInt throws
-        expect(() =>
-            document.getElementById('confirm-delete-modal-delete-btn').click()
-        ).not.toThrow();
-        const temp = Array.from(document.querySelectorAll('form')).find(
-            (f) => f.action && f.action.includes('/pz')
-        );
-        expect(temp).toBeTruthy();
-        // restore
-        global.parseInt = origParse;
+        try {
+            global.parseInt = function () {
+                throw new Error('boom parse');
+            };
+            const { showConfirmDelete } = require('../admin.js');
+            // Use a string that JSON.parse will throw on (e.g., '+42'), but regex matches
+            showConfirmDelete({ deleteUrl: '/pz', ids: '+42', idsName: 'ids[]' });
+            // click should not throw even though parseInt throws
+            expect(() =>
+                document.getElementById('confirm-delete-modal-delete-btn').click()
+            ).not.toThrow();
+            const temp = Array.from(document.querySelectorAll('form')).find(
+                (f) => f.action && f.action.includes('/pz')
+            );
+            expect(temp).toBeTruthy();
+        } finally {
+            global.parseInt = origParse;
+        }
     });
 
     test('normalization error path caught when Array.filter throws', () => {
@@ -72,15 +120,17 @@ describe('admin.js remaining branch targets', () => {
           <div id="confirm-delete-modal"><ul id="confirm-delete-modal-assoc"></ul><form id="confirm-delete-modal-hidden-form"></form><button id="confirm-delete-modal-delete-btn" type="button">Delete</button></div>
         `;
         const origFilter = Array.prototype.filter;
-        Array.prototype.filter = function () {
-            throw new Error('filter boom');
-        };
-        const { showConfirmDelete } = require('../admin.js');
-        showConfirmDelete({ deleteUrl: '/nz', ids: '[1,2]', idsName: 'ids[]' });
-        expect(() =>
-            document.getElementById('confirm-delete-modal-delete-btn').click()
-        ).not.toThrow();
-        // restore
-        Array.prototype.filter = origFilter;
+        try {
+            Array.prototype.filter = function () {
+                throw new Error('filter boom');
+            };
+            const { showConfirmDelete } = require('../admin.js');
+            showConfirmDelete({ deleteUrl: '/nz', ids: '[1,2]', idsName: 'ids[]' });
+            expect(() =>
+                document.getElementById('confirm-delete-modal-delete-btn').click()
+            ).not.toThrow();
+        } finally {
+            Array.prototype.filter = origFilter;
+        }
     });
 });

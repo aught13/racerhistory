@@ -27,6 +27,7 @@ class SportsControllerTest extends TestCase
         'app.Teams',
         'app.Users',
         'app.SiteOptions',
+        'app.SportConfigs',
     ];
 
     /**
@@ -391,5 +392,224 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports');
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
+    }
+
+    /**
+     * Test editConfigs method GET request
+     *
+     * @return void
+     */
+    public function testEditConfigsGet(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/sports/edit-configs/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Edit Sport Configurations');
+    }
+
+    /**
+     * Test editConfigs method POST request
+     *
+     * @return void
+     */
+    public function testEditConfigsPost(): void
+    {
+        $this->mockIdentity();
+
+        $configData = [
+            'configs' => [
+                'period_name_2' => [
+                    'value' => 'Half',
+                    'description' => 'Updated period name for 2 periods',
+                ],
+                'officials' => [
+                    'value' => 'Referee',
+                    'description' => 'Updated officials info',
+                ],
+                'default_periods' => [
+                    'value' => '2',
+                    'description' => 'Default number of periods',
+                ],
+            ],
+        ];
+
+        $this->post('/admin/sports/edit-configs/1', $configData);
+        $this->assertRedirect('/admin/sports/configs/1');
+        $this->assertFlashMessage('Sport configurations have been updated.');
+    }
+
+    /**
+     * Test configs method GET request
+     *
+     * @return void
+     */
+    public function testConfigsGet(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Sport Configurations');
+        $this->assertResponseContains('Officials');
+    }
+
+    /**
+     * Test editConfigs loads existing fixture values correctly
+     *
+     * @return void
+     */
+    public function testEditConfigsLoadsExistingValues(): void
+    {
+        $this->mockIdentity();
+
+        // Load the edit form - should show fixture values, not defaults
+        $this->get('/admin/sports/edit-configs/1');
+        $this->assertResponseOk();
+
+        // Should contain values from the fixture (Half, Quarter, Basketball officials)
+        $this->assertResponseContains('Half'); // period_name_2 from fixture
+        $this->assertResponseContains('Quarter'); // period_name_4 from fixture
+        // Note: Officials in fixture are JSON array, should be displayed as comma-separated
+        $this->assertResponseContains('Referee 1'); // from fixture officials array
+    }
+
+    /**
+     * Test that saved values persist after save/reload cycle
+     *
+     * @return void
+     */
+    public function testSaveAndReloadCycle(): void
+    {
+        $this->mockIdentity();
+
+        // Save custom officials data
+        $configData = [
+            'configs' => [
+                'officials' => [
+                    'value' => 'Home Plate, First Base, Third Base',
+                    'description' => 'Baseball officials',
+                ],
+            ],
+        ];
+
+        $this->post('/admin/sports/edit-configs/1', $configData);
+        $this->assertRedirect('/admin/sports/configs/1');
+
+        // Now verify it was saved by checking the configs view
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Home Plate');
+        $this->assertResponseContains('First Base');
+        $this->assertResponseContains('Third Base');
+    }
+
+    /**
+     * Test that edit form shows saved values (the core issue)
+     *
+     * @return void
+     */
+    public function testEditFormShowsSavedValues(): void
+    {
+        $this->mockIdentity();
+
+        // Save custom officials data
+        $configData = [
+            'configs' => [
+                'officials' => [
+                    'value' => 'Home Plate, First Base, Third Base',
+                    'description' => 'Baseball officials',
+                ],
+            ],
+        ];
+
+        $this->post('/admin/sports/edit-configs/1', $configData);
+        $this->assertRedirect('/admin/sports/configs/1');
+
+        // Now load the EDIT form and verify it shows our saved values (not defaults)
+        $this->get('/admin/sports/edit-configs/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Home Plate, First Base, Third Base');
+    }
+
+    /**
+     * Test that custom period names are saved and loaded correctly
+     *
+     * @return void
+     */
+    public function testCustomPeriodNames(): void
+    {
+        $this->mockIdentity();
+
+        // Save custom period names (7 and 9 periods instead of default 2 and 4)
+        $configData = [
+            'configs' => [
+                'period_name_7' => [
+                    'value' => 'Inning',
+                    'description' => 'Baseball innings for 7 periods',
+                ],
+                'period_name_9' => [
+                    'value' => 'Inning',
+                    'description' => 'Baseball innings for 9 periods',
+                ],
+            ],
+        ];
+
+        $this->post('/admin/sports/edit-configs/1', $configData);
+        $this->assertRedirect('/admin/sports/configs/1');
+
+        // Verify the custom period names are displayed in configs view
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('7'); // Should show 7 periods
+        $this->assertResponseContains('9'); // Should show 9 periods
+
+        // Now load the EDIT form and verify it shows our custom values (not defaults)
+        $this->get('/admin/sports/edit-configs/1');
+        $this->assertResponseOk();
+        // Should NOT contain default period counts
+        $this->assertResponseNotContains('value="2"'); // Should not show default 2 periods
+        $this->assertResponseNotContains('value="4"'); // Should not show default 4 periods
+        // Should contain our custom period counts
+        $this->assertResponseContains('value="7"'); // Should show our 7 periods
+        $this->assertResponseContains('value="9"'); // Should show our 9 periods
+    }
+
+    /**
+     * Test that JavaScript-generated period names are processed correctly
+     *
+     * @return void
+     */
+    public function testJavaScriptGeneratedPeriodNames(): void
+    {
+        $this->mockIdentity();
+
+        // Simulate what happens when JavaScript adds new period names
+        // This matches the structure created by the addPeriodName() JavaScript function
+        $configData = [
+            'configs' => [
+                'period_name_new_0' => [
+                    'periods' => '7',
+                    'value' => 'Inning',
+                    'description' => 'Baseball innings for 7 periods',
+                ],
+                'period_name_new_1' => [
+                    'periods' => '9',
+                    'value' => 'Inning',
+                    'description' => 'Baseball innings for 9 periods',
+                ],
+            ],
+        ];
+
+        $this->post('/admin/sports/edit-configs/1', $configData);
+        $this->assertRedirect('/admin/sports/configs/1');
+
+        // Verify the period names were saved with correct keys (period_name_7, period_name_9)
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('7'); // Should show 7 periods
+        $this->assertResponseContains('9'); // Should show 9 periods
+
+        // Should NOT show the temporary JavaScript keys
+        $this->assertResponseNotContains('new_0');
+        $this->assertResponseNotContains('new_1');
     }
 }

@@ -39,6 +39,8 @@ class TeamSeasonsControllerTest extends TestCase
         // Should include image element debug comment now that fixture sets team_season_image
         // Image presence now handled client-side; ensure basic page content loads instead
         $this->assertResponseContains('Basic Information');
+        // Should also contain games management section
+        $this->assertResponseContains('Games for this Season');
     }
 
     public function testViewContainsRosterManagementElement(): void

@@ -12,6 +12,14 @@ class ImagesControllerTest extends TestCase
     use IntegrationTestTrait;
     use AuthTestTrait;
 
+    /**
+     * Saved PHP error handler captured in setUp so tests can restore it in tearDown.
+     * Declared to avoid dynamic property deprecation notices.
+     *
+     * @var callable|null
+     */
+    protected $savedErrorHandler = null;
+
     protected array $fixtures = [
         'app.Images',
     ];
@@ -25,6 +33,13 @@ class ImagesControllerTest extends TestCase
 
     public function setUp(): void
     {
+        // Capture current PHP error handler before calling parent::setUp so we
+        // don't change PHPUnit's internal baseline of handlers.
+        $prev = set_error_handler(function () {
+        });
+        restore_error_handler();
+        $this->savedErrorHandler = $prev;
+
         parent::setUp();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
@@ -65,6 +80,20 @@ class ImagesControllerTest extends TestCase
         $record = $images->get($json['image']['id']);
         $this->assertNotEmpty($record->storage_path, 'storage_path should be set');
         $this->assertStringContainsString('/', (string)$record->storage_path, 'storage_path should include subdir');
+    }
+
+    /**
+     * Return the current active PHP error handler without modifying the stack.
+     *
+     * @return callable|array|null
+     */
+    protected function getCurrentErrorHandler()
+    {
+        $prev = set_error_handler(static function () {
+        });
+        restore_error_handler();
+
+        return $prev;
     }
 
     public function testUploadRejectsUnsupportedMime(): void
@@ -238,6 +267,31 @@ class ImagesControllerTest extends TestCase
                         }
                     }
                 }
+            }
+        }
+
+        // Restore the saved PHP error handler to avoid leaving modified handlers
+        // that cause PHPUnit to mark tests as risky. We set the saved handler and
+        // then immediately restore the stack so the overall handler state matches
+        // what it was at setUp time.
+        if ($this->savedErrorHandler !== null) {
+            $maxLoops = 20;
+            $loops = 0;
+            while ($loops++ < $maxLoops) {
+                $curr = $this->getCurrentErrorHandler();
+                if ($curr === $this->savedErrorHandler) {
+                    break;
+                }
+
+                // Pop the most recent handler and try again.
+                restore_error_handler();
+            }
+
+            // If after popping we still don't have the saved handler active,
+            // force it to be the active handler so PHPUnit's post-test check
+            // observes the original handler.
+            if ($this->getCurrentErrorHandler() !== $this->savedErrorHandler) {
+                set_error_handler($this->savedErrorHandler);
             }
         }
 

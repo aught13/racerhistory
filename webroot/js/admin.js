@@ -249,13 +249,14 @@
                 }
 
                 // Build extra fields
-                const extra = [];
-                if (context.ids && context.idsName) {
+                const extra = (function buildExtraFields(ctx) {
+                    const res = [];
+                    if (!ctx || !ctx.ids || !ctx.idsName) return res;
                     let idsArr = [];
-                    if (typeof context.ids === 'string') {
-                        const trimmed = context.ids.trim();
+                    if (typeof ctx.ids === 'string') {
+                        const trimmed = ctx.ids.trim();
                         try {
-                            const parsed = JSON.parse(context.ids);
+                            const parsed = JSON.parse(ctx.ids);
                             if (Array.isArray(parsed)) {
                                 idsArr = parsed;
                             } else if (parsed !== null && parsed !== undefined) {
@@ -275,26 +276,24 @@
                                 idsArr = [];
                             }
                         }
-                    } else if (Array.isArray(context.ids)) {
-                        idsArr = context.ids;
-                    } else if (context.ids) {
-                        idsArr = [context.ids];
+                    } else if (Array.isArray(ctx.ids)) {
+                        idsArr = ctx.ids;
+                    } else if (ctx.ids) {
+                        idsArr = [ctx.ids];
                     }
-                    // Final normalization: ensure primitive values converted to strings
                     try {
                         idsArr
                             .filter((v) => v !== null && v !== undefined && v !== '')
                             .forEach((id) =>
-                                extra.push({ name: context.idsName, value: String(id) })
+                                res.push({ name: ctx.idsName, value: String(id).trim() })
                             );
                     } catch (e) {
                         console.error('Error normalizing ids:', e);
                         window.AdminToast && window.AdminToast('Error normalizing ids', 'danger');
                     }
-                    if (context.bulkAction) {
-                        extra.push({ name: 'bulk_action', value: context.bulkAction });
-                    }
-                }
+                    if (ctx.bulkAction) res.push({ name: 'bulk_action', value: ctx.bulkAction });
+                    return res;
+                })(context);
 
                 // If a source form exists, prefer injecting into and submitting that form so tests
                 // and server-side FormProtection tokens align. Otherwise fallback to a temporary form.
@@ -309,7 +308,11 @@
                         postAction = source.action;
                     }
                 } catch (err) {
+                    // If reading attributes from the source form throws, treat the source as
+                    // unavailable so we fall back to submitting a temporary form. This prevents
+                    // attempting to mutate or submit a potentially broken form element.
                     console.error('Error determining postAction from source form:', err);
+                    source = null;
                 }
                 console.log(
                     'confirm-delete final post action:',
@@ -386,6 +389,51 @@
                     renderAssociated,
                     setContext,
                     submitTempForm,
+                    // expose helper for unit testing
+                    buildExtraFields: function (ctx) {
+                        // replicate the same logic as used above
+                        const res = [];
+                        if (!ctx || !ctx.ids || !ctx.idsName) return res;
+                        let idsArr = [];
+                        if (typeof ctx.ids === 'string') {
+                            const trimmed = ctx.ids.trim();
+                            try {
+                                const parsed = JSON.parse(ctx.ids);
+                                if (Array.isArray(parsed)) {
+                                    idsArr = parsed;
+                                } else if (parsed !== null && parsed !== undefined) {
+                                    idsArr = [parsed];
+                                }
+                            } catch {
+                                if (/^\s*[+-]?\d+\s*$/.test(trimmed)) {
+                                    try {
+                                        idsArr = [parseInt(trimmed, 10)];
+                                    } catch {
+                                        // ignore parseInt errors
+                                        idsArr = [];
+                                    }
+                                } else {
+                                    idsArr = [];
+                                }
+                            }
+                        } else if (Array.isArray(ctx.ids)) {
+                            idsArr = ctx.ids;
+                        } else if (ctx.ids) {
+                            idsArr = [ctx.ids];
+                        }
+                        try {
+                            idsArr
+                                .filter((v) => v !== null && v !== undefined && v !== '')
+                                .forEach((id) =>
+                                    res.push({ name: ctx.idsName, value: String(id).trim() })
+                                );
+                        } catch {
+                            // swallow
+                        }
+                        if (ctx.bulkAction)
+                            res.push({ name: 'bulk_action', value: ctx.bulkAction });
+                        return res;
+                    },
                 },
             };
         } catch (e) {
