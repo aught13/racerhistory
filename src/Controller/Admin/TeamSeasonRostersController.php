@@ -130,6 +130,7 @@ class TeamSeasonRostersController extends AppController
 
         $teamSeasonsList = [];
         foreach ($teamSeasonsQuery as $teamSeason) {
+            /** @var \App\Model\Entity\TeamSeason $teamSeason */
             $teamName = $teamSeason->team->team_name;
             $seasonRange = $teamSeason->season->start . '-' . $teamSeason->season->end;
             $teamSeasonsList[$teamSeason->get('id')] = $teamName . ' (' . $seasonRange . ')';

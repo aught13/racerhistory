@@ -1,4 +1,9 @@
 <?php
+/**
+ * Contributor Note: The `$autoId` property type must match your local CakePHP version's AbstractMigration parent class.
+ * CI will auto-adapt this property type as needed (see .github/workflows/ci.yml, step: "Fix migration compatibility").
+ * Do not attempt runtime adaptation in migration code; rely on CI logic.
+ */
 
 declare(strict_types=1);
 
