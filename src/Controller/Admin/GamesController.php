@@ -45,6 +45,7 @@ class GamesController extends AppController
                     ->where(['Games.id' => $gameId])
                     ->firstOrFail();
                 $teamSeasonId = (int)($game->get('team_season_id') ?? 0);
+                /** @var \App\Model\Entity\TeamSeason|null $teamSeasonAssoc */
                 $teamSeasonAssoc = $game->get('team_season');
                 if ($teamSeasonAssoc && $teamSeasonAssoc->team && $teamSeasonAssoc->team->sport) {
                     $sportId = $teamSeasonAssoc->team->sport->id;
@@ -380,6 +381,7 @@ class GamesController extends AppController
             ->all();
         $teamSeasonList = [];
         foreach ($teamSeasons as $ts) {
+            /** @var \App\Model\Entity\TeamSeason $ts */
             $sportName = $ts->team->sport->sport_name ?? 'Unknown';
             $label = sprintf(
                 '%s (%s) — %s-%s',
@@ -477,7 +479,9 @@ class GamesController extends AppController
             ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
             ->where(['Games.id' => $gameId])
             ->first();
-        $sportId = $game->team_season->team->sport->id ?? null;
+        /** @var \App\Model\Entity\TeamSeason|null $ts */
+        $ts = $game?->team_season;
+        $sportId = $ts?->team?->sport->id ?? null;
 
         if ($sportId) {
             /** @var \App\Model\Table\GameEavTable $gameEavTable */

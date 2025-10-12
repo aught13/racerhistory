@@ -77,7 +77,8 @@ class GamesTable extends Table
             if ($teamSeasonId) {
                 try {
                     $ts = $this->fetchTable('TeamSeasons');
-                    $teamSeason = $ts->get((int)$teamSeasonId, contain: ['Teams' => ['Sports']]);
+                    /** @var \App\Model\Entity\TeamSeason $teamSeason */
+                    $teamSeason = $ts->get((int)$teamSeasonId, ['contain' => ['Teams' => ['Sports']]]);
                     if (!empty($teamSeason->team) && !empty($teamSeason->team->sport)) {
                         $sportId = $teamSeason->team->sport->id;
                     }
@@ -226,6 +227,7 @@ class GamesTable extends Table
                 }
                 try {
                     $tsTable = $this->fetchTable('TeamSeasons');
+                    /** @var \App\Model\Entity\TeamSeason|null $teamSeason */
                     $teamSeason = $tsTable->find()
                         ->contain(['Seasons'])
                         ->where(['TeamSeasons.id' => (int)$teamSeasonId])
@@ -345,6 +347,7 @@ class GamesTable extends Table
             // Get sport from team season
             /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
             $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+            /** @var \App\Model\Entity\TeamSeason|null $teamSeason */
             $teamSeason = $teamSeasonsTable->find()
                 ->contain(['Teams' => ['Sports']])
                 ->where(['TeamSeasons.id' => $teamSeasonId])
@@ -387,6 +390,7 @@ class GamesTable extends Table
             // Get sport from team season
             /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
             $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+            /** @var \App\Model\Entity\TeamSeason|null $teamSeason */
             $teamSeason = $teamSeasonsTable->find()
                 ->contain(['Teams' => ['Sports']])
                 ->where(['TeamSeasons.id' => $teamSeasonId])

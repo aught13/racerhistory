@@ -30,10 +30,10 @@ class TeamSeasonRostersController extends AppController
     {
         $teamSeasonRoster = $this->TeamSeasonRosters->get(
             $id,
-            contain: [
+            ['contain' => [
                 'TeamSeasons' => ['Teams', 'Seasons'],
                 'Persons',
-            ]
+            ]]
         );
         $this->set(compact('teamSeasonRoster'));
     }
@@ -78,6 +78,7 @@ class TeamSeasonRostersController extends AppController
 
         $teamSeasonsList = [];
         foreach ($teamSeasonsQuery as $teamSeason) {
+            /** @var \App\Model\Entity\TeamSeason $teamSeason */
             $teamName = $teamSeason->team->team_name;
             $seasonRange = $teamSeason->season->start . '-' . $teamSeason->season->end;
             $teamSeasonsList[$teamSeason->get('id')] = $teamName . ' (' . $seasonRange . ')';
@@ -101,10 +102,10 @@ class TeamSeasonRostersController extends AppController
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
         $teamSeasonRoster = $this->TeamSeasonRosters->get(
             $id,
-            contain: [
+            ['contain' => [
                 'TeamSeasons' => ['Teams', 'Seasons'],
                 'Persons',
-            ]
+            ]]
         );
 
         if ($this->request->is(['patch', 'post', 'put'])) {
