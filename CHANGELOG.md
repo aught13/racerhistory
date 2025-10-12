@@ -16,7 +16,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 - **Advanced Game Validation & Business Rules**: Comprehensive business logic for game entities
   - Future games allowed but cannot have scores/results set (`futureNoScore` validator)
-  - Game dates must fall within season years for selected team season (`withinSeason` validator)  
+  - Game dates must fall within season years for selected team season (`withinSeason` validator)
   - Cumulative scoring validation: period/overtime totals must equal game totals when `scoring_type='cumulative'`
   - Removed same-day game uniqueness constraint to allow multiple games per day
   - Enhanced `GamesTable` with `validateCumulativeTotals()` method and sport-aware validation
