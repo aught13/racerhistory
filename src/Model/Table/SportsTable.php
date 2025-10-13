@@ -61,6 +61,11 @@ class SportsTable extends Table
             'foreignKey' => 'sport_id',
             'dependent' => true,
         ]);
+
+        $this->hasMany('SportStatRegistry', [
+            'foreignKey' => 'sport_id',
+            'dependent' => true,
+        ]);
     }
 
     /**
