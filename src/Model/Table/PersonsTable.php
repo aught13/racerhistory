@@ -24,6 +24,15 @@ class PersonsTable extends Table
             'created' => 'created_at',
             'modified' => 'updated_at',
         ]);
+
+        // Add a callback to automatically set the full name
+        $this->getEventManager()->on('Model.beforeSave', function($event, $entity, $options) {
+            if ($entity instanceof \App\Model\Entity\Person) {
+                if (empty($entity->full) && !empty($entity->first) && !empty($entity->last)) {
+                    $entity->full = trim($entity->first . ' ' . $entity->last);
+                }
+            }
+        });
     }
 
     /**
