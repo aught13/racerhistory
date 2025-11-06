@@ -76,7 +76,8 @@ $this->assign('title', 'Period Box Scores');
                             <?php foreach ($statFields as $field => $shortLabel) :
                                 $displayLabel = $fieldLabels[$field] ?? $shortLabel;
                                 $existingKey = 'team_' . $p;
-                                $value = isset($existingStats[$existingKey]) ? $existingStats[$existingKey]->get($field) : null;
+                                $value = isset($existingStats[$existingKey])
+                                    ? $existingStats[$existingKey]->get($field) : null;
                                 ?>
                                 <div class="col-md-4 col-sm-6">
                                     <?= $this->Form->control("team_{$p}.{$field}", [

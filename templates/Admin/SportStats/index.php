@@ -114,10 +114,11 @@
                                             '<i class="bi bi-trash"></i>',
                                             ['action' => 'delete', $registry->id],
                                             [
-                                                'confirm' => 'Are you sure you want to delete this stat configuration?',
+                                                'confirm' => 'Are you sure you want to delete '
+                                                    . 'this stat configuration?',
                                                 'class' => 'btn btn-danger',
                                                 'escape' => false,
-                                            ]
+                                            ],
                                         ) ?>
                                     </div>
                                 </td>
@@ -139,7 +140,10 @@
                     </nav>
                 </div>
                 <p class="text-center text-muted">
-                    <?= $this->Paginator->counter('Page {{page}} of {{pages}}, showing {{current}} record(s) out of {{count}} total') ?>
+                    <?= $this->Paginator->counter(
+                        'Page {{page}} of {{pages}}, showing {{current}} record(s) '
+                        . 'out of {{count}} total',
+                    ) ?>
                 </p>
             <?php else : ?>
                 <div class="alert alert-info">

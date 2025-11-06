@@ -130,7 +130,9 @@ $mapping = $sportConfigService->getFieldMapping(
                     if (empty($fieldMapping)) : ?>
                         <div class="alert alert-warning">
                             No field mappings have been defined for this table yet.
-                            <a href="<?= $this->Url->build(['action' => 'edit', $sportStatRegistry->id]) ?>" class="btn btn-sm btn-warning ms-3">
+                            <a href="<?= $this->Url->build([
+                                'action' => 'edit', $sportStatRegistry->id,
+                            ]) ?>" class="btn btn-sm btn-warning ms-3">
                                 <i class="bi bi-pencil"></i> Add Field Mappings
                             </a>
                         </div>

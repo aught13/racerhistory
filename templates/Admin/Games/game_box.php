@@ -132,7 +132,9 @@ $this->assign('title', 'Game Box Scores');
                     <span class="badge bg-success">
                         <i class="bi bi-check-circle"></i> Period stats entered
                     </span>
-                    <a href="<?= $this->Url->build(['action' => 'gameBoxPeriods', $game->id]) ?>" class="btn btn-outline-primary btn-sm ms-2">
+                    <a href="<?= $this->Url->build([
+                        'action' => 'gameBoxPeriods', $game->id,
+                    ]) ?>" class="btn btn-outline-primary btn-sm ms-2">
                         Edit Period Stats
                     </a>
                 <?php else : ?>
