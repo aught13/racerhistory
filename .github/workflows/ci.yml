@@ -118,6 +118,8 @@ jobs:
             sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251003140000_CreateSportConfigs.php || true
             # Enhance Games Table migration (new)
             sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251003141000_EnhanceGamesTableForMultiSport.php || true
+            # Sport Stat Registry migration (new)
+            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251012150000_CreateSportStatRegistry.php || true
             # (Removed obsolete image path migrations)
           else
             echo "Parent requires no type, updating migrations to untyped..."
@@ -135,6 +137,8 @@ jobs:
             sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251003140000_CreateSportConfigs.php || true
             # Enhance Games Table migration (new)
             sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251003141000_EnhanceGamesTableForMultiSport.php || true
+            # Sport Stat Registry migration (new)
+            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251012150000_CreateSportStatRegistry.php || true
             # (Removed obsolete image path migrations)
           fi
 
