@@ -36,7 +36,9 @@
                 <div class="card-body">
                     <div class="list-group">
                         <?php foreach ($sports as $id => $name) : ?>
-                            <a href="<?= $this->Url->build(['action' => 'index', $id]) ?>" class="list-group-item list-group-item-action">
+                            <a href="<?= $this->Url->build([
+                                'action' => 'index', $id,
+                            ]) ?>" class="list-group-item list-group-item-action">
                                 <?= h($name) ?>
                             </a>
                         <?php endforeach; ?>
@@ -104,10 +106,14 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="<?= $this->Url->build(['action' => 'view', $registry->id]) ?>" class="btn btn-info">
+                                        <a href="<?= $this->Url->build([
+                                            'action' => 'view', $registry->id,
+                                        ]) ?>" class="btn btn-info">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="<?= $this->Url->build(['action' => 'edit', $registry->id]) ?>" class="btn btn-primary">
+                                        <a href="<?= $this->Url->build([
+                                            'action' => 'edit', $registry->id,
+                                        ]) ?>" class="btn btn-primary">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <?= $this->Form->postLink(
