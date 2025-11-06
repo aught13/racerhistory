@@ -4,8 +4,9 @@
         <div class="col">
             <h1 class="mb-3">Add Sport Stat Configuration</h1>
             <p class="text-muted mb-3">
-                Register a new statistics table for a sport. Define the context (game, season) and entity type (team, player, opponent)
-                along with the field mapping that explains what each column represents.
+                Register a new statistics table for a sport. Define the context
+                (game, season) and entity type (team, player, opponent) along with
+                the field mapping that explains what each column represents.
             </p>
         </div>
     </div>
@@ -116,7 +117,9 @@
                                             <input type="text" name="field_keys[]" class="form-control" placeholder="Database Column" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" name="field_labels[]" class="form-control" placeholder="Display Label" required>
+                                            <input type="text" name="field_labels[]"
+                                                   class="form-control"
+                                                   placeholder="Display Label" required>
                                         </div>
                                         <div class="col-md-3">
                                             <select name="field_types[]" class="form-select">
@@ -128,7 +131,9 @@
                                             </select>
                                         </div>
                                         <div class="col-md-1">
-                                            <button type="button" class="btn btn-danger remove-field" disabled><i class="bi bi-dash-circle"></i></button>
+                                            <button type="button" class="btn btn-danger remove-field" disabled>
+                                                <i class="bi bi-dash-circle"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -139,8 +144,12 @@
 
                     <div class="col-12 mt-4">
                         <div class="d-flex gap-2">
-                            <?= $this->Form->button('Save Configuration', ['class' => 'btn btn-primary']) ?>
-                            <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">Cancel</a>
+                            <?= $this->Form->button(
+                                'Save Configuration',
+                                ['class' => 'btn btn-primary'],
+                            ) ?>
+                            <a href="<?= $this->Url->build(['action' => 'index']) ?>"
+                               class="btn btn-secondary">Cancel</a>
                         </div>
                     </div>
 

@@ -97,10 +97,17 @@
                     <h6 class="mt-3">Service Access:</h6>
                     <pre class="bg-light p-3 code-snippet"><code>// Example code to access this configuration:
 $sportConfigService = $this->getService(SportConfigService::class);
-$tables = $sportConfigService->getStatTablesForSport($sportId, '<?= h($sportStatRegistry->context) ?>', '<?= h($sportStatRegistry->entity_type) ?>');
+$tables = $sportConfigService->getStatTablesForSport(
+    $sportId,
+    '<?= h($sportStatRegistry->context) ?>',
+    '<?= h($sportStatRegistry->entity_type) ?>',
+);
 
 // To get field mapping:
-$mapping = $sportConfigService->getFieldMapping($sportId, '<?= h($sportStatRegistry->table_name) ?>');</code></pre>
+$mapping = $sportConfigService->getFieldMapping(
+    $sportId,
+    '<?= h($sportStatRegistry->table_name) ?>',
+);</code></pre>
                 </div>
             </div>
         </div>

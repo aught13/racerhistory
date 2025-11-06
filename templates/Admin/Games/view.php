@@ -118,8 +118,9 @@
                     <div class="col-lg-9 h4">
                         <?= h(($game->site->place->place_city ?? '') . ' ' . ($game->site->site_name ?? '')) ?>
                         <?php if (!empty($game->site_id)) : ?>
-                            <a href="<?= $this->Url->build(['controller' => 'Sites', 'action' => 'edit', $game->site_id]) ?>"
-                               class="btn btn-sm btn-outline-primary" title="Edit Site">
+                            <a href="<?= $this->Url->build([
+                                'controller' => 'Sites', 'action' => 'edit', $game->site_id,
+                            ]) ?>" class="btn btn-sm btn-outline-primary" title="Edit Site">
                                 <i class="bi bi-pencil"></i>
                             </a>
                         <?php endif; ?>
@@ -235,7 +236,9 @@
                 <div class="col-12">
                     <strong>Technical Fouls:</strong>
                     <?php
-                    if (isset($teamBoxStats['TF']) && $teamBoxStats['TF'] !== null && $teamBoxStats['TF'] !== '' && $teamBoxStats['TF'] !== '0') {
+                    $hasTechFouls = isset($teamBoxStats['TF']) && $teamBoxStats['TF'] !== null
+                        && $teamBoxStats['TF'] !== '' && $teamBoxStats['TF'] !== '0';
+                    if ($hasTechFouls) {
                         echo h($teamBoxStats['TF']);
                     } else {
                         echo 'NONE';
@@ -287,15 +290,21 @@
                                         <td class="text-start"><strong><?= h($periodLabel) ?></strong></td>
                                         <td>
                                             <?= h($fgm) ?>-<?= h($fga) ?>
-                                            <?php if ($fgPct): ?><br><small class="text-muted"><?= h($fgPct) ?></small><?php endif; ?>
+                                            <?php if ($fgPct) : ?>
+                                                <br><small class="text-muted"><?= h($fgPct) ?></small>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?= h($tpm) ?>-<?= h($tpa) ?>
-                                            <?php if ($tpPct): ?><br><small class="text-muted"><?= h($tpPct) ?></small><?php endif; ?>
+                                            <?php if ($tpPct) : ?>
+                                                <br><small class="text-muted"><?= h($tpPct) ?></small>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?= h($ftm) ?>-<?= h($fta) ?>
-                                            <?php if ($ftPct): ?><br><small class="text-muted"><?= h($ftPct) ?></small><?php endif; ?>
+                                            <?php if ($ftPct) : ?>
+                                                <br><small class="text-muted"><?= h($ftPct) ?></small>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -317,15 +326,21 @@
                                         <td class="text-start"><strong>Total</strong></td>
                                         <td>
                                             <?= h($totalFGM) ?>-<?= h($totalFGA) ?>
-                                            <?php if ($totalFGPct): ?><br><small class="text-muted"><?= h($totalFGPct) ?></small><?php endif; ?>
+                                            <?php if ($totalFGPct) : ?>
+                                                <br><small class="text-muted"><?= h($totalFGPct) ?></small>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?= h($totalTPM) ?>-<?= h($totalTPA) ?>
-                                            <?php if ($totalTPPct): ?><br><small class="text-muted"><?= h($totalTPPct) ?></small><?php endif; ?>
+                                            <?php if ($totalTPPct) : ?>
+                                                <br><small class="text-muted"><?= h($totalTPPct) ?></small>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?= h($totalFTM) ?>-<?= h($totalFTA) ?>
-                                            <?php if ($totalFTPct): ?><br><small class="text-muted"><?= h($totalFTPct) ?></small><?php endif; ?>
+                                            <?php if ($totalFTPct) : ?>
+                                                <br><small class="text-muted"><?= h($totalFTPct) ?></small>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -408,7 +423,10 @@
                     <div class="col-12">
                         <strong>Technical Fouls:</strong>
                         <?php
-                        if (isset($opponentBoxStats['TF']) && $opponentBoxStats['TF'] !== null && $opponentBoxStats['TF'] !== '' && $opponentBoxStats['TF'] !== '0') {
+                        $hasOppTechFouls = isset($opponentBoxStats['TF'])
+                            && $opponentBoxStats['TF'] !== null && $opponentBoxStats['TF'] !== ''
+                            && $opponentBoxStats['TF'] !== '0';
+                        if ($hasOppTechFouls) {
                             echo h($opponentBoxStats['TF']);
                         } else {
                             echo 'NONE';
@@ -549,7 +567,9 @@
                                     <td><?= h($opponentBoxStats['BN'] ?? '0') ?></td>
                                 </tr>
                                 <tr>
-                                    <td colspan="3"><strong>Times Tied:</strong> <?= h($teamBoxStats['TIED'] ?? '0') ?></td>
+                                    <td colspan="3">
+                                        <strong>Times Tied:</strong> <?= h($teamBoxStats['TIED'] ?? '0') ?>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td colspan="3"><strong>Lead Changes:</strong> <?= h($teamBoxStats['LC'] ?? '0') ?></td>

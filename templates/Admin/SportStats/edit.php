@@ -147,15 +147,27 @@
                                         <?php foreach ($fieldMapping as $key => $field) : ?>
                                         <div class="row g-3 mb-3 field-mapping-row">
                                             <div class="col-md-4">
-                                                <input type="text" name="field_keys[]" class="form-control" placeholder="Database Column" value="<?= h($key) ?>" required>
+                                                <input type="text" name="field_keys[]"
+                                                       class="form-control"
+                                                       placeholder="Database Column"
+                                                       value="<?= h($key) ?>" required>
                                             </div>
                                             <div class="col-md-4">
-                                                <input type="text" name="field_labels[]" class="form-control" placeholder="Display Label" value="<?= h($field['label'] ?? '') ?>" required>
+                                                <input type="text" name="field_labels[]"
+                                                       class="form-control"
+                                                       placeholder="Display Label"
+                                                       value="<?= h($field['label'] ?? '') ?>" required>
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="field_types[]" class="form-select">
-                                                    <option value="numeric" <?= ($field['type'] ?? '') === 'numeric' ? 'selected' : '' ?>>Numeric</option>
-                                                    <option value="percentage" <?= ($field['type'] ?? '') === 'percentage' ? 'selected' : '' ?>>Percentage</option>
+                                                    <option value="numeric"
+                                                        <?= ($field['type'] ?? '') === 'numeric' ? 'selected' : '' ?>>
+                                                        Numeric
+                                                    </option>
+                                                    <option value="percentage"
+                                                        <?= ($field['type'] ?? '') === 'percentage' ? 'selected' : '' ?>>
+                                                        Percentage
+                                                    </option>
                                                     <option value="text" <?= ($field['type'] ?? '') === 'text' ? 'selected' : '' ?>>Text</option>
                                                     <option value="boolean" <?= ($field['type'] ?? '') === 'boolean' ? 'selected' : '' ?>>Boolean</option>
                                                     <option value="date" <?= ($field['type'] ?? '') === 'date' ? 'selected' : '' ?>>Date</option>
@@ -180,7 +192,11 @@
                             <?= $this->Form->postLink(
                                 'Delete Configuration',
                                 ['action' => 'delete', $sportStatRegistry->id],
-                                ['confirm' => 'Are you sure you want to delete this stat configuration? This action cannot be undone.', 'class' => 'btn btn-danger ms-auto']
+                                [
+                                    'confirm' => 'Are you sure you want to delete this stat configuration? '
+                                        . 'This action cannot be undone.',
+                                    'class' => 'btn btn-danger ms-auto',
+                                ],
                             ) ?>
                         </div>
                     </div>

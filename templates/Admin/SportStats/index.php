@@ -4,18 +4,21 @@
         <div class="col">
             <h1 class="mb-3">Sport Statistics Registry</h1>
             <p class="text-muted mb-3">
-                Configure the database tables and field mappings used for different sports' statistics.
-                Each sport can have multiple stat tables for various contexts (game, season) and entity types (team, player, opponent).
+                Configure the database tables and field mappings used for different
+                sports' statistics. Each sport can have multiple stat tables for various
+                contexts (game, season) and entity types (team, player, opponent).
             </p>
             <div class="d-flex gap-2">
-                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'SportStats', 'action' => 'add']) ?>"
-                   class="btn btn-success mb-3">
+                <a href="<?= $this->Url->build([
+                    'prefix' => 'Admin', 'controller' => 'SportStats', 'action' => 'add',
+                ]) ?>" class="btn btn-success mb-3">
                     <i class="bi bi-plus-circle"></i> Add New Stat Configuration
                 </a>
 
                 <?php if (isset($sport) && $sport) : ?>
-                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'SportStats', 'action' => 'index']) ?>"
-                       class="btn btn-outline-secondary mb-3">
+                    <a href="<?= $this->Url->build([
+                        'prefix' => 'Admin', 'controller' => 'SportStats', 'action' => 'index',
+                    ]) ?>" class="btn btn-outline-secondary mb-3">
                         <i class="bi bi-funnel"></i> Show All Sports
                     </a>
                 <?php endif; ?>
@@ -49,8 +52,9 @@
         <div class="col">
             <div class="d-flex align-items-center gap-3">
                 <h2 class="mb-0"><?= h($sport->sport_name) ?> Stat Tables</h2>
-                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'view', $sport->id]) ?>"
-                   class="btn btn-sm btn-outline-secondary">
+                <a href="<?= $this->Url->build([
+                    'prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'view', $sport->id,
+                ]) ?>" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Sport
                 </a>
             </div>
