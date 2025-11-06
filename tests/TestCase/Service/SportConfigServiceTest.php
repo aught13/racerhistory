@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
-use App\Model\Entity\Sport;
 use App\Service\SportConfigService;
 use Cake\TestSuite\TestCase;
 
@@ -60,8 +59,6 @@ class SportConfigServiceTest extends TestCase
     {
         // Test with basketball (ID 1)
         $result = $this->sportConfigService->getAllStatTables(1);
-
-
 
         // Verify structure matches expected defaults for basketball
         $this->assertArrayHasKey('game', $result);

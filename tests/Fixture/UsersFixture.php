@@ -7,6 +7,7 @@ use Cake\TestSuite\Fixture\TestFixture;
 class UsersFixture extends TestFixture
 {
     // Define the schema directly instead of importing
+
     public function init(): void
     {
         $this->schema = [
@@ -25,7 +26,7 @@ class UsersFixture extends TestFixture
             ],
             '_options' => [
                 'engine' => 'InnoDB',
-                'collation' => 'utf8mb4_general_ci'
+                'collation' => 'utf8mb4_general_ci',
             ],
         ];
         parent::init();

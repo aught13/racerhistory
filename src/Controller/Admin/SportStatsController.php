@@ -115,7 +115,9 @@ class SportStatsController extends AppController
             $data = $this->request->getData();
 
             // Process field mapping
-            if (!empty($data['fields']) && is_array($data['fields']) && !empty($data['labels']) && is_array($data['labels'])) {
+            $hasFields = !empty($data['fields']) && is_array($data['fields']);
+            $hasLabels = !empty($data['labels']) && is_array($data['labels']);
+            if ($hasFields && $hasLabels) {
                 $mapping = [];
                 foreach ($data['fields'] as $i => $field) {
                     if (!empty($field) && !empty($data['labels'][$i])) {
@@ -170,7 +172,9 @@ class SportStatsController extends AppController
             $data = $this->request->getData();
 
             // Process field mapping
-            if (!empty($data['fields']) && is_array($data['fields']) && !empty($data['labels']) && is_array($data['labels'])) {
+            $hasFields = !empty($data['fields']) && is_array($data['fields']);
+            $hasLabels = !empty($data['labels']) && is_array($data['labels']);
+            if ($hasFields && $hasLabels) {
                 $mapping = [];
                 foreach ($data['fields'] as $i => $field) {
                     if (!empty($field) && !empty($data['labels'][$i])) {
@@ -187,6 +191,7 @@ class SportStatsController extends AppController
                 $this->sportConfigService->clearCache($statRegistry->sport_id);
 
                 $this->Flash->success(__('The stat table configuration has been updated.'));
+
                 return $this->redirect(['action' => 'view', $id]);
             }
 
