@@ -44,9 +44,20 @@ class SportConfigService
                 ],
             ],
             'statFields' => [
-                'player' => ['MIN', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS'],
-                'team' => ['ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC'],
-                'opponent' => ['ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC'],
+                'player' => [
+                    'MIN', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA',
+                    'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS',
+                ],
+                'team' => [
+                    'ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF',
+                    'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS',
+                    'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+                ],
+                'opponent' => [
+                    'ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF',
+                    'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS',
+                    'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+                ],
             ],
             'fieldLabels' => [
                 'MIN' => 'Minutes',
@@ -99,7 +110,10 @@ class SportConfigService
             'periodNames' => [
                 4 => 'Quarter',
             ],
-            'officials' => ['Referee', 'Umpire', 'Head Linesman', 'Line Judge', 'Field Judge', 'Side Judge', 'Back Judge'],
+            'officials' => [
+                'Referee', 'Umpire', 'Head Linesman',
+                'Line Judge', 'Field Judge', 'Side Judge', 'Back Judge',
+            ],
             'scoringType' => 'cumulative',
             'statTables' => [
                 'game' => [
@@ -120,10 +134,18 @@ class SportConfigService
                     'defense' => ['TKL', 'AST', 'SACK', 'FF', 'FR', 'INT', 'PD', 'TD'],
                     'special' => ['FGM', 'FGA', 'XPM', 'XPA', 'PUNTS', 'PAVG', 'TB', 'I20'],
                 ],
-                'team' => ['COMP', 'ATT', 'YDS', 'TD', 'INT', 'RUSH', 'RYDS', 'RTD', 'REC', 'RECYDS', 'RECTD',
-                           'TKL', 'AST', 'SACK', 'FF', 'FR', 'DINT', 'PD', 'DTD', 'FGM', 'FGA', 'XPM', 'XPA', 'PUNTS', 'PAVG', 'TB', 'I20'],
-                'opponent' => ['COMP', 'ATT', 'YDS', 'TD', 'INT', 'RUSH', 'RYDS', 'RTD', 'REC', 'RECYDS', 'RECTD',
-                              'TKL', 'AST', 'SACK', 'FF', 'FR', 'DINT', 'PD', 'DTD', 'FGM', 'FGA', 'XPM', 'XPA', 'PUNTS', 'PAVG', 'TB', 'I20'],
+                'team' => [
+                    'COMP', 'ATT', 'YDS', 'TD', 'INT', 'RUSH', 'RYDS', 'RTD',
+                    'REC', 'RECYDS', 'RECTD', 'TKL', 'AST', 'SACK', 'FF', 'FR',
+                    'DINT', 'PD', 'DTD', 'FGM', 'FGA', 'XPM', 'XPA',
+                    'PUNTS', 'PAVG', 'TB', 'I20',
+                ],
+                'opponent' => [
+                    'COMP', 'ATT', 'YDS', 'TD', 'INT', 'RUSH', 'RYDS', 'RTD',
+                    'REC', 'RECYDS', 'RECTD', 'TKL', 'AST', 'SACK', 'FF', 'FR',
+                    'DINT', 'PD', 'DTD', 'FGM', 'FGA', 'XPM', 'XPA',
+                    'PUNTS', 'PAVG', 'TB', 'I20',
+                ],
             ],
             'fieldLabels' => [
                 'COMP' => 'Completions',

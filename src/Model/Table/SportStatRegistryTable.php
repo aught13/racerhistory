@@ -71,7 +71,11 @@ class SportStatRegistryTable extends Table
             ->scalar('entity_type')
             ->maxLength('entity_type', 20)
             ->notEmptyString('entity_type', 'Entity type is required')
-            ->inList('entity_type', ['team', 'player', 'opponent', 'box'], 'Entity type must be team, player, opponent, or box');
+            ->inList(
+                'entity_type',
+                ['team', 'player', 'opponent', 'box'],
+                'Entity type must be team, player, opponent, or box',
+            );
 
         $validator
             ->scalar('table_name')
@@ -113,7 +117,13 @@ class SportStatRegistryTable extends Table
     public function buildRules(RulesChecker $rules): RulesChecker
     {
         $rules->add($rules->existsIn('sport_id', 'Sports'), ['errorField' => 'sport_id']);
-        $rules->add($rules->isUnique(['sport_id', 'context', 'entity_type']), ['errorField' => 'context', 'message' => 'This combination of sport, context, and entity type already exists']);
+        $rules->add(
+            $rules->isUnique(['sport_id', 'context', 'entity_type']),
+            [
+                'errorField' => 'context',
+                'message' => 'This combination of sport, context, and entity type already exists',
+            ],
+        );
 
         return $rules;
     }
