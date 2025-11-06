@@ -168,9 +168,18 @@
                                                         <?= ($field['type'] ?? '') === 'percentage' ? 'selected' : '' ?>>
                                                         Percentage
                                                     </option>
-                                                    <option value="text" <?= ($field['type'] ?? '') === 'text' ? 'selected' : '' ?>>Text</option>
-                                                    <option value="boolean" <?= ($field['type'] ?? '') === 'boolean' ? 'selected' : '' ?>>Boolean</option>
-                                                    <option value="date" <?= ($field['type'] ?? '') === 'date' ? 'selected' : '' ?>>Date</option>
+                                                    <option value="text"
+                                                        <?= ($field['type'] ?? '') === 'text' ? 'selected' : '' ?>>
+                                                        Text
+                                                    </option>
+                                                    <option value="boolean"
+                                                        <?= ($field['type'] ?? '') === 'boolean' ? 'selected' : '' ?>>
+                                                        Boolean
+                                                    </option>
+                                                    <option value="date"
+                                                        <?= ($field['type'] ?? '') === 'date' ? 'selected' : '' ?>>
+                                                        Date
+                                                    </option>
                                                 </select>
                                             </div>
                                             <div class="col-md-1">
@@ -180,7 +189,9 @@
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
-                                <button type="button" id="add-field" class="btn btn-secondary"><i class="bi bi-plus-circle"></i> Add Field</button>
+                                <button type="button" id="add-field" class="btn btn-secondary">
+                                    <i class="bi bi-plus-circle"></i> Add Field
+                                </button>
                             </div>
                         </div>
                     </div>

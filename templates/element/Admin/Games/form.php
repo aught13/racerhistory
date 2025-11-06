@@ -117,19 +117,43 @@ $eav = $eav ?? [];
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-3"><?= $this->Form->control('pts_mur', ['label' => 'Team Points', 'class' => 'form-control', 'type' => 'number', 'min' => 0]) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('pts_opp', ['label' => 'Opponent Points', 'class' => 'form-control', 'type' => 'number', 'min' => 0]) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('mur_rk', ['label' => 'Team Rank', 'class' => 'form-control']) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('opp_rk', ['label' => 'Opponent Rank', 'class' => 'form-control']) ?></div>
+            <div class="col-md-3">
+                <?= $this->Form->control('pts_mur', [
+                    'label' => 'Team Points', 'class' => 'form-control',
+                    'type' => 'number', 'min' => 0,
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('pts_opp', [
+                    'label' => 'Opponent Points', 'class' => 'form-control',
+                    'type' => 'number', 'min' => 0,
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('mur_rk', [
+                    'label' => 'Team Rank', 'class' => 'form-control',
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('opp_rk', [
+                    'label' => 'Opponent Rank', 'class' => 'form-control',
+                ]) ?>
+            </div>
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-3"><?= $this->Form->control('attendance', ['label' => 'Attendance', 'class' => 'form-control', 'type' => 'text', 'maxlength' => 7]) ?></div>
+            <div class="col-md-3">
+                <?= $this->Form->control('attendance', [
+                    'label' => 'Attendance', 'class' => 'form-control',
+                    'type' => 'text', 'maxlength' => 7,
+                ]) ?>
+            </div>
         </div>
 
         <div class="alert alert-info mt-3">
             <i class="bi bi-info-circle"></i>
-            <strong>Note:</strong> Period scores must sum to the final score, and regular periods must be tied when overtime is present.
+            <strong>Note:</strong> Period scores must sum to the final score,
+            and regular periods must be tied when overtime is present.
         </div>
 
         <?php if (isset($eavTemplate) && is_array($eavTemplate) && count($eavTemplate)) : ?>

@@ -312,15 +312,18 @@
                                 <?php if (!empty($teamBoxStats)) :
                                     $totalFGA = (int)($teamBoxStats['FGA'] ?? 0);
                                     $totalFGM = (int)($teamBoxStats['FGM'] ?? 0);
-                                    $totalFGPct = $totalFGA > 0 ? number_format($totalFGM / $totalFGA * 100, 1) . '%' : '';
+                                    $totalFGPct = $totalFGA > 0
+                                        ? number_format($totalFGM / $totalFGA * 100, 1) . '%' : '';
 
                                     $totalTPA = (int)($teamBoxStats['TPA'] ?? 0);
                                     $totalTPM = (int)($teamBoxStats['TPM'] ?? 0);
-                                    $totalTPPct = $totalTPA > 0 ? number_format($totalTPM / $totalTPA * 100, 1) . '%' : '';
+                                    $totalTPPct = $totalTPA > 0
+                                        ? number_format($totalTPM / $totalTPA * 100, 1) . '%' : '';
 
                                     $totalFTA = (int)($teamBoxStats['FTA'] ?? 0);
                                     $totalFTM = (int)($teamBoxStats['FTM'] ?? 0);
-                                    $totalFTPct = $totalFTA > 0 ? number_format($totalFTM / $totalFTA * 100, 1) . '%' : '';
+                                    $totalFTPct = $totalFTA > 0
+                                        ? number_format($totalFTM / $totalFTA * 100, 1) . '%' : '';
                                     ?>
                                     <tr class="table-secondary">
                                         <td class="text-start"><strong>Total</strong></td>
@@ -478,15 +481,21 @@
                                             <td class="text-start"><strong><?= h($periodLabel) ?></strong></td>
                                             <td>
                                                 <?= h($fgm) ?>-<?= h($fga) ?>
-                                                <?php if ($fgPct): ?><br><small class="text-muted"><?= h($fgPct) ?></small><?php endif; ?>
+                                                <?php if ($fgPct) : ?>
+                                                    <br><small class="text-muted"><?= h($fgPct) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= h($tpm) ?>-<?= h($tpa) ?>
-                                                <?php if ($tpPct): ?><br><small class="text-muted"><?= h($tpPct) ?></small><?php endif; ?>
+                                                <?php if ($tpPct) : ?>
+                                                    <br><small class="text-muted"><?= h($tpPct) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= h($ftm) ?>-<?= h($fta) ?>
-                                                <?php if ($ftPct): ?><br><small class="text-muted"><?= h($ftPct) ?></small><?php endif; ?>
+                                                <?php if ($ftPct) : ?>
+                                                    <br><small class="text-muted"><?= h($ftPct) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -508,15 +517,21 @@
                                             <td class="text-start"><strong>Total</strong></td>
                                             <td>
                                                 <?= h($totalFGM) ?>-<?= h($totalFGA) ?>
-                                                <?php if ($totalFGPct): ?><br><small class="text-muted"><?= h($totalFGPct) ?></small><?php endif; ?>
+                                                <?php if ($totalFGPct) : ?>
+                                                    <br><small class="text-muted"><?= h($totalFGPct) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= h($totalTPM) ?>-<?= h($totalTPA) ?>
-                                                <?php if ($totalTPPct): ?><br><small class="text-muted"><?= h($totalTPPct) ?></small><?php endif; ?>
+                                                <?php if ($totalTPPct) : ?>
+                                                    <br><small class="text-muted"><?= h($totalTPPct) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= h($totalFTM) ?>-<?= h($totalFTA) ?>
-                                                <?php if ($totalFTPct): ?><br><small class="text-muted"><?= h($totalFTPct) ?></small><?php endif; ?>
+                                                <?php if ($totalFTPct) : ?>
+                                                    <br><small class="text-muted"><?= h($totalFTPct) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endif; ?>
@@ -584,9 +599,18 @@
 
         <!-- Initialize DataTables -->
         <?php if (!empty($teamBoxStats) || !empty($opponentBoxStats)) : ?>
-            <?php $this->Html->script('https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js', ['block' => true]); ?>
-            <?php $this->Html->script('https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js', ['block' => true]); ?>
-            <?php $this->Html->css('https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css', ['block' => true]); ?>
+            <?php $this->Html->script(
+                'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js',
+                ['block' => true],
+            ); ?>
+            <?php $this->Html->script(
+                'https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js',
+                ['block' => true],
+            ); ?>
+            <?php $this->Html->css(
+                'https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css',
+                ['block' => true],
+            ); ?>
             <script>
                 $(document).ready(function() {
                     // Initialize DataTables for player stats tables

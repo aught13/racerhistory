@@ -17,6 +17,9 @@ use Migrations\AbstractMigration;
  */
 class CreateSportStatRegistry extends AbstractMigration
 {
+    /**
+     * @var bool Disable automatic primary key generation
+     */
     public $autoId = false;
 
     /**
