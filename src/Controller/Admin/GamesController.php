@@ -17,6 +17,24 @@ use Cake\Http\Response;
 class GamesController extends AppController
 {
     /**
+     * SportConfigService instance for sport-aware configurations
+     *
+     * @var \App\Service\SportConfigService
+     */
+    protected \App\Service\SportConfigService $sportConfigService;
+
+    /**
+     * Initialize controller
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->sportConfigService = new \App\Service\SportConfigService();
+    }
+
+    /**
      * Unified AJAX meta endpoint.
      * Accepts one of:
      *  - game_id: load existing game, infer team_season/sport, include existing EAV values
@@ -96,9 +114,21 @@ class GamesController extends AppController
                 /** @var \App\Model\Table\SportConfigsTable $sportConfigsTable */
                 $sportConfigsTable = $this->fetchTable('SportConfigs');
                 $configs = $sportConfigsTable->getFormattedConfigsForSport($sportId);
+
                 /** @var \App\Model\Table\GameEavTable $gameEavTable */
                 $gameEavTable = $this->fetchTable('GameEav');
-                $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId);
+
+                // Inject SportConfigService into GameEavTable
+                $gameEavTable->setSportConfigService($this->sportConfigService);
+
+                // If we have a game, use its periods/ot values; otherwise use defaults
+                $periods = '2';
+                $overtime = '0';
+                if (isset($game)) {
+                    $periods = (string)($game->get('periods') ?: '2');
+                    $overtime = (string)($game->get('ot') ?: '0');
+                }
+                $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
             }
 
             // If neither a valid game nor team season resolved a sport, treat as error
@@ -184,8 +214,68 @@ class GamesController extends AppController
             ->where(['Games.id' => $id])
             ->firstOrFail();
         $eav = $this->loadGameEavArray((int)$id);
+
+        // Load box score stats if available
+        $teamBoxStats = [];
+        $opponentBoxStats = [];
+        $teamPeriodStats = [];
+        $opponentPeriodStats = [];
+        $hasSportConfig = false;
+        $hasPeriodStats = false;
+
+        if ($game->team_season && $game->team_season->team && $game->team_season->team->sport) {
+            $sportId = $game->team_season->team->sport->id;
+            $sportName = strtolower($game->team_season->team->sport->sport_name);
+            $hasSportConfig = true;
+
+            // Only load basketball box scores for now
+            if ($sportName === 'basketball') {
+                /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
+                $boxTable = $this->fetchTable('StatBasketGameBox');
+
+                // Load team final stats (period Z, opponent_id 0)
+                $teamBox = $boxTable->find()
+                    ->where(['game_id' => $id, 'opponent_id' => 0, 'period' => 'Z'])
+                    ->first();
+
+                if ($teamBox) {
+                    $teamBoxStats = $teamBox->toArray();
+                }
+
+                // Load opponent final stats (period Z, with opponent_id)
+                $opponentId = $game->opponent_id ?? 0;
+                $opponentBox = $boxTable->find()
+                    ->where(['game_id' => $id, 'opponent_id' => $opponentId, 'period' => 'Z'])
+                    ->first();
+
+                if ($opponentBox) {
+                    $opponentBoxStats = $opponentBox->toArray();
+                }
+
+                // Load period stats for both teams (for half-by-half breakdowns)
+                $periodStatsData = $boxTable->find()
+                    ->where(['game_id' => $id, 'period !=' => 'Z'])
+                    ->order(['period' => 'ASC'])
+                    ->all();
+
+                foreach ($periodStatsData as $periodStat) {
+                    if ($periodStat->opponent_id == 0) {
+                        $teamPeriodStats[$periodStat->period] = $periodStat->toArray();
+                    } elseif ($periodStat->opponent_id == $opponentId) {
+                        $opponentPeriodStats[$periodStat->period] = $periodStat->toArray();
+                    }
+                }
+
+                $hasPeriodStats = !empty($periodStatsData);
+            }
+
+            // Get field labels from SportConfigService
+            $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+            $this->set('fieldLabels', $fieldLabels);
+        }
+
         $this->setSportAwareData($game);
-        $this->set(compact('game', 'eav'));
+        $this->set(compact('game', 'eav', 'teamBoxStats', 'opponentBoxStats', 'teamPeriodStats', 'opponentPeriodStats', 'hasSportConfig', 'hasPeriodStats'));
     }
 
     /**
@@ -216,12 +306,31 @@ class GamesController extends AppController
         $overtime = $game->ot ?? '0';
         /** @var \App\Model\Table\GameEavTable $gameEavTable */
         $gameEavTable = $this->fetchTable('GameEav');
+        $gameEavTable->setSportConfigService($this->sportConfigService);
         $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
         $eav = [];
 
         if ($this->request->is('post')) {
             $data = $this->request->getData();
             $this->normalizeAssociatedInlineCreate($data);
+
+            // Auto-calculate W/L based on scores
+            $data = $this->calculateWinLoss($data);
+
+            // Validate period scores if present
+            $eavErrors = $this->validatePeriodScores($data);
+            if (!empty($eavErrors)) {
+                foreach ($eavErrors as $error) {
+                    $this->Flash->error($error);
+                }
+                $this->setFormLists();
+                $this->setSportAwareData($game);
+                $eav = $data; // Keep user input for re-display
+                $this->set(compact('game', 'eav', 'eavTemplate'));
+
+                return null;
+            }
+
             $game = $this->Games->patchEntity($game, $data);
             if ($this->Games->save($game)) {
                 $this->saveGameEavFromRequest((int)$game->get('id'));
@@ -261,6 +370,30 @@ class GamesController extends AppController
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
             $this->normalizeAssociatedInlineCreate($data);
+
+            // Auto-calculate W/L based on scores
+            $data = $this->calculateWinLoss($data);
+
+            // Validate period scores if present
+            $eavErrors = $this->validatePeriodScores($data);
+            if (!empty($eavErrors)) {
+                foreach ($eavErrors as $error) {
+                    $this->Flash->error($error);
+                }
+                $eav = $this->loadGameEavArray((int)$id);
+                // Merge in the new data for re-display
+                foreach ($data as $key => $value) {
+                    if (strpos($key, 'period_') === 0 || strpos($key, 'overtime_') === 0) {
+                        $eav[$key] = $value;
+                    }
+                }
+                $this->setFormLists();
+                $this->setSportAwareData($game);
+                $this->set(compact('game', 'eav'));
+
+                return null;
+            }
+
             $game = $this->Games->patchEntity($game, $data);
             if ($this->Games->save($game)) {
                 $this->saveGameEavFromRequest((int)$game->get('id'));
@@ -437,7 +570,11 @@ class GamesController extends AppController
 
             /** @var \App\Model\Table\GameEavTable $gameEavTable */
             $gameEavTable = $this->fetchTable('GameEav');
-            $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId);
+            $gameEavTable->setSportConfigService($this->sportConfigService);
+            // Pass game's periods and overtime values to generate appropriate EAV fields
+            $periods = (string)($game->get('periods') ?: '2');
+            $overtime = (string)($game->get('ot') ?: '0');
+            $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
 
             // When editing, map legacy stored keys (period_X_mur/opp) to new naming (period_X_team/opponent)
             if ($game->id) {
@@ -486,7 +623,11 @@ class GamesController extends AppController
         if ($sportId) {
             /** @var \App\Model\Table\GameEavTable $gameEavTable */
             $gameEavTable = $this->fetchTable('GameEav');
-            $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId);
+            $gameEavTable->setSportConfigService($this->sportConfigService);
+            // Pass game's periods and overtime values to generate appropriate EAV fields
+            $periods = (string)($game->get('periods') ?: '2');
+            $overtime = (string)($game->get('ot') ?: '0');
+            $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
 
             // Save all EAV fields from the template
             foreach ($eavTemplate as $key => $fieldConfig) {
@@ -645,5 +786,377 @@ class GamesController extends AppController
             $entity = $table->newEntity(['game_id' => $gameId, 'key' => $key, 'value' => $value]);
         }
         $table->save($entity);
+    }
+
+    /**
+     * Auto-calculate W/L based on game scores
+     *
+     * @param array $data Game data
+     * @return array Modified data with W/L set
+     */
+    private function calculateWinLoss(array $data): array
+    {
+        $teamScore = isset($data['pts_mur']) ? (int)$data['pts_mur'] : 0;
+        $oppScore = isset($data['pts_opp']) ? (int)$data['pts_opp'] : 0;
+
+        // Only calculate if both scores are present
+        if ($teamScore > 0 || $oppScore > 0) {
+            if ($teamScore > $oppScore) {
+                $data['w'] = 1;
+                $data['l'] = 0;
+            } elseif ($teamScore < $oppScore) {
+                $data['w'] = 0;
+                $data['l'] = 1;
+            } else {
+                // Tie game
+                $data['w'] = 1;
+                $data['l'] = 1;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Validate period scores against final scores
+     *
+     * @param array $data Game and EAV data
+     * @return array Error messages (empty if valid)
+     */
+    private function validatePeriodScores(array $data): array
+    {
+        $errors = [];
+
+        $teamScore = isset($data['pts_mur']) ? (int)$data['pts_mur'] : 0;
+        $oppScore = isset($data['pts_opp']) ? (int)$data['pts_opp'] : 0;
+        $periods = isset($data['periods']) ? (int)$data['periods'] : 2;
+        $otPeriods = isset($data['ot']) ? (int)$data['ot'] : 0;
+
+        // Only validate if scores are present
+        if ($teamScore === 0 && $oppScore === 0) {
+            return $errors;
+        }
+
+        // Calculate sum of regular period scores
+        $teamPeriodSum = 0;
+        $oppPeriodSum = 0;
+        $hasPeriodData = false;
+
+        for ($i = 1; $i <= $periods; $i++) {
+            $teamKey = "period_{$i}_team";
+            $oppKey = "period_{$i}_opponent";
+
+            if (isset($data[$teamKey]) && $data[$teamKey] !== '') {
+                $teamPeriodSum += (int)$data[$teamKey];
+                $hasPeriodData = true;
+            }
+            if (isset($data[$oppKey]) && $data[$oppKey] !== '') {
+                $oppPeriodSum += (int)$data[$oppKey];
+                $hasPeriodData = true;
+            }
+        }
+
+        // Calculate sum of overtime period scores
+        $teamOtSum = 0;
+        $oppOtSum = 0;
+
+        for ($i = 1; $i <= $otPeriods; $i++) {
+            $teamKey = "overtime_{$i}_team";
+            $oppKey = "overtime_{$i}_opponent";
+
+            if (isset($data[$teamKey]) && $data[$teamKey] !== '') {
+                $teamOtSum += (int)$data[$teamKey];
+                $hasPeriodData = true;
+            }
+            if (isset($data[$oppKey]) && $data[$oppKey] !== '') {
+                $oppOtSum += (int)$data[$oppKey];
+                $hasPeriodData = true;
+            }
+        }
+
+        // Only validate if period data was provided
+        if (!$hasPeriodData) {
+            return $errors;
+        }
+
+        // If there are OT periods, regular periods must be tied
+        if ($otPeriods > 0 && $teamPeriodSum !== $oppPeriodSum) {
+            $errors[] = __(
+                'Regular period scores must be tied when overtime periods exist. ' .
+                'Team: {0}, Opponent: {1}',
+                $teamPeriodSum,
+                $oppPeriodSum
+            );
+        }
+
+        // Total period + OT must equal final score
+        $teamTotalPeriods = $teamPeriodSum + $teamOtSum;
+        $oppTotalPeriods = $oppPeriodSum + $oppOtSum;
+
+        if ($teamTotalPeriods !== $teamScore) {
+            $errors[] = __(
+                'Team period scores ({0}) must equal final team score ({1})',
+                $teamTotalPeriods,
+                $teamScore
+            );
+        }
+
+        if ($oppTotalPeriods !== $oppScore) {
+            $errors[] = __(
+                'Opponent period scores ({0}) must equal final opponent score ({1})',
+                $oppTotalPeriods,
+                $oppScore
+            );
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Add or edit game box scores (team and opponent stats)
+     *
+     * @param string $id Game ID
+     * @return \Cake\Http\Response|null
+     */
+    public function gameBox(string $id): ?Response
+    {
+        /** @var \App\Model\Entity\Game $game */
+        $game = $this->Games->find()
+            ->contain(['TeamSeason' => ['Teams' => ['Sports']], 'Opponents'])
+            ->where(['Games.id' => $id])
+            ->firstOrFail();
+
+        // Check if this is a basketball game
+        if ($game->team_season && $game->team_season->team && $game->team_season->team->sport) {
+            $sportName = strtolower($game->team_season->team->sport->sport_name);
+            if ($sportName !== 'basketball') {
+                $this->Flash->error(__('Game box scores are currently only supported for basketball games.'));
+
+                return $this->redirect(['action' => 'edit', $id]);
+            }
+        }
+
+        /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
+        $boxTable = $this->fetchTable('StatBasketGameBox');
+
+        // Load existing box scores
+        $teamBox = $boxTable->find()
+            ->where(['game_id' => $id, 'opponent_id' => 0, 'period' => 'Z'])
+            ->first();
+
+        $opponentId = $game->opponent_id ?? 0;
+        $opponentBox = $boxTable->find()
+            ->where(['game_id' => $id, 'opponent_id' => $opponentId, 'period' => 'Z'])
+            ->first();
+
+        // Check if we have period stats already
+        $periodStats = $boxTable->find()
+            ->where(['game_id' => $id, 'period !=' => 'Z'])
+            ->order(['period' => 'ASC'])
+            ->all()
+            ->toArray();
+
+        $hasPeriodStats = !empty($periodStats);
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $data = $this->request->getData();
+
+            // Save team final stats (period Z, opponent_id 0)
+            if (!empty($data['team'])) {
+                $teamData = $data['team'];
+                $teamData['game_id'] = $id;
+                $teamData['opponent_id'] = 0;
+                $teamData['period'] = 'Z';
+
+                if ($teamBox) {
+                    $teamBox = $boxTable->patchEntity($teamBox, $teamData);
+                } else {
+                    $teamBox = $boxTable->newEntity($teamData);
+                }
+
+                if (!$boxTable->save($teamBox)) {
+                    $this->Flash->error(__('Could not save team box scores. Please try again.'));
+
+                    return null;
+                }
+            }
+
+            // Save opponent final stats (period Z, with opponent_id)
+            if (!empty($data['opponent'])) {
+                $oppData = $data['opponent'];
+                $oppData['game_id'] = $id;
+                $oppData['opponent_id'] = $opponentId;
+                $oppData['period'] = 'Z';
+
+                if ($opponentBox) {
+                    $opponentBox = $boxTable->patchEntity($opponentBox, $oppData);
+                } else {
+                    $opponentBox = $boxTable->newEntity($oppData);
+                }
+
+                if (!$boxTable->save($opponentBox)) {
+                    $this->Flash->error(__('Could not save opponent box scores. Please try again.'));
+
+                    return null;
+                }
+            }
+
+            $this->Flash->success(__('Game box scores have been saved.'));
+
+            // If user wants to add period stats, redirect to period entry
+            if (!empty($data['add_periods'])) {
+                return $this->redirect(['action' => 'gameBoxPeriods', $id]);
+            }
+
+            return $this->redirect(['action' => 'edit', $id]);
+        }
+
+        // Get stat field labels from SportConfigService
+        $sportId = $game->team_season->team->sport->id;
+        $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+
+        $this->set(compact('game', 'teamBox', 'opponentBox', 'fieldLabels', 'hasPeriodStats'));
+
+        return null;
+    }
+
+    /**
+     * Add or edit period-by-period box scores
+     *
+     * @param string $id Game ID
+     * @return \Cake\Http\Response|null
+     */
+    public function gameBoxPeriods(string $id): ?Response
+    {
+        /** @var \App\Model\Entity\Game $game */
+        $game = $this->Games->find()
+            ->contain(['TeamSeason' => ['Teams' => ['Sports']], 'Opponents'])
+            ->where(['Games.id' => $id])
+            ->firstOrFail();
+
+        /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
+        $boxTable = $this->fetchTable('StatBasketGameBox');
+
+        // Get number of periods from game
+        $numPeriods = (int)($game->periods ?? 2);
+        $numOT = (int)($game->ot ?? 0);
+        $opponentId = $game->opponent_id ?? 0;
+
+        // Load existing period stats
+        $existingStats = [];
+        $periodStats = $boxTable->find()
+            ->where(['game_id' => $id, 'period !=' => 'Z'])
+            ->order(['period' => 'ASC'])
+            ->all();
+
+        foreach ($periodStats as $stat) {
+            $key = ($stat->opponent_id == 0 ? 'team' : 'opponent') . '_' . $stat->period;
+            $existingStats[$key] = $stat;
+        }
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $data = $this->request->getData();
+            $saveErrors = [];
+
+            // Process each period
+            for ($p = 1; $p <= $numPeriods; $p++) {
+                // Team period stats
+                if (!empty($data['team_' . $p])) {
+                    $teamData = $data['team_' . $p];
+                    $teamData['game_id'] = $id;
+                    $teamData['opponent_id'] = 0;
+                    $teamData['period'] = (string)$p;
+
+                    $existingKey = 'team_' . $p;
+                    if (isset($existingStats[$existingKey])) {
+                        $entity = $boxTable->patchEntity($existingStats[$existingKey], $teamData);
+                    } else {
+                        $entity = $boxTable->newEntity($teamData);
+                    }
+
+                    if (!$boxTable->save($entity)) {
+                        $saveErrors[] = "Team Period $p";
+                    }
+                }
+
+                // Opponent period stats
+                if (!empty($data['opponent_' . $p])) {
+                    $oppData = $data['opponent_' . $p];
+                    $oppData['game_id'] = $id;
+                    $oppData['opponent_id'] = $opponentId;
+                    $oppData['period'] = (string)$p;
+
+                    $existingKey = 'opponent_' . $p;
+                    if (isset($existingStats[$existingKey])) {
+                        $entity = $boxTable->patchEntity($existingStats[$existingKey], $oppData);
+                    } else {
+                        $entity = $boxTable->newEntity($oppData);
+                    }
+
+                    if (!$boxTable->save($entity)) {
+                        $saveErrors[] = "Opponent Period $p";
+                    }
+                }
+            }
+
+            // Process overtime periods
+            for ($ot = 1; $ot <= $numOT; $ot++) {
+                $otPeriod = 'OT' . ($ot > 1 ? $ot : '');
+
+                // Team OT stats
+                if (!empty($data['team_' . $otPeriod])) {
+                    $teamData = $data['team_' . $otPeriod];
+                    $teamData['game_id'] = $id;
+                    $teamData['opponent_id'] = 0;
+                    $teamData['period'] = $otPeriod;
+
+                    $existingKey = 'team_' . $otPeriod;
+                    if (isset($existingStats[$existingKey])) {
+                        $entity = $boxTable->patchEntity($existingStats[$existingKey], $teamData);
+                    } else {
+                        $entity = $boxTable->newEntity($teamData);
+                    }
+
+                    if (!$boxTable->save($entity)) {
+                        $saveErrors[] = "Team $otPeriod";
+                    }
+                }
+
+                // Opponent OT stats
+                if (!empty($data['opponent_' . $otPeriod])) {
+                    $oppData = $data['opponent_' . $otPeriod];
+                    $oppData['game_id'] = $id;
+                    $oppData['opponent_id'] = $opponentId;
+                    $oppData['period'] = $otPeriod;
+
+                    $existingKey = 'opponent_' . $otPeriod;
+                    if (isset($existingStats[$existingKey])) {
+                        $entity = $boxTable->patchEntity($existingStats[$existingKey], $oppData);
+                    } else {
+                        $entity = $boxTable->newEntity($oppData);
+                    }
+
+                    if (!$boxTable->save($entity)) {
+                        $saveErrors[] = "Opponent $otPeriod";
+                    }
+                }
+            }
+
+            if (empty($saveErrors)) {
+                $this->Flash->success(__('Period box scores have been saved.'));
+
+                return $this->redirect(['action' => 'edit', $id]);
+            } else {
+                $this->Flash->error(__('Could not save some period stats: {0}', implode(', ', $saveErrors)));
+            }
+        }
+
+        // Get stat field labels
+        $sportId = $game->team_season->team->sport->id;
+        $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+
+        $this->set(compact('game', 'numPeriods', 'numOT', 'existingStats', 'fieldLabels'));
+
+        return null;
     }
 }

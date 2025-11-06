@@ -15,7 +15,7 @@ class GameEavTable extends Table
      *
      * @var \App\Model\Table\SportStatRegistryTable
      */
-    protected SportStatRegistryTable $sportStatRegistry;
+    protected $sportStatRegistry;
 
     /**
      * SportConfigService instance
@@ -37,8 +37,14 @@ class GameEavTable extends Table
         $this->setPrimaryKey('id');
         $this->setDisplayField('key');
 
+        // Enable identifier quoting for this table because 'key' is a reserved SQL keyword
+        $connection = $this->getConnection();
+        $connection->getDriver()->enableAutoQuoting(true);
+
         // Initialize dependencies with defaults that can be overridden in tests
-        $this->sportStatRegistry = TableRegistry::getTableLocator()->get('SportStatRegistry');
+        /** @var \App\Model\Table\SportStatRegistryTable $sportStatRegistry */
+        $sportStatRegistry = TableRegistry::getTableLocator()->get('SportStatRegistry');
+        $this->sportStatRegistry = $sportStatRegistry;
         $this->sportConfigService = new SportConfigService();
     }
 
