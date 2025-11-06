@@ -1,0 +1,28 @@
+---
+# Codacy configuration file
+# https://docs.codacy.com/repositories-configure/codacy-configuration-file/
+
+exclude_paths:
+  # SQLite-specific test schema (not production code)
+  - 'tests/schema.sql'
+  # Third-party vendor code
+  - 'vendor/**'
+  # Compiled/generated assets
+  - 'webroot/js/tinymce/**'
+  # Test fixtures (data files, not logic)
+  - 'tests/Fixture/**'
+  # Logs and temporary files
+  - 'logs/**'
+  - 'tmp/**'
+  - 'coverage-js/**'
+
+engines:
+  phpcs:
+    enabled: true
+    # Use project's phpcs.xml configuration
+  phpmd:
+    enabled: true
+  duplication:
+    enabled: true
+    exclude_paths:
+      - 'tests/**'
