@@ -130,19 +130,11 @@ class GamesTable extends Table
                 $periodOppSum += (int)$v;
                 continue;
             }
-            if (preg_match('/^overtime_\d+_\d+_(?:team|mur)$/', $k)) {
+            if (preg_match('/^overtime_\d+_(?:team|mur)$/', $k)) {
                 $periodTeamSum += (int)$v;
                 continue;
             }
-            if (preg_match('/^overtime_\d+_\d+_(?:opponent|opp)$/', $k)) {
-                $periodOppSum += (int)$v;
-                continue;
-            }
-            if (preg_match('/^period_\d+_mur$/', $k)) {
-                $periodTeamSum += (int)$v;
-                continue;
-            }
-            if (preg_match('/^period_\d+_opp$/', $k)) {
+            if (preg_match('/^overtime_\d+_(?:opponent|opp)$/', $k)) {
                 $periodOppSum += (int)$v;
                 continue;
             }

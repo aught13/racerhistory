@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\SportConfigService;
 use Cake\Http\Response;
 
 /**
@@ -16,6 +17,13 @@ use Cake\Http\Response;
 class SportStatsController extends AppController
 {
     /**
+     * SportConfigService instance
+     *
+     * @var \App\Service\SportConfigService
+     */
+    protected SportConfigService $sportConfigService;
+
+    /**
      * Initialization hook method.
      *
      * @return void
@@ -24,6 +32,7 @@ class SportStatsController extends AppController
     {
         parent::initialize();
         $this->fetchTable('SportStatRegistry');
+        $this->sportConfigService = new SportConfigService();
     }
 
     /**
@@ -119,6 +128,9 @@ class SportStatsController extends AppController
             $statRegistry = $this->SportStatRegistry->patchEntity($statRegistry, $data);
 
             if ($this->SportStatRegistry->save($statRegistry)) {
+                // Clear configuration cache
+                $this->sportConfigService->clearCache($statRegistry->sport_id);
+
                 $this->Flash->success(__('The stat table configuration has been saved.'));
 
                 return $this->redirect(['action' => 'index', $statRegistry->sport_id]);
@@ -172,11 +184,9 @@ class SportStatsController extends AppController
 
             if ($this->SportStatRegistry->save($statRegistry)) {
                 // Clear configuration cache
-                $sportConfigService = new \App\Service\SportConfigService();
-                $sportConfigService->clearCache($statRegistry->sport_id);
+                $this->sportConfigService->clearCache($statRegistry->sport_id);
 
                 $this->Flash->success(__('The stat table configuration has been updated.'));
-
                 return $this->redirect(['action' => 'view', $id]);
             }
 
@@ -227,6 +237,9 @@ class SportStatsController extends AppController
         $sportId = $statRegistry->sport_id;
 
         if ($this->SportStatRegistry->delete($statRegistry)) {
+            // Clear configuration cache
+            $this->sportConfigService->clearCache($sportId);
+
             $this->Flash->success(__('The stat table configuration has been deleted.'));
         } else {
             $this->Flash->error(__('The stat table configuration could not be deleted. Please try again.'));

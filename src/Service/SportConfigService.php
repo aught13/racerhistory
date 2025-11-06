@@ -45,8 +45,8 @@ class SportConfigService
             ],
             'statFields' => [
                 'player' => ['MIN', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS'],
-                'team' => ['ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS'],
-                'opponent' => ['ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS'],
+                'team' => ['ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC'],
+                'opponent' => ['ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'PTS', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC'],
             ],
             'fieldLabels' => [
                 'MIN' => 'Minutes',
@@ -66,6 +66,13 @@ class SportConfigService
                 'TO' => 'Turnovers',
                 'PF' => 'Personal Fouls',
                 'PTS' => 'Points',
+                'PNT' => 'Points in Paint',
+                'OTO' => 'Points off Turnovers',
+                'SND' => '2nd Chance Points',
+                'FB' => 'Fast Break Points',
+                'BN' => 'Bench Points',
+                'TIED' => 'Times Tied',
+                'LC' => 'Lead Changes',
             ],
             'calculatedFields' => [
                 'FG%' => [
@@ -201,7 +208,7 @@ class SportConfigService
             Cache::setConfig($this->cacheConfig, [
                 'className' => 'File',
                 'duration' => '+1 day',
-                'path' => CACHE . 'sport_config/',
+                'path' => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'sport_config' . DIRECTORY_SEPARATOR,
                 'prefix' => 'sport_',
             ]);
         }
@@ -226,9 +233,8 @@ class SportConfigService
      */
     public function getConfig(int $sportId, string $key, mixed $default = null): mixed
     {
-        // Get sport name first
+        // Get sport name first (already lowercase from getSportName)
         $sportName = $this->getSportName($sportId);
-        $sportNameLower = strtolower($sportName);
 
         // Try database config first
         $value = $this->getDbConfig($sportId, $key);
@@ -238,7 +244,7 @@ class SportConfigService
 
         // Check hard defaults by sport type
         $keyParts = explode('.', $key);
-        $config = $this->defaults[$sportNameLower] ?? [];
+        $config = $this->defaults[$sportName] ?? [];
 
         foreach ($keyParts as $part) {
             if (!isset($config[$part])) {
@@ -261,15 +267,20 @@ class SportConfigService
         $cacheKey = "sport_name_{$sportId}";
         $sportName = Cache::read($cacheKey, $this->cacheConfig);
 
-        if ($sportName === null) {
+        // Don't use cached 'unknown' values - they indicate previous lookup failures
+        if ($sportName === null || $sportName === 'unknown') {
             $sportsTable = $this->fetchTable('Sports');
             $sport = $sportsTable->find()
                 ->select(['sport_name'])
                 ->where(['id' => $sportId])
                 ->first();
 
-            $sportName = $sport ? $sport->sport_name : 'unknown';
-            Cache::write($cacheKey, $sportName, $this->cacheConfig);
+            $sportName = $sport ? strtolower($sport->sport_name) : 'unknown';
+
+            // Only cache successful lookups
+            if ($sportName !== 'unknown') {
+                Cache::write($cacheKey, $sportName, $this->cacheConfig);
+            }
         }
 
         return $sportName;
