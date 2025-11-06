@@ -275,7 +275,16 @@ class GamesController extends AppController
         }
 
         $this->setSportAwareData($game);
-        $this->set(compact('game', 'eav', 'teamBoxStats', 'opponentBoxStats', 'teamPeriodStats', 'opponentPeriodStats', 'hasSportConfig', 'hasPeriodStats'));
+        $this->set(compact(
+            'game',
+            'eav',
+            'teamBoxStats',
+            'opponentBoxStats',
+            'teamPeriodStats',
+            'opponentPeriodStats',
+            'hasSportConfig',
+            'hasPeriodStats',
+        ));
     }
 
     /**
