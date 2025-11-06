@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Model\Table;
 
-use App\Model\Entity\SportStatRegistry;
 use App\Model\Table\SportStatRegistryTable;
 use Cake\TestSuite\TestCase;
 

@@ -15,7 +15,7 @@ class GameEavTable extends Table
      *
      * @var \App\Model\Table\SportStatRegistryTable
      */
-    protected $sportStatRegistry;
+    protected SportStatRegistryTable $sportStatRegistry;
 
     /**
      * SportConfigService instance
@@ -404,14 +404,20 @@ class GameEavTable extends Table
      * Get the stat tables associated with a specific sport
      *
      * @param int $sportId Sport ID to get tables for
-     * @param string|null $context Optional context filter (game, season, career)
-     * @param string|null $entityType Optional entity type filter (team, player, opponent)
+     * @param string|null $context Optional context filter
+     * @param string|null $entityType Optional entity type filter
      * @return array Stat tables with their configurations
      */
-    public function getStatTablesForSport(int $sportId, ?string $context = null, ?string $entityType = null): array
-    {
+    public function getStatTablesForSport(
+        int $sportId,
+        ?string $context = null,
+        ?string $entityType = null,
+    ): array {
         // First check SportStatRegistry for database configuration
-        $query = $this->sportStatRegistry->find('bySport', ['sport_id' => $sportId]);
+        $query = $this->sportStatRegistry->find(
+            'bySport',
+            ['sport_id' => $sportId]
+        );
 
         // Apply optional filters
         if ($context !== null) {
@@ -458,10 +464,13 @@ class GameEavTable extends Table
                 }
 
                 $key = "{$contextKey}.{$entityKey}";
-                // Get sport name for display purposes (fallback to defaults if protected)
+                // Get sport name for display purposes
                 $sportName = 'Basketball'; // Default sport name
                 // Build display name
-                $displayName = ucfirst($sportName) . ' ' . ucfirst($contextKey) . ' ' . ucfirst($entityKey) . ' Stats';
+                $contextUpper = ucfirst($contextKey);
+                $entityUpper = ucfirst($entityKey);
+                $displayName = ucfirst($sportName) . ' ' .
+                    $contextUpper . ' ' . $entityUpper . ' Stats';
 
                 // Get default field mapping for this sport and entity type
                 $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);

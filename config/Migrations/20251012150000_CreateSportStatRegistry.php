@@ -17,7 +17,7 @@ use Migrations\AbstractMigration;
  */
 class CreateSportStatRegistry extends AbstractMigration
 {
-    public bool $autoId = false;
+    public $autoId = false;
 
     /**
      * Apply migration: create sport stat registry table
