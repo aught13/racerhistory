@@ -125,10 +125,14 @@
                                         ?>
                                     <div class="row g-3 mb-3 field-mapping-row">
                                         <div class="col-md-4">
-                                            <input type="text" name="field_keys[]" class="form-control" placeholder="Database Column" required>
+                                            <input type="text" name="field_keys[]"
+                                                   class="form-control"
+                                                   placeholder="Database Column" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" name="field_labels[]" class="form-control" placeholder="Display Label" required>
+                                            <input type="text" name="field_labels[]"
+                                                   class="form-control"
+                                                   placeholder="Display Label" required>
                                         </div>
                                         <div class="col-md-3">
                                             <select name="field_types[]" class="form-select">
@@ -140,7 +144,11 @@
                                             </select>
                                         </div>
                                         <div class="col-md-1">
-                                            <button type="button" class="btn btn-danger remove-field" disabled><i class="bi bi-dash-circle"></i></button>
+                                            <button type="button"
+                                                    class="btn btn-danger remove-field"
+                                                    disabled>
+                                                <i class="bi bi-dash-circle"></i>
+                                            </button>
                                         </div>
                                     </div>
                                     <?php else : ?>
@@ -183,7 +191,10 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-1">
-                                                <button type="button" class="btn btn-danger remove-field"><i class="bi bi-dash-circle"></i></button>
+                                                <button type="button"
+                                                        class="btn btn-danger remove-field">
+                                                    <i class="bi bi-dash-circle"></i>
+                                                </button>
                                             </div>
                                         </div>
                                         <?php endforeach; ?>
@@ -198,7 +209,10 @@
 
                     <div class="col-12 mt-4">
                         <div class="d-flex gap-2">
-                            <?= $this->Form->button('Save Changes', ['class' => 'btn btn-primary']) ?>
+                            <?= $this->Form->button(
+                                'Save Changes',
+                                ['class' => 'btn btn-primary'],
+                            ) ?>
                             <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">Cancel</a>
                             <?= $this->Form->postLink(
                                 'Delete Configuration',

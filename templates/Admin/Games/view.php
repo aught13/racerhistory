@@ -8,8 +8,9 @@
                     <i class="bi bi-pencil"></i> Edit Game
                 </a>
                 <?php if (!empty($game->opponent_id)) : ?>
-                    <a href="<?= $this->Url->build(['controller' => 'Opponents', 'action' => 'edit', $game->opponent_id]) ?>"
-                       class="btn btn-outline-primary">
+                    <a href="<?= $this->Url->build([
+                        'controller' => 'Opponents', 'action' => 'edit', $game->opponent_id,
+                    ]) ?>" class="btn btn-outline-primary">
                         <i class="bi bi-pencil"></i> Edit Opponent
                     </a>
                 <?php endif; ?>
@@ -153,7 +154,9 @@
                             <i class="bi bi-clipboard-data"></i> Edit Box Scores
                         </a>
                         <?php if ($hasPeriodStats) : ?>
-                            <a href="<?= $this->Url->build(['action' => 'gameBoxPeriods', $game->id]) ?>" class="btn btn-outline-success">
+                            <a href="<?= $this->Url->build([
+                                'action' => 'gameBoxPeriods', $game->id,
+                            ]) ?>" class="btn btn-outline-success">
                                 <i class="bi bi-clock-history"></i> Edit Period Stats
                             </a>
                         <?php endif; ?>
@@ -167,12 +170,17 @@
             <!-- Team Player Stats -->
             <div class="row mt-4">
                 <div class="col-12">
-                    <h3><?= h($game->team_season->team->team_name ?? 'Murray State') ?> - <?= h($game->pts_mur ?? '') ?></h3>
+                    <h3>
+                        <?= h($game->team_season->team->team_name ?? 'Murray State') ?>
+                        - <?= h($game->pts_mur ?? '') ?>
+                    </h3>
                 </div>
             </div>
             <div class="row mb-3">
                 <div class="col-12">
-                    <table id="team-player-stats" class="table table-sm table-bordered table-striped" style="width:100%">
+                    <table id="team-player-stats"
+                           class="table table-sm table-bordered table-striped"
+                           style="width:100%">
                         <thead class="table-light">
                             <tr>
                                 <th>#</th>
@@ -362,7 +370,9 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-12">
-                        <table id="opponent-player-stats" class="table table-sm table-bordered table-striped" style="width:100%">
+                        <table id="opponent-player-stats"
+                               class="table table-sm table-bordered table-striped"
+                               style="width:100%">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -503,15 +513,18 @@
                                     <?php if (!empty($opponentBoxStats)) :
                                         $totalFGA = (int)($opponentBoxStats['FGA'] ?? 0);
                                         $totalFGM = (int)($opponentBoxStats['FGM'] ?? 0);
-                                        $totalFGPct = $totalFGA > 0 ? number_format($totalFGM / $totalFGA * 100, 1) . '%' : '';
+                                        $totalFGPct = $totalFGA > 0
+                                            ? number_format($totalFGM / $totalFGA * 100, 1) . '%' : '';
 
                                         $totalTPA = (int)($opponentBoxStats['TPA'] ?? 0);
                                         $totalTPM = (int)($opponentBoxStats['TPM'] ?? 0);
-                                        $totalTPPct = $totalTPA > 0 ? number_format($totalTPM / $totalTPA * 100, 1) . '%' : '';
+                                        $totalTPPct = $totalTPA > 0
+                                            ? number_format($totalTPM / $totalTPA * 100, 1) . '%' : '';
 
                                         $totalFTA = (int)($opponentBoxStats['FTA'] ?? 0);
                                         $totalFTM = (int)($opponentBoxStats['FTM'] ?? 0);
-                                        $totalFTPct = $totalFTA > 0 ? number_format($totalFTM / $totalFTA * 100, 1) . '%' : '';
+                                        $totalFTPct = $totalFTA > 0
+                                            ? number_format($totalFTM / $totalFTA * 100, 1) . '%' : '';
                                         ?>
                                         <tr class="table-secondary">
                                             <td class="text-start"><strong>Total</strong></td>
@@ -587,7 +600,9 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colspan="3"><strong>Lead Changes:</strong> <?= h($teamBoxStats['LC'] ?? '0') ?></td>
+                                    <td colspan="3">
+                                        <strong>Lead Changes:</strong> <?= h($teamBoxStats['LC'] ?? '0') ?>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

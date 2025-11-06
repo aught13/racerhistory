@@ -10,11 +10,16 @@
             </nav>
             <h1 class="mb-3"><?= h($sportStatRegistry->display_name) ?></h1>
             <div class="d-flex gap-2 mb-3">
-                <a href="<?= $this->Url->build(['action' => 'edit', $sportStatRegistry->id]) ?>" class="btn btn-primary">
+                <a href="<?= $this->Url->build([
+                    'action' => 'edit', $sportStatRegistry->id,
+                ]) ?>" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Edit Configuration
                 </a>
-                <a href="<?= $this->Url->build(['action' => 'index', $sportStatRegistry->sport_id]) ?>" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to <?= h($sportStatRegistry->sport->sport_name) ?> Stat Tables
+                <a href="<?= $this->Url->build([
+                    'action' => 'index', $sportStatRegistry->sport_id,
+                ]) ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to
+                    <?= h($sportStatRegistry->sport->sport_name) ?> Stat Tables
                 </a>
                 <?= $this->Form->postLink(
                     '<i class="bi bi-trash"></i> Delete',
@@ -92,7 +97,11 @@
                     <h5 class="card-title mb-0">Usage Information</h5>
                 </div>
                 <div class="card-body">
-                    <p>This configuration defines the mapping between database columns and their display properties for the <code><?= h($sportStatRegistry->table_name) ?></code> table.</p>
+                    <p>
+                        This configuration defines the mapping between database columns and
+                        their display properties for the
+                        <code><?= h($sportStatRegistry->table_name) ?></code> table.
+                    </p>
 
                     <h6 class="mt-3">Service Access:</h6>
                     <pre class="bg-light p-3 code-snippet"><code>// Example code to access this configuration:
@@ -199,7 +208,10 @@ $mapping = $sportConfigService->getFieldMapping(
                     <h5 class="card-title mb-0">Database Schema Information</h5>
                 </div>
                 <div class="card-body">
-                    <p>The following shows the database schema for the <code><?= h($sportStatRegistry->table_name) ?></code> table:</p>
+                    <p>
+                        The following shows the database schema for the
+                        <code><?= h($sportStatRegistry->table_name) ?></code> table:
+                    </p>
 
                     <div class="table-responsive">
                         <?php if (!empty($tableSchema) && is_array($tableSchema)) : ?>
@@ -230,7 +242,11 @@ $mapping = $sportConfigService->getFieldMapping(
                         <?php else : ?>
                             <div class="alert alert-danger">
                                 <h6 class="alert-heading">Table Not Found</h6>
-                                <p>The specified table <code><?= h($sportStatRegistry->table_name) ?></code> could not be found in the database or is not accessible.</p>
+                                <p>
+                                    The specified table
+                                    <code><?= h($sportStatRegistry->table_name) ?></code>
+                                    could not be found in the database or is not accessible.
+                                </p>
                             </div>
                         <?php endif; ?>
                     </div>
