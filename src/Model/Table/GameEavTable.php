@@ -3,11 +3,27 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Service\SportConfigService;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 
 class GameEavTable extends Table
 {
+    /**
+     * SportStatRegistry table instance
+     *
+     * @var \App\Model\Table\SportStatRegistryTable
+     */
+    protected SportStatRegistryTable $sportStatRegistry;
+
+    /**
+     * SportConfigService instance
+     *
+     * @var \App\Service\SportConfigService
+     */
+    protected SportConfigService $sportConfigService;
+
     /**
      * Initialize table configuration.
      *
@@ -20,6 +36,42 @@ class GameEavTable extends Table
         $this->setTable('game_eav');
         $this->setPrimaryKey('id');
         $this->setDisplayField('key');
+
+        // Enable identifier quoting for this table because 'key' is a reserved SQL keyword
+        $connection = $this->getConnection();
+        $connection->getDriver()->enableAutoQuoting(true);
+
+        // Initialize dependencies with defaults that can be overridden in tests
+        /** @var \App\Model\Table\SportStatRegistryTable $sportStatRegistry */
+        $sportStatRegistry = TableRegistry::getTableLocator()->get('SportStatRegistry');
+        $this->sportStatRegistry = $sportStatRegistry;
+        $this->sportConfigService = new SportConfigService();
+    }
+
+    /**
+     * Set SportStatRegistry table instance - used for dependency injection in tests
+     *
+     * @param \App\Model\Table\SportStatRegistryTable $sportStatRegistry The SportStatRegistry table
+     * @return self
+     */
+    public function setSportStatRegistry(SportStatRegistryTable $sportStatRegistry): self
+    {
+        $this->sportStatRegistry = $sportStatRegistry;
+
+        return $this;
+    }
+
+    /**
+     * Set SportConfigService instance - used for dependency injection in tests
+     *
+     * @param \App\Service\SportConfigService $sportConfigService The SportConfigService
+     * @return self
+     */
+    public function setSportConfigService(SportConfigService $sportConfigService): self
+    {
+        $this->sportConfigService = $sportConfigService;
+
+        return $this;
     }
 
     /**
@@ -346,5 +398,105 @@ class GameEavTable extends Table
         }
 
         return $scoring;
+    }
+
+    /**
+     * Get the stat tables associated with a specific sport
+     *
+     * @param int $sportId Sport ID to get tables for
+     * @param string|null $context Optional context filter
+     * @param string|null $entityType Optional entity type filter
+     * @return array Stat tables with their configurations
+     */
+    public function getStatTablesForSport(
+        int $sportId,
+        ?string $context = null,
+        ?string $entityType = null,
+    ): array {
+        // First check SportStatRegistry for database configuration
+        $query = $this->sportStatRegistry->find(
+            'bySport',
+            ['sport_id' => $sportId]
+        );
+
+        // Apply optional filters
+        if ($context !== null) {
+            $query = $query->find('byContext', ['context' => $context]);
+        }
+
+        if ($entityType !== null) {
+            $query = $query->find('byEntityType', ['entity_type' => $entityType]);
+        }
+
+        $statTablesFromDb = $query->toArray();
+
+        if (!empty($statTablesFromDb)) {
+            $result = [];
+            foreach ($statTablesFromDb as $registry) {
+                $key = "{$registry->context}.{$registry->entity_type}";
+                $result[$key] = [
+                    'table_name' => $registry->table_name,
+                    'display_name' => $registry->display_name,
+                    'field_mapping' => $registry->mapped_fields,
+                    'primary_key' => $registry->primary_key ?: 'id',
+                    'registry_id' => $registry->id,
+                ];
+            }
+
+            return $result;
+        }
+
+        // Fallback to SportConfigService for hardcoded defaults
+        $allTables = $this->sportConfigService->getAllStatTables($sportId);
+
+        // Format the result similar to database version
+        $result = [];
+        foreach ($allTables as $contextKey => $contextTables) {
+            // Skip if context filter doesn't match
+            if ($context !== null && $contextKey !== $context) {
+                continue;
+            }
+
+            foreach ($contextTables as $entityKey => $tableName) {
+                // Skip if entity type filter doesn't match
+                if ($entityType !== null && $entityKey !== $entityType) {
+                    continue;
+                }
+
+                $key = "{$contextKey}.{$entityKey}";
+                // Get sport name for display purposes
+                $sportName = 'Basketball'; // Default sport name
+                // Build display name
+                $contextUpper = ucfirst($contextKey);
+                $entityUpper = ucfirst($entityKey);
+                $displayName = ucfirst($sportName) . ' ' .
+                    $contextUpper . ' ' . $entityUpper . ' Stats';
+
+                // Get default field mapping for this sport and entity type
+                $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+                $fieldMapping = [];
+
+                // Apply stat fields from config if available
+                $statFields = $this->sportConfigService->getStatFields($sportId, $entityKey);
+                if (!empty($statFields)) {
+                    foreach ($statFields as $field) {
+                        $fieldMapping[$field] = [
+                            'label' => $fieldLabels[$field] ?? $field,
+                            'type' => 'numeric',
+                        ];
+                    }
+                }
+
+                $result[$key] = [
+                    'table_name' => $tableName,
+                    'display_name' => $displayName,
+                    'field_mapping' => $fieldMapping,
+                    'primary_key' => 'id',
+                    'registry_id' => null, // Not from database
+                ];
+            }
+        }
+
+        return $result;
     }
 }
