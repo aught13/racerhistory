@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-0.1.0--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.1.5--alpha-orange.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/CakePHP-5.x-red.svg)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -46,6 +46,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
 - Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)
 - **Games Management** (add/edit/delete, bulk operations, sport-aware period/official tracking)
+- **Basketball Statistics** (player, opponent, and team stats with comprehensive tracking)
 - Dynamic Person AJAX search & inline person creation modal (roster forms)
 - Responsive admin navigation with Bootstrap styling
 - Comprehensive CRUD and bulk operations for all admin entities
@@ -57,6 +58,11 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Multi-Sport Support** - Basketball (halves/quarters), Football, Baseball with configurable periods/officials
 - **EAV Attribute System** - Flexible storage for sport-specific game data (period scores, officials, attendance)
 - **Cumulative Scoring** - Validates period totals match game totals for supported sports
+- **Basketball Statistics** - Comprehensive player, opponent, and team statistics tracking
+  - Player stats with team roster linkage (GP/GS tracking)
+  - Opponent player stats with name-based tracking
+  - Team-level stats (rebounds, turnovers, technical fouls)
+  - Integrated display in game view with proper validation
 - **Legacy Compatibility** - Maintains backward compatibility with existing game data
 
 ### UI/UX
@@ -153,11 +159,11 @@ racerhistory/
 
 ### Code Coverage & Test Suite
 
-- **PHP Tests**: 288 tests / 761 assertions (controllers, models, integration, game flows & validation)
+- **PHP Tests**: 324 tests / 914 assertions (controllers, models, integration, game flows & validation, basketball stats)
 - **JavaScript Coverage** (Jest): Statements 88%+, Branches 80%+, Functions 95%+, Lines 90%+
-- **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk, games management)
-- **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, Games, EAV, Persons, Images)
-- **Business Rules**: Comprehensive validation testing (season dates, cumulative scoring, future games)
+- **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk, games management, basketball stats)
+- **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, Games, EAV, Persons, Images, StatBasket*)
+- **Business Rules**: Comprehensive validation testing (season dates, cumulative scoring, future games, stat validation)
 - **Frontend**: Jest exercises confirm-delete modal, image selector, sport-aware forms, error branches
 
 ### Key Documentation Features
