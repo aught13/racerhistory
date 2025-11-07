@@ -220,6 +220,10 @@ class GamesController extends AppController
         $opponentBoxStats = [];
         $teamPeriodStats = [];
         $opponentPeriodStats = [];
+        $playerStats = [];
+        $opponentPlayerStats = [];
+        $teamTeamStats = null;
+        $opponentTeamStats = null;
         $hasSportConfig = false;
         $hasPeriodStats = false;
 
@@ -267,6 +271,47 @@ class GamesController extends AppController
                 }
 
                 $hasPeriodStats = !empty($periodStatsData);
+
+                // Load player stats (period Z final stats)
+                /** @var \App\Model\Table\StatBasketGamePersonTable $personTable */
+                $personTable = $this->fetchTable('StatBasketGamePerson');
+                $playerStats = $personTable->find()
+                    ->contain(['TeamSeasonRosters' => ['Persons', 'TeamSeasons']])
+                    ->where(['StatBasketGamePerson.game_id' => $id, 'StatBasketGamePerson.period' => 'Z'])
+                    ->orderBy(function ($exp, $query) {
+                        return [
+                            $query->newExpr('COALESCE(StatBasketGamePerson.GS, 0) DESC'),
+                            $query->newExpr('COALESCE(StatBasketGamePerson.MIN, 0) DESC'),
+                            'StatBasketGamePerson.PTS' => 'DESC',
+                        ];
+                    })
+                    ->all();
+
+                // Load opponent player stats (period Z final stats)
+                /** @var \App\Model\Table\StatBasketGameOpponentTable $opponentTable */
+                $opponentTable = $this->fetchTable('StatBasketGameOpponent');
+                $opponentPlayerStats = $opponentTable->find()
+                    ->where(['StatBasketGameOpponent.game_id' => $id, 'StatBasketGameOpponent.period' => 'Z'])
+                    ->orderBy(function ($exp, $query) {
+                        return [
+                            $query->newExpr('COALESCE(StatBasketGameOpponent.GS, 0) DESC'),
+                            $query->newExpr('COALESCE(StatBasketGameOpponent.MIN, 0) DESC'),
+                            'StatBasketGameOpponent.PTS' => 'DESC',
+                        ];
+                    })
+                    ->all();
+
+                // Load team stats (Dead Ball rebounds, Fouls Drawn, Team Turnovers) for period Z
+                /** @var \App\Model\Table\StatBasketGameTeamTable $teamTable */
+                $teamTable = $this->fetchTable('StatBasketGameTeam');
+
+                $teamTeamStats = $teamTable->find()
+                    ->where(['StatBasketGameTeam.game_id' => $id, 'StatBasketGameTeam.opp' => 0])
+                    ->first();
+
+                $opponentTeamStats = $teamTable->find()
+                    ->where(['StatBasketGameTeam.game_id' => $id, 'StatBasketGameTeam.opp' => 1])
+                    ->first();
             }
 
             // Get field labels from SportConfigService
@@ -282,6 +327,10 @@ class GamesController extends AppController
             'opponentBoxStats',
             'teamPeriodStats',
             'opponentPeriodStats',
+            'playerStats',
+            'opponentPlayerStats',
+            'teamTeamStats',
+            'opponentTeamStats',
             'hasSportConfig',
             'hasPeriodStats',
         ));
