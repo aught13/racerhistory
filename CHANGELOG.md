@@ -30,7 +30,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 - **26 New Unit Tests** for basketball statistics controllers (324 total tests, 914 assertions)
   - StatBasketGamePersonControllerTest: 13 tests, 97% coverage
-  - StatBasketGameOpponentControllerTest: 8 tests, 97% coverage  
+  - StatBasketGameOpponentControllerTest: 8 tests, 97% coverage
   - StatBasketGameTeamControllerTest: 5 tests, 86% coverage
   - Three new test fixtures with proper database structures
   - Updated tests/schema.sql with all three stat tables
