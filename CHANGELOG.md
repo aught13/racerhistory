@@ -12,6 +12,38 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - (placeholder) Additional domain models and admin features.
 - (placeholder) Extended test coverage and performance improvements.
 
+## [0.1.5-alpha] - 2025-11-06
+
+### Added
+
+- **Basketball Game Statistics System**: Complete CRUD management for basketball game statistics
+  - Player statistics with team roster linkage (GP/GS tracking, 18 stat fields)
+  - Opponent player statistics with name-based tracking (no roster requirement)
+  - Team-level statistics for plays not attributed to individuals (ORB/DRB/RB/TRN/TF/PTS)
+  - Three new controllers: `StatBasketGamePersonController`, `StatBasketGameOpponentController`, `StatBasketGameTeamController`
+  - Nine new admin templates for add/edit/view operations
+  - Integration into Games view template with proper display of all stat types
+  - Comprehensive validation: PTS required for players/opponents, GP defaults to 1, all team stats optional
+  - Proper entity associations: belongsTo Games, Players link to TeamSeasonRosters
+
+### Testing
+
+- **26 New Unit Tests** for basketball statistics controllers (324 total tests, 914 assertions)
+  - StatBasketGamePersonControllerTest: 13 tests, 97% coverage
+  - StatBasketGameOpponentControllerTest: 8 tests, 97% coverage  
+  - StatBasketGameTeamControllerTest: 5 tests, 86% coverage
+  - Three new test fixtures with proper database structures
+  - Updated tests/schema.sql with all three stat tables
+
+### Fixed
+
+- Fixed association naming issues (TeamSeasons vs TeamSeason)
+- Fixed property access for belongsTo associations (team_season_rosters → team_season_roster)
+- Fixed team stats display (removed non-existent 'period' column, shows correct 6 fields)
+- Fixed sorting with COALESCE for NULL-safe ordering
+- All PHPStan errors resolved (type assertions, PHPDoc properties, proper initialization)
+- All PHPCS violations auto-fixed (FQN references, DateTime namespace)
+
 ### Added (Unreleased) - Game Management System
 
 - **Advanced Game Validation & Business Rules**: Comprehensive business logic for game entities
