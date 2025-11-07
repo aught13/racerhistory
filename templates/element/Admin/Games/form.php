@@ -43,7 +43,7 @@ $eav = $eav ?? [];
                     </div>
                 </fieldset>
                 <!-- Hidden field for game_id (for JS/AJAX) -->
-                <?php if (isset($game) && isset($game->id)): ?>
+                <?php if (isset($game) && isset($game->id)) : ?>
                     <input type="hidden" id="game-id-hidden" value="<?= h($game->id) ?>">
                 <?php endif; ?>
             </div>
@@ -95,21 +95,74 @@ $eav = $eav ?? [];
                 ]) ?>
             </div>
             <div class="col-md-3"><?= $this->Form->control('post', ['label' => 'Postseason', 'type' => 'checkbox', 'class' => 'form-check-input']) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('w', ['label' => 'W', 'class' => 'form-control']) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('l', ['label' => 'L', 'class' => 'form-control']) ?></div>
+            <div class="col-md-3">
+                <?= $this->Form->control('periods', [
+                    'label' => 'Periods',
+                    'type' => 'select',
+                    'options' => [2 => '2 (Halves)', 4 => '4 (Quarters)'],
+                    'class' => 'form-select',
+                    'default' => 2,
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('ot', [
+                    'label' => 'Overtime Periods',
+                    'type' => 'number',
+                    'min' => 0,
+                    'max' => 5,
+                    'class' => 'form-control',
+                    'default' => 0,
+                ]) ?>
+            </div>
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-3"><?= $this->Form->control('pts_mur', ['label' => 'Team Points', 'class' => 'form-control']) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('pts_opp', ['label' => 'Opponent Points', 'class' => 'form-control']) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('mur_rk', ['label' => 'Team Rank', 'class' => 'form-control']) ?></div>
-            <div class="col-md-3"><?= $this->Form->control('opp_rk', ['label' => 'Opponent Rank', 'class' => 'form-control']) ?></div>
+            <div class="col-md-3">
+                <?= $this->Form->control('pts_mur', [
+                    'label' => 'Team Points', 'class' => 'form-control',
+                    'type' => 'number', 'min' => 0,
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('pts_opp', [
+                    'label' => 'Opponent Points', 'class' => 'form-control',
+                    'type' => 'number', 'min' => 0,
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('mur_rk', [
+                    'label' => 'Team Rank', 'class' => 'form-control',
+                ]) ?>
+            </div>
+            <div class="col-md-3">
+                <?= $this->Form->control('opp_rk', [
+                    'label' => 'Opponent Rank', 'class' => 'form-control',
+                ]) ?>
+            </div>
         </div>
 
-        <?php if (isset($eavTemplate) && is_array($eavTemplate) && count($eavTemplate)): ?>
+        <div class="row g-3 mt-1">
+            <div class="col-md-3">
+                <?= $this->Form->control('attendance', [
+                    'label' => 'Attendance', 'class' => 'form-control',
+                    'type' => 'text', 'maxlength' => 7,
+                ]) ?>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle"></i>
+            <strong>Note:</strong> Period scores must sum to the final score,
+            and regular periods must be tied when overtime is present.
+        </div>
+
+        <?php if (isset($eavTemplate) && is_array($eavTemplate) && count($eavTemplate)) : ?>
             <div class="row g-3 mt-1">
-                <?php $fieldsPerRow = 4; $i = 0; foreach ($eavTemplate as $field): ?>
-                    <?php if ($i > 0 && $i % $fieldsPerRow === 0): ?></div><div class="row g-3 mt-1"><?php endif; ?>
+                <?php $fieldsPerRow = 4;
+                $i = 0; foreach ($eavTemplate as $field) : ?>
+                                    <?php if ($i > 0 && $i % $fieldsPerRow === 0) :
+                                        ?></div><div class="row g-3 mt-1"><?php
+                                    endif; ?>
                     <div class="col-md-3">
                         <?php
                         $value = $eav[$field['field_name']] ?? null;
@@ -119,14 +172,23 @@ $eav = $eav ?? [];
                             'value' => $value,
                             'type' => $field['field_type'] ?? 'text',
                         ];
-                        if (isset($field['min'])) $opts['min'] = $field['min'];
-                        if (isset($field['max'])) $opts['max'] = $field['max'];
-                        if (isset($field['maxlength'])) $opts['maxlength'] = $field['maxlength'];
-                        if (isset($field['placeholder'])) $opts['placeholder'] = $field['placeholder'];
+                        if (isset($field['min'])) {
+                            $opts['min'] = $field['min'];
+                        }
+                        if (isset($field['max'])) {
+                            $opts['max'] = $field['max'];
+                        }
+                        if (isset($field['maxlength'])) {
+                            $opts['maxlength'] = $field['maxlength'];
+                        }
+                        if (isset($field['placeholder'])) {
+                            $opts['placeholder'] = $field['placeholder'];
+                        }
                         ?>
                         <?= $this->Form->control($field['field_name'], $opts) ?>
                     </div>
-                <?php $i++; endforeach; ?>
+                                <?php $i++;
+                endforeach; ?>
             </div>
         <?php endif; ?>
     </div>

@@ -6,7 +6,32 @@ use Cake\TestSuite\Fixture\TestFixture;
 
 class UsersFixture extends TestFixture
 {
-    public $import = ['table' => 'users'];
+    // Define the schema directly instead of importing
+
+    public function init(): void
+    {
+        $this->schema = [
+            'id' => ['type' => 'integer', 'length' => 11, 'unsigned' => false, 'null' => false, 'default' => null, 'comment' => '', 'autoIncrement' => true, 'precision' => null],
+            'username' => ['type' => 'string', 'length' => 50, 'null' => false, 'default' => null, 'collate' => 'utf8mb4_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+            'email' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => null, 'collate' => 'utf8mb4_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+            'password' => ['type' => 'string', 'length' => 255, 'null' => false, 'default' => null, 'collate' => 'utf8mb4_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+            'role' => ['type' => 'string', 'length' => 20, 'null' => false, 'default' => 'user', 'collate' => 'utf8mb4_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+            'status' => ['type' => 'string', 'length' => 20, 'null' => false, 'default' => 'inactive', 'collate' => 'utf8mb4_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+            'created' => ['type' => 'datetime', 'length' => null, 'precision' => null, 'null' => true, 'default' => null, 'comment' => ''],
+            'modified' => ['type' => 'datetime', 'length' => null, 'precision' => null, 'null' => true, 'default' => null, 'comment' => ''],
+            '_constraints' => [
+                'primary' => ['type' => 'primary', 'columns' => ['id'], 'length' => []],
+                'username' => ['type' => 'unique', 'columns' => ['username'], 'length' => []],
+                'email' => ['type' => 'unique', 'columns' => ['email'], 'length' => []],
+            ],
+            '_options' => [
+                'engine' => 'InnoDB',
+                'collation' => 'utf8mb4_general_ci',
+            ],
+        ];
+        parent::init();
+    }
+
     public array $records = [
         [
             'id' => 1,

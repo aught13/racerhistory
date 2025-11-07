@@ -18,6 +18,17 @@
         </nav>
     <?php endif; ?>
     <h1 class="mb-3">Edit Game</h1>
+
+    <?php if (isset($game) && $game->id) : ?>
+        <div class="mb-3">
+            <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>"
+               class="btn btn-success">
+                <i class="bi bi-clipboard-data"></i>
+                Add/Edit Game Box Scores
+            </a>
+        </div>
+    <?php endif; ?>
+
     <?php
     // Merge legacy mapped EAV (period_X_team/opponent) into eav for form rendering if provided
     if (isset($legacyMappedEav) && is_array($legacyMappedEav)) {
