@@ -21,6 +21,35 @@
         </div>
     </div>
 
+    <!-- Game Stats Action Buttons -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="btn-group" role="group" aria-label="Game Statistics">
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGamePerson',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-outline-success">
+                    <i class="bi bi-person"></i> Player Stats
+                </a>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGameOpponent',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-outline-danger">
+                    <i class="bi bi-people"></i> Opponent Stats
+                </a>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGameTeam',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-outline-info">
+                    <i class="bi bi-bar-chart"></i> Team Stats
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Header -->
     <div class="row">
         <span class="h3 col-xl-6 text-center text-nowrap text-break">
@@ -205,14 +234,62 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Player stats will be loaded here when implemented -->
-                            <tr>
-                                <td colspan="19" class="text-center text-muted">
-                                    <em>Player statistics will be available in the next phase</em>
-                                </td>
-                            </tr>
+                            <?php if (!empty($playerStats) && $playerStats->count() > 0) : ?>
+                                <?php foreach ($playerStats as $stat) : ?>
+                                    <tr>
+                                        <td><?= h($stat->team_season_roster->roster_number ?? '') ?></td>
+                                        <td><?= h($stat->team_season_roster->person->display ?? $stat->team_season_roster->person->full ?? '') ?></td>
+                                        <td><?= $stat->GS ? h($stat->team_season_roster->roster_position ?? '') : '' ?></td>
+                                        <td><?= h($stat->MIN ?? '') ?></td>
+                                        <td><?= h($stat->FGM ?? '') ?></td>
+                                        <td><?= h($stat->FGA ?? '') ?></td>
+                                        <td><?= h($stat->TPM ?? '') ?></td>
+                                        <td><?= h($stat->TPA ?? '') ?></td>
+                                        <td><?= h($stat->FTM ?? '') ?></td>
+                                        <td><?= h($stat->FTA ?? '') ?></td>
+                                        <td><?= h($stat->ORB ?? '') ?></td>
+                                        <td><?= h($stat->DRB ?? '') ?></td>
+                                        <td><?= h($stat->RB ?? '') ?></td>
+                                        <td><?= h($stat->AST ?? '') ?></td>
+                                        <td><?= h($stat->STL ?? '') ?></td>
+                                        <td><?= h($stat->BS ?? '') ?></td>
+                                        <td><?= h($stat->TRN ?? '') ?></td>
+                                        <td><?= h($stat->PF ?? '') ?></td>
+                                        <td><?= h($stat->PTS ?? '') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <tr>
+                                    <td colspan="19" class="text-center text-muted">
+                                        <em>No player statistics entered yet</em>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                         <?php if (!empty($teamBoxStats)) : ?>
+                            <?php if (!empty($teamTeamStats)) : ?>
+                                <tbody class="table-light">
+                                    <tr>
+                                        <td colspan="3"><strong>TEAM</strong></td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td><?= h($teamTeamStats->ORB ?? '0') ?></td>
+                                        <td><?= h($teamTeamStats->DRB ?? '0') ?></td>
+                                        <td><?= h($teamTeamStats->RB ?? '0') ?></td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td><?= h($teamTeamStats->TRN ?? '0') ?></td>
+                                        <td>-</td>
+                                        <td><?= h($teamTeamStats->PTS ?? '0') ?></td>
+                                    </tr>
+                                </tbody>
+                            <?php endif; ?>
                             <tfoot class="table-secondary">
                                 <tr>
                                     <td colspan="3"><strong>TOTALS</strong></td>
@@ -397,14 +474,62 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Opponent player stats will be loaded here when implemented -->
-                                <tr>
-                                    <td colspan="19" class="text-center text-muted">
-                                        <em>Player statistics will be available in the next phase</em>
-                                    </td>
-                                </tr>
+                                <?php if (!empty($opponentPlayerStats) && $opponentPlayerStats->count() > 0) : ?>
+                                    <?php foreach ($opponentPlayerStats as $stat) : ?>
+                                        <tr>
+                                            <td><?= h($stat->jersey ?? '') ?></td>
+                                            <td><?= h($stat->name ?? '') ?></td>
+                                            <td><?= h($stat->position ?? '') ?></td>
+                                            <td><?= h($stat->MIN ?? '') ?></td>
+                                            <td><?= h($stat->FGM ?? '') ?></td>
+                                            <td><?= h($stat->FGA ?? '') ?></td>
+                                            <td><?= h($stat->TPM ?? '') ?></td>
+                                            <td><?= h($stat->TPA ?? '') ?></td>
+                                            <td><?= h($stat->FTM ?? '') ?></td>
+                                            <td><?= h($stat->FTA ?? '') ?></td>
+                                            <td><?= h($stat->ORB ?? '') ?></td>
+                                            <td><?= h($stat->DRB ?? '') ?></td>
+                                            <td><?= h($stat->RB ?? '') ?></td>
+                                            <td><?= h($stat->AST ?? '') ?></td>
+                                            <td><?= h($stat->STL ?? '') ?></td>
+                                            <td><?= h($stat->BS ?? '') ?></td>
+                                            <td><?= h($stat->TRN ?? '') ?></td>
+                                            <td><?= h($stat->PF ?? '') ?></td>
+                                            <td><?= h($stat->PTS ?? '') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else : ?>
+                                    <tr>
+                                        <td colspan="19" class="text-center text-muted">
+                                            <em>No opponent player statistics entered yet</em>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
                             </tbody>
                             <?php if (!empty($opponentBoxStats)) : ?>
+                                <?php if (!empty($opponentTeamStats)) : ?>
+                                    <tbody class="table-light">
+                                        <tr>
+                                            <td colspan="3"><strong>TEAM</strong></td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td><?= h($opponentTeamStats->ORB ?? '0') ?></td>
+                                            <td><?= h($opponentTeamStats->DRB ?? '0') ?></td>
+                                            <td><?= h($opponentTeamStats->RB ?? '0') ?></td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td><?= h($opponentTeamStats->TRN ?? '0') ?></td>
+                                            <td>-</td>
+                                            <td><?= h($opponentTeamStats->PTS ?? '0') ?></td>
+                                        </tr>
+                                    </tbody>
+                                <?php endif; ?>
                                 <tfoot class="table-secondary">
                                     <tr>
                                         <td colspan="3"><strong>TOTALS</strong></td>
