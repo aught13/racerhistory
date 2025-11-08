@@ -14,8 +14,6 @@ use Cake\Http\Response;
  */
 class StatBasketSeasonPersonController extends AppController
 {
-
-
     /**
      * Add method - create new player season stat entry
      *
