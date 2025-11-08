@@ -91,12 +91,40 @@ class TeamSeasonsController extends AppController
             ->orderByAsc('Seasons.end')
             ->first();
 
+        // Load basketball season stats if sport is basketball (ID = 1)
+        $playerStats = null;
+        $teamStats = null;
+        $opponentStats = null;
+        if ($teamSeason->team->sport_id === 1) {
+            // Load player stats
+            $playerStats = $this->fetchTable('StatBasketSeasonPerson')
+                ->find()
+                ->contain(['TeamSeasonRosters' => ['Persons']])
+                ->where(['TeamSeasonRosters.team_season_id' => $id])
+                ->all();
+
+            // Load team stats
+            $teamStats = $this->fetchTable('StatBasketSeasonTeam')
+                ->find()
+                ->where(['team_season_id' => $id])
+                ->first();
+
+            // Load opponent stats
+            $opponentStats = $this->fetchTable('StatBasketSeasonOpponent')
+                ->find()
+                ->where(['team_season_id' => $id])
+                ->first();
+        }
+
         $this->set(compact(
             'teamSeason',
             'teamSeasonRosters',
             'teamSeasonGames',
             'previousTeamSeason',
-            'nextTeamSeason'
+            'nextTeamSeason',
+            'playerStats',
+            'teamStats',
+            'opponentStats'
         ));
     }
 
