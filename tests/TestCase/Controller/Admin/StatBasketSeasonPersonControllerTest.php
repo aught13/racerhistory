@@ -46,7 +46,6 @@ class StatBasketSeasonPersonControllerTest extends TestCase
         $this->mockIdentity();
     }
 
-
     /**
      * Test add method GET
      *
