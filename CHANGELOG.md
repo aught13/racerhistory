@@ -12,6 +12,42 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - (placeholder) Additional domain models and admin features.
 - (placeholder) Extended test coverage and performance improvements.
 
+## [0.1.6-alpha] - 2025-11-08
+
+### Added
+
+- **Basketball Season Statistics System**: Complete CRUD management for basketball team season statistics
+  - Player season statistics with team roster linkage (GP/GS/MIN and 18 stat fields: FGM, FGA, 3PM, 3PA, FTM, FTA, ORB, DRB, RB, AST, STL, BS, TRN, PF, TF, PTS)
+  - Team season totals for unattributed plays (19 stat fields without GS)
+  - Opponent season totals (19 stat fields without GS)
+  - Three new controllers: `StatBasketSeasonPersonController`, `StatBasketSeasonTeamController`, `StatBasketSeasonOpponentController`
+  - Four new admin templates (add/edit for player stats, edit for team/opponent stats)
+  - Integration into TeamSeasons view template with conditional display for basketball (sport_id = 1)
+  - Dynamic column filtering in stats display (hides columns with no data)
+  - jQuery DataTable with sorting, searching, and responsive design
+  - Proper entity associations: belongsTo TeamSeasonRosters (for players), belongsTo TeamSeasons (for team/opponent)
+
+### Testing
+
+- **19 New Unit Tests** for basketball season statistics controllers (343 total tests, 988 assertions)
+  - StatBasketSeasonPersonControllerTest: 8 tests covering add GET/POST, edit GET/POST, delete, validation
+  - StatBasketSeasonTeamControllerTest: 7 tests for edit GET/POST (create/update), delete
+  - StatBasketSeasonOpponentControllerTest: 7 tests for edit GET/POST (create/update), delete
+  - Three new test fixtures with realistic season totals data
+  - Updated tests/schema.sql with three new stat tables
+
+### Fixed
+
+- Fixed association naming in Table models (TeamSeason → TeamSeasons for consistent naming)
+  - StatBasketSeasonPersonTable: corrected belongsTo association to TeamSeasonRosters
+  - StatBasketSeasonTeamTable: corrected belongsTo association to TeamSeasons
+  - StatBasketSeasonOpponentTable: corrected belongsTo association to TeamSeasons
+- Added comprehensive PHPDoc to all three season stat entities
+- Added validation rules and buildRules to all three Table models
+- Fixed controller type assertions and null-safe property access patterns
+- All PHPStan errors resolved (0 errors)
+- All PHPCS errors auto-fixed (13 violations in basketball_season_stats element)
+
 ## [0.1.5-alpha] - 2025-11-06
 
 ### Added
