@@ -302,6 +302,15 @@
     <?= $this->element('Admin/roster_management', ['teamSeason' => $teamSeason, 'teamSeasonRosters' => $teamSeasonRosters]) ?>
 
     <?= $this->element('Admin/games_management', ['teamSeason' => $teamSeason, 'teamSeasonGames' => $teamSeasonGames]) ?>
+
+    <?php if ($teamSeason->team->sport_id === 1): // Basketball ?>
+        <?= $this->element('Admin/basketball_season_stats', [
+            'teamSeason' => $teamSeason,
+            'playerStats' => $playerStats,
+            'teamStats' => $teamStats,
+            'opponentStats' => $opponentStats
+        ]) ?>
+    <?php endif; ?>
 </div>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team season']) ?>
