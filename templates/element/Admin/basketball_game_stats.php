@@ -115,121 +115,69 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
 <div class="row mt-4 mb-3">
     <div class="col-12">
         <h3 class="mb-3">Game Statistics</h3>
-        
-        <!-- Box Score Controls -->
-        <div class="mb-3">
-            <h5>Box Scores</h5>
-            <div class="btn-group" role="group">
-                <?php if ($hasBoxStats) : ?>
-                    <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>" class="btn btn-success">
-                        <i class="bi bi-clipboard-data"></i> Edit Box Scores
-                    </a>
-                    <?php if ($hasPeriodStats) : ?>
-                        <a href="<?= $this->Url->build([
-                            'action' => 'gameBoxPeriods', $game->id,
-                        ]) ?>" class="btn btn-outline-success">
-                            <i class="bi bi-clock-history"></i> Edit Period Stats
-                        </a>
-                    <?php endif; ?>
-                <?php else : ?>
-                    <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>" class="btn btn-outline-success">
-                        <i class="bi bi-plus-circle"></i> Add Box Scores
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
+        <div class="btn-group" role="group">
+            <!-- 1. Game Box Score -->
+            <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>" class="btn btn-sm <?= $hasBoxStats ? 'btn-success' : 'btn-outline-success' ?>">
+                <i class="bi bi-clipboard-data"></i> <?= $hasBoxStats ? 'Edit' : 'Add' ?> Box Score
+            </a>
 
-        <!-- Player Stats Controls -->
-        <div class="mb-3">
-            <h5>Player Statistics</h5>
-            <div class="btn-group" role="group">
-                <?php if ($hasTeamStats) : ?>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGamePerson',
-                        'action' => 'view',
-                        $game->id,
-                    ]) ?>" class="btn btn-primary">
-                        <i class="bi bi-person"></i> View Player Stats
-                    </a>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGamePerson',
-                        'action' => 'add',
-                        $game->id,
-                    ]) ?>" class="btn btn-outline-primary">
-                        <i class="bi bi-plus-circle"></i> Add Player
-                    </a>
-                <?php else : ?>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGamePerson',
-                        'action' => 'add',
-                        $game->id,
-                    ]) ?>" class="btn btn-outline-primary">
-                        <i class="bi bi-plus-circle"></i> Add Player Stats
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
+            <!-- 2. Game Box Periods (if period stats exist) -->
+            <?php if ($hasPeriodStats) : ?>
+                <a href="<?= $this->Url->build([
+                    'action' => 'gameBoxPeriods', $game->id,
+                ]) ?>" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-clock-history"></i> Edit Period Stats
+                </a>
+            <?php endif; ?>
 
-        <!-- Opponent Stats Controls -->
-        <div class="mb-3">
-            <h5>Opponent Statistics</h5>
-            <div class="btn-group" role="group">
-                <?php if ($hasOpponentStats) : ?>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGameOpponent',
-                        'action' => 'view',
-                        $game->id,
-                    ]) ?>" class="btn btn-danger">
-                        <i class="bi bi-people"></i> View Opponent Stats
-                    </a>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGameOpponent',
-                        'action' => 'add',
-                        $game->id,
-                    ]) ?>" class="btn btn-outline-danger">
-                        <i class="bi bi-plus-circle"></i> Add Opponent Player
-                    </a>
-                <?php else : ?>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGameOpponent',
-                        'action' => 'add',
-                        $game->id,
-                    ]) ?>" class="btn btn-outline-danger">
-                        <i class="bi bi-plus-circle"></i> Add Opponent Stats
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
+            <!-- 3. Team Stats (Dead Ball Rebounds, Turnovers, etc.) -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGameTeam',
+                'action' => 'edit',
+                $game->id,
+            ]) ?>" class="btn btn-sm <?= $hasTeamTeamStats ? 'btn-info' : 'btn-outline-info' ?>">
+                <i class="bi bi-bar-chart"></i> <?= $hasTeamTeamStats ? 'Edit' : 'Add' ?> Team Stats
+            </a>
 
-        <!-- Team Stats Controls (Dead Ball Rebounds, Turnovers, etc.) -->
-        <div class="mb-3">
-            <h5>Team Statistics</h5>
-            <div class="btn-group" role="group">
-                <?php if ($hasTeamTeamStats) : ?>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGameTeam',
-                        'action' => 'view',
-                        $game->id,
-                    ]) ?>" class="btn btn-info">
-                        <i class="bi bi-bar-chart"></i> View Team Stats
-                    </a>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGameTeam',
-                        'action' => 'edit',
-                        $game->id,
-                    ]) ?>" class="btn btn-outline-info">
-                        <i class="bi bi-pencil"></i> Edit Team Stats
-                    </a>
-                <?php else : ?>
-                    <a href="<?= $this->Url->build([
-                        'controller' => 'StatBasketGameTeam',
-                        'action' => 'edit',
-                        $game->id,
-                    ]) ?>" class="btn btn-outline-info">
-                        <i class="bi bi-plus-circle"></i> Add Team Stats
-                    </a>
-                <?php endif; ?>
-            </div>
+            <!-- 4. View Player Stats (if any rows are set) -->
+            <?php if ($hasTeamStats) : ?>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGamePerson',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-sm btn-primary">
+                    <i class="bi bi-person"></i> View Player Stats
+                </a>
+            <?php endif; ?>
+
+            <!-- 5. Add Player Stats -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGamePerson',
+                'action' => 'add',
+                $game->id,
+            ]) ?>" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-circle"></i> Add Player
+            </a>
+
+            <!-- 6. View Opponent Stats (if any rows are set) -->
+            <?php if ($hasOpponentStats) : ?>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGameOpponent',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-sm btn-danger">
+                    <i class="bi bi-people"></i> View Opponent Stats
+                </a>
+            <?php endif; ?>
+
+            <!-- 7. Add Opponent Stats -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGameOpponent',
+                'action' => 'add',
+                $game->id,
+            ]) ?>" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-plus-circle"></i> Add Opponent
+            </a>
         </div>
     </div>
 </div>
