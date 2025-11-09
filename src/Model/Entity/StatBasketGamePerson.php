@@ -11,6 +11,7 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property int $game_id
  * @property int $team_season_id
+ * @property int $team_season_roster_id
  * @property string $period
  * @property string|null $GP
  * @property string|null $GS

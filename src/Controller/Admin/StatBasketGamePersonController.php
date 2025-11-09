@@ -57,6 +57,7 @@ class StatBasketGamePersonController extends AppController
         if ($this->request->is('post')) {
             $stat = $this->StatBasketGamePerson->patchEntity($stat, $this->request->getData());
             if ($this->StatBasketGamePerson->save($stat)) {
+                /** @var \App\Model\Entity\StatBasketGamePerson $stat */
                 // Handle add-to-totals if checkbox was selected
                 $addToTotals = $this->request->getData('add_to_totals');
                 if ($addToTotals && $stat->team_season_roster_id && $stat->period === 'Z') {
@@ -178,6 +179,7 @@ class StatBasketGamePersonController extends AppController
         $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
 
         // Find or create season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonPerson|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_roster_id' => $gameStat->team_season_roster_id])
@@ -185,8 +187,10 @@ class StatBasketGamePersonController extends AppController
 
         if (!$seasonStat) {
             $seasonStat = $seasonTable->newEmptyEntity();
+            /** @var \App\Model\Entity\StatBasketSeasonPerson $seasonStat */
             $seasonStat->team_season_roster_id = $gameStat->team_season_roster_id;
         }
+        assert($seasonStat instanceof \App\Model\Entity\StatBasketSeasonPerson);
 
         // Add game stats to season totals
         $this->addStatValues($seasonStat, $gameStat);
@@ -208,6 +212,7 @@ class StatBasketGamePersonController extends AppController
         $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
 
         // Find season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonPerson|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_roster_id' => $newStat->team_season_roster_id])
@@ -219,6 +224,7 @@ class StatBasketGamePersonController extends AppController
 
             return;
         }
+        assert($seasonStat instanceof \App\Model\Entity\StatBasketSeasonPerson);
 
         // Subtract original values and add new values
         $this->subtractStatValues($seasonStat, $originalStat);
