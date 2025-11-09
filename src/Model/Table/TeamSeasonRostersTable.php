@@ -27,6 +27,12 @@ class TeamSeasonRostersTable extends Table
             'foreignKey' => 'person_id',
             'joinType' => 'INNER',
         ]);
+        $this->hasMany('StatBasketGamePerson', [
+            'foreignKey' => 'team_season_roster_id',
+        ]);
+        $this->hasMany('StatBasketSeasonPerson', [
+            'foreignKey' => 'team_season_roster_id',
+        ]);
         $this->setEntityClass('App\Model\Entity\TeamSeasonRosters');
     }
 
