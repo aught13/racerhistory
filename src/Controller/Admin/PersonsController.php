@@ -42,7 +42,7 @@ class PersonsController extends AppController
         $person = $this->Persons->get($id, contain: [
             'TeamSeasonRosters' => [
                 'TeamSeasons' => ['Teams' => ['Sports'], 'Seasons'],
-                'StatBasketGamePerson' => ['Games'],
+                'StatBasketGamePerson' => ['Games' => ['Opponents']],
                 'StatBasketSeasonPerson',
             ],
         ]);
@@ -97,7 +97,30 @@ class PersonsController extends AppController
                     $careerStatsBySport[$sportId] = [
                         'sport' => $sport,
                         'totals' => $this->initializeBasketballStats(),
+                        'seasons' => [],
+                        'minYear' => null,
+                        'maxYear' => null,
                     ];
+                }
+
+                // Store individual season stats
+                $careerStatsBySport[$sportId]['seasons'][] = [
+                    'teamSeason' => $teamSeason,
+                    'stats' => $seasonStats,
+                ];
+
+                // Track year range
+                $startYear = $teamSeason->season->start ?? null;
+                $endYear = $teamSeason->season->end ?? null;
+                if ($startYear !== null) {
+                    if ($careerStatsBySport[$sportId]['minYear'] === null || $startYear < $careerStatsBySport[$sportId]['minYear']) {
+                        $careerStatsBySport[$sportId]['minYear'] = $startYear;
+                    }
+                }
+                if ($endYear !== null) {
+                    if ($careerStatsBySport[$sportId]['maxYear'] === null || $endYear > $careerStatsBySport[$sportId]['maxYear']) {
+                        $careerStatsBySport[$sportId]['maxYear'] = $endYear;
+                    }
                 }
 
                 // Add season stats to career totals

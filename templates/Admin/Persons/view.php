@@ -272,6 +272,7 @@
                                 <table class="table table-bordered">
                                     <thead class="table-dark">
                                         <tr>
+                                            <th>Season</th>
                                             <th>GP</th>
                                             <th>GS</th>
                                             <th>MIN</th>
@@ -292,26 +293,53 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr class="fw-semibold">
+                                        <?php foreach ($careerData['seasons'] as $seasonData) : ?>
+                                            <?php $stats = $seasonData['stats']; ?>
+                                            <?php $ts = $seasonData['teamSeason']; ?>
+                                            <tr>
+                                                <td class="fw-semibold"><?= h($ts->season->start ?? '????') ?>-<?= h($ts->season->end ?? '????') ?></td>
+                                                <td><?= h($stats->GP ?? 0) ?></td>
+                                                <td><?= h($stats->GS ?? 0) ?></td>
+                                                <td><?= h($stats->MIN ?? 0) ?></td>
+                                                <td><?= h($stats->FGM ?? 0) ?>-<?= h($stats->FGA ?? 0) ?></td>
+                                                <td class="text-primary"><?= ($stats->FGA ?? 0) > 0 ? number_format(($stats->FGM ?? 0) / ($stats->FGA ?? 0) * 100, 1) : '0.0' ?>%</td>
+                                                <td><?= h($stats->TPM ?? 0) ?>-<?= h($stats->TPA ?? 0) ?></td>
+                                                <td class="text-primary"><?= ($stats->TPA ?? 0) > 0 ? number_format(($stats->TPM ?? 0) / ($stats->TPA ?? 0) * 100, 1) : '0.0' ?>%</td>
+                                                <td><?= h($stats->FTM ?? 0) ?>-<?= h($stats->FTA ?? 0) ?></td>
+                                                <td class="text-primary"><?= ($stats->FTA ?? 0) > 0 ? number_format(($stats->FTM ?? 0) / ($stats->FTA ?? 0) * 100, 1) : '0.0' ?>%</td>
+                                                <td><?= h($stats->RB ?? 0) ?></td>
+                                                <td><?= h($stats->AST ?? 0) ?></td>
+                                                <td><?= h($stats->STL ?? 0) ?></td>
+                                                <td><?= h($stats->BS ?? 0) ?></td>
+                                                <td><?= h($stats->TRN ?? 0) ?></td>
+                                                <td><?= h($stats->PF ?? 0) ?></td>
+                                                <td class="text-success"><?= h($stats->PTS ?? 0) ?></td>
+                                                <td class="text-success"><?= ($stats->GP ?? 0) > 0 ? number_format(($stats->PTS ?? 0) / ($stats->GP ?? 0), 1) : '0.0' ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot class="table-dark">
+                                        <tr class="fw-bold">
+                                            <td class="text-center"><?= ($careerData['minYear'] ?? '????') ?>-<?= ($careerData['maxYear'] ?? '????') ?></td>
                                             <td><?= h($totals['GP']) ?></td>
                                             <td><?= h($totals['GS']) ?></td>
                                             <td><?= h($totals['MIN']) ?></td>
                                             <td><?= h($totals['FGM']) ?>-<?= h($totals['FGA']) ?></td>
-                                            <td class="text-primary"><?= $totals['FGA'] > 0 ? number_format($totals['FGM'] / $totals['FGA'] * 100, 1) : '0.0' ?>%</td>
+                                            <td class="text-warning"><?= $totals['FGA'] > 0 ? number_format($totals['FGM'] / $totals['FGA'] * 100, 1) : '0.0' ?>%</td>
                                             <td><?= h($totals['TPM']) ?>-<?= h($totals['TPA']) ?></td>
-                                            <td class="text-primary"><?= $totals['TPA'] > 0 ? number_format($totals['TPM'] / $totals['TPA'] * 100, 1) : '0.0' ?>%</td>
+                                            <td class="text-warning"><?= $totals['TPA'] > 0 ? number_format($totals['TPM'] / $totals['TPA'] * 100, 1) : '0.0' ?>%</td>
                                             <td><?= h($totals['FTM']) ?>-<?= h($totals['FTA']) ?></td>
-                                            <td class="text-primary"><?= $totals['FTA'] > 0 ? number_format($totals['FTM'] / $totals['FTA'] * 100, 1) : '0.0' ?>%</td>
+                                            <td class="text-warning"><?= $totals['FTA'] > 0 ? number_format($totals['FTM'] / $totals['FTA'] * 100, 1) : '0.0' ?>%</td>
                                             <td><?= h($totals['RB']) ?></td>
                                             <td><?= h($totals['AST']) ?></td>
                                             <td><?= h($totals['STL']) ?></td>
                                             <td><?= h($totals['BS']) ?></td>
                                             <td><?= h($totals['TRN']) ?></td>
                                             <td><?= h($totals['PF']) ?></td>
-                                            <td class="text-success fw-bold"><?= h($totals['PTS']) ?></td>
-                                            <td class="text-success fw-bold"><?= $totals['GP'] > 0 ? number_format($totals['PTS'] / $totals['GP'], 1) : '0.0' ?></td>
+                                            <td class="text-warning"><?= h($totals['PTS']) ?></td>
+                                            <td class="text-warning"><?= $totals['GP'] > 0 ? number_format($totals['PTS'] / $totals['GP'], 1) : '0.0' ?></td>
                                         </tr>
-                                    </tbody>
+                                    </tfoot>
                                 </table>
                             </div>
                         <?php endif; ?>
@@ -331,7 +359,7 @@ function handleBackButton() {
     // Check if the previous page in history is from /admin/persons (index)
     const referrer = document.referrer;
     const personsIndexUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>';
-    
+
     // If referrer contains /admin/persons but not /admin/persons/view, hide the back button
     if (referrer && referrer.includes('/admin/persons') && !referrer.includes('/admin/persons/view')) {
         // Redirect to persons index instead of going back
@@ -349,7 +377,7 @@ function handleBackButton() {
 document.addEventListener('DOMContentLoaded', function() {
     const referrer = document.referrer;
     const backButton = document.getElementById('back-button');
-    
+
     if (backButton && referrer && referrer.includes('/admin/persons') && !referrer.includes('/admin/persons/view')) {
         backButton.style.display = 'none';
     }
