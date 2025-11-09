@@ -174,28 +174,24 @@
         </div>
         <hr>
 
-        <!-- Box Score Action Buttons -->
-        <?php if (isset($hasSportConfig) && $hasSportConfig) : ?>
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="btn-group" role="group">
-                        <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>" class="btn btn-success">
-                            <i class="bi bi-clipboard-data"></i> Edit Box Scores
-                        </a>
-                        <?php if ($hasPeriodStats) : ?>
-                            <a href="<?= $this->Url->build([
-                                'action' => 'gameBoxPeriods', $game->id,
-                            ]) ?>" class="btn btn-outline-success">
-                                <i class="bi bi-clock-history"></i> Edit Period Stats
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
+        <!-- Basketball Game Statistics -->
+        <?php if (isset($hasSportConfig) && $hasSportConfig && $game->team_season->team->sport_id === 1) : ?>
+            <?= $this->element('Admin/basketball_game_stats', [
+                'game' => $game,
+                'teamBoxStats' => $teamBoxStats ?? [],
+                'opponentBoxStats' => $opponentBoxStats ?? [],
+                'teamPeriodStats' => $teamPeriodStats ?? [],
+                'opponentPeriodStats' => $opponentPeriodStats ?? [],
+                'playerStats' => $playerStats ?? null,
+                'opponentPlayerStats' => $opponentPlayerStats ?? null,
+                'teamTeamStats' => $teamTeamStats ?? null,
+                'opponentTeamStats' => $opponentTeamStats ?? null,
+                'hasPeriodStats' => $hasPeriodStats ?? false,
+            ]) ?>
         <?php endif; ?>
 
-        <!-- Box Score Statistics Display -->
-        <?php if (!empty($teamBoxStats) || !empty($opponentBoxStats)) : ?>
+        <!-- Legacy Box Score Display (for reference/fallback) -->
+        <?php if (false && (!empty($teamBoxStats) || !empty($opponentBoxStats))) : ?>
             <!-- Team Player Stats -->
             <div class="row mt-4">
                 <div class="col-12">
@@ -735,52 +731,6 @@
                 </div>
             <?php endif; ?>
             <hr>
-        <?php endif; ?>
-
-        <!-- Initialize DataTables -->
-        <?php if (!empty($teamBoxStats) || !empty($opponentBoxStats)) : ?>
-            <?php $this->Html->script(
-                'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js',
-                ['block' => true],
-            ); ?>
-            <?php $this->Html->script(
-                'https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js',
-                ['block' => true],
-            ); ?>
-            <?php $this->Html->css(
-                'https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css',
-                ['block' => true],
-            ); ?>
-            <script>
-                $(document).ready(function() {
-                    // Initialize DataTables for player stats tables
-                    if ($('#team-player-stats').length) {
-                        $('#team-player-stats').DataTable({
-                            paging: false,
-                            searching: false,
-                            info: false,
-                            order: [[18, 'desc']], // Sort by points descending
-                            columnDefs: [
-                                { targets: [0, 1, 2], orderable: true },
-                                { targets: '_all', orderable: true }
-                            ]
-                        });
-                    }
-
-                    if ($('#opponent-player-stats').length) {
-                        $('#opponent-player-stats').DataTable({
-                            paging: false,
-                            searching: false,
-                            info: false,
-                            order: [[18, 'desc']], // Sort by points descending
-                            columnDefs: [
-                                { targets: [0, 1, 2], orderable: true },
-                                { targets: '_all', orderable: true }
-                            ]
-                        });
-                    }
-                });
-            </script>
         <?php endif; ?>
 
         <div class="row"><!-- Murray Stats --></div>
