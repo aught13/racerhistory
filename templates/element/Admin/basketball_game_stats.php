@@ -117,13 +117,14 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
         <h3 class="mb-3">Game Statistics</h3>
         <div class="btn-group" role="group">
             <!-- 1. Game Box Score -->
-            <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>" class="btn btn-sm <?= $hasBoxStats ? 'btn-success' : 'btn-outline-success' ?>">
+            <a href="<?= $this->Url->build(['controller' => 'StatBasketGameBox', 'action' => 'gameBox', $game->id]) ?>" class="btn btn-sm <?= $hasBoxStats ? 'btn-success' : 'btn-outline-success' ?>">
                 <i class="bi bi-clipboard-data"></i> <?= $hasBoxStats ? 'Edit' : 'Add' ?> Box Score
             </a>
 
             <!-- 2. Game Box Periods (if period stats exist) -->
             <?php if ($hasPeriodStats) : ?>
                 <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGameBox',
                     'action' => 'gameBoxPeriods', $game->id,
                 ]) ?>" class="btn btn-sm btn-outline-success">
                     <i class="bi bi-clock-history"></i> Edit Period Stats
