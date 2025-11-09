@@ -21,35 +21,6 @@
         </div>
     </div>
 
-    <!-- Game Stats Action Buttons -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="btn-group" role="group" aria-label="Game Statistics">
-                <a href="<?= $this->Url->build([
-                    'controller' => 'StatBasketGamePerson',
-                    'action' => 'view',
-                    $game->id,
-                ]) ?>" class="btn btn-outline-success">
-                    <i class="bi bi-person"></i> Player Stats
-                </a>
-                <a href="<?= $this->Url->build([
-                    'controller' => 'StatBasketGameOpponent',
-                    'action' => 'view',
-                    $game->id,
-                ]) ?>" class="btn btn-outline-danger">
-                    <i class="bi bi-people"></i> Opponent Stats
-                </a>
-                <a href="<?= $this->Url->build([
-                    'controller' => 'StatBasketGameTeam',
-                    'action' => 'view',
-                    $game->id,
-                ]) ?>" class="btn btn-outline-info">
-                    <i class="bi bi-bar-chart"></i> Team Stats
-                </a>
-            </div>
-        </div>
-    </div>
-
     <!-- Game Header -->
     <div class="row">
         <span class="h3 col-xl-6 text-center text-nowrap text-break">

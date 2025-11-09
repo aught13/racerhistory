@@ -107,36 +107,92 @@ foreach ($allColumns as $key => $label) {
 $hasTeamStats = $playerStats && $playerStats->count() > 0;
 $hasOpponentStats = $opponentPlayerStats && $opponentPlayerStats->count() > 0;
 $hasAnyStats = !empty($teamBoxStats) || !empty($opponentBoxStats) || $hasTeamStats || $hasOpponentStats;
+$hasBoxStats = !empty($teamBoxStats) || !empty($opponentBoxStats);
+$hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
 ?>
 
+<!-- Basketball Statistics Controls -->
+<div class="row mt-4 mb-3">
+    <div class="col-12">
+        <h3 class="mb-3">Game Statistics</h3>
+        <div class="btn-group" role="group">
+            <!-- 1. Game Box Score -->
+            <a href="<?= $this->Url->build(['controller' => 'StatBasketGameBox', 'action' => 'gameBox', $game->id]) ?>" class="btn btn-sm <?= $hasBoxStats ? 'btn-success' : 'btn-outline-success' ?>">
+                <i class="bi bi-clipboard-data"></i> <?= $hasBoxStats ? 'Edit' : 'Add' ?> Box Score
+            </a>
+
+            <!-- 2. Game Box Periods (if period stats exist) -->
+            <?php if ($hasPeriodStats) : ?>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGameBox',
+                    'action' => 'gameBoxPeriods', $game->id,
+                ]) ?>" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-clock-history"></i> Edit Period Stats
+                </a>
+            <?php endif; ?>
+
+            <!-- 3. View Player Stats (if any rows are set) -->
+            <?php if ($hasTeamStats) : ?>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGamePerson',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-sm btn-primary">
+                    <i class="bi bi-person"></i> View Player Stats
+                </a>
+            <?php endif; ?>
+
+            <!-- 4. Add Player Stats -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGamePerson',
+                'action' => 'add',
+                $game->id,
+            ]) ?>" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-circle"></i> Add Player
+            </a>
+
+            <!-- 5. View Opponent Individual Stats (if any rows are set) -->
+            <?php if ($hasOpponentStats) : ?>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'StatBasketGameOpponent',
+                    'action' => 'view',
+                    $game->id,
+                ]) ?>" class="btn btn-sm btn-danger">
+                    <i class="bi bi-people"></i> View Opp. Indiv.
+                </a>
+            <?php endif; ?>
+
+            <!-- 6. Add Opponent Individual Stats -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGameOpponent',
+                'action' => 'add',
+                $game->id,
+            ]) ?>" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-plus-circle"></i> Add Opp. Indiv.
+            </a>
+
+            <!-- 7. Team Stats (Dead Ball Rebounds, Turnovers, etc.) -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGameTeam',
+                'action' => 'edit',
+                $game->id,
+            ]) ?>" class="btn btn-sm <?= $hasTeamTeamStats ? 'btn-info' : 'btn-outline-info' ?>">
+                <i class="bi bi-bar-chart"></i> <?= $hasTeamTeamStats ? 'Edit' : 'Add' ?> Team Stats
+            </a>
+        </div>
+    </div>
+</div>
+
 <?php if (!$hasAnyStats) : ?>
-    <div class="row mt-4">
+    <div class="row mt-2">
         <div class="col-12">
             <div class="alert alert-info text-center">
-                <p class="mb-2"><strong>No game statistics available</strong></p>
-                <p class="mb-0 text-muted">Use the buttons above to add box scores and player statistics for this game.</p>
+                <p class="mb-2"><strong>No game statistics entered yet</strong></p>
+                <p class="mb-0 text-muted">Use the buttons above to add statistics for this game.</p>
             </div>
         </div>
     </div>
 <?php else : ?>
-    <!-- Box Score Action Buttons -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="btn-group" role="group">
-                <a href="<?= $this->Url->build(['action' => 'gameBox', $game->id]) ?>" class="btn btn-success">
-                    <i class="bi bi-clipboard-data"></i> Edit Box Scores
-                </a>
-                <?php if ($hasPeriodStats) : ?>
-                    <a href="<?= $this->Url->build([
-                        'action' => 'gameBoxPeriods', $game->id,
-                    ]) ?>" class="btn btn-outline-success">
-                        <i class="bi bi-clock-history"></i> Edit Period Stats
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
     <!-- Team Player Stats -->
     <?php if (!empty($teamBoxStats) || $hasTeamStats) : ?>
         <div class="row mt-4">
