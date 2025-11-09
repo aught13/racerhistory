@@ -57,6 +57,12 @@ class StatBasketGamePersonController extends AppController
         if ($this->request->is('post')) {
             $stat = $this->StatBasketGamePerson->patchEntity($stat, $this->request->getData());
             if ($this->StatBasketGamePerson->save($stat)) {
+                // Handle add-to-totals if checkbox was selected
+                $addToTotals = $this->request->getData('add_to_totals');
+                if ($addToTotals && $stat->team_season_roster_id && $stat->period === 'Z') {
+                    $this->addToSeasonTotals($stat);
+                }
+
                 $this->Flash->success(__('The player stat has been saved.'));
 
                 return $this->redirect(['action' => 'view', $gameId]);
@@ -97,10 +103,19 @@ class StatBasketGamePersonController extends AppController
         $stat = $this->StatBasketGamePerson->get($id, contain: ['TeamSeasonRosters', 'Games']);
         assert($stat instanceof \App\Model\Entity\StatBasketGamePerson);
 
+        // Store original stat values for comparison if editing
+        $originalStat = clone $stat;
+
         if ($this->request->is(['patch', 'post', 'put'])) {
             $stat = $this->StatBasketGamePerson->patchEntity($stat, $this->request->getData());
             assert($stat instanceof \App\Model\Entity\StatBasketGamePerson);
             if ($this->StatBasketGamePerson->save($stat)) {
+                // Handle add-to-totals if checkbox was selected
+                $addToTotals = $this->request->getData('add_to_totals');
+                if ($addToTotals && $stat->team_season_roster_id && $stat->period === 'Z') {
+                    $this->updateSeasonTotals($originalStat, $stat);
+                }
+
                 $this->Flash->success(__('The player stat has been saved.'));
 
                 return $this->redirect(['action' => 'view', $stat->game_id]);
@@ -150,5 +165,117 @@ class StatBasketGamePersonController extends AppController
         }
 
         return $this->redirect(['action' => 'view', $gameId]);
+    }
+
+    /**
+     * Add game stats to player's season totals
+     *
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat Game stat to add
+     * @return void
+     */
+    protected function addToSeasonTotals(\App\Model\Entity\StatBasketGamePerson $gameStat): void
+    {
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        // Find or create season totals record
+        $seasonStat = $seasonTable
+            ->find()
+            ->where(['team_season_roster_id' => $gameStat->team_season_roster_id])
+            ->first();
+
+        if (!$seasonStat) {
+            $seasonStat = $seasonTable->newEmptyEntity();
+            $seasonStat->team_season_roster_id = $gameStat->team_season_roster_id;
+        }
+
+        // Add game stats to season totals
+        $this->addStatValues($seasonStat, $gameStat);
+
+        $seasonTable->save($seasonStat);
+    }
+
+    /**
+     * Update season totals when editing a game stat
+     *
+     * @param \App\Model\Entity\StatBasketGamePerson $originalStat Original stat values
+     * @param \App\Model\Entity\StatBasketGamePerson $newStat New stat values
+     * @return void
+     */
+    protected function updateSeasonTotals(
+        \App\Model\Entity\StatBasketGamePerson $originalStat,
+        \App\Model\Entity\StatBasketGamePerson $newStat,
+    ): void {
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        // Find season totals record
+        $seasonStat = $seasonTable
+            ->find()
+            ->where(['team_season_roster_id' => $newStat->team_season_roster_id])
+            ->first();
+
+        if (!$seasonStat) {
+            // If no season stat exists, just add the new values
+            $this->addToSeasonTotals($newStat);
+
+            return;
+        }
+
+        // Subtract original values and add new values
+        $this->subtractStatValues($seasonStat, $originalStat);
+        $this->addStatValues($seasonStat, $newStat);
+
+        $seasonTable->save($seasonStat);
+    }
+
+    /**
+     * Add stat values from game stat to season stat
+     *
+     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStat Season stat to update
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat Game stat to add from
+     * @return void
+     */
+    protected function addStatValues(
+        \App\Model\Entity\StatBasketSeasonPerson $seasonStat,
+        \App\Model\Entity\StatBasketGamePerson $gameStat,
+    ): void {
+        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
+
+        foreach ($fields as $field) {
+            $current = (int)($seasonStat->$field ?? 0);
+            $add = (int)($gameStat->$field ?? 0);
+            $seasonStat->$field = (string)($current + $add);
+        }
+
+        // PTS is stored as integer in season stats
+        $currentPts = (int)($seasonStat->PTS ?? 0);
+        $addPts = (int)($gameStat->PTS ?? 0);
+        $seasonStat->PTS = $currentPts + $addPts;
+    }
+
+    /**
+     * Subtract stat values from season stat
+     *
+     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStat Season stat to update
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat Game stat to subtract
+     * @return void
+     */
+    protected function subtractStatValues(
+        \App\Model\Entity\StatBasketSeasonPerson $seasonStat,
+        \App\Model\Entity\StatBasketGamePerson $gameStat,
+    ): void {
+        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
+
+        foreach ($fields as $field) {
+            $current = (int)($seasonStat->$field ?? 0);
+            $subtract = (int)($gameStat->$field ?? 0);
+            $seasonStat->$field = (string)max(0, $current - $subtract);
+        }
+
+        // PTS is stored as integer in season stats
+        $currentPts = (int)($seasonStat->PTS ?? 0);
+        $subtractPts = (int)($gameStat->PTS ?? 0);
+        $seasonStat->PTS = max(0, $currentPts - $subtractPts);
     }
 }
