@@ -156,8 +156,10 @@ class StatBasketGameTeamController extends AppController
     {
         $seasonTable = $this->fetchTable('StatBasketSeasonTeam');
         $game = $this->fetchTable('Games')->get($gameId);
+        /** @var \App\Model\Entity\Game $game */
 
         // Find or create season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonTeam|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_id' => $game->team_season_id])
@@ -165,6 +167,7 @@ class StatBasketGameTeamController extends AppController
 
         if (!$seasonStat) {
             $seasonStat = $seasonTable->newEmptyEntity();
+            /** @var \App\Model\Entity\StatBasketSeasonTeam $seasonStat */
             $seasonStat->team_season_id = $game->team_season_id;
         }
 
@@ -189,8 +192,10 @@ class StatBasketGameTeamController extends AppController
     ): void {
         $seasonTable = $this->fetchTable('StatBasketSeasonTeam');
         $game = $this->fetchTable('Games')->get($gameId);
+        /** @var \App\Model\Entity\Game $game */
 
         // Find season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonTeam|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_id' => $game->team_season_id])
@@ -202,6 +207,7 @@ class StatBasketGameTeamController extends AppController
 
             return;
         }
+        assert($seasonStat instanceof \App\Model\Entity\StatBasketSeasonTeam);
 
         // Subtract original values and add new values
         $this->subtractTeamStatValues($seasonStat, $originalStat);
@@ -221,8 +227,10 @@ class StatBasketGameTeamController extends AppController
     {
         $seasonTable = $this->fetchTable('StatBasketSeasonOpponent');
         $game = $this->fetchTable('Games')->get($gameId);
+        /** @var \App\Model\Entity\Game $game */
 
         // Find or create season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_id' => $game->team_season_id])
@@ -230,6 +238,7 @@ class StatBasketGameTeamController extends AppController
 
         if (!$seasonStat) {
             $seasonStat = $seasonTable->newEmptyEntity();
+            /** @var \App\Model\Entity\StatBasketSeasonOpponent $seasonStat */
             $seasonStat->team_season_id = $game->team_season_id;
         }
 
@@ -254,8 +263,10 @@ class StatBasketGameTeamController extends AppController
     ): void {
         $seasonTable = $this->fetchTable('StatBasketSeasonOpponent');
         $game = $this->fetchTable('Games')->get($gameId);
+        /** @var \App\Model\Entity\Game $game */
 
         // Find season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_id' => $game->team_season_id])
@@ -267,6 +278,7 @@ class StatBasketGameTeamController extends AppController
 
             return;
         }
+        assert($seasonStat instanceof \App\Model\Entity\StatBasketSeasonOpponent);
 
         // Subtract original values and add new values
         $this->subtractTeamStatValues($seasonStat, $originalStat);
@@ -282,8 +294,10 @@ class StatBasketGameTeamController extends AppController
      * @param \App\Model\Entity\StatBasketGameTeam $gameStat Game stat to add from
      * @return void
      */
-    protected function addTeamStatValues(\App\Model\Entity\StatBasketSeasonTeam|\App\Model\Entity\StatBasketSeasonOpponent $seasonStat, \App\Model\Entity\StatBasketGameTeam $gameStat): void
-    {
+    protected function addTeamStatValues(
+        \App\Model\Entity\StatBasketSeasonTeam|\App\Model\Entity\StatBasketSeasonOpponent $seasonStat,
+        \App\Model\Entity\StatBasketGameTeam $gameStat,
+    ): void {
         $fields = ['ORB', 'DRB', 'RB', 'TRN', 'TF', 'PTS'];
 
         foreach ($fields as $field) {
@@ -300,8 +314,10 @@ class StatBasketGameTeamController extends AppController
      * @param \App\Model\Entity\StatBasketGameTeam $gameStat Game stat to subtract
      * @return void
      */
-    protected function subtractTeamStatValues(\App\Model\Entity\StatBasketSeasonTeam|\App\Model\Entity\StatBasketSeasonOpponent $seasonStat, \App\Model\Entity\StatBasketGameTeam $gameStat): void
-    {
+    protected function subtractTeamStatValues(
+        \App\Model\Entity\StatBasketSeasonTeam|\App\Model\Entity\StatBasketSeasonOpponent $seasonStat,
+        \App\Model\Entity\StatBasketGameTeam $gameStat,
+    ): void {
         $fields = ['ORB', 'DRB', 'RB', 'TRN', 'TF', 'PTS'];
 
         foreach ($fields as $field) {

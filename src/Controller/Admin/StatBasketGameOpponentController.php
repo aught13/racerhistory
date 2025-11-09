@@ -50,6 +50,7 @@ class StatBasketGameOpponentController extends AppController
         if ($this->request->is('post')) {
             $stat = $this->StatBasketGameOpponent->patchEntity($stat, $this->request->getData());
             if ($this->StatBasketGameOpponent->save($stat)) {
+                /** @var \App\Model\Entity\StatBasketGameOpponent $stat */
                 // Handle add-to-totals if checkbox was selected
                 $addToTotals = $this->request->getData('add_to_totals');
                 if ($addToTotals && $stat->period === 'Z') {
@@ -139,9 +140,11 @@ class StatBasketGameOpponentController extends AppController
     {
         $seasonTable = $this->fetchTable('StatBasketSeasonOpponent');
         $game = $this->fetchTable('Games')->get($gameId);
+        /** @var \App\Model\Entity\Game $game */
         assert($game instanceof \App\Model\Entity\Game);
 
         // Find or create season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_id' => $game->team_season_id])
@@ -149,8 +152,10 @@ class StatBasketGameOpponentController extends AppController
 
         if (!$seasonStat) {
             $seasonStat = $seasonTable->newEmptyEntity();
+            /** @var \App\Model\Entity\StatBasketSeasonOpponent $seasonStat */
             $seasonStat->team_season_id = $game->team_season_id;
         }
+        assert($seasonStat instanceof \App\Model\Entity\StatBasketSeasonOpponent);
 
         // Add game stats to season totals
         $this->addStatValues($seasonStat, $gameStat);
@@ -176,6 +181,7 @@ class StatBasketGameOpponentController extends AppController
         assert($game instanceof \App\Model\Entity\Game);
 
         // Find season totals record
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent|null $seasonStat */
         $seasonStat = $seasonTable
             ->find()
             ->where(['team_season_id' => $game->team_season_id])
@@ -187,6 +193,7 @@ class StatBasketGameOpponentController extends AppController
 
             return;
         }
+        assert($seasonStat instanceof \App\Model\Entity\StatBasketSeasonOpponent);
 
         // Subtract original values and add new values
         $this->subtractStatValues($seasonStat, $originalStat);
@@ -206,7 +213,7 @@ class StatBasketGameOpponentController extends AppController
         \App\Model\Entity\StatBasketSeasonOpponent $seasonStat,
         \App\Model\Entity\StatBasketGameOpponent $gameStat,
     ): void {
-        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+        $fields = ['GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
             'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
 
         foreach ($fields as $field) {
@@ -215,10 +222,10 @@ class StatBasketGameOpponentController extends AppController
             $seasonStat->$field = (string)($current + $add);
         }
 
-        // PTS is stored as integer in season stats
+        // PTS is stored as string in season stats
         $currentPts = (int)($seasonStat->PTS ?? 0);
         $addPts = (int)($gameStat->PTS ?? 0);
-        $seasonStat->PTS = $currentPts + $addPts;
+        $seasonStat->PTS = (string)($currentPts + $addPts);
     }
 
     /**
@@ -232,7 +239,7 @@ class StatBasketGameOpponentController extends AppController
         \App\Model\Entity\StatBasketSeasonOpponent $seasonStat,
         \App\Model\Entity\StatBasketGameOpponent $gameStat,
     ): void {
-        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+        $fields = ['GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
             'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
 
         foreach ($fields as $field) {
@@ -241,9 +248,9 @@ class StatBasketGameOpponentController extends AppController
             $seasonStat->$field = (string)max(0, $current - $subtract);
         }
 
-        // PTS is stored as integer in season stats
+        // PTS is stored as string in season stats
         $currentPts = (int)($seasonStat->PTS ?? 0);
         $subtractPts = (int)($gameStat->PTS ?? 0);
-        $seasonStat->PTS = max(0, $currentPts - $subtractPts);
+        $seasonStat->PTS = (string)max(0, $currentPts - $subtractPts);
     }
 }
