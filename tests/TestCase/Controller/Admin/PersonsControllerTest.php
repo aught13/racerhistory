@@ -15,6 +15,15 @@ class PersonsControllerTest extends TestCase
     protected array $fixtures = [
         'app.Persons',
         'app.Users',
+        'app.Sports',
+        'app.Teams',
+        'app.Seasons',
+        'app.TeamSeasons',
+        'app.TeamSeasonRosters',
+        'app.Games',
+        'app.Opponents',
+        'app.StatBasketGamePerson',
+        'app.StatBasketSeasonPerson',
     ];
 
     public function setUp(): void
@@ -179,5 +188,62 @@ class PersonsControllerTest extends TestCase
         $data = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($data['success']);
         $this->assertArrayHasKey('results', $data);
+    }
+
+    public function testViewWithRosterEntries(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/view/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        // Check for roster entries section
+        $this->assertStringContainsString('Roster Entries', $body);
+    }
+
+    public function testViewWithBasketballStats(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/view/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        // Check for game stats table
+        $this->assertStringContainsString('Game Stats', $body);
+        $this->assertStringContainsString('Season Totals', $body);
+    }
+
+    public function testViewWithCareerStats(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/view/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        // Check for career statistics section
+        $this->assertStringContainsString('Career Statistics', $body);
+        $this->assertStringContainsString('Career Totals', $body);
+    }
+
+    public function testViewWithoutRosterEntries(): void
+    {
+        $this->mockIdentity();
+        // Create a new person with no roster entries
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->newEmptyEntity();
+        $person = $persons->patchEntity($person, [
+            'first' => 'No',
+            'last' => 'Stats',
+            'display' => 'No Stats Person',
+        ]);
+        $persons->save($person);
+
+        $this->get('/admin/persons/view/' . $person->id);
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        // Should not show roster/stats sections
+        $this->assertStringNotContainsString('Roster Entries', $body);
+        $this->assertStringNotContainsString('Career Statistics', $body);
     }
 }

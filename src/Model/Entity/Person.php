@@ -20,6 +20,7 @@ use Cake\ORM\Entity;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $label
+ * @property \App\Model\Entity\TeamSeasonRosters[] $team_season_rosters
  */
 class Person extends Entity
 {

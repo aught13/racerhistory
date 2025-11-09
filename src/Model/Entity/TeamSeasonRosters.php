@@ -23,6 +23,8 @@ use Cake\ORM\Entity;
  *
  * @property \App\Model\Entity\TeamSeason $team_season
  * @property \App\Model\Entity\Person $person
+ * @property \App\Model\Entity\StatBasketGamePerson[] $stat_basket_game_person
+ * @property \App\Model\Entity\StatBasketSeasonPerson[] $stat_basket_season_person
  */
 class TeamSeasonRosters extends Entity
 {

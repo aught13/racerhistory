@@ -25,6 +25,10 @@ class PersonsTable extends Table
             'modified' => 'updated_at',
         ]);
 
+        $this->hasMany('TeamSeasonRosters', [
+            'foreignKey' => 'person_id',
+        ]);
+
         // Add a callback to automatically set the full name
         $this->getEventManager()->on('Model.beforeSave', function ($event, $entity, $options): void {
             if ($entity instanceof \App\Model\Entity\Person) {
