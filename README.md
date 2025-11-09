@@ -63,6 +63,8 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
   - Opponent player stats with name-based tracking
   - Team-level stats (rebounds, turnovers, technical fouls)
   - Integrated display in game view with proper validation
+  - Season totals update option (final box score) with aggregation into team & opponent season totals
+  - Refactored architecture: dedicated `StatBasketGameBoxController` for game/period box management and `BasketballStatsService` for consolidated data loading; `GamesController` now minimal sport-aware orchestrator
 - **Legacy Compatibility** - Maintains backward compatibility with existing game data
 
 ### UI/UX
@@ -149,7 +151,7 @@ racerhistory/
 └── webroot/                # Public web assets
 ```
 
-## 📚 Documentation
+## 📚 Documentation & Architecture
 
 ### Application Documentation
 
@@ -159,7 +161,7 @@ racerhistory/
 
 ### Code Coverage & Test Suite
 
-- **PHP Tests**: 324 tests / 914 assertions (controllers, models, integration, game flows & validation, basketball stats)
+- **PHP Tests**: 348 tests / 998 assertions (controllers, models, integration, game flows & validation, basketball stats, service/controller refactor)
 - **JavaScript Coverage** (Jest): Statements 88%+, Branches 80%+, Functions 95%+, Lines 90%+
 - **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk, games management, basketball stats)
 - **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, Games, EAV, Persons, Images, StatBasket*)
@@ -299,4 +301,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-### Built with ❤️ using CakePHP 5.x and Bootstrap**Built with ❤️ using CakePHP 5.x and Bootstrap**
+### Built with ❤️ using CakePHP 5.x and Bootstrap
