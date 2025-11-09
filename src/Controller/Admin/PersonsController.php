@@ -113,12 +113,14 @@ class PersonsController extends AppController
                 $startYear = $teamSeason->season->start ?? null;
                 $endYear = $teamSeason->season->end ?? null;
                 if ($startYear !== null) {
-                    if ($careerStatsBySport[$sportId]['minYear'] === null || $startYear < $careerStatsBySport[$sportId]['minYear']) {
+                    $minYear = $careerStatsBySport[$sportId]['minYear'];
+                    if ($minYear === null || $startYear < $minYear) {
                         $careerStatsBySport[$sportId]['minYear'] = $startYear;
                     }
                 }
                 if ($endYear !== null) {
-                    if ($careerStatsBySport[$sportId]['maxYear'] === null || $endYear > $careerStatsBySport[$sportId]['maxYear']) {
+                    $maxYear = $careerStatsBySport[$sportId]['maxYear'];
+                    if ($maxYear === null || $endYear > $maxYear) {
                         $careerStatsBySport[$sportId]['maxYear'] = $endYear;
                     }
                 }
