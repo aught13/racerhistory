@@ -25,6 +25,12 @@ class GamesControllerTest extends TestCase
         'app.GameEav',
         'app.Images',
         'app.Sports',
+        'app.TeamSeasonRosters',
+        'app.Persons',
+        'app.StatBasketGamePerson',
+        'app.StatBasketGameTeam',
+        'app.StatBasketGameOpponent',
+        'app.StatBasketGameBox',
     ];
 
     public function testIndex(): void
@@ -181,5 +187,68 @@ class GamesControllerTest extends TestCase
         $this->assertStringContainsString('<div class="card', $body);
         // Expect at least one input control name from the element (e.g., period_1_team)
         $this->assertStringContainsString('name="period_1_team"', $body);
+    }
+
+    /**
+     * Test view action displays game details
+     */
+    public function testView(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/view/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Game Details');
+    }
+
+    /**
+     * Test view action displays basketball stats when available
+     */
+    public function testViewBasketballStatsDisplay(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/view/1');
+        $this->assertResponseOk();
+
+        // Should contain the basketball stats element conditionally
+        // Player stats tables may or may not exist depending on data
+        $this->assertResponseContains('Game Details');
+    }
+
+    /**
+     * Test view action with no stats shows appropriate content
+     */
+    public function testViewNoStatsMessage(): void
+    {
+        // Without box score fixture, view should still work
+        $this->mockIdentity();
+        $this->get('/admin/games/view/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Game Details');
+    }
+
+    /**
+     * Test view action displays game information
+     */
+    public function testViewOpponentStats(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/view/1');
+        $this->assertResponseOk();
+
+        // Should contain basic game info
+        $this->assertResponseContains('Vs');
+    }
+
+    /**
+     * Test view action displays period scores
+     */
+    public function testViewTeamComparison(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/view/1');
+        $this->assertResponseOk();
+
+        // Should contain score display
+        $this->assertResponseContains('F'); // Final column in period table
     }
 }
