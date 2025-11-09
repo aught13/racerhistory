@@ -357,16 +357,15 @@ class StatBasketGameBoxController extends AppController
         $teamSeasonTable->save($teamSeasonStat);
 
         // Update opponent season totals
-        /** @phpstan-ignore-next-line */
-        $opponentId = $game->opponent_id;
+        // Note: StatBasketSeasonOpponent stores cumulative opponent stats per team season (not per opponent)
         $opponentSeasonStat = $opponentSeasonTable->find()
-            ->where(['opponent_id' => $opponentId])
+            ->where(['team_season_id' => $game->team_season_id])
             ->first();
 
         if (!$opponentSeasonStat) {
             $opponentSeasonStat = $opponentSeasonTable->newEmptyEntity();
             /** @phpstan-ignore-next-line */
-            $opponentSeasonStat->opponent_id = $opponentId;
+            $opponentSeasonStat->team_season_id = $game->team_season_id;
         }
 
         // If this is an edit, subtract the original values first

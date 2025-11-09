@@ -126,29 +126,48 @@ $this->assign('title', 'Game Box Scores');
     </div>
 
     <div class="card mt-4">
-        <div class="card-footer d-flex justify-content-between align-items-center">
-            <div>
-                <?php if ($hasPeriodStats) : ?>
-                    <span class="badge bg-success">
-                        <i class="bi bi-check-circle"></i> Period stats entered
-                    </span>
-                    <a href="<?= $this->Url->build([
-                        'action' => 'gameBoxPeriods', $game->id,
-                    ]) ?>" class="btn btn-outline-primary btn-sm ms-2">
-                        Edit Period Stats
-                    </a>
-                <?php else : ?>
+        <div class="card-body border-bottom">
+            <div class="row g-3">
+                <div class="col-md-6">
                     <div class="form-check">
-                        <?= $this->Form->checkbox('add_periods', [
-                            'id' => 'add-periods-check',
+                        <?= $this->Form->checkbox('add_to_totals', [
+                            'id' => 'add-to-totals-check',
                             'class' => 'form-check-input',
                         ]) ?>
-                        <label class="form-check-label" for="add-periods-check">
-                            Add period-by-period stats after saving
+                        <label class="form-check-label" for="add-to-totals-check">
+                            <strong>Update Season Totals</strong>
+                            <div class="text-muted small">Automatically update cumulative season statistics from these box scores</div>
                         </label>
                     </div>
-                <?php endif; ?>
+                </div>
+                <div class="col-md-6">
+                    <?php if ($hasPeriodStats) : ?>
+                        <div class="form-check">
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> Period stats already entered
+                            </span>
+                            <a href="<?= $this->Url->build([
+                                'action' => 'gameBoxPeriods', $game->id,
+                            ]) ?>" class="btn btn-outline-primary btn-sm ms-2">
+                                Edit Period Stats
+                            </a>
+                        </div>
+                    <?php else : ?>
+                        <div class="form-check">
+                            <?= $this->Form->checkbox('add_periods', [
+                                'id' => 'add-periods-check',
+                                'class' => 'form-check-input',
+                            ]) ?>
+                            <label class="form-check-label" for="add-periods-check">
+                                Add period-by-period stats after saving
+                            </label>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <div>
             <div class="d-flex gap-2">
                 <a href="<?= $this->Url->build(['action' => 'edit', $game->id]) ?>" class="btn btn-secondary">
                     Cancel
