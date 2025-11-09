@@ -68,7 +68,17 @@ class StatBasketGamePersonController extends AppController
 
                 return $this->redirect(['action' => 'view', $gameId]);
             }
-            $this->Flash->error(__('The player stat could not be saved. Please, try again.'));
+            // Display specific validation errors
+            $errors = $stat->getErrors();
+            if (!empty($errors)) {
+                foreach ($errors as $field => $fieldErrors) {
+                    foreach ($fieldErrors as $error) {
+                        $this->Flash->error(__('Validation error in {0}: {1}', $field, $error));
+                    }
+                }
+            } else {
+                $this->Flash->error(__('The player stat could not be saved. Please, try again.'));
+            }
         }
 
         $game = $this->fetchTable('Games')->get($gameId, contain: ['TeamSeason', 'Opponents']);

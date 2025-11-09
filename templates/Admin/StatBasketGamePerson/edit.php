@@ -34,6 +34,7 @@
     </div>
 
     <?= $this->Form->create($stat) ?>
+    <?= $this->Form->hidden('game_id') ?>
     <div class="card">
         <div class="card-body">
             <div class="row">
