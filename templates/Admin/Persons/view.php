@@ -4,23 +4,56 @@
     <div class="row mb-3">
         <div class="col-12">
             <nav aria-label="breadcrumb">
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                <div
+                    class="d-flex flex-column flex-sm-row justify-content-between
+                    align-items-start align-items-sm-center gap-2"
+                >
                     <div class="d-flex gap-2 flex-wrap">
                         <button class="btn btn-outline-secondary btn-sm" id="back-button" onclick="handleBackButton()">
                             <i class="bi bi-arrow-left"></i> Back
                         </button>
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>" class="btn btn-outline-primary btn-sm">
+                        <a
+                            href="<?= $this->Url->build([
+                                'prefix' => 'Admin',
+                                'controller' => 'Persons',
+                                'action' => 'index',
+                            ]) ?>"
+                            class="btn btn-outline-primary btn-sm"
+                        >
                             <i class="bi bi-people"></i> All People
                         </a>
                     </div>
                     <div class="btn-group" role="group" aria-label="Actions">
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'edit', $person->id]) ?>" class="btn btn-primary btn-sm">
+                        <a
+                            href="<?= $this->Url->build([
+                                'prefix' => 'Admin',
+                                'controller' => 'Persons',
+                                'action' => 'edit',
+                                $person->id,
+                            ]) ?>"
+                            class="btn btn-primary btn-sm"
+                        >
                             <i class="bi bi-pencil"></i> Edit
                         </a>
-                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
-                            data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'delete', $person->id]) ?>"
-                            data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'edit', $person->id]) ?>"
-                            data-item-type="person">
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#confirm-delete-modal"
+                            data-delete-url="<?= $this->Url->build([
+                                'prefix' => 'Admin',
+                                'controller' => 'Persons',
+                                'action' => 'delete',
+                                $person->id,
+                            ]) ?>"
+                            data-edit-url="<?= $this->Url->build([
+                                'prefix' => 'Admin',
+                                'controller' => 'Persons',
+                                'action' => 'edit',
+                                $person->id,
+                            ]) ?>"
+                            data-item-type="person"
+                        >
                             <i class="bi bi-trash"></i> Delete
                         </button>
                     </div>
@@ -97,7 +130,15 @@
                                 <?php
                                 $bio = (string)($person->bio ?? '');
                                 // Basic sanitization: strip script/style tags while allowing common formatting
-                                $bioClean = preg_replace('#<\/(script|style)>#i', '', preg_replace('#<(script|style)[^>]*>.*?<\/\1>#is', '', $bio));
+                                    $bioClean = preg_replace(
+                                        '#</(script|style)>#i',
+                                        '',
+                                        preg_replace(
+                                            '#<(script|style)[^>]*>.*?</\\1>#is',
+                                            '',
+                                            $bio
+                                        )
+                                    );
                                 echo $bioClean;
                                 ?>
                             </div>
@@ -127,19 +168,37 @@
                                 ?>
                                 <div class="accordion-item border">
                                     <h2 class="accordion-header" id="heading-<?= h($accordionId) ?>">
-                                        <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<?= h($accordionId) ?>" aria-expanded="false" aria-controls="collapse-<?= h($accordionId) ?>">
+                                        <button
+                                            class="accordion-button collapsed fw-semibold"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapse-<?= h($accordionId) ?>"
+                                            aria-expanded="false"
+                                            aria-controls="collapse-<?= h($accordionId) ?>"
+                                        >
                                             <span class="me-2"><i class="bi bi-calendar3"></i></span>
                                             <?= h($teamSeason->team->team_name) ?>
-                                            <span class="badge bg-info text-dark ms-2"><?= h($teamSeason->season->start) ?>-<?= h($teamSeason->season->end) ?></span>
+                                            <span class="badge bg-info text-dark ms-2">
+                                                <?= h($teamSeason->season->start) ?>-<?= h($teamSeason->season->end) ?>
+                                            </span>
                                             <?php if ($roster->roster_number) : ?>
-                                                <span class="badge bg-secondary ms-2">#<?= h($roster->roster_number) ?></span>
+                                                <span class="badge bg-secondary ms-2">
+                                                    #<?= h($roster->roster_number) ?>
+                                                </span>
                                             <?php endif; ?>
                                             <?php if ($roster->roster_position) : ?>
-                                                <span class="badge bg-primary ms-2"><?= h($roster->roster_position) ?></span>
+                                                <span class="badge bg-primary ms-2">
+                                                    <?= h($roster->roster_position) ?>
+                                                </span>
                                             <?php endif; ?>
                                         </button>
                                     </h2>
-                                    <div id="collapse-<?= h($accordionId) ?>" class="accordion-collapse collapse" aria-labelledby="heading-<?= h($accordionId) ?>" data-bs-parent="#accordion-sport-<?= h($sportId) ?>">
+                                    <div
+                                        id="collapse-<?= h($accordionId) ?>"
+                                        class="accordion-collapse collapse"
+                                        aria-labelledby="heading-<?= h($accordionId) ?>"
+                                        data-bs-parent="#accordion-sport-<?= h($sportId) ?>"
+                                    >
                                         <div class="accordion-body bg-light">
                                             <!-- Roster Details -->
                                             <div class="row g-2 mb-3">
@@ -210,7 +269,11 @@
                                                                 }
                                                                 ?>
                                                                 <tr>
-                                                                    <td><?= $game->game_date ? h($game->game_date->format('M j, Y')) : 'N/A' ?></td>
+                                                                    <td>
+                                                                        <?= $game->game_date
+                                                                            ? h($game->game_date->format('M j, Y'))
+                                                                            : 'N/A' ?>
+                                                                    </td>
                                                                     <td><?= h($game->opponent->opponent_name ?? 'Unknown') ?></td>
                                                                     <td><?= h($totals['MIN']) ?></td>
                                                                     <td><?= h($totals['FGM']) ?>-<?= h($totals['FGA']) ?></td>
@@ -302,11 +365,23 @@
                                                 <td><?= h($stats->GS ?? 0) ?></td>
                                                 <td><?= h($stats->MIN ?? 0) ?></td>
                                                 <td><?= h($stats->FGM ?? 0) ?>-<?= h($stats->FGA ?? 0) ?></td>
-                                                <td class="text-primary"><?= ($stats->FGA ?? 0) > 0 ? number_format(($stats->FGM ?? 0) / ($stats->FGA ?? 0) * 100, 1) : '0.0' ?>%</td>
+                                                <td class="text-primary">
+                                                    <?= ($stats->FGA ?? 0) > 0
+                                                        ? number_format(($stats->FGM ?? 0) / ($stats->FGA ?? 0) * 100, 1)
+                                                        : '0.0' ?>%
+                                                </td>
                                                 <td><?= h($stats->TPM ?? 0) ?>-<?= h($stats->TPA ?? 0) ?></td>
-                                                <td class="text-primary"><?= ($stats->TPA ?? 0) > 0 ? number_format(($stats->TPM ?? 0) / ($stats->TPA ?? 0) * 100, 1) : '0.0' ?>%</td>
+                                                <td class="text-primary">
+                                                    <?= ($stats->TPA ?? 0) > 0
+                                                        ? number_format(($stats->TPM ?? 0) / ($stats->TPA ?? 0) * 100, 1)
+                                                        : '0.0' ?>%
+                                                </td>
                                                 <td><?= h($stats->FTM ?? 0) ?>-<?= h($stats->FTA ?? 0) ?></td>
-                                                <td class="text-primary"><?= ($stats->FTA ?? 0) > 0 ? number_format(($stats->FTM ?? 0) / ($stats->FTA ?? 0) * 100, 1) : '0.0' ?>%</td>
+                                                <td class="text-primary">
+                                                    <?= ($stats->FTA ?? 0) > 0
+                                                        ? number_format(($stats->FTM ?? 0) / ($stats->FTA ?? 0) * 100, 1)
+                                                        : '0.0' ?>%
+                                                </td>
                                                 <td><?= h($stats->RB ?? 0) ?></td>
                                                 <td><?= h($stats->AST ?? 0) ?></td>
                                                 <td><?= h($stats->STL ?? 0) ?></td>
@@ -314,7 +389,11 @@
                                                 <td><?= h($stats->TRN ?? 0) ?></td>
                                                 <td><?= h($stats->PF ?? 0) ?></td>
                                                 <td class="text-success"><?= h($stats->PTS ?? 0) ?></td>
-                                                <td class="text-success"><?= ($stats->GP ?? 0) > 0 ? number_format(($stats->PTS ?? 0) / ($stats->GP ?? 0), 1) : '0.0' ?></td>
+                                                <td class="text-success">
+                                                    <?= ($stats->GP ?? 0) > 0
+                                                        ? number_format(($stats->PTS ?? 0) / ($stats->GP ?? 0), 1)
+                                                        : '0.0' ?>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -358,7 +437,12 @@
 function handleBackButton() {
     // Check if the previous page in history is from /admin/persons (index)
     const referrer = document.referrer;
-    const personsIndexUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>';
+    <?php $personsIndexUrl = $this->Url->build([
+        'prefix' => 'Admin',
+        'controller' => 'Persons',
+        'action' => 'index',
+    ]); ?>
+    const personsIndexUrl = '<?= h($personsIndexUrl) ?>';
 
     // If referrer contains /admin/persons but not /admin/persons/view, hide the back button
     if (referrer && referrer.includes('/admin/persons') && !referrer.includes('/admin/persons/view')) {
