@@ -130,16 +130,7 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                 </a>
             <?php endif; ?>
 
-            <!-- 3. Team Stats (Dead Ball Rebounds, Turnovers, etc.) -->
-            <a href="<?= $this->Url->build([
-                'controller' => 'StatBasketGameTeam',
-                'action' => 'edit',
-                $game->id,
-            ]) ?>" class="btn btn-sm <?= $hasTeamTeamStats ? 'btn-info' : 'btn-outline-info' ?>">
-                <i class="bi bi-bar-chart"></i> <?= $hasTeamTeamStats ? 'Edit' : 'Add' ?> Team Stats
-            </a>
-
-            <!-- 4. View Player Stats (if any rows are set) -->
+            <!-- 3. View Player Stats (if any rows are set) -->
             <?php if ($hasTeamStats) : ?>
                 <a href="<?= $this->Url->build([
                     'controller' => 'StatBasketGamePerson',
@@ -150,7 +141,7 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                 </a>
             <?php endif; ?>
 
-            <!-- 5. Add Player Stats -->
+            <!-- 4. Add Player Stats -->
             <a href="<?= $this->Url->build([
                 'controller' => 'StatBasketGamePerson',
                 'action' => 'add',
@@ -159,24 +150,33 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                 <i class="bi bi-plus-circle"></i> Add Player
             </a>
 
-            <!-- 6. View Opponent Stats (if any rows are set) -->
+            <!-- 5. View Opponent Individual Stats (if any rows are set) -->
             <?php if ($hasOpponentStats) : ?>
                 <a href="<?= $this->Url->build([
                     'controller' => 'StatBasketGameOpponent',
                     'action' => 'view',
                     $game->id,
                 ]) ?>" class="btn btn-sm btn-danger">
-                    <i class="bi bi-people"></i> View Opponent Stats
+                    <i class="bi bi-people"></i> View Opp. Indiv.
                 </a>
             <?php endif; ?>
 
-            <!-- 7. Add Opponent Stats -->
+            <!-- 6. Add Opponent Individual Stats -->
             <a href="<?= $this->Url->build([
                 'controller' => 'StatBasketGameOpponent',
                 'action' => 'add',
                 $game->id,
             ]) ?>" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-plus-circle"></i> Add Opponent
+                <i class="bi bi-plus-circle"></i> Add Opp. Indiv.
+            </a>
+
+            <!-- 7. Team Stats (Dead Ball Rebounds, Turnovers, etc.) -->
+            <a href="<?= $this->Url->build([
+                'controller' => 'StatBasketGameTeam',
+                'action' => 'edit',
+                $game->id,
+            ]) ?>" class="btn btn-sm <?= $hasTeamTeamStats ? 'btn-info' : 'btn-outline-info' ?>">
+                <i class="bi bi-bar-chart"></i> <?= $hasTeamTeamStats ? 'Edit' : 'Add' ?> Team Stats
             </a>
         </div>
     </div>
