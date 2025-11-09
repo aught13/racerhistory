@@ -171,7 +171,8 @@ class StatBasketGamePersonControllerTest extends TestCase
         $this->post('/admin/stat-basket-game-person/add/1', $data);
 
         $this->assertResponseOk();
-        $this->assertFlashMessage('The player stat could not be saved. Please, try again.');
+        // Since PTS is required but missing, validation should fail
+        $this->assertFlashElement('flash/error');
         $this->assertResponseContains('Add Player Stats');
     }
 

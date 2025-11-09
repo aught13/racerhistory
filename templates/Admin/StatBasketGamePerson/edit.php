@@ -34,6 +34,7 @@
     </div>
 
     <?= $this->Form->create($stat) ?>
+    <?= $this->Form->hidden('game_id') ?>
     <div class="card">
         <div class="card-body">
             <div class="row">
@@ -210,6 +211,27 @@
                         'required' => true,
                     ]) ?>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="mb-3">Season Totals</h5>
+            <div class="form-check">
+                <?= $this->Form->control('add_to_totals', [
+                    'type' => 'checkbox',
+                    'label' => 'Update Season Totals',
+                    'class' => 'form-check-input',
+                    'templates' => [
+                        'inputContainer' => '{{content}}',
+                        'checkboxWrapper' => '<div class="form-check">{{label}}</div>',
+                    ],
+                ]) ?>
+                <small class="form-text text-muted">
+                    Check this box to update season totals with the new values (old values will be subtracted, new values added).
+                    Only applies when period is 'Z' (final stats).
+                </small>
             </div>
         </div>
     </div>

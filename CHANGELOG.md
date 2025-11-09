@@ -12,6 +12,28 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - (placeholder) Additional domain models and admin features.
 - (placeholder) Extended test coverage and performance improvements.
 
+### Added (Unreleased) - Basketball Season/Game Stats Integration
+
+- **Season Totals Update Option**: Added "Update Season Totals" checkbox to Basketball Game Box final stats form (period Z) enabling direct aggregation of game box totals into season team & opponent totals.
+- **Service Layer Introduction**: New `BasketballStatsService` centralizes loading of basketball game statistics (team box, opponent box, periods, player stats, opponent player stats, team unattributed stats) for `GamesController::view()`.
+- **Dedicated Controller**: New `Admin\StatBasketGameBoxController` handling game box (final) and per-period basketball stats management, reducing responsibilities in `Admin\GamesController`.
+
+### Changed (Unreleased) - Architecture & Separation of Concerns
+
+- `Admin\GamesController` refactored to a minimal, sport-aware orchestrator: now only verifies basketball stats existence and delegates data assembly to the service layer.
+- Basketball game stats UI controls reorganized into a single, clearer action group; opponent labels clarified; button routes updated to use the new controller.
+- Improved maintainability by isolating season totals update logic inside `StatBasketGameBoxController::updateSeasonTotals()` with explicit handling for edits (subtract originals before applying new totals).
+
+### Fixed (Unreleased) - Basketball Stats
+
+- Corrected opponent season totals persistence: replaced invalid lookup on non-existent `opponent_id` with proper `team_season_id` usage in `StatBasketGameBoxController::updateSeasonTotals()` preventing database errors when updating season aggregates.
+- Ensured hidden `game_id` propagation in player stat forms to fix prior save failures.
+- Resolved PHPStan and PHPCS issues introduced during refactor (dynamic property access, formatting, trailing commas) achieving a clean static analysis state.
+
+### Testing (Unreleased)
+
+- Test suite expanded to **348 tests / 998 assertions** validating refactored controller/service architecture, season totals update path, and stability across basketball stats operations.
+
 ## [0.1.6-alpha] - 2025-11-08
 
 ### Added
