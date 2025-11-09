@@ -905,5 +905,4 @@ class GamesController extends AppController
 
         return $errors;
     }
-
 }

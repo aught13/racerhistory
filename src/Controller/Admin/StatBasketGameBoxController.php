@@ -38,7 +38,7 @@ class StatBasketGameBoxController extends AppController
      * Edit/Create game box scores (final period only - period Z)
      *
      * @param int $gameId Game ID
-     * @return \Cake\Http\Response|null|void
+     * @return \Cake\Http\Response|null
      */
     public function gameBox(int $gameId): ?Response
     {
@@ -307,7 +307,7 @@ class StatBasketGameBoxController extends AppController
         \App\Model\Entity\StatBasketGameBox $teamBox,
         \App\Model\Entity\StatBasketGameBox $opponentBox,
         ?\App\Model\Entity\StatBasketGameBox $originalTeamBox = null,
-        ?\App\Model\Entity\StatBasketGameBox $originalOpponentBox = null
+        ?\App\Model\Entity\StatBasketGameBox $originalOpponentBox = null,
     ): void {
         if (!$game->team_season_id) {
             return;
@@ -330,6 +330,7 @@ class StatBasketGameBoxController extends AppController
 
         if (!$teamSeasonStat) {
             $teamSeasonStat = $teamSeasonTable->newEmptyEntity();
+            /** @phpstan-ignore-next-line */
             $teamSeasonStat->team_season_id = $game->team_season_id;
         }
 
@@ -356,6 +357,7 @@ class StatBasketGameBoxController extends AppController
         $teamSeasonTable->save($teamSeasonStat);
 
         // Update opponent season totals
+        /** @phpstan-ignore-next-line */
         $opponentId = $game->opponent_id;
         $opponentSeasonStat = $opponentSeasonTable->find()
             ->where(['opponent_id' => $opponentId])
@@ -363,6 +365,7 @@ class StatBasketGameBoxController extends AppController
 
         if (!$opponentSeasonStat) {
             $opponentSeasonStat = $opponentSeasonTable->newEmptyEntity();
+            /** @phpstan-ignore-next-line */
             $opponentSeasonStat->opponent_id = $opponentId;
         }
 
