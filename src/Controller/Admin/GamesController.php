@@ -689,6 +689,7 @@ class GamesController extends AppController
         }
 
         $eav = $this->loadGameEavArray((int)$id);
+        /** @var \App\Model\Entity\Game $game */
         $this->setFormLists($game->place_id);
         $this->setSportAwareData($game);
         $this->set(compact('game', 'eav'));
