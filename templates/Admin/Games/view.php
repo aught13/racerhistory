@@ -22,9 +22,15 @@
     </div>
 
     <!-- Game Header -->
+
     <div class="row">
         <span class="h3 col-xl-6 text-center text-nowrap text-break">
             <?= h($game->team_season->team->team_description ?? '') ?> <?= h($game->team_season->season->start ?? '') ?>-<?= h($game->team_season->season->end ?? '') ?>
+        </span>
+    </div>
+    <div class="row">
+        <span class="h3 col-xl-6 text-center text-nowrap text-break">
+            <?= h($game->team_season->team->team_description ?? '') ?>
         </span>
         <span class="h3 col-xl-1 text-center text-nowrap">Vs</span>
         <span class="h3 col-xl-5 text-center text-nowrap">

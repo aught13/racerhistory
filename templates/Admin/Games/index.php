@@ -46,7 +46,6 @@
 
     <div class="row">
         <div class="col">
-            <?php if (!$games->isEmpty()) : ?>
             <form id="bulk-action-form-games" method="post">
                 <div class="mb-2 d-flex align-items-center gap-2" id="games-bulk-action-bar">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
@@ -63,39 +62,14 @@
                         <th><input type="checkbox" id="select-all-games" aria-label="Select all games"></th>
                         <th>Date</th>
                         <th>Team Season</th>
+                        <th>H/R/N</th>
                         <th>Opponent</th>
                         <th>Type</th>
-                        <th>Place / Site</th>
+                        <th>Place</th>
                         <th>Score</th>
-                        <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($games as $game) : ?>
-                        <tr>
-                            <td><input type="checkbox" name="game_ids[]" value="<?= $game->id ?>" class="game-checkbox" aria-label="Select game #<?= (int)$game->id ?>"></td>
-                            <td><?= h($game->game_date) ?></td>
-                            <td>
-                                <?php if (isset($game->team_season->team) && isset($game->team_season->season)) : ?>
-                                    <?= h($game->team_season->team->team_name) ?>
-                                    <small class="text-muted">
-                                        (<?= h($game->team_season->season->start . '-' . $game->team_season->season->end) ?>)
-                                    </small>
-                                <?php endif; ?>
-                            </td>
-                            <td><?= h($game->opponent->opponent_name ?? '-') ?></td>
-                            <td><?= h($game->game_type->game_type_name ?? '-') ?></td>
-                            <td>
-                                <?= h($game->place->place_name ?? '-') ?><br>
-                                <small class="text-muted"><?= h($game->site->site_name ?? '-') ?></small>
-                            </td>
-                            <td><?= h(($game->pts_mur ?? '') . ' - ' . ($game->pts_opp ?? '')) ?></td>
-                            <td class="text-nowrap">
-                                <a href="<?= $this->Url->build(['action' => 'view', $game->id]) ?>" class="btn btn-sm btn-outline-secondary" aria-label="View game"><i class="bi bi-eye"></i></a>
-                                <a href="<?= $this->Url->build(['action' => 'edit', $game->id]) ?>" class="btn btn-sm btn-primary" aria-label="Edit game"><i class="bi bi-pencil"></i></a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
                     </tbody>
                 </table>
             </form>
@@ -105,28 +79,101 @@
             <?= $this->Form->hidden('game_ids[]', ['value' => '']) ?>
             <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
             <?= $this->Form->end() ?>
-            <?php else : ?>
-                <div class="alert alert-info" role="alert">No games have been created yet.</div>
-            <?php endif; ?>
         </div>
     </div>
 </div>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'game']) ?>
 
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/searchbuilder/1.6.0/css/searchBuilder.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/datetime/1.5.1/css/dataTables.dateTime.min.css">
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/searchbuilder/1.6.0/js/dataTables.searchBuilder.min.js"></script>
+<script src="https://cdn.datatables.net/searchbuilder/1.6.0/js/searchBuilder.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/datetime/1.5.1/js/dataTables.dateTime.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize DataTables with server-side processing
+    const teamSeasonId = <?= json_encode($teamSeasonId ?? null) ?>;
+    const ajaxUrl = <?= json_encode($this->Url->build([
+        'prefix' => 'Admin',
+        'controller' => 'Games',
+        'action' => 'ajaxList',
+        '?' => $teamSeasonId ? ['team_season_id' => $teamSeasonId] : []
+    ])) ?>;
+
+    const table = $('#games-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: ajaxUrl,
+            type: 'GET'
+        },
+        columns: [
+            { data: 'checkbox', name: 'checkbox', title: '', orderable: false, searchable: false },
+            { data: 'game_date', name: 'game_date', title: 'Date', type: 'date' },
+            { data: 'team_season', name: 'team_season', title: 'Team Season', type: 'string' },
+            { data: 'hrn', name: 'hrn', title: 'H/R/N', type: 'string' },
+            { data: 'opponent', name: 'opponent', title: 'Opponent', type: 'string' },
+            { data: 'game_type', name: 'game_type', title: 'Type', type: 'string' },
+            { data: 'place', name: 'place', title: 'Place', type: 'string' },
+            { data: 'score', name: 'score', title: 'Score', orderable: false, searchable: false },
+            // Hidden columns for SearchBuilder
+            { data: 'place_state', name: 'place_state', title: 'State', type: 'string', visible: false },
+            { data: 'mur_pts', name: 'mur_pts', title: 'Team Points', type: 'num', visible: false },
+            { data: 'opp_pts', name: 'opp_pts', title: 'Opponent Points', type: 'num', visible: false },
+            { data: 'mur_rk', name: 'mur_rk', title: 'Team Rank', type: 'num', visible: false },
+            { data: 'opp_rk', name: 'opp_rk', title: 'Opponent Rank', type: 'num', visible: false },
+            { data: 'result', name: 'result', title: 'Result (W/L/T)', type: 'string', visible: false },
+            { data: 'conf', name: 'conf', title: 'Conference Game', type: 'num', visible: false },
+            { data: 'post', name: 'post', title: 'Postseason', type: 'num', visible: false }
+        ],
+        order: [[1, 'desc']], // Sort by date descending
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+        language: {
+            processing: 'Loading games...'
+        },
+        dom: 'Qlfrtip', // Q = SearchBuilder
+        searchBuilder: {
+            columns: [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15], // Enable on visible + hidden searchable columns
+            depthLimit: 2
+        }
+    });
+
     const selectAll = document.getElementById('select-all-games');
-    const checkboxes = document.querySelectorAll('.game-checkbox');
     const actionSelect = document.getElementById('bulk-action-select');
     const actionBtn = document.getElementById('bulk-action-btn');
 
     function refreshState() {
-        let checked = 0; checkboxes.forEach(cb => cb.checked && checked++);
+        const checkboxes = document.querySelectorAll('.game-checkbox');
+        let checked = 0;
+        checkboxes.forEach(cb => cb.checked && checked++);
         actionBtn.disabled = checked === 0 || !actionSelect.value;
     }
-    selectAll && selectAll.addEventListener('change', () => { checkboxes.forEach(cb => (cb.checked = selectAll.checked)); refreshState(); });
-    checkboxes.forEach(cb => cb.addEventListener('change', refreshState));
+
+    selectAll && selectAll.addEventListener('change', () => {
+        const checkboxes = document.querySelectorAll('.game-checkbox');
+        checkboxes.forEach(cb => (cb.checked = selectAll.checked));
+        refreshState();
+    });
+
+    // Use event delegation for dynamically rendered checkboxes
+    document.getElementById('games-table').addEventListener('change', function(e) {
+        if (e.target.classList.contains('game-checkbox')) {
+            refreshState();
+        }
+    });
+
     actionSelect.addEventListener('change', refreshState);
 
     document.getElementById('bulk-action-form-games').addEventListener('submit', function (e) {
@@ -136,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const assoc = Array.from(document.querySelectorAll('.game-checkbox:checked')).map(cb => {
             const row = cb.closest('tr');
             const date = row.querySelector('td:nth-child(2)').textContent.trim();
-            const opp = row.querySelector('td:nth-child(4)').textContent.trim();
+            const opp = row.querySelector('td:nth-child(5)').textContent.trim();
             return date + ' vs ' + opp;
         });
         window.showConfirmDelete && window.showConfirmDelete({

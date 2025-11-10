@@ -39,6 +39,8 @@ class GamesControllerTest extends TestCase
         $this->get('/admin/games');
         $this->assertResponseOk();
         $this->assertResponseContains('Games Management');
+        // DataTables replaces pagination
+        $this->assertResponseContains('DataTables');
     }
 
     public function testAddGet(): void
