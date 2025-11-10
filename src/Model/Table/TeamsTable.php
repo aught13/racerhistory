@@ -33,6 +33,8 @@ use Cake\Validation\Validator;
  * - team_name: Short display name of the team (max 162 chars, required)
  * - team_description: Full official name including institution and sport (max 240 chars)
  * - abbr: Team abbreviation for display (max 5 chars, required)
+ * - team_nickname: Team mascot or nickname (max 30 chars, required)
+ * - team_scorebug: Shortened name for score display (max 6 chars, required)
  * - gender: Gender classification - M (Male), F (Female), C (Co-ed) (required)
  * - created_at: Timestamp when record was created
  * - updated_at: Timestamp when record was last modified
@@ -94,6 +96,18 @@ class TeamsTable extends Table
             ->maxLength('abbr', 5)
             ->requirePresence('abbr', 'create')
             ->notEmptyString('abbr');
+
+        $validator
+            ->scalar('team_nickname')
+            ->maxLength('team_nickname', 30)
+            ->requirePresence('team_nickname', 'create')
+            ->notEmptyString('team_nickname');
+
+        $validator
+            ->scalar('team_scorebug')
+            ->maxLength('team_scorebug', 6)
+            ->requirePresence('team_scorebug', 'create')
+            ->notEmptyString('team_scorebug');
 
         $validator
             ->scalar('gender')
