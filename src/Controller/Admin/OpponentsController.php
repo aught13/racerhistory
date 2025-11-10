@@ -32,8 +32,26 @@ class OpponentsController extends AppController
             }
             $this->Flash->error('The opponent could not be saved.');
         }
-        $places = $this->fetchTable('Places')->find('list')->all();
-        $this->set(compact('opponent', 'places'));
+
+        // Format places as "Name, State" sorted by name
+        $placesQuery = $this->fetchTable('Places')->find()
+            ->order(['Places.place_name' => 'ASC'])
+            ->all();
+        $places = [];
+        foreach ($placesQuery as $place) {
+            $label = $place->place_name;
+            if (!empty($place->place_state)) {
+                $label .= ', ' . $place->place_state;
+            }
+            $places[$place->id] = $label;
+        }
+
+        // Get all opponents for opponent_current dropdown (sorted by name)
+        $opponentsList = $this->fetchTable('Opponents')->find('list')
+            ->order(['Opponents.opponent_name' => 'ASC'])
+            ->all();
+
+        $this->set(compact('opponent', 'places', 'opponentsList'));
 
         return null;
     }
@@ -54,8 +72,27 @@ class OpponentsController extends AppController
             }
             $this->Flash->error('The opponent could not be saved.');
         }
-        $places = $this->fetchTable('Places')->find('list')->all();
-        $this->set(compact('opponent', 'places'));
+
+        // Format places as "Name, State" sorted by name
+        $placesQuery = $this->fetchTable('Places')->find()
+            ->order(['Places.place_name' => 'ASC'])
+            ->all();
+        $places = [];
+        foreach ($placesQuery as $place) {
+            $label = $place->place_name;
+            if (!empty($place->place_state)) {
+                $label .= ', ' . $place->place_state;
+            }
+            $places[$place->id] = $label;
+        }
+
+        // Get all opponents except current one for opponent_current dropdown
+        $opponentsList = $this->fetchTable('Opponents')->find('list')
+            ->where(['Opponents.id !=' => $id])
+            ->order(['Opponents.opponent_name' => 'ASC'])
+            ->all();
+
+        $this->set(compact('opponent', 'places', 'opponentsList'));
 
         return null;
     }

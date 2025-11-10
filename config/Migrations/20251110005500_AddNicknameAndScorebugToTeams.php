@@ -27,21 +27,21 @@ class AddNicknameAndScorebugToTeams extends AbstractMigration
     public function change(): void
     {
         $table = $this->table('teams');
-        
+
         $table->addColumn('team_nickname', 'string', [
             'default' => null,
             'limit' => 30,
             'null' => false,
             'after' => 'team_name',
         ]);
-        
+
         $table->addColumn('team_scorebug', 'string', [
             'default' => null,
             'limit' => 6,
             'null' => false,
             'after' => 'team_nickname',
         ]);
-        
+
         $table->update();
     }
 }
