@@ -283,7 +283,12 @@ class GamesController extends AppController
             }
 
             $data[] = [
-                'checkbox' => '<input type="checkbox" name="game_ids[]" value="' . $game->id . '" class="game-checkbox" aria-label="Select game #' . $game->id . '">',
+                'checkbox' =>
+                    '<input type="checkbox" name="game_ids[]" value="' .
+                    $game->id .
+                    '" class="game-checkbox" aria-label="Select game #' .
+                    $game->id .
+                    '">',
                 'game_date' => $game->game_date ? $game->game_date->format('Y-m-d') : '',
                 'team_season' => $teamDisplay,
                 'hrn' => $hrnMap[$game->hrn] ?? '-',
@@ -367,11 +372,17 @@ class GamesController extends AppController
             // Handle computed 'result' field (W/L/T)
             if ($origData === '13' || $origData === 'result') {
                 if ($value1 === 'W') {
-                    $conditions[] = ['Games.pts_mur >' => new \Cake\Database\Expression\IdentifierExpression('Games.pts_opp')];
+                    $conditions[] = [
+                        'Games.pts_mur >' => new \Cake\Database\Expression\IdentifierExpression('Games.pts_opp'),
+                    ];
                 } elseif ($value1 === 'L') {
-                    $conditions[] = ['Games.pts_mur <' => new \Cake\Database\Expression\IdentifierExpression('Games.pts_opp')];
+                    $conditions[] = [
+                        'Games.pts_mur <' => new \Cake\Database\Expression\IdentifierExpression('Games.pts_opp'),
+                    ];
                 } elseif ($value1 === 'T') {
-                    $conditions[] = ['Games.pts_mur' => new \Cake\Database\Expression\IdentifierExpression('Games.pts_opp')];
+                    $conditions[] = [
+                        'Games.pts_mur' => new \Cake\Database\Expression\IdentifierExpression('Games.pts_opp'),
+                    ];
                 }
 
                 continue;
