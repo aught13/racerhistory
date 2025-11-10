@@ -89,6 +89,30 @@
                     </div>
 
                     <div class="mb-3">
+                        <?= $this->Form->control('team_nickname', [
+                            'type' => 'text',
+                            'class' => 'form-control',
+                            'label' => ['class' => 'form-label', 'text' => 'Team Nickname/Mascot *'],
+                            'placeholder' => 'Enter team nickname (e.g., Racers)',
+                            'maxlength' => 30,
+                            'required' => true
+                        ]) ?>
+                        <div class="form-text">Team mascot or nickname (maximum 30 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <?= $this->Form->control('team_scorebug', [
+                            'type' => 'text',
+                            'class' => 'form-control',
+                            'label' => ['class' => 'form-label', 'text' => 'Scorebug Name *'],
+                            'placeholder' => 'Enter scorebug name (e.g., MURRAY)',
+                            'maxlength' => 6,
+                            'required' => true
+                        ]) ?>
+                        <div class="form-text">Shortened name for score display (maximum 6 characters).</div>
+                    </div>
+
+                    <div class="mb-3">
                         <?= $this->Form->control('gender', [
                             'type' => 'select',
                             'options' => [
@@ -129,6 +153,8 @@
                         <li><strong>Sport:</strong> Select the sport this team plays</li>
                         <li><strong>Team Name:</strong> Full name of the team</li>
                         <li><strong>Abbreviation:</strong> Short code for the team (max 5 chars)</li>
+                        <li><strong>Nickname:</strong> Team mascot or nickname (max 30 chars)</li>
+                        <li><strong>Scorebug:</strong> Short name for score display (max 6 chars)</li>
                         <li><strong>Gender:</strong> Team gender classification</li>
                     </ul>
 
