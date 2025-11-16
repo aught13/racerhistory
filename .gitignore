@@ -1,59 +1,56 @@
-# app
-/config/app.php
-/tmp/*
-/logs/*
+# CakePHP core configs (track app.php, ignore local overrides)
 /config/app_local.php
+/config/app_local.test.php
 /config/bootstrap.local.php
-/vendor/*
 /config/.env
 
-# Dependency directories
-/node_modules
-/bower_components
-coverage-js/
+# Runtime & cache
+/tmp/
+/logs/
+server.log
 
-# IDEs and editors
-/.idea
+# Coverage & test artifacts
+coverage.xml
+/tmp/coverage/
+/coverage-js/
+test-results.xml
+.phpunit.cache
+.phpunit.result.cache
+tests.sqlite
+*.sqlite
+
+# Dependencies
+/vendor/
+/node_modules/
+/bower_components/
+
+# IDEs and editors (local development only)
+/.idea/
+/.vscode/
 pmip
 .project
 .classpath
 *.launch
 .settings/
 
-#System Files
+# System Files
 .DS_Store
 Thumbs.db
 ehthumbs.db
 .directory
 
-# Tool specific files #
-#######################
-.phpunit.cache
-tests.sqlite
-test-results.xml
-coverage.xml
-tmp/coverage/
-server.log
-*.sqlite
-.phpunit.result.cache
-.github
-.codacy
-.githooks
-phpstan
-resources
-.vscode
-.prettierignore
-.prettierrc
+# Local development tooling (not needed for CI)
+/resources/
+/external/
 security-report.json
-test-results.xml
 
+# Codacy & git hooks (local only)
+.codacy/
+.githooks/
 
-# Public image storage
+# Public image storage (user-generated content)
 /webroot/img/storage/
 
 # Local helper scripts
 /bin/fix-permissions.sh
-
-# Local reference: 3rd party  files
-external
 
