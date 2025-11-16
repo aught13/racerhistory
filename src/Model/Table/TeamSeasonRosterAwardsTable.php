@@ -18,7 +18,7 @@ class TeamSeasonRosterAwardsTable extends Table
         parent::initialize($config);
         $this->setTable('team_season_roster_awards');
         $this->setPrimaryKey('id');
-        $this->belongsTo('TeamSeasonRoster', [
+        $this->belongsTo('TeamSeasonRosters', [
             'foreignKey' => 'team_season_roster_id',
             'joinType' => 'INNER',
         ]);

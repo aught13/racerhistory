@@ -330,7 +330,6 @@ class StatBasketGameBoxController extends AppController
 
         if (!$teamSeasonStat) {
             $teamSeasonStat = $teamSeasonTable->newEmptyEntity();
-            /** @phpstan-ignore-next-line */
             $teamSeasonStat->team_season_id = $game->team_season_id;
         }
 
@@ -364,7 +363,6 @@ class StatBasketGameBoxController extends AppController
 
         if (!$opponentSeasonStat) {
             $opponentSeasonStat = $opponentSeasonTable->newEmptyEntity();
-            /** @phpstan-ignore-next-line */
             $opponentSeasonStat->team_season_id = $game->team_season_id;
         }
 
