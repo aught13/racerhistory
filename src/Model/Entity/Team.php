@@ -17,6 +17,8 @@ use Cake\ORM\Entity;
  * @property string $team_name Short display name (max 162 chars)
  * @property string|null $team_description Full official name including institution and sport (max 240 chars)
  * @property string $abbr Team abbreviation for compact display (max 5 chars)
+ * @property string $team_nickname Team mascot or nickname (max 30 chars)
+ * @property string $team_scorebug Shortened name for score display (max 6 chars)
  * @property string $gender Gender classification: M (Male), F (Female), C (Co-ed)
  * @property \Cake\I18n\DateTime|null $created_at Creation timestamp
  * @property \Cake\I18n\DateTime|null $updated_at Last modification timestamp
@@ -39,6 +41,8 @@ class Team extends Entity
         'team_name' => true,
         'team_description' => true,
         'abbr' => true,
+        'team_nickname' => true,
+        'team_scorebug' => true,
         'gender' => true,
         'created_at' => true,
         'updated_at' => true,

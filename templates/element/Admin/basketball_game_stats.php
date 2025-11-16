@@ -198,7 +198,7 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
         <div class="row mt-4">
             <div class="col-12">
                 <h3>
-                    <?= h($game->team_season->team->team_name ?? 'Murray State') ?>
+                    <?= h($game->team_season->team->team_nickname ?? 'Murray State') ?>
                     - <?= h($game->pts_mur ?? '') ?>
                 </h3>
             </div>
@@ -621,7 +621,7 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                 <table class="table table-bordered table-sm text-center">
                     <thead class="table-light">
                         <tr>
-                            <th><?= h($game->team_season->team->team_name ?? 'Murray State') ?></th>
+                            <th><?= h($game->team_season->team->team_nickname ?? 'Murray State') ?></th>
                             <th>Category</th>
                             <th><?= h($game->opponent->opponent_name ?? 'Opponent') ?></th>
                         </tr>

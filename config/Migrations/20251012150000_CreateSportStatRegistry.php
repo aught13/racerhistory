@@ -20,7 +20,7 @@ class CreateSportStatRegistry extends AbstractMigration
     /**
      * @var bool Disable automatic primary key generation
      */
-    public $autoId = false;
+    public bool $autoId = false;
 
     /**
      * Apply migration: create sport stat registry table

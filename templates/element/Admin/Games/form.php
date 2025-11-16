@@ -26,12 +26,35 @@ $eav = $eav ?? [];
         </div>
         <div class="row g-3">
             <div class="col-md-4"><?= $this->Form->control('game_date', ['type' => 'date', 'class' => 'form-control']) ?></div>
-            <div class="col-md-4"><?= $this->Form->control('game_time', ['label' => 'Time', 'type' => 'text', 'class' => 'form-control']) ?></div>
-            <div class="col-md-4"><?= $this->Form->control('game_duration', ['label' => 'Duration', 'type' => 'text', 'class' => 'form-control']) ?></div>
+            <div class="col-md-4">
+                <?= $this->Form->control('game_time', [
+                    'label' => 'Time (12-hour format)',
+                    'type' => 'text',
+                    'class' => 'form-control',
+                    'placeholder' => 'e.g., 7:00 PM',
+                ]) ?>
+            </div>
+            <div class="col-md-4">
+                <?= $this->Form->control('game_duration', [
+                    'label' => 'Duration (24-hour format)',
+                    'type' => 'text',
+                    'class' => 'form-control',
+                    'placeholder' => 'e.g., 02:30',
+                ]) ?>
+            </div>
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-6"><?= $this->Form->control('game_type_id', ['label' => 'Game Type', 'type' => 'select', 'options' => $gameTypes, 'empty' => 'Choose...', 'class' => 'form-select']) ?></div>
+            <div class="col-md-6">
+                <?= $this->Form->control('game_type_id', [
+                    'label' => 'Game Type',
+                    'type' => 'select',
+                    'options' => $gameTypes,
+                    'empty' => 'Choose...',
+                    'class' => 'form-select',
+                    'default' => 1, // Default to ID 1 (Regular Season Game)
+                ]) ?>
+            </div>
             <div class="col-md-6">
                 <fieldset class="border rounded p-2">
                     <legend class="float-none w-auto fs-6">New Game Type</legend>
@@ -60,7 +83,16 @@ $eav = $eav ?? [];
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-6"><?= $this->Form->control('place_id', ['label' => 'Place (City, State)', 'type' => 'select', 'options' => $places, 'empty' => 'Choose...', 'class' => 'form-select']) ?></div>
+            <div class="col-md-6">
+                <?= $this->Form->control('place_id', [
+                    'label' => 'Place (City, State)',
+                    'type' => 'select',
+                    'options' => $places,
+                    'empty' => 'Choose...',
+                    'class' => 'form-select',
+                    'id' => 'place-select',
+                ]) ?>
+            </div>
             <div class="col-md-6">
                 <fieldset class="border rounded p-2">
                     <legend class="float-none w-auto fs-6">New Place</legend>
@@ -74,7 +106,16 @@ $eav = $eav ?? [];
         </div>
 
         <div class="row g-3 mt-1">
-            <div class="col-md-6"><?= $this->Form->control('site_id', ['label' => 'Site (Arena/Stadium)', 'type' => 'select', 'options' => $sites, 'empty' => 'Choose...', 'class' => 'form-select']) ?></div>
+            <div class="col-md-6">
+                <?= $this->Form->control('site_id', [
+                    'label' => 'Site (Arena/Stadium)',
+                    'type' => 'select',
+                    'options' => $sites,
+                    'empty' => 'Choose a Place first...',
+                    'class' => 'form-select',
+                    'id' => 'site-select',
+                ]) ?>
+            </div>
             <div class="col-md-6">
                 <fieldset class="border rounded p-2">
                     <legend class="float-none w-auto fs-6">New Site</legend>
@@ -203,3 +244,53 @@ $eav = $eav ?? [];
         <button type="submit" class="btn btn-primary">Save</button>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const placeSelect = document.getElementById('place-select');
+    const siteSelect = document.getElementById('site-select');
+    const ajaxUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'ajaxSitesByPlace']) ?>';
+
+    // Store the initial site_id if editing
+    const initialSiteId = <?= json_encode($game->site_id ?? null) ?>;
+    const initialPlaceId = <?= json_encode($game->place_id ?? null) ?>;
+
+    function loadSites(placeId, selectSiteId = null) {
+        if (!placeId) {
+            siteSelect.innerHTML = '<option value="">Choose a Place first...</option>';
+            siteSelect.disabled = true;
+            return;
+        }
+
+        fetch(ajaxUrl + '?place_id=' + placeId)
+            .then(response => response.json())
+            .then(data => {
+                siteSelect.innerHTML = '<option value="">Choose...</option>';
+                data.sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site.id;
+                    option.textContent = site.name;
+                    if (selectSiteId && site.id == selectSiteId) {
+                        option.selected = true;
+                    }
+                    siteSelect.appendChild(option);
+                });
+                siteSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading sites:', error);
+                siteSelect.innerHTML = '<option value="">Error loading sites</option>';
+            });
+    }
+
+    // Load sites when place changes
+    placeSelect.addEventListener('change', function() {
+        loadSites(this.value);
+    });
+
+    // Load sites on page load if editing and place is selected
+    if (initialPlaceId) {
+        loadSites(initialPlaceId, initialSiteId);
+    }
+});
+</script>

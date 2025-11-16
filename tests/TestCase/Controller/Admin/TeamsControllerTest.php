@@ -109,6 +109,8 @@ class TeamsControllerTest extends TestCase
             'team_name' => 'Test Team',
             'team_description' => 'Test description',
             'abbr' => 'TEST',
+            'team_nickname' => 'Testers',
+            'team_scorebug' => 'TEST',
             'gender' => 'M',
         ];
 
@@ -183,6 +185,8 @@ class TeamsControllerTest extends TestCase
             'team_name' => 'Updated Team Name',
             'team_description' => 'Updated description',
             'abbr' => 'UPD',
+            'team_nickname' => 'Updated',
+            'team_scorebug' => 'UPDT',
             'gender' => 'F',
         ];
 
