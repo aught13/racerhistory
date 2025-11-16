@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use Cake\ORM\TableRegistry;
+use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
  * BasketballStatsService
@@ -13,6 +13,7 @@ use Cake\ORM\TableRegistry;
  */
 class BasketballStatsService
 {
+    use LocatorAwareTrait;
     /**
      * Get basketball game statistics for display in game view
      *
@@ -29,7 +30,7 @@ class BasketballStatsService
     public function getGameStats(int $gameId): ?array
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
-        $gamesTable = TableRegistry::getTableLocator()->get('Games');
+        $gamesTable = $this->fetchTable('Games');
 
         /** @var \App\Model\Entity\Game $game */
         $game = $gamesTable->find()
@@ -65,7 +66,7 @@ class BasketballStatsService
 
         // Load box score stats if available
         /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
-        $boxTable = TableRegistry::getTableLocator()->get('StatBasketGameBox');
+        $boxTable = $this->fetchTable('StatBasketGameBox');
 
         // Load team final stats (period Z, opponent_id 0)
         $teamBox = $boxTable->find()
@@ -104,7 +105,7 @@ class BasketballStatsService
 
         // Load player stats (period Z final stats)
         /** @var \App\Model\Table\StatBasketGamePersonTable $personTable */
-        $personTable = TableRegistry::getTableLocator()->get('StatBasketGamePerson');
+        $personTable = $this->fetchTable('StatBasketGamePerson');
         $playerStats = $personTable->find()
             ->contain(['TeamSeasonRosters' => ['Persons', 'TeamSeasons']])
             ->where(['StatBasketGamePerson.game_id' => $gameId, 'StatBasketGamePerson.period' => 'Z'])
@@ -119,7 +120,7 @@ class BasketballStatsService
 
         // Load opponent player stats (period Z final stats)
         /** @var \App\Model\Table\StatBasketGameOpponentTable $opponentTable */
-        $opponentTable = TableRegistry::getTableLocator()->get('StatBasketGameOpponent');
+        $opponentTable = $this->fetchTable('StatBasketGameOpponent');
         $opponentPlayerStats = $opponentTable->find()
             ->where(['StatBasketGameOpponent.game_id' => $gameId, 'StatBasketGameOpponent.period' => 'Z'])
             ->orderBy(function ($exp, $query) {
@@ -133,7 +134,7 @@ class BasketballStatsService
 
         // Load team stats (Dead Ball rebounds, Fouls Drawn, Team Turnovers) for period Z
         /** @var \App\Model\Table\StatBasketGameTeamTable $teamTable */
-        $teamTable = TableRegistry::getTableLocator()->get('StatBasketGameTeam');
+        $teamTable = $this->fetchTable('StatBasketGameTeam');
 
         $teamTeamStats = $teamTable->find()
             ->where(['StatBasketGameTeam.game_id' => $gameId, 'StatBasketGameTeam.opp' => 0])
