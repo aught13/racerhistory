@@ -24,15 +24,22 @@
     <!-- Game Header -->
 
     <div class="row">
-        <span class="h3 col-xl-6 text-center text-nowrap text-break">
-            <?= h($game->team_season->team->team_description ?? '') ?> <?= h($game->team_season->season->start ?? '') ?>-<?= h($game->team_season->season->end ?? '') ?>
+        <span class="h3 col-xl-12 text-center text-nowrap text-break">
+            <?= h($game->team_season->team->team_description ?? '') ?>
+            <?= h($game->team_season->season->start ?? '') ?>-<?= h($game->team_season->season->end ?? '') ?>
         </span>
     </div>
     <div class="row">
         <span class="h3 col-xl-6 text-center text-nowrap text-break">
-            <?= h($game->team_season->team->team_description ?? '') ?>
+            <?= h($game->team_season->team->team_nickname ?? '') ?>
         </span>
-        <span class="h3 col-xl-1 text-center text-nowrap">Vs</span>
+        <span class="h3 col-xl-1 text-center text-nowrap">
+            <?php
+            // Display 'Vs' for home (1) and neutral (3), '@' for road (2)
+            $vsText = $game->hrn == 2 ? '@' : 'Vs';
+            echo h($vsText);
+            ?>
+        </span>
         <span class="h3 col-xl-5 text-center text-nowrap">
             <?= h($game->opponent->opponent_name ?? '') ?>
         </span>
@@ -49,16 +56,26 @@
                 <table class="table text-center">
                     <thead>
                         <tr>
-                            <th class="text-center h2"><?= h($game->team_season->team->team_name ?? 'Team') ?></th>
+                            <th class="text-center h2"><?= h($game->team_season->team->team_nickname ?? 'Team') ?></th>
                             <th></th>
                             <th class="text-center h2"><?= h($game->opponent->opponent_name ?? 'Opponent') ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="font-size: 40px; font-weight: bold;"><?= h($game->pts_mur ?? '') ?></td>
+                            <?php
+                            $murPts = $game->pts_mur ?? 0;
+                            $oppPts = $game->pts_opp ?? 0;
+                            $murBold = $murPts > $oppPts ? 'bold' : 'normal';
+                            $oppBold = $oppPts > $murPts ? 'bold' : 'normal';
+                            ?>
+                            <td style="font-size: 40px; font-weight: <?= $murBold ?>;">
+                                <?= h($game->pts_mur ?? '') ?>
+                            </td>
                             <td></td>
-                            <td style="font-size: 40px; font-weight: normal;"><?= h($game->pts_opp ?? '') ?></td>
+                            <td style="font-size: 40px; font-weight: <?= $oppBold ?>;">
+                                <?= h($game->pts_opp ?? '') ?>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -92,14 +109,14 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>MURRAY</td>
+                            <td><?= h($game->team_season->team->team_scorebug ?? '') ?></td>
                             <?php for ($i = 1; $i <= $periods; $i++) : ?>
                                 <td><?= h($eav['period_' . $i . '_team'] ?? '') ?></td>
                             <?php endfor; ?>
                             <?php for ($i = 1; $i <= $otPeriods; $i++) : ?>
                                 <td><?= h($eav['overtime_' . $i . '_team'] ?? '') ?></td>
                             <?php endfor; ?>
-                            <td style="font-weight: bold;"><?= h($game->pts_mur ?? '') ?></td>
+                            <td style="font-weight: <?= $murBold ?>;"><?= h($game->pts_mur ?? '') ?></td>
                         </tr>
                         <tr>
                             <td><?= h($game->opponent->opponent_abbr ?? 'Opponent') ?></td>
@@ -109,7 +126,7 @@
                             <?php for ($i = 1; $i <= $otPeriods; $i++) : ?>
                                 <td><?= h($eav['overtime_' . $i . '_opponent'] ?? '') ?></td>
                             <?php endfor; ?>
-                            <td style="font-weight: normal;"><?= h($game->pts_opp ?? '') ?></td>
+                            <td style="font-weight: <?= $oppBold ?>;"><?= h($game->pts_opp ?? '') ?></td>
                         </tr>
                     </tbody>
                 </table>
@@ -123,7 +140,16 @@
             <div class="col-md-8">
                 <div class="row">
                     <div class="col-lg-9 h4">
-                        <?= h(($game->site->place->place_city ?? '') . ' ' . ($game->site->site_name ?? '')) ?>
+                        <?php
+                        $placeName = $game->site->place->place_name ?? '';
+                        $placeState = $game->site->place->place_state ?? '';
+                        $siteName = $game->site->site_name ?? '';
+                        $locationText = trim($placeName . ($placeState ? ', ' . $placeState : ''));
+                        if ($siteName) {
+                            $locationText .= ($locationText ? ' ' : '') . $siteName;
+                        }
+                        ?>
+                        <?= h($locationText) ?>
                         <?php if (!empty($game->site_id)) : ?>
                             <a href="<?= $this->Url->build([
                                 'controller' => 'Sites', 'action' => 'edit', $game->site_id,
@@ -132,21 +158,49 @@
                             </a>
                         <?php endif; ?>
                     </div>
+                    <?php if (!empty($game->attendance)) : ?>
                     <div class="col-lg-3">
-                        Attendance: <?= h($eav['attendance'] ?? '') ?>
+                        Attendance: <?= h($game->attendance ?? '') ?>
                     </div>
+                    <?php endif; ?>
                 </div>
                 <div>
-                    Referees: <?= h($eav['official_1'] ?? '') ?><?= !empty($eav['official_2']) ? ', ' . h($eav['official_2']) : '' ?><?= !empty($eav['official_3']) ? ', ' . h($eav['official_3']) : '' ?>
+                    Referees: <?= h($eav['official_1'] ?? '') ?>
+                    <?= !empty($eav['official_2']) ? ', ' . h($eav['official_2']) : '' ?>
+                    <?= !empty($eav['official_3']) ? ', ' . h($eav['official_3']) : '' ?>
                 </div>
                 <div>
                     <span><?= h($game->notes ?? '') ?></span>
                 </div>
             </div>
             <div class="col-md-4">
+                <?php if (!empty($game->game_time)) : ?>
                 <div>
-                    <span>Game Time: <?= h($game->game_time ?? '') ?></span>
+                    <?php
+                    // Format game_time to 12-hour format if it exists
+                    $gameTimeDisplay = '';
+                    if (!empty($game->game_time)) {
+                        if ($game->game_time instanceof \DateTimeInterface) {
+                            $gameTimeDisplay = $game->game_time->format('g:i A');
+                        } else {
+                            // Try to parse string time
+                            try {
+                                $timeObj = new \DateTime($game->game_time);
+                                $gameTimeDisplay = $timeObj->format('g:i A');
+                            } catch (\Exception $e) {
+                                $gameTimeDisplay = $game->game_time;
+                            }
+                        }
+                    }
+                    ?>
+                    <span>Game Time: <?= h($gameTimeDisplay) ?></span>
                 </div>
+                <?php endif; ?>
+                <?php if (!empty($game->game_duration)) : ?>
+                    <div>
+                        <span>Duration: <?= h($game->game_duration) ?></span>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
         <hr>
@@ -173,7 +227,7 @@
             <div class="row mt-4">
                 <div class="col-12">
                     <h3>
-                        <?= h($game->team_season->team->team_name ?? 'Murray State') ?>
+                        <?= h($game->team_season->team->team_nickname ?? 'Murray State') ?>
                         - <?= h($game->pts_mur ?? '') ?>
                     </h3>
                 </div>
@@ -211,8 +265,16 @@
                                 <?php foreach ($playerStats as $stat) : ?>
                                     <tr>
                                         <td><?= h($stat->team_season_roster->roster_number ?? '') ?></td>
-                                        <td><?= h($stat->team_season_roster->person->display ?? $stat->team_season_roster->person->full ?? '') ?></td>
-                                        <td><?= $stat->GS ? h($stat->team_season_roster->roster_position ?? '') : '' ?></td>
+                                        <td>
+                                            <?= h(
+                                                $stat->team_season_roster->person->display ??
+                                                $stat->team_season_roster->person->full ?? ''
+                                            ) ?>
+                                        </td>
+                                        <td>
+                                            <?= $stat->GS ?
+                                                h($stat->team_season_roster->roster_position ?? '') : '' ?>
+                                        </td>
                                         <td><?= h($stat->MIN ?? '') ?></td>
                                         <td><?= h($stat->FGM ?? '') ?></td>
                                         <td><?= h($stat->FGA ?? '') ?></td>
@@ -661,7 +723,7 @@
                         <table class="table table-bordered table-sm text-center">
                             <thead class="table-light">
                                 <tr>
-                                    <th><?= h($game->team_season->team->team_name ?? 'Murray State') ?></th>
+                                    <th><?= h($game->team_season->team->team_nickname ?? 'Murray State') ?></th>
                                     <th>Category</th>
                                     <th><?= h($game->opponent->opponent_name ?? 'Opponent') ?></th>
                                 </tr>

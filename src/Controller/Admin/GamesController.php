@@ -176,6 +176,36 @@ class GamesController extends AppController
     }
 
     /**
+     * AJAX endpoint to get sites filtered by place_id
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function ajaxSitesByPlace(): ?Response
+    {
+        $this->request->allowMethod(['get']);
+        $placeId = (int)$this->request->getQuery('place_id');
+
+        $sites = [];
+        if ($placeId) {
+            $sitesQuery = $this->fetchTable('Sites')->find()
+                ->where(['Sites.place_id' => $placeId])
+                ->order(['Sites.site_name' => 'ASC'])
+                ->all();
+
+            foreach ($sitesQuery as $site) {
+                $sites[] = [
+                    'id' => $site->id,
+                    'name' => $site->site_name,
+                ];
+            }
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode(['sites' => $sites]));
+    }
+
+    /**
      * List games with associations.
      */
     public function index(): void
@@ -534,7 +564,20 @@ class GamesController extends AppController
 
         if ($this->request->is('post')) {
             $data = $this->request->getData();
+
+            // Track if new opponent is being created
+            $newOpponentId = null;
+            if (!empty($data['new_opponent']['opponent_name'])) {
+                // Will be set in normalizeAssociatedInlineCreate
+                $trackNewOpponent = true;
+            }
+
             $this->normalizeAssociatedInlineCreate($data);
+
+            // Check if opponent was just created
+            if (isset($trackNewOpponent) && !empty($data['opponent_id'])) {
+                $newOpponentId = $data['opponent_id'];
+            }
 
             // Auto-calculate W/L based on scores
             $data = $this->calculateWinLoss($data);
@@ -557,6 +600,16 @@ class GamesController extends AppController
             if ($this->Games->save($game)) {
                 $this->saveGameEavFromRequest((int)$game->get('id'));
                 $this->Flash->success(__('The game has been saved.'));
+
+                // Redirect to edit opponent if a new one was created
+                if ($newOpponentId) {
+                    return $this->redirect([
+                        'prefix' => 'Admin',
+                        'controller' => 'Opponents',
+                        'action' => 'edit',
+                        $newOpponentId,
+                    ]);
+                }
 
                 return $this->redirect([
                     'prefix' => 'Admin',
@@ -609,7 +662,7 @@ class GamesController extends AppController
                         $eav[$key] = $value;
                     }
                 }
-                $this->setFormLists();
+                $this->setFormLists($game->place_id);
                 $this->setSportAwareData($game);
                 $this->set(compact('game', 'eav'));
 
@@ -636,7 +689,8 @@ class GamesController extends AppController
         }
 
         $eav = $this->loadGameEavArray((int)$id);
-        $this->setFormLists();
+        /** @var \App\Model\Entity\Game $game */
+        $this->setFormLists($game->place_id);
         $this->setSportAwareData($game);
         $this->set(compact('game', 'eav'));
 
@@ -727,8 +781,10 @@ class GamesController extends AppController
 
     /**
      * Build lists for select inputs and provide inline create options.
+     *
+     * @param int|null $placeId Optional place ID to filter sites
      */
-    private function setFormLists(): void
+    private function setFormLists(?int $placeId = null): void
     {
         $teamSeasons = $this->fetchTable('TeamSeasons')->find()
             ->contain(['Teams' => ['Sports'], 'Seasons'])
@@ -748,10 +804,33 @@ class GamesController extends AppController
             $teamSeasonList[$ts->id] = $label;
         }
 
-        $gameTypes = $this->fetchTable('GameTypes')->find('list')->all();
-        $opponents = $this->fetchTable('Opponents')->find('list')->all();
-        $places = $this->fetchTable('Places')->find('list')->all();
-        $sites = $this->fetchTable('Sites')->find('list')->all();
+        $gameTypes = $this->fetchTable('GameTypes')->find('list')
+            ->order(['GameTypes.game_type_name' => 'ASC'])
+            ->all();
+
+        $opponents = $this->fetchTable('Opponents')->find('list')
+            ->order(['Opponents.opponent_name' => 'ASC'])
+            ->all();
+
+        // Format places as "Name, State" sorted by name
+        $placesQuery = $this->fetchTable('Places')->find()
+            ->order(['Places.place_name' => 'ASC'])
+            ->all();
+        $places = [];
+        foreach ($placesQuery as $place) {
+            $label = $place->place_name;
+            if (!empty($place->place_state)) {
+                $label .= ', ' . $place->place_state;
+            }
+            $places[$place->id] = $label;
+        }
+
+        // Filter sites by place_id if provided
+        $sitesQuery = $this->fetchTable('Sites')->find('list');
+        if ($placeId) {
+            $sitesQuery->where(['Sites.place_id' => $placeId]);
+        }
+        $sites = $sitesQuery->all();
 
         $sports = $this->fetchTable('Sports')->find('list')->all(); // for opponent/site creation helpers
 

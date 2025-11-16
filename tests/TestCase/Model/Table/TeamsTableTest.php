@@ -63,6 +63,8 @@ class TeamsTableTest extends TestCase
             'sport_id' => 1,
             'team_name' => 'Test Team',
             'abbr' => 'TT',
+            'team_nickname' => 'Testers',
+            'team_scorebug' => 'TEST',
             'gender' => 'M',
         ]);
 
@@ -82,6 +84,8 @@ class TeamsTableTest extends TestCase
         $this->assertArrayHasKey('sport_id', $errors);
         $this->assertArrayHasKey('team_name', $errors);
         $this->assertArrayHasKey('abbr', $errors);
+        $this->assertArrayHasKey('team_nickname', $errors);
+        $this->assertArrayHasKey('team_scorebug', $errors);
         $this->assertArrayHasKey('gender', $errors);
     }
 
@@ -96,6 +100,8 @@ class TeamsTableTest extends TestCase
             'sport_id' => 1,
             'team_name' => 'Test Team',
             'abbr' => 'TT',
+            'team_nickname' => 'Testers',
+            'team_scorebug' => 'TEST',
             'gender' => 'X', // Invalid gender
         ]);
 
@@ -117,6 +123,8 @@ class TeamsTableTest extends TestCase
                 'sport_id' => 1,
                 'team_name' => 'Test Team ' . $gender,
                 'abbr' => 'T' . $gender,
+                'team_nickname' => 'Testers',
+                'team_scorebug' => 'TEST',
                 'gender' => $gender,
             ]);
 
@@ -136,6 +144,8 @@ class TeamsTableTest extends TestCase
             'team_name' => str_repeat('a', 163), // Too long
             'team_description' => str_repeat('b', 241), // Too long
             'abbr' => 'TOOLONG', // Too long
+            'team_nickname' => str_repeat('c', 31), // Too long
+            'team_scorebug' => 'TOOLONG', // Too long
             'gender' => 'M',
         ]);
 
@@ -143,6 +153,8 @@ class TeamsTableTest extends TestCase
         $this->assertArrayHasKey('team_name', $errors);
         $this->assertArrayHasKey('team_description', $errors);
         $this->assertArrayHasKey('abbr', $errors);
+        $this->assertArrayHasKey('team_nickname', $errors);
+        $this->assertArrayHasKey('team_scorebug', $errors);
     }
 
     /**
