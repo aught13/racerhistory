@@ -1,9 +1,11 @@
+includes:
+    - vendor/cakedc/cakephp-phpstan/extension.neon
+
 parameters:
     level: 3
     treatPhpDocTypesAsCertain: false
     bootstrapFiles:
         - config/bootstrap.php
-        - phpstan/phpstan.stub.php
     paths:
         - src/
     ignoreErrors:
