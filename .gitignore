@@ -1,5 +1,6 @@
 # CakePHP core configs (track app.php, ignore local overrides)
 /config/app_local.php
+/config/app_local.test.php
 /config/bootstrap.local.php
 /config/.env
 
@@ -42,8 +43,6 @@ ehthumbs.db
 /phpstan/
 /resources/
 /external/
-.prettierrc
-.prettierignore
 security-report.json
 
 # Codacy & git hooks (local only)
