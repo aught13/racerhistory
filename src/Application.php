@@ -59,6 +59,9 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
 
+        // Load Service Layer plugin
+        $this->addPlugin('Burzum/ServiceLayer');
+
         // Image variants configuration (central place)
         \Cake\Core\Configure::write('Images.variants', [
             'thumb' => ['fit' => [150,150]],
