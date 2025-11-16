@@ -5,17 +5,7 @@ use Migrations\AbstractMigration;
 
 class AddNicknameAndScorebugToTeams extends AbstractMigration
 {
-    /**
-     * Whether the tables created in this migration
-     * should auto-create an `id` field or not
-     *
-     * This option is global for all tables created in the migration file.
-     * If you set it to false, you have to manually add the primary keys for your
-     * tables using the Migrations\Table::addPrimaryKey() method
-     *
-     * @var bool
-     */
-    public bool $autoId = false;
+    // No need to override $autoId for this migration; we only alter an existing table.
 
     /**
      * Change Method.
