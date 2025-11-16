@@ -40,7 +40,6 @@ ehthumbs.db
 .directory
 
 # Local development tooling (not needed for CI)
-/phpstan/
 /resources/
 /external/
 security-report.json
