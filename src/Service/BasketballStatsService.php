@@ -90,7 +90,7 @@ class BasketballStatsService
         // Load period stats for both teams (for half-by-half breakdowns)
         $periodStatsData = $boxTable->find()
             ->where(['game_id' => $gameId, 'period !=' => 'Z'])
-            ->order(['period' => 'ASC'])
+            ->orderBy(['period' => 'ASC'])
             ->all();
 
         foreach ($periodStatsData as $periodStat) {
@@ -122,14 +122,8 @@ class BasketballStatsService
         /** @var \App\Model\Table\StatBasketGameOpponentTable $opponentTable */
         $opponentTable = $this->fetchTable('StatBasketGameOpponent');
         $opponentPlayerStats = $opponentTable->find()
-            ->where(['StatBasketGameOpponent.game_id' => $gameId, 'StatBasketGameOpponent.period' => 'Z'])
-            ->orderBy(function ($exp, $query) {
-                return [
-                    $query->newExpr('COALESCE(StatBasketGameOpponent.GS, 0) DESC'),
-                    $query->newExpr('COALESCE(StatBasketGameOpponent.MIN, 0) DESC'),
-                    'StatBasketGameOpponent.PTS' => 'DESC',
-                ];
-            })
+            ->where(['StatBasketGameOpponent.game_id' => $gameId])
+            ->orderBy(['StatBasketGameOpponent.name' => 'ASC'])
             ->all();
 
         // Load team stats (Dead Ball rebounds, Fouls Drawn, Team Turnovers) for period Z

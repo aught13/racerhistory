@@ -44,9 +44,9 @@ class StatBasketGameTeamTable extends Table
             ->notEmptyString('game_id');
 
         $validator
-            ->boolean('opp')
+            ->integer('opp')
             ->requirePresence('opp', 'create')
-            ->notEmptyString('opp');
+            ->inList('opp', [0, 1], 'Must be 0 (team) or 1 (opponent)');
 
         // All stat fields are strings but should contain numeric values
         $numericFields = ['ORB', 'DRB', 'RB', 'TRN', 'TF', 'PTS'];

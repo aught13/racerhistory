@@ -126,46 +126,6 @@
         </div>
     </div>
 
-    <div class="card mt-3">
-        <div class="card-body">
-            <h5 class="mb-3">Season Totals</h5>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-check mb-2">
-                        <?= $this->Form->control('add_team_to_totals', [
-                            'type' => 'checkbox',
-                            'label' => 'Add Team Stats to Season Totals',
-                            'class' => 'form-check-input',
-                            'templates' => [
-                                'inputContainer' => '{{content}}',
-                                'checkboxWrapper' => '<div class="form-check">{{label}}</div>',
-                            ],
-                        ]) ?>
-                        <small class="form-text text-muted">
-                            Update team season totals with the new values (old values will be subtracted, new values added).
-                        </small>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-check mb-2">
-                        <?= $this->Form->control('add_opponent_to_totals', [
-                            'type' => 'checkbox',
-                            'label' => 'Add Opponent Stats to Season Totals',
-                            'class' => 'form-check-input',
-                            'templates' => [
-                                'inputContainer' => '{{content}}',
-                                'checkboxWrapper' => '<div class="form-check">{{label}}</div>',
-                            ],
-                        ]) ?>
-                        <small class="form-text text-muted">
-                            Update opponent season totals with the new values (old values will be subtracted, new values added).
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="mt-3">
         <?= $this->Form->button(__('Save All'), ['class' => 'btn btn-primary']) ?>
         <a href="<?= $this->Url->build(['action' => 'view', $game->id]) ?>" class="btn btn-secondary">Cancel</a>

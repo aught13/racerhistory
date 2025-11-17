@@ -153,6 +153,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             'loginUrl' => '/users/login',
         ]);
 
+        assert($service instanceof AuthenticationServiceInterface);
+
         return $service;
     }
 }
