@@ -73,7 +73,6 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Bootstrap Icons 1.11.3** for consistent iconography
 - **jQuery 3.7.1** for enhanced interactions
 - Mobile-first responsive design
-- Flash messaging system with multiple types
 
 ### Security Features
 
@@ -82,8 +81,11 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - Password hashing with CakePHP security
 - CDN integrity verification for external resources
 
-## 📋 Requirements
+### Note on Removed Tooling
 
+Prettier and Codacy have been removed from this project (local and CI). Formatting and quality are now handled solely by ESLint (for JS) and PHP_CodeSniffer / PHPStan / PHPUnit (for PHP). Legacy configuration files (`.prettierrc`, `.prettierignore`, `.codacy.yml`) were deleted to simplify maintenance.
+
+If reintroduction is desired later, restore the files from version control history and add appropriate npm scripts.
 - **PHP 8.1+** with required extensions
 - **Composer** for dependency management
 - **MySQL/MariaDB** database
@@ -179,7 +181,6 @@ racerhistory/
 
 ### Run Test Suites
 
-```bash
 ```bash
 # PHP tests (auto discovery)
 vendor/bin/phpunit
