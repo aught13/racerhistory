@@ -14,7 +14,7 @@ use Cake\Http\Response;
  * @property \App\Model\Table\GamesTable $Games
  * @property \App\Service\GameService $Game
  * @property \App\Service\SportConfigService $SportConfig
- * @property \App\Service\BasketballStatsService $BasketballStats
+ * @property \App\Service\StatsService $Stats
  */
 class GamesController extends AppController
 {
@@ -29,9 +29,9 @@ class GamesController extends AppController
     protected \App\Service\SportConfigService $SportConfig;
 
     /**
-     * @var \App\Service\BasketballStatsService Service for basketball statistics
+     * @var \App\Service\StatsService Service for sport-specific statistics
      */
-    protected \App\Service\BasketballStatsService $BasketballStats;
+    protected \App\Service\StatsService $Stats;
 
     /**
      * Initialize controller
@@ -43,7 +43,7 @@ class GamesController extends AppController
         parent::initialize();
         $this->loadService('Game');
         $this->loadService('SportConfig');
-        $this->loadService('BasketballStats');
+        $this->loadService('Stats');
     }
 
     /**
@@ -203,24 +203,21 @@ class GamesController extends AppController
 
         if ($game->team_season && $game->team_season->team && $game->team_season->team->sport) {
             $sportId = $game->team_season->team->sport->id;
-            $sportName = strtolower($game->team_season->team->sport->sport_name);
             $hasSportConfig = true;
 
-            // Delegate sport-specific stats loading to service
-            if ($sportName === 'basketball') {
-                $basketballStats = $this->BasketballStats->getGameStats((int)$id);
+            // Load sport-specific stats via generic Stats service
+            $sportStats = $this->Stats->getGameStats((int)$id);
 
-                if ($basketballStats) {
-                    $teamBoxStats = $basketballStats['teamBoxStats'] ?? [];
-                    $opponentBoxStats = $basketballStats['opponentBoxStats'] ?? [];
-                    $teamPeriodStats = $basketballStats['teamPeriodStats'] ?? [];
-                    $opponentPeriodStats = $basketballStats['opponentPeriodStats'] ?? [];
-                    $playerStats = $basketballStats['playerStats'] ?? [];
-                    $opponentPlayerStats = $basketballStats['opponentPlayerStats'] ?? [];
-                    $teamTeamStats = $basketballStats['teamTeamStats'] ?? null;
-                    $opponentTeamStats = $basketballStats['opponentTeamStats'] ?? null;
-                    $hasPeriodStats = $basketballStats['hasPeriodStats'] ?? false;
-                }
+            if ($sportStats) {
+                $teamBoxStats = $sportStats['teamBoxStats'] ?? [];
+                $opponentBoxStats = $sportStats['opponentBoxStats'] ?? [];
+                $teamPeriodStats = $sportStats['teamPeriodStats'] ?? [];
+                $opponentPeriodStats = $sportStats['opponentPeriodStats'] ?? [];
+                $playerStats = $sportStats['playerStats'] ?? [];
+                $opponentPlayerStats = $sportStats['opponentPlayerStats'] ?? [];
+                $teamTeamStats = $sportStats['teamTeamStats'] ?? null;
+                $opponentTeamStats = $sportStats['opponentTeamStats'] ?? null;
+                $hasPeriodStats = $sportStats['hasPeriodStats'] ?? false;
             }
 
             // Get field labels from SportConfigService

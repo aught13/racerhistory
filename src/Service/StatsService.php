@@ -1,0 +1,247 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Service;
+
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
+use Cake\ORM\Locator\LocatorAwareTrait;
+
+/**
+ * StatsService
+ *
+ * Generic statistics service that coordinates sport-specific stat services.
+ * Acts as a facade/coordinator for sport-specific statistics operations,
+ * delegating to the appropriate sport service based on sport ID/name.
+ *
+ * This service eliminates the need for controllers to know about specific
+ * sport implementations (e.g., BasketballStatsService). Controllers only
+ * interact with this generic service, which routes to the correct sport service.
+ */
+class StatsService
+{
+    use LocatorAwareTrait;
+    use ServiceAwareTrait;
+
+    /**
+     * SportConfigService instance
+     *
+     * @var \App\Service\SportConfigService
+     */
+    protected SportConfigService $sportConfig;
+
+    /**
+     * Map of sport names to their stat service class names
+     *
+     * @var array<string, string>
+     */
+    protected array $sportServiceMap = [
+        'basketball' => BasketballStatsService::class,
+        // Future sports will be added here:
+        // 'football' => FootballStatsService::class,
+        // 'soccer' => SoccerStatsService::class,
+    ];
+
+    /**
+     * Cached sport service instances
+     *
+     * @var array<string, object>
+     */
+    protected array $serviceCache = [];
+
+    /**
+     * Constructor
+     *
+     * @param \App\Service\SportConfigService|null $sportConfig Sport config service
+     */
+    public function __construct(?SportConfigService $sportConfig = null)
+    {
+        $this->sportConfig = $sportConfig ?? $this->loadService('SportConfig', [], false);
+    }
+
+    /**
+     * Get game statistics for any sport
+     *
+     * Delegates to the appropriate sport-specific service based on the game's sport.
+     *
+     * @param int $gameId Game ID
+     * @return array|null Statistics array or null if not available
+     */
+    public function getGameStats(int $gameId): ?array
+    {
+        $sportId = $this->getGameSportId($gameId);
+        if (!$sportId) {
+            return null;
+        }
+
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getGameStats')) {
+            return null;
+        }
+
+        return $service->getGameStats($gameId);
+    }
+
+    /**
+     * Initialize empty stat totals array for a sport
+     *
+     * Returns a zeroed array of all stat fields for the given sport.
+     * Useful for career totals initialization.
+     *
+     * @param int $sportId Sport ID
+     * @param string $type Stat type ('player', 'team', 'opponent')
+     * @return array Zeroed stat fields
+     */
+    public function initializeStats(int $sportId, string $type = 'player'): array
+    {
+        $service = $this->getSportService($sportId);
+        if ($service && method_exists($service, 'initializeStats')) {
+            return $service->initializeStats($type);
+        }
+
+        // Fallback: get field list from config and zero them
+        $fields = $this->sportConfig->getStatFields($sportId, $type);
+        $stats = [];
+        foreach ($fields as $field) {
+            // Handle nested arrays (e.g., football offense/defense/special)
+            if (is_array($field)) {
+                foreach ($field as $subField) {
+                    $stats[$subField] = 0;
+                }
+            } else {
+                $stats[$field] = 0;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Add season stats to career totals for a sport
+     *
+     * Delegates to sport-specific service for proper stat aggregation logic.
+     *
+     * @param int $sportId Sport ID
+     * @param array $totals Career totals array (modified by reference)
+     * @param object $seasonStats Season stats entity
+     * @return void
+     */
+    public function addSeasonStats(int $sportId, array &$totals, object $seasonStats): void
+    {
+        $service = $this->getSportService($sportId);
+        if ($service && method_exists($service, 'addSeasonStats')) {
+            $service->addSeasonStats($totals, $seasonStats);
+
+            return;
+        }
+
+        // Fallback: simple addition of all numeric fields
+        $fields = $this->sportConfig->getStatFields($sportId, 'player');
+        foreach ($fields as $field) {
+            if (is_array($field)) {
+                // Handle nested field arrays
+                foreach ($field as $subField) {
+                    $this->addFieldValue($totals, $seasonStats, $subField);
+                }
+            } else {
+                $this->addFieldValue($totals, $seasonStats, $field);
+            }
+        }
+    }
+
+    /**
+     * Add a single field value from season stats to totals
+     *
+     * @param array $totals Totals array (modified by reference)
+     * @param object $seasonStats Season stats entity
+     * @param string $field Field name
+     * @return void
+     */
+    protected function addFieldValue(array &$totals, object $seasonStats, string $field): void
+    {
+        if (!isset($totals[$field])) {
+            $totals[$field] = 0;
+        }
+
+        $value = $seasonStats->$field ?? 0;
+        $totals[$field] += is_numeric($value) ? (int)$value : 0;
+    }
+
+    /**
+     * Get the sport-specific service for a given sport ID
+     *
+     * @param int $sportId Sport ID
+     * @return object|null Sport-specific service instance or null if not found
+     */
+    protected function getSportService(int $sportId): ?object
+    {
+        $sportName = $this->sportConfig->getSportName($sportId);
+        if (!$sportName || $sportName === 'unknown') {
+            return null;
+        }
+
+        // Return cached service if available
+        if (isset($this->serviceCache[$sportName])) {
+            return $this->serviceCache[$sportName];
+        }
+
+        // Check if we have a service for this sport
+        if (!isset($this->sportServiceMap[$sportName])) {
+            return null;
+        }
+
+        $serviceClass = $this->sportServiceMap[$sportName];
+
+        // Instantiate and cache the service
+        $service = new $serviceClass();
+        $this->serviceCache[$sportName] = $service;
+
+        return $service;
+    }
+
+    /**
+     * Get sport ID for a given game
+     *
+     * @param int $gameId Game ID
+     * @return int|null Sport ID or null if not found
+     */
+    protected function getGameSportId(int $gameId): ?int
+    {
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+
+        $game = $gamesTable->find()
+            ->select(['Games.id'])
+            ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
+            ->where(['Games.id' => $gameId])
+            ->first();
+
+        if (!$game || !$game->team_season || !$game->team_season->team || !$game->team_season->team->sport) {
+            return null;
+        }
+
+        return $game->team_season->team->sport->id;
+    }
+
+    /**
+     * Check if a sport has statistical support
+     *
+     * @param int $sportId Sport ID
+     * @return bool True if sport has a dedicated stats service
+     */
+    public function hasSportSupport(int $sportId): bool
+    {
+        $sportName = $this->sportConfig->getSportName($sportId);
+
+        return isset($this->sportServiceMap[$sportName]);
+    }
+
+    /**
+     * Get list of supported sport names
+     *
+     * @return array<string> List of sport names with stat support
+     */
+    public function getSupportedSports(): array
+    {
+        return array_keys($this->sportServiceMap);
+    }
+}
