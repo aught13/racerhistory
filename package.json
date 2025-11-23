@@ -13,9 +13,7 @@
         "test:js": "jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",
         "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
-        "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
-        "format:js": "npx prettier --write 'webroot/js/**'",
-        "format:js:check": "npx prettier --check 'webroot/js/**'"
+        "lint:js:fix": "npx eslint 'webroot/js/**' --fix"
     },
     "jest": {
         "testEnvironment": "jsdom",

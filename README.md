@@ -73,7 +73,6 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Bootstrap Icons 1.11.3** for consistent iconography
 - **jQuery 3.7.1** for enhanced interactions
 - Mobile-first responsive design
-- Flash messaging system with multiple types
 
 ### Security Features
 
@@ -82,7 +81,6 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - Password hashing with CakePHP security
 - CDN integrity verification for external resources
 
-## 📋 Requirements
 
 - **PHP 8.1+** with required extensions
 - **Composer** for dependency management
@@ -179,7 +177,6 @@ racerhistory/
 
 ### Run Test Suites
 
-```bash
 ```bash
 # PHP tests (auto discovery)
 vendor/bin/phpunit
