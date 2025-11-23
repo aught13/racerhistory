@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
@@ -14,6 +15,8 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 class BasketballStatsService
 {
     use LocatorAwareTrait;
+    use ServiceAwareTrait;
+
     /**
      * Get basketball game statistics for display in game view
      *

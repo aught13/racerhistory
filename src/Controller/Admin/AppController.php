@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Controller\AppController as BaseController;
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Event\EventInterface;
 
 /**
@@ -18,6 +19,8 @@ use Cake\Event\EventInterface;
  */
 class AppController extends BaseController
 {
+    use ServiceAwareTrait;
+
     /**
      * Initialization hook method.
      */

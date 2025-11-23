@@ -13,22 +13,26 @@ use Cake\Http\Response;
  * EAV attributes such as period scores and officials.
  *
  * @property \App\Model\Table\GamesTable $Games
+ * @property \App\Service\GameService $Game
+ * @property \App\Service\SportConfigService $SportConfig
+ * @property \App\Service\BasketballStatsService $BasketballStats
  */
 class GamesController extends AppController
 {
     /**
-     * SportConfigService instance for sport-aware configurations
-     *
-     * @var \App\Service\SportConfigService
+     * @var \App\Service\GameService Service for game-related business logic
      */
-    protected \App\Service\SportConfigService $sportConfigService;
+    protected \App\Service\GameService $Game;
 
     /**
-     * GameService instance for game business logic
-     *
-     * @var \App\Service\GameService
+     * @var \App\Service\SportConfigService Service for sport configuration management
      */
-    protected \App\Service\GameService $gameService;
+    protected \App\Service\SportConfigService $SportConfig;
+
+    /**
+     * @var \App\Service\BasketballStatsService Service for basketball statistics
+     */
+    protected \App\Service\BasketballStatsService $BasketballStats;
 
     /**
      * Initialize controller
@@ -38,8 +42,9 @@ class GamesController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->sportConfigService = new \App\Service\SportConfigService();
-        $this->gameService = new \App\Service\GameService();
+        $this->loadService('Game');
+        $this->loadService('SportConfig');
+        $this->loadService('BasketballStats');
     }
 
     /**
@@ -59,7 +64,7 @@ class GamesController extends AppController
         $payload = ['success' => false];
 
         try {
-            $metadata = $this->gameService->getGameEavMetadata(
+            $metadata = $this->Game->getGameEavMetadata(
                 $gameId ?: null,
                 $teamSeasonId ?: null
             );
@@ -111,7 +116,7 @@ class GamesController extends AppController
         $this->request->allowMethod(['get']);
         $placeId = (int)$this->request->getQuery('place_id');
 
-        $sites = $this->gameService->getSitesByPlace($placeId);
+        $sites = $this->Game->getSitesByPlace($placeId);
 
         return $this->response
             ->withType('application/json')
@@ -405,8 +410,7 @@ class GamesController extends AppController
 
             // Delegate sport-specific stats loading to service
             if ($sportName === 'basketball') {
-                $basketballService = new \App\Service\BasketballStatsService();
-                $basketballStats = $basketballService->getGameStats((int)$id);
+                $basketballStats = $this->BasketballStats->getGameStats((int)$id);
 
                 if ($basketballStats) {
                     $teamBoxStats = $basketballStats['teamBoxStats'] ?? [];
@@ -422,7 +426,7 @@ class GamesController extends AppController
             }
 
             // Get field labels from SportConfigService
-            $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+            $fieldLabels = $this->SportConfig->getAllFieldLabels($sportId);
             $this->set('fieldLabels', $fieldLabels);
         }
 
@@ -471,7 +475,7 @@ class GamesController extends AppController
         $overtime = $game->ot ?? '0';
         /** @var \App\Model\Table\GameEavTable $gameEavTable */
         $gameEavTable = $this->fetchTable('GameEav');
-        $gameEavTable->setSportConfigService($this->sportConfigService);
+        $gameEavTable->setSportConfigService($this->SportConfig);
         $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
         $eav = [];
 
@@ -485,7 +489,7 @@ class GamesController extends AppController
                 $trackNewOpponent = true;
             }
 
-            $this->gameService->normalizeAssociatedInlineCreate($data);
+            $this->Game->normalizeAssociatedInlineCreate($data);
 
             // Check if opponent was just created
             if (isset($trackNewOpponent) && !empty($data['opponent_id'])) {
@@ -493,10 +497,10 @@ class GamesController extends AppController
             }
 
             // Auto-calculate W/L based on scores
-            $data = $this->gameService->calculateWinLoss($data);
+            $data = $this->Game->calculateWinLoss($data);
 
             // Validate period scores if present
-            $eavErrors = $this->gameService->validatePeriodScores($data);
+            $eavErrors = $this->Game->validatePeriodScores($data);
             if (!empty($eavErrors)) {
                 foreach ($eavErrors as $error) {
                     $this->Flash->error($error);
@@ -511,7 +515,7 @@ class GamesController extends AppController
 
             $game = $this->Games->patchEntity($game, $data);
             if ($this->Games->save($game)) {
-                $this->gameService->saveGameEavFromRequest((int)$game->get('id'), $data);
+                $this->Game->saveGameEavFromRequest((int)$game->get('id'), $data);
                 $this->Flash->success(__('The game has been saved.'));
 
                 // Redirect to edit opponent if a new one was created
@@ -557,13 +561,13 @@ class GamesController extends AppController
 
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
-            $this->gameService->normalizeAssociatedInlineCreate($data);
+            $this->Game->normalizeAssociatedInlineCreate($data);
 
             // Auto-calculate W/L based on scores
-            $data = $this->gameService->calculateWinLoss($data);
+            $data = $this->Game->calculateWinLoss($data);
 
             // Validate period scores if present
-            $eavErrors = $this->gameService->validatePeriodScores($data);
+            $eavErrors = $this->Game->validatePeriodScores($data);
             if (!empty($eavErrors)) {
                 foreach ($eavErrors as $error) {
                     $this->Flash->error($error);
@@ -584,7 +588,7 @@ class GamesController extends AppController
 
             $game = $this->Games->patchEntity($game, $data);
             if ($this->Games->save($game)) {
-                $this->gameService->saveGameEavFromRequest((int)$game->get('id'), $data);
+                $this->Game->saveGameEavFromRequest((int)$game->get('id'), $data);
                 $this->Flash->success(__('The game has been saved.'));
 
                 // Redirect back to team season if we have the context
@@ -700,7 +704,7 @@ class GamesController extends AppController
     private function setFormLists(?int $placeId = null): void
     {
         // Get formatted lists from service
-        $lists = $this->gameService->getFormLists($placeId);
+        $lists = $this->Game->getFormLists($placeId);
 
         // Build team season list (still controller-specific formatting)
         $teamSeasons = $this->fetchTable('TeamSeasons')->find()
@@ -760,7 +764,7 @@ class GamesController extends AppController
 
             /** @var \App\Model\Table\GameEavTable $gameEavTable */
             $gameEavTable = $this->fetchTable('GameEav');
-            $gameEavTable->setSportConfigService($this->sportConfigService);
+            $gameEavTable->setSportConfigService($this->SportConfig);
             // Pass game's periods and overtime values to generate appropriate EAV fields
             $periods = (string)($game->get('periods') ?: '2');
             $overtime = (string)($game->get('ot') ?: '0');
@@ -798,6 +802,6 @@ class GamesController extends AppController
      */
     private function loadGameEavArray(int $gameId): array
     {
-        return $this->gameService->loadGameEavValues($gameId);
+        return $this->Game->loadGameEavValues($gameId);
     }
 }
