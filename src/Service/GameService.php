@@ -629,4 +629,292 @@ class GameService
         }
         $table->save($entity);
     }
+
+    /**
+     * Build DataTables result set for Games listing (server-side processing)
+     *
+     * @param array $params Parameters: start, length, searchValue, teamSeasonId, searchBuilder
+     * @return array{recordsTotal:int,recordsFiltered:int,data:array<int,array<string,mixed>>}
+     */
+    public function buildGamesDataTable(array $params): array
+    {
+        $start = (int)($params['start'] ?? 0);
+        $length = (int)($params['length'] ?? 25);
+        $searchValue = (string)($params['searchValue'] ?? '');
+        $teamSeasonId = $params['teamSeasonId'] ?? null;
+        $searchBuilder = $params['searchBuilder'] ?? null;
+
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+        $query = $gamesTable->find()
+            ->contain([
+                'TeamSeason' => ['Teams' => ['Sports'], 'Seasons'],
+                'GameTypes', 'Opponents', 'Places',
+            ]);
+
+        if ($teamSeasonId) {
+            $query->where(['Games.team_season_id' => $teamSeasonId]);
+        }
+
+        // Apply SearchBuilder criteria if present
+        if (!empty($searchBuilder['criteria'])) {
+            $this->applySearchBuilderCriteria($query, $searchBuilder['criteria'], $searchBuilder['logic'] ?? 'AND');
+        }
+
+        // Global search (only if no SearchBuilder criteria)
+        if ($searchValue !== '' && empty($searchBuilder['criteria'])) {
+            $query->where([
+                'OR' => [
+                    'Games.game_date LIKE' => '%' . $searchValue . '%',
+                    'Teams.team_name LIKE' => '%' . $searchValue . '%',
+                    'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
+                    'GameTypes.game_type_name LIKE' => '%' . $searchValue . '%',
+                    'Places.place_name LIKE' => '%' . $searchValue . '%',
+                    'Places.place_state LIKE' => '%' . $searchValue . '%',
+                ],
+            ]);
+        }
+
+        $recordsTotal = $gamesTable->find()->count();
+        $recordsFiltered = $query->count();
+
+        $query->limit($length)->offset($start)->orderByDesc('Games.game_date');
+        $games = $query->all();
+
+        $hrnMap = [1 => 'H', 2 => 'R', 3 => 'N'];
+        $data = [];
+        foreach ($games as $game) {
+            /** @var \App\Model\Entity\Game $game */
+            $teamName = $game->team_season->team->team_name ?? '';
+            $seasonRange = isset($game->team_season->season)
+                ? $game->team_season->season->start . '-' . $game->team_season->season->end
+                : '';
+            $teamDisplay = $teamName . ($seasonRange ? ' (' . $seasonRange . ')' : '');
+            if (!empty($game->mur_rk)) {
+                $teamDisplay .= '<div><span class="badge bg-secondary">#' . h($game->mur_rk) . '</span></div>';
+            }
+
+            $oppName = $game->opponent->opponent_name ?? '-';
+            if (!empty($game->opp_rk)) {
+                $oppName .= ' (#' . $game->opp_rk . ')';
+            }
+
+            $placeDisplay = '-';
+            if (isset($game->place)) {
+                $placeDisplay = ($game->place->place_name ?? '');
+                if (!empty($game->place->place_state)) {
+                    $placeDisplay .= ', ' . $game->place->place_state;
+                }
+            }
+
+            $result = '';
+            if ($game->pts_mur !== null && $game->pts_opp !== null) {
+                $result = $game->pts_mur > $game->pts_opp ? 'W' : ($game->pts_mur < $game->pts_opp ? 'L' : 'T');
+            }
+
+            $data[] = [
+                'checkbox' => '<input type="checkbox" name="game_ids[]" value="' . $game->id .
+                    '" class="game-checkbox" aria-label="Select game #' . $game->id . '">',
+                'game_date' => $game->game_date
+                    ? ($game->game_date instanceof \Cake\I18n\Date
+                        ? $game->game_date->i18nFormat('yyyy-MM-dd')
+                        : ($game->game_date instanceof \DateTimeInterface
+                            ? $game->game_date->format('Y-m-d')
+                            : (string)$game->game_date))
+                    : '',
+                'team_season' => $teamDisplay,
+                'hrn' => $hrnMap[$game->hrn] ?? '-',
+                'opponent' => $oppName,
+                'game_type' => $game->game_type->game_type_name ?? '-',
+                'place' => $placeDisplay,
+                'score' => '<a href="/admin/games/view/' . $game->id . '" class="text-decoration-none">' .
+                    h(($game->pts_mur ?? '') . ' - ' . ($game->pts_opp ?? '')) . '</a>',
+                'place_state' => $game->place->place_state ?? '',
+                'mur_pts' => $game->pts_mur ?? '',
+                'opp_pts' => $game->pts_opp ?? '',
+                'mur_rk' => $game->mur_rk ?? '',
+                'opp_rk' => $game->opp_rk ?? '',
+                'result' => $result,
+                'conf' => $game->game_type->conf ?? '',
+                'post' => $game->game_type->post ?? '',
+            ];
+        }
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Apply SearchBuilder criteria to a Games query (moved from controller)
+     *
+     * @param \Cake\ORM\Query $query Query reference
+     * @param array $criteria Criteria array
+     * @param string $logic Logic operator AND/OR
+     * @return void
+     */
+    public function applySearchBuilderCriteria(\Cake\ORM\Query $query, array $criteria, string $logic = 'AND'): void
+    {
+        $conditions = [];
+        $hrnMap = ['H' => 1, 'R' => 2, 'N' => 3];
+
+        foreach ($criteria as $criterion) {
+            if (isset($criterion['criteria'])) { // nested group
+                $subQuery = $this->fetchTable('Games')->find();
+                $this->applySearchBuilderCriteria($subQuery, $criterion['criteria'], $criterion['logic'] ?? 'AND');
+                $subConditions = $subQuery->clause('where');
+                if ($subConditions) {
+                    $conditions[] = $subConditions;
+                }
+                continue;
+            }
+
+            $origData = $criterion['origData'] ?? $criterion['data'] ?? null;
+            $condition = $criterion['condition'] ?? '=';
+            $value1 = $criterion['value1'] ?? $criterion['value'] ?? '';
+            $value2 = $criterion['value2'] ?? '';
+
+            $field = match ($origData) {
+                '1', 'game_date' => 'Games.game_date',
+                '2', 'team_season' => 'Teams.team_name',
+                '3', 'hrn' => 'Games.hrn',
+                '4', 'opponent' => 'Opponents.opponent_name',
+                '5', 'game_type' => 'GameTypes.game_type_name',
+                '6', 'place' => 'Places.place_name',
+                '8', 'place_state' => 'Places.place_state',
+                '9', 'mur_pts' => 'Games.pts_mur',
+                '10', 'opp_pts' => 'Games.pts_opp',
+                '11', 'mur_rk' => 'Games.mur_rk',
+                '12', 'opp_rk' => 'Games.opp_rk',
+                '13', 'result' => null,
+                '14', 'conf' => 'GameTypes.conf',
+                '15', 'post' => 'GameTypes.post',
+                default => null,
+            };
+
+            // Computed result (W/L/T)
+            if ($origData === '13' || $origData === 'result') {
+                if ($value1 === 'W') {
+                    $conditions[] = [
+                        'Games.pts_mur > Games.pts_opp',
+                    ];
+                } elseif ($value1 === 'L') {
+                    $conditions[] = [
+                        'Games.pts_mur < Games.pts_opp',
+                    ];
+                } elseif ($value1 === 'T') {
+                    $conditions[] = [
+                        'Games.pts_mur = Games.pts_opp',
+                    ];
+                }
+                continue;
+            }
+
+            if (!$field) {
+                continue;
+            }
+
+            if ($field === 'Games.hrn' && isset($hrnMap[$value1])) {
+                $value1 = $hrnMap[$value1];
+            }
+
+            $cond = match ($condition) {
+                '=' => [$field => $value1],
+                '!=' => [$field . ' !=' => $value1],
+                'contains' => [$field . ' LIKE' => '%' . $value1 . '%'],
+                '!contains' => [$field . ' NOT LIKE' => '%' . $value1 . '%'],
+                'starts' => [$field . ' LIKE' => $value1 . '%'],
+                '!starts' => [$field . ' NOT LIKE' => $value1 . '%'],
+                'ends' => [$field . ' LIKE' => '%' . $value1],
+                '!ends' => [$field . ' NOT LIKE' => '%' . $value1],
+                '>' => [$field . ' >' => $value1],
+                '<' => [$field . ' <' => $value1],
+                '>=' => [$field . ' >=' => $value1],
+                '<=' => [$field . ' <=' => $value1],
+                'between' => [$field . ' >=' => $value1, $field . ' <=' => $value2],
+                '!between' => ['OR' => [$field . ' <' => $value1, $field . ' >' => $value2]],
+                'null' => [$field . ' IS' => null],
+                '!null' => [$field . ' IS NOT' => null],
+                default => [$field . ' LIKE' => '%' . $value1 . '%'],
+            };
+
+            $conditions[] = $cond;
+        }
+
+        if ($conditions) {
+            $query->where([$logic => $conditions]);
+        }
+    }
+
+    /**
+     * Bulk delete games and return metadata
+     *
+     * @param array $ids Game IDs
+     * @return array{deleted:int,teamSeasonId:int|null}
+     */
+    public function bulkDeleteGames(array $ids): array
+    {
+        $ids = array_values(array_filter($ids, fn($v) => $v !== '' && $v !== null && ctype_digit((string)$v)));
+        if (!$ids) {
+            return ['deleted' => 0, 'teamSeasonId' => null];
+        }
+
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+        $teamSeasonId = null;
+        try {
+            $first = $gamesTable->get((int)$ids[0]);
+            $teamSeasonId = $first->get('team_season_id');
+        } catch (RecordNotFoundException $e) {
+            // ignore
+        }
+
+        $deleted = 0;
+        foreach ($ids as $id) {
+            try {
+                $entity = $gamesTable->get((int)$id);
+            } catch (RecordNotFoundException $e) {
+                continue;
+            }
+            if ($gamesTable->delete($entity)) {
+                $deleted++;
+            }
+        }
+
+        return ['deleted' => $deleted, 'teamSeasonId' => $teamSeasonId];
+    }
+
+    /**
+     * Get team season list (formatted) and sports list for form helpers
+     *
+     * @return array{teamSeasonList:array,sports:\Cake\Datasource\ResultSetInterface}
+     */
+    public function getTeamSeasonAndSportsLists(): array
+    {
+        /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
+        $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+        $teamSeasons = $teamSeasonsTable->find()
+            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->orderByDesc('Seasons.start')
+            ->all();
+        $teamSeasonList = [];
+        foreach ($teamSeasons as $ts) {
+            /** @var \App\Model\Entity\TeamSeason $ts */
+            $sportName = $ts->team->sport->sport_name ?? 'Unknown';
+            $label = sprintf(
+                '%s (%s) — %s-%s',
+                ($ts->team->team_name ?? 'Team'),
+                $sportName,
+                ($ts->season->start ?? ''),
+                ($ts->season->end ?? '')
+            );
+            $teamSeasonList[$ts->id] = $label;
+        }
+
+        $sports = $this->fetchTable('Sports')->find('list')->all();
+
+        return compact('teamSeasonList', 'sports');
+    }
 }
