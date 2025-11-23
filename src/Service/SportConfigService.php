@@ -284,9 +284,9 @@ class SportConfigService
      * Get sport name by ID
      *
      * @param int $sportId Sport ID
-     * @return string Sport name
+     * @return string Sport name (lowercase)
      */
-    protected function getSportName(int $sportId): string
+    public function getSportName(int $sportId): string
     {
         $cacheKey = "sport_name_{$sportId}";
         $sportName = Cache::read($cacheKey, $this->cacheConfig);

@@ -153,4 +153,46 @@ class BasketballStatsService
             'hasPeriodStats'
         );
     }
+
+    /**
+     * Initialize basketball stats array with zero values
+     *
+     * @param string $type Stat type ('player', 'team', 'opponent')
+     * @return array<string, int> Zeroed stats array
+     */
+    public function initializeStats(string $type = 'player'): array
+    {
+        // Standard player stat fields
+        if ($type === 'player') {
+            return [
+                'GP' => 0, 'GS' => 0, 'MIN' => 0, 'FGM' => 0, 'FGA' => 0,
+                'TPM' => 0, 'TPA' => 0, 'FTM' => 0, 'FTA' => 0,
+                'ORB' => 0, 'DRB' => 0, 'RB' => 0, 'AST' => 0, 'STL' => 0,
+                'BS' => 0, 'TRN' => 0, 'PF' => 0, 'TF' => 0, 'PTS' => 0,
+            ];
+        }
+
+        // Team/opponent stats would be similar but might have additional fields
+        return [];
+    }
+
+    /**
+     * Add season stats to career totals
+     *
+     * Sums all numeric basketball stat fields from season stats into career totals.
+     *
+     * @param array<string, int> $totals Career totals array (modified by reference)
+     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStats Season stats entity
+     * @return void
+     */
+    public function addSeasonStats(array &$totals, \App\Model\Entity\StatBasketSeasonPerson $seasonStats): void
+    {
+        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+                   'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS'];
+
+        foreach ($fields as $field) {
+            $value = $seasonStats->$field ?? 0;
+            $totals[$field] += is_numeric($value) ? (int)$value : 0;
+        }
+    }
 }
