@@ -181,7 +181,6 @@ Add @codecov-ai-reviewer review-- the assistant will review the PR and make sugg
 This project enforces modern JavaScript standards for all custom JS code (excluding third-party libraries like TinyMCE):
 
 - **Linting:** All JS files in `webroot/js/` (except `webroot/js/tinymce/`) must pass ESLint checks using the config in `eslint.config.js`.
-- **Formatting:** Prettier is required for consistent code style. See `.prettierrc` and `.prettierignore`.
 - **Testing:** Jest is used for unit and coverage testing of JS. All new JS features should include corresponding tests in `webroot/js/tests/`.
 - **Coverage Targets:** Minimum coverage enforced: 88% for JS (lines), 80% for JS branch coverage. See `codecov.yml` and VS Code settings.
 - **Pre-commit:** All JS code must pass lint, format, and test checks before commit (see `.git/hooks/pre-commit`).
