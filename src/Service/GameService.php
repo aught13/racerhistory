@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
@@ -13,24 +14,29 @@ use Cake\ORM\Locator\LocatorAwareTrait;
  * - Loading games with associations
  * - Managing EAV metadata
  * - Retrieving formatted lists for forms
+ * - Inline entity creation
+ * - Score calculations and validations
  */
 class GameService
 {
     use LocatorAwareTrait;
+    use ServiceAwareTrait;
 
     /**
      * SportConfigService instance
      *
-     * @var \App\Service\SportConfigService
+     * @var \App\Service\SportConfigService|null
      */
-    protected SportConfigService $sportConfigService;
+    protected ?SportConfigService $sportConfigService = null;
 
     /**
      * Constructor
+     *
+     * @param \App\Service\SportConfigService|null $sportConfigService Sport config service
      */
-    public function __construct()
+    public function __construct(?SportConfigService $sportConfigService = null)
     {
-        $this->sportConfigService = new SportConfigService();
+        $this->sportConfigService = $sportConfigService ?? $this->loadService('SportConfig', [], false);
     }
 
     /**

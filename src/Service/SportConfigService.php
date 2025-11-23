@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Cache\Cache;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
@@ -14,6 +15,7 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 class SportConfigService
 {
     use LocatorAwareTrait;
+    use ServiceAwareTrait;
 
     /**
      * Hard-coded sport configuration defaults that serve as fallbacks

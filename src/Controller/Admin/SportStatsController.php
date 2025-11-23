@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\SportConfigService;
 use Cake\Http\Response;
 
 /**
@@ -13,15 +12,14 @@ use Cake\Http\Response;
  * Provides functionality for configuring sport-specific statistic tables and field mappings.
  *
  * @property \App\Model\Table\SportStatRegistryTable $SportStatRegistry
+ * @property \App\Service\SportConfigService $SportConfig
  */
 class SportStatsController extends AppController
 {
     /**
-     * SportConfigService instance
-     *
-     * @var \App\Service\SportConfigService
+     * @var \App\Service\SportConfigService Service for sport configuration management
      */
-    protected SportConfigService $sportConfigService;
+    protected \App\Service\SportConfigService $SportConfig;
 
     /**
      * Initialization hook method.
@@ -32,7 +30,7 @@ class SportStatsController extends AppController
     {
         parent::initialize();
         $this->fetchTable('SportStatRegistry');
-        $this->sportConfigService = new SportConfigService();
+        $this->loadService('SportConfig');
     }
 
     /**
@@ -131,7 +129,7 @@ class SportStatsController extends AppController
 
             if ($this->SportStatRegistry->save($statRegistry)) {
                 // Clear configuration cache
-                $this->sportConfigService->clearCache($statRegistry->sport_id);
+                $this->SportConfig->clearCache($statRegistry->sport_id);
 
                 $this->Flash->success(__('The stat table configuration has been saved.'));
 
@@ -188,7 +186,7 @@ class SportStatsController extends AppController
 
             if ($this->SportStatRegistry->save($statRegistry)) {
                 // Clear configuration cache
-                $this->sportConfigService->clearCache($statRegistry->sport_id);
+                $this->SportConfig->clearCache($statRegistry->sport_id);
 
                 $this->Flash->success(__('The stat table configuration has been updated.'));
 
@@ -243,7 +241,7 @@ class SportStatsController extends AppController
 
         if ($this->SportStatRegistry->delete($statRegistry)) {
             // Clear configuration cache
-            $this->sportConfigService->clearCache($sportId);
+            $this->SportConfig->clearCache($sportId);
 
             $this->Flash->success(__('The stat table configuration has been deleted.'));
         } else {

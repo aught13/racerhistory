@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\SportConfigService;
 use Cake\Http\Response;
 
 /**
@@ -13,15 +12,14 @@ use Cake\Http\Response;
  * Updates season totals for team and opponent when box scores are saved (final period only).
  *
  * @property \App\Model\Table\StatBasketGameBoxTable $StatBasketGameBox
+ * @property \App\Service\SportConfigService $SportConfig
  */
 class StatBasketGameBoxController extends AppController
 {
     /**
-     * SportConfigService instance
-     *
-     * @var \App\Service\SportConfigService
+     * @var \App\Service\SportConfigService Service for sport configuration management
      */
-    protected SportConfigService $sportConfigService;
+    protected \App\Service\SportConfigService $SportConfig;
 
     /**
      * Initialization hook method.
@@ -31,7 +29,7 @@ class StatBasketGameBoxController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->sportConfigService = new SportConfigService();
+        $this->loadService('SportConfig');
     }
 
     /**
@@ -145,7 +143,7 @@ class StatBasketGameBoxController extends AppController
 
         // Get stat field labels from SportConfigService
         $sportId = $game->team_season->team->sport->id;
-        $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+        $fieldLabels = $this->SportConfig->getAllFieldLabels($sportId);
 
         $this->set(compact('game', 'teamBox', 'opponentBox', 'fieldLabels', 'hasPeriodStats'));
 
@@ -285,7 +283,7 @@ class StatBasketGameBoxController extends AppController
 
         // Get stat field labels
         $sportId = $game->team_season->team->sport->id;
-        $fieldLabels = $this->sportConfigService->getAllFieldLabels($sportId);
+        $fieldLabels = $this->SportConfig->getAllFieldLabels($sportId);
 
         $this->set(compact('game', 'numPeriods', 'numOT', 'existingStats', 'fieldLabels'));
 
