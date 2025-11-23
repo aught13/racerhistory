@@ -20,6 +20,22 @@ use Cake\Http\Response;
 class PersonsController extends AppController
 {
     /**
+     * @var \App\Service\StatsService Service for sport-specific statistics
+     */
+    protected \App\Service\StatsService $Stats;
+
+    /**
+     * Initialize controller
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->loadService('Stats');
+    }
+
+    /**
      * Index: list persons.
      *
      * @return void
@@ -91,12 +107,12 @@ class PersonsController extends AppController
                 'seasonStats' => $seasonStats,
             ];
 
-            // Calculate career totals for basketball (sport_id = 1)
-            if ($sportId === 1 && $seasonStats) {
+            // Calculate career totals for sports with statistical support
+            if ($this->Stats->hasSportSupport($sportId) && $seasonStats) {
                 if (!isset($careerStatsBySport[$sportId])) {
                     $careerStatsBySport[$sportId] = [
                         'sport' => $sport,
-                        'totals' => $this->initializeBasketballStats(),
+                        'totals' => $this->Stats->initializeStats($sportId, 'player'),
                         'seasons' => [],
                         'minYear' => null,
                         'maxYear' => null,
@@ -126,44 +142,11 @@ class PersonsController extends AppController
                 }
 
                 // Add season stats to career totals
-                $this->addBasketballStats($careerStatsBySport[$sportId]['totals'], $seasonStats);
+                $this->Stats->addSeasonStats($sportId, $careerStatsBySport[$sportId]['totals'], $seasonStats);
             }
         }
 
         $this->set(compact('person', 'rostersBySport', 'careerStatsBySport'));
-    }
-
-    /**
-     * Initialize basketball stats array with zero values
-     *
-     * @return array<string, int> Stats array
-     */
-    private function initializeBasketballStats(): array
-    {
-        return [
-            'GP' => 0, 'GS' => 0, 'MIN' => 0, 'FGM' => 0, 'FGA' => 0,
-            'TPM' => 0, 'TPA' => 0, 'FTM' => 0, 'FTA' => 0,
-            'ORB' => 0, 'DRB' => 0, 'RB' => 0, 'AST' => 0, 'STL' => 0,
-            'BS' => 0, 'TRN' => 0, 'PF' => 0, 'TF' => 0, 'PTS' => 0,
-        ];
-    }
-
-    /**
-     * Add basketball season stats to career totals
-     *
-     * @param array<string, int> $totals Career totals array (modified by reference)
-     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStats Season stats entity
-     * @return void
-     */
-    private function addBasketballStats(array &$totals, \App\Model\Entity\StatBasketSeasonPerson $seasonStats): void
-    {
-        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
-                   'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS'];
-
-        foreach ($fields as $field) {
-            $value = $seasonStats->$field ?? 0;
-            $totals[$field] += is_numeric($value) ? (int)$value : 0;
-        }
     }
 
     /**

@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use Cake\ORM\TableRegistry;
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
+use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
  * BasketballStatsService
@@ -13,6 +14,9 @@ use Cake\ORM\TableRegistry;
  */
 class BasketballStatsService
 {
+    use LocatorAwareTrait;
+    use ServiceAwareTrait;
+
     /**
      * Get basketball game statistics for display in game view
      *
@@ -29,7 +33,7 @@ class BasketballStatsService
     public function getGameStats(int $gameId): ?array
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
-        $gamesTable = TableRegistry::getTableLocator()->get('Games');
+        $gamesTable = $this->fetchTable('Games');
 
         /** @var \App\Model\Entity\Game $game */
         $game = $gamesTable->find()
@@ -65,7 +69,7 @@ class BasketballStatsService
 
         // Load box score stats if available
         /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
-        $boxTable = TableRegistry::getTableLocator()->get('StatBasketGameBox');
+        $boxTable = $this->fetchTable('StatBasketGameBox');
 
         // Load team final stats (period Z, opponent_id 0)
         $teamBox = $boxTable->find()
@@ -89,7 +93,7 @@ class BasketballStatsService
         // Load period stats for both teams (for half-by-half breakdowns)
         $periodStatsData = $boxTable->find()
             ->where(['game_id' => $gameId, 'period !=' => 'Z'])
-            ->order(['period' => 'ASC'])
+            ->orderBy(['period' => 'ASC'])
             ->all();
 
         foreach ($periodStatsData as $periodStat) {
@@ -104,7 +108,7 @@ class BasketballStatsService
 
         // Load player stats (period Z final stats)
         /** @var \App\Model\Table\StatBasketGamePersonTable $personTable */
-        $personTable = TableRegistry::getTableLocator()->get('StatBasketGamePerson');
+        $personTable = $this->fetchTable('StatBasketGamePerson');
         $playerStats = $personTable->find()
             ->contain(['TeamSeasonRosters' => ['Persons', 'TeamSeasons']])
             ->where(['StatBasketGamePerson.game_id' => $gameId, 'StatBasketGamePerson.period' => 'Z'])
@@ -119,21 +123,15 @@ class BasketballStatsService
 
         // Load opponent player stats (period Z final stats)
         /** @var \App\Model\Table\StatBasketGameOpponentTable $opponentTable */
-        $opponentTable = TableRegistry::getTableLocator()->get('StatBasketGameOpponent');
+        $opponentTable = $this->fetchTable('StatBasketGameOpponent');
         $opponentPlayerStats = $opponentTable->find()
-            ->where(['StatBasketGameOpponent.game_id' => $gameId, 'StatBasketGameOpponent.period' => 'Z'])
-            ->orderBy(function ($exp, $query) {
-                return [
-                    $query->newExpr('COALESCE(StatBasketGameOpponent.GS, 0) DESC'),
-                    $query->newExpr('COALESCE(StatBasketGameOpponent.MIN, 0) DESC'),
-                    'StatBasketGameOpponent.PTS' => 'DESC',
-                ];
-            })
+            ->where(['StatBasketGameOpponent.game_id' => $gameId])
+            ->orderBy(['StatBasketGameOpponent.name' => 'ASC'])
             ->all();
 
         // Load team stats (Dead Ball rebounds, Fouls Drawn, Team Turnovers) for period Z
         /** @var \App\Model\Table\StatBasketGameTeamTable $teamTable */
-        $teamTable = TableRegistry::getTableLocator()->get('StatBasketGameTeam');
+        $teamTable = $this->fetchTable('StatBasketGameTeam');
 
         $teamTeamStats = $teamTable->find()
             ->where(['StatBasketGameTeam.game_id' => $gameId, 'StatBasketGameTeam.opp' => 0])
@@ -154,5 +152,47 @@ class BasketballStatsService
             'opponentTeamStats',
             'hasPeriodStats'
         );
+    }
+
+    /**
+     * Initialize basketball stats array with zero values
+     *
+     * @param string $type Stat type ('player', 'team', 'opponent')
+     * @return array<string, int> Zeroed stats array
+     */
+    public function initializeStats(string $type = 'player'): array
+    {
+        // Standard player stat fields
+        if ($type === 'player') {
+            return [
+                'GP' => 0, 'GS' => 0, 'MIN' => 0, 'FGM' => 0, 'FGA' => 0,
+                'TPM' => 0, 'TPA' => 0, 'FTM' => 0, 'FTA' => 0,
+                'ORB' => 0, 'DRB' => 0, 'RB' => 0, 'AST' => 0, 'STL' => 0,
+                'BS' => 0, 'TRN' => 0, 'PF' => 0, 'TF' => 0, 'PTS' => 0,
+            ];
+        }
+
+        // Team/opponent stats would be similar but might have additional fields
+        return [];
+    }
+
+    /**
+     * Add season stats to career totals
+     *
+     * Sums all numeric basketball stat fields from season stats into career totals.
+     *
+     * @param array<string, int> $totals Career totals array (modified by reference)
+     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStats Season stats entity
+     * @return void
+     */
+    public function addSeasonStats(array &$totals, \App\Model\Entity\StatBasketSeasonPerson $seasonStats): void
+    {
+        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+                   'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS'];
+
+        foreach ($fields as $field) {
+            $value = $seasonStats->$field ?? 0;
+            $totals[$field] += is_numeric($value) ? (int)$value : 0;
+        }
     }
 }

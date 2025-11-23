@@ -228,27 +228,6 @@
         </div>
     </div>
 
-    <div class="card mt-3">
-        <div class="card-body">
-            <h5 class="mb-3">Season Totals</h5>
-            <div class="form-check">
-                <?= $this->Form->control('add_to_totals', [
-                    'type' => 'checkbox',
-                    'label' => 'Update Opponent Season Totals',
-                    'class' => 'form-check-input',
-                    'templates' => [
-                        'inputContainer' => '{{content}}',
-                        'checkboxWrapper' => '<div class="form-check">{{label}}</div>',
-                    ],
-                ]) ?>
-                <small class="form-text text-muted">
-                    Check this box to update opponent season totals with the new values (old values will be subtracted, new values added).
-                    Only applies when period is 'Z' (final stats).
-                </small>
-            </div>
-        </div>
-    </div>
-
     <div class="mt-3">
         <?= $this->Form->button(__('Save'), ['class' => 'btn btn-primary']) ?>
         <a href="<?= $this->Url->build(['action' => 'view', $game->id]) ?>" class="btn btn-secondary">Cancel</a>

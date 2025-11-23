@@ -4,8 +4,59 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5dd0b82612eb77283401f7590339d7af",
+    "content-hash": "3c639c92a571475e7a126875509e64ad",
     "packages": [
+        {
+            "name": "burzum/cakephp-service-layer",
+            "version": "3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/burzum/cakephp-service-layer.git",
+                "reference": "fbcdc2d1a98aa2953737c17a961acacbc3db3124"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/burzum/cakephp-service-layer/zipball/fbcdc2d1a98aa2953737c17a961acacbc3db3124",
+                "reference": "fbcdc2d1a98aa2953737c17a961acacbc3db3124",
+                "shasum": ""
+            },
+            "require": {
+                "cakephp/cakephp": "^5.0.0",
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "cakephp/cakephp-codesniffer": "^4.5",
+                "dereuromark/cakephp-ide-helper": "^2.0.0",
+                "phpstan/phpstan": "^1.0.0",
+                "phpunit/phpunit": "^10.2.0"
+            },
+            "type": "cakephp-plugin",
+            "autoload": {
+                "psr-4": {
+                    "Burzum\\CakeServiceLayer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Florian Krämer",
+                    "role": "Maintainer"
+                },
+                {
+                    "name": "Mark Scherer",
+                    "role": "Contributor"
+                }
+            ],
+            "description": "Service layer and domain / business model implementation for CakePHP",
+            "support": {
+                "issues": "https://github.com/burzum/cakephp-service-layer/issues",
+                "source": "https://github.com/burzum/cakephp-service-layer/tree/3.0.0"
+            },
+            "time": "2023-11-03T12:04:06+00:00"
+        },
         {
             "name": "cakephp/authentication",
             "version": "3.3.2",

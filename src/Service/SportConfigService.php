@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Cache\Cache;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
@@ -14,6 +15,7 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 class SportConfigService
 {
     use LocatorAwareTrait;
+    use ServiceAwareTrait;
 
     /**
      * Hard-coded sport configuration defaults that serve as fallbacks
@@ -282,9 +284,9 @@ class SportConfigService
      * Get sport name by ID
      *
      * @param int $sportId Sport ID
-     * @return string Sport name
+     * @return string Sport name (lowercase)
      */
-    protected function getSportName(int $sportId): string
+    public function getSportName(int $sportId): string
     {
         $cacheKey = "sport_name_{$sportId}";
         $sportName = Cache::read($cacheKey, $this->cacheConfig);
