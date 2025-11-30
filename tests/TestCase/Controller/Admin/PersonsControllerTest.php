@@ -246,4 +246,116 @@ class PersonsControllerTest extends TestCase
         $this->assertStringNotContainsString('Roster Entries', $body);
         $this->assertStringNotContainsString('Career Statistics', $body);
     }
+
+    public function testViewWithSupportedSportButNoStatsShowsFallbacks(): void
+    {
+        $this->mockIdentity();
+
+        // Create a new person
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->newEmptyEntity();
+        $person = $persons->patchEntity($person, [
+            'first' => 'Empty',
+            'last' => 'Stats',
+            'display' => 'Empty Stats Person',
+        ]);
+        $this->assertNotFalse($persons->save($person));
+
+        // Create a roster for basketball team season id 1 without any stat rows
+        $rosters = $this->getTableLocator()->get('TeamSeasonRosters');
+        $roster = $rosters->newEmptyEntity();
+        $roster = $rosters->patchEntity($roster, [
+            'team_season_id' => 1,
+            'person_id' => $person->id,
+            'roster_year' => '2024',
+        ]);
+        $this->assertNotFalse($rosters->save($roster));
+
+        // Ensure there are no game or season person stats for this roster id
+        $seasonStats = $this->getTableLocator()->get('StatBasketSeasonPerson');
+        $gameStats = $this->getTableLocator()->get('StatBasketGamePerson');
+        $this->assertSame(0, $seasonStats->find()->where(['team_season_roster_id' => $roster->id])->count());
+        $this->assertSame(0, $gameStats->find()->where(['team_season_roster_id' => $roster->id])->count());
+
+        // View the person page
+        $this->get('/admin/persons/view/' . $person->id);
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        // Should show roster section
+        $this->assertStringContainsString('Roster Entries', $body);
+
+        // Should render friendly fallbacks for stats and career
+        $this->assertStringContainsString('No stats available for this roster yet.', $body);
+        $this->assertStringContainsString('No career statistics have been recorded yet.', $body);
+    }
+
+    public function testViewMultiSportFallbacksSupportedVsUnsupported(): void
+    {
+        $this->mockIdentity();
+
+        // Create a new person
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->newEmptyEntity();
+        $person = $persons->patchEntity($person, [
+            'first' => 'Multi',
+            'last' => 'Sport',
+            'display' => 'Multi Sport Person',
+        ]);
+        $this->assertNotFalse($persons->save($person));
+
+        // Basketball roster on existing team season id 1 (no stats present)
+        $rosters = $this->getTableLocator()->get('TeamSeasonRosters');
+        $basketRoster = $rosters->newEmptyEntity();
+        $basketRoster = $rosters->patchEntity($basketRoster, [
+            'team_season_id' => 1,
+            'person_id' => $person->id,
+            'roster_year' => '2024',
+        ]);
+        $this->assertNotFalse($rosters->save($basketRoster));
+
+        // Ensure no basketball stats rows exist for this roster
+        $seasonStats = $this->getTableLocator()->get('StatBasketSeasonPerson');
+        $gameStats = $this->getTableLocator()->get('StatBasketGamePerson');
+        $this->assertSame(0, $seasonStats->find()->where(['team_season_roster_id' => $basketRoster->id])->count());
+        $this->assertSame(0, $gameStats->find()->where(['team_season_roster_id' => $basketRoster->id])->count());
+
+        // Create a non-basketball team season (unsupported sport for stats)
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $newSeason = $teamSeasons->newEmptyEntity();
+        // Use team_id = 3 from TeamsFixture (Football), season_id = 1 existing
+        $newSeason = $teamSeasons->patchEntity($newSeason, [
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+            'team_season_image' => 1,
+        ]);
+        $this->assertNotFalse($teamSeasons->save($newSeason));
+
+        // Create roster entry for unsupported sport
+        $footballRoster = $rosters->newEmptyEntity();
+        $footballRoster = $rosters->patchEntity($footballRoster, [
+            'team_season_id' => $newSeason->id,
+            'person_id' => $person->id,
+            'roster_year' => '2024',
+        ]);
+        $this->assertNotFalse($rosters->save($footballRoster));
+
+        // View the person page
+        $this->get('/admin/persons/view/' . $person->id);
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        // Shows roster section overall
+        $this->assertStringContainsString('Roster Entries', $body);
+
+        // For supported sport (basketball) with no stats, fallbacks appear
+        $this->assertStringContainsString('No stats available for this roster yet.', $body);
+        $this->assertStringContainsString('No career statistics have been recorded yet.', $body);
+
+        // Per-roster stats fallback should render for each roster (2 total)
+        $this->assertSame(2, substr_count($body, 'No stats available for this roster yet.'));
+        // Career fallback should render only for supported sports (basketball -> 1 total)
+        $this->assertSame(1, substr_count($body, 'No career statistics have been recorded yet.'));
+    }
 }

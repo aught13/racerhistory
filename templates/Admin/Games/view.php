@@ -206,7 +206,7 @@
         <hr>
 
         <!-- Basketball Game Statistics -->
-        <?php if (isset($hasSportConfig) && $hasSportConfig && $game->team_season->team->sport_id === 1) : ?>
+        <?php if (!empty($hasSportConfig) && isset($game->team_season->team->sport) && strtolower((string)$game->team_season->team->sport->sport_name) === 'basketball') : ?>
             <?= $this->element('Admin/basketball_game_stats', [
                 'game' => $game,
                 'teamBoxStats' => $teamBoxStats ?? [],

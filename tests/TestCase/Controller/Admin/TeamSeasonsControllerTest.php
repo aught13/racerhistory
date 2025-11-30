@@ -21,6 +21,9 @@ class TeamSeasonsControllerTest extends TestCase
         'app.TeamSeasonRosters',
         'app.Persons',
         'app.Sports',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
+        'app.StatBasketSeasonPerson',
     ];
 
     public function testIndex(): void
@@ -41,6 +44,20 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('Basic Information');
         // Should also contain games management section
         $this->assertResponseContains('Games for this Season');
+        // Season statistics heading should appear for basketball
+        $this->assertResponseContains('Season Statistics');
+    }
+
+    public function testViewSeasonStatsDisplay(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-seasons/view/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Season Statistics');
+        $this->assertResponseContains('TEAM TOTALS');
+        $this->assertResponseContains('OPPONENT TOTALS');
+        $this->assertResponseContains('FGM');
+        $this->assertResponseContains('PTS');
     }
 
     public function testViewContainsRosterManagementElement(): void

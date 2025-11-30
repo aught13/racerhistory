@@ -303,12 +303,12 @@
 
     <?= $this->element('Admin/games_management', ['teamSeason' => $teamSeason, 'teamSeasonGames' => $teamSeasonGames]) ?>
 
-    <?php if ($teamSeason->team->sport_id === 1): // Basketball ?>
+    <?php if ((int)$teamSeason->team->sport_id === 1): // Basketball ?>
         <?= $this->element('Admin/basketball_season_stats', [
             'teamSeason' => $teamSeason,
             'playerStats' => $playerStats,
             'teamStats' => $teamStats,
-            'opponentStats' => $opponentStats
+            'opponentStats' => $opponentStats,
         ]) ?>
     <?php endif; ?>
 </div>

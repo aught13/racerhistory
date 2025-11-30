@@ -228,88 +228,16 @@
                                                 </div>
                                             </div>
 
-                                            <?php if ($sportId === 1 && !empty($gameStats)) : // Basketball ?>
-                                                <!-- Game Stats Table -->
-                                                <h5 class="mb-3"><i class="bi bi-graph-up"></i> Game Statistics</h5>
-                                                <div class="table-responsive mb-3">
-                                                    <table class="table table-sm table-striped table-bordered">
-                                                        <thead class="table-dark">
-                                                            <tr>
-                                                                <th>Date</th>
-                                                                <th>Opponent</th>
-                                                                <th>MIN</th>
-                                                                <th>FGM-A</th>
-                                                                <th>3PM-A</th>
-                                                                <th>FTM-A</th>
-                                                                <th>REB</th>
-                                                                <th>AST</th>
-                                                                <th>STL</th>
-                                                                <th>BLK</th>
-                                                                <th>TO</th>
-                                                                <th>PF</th>
-                                                                <th>PTS</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <?php foreach ($gameStats as $gameData) : ?>
-                                                                <?php
-                                                                $game = $gameData['game'];
-                                                                $stats = $gameData['stats'];
-                                                                // Sum stats if multiple periods
-                                                                $totals = [
-                                                                    'MIN' => 0, 'FGM' => 0, 'FGA' => 0,
-                                                                    'TPM' => 0, 'TPA' => 0, 'FTM' => 0, 'FTA' => 0,
-                                                                    'RB' => 0, 'AST' => 0, 'STL' => 0, 'BS' => 0,
-                                                                    'TRN' => 0, 'PF' => 0, 'PTS' => 0,
-                                                                ];
-                                                                foreach ($stats as $stat) {
-                                                                    foreach ($totals as $field => &$value) {
-                                                                        $value += is_numeric($stat->$field) ? (int)$stat->$field : 0;
-                                                                    }
-                                                                }
-                                                                ?>
-                                                                <tr>
-                                                                    <td>
-                                                                        <?= $game->game_date
-                                                                            ? h($game->game_date->format('M j, Y'))
-                                                                            : 'N/A' ?>
-                                                                    </td>
-                                                                    <td><?= h($game->opponent->opponent_name ?? 'Unknown') ?></td>
-                                                                    <td><?= h($totals['MIN']) ?></td>
-                                                                    <td><?= h($totals['FGM']) ?>-<?= h($totals['FGA']) ?></td>
-                                                                    <td><?= h($totals['TPM']) ?>-<?= h($totals['TPA']) ?></td>
-                                                                    <td><?= h($totals['FTM']) ?>-<?= h($totals['FTA']) ?></td>
-                                                                    <td><?= h($totals['RB']) ?></td>
-                                                                    <td><?= h($totals['AST']) ?></td>
-                                                                    <td><?= h($totals['STL']) ?></td>
-                                                                    <td><?= h($totals['BS']) ?></td>
-                                                                    <td><?= h($totals['TRN']) ?></td>
-                                                                    <td><?= h($totals['PF']) ?></td>
-                                                                    <td><?= h($totals['PTS']) ?></td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        </tbody>
-                                                        <?php if ($seasonStats) : ?>
-                                                        <tfoot class="table-secondary fw-bold">
-                                                            <tr>
-                                                                <td colspan="2">Season Totals</td>
-                                                                <td><?= h($seasonStats->MIN ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->FGM ?? 0) ?>-<?= h($seasonStats->FGA ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->TPM ?? 0) ?>-<?= h($seasonStats->TPA ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->FTM ?? 0) ?>-<?= h($seasonStats->FTA ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->RB ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->AST ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->STL ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->BS ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->TRN ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->PF ?? 0) ?></td>
-                                                                <td><?= h($seasonStats->PTS ?? 0) ?></td>
-                                                            </tr>
-                                                        </tfoot>
-                                                        <?php endif; ?>
-                                                    </table>
-                                                </div>
-                                            <?php endif; ?>
+                                            <?php
+                                                // Render sport-specific person stats via elements
+                                                $sportName = strtolower((string)($sportData['sport']->sport_name ?? ''));
+                                                $elementName = 'Admin/' . $sportName . '_person_stats';
+                                                if (!empty($gameStats) || !empty($seasonStats)) {
+                                                    echo $this->element($elementName, compact('gameStats', 'seasonStats'));
+                                                } else {
+                                                    echo $this->element('Admin/person_stats_empty');
+                                                }
+                                            ?>
                                         </div>
                                     </div>
                                 </div>
@@ -329,99 +257,25 @@
                 <div class="card-body">
                     <?php foreach ($careerStatsBySport as $sportId => $careerData) : ?>
                         <h4 class="mb-3 text-success"><i class="bi bi-star"></i> <?= h($careerData['sport']->sport_name) ?> Career Totals</h4>
-                        <?php if ($sportId === 1) : // Basketball ?>
-                            <?php $totals = $careerData['totals']; ?>
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Season</th>
-                                            <th>GP</th>
-                                            <th>GS</th>
-                                            <th>MIN</th>
-                                            <th>FGM-A</th>
-                                            <th>FG%</th>
-                                            <th>3PM-A</th>
-                                            <th>3P%</th>
-                                            <th>FTM-A</th>
-                                            <th>FT%</th>
-                                            <th>REB</th>
-                                            <th>AST</th>
-                                            <th>STL</th>
-                                            <th>BLK</th>
-                                            <th>TO</th>
-                                            <th>PF</th>
-                                            <th>PTS</th>
-                                            <th>PPG</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($careerData['seasons'] as $seasonData) : ?>
-                                            <?php $stats = $seasonData['stats']; ?>
-                                            <?php $ts = $seasonData['teamSeason']; ?>
-                                            <tr>
-                                                <td class="fw-semibold"><?= h($ts->season->start ?? '????') ?>-<?= h($ts->season->end ?? '????') ?></td>
-                                                <td><?= h($stats->GP ?? 0) ?></td>
-                                                <td><?= h($stats->GS ?? 0) ?></td>
-                                                <td><?= h($stats->MIN ?? 0) ?></td>
-                                                <td><?= h($stats->FGM ?? 0) ?>-<?= h($stats->FGA ?? 0) ?></td>
-                                                <td class="text-primary">
-                                                    <?= ($stats->FGA ?? 0) > 0
-                                                        ? number_format(($stats->FGM ?? 0) / ($stats->FGA ?? 0) * 100, 1)
-                                                        : '0.0' ?>%
-                                                </td>
-                                                <td><?= h($stats->TPM ?? 0) ?>-<?= h($stats->TPA ?? 0) ?></td>
-                                                <td class="text-primary">
-                                                    <?= ($stats->TPA ?? 0) > 0
-                                                        ? number_format(($stats->TPM ?? 0) / ($stats->TPA ?? 0) * 100, 1)
-                                                        : '0.0' ?>%
-                                                </td>
-                                                <td><?= h($stats->FTM ?? 0) ?>-<?= h($stats->FTA ?? 0) ?></td>
-                                                <td class="text-primary">
-                                                    <?= ($stats->FTA ?? 0) > 0
-                                                        ? number_format(($stats->FTM ?? 0) / ($stats->FTA ?? 0) * 100, 1)
-                                                        : '0.0' ?>%
-                                                </td>
-                                                <td><?= h($stats->RB ?? 0) ?></td>
-                                                <td><?= h($stats->AST ?? 0) ?></td>
-                                                <td><?= h($stats->STL ?? 0) ?></td>
-                                                <td><?= h($stats->BS ?? 0) ?></td>
-                                                <td><?= h($stats->TRN ?? 0) ?></td>
-                                                <td><?= h($stats->PF ?? 0) ?></td>
-                                                <td class="text-success"><?= h($stats->PTS ?? 0) ?></td>
-                                                <td class="text-success">
-                                                    <?= ($stats->GP ?? 0) > 0
-                                                        ? number_format(($stats->PTS ?? 0) / ($stats->GP ?? 0), 1)
-                                                        : '0.0' ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                    <tfoot class="table-dark">
-                                        <tr class="fw-bold">
-                                            <td class="text-center"><?= ($careerData['minYear'] ?? '????') ?>-<?= ($careerData['maxYear'] ?? '????') ?></td>
-                                            <td><?= h($totals['GP']) ?></td>
-                                            <td><?= h($totals['GS']) ?></td>
-                                            <td><?= h($totals['MIN']) ?></td>
-                                            <td><?= h($totals['FGM']) ?>-<?= h($totals['FGA']) ?></td>
-                                            <td class="text-warning"><?= $totals['FGA'] > 0 ? number_format($totals['FGM'] / $totals['FGA'] * 100, 1) : '0.0' ?>%</td>
-                                            <td><?= h($totals['TPM']) ?>-<?= h($totals['TPA']) ?></td>
-                                            <td class="text-warning"><?= $totals['TPA'] > 0 ? number_format($totals['TPM'] / $totals['TPA'] * 100, 1) : '0.0' ?>%</td>
-                                            <td><?= h($totals['FTM']) ?>-<?= h($totals['FTA']) ?></td>
-                                            <td class="text-warning"><?= $totals['FTA'] > 0 ? number_format($totals['FTM'] / $totals['FTA'] * 100, 1) : '0.0' ?>%</td>
-                                            <td><?= h($totals['RB']) ?></td>
-                                            <td><?= h($totals['AST']) ?></td>
-                                            <td><?= h($totals['STL']) ?></td>
-                                            <td><?= h($totals['BS']) ?></td>
-                                            <td><?= h($totals['TRN']) ?></td>
-                                            <td><?= h($totals['PF']) ?></td>
-                                            <td class="text-warning"><?= h($totals['PTS']) ?></td>
-                                            <td class="text-warning"><?= $totals['GP'] > 0 ? number_format($totals['PTS'] / $totals['GP'], 1) : '0.0' ?></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        <?php endif; ?>
+                        <?php
+                            // Career totals rendered by sport-specific element when available
+                            $sportName = strtolower((string)($careerData['sport']->sport_name ?? ''));
+                            $careerElement = 'Admin/' . $sportName . '_person_career_stats';
+                            $totals = $careerData['totals'];
+                        ?>
+                            <?php
+                                $seasons = $careerData['seasons'];
+                                if (!empty($seasons)) {
+                                    echo $this->element($careerElement, [
+                                        'seasons' => $seasons,
+                                        'totals' => $totals,
+                                        'minYear' => $careerData['minYear'] ?? null,
+                                        'maxYear' => $careerData['maxYear'] ?? null,
+                                    ]);
+                                } else {
+                                    echo $this->element('Admin/person_career_empty');
+                                }
+                            ?>
                     <?php endforeach; ?>
                 </div>
             </div>

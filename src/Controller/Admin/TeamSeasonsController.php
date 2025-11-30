@@ -21,12 +21,31 @@ use Cake\Http\Response;
  *
  * @property \App\Model\Table\TeamSeasonsTable $TeamSeasons
  * @property \App\Model\Entity\Image|null $team_season_image_entity
+ * @property \App\Service\StatsService $Stats
  */
 class TeamSeasonsController extends AppController
 {
     /**
+     * Stats service instance loaded via ServiceAwareTrait.
+     * Declared to avoid dynamic property deprecation notices.
+     *
+     * @var \App\Service\StatsService
+     */
+    protected \App\Service\StatsService $Stats;
+    /**
      * @property \App\Model\Entity\Image|null $team_season_image_entity (runtime-assigned in edit())
      */
+
+    /**
+     * Initialize controller
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->loadService('Stats');
+    }
 
     /**
      * List all team seasons for administration.
@@ -91,29 +110,19 @@ class TeamSeasonsController extends AppController
             ->orderByAsc('Seasons.end')
             ->first();
 
-        // Load basketball season stats if sport is basketball (ID = 1)
+        // Load season stats via Stats service
         $playerStats = null;
         $teamStats = null;
         $opponentStats = null;
-        if ($teamSeason->team->sport_id === 1) {
-            // Load player stats
-            $playerStats = $this->fetchTable('StatBasketSeasonPerson')
-                ->find()
-                ->contain(['TeamSeasonRosters' => ['Persons']])
-                ->where(['TeamSeasonRosters.team_season_id' => $id])
-                ->all();
 
-            // Load team stats
-            $teamStats = $this->fetchTable('StatBasketSeasonTeam')
-                ->find()
-                ->where(['team_season_id' => $id])
-                ->first();
+        if ($teamSeason->team && $teamSeason->team->sport_id) {
+            $seasonStats = $this->Stats->getSeasonStats((int)$id);
 
-            // Load opponent stats
-            $opponentStats = $this->fetchTable('StatBasketSeasonOpponent')
-                ->find()
-                ->where(['team_season_id' => $id])
-                ->first();
+            if ($seasonStats) {
+                $playerStats = $seasonStats['playerStats'] ?? null;
+                $teamStats = $seasonStats['teamStats'] ?? null;
+                $opponentStats = $seasonStats['opponentStats'] ?? null;
+            }
         }
 
         $this->set(compact(
