@@ -82,6 +82,68 @@ class StatsService
     }
 
     /**
+     * Get season statistics for any sport
+     *
+     * Delegates to the appropriate sport-specific service based on the team season's sport.
+     *
+     * @param int $teamSeasonId Team Season ID
+     * @return array|null Statistics array with keys: playerStats, teamStats, opponentStats
+     *                     Returns null if not available
+     */
+    public function getSeasonStats(int $teamSeasonId): ?array
+    {
+        $sportId = $this->getTeamSeasonSportId($teamSeasonId);
+        if (!$sportId) {
+            return null;
+        }
+
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getSeasonStats')) {
+            return null;
+        }
+
+        return $service->getSeasonStats($teamSeasonId);
+    }
+
+    /**
+     * Get a person's season statistics for a given sport context
+     *
+     * Delegates to the appropriate sport-specific service based on the given sport id.
+     *
+     * @param int $sportId Sport ID
+     * @param int $teamSeasonRosterId Team season roster ID for the person
+     * @return object|null Season stats entity or null if not available
+     */
+    public function getPersonSeasonStats(int $sportId, int $teamSeasonRosterId): ?object
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getPersonSeasonStats')) {
+            return null;
+        }
+
+        return $service->getPersonSeasonStats($teamSeasonRosterId);
+    }
+
+    /**
+     * Get a person's game statistics grouped by game for a given sport context
+     *
+     * Delegates to the appropriate sport-specific service based on the given sport id.
+     *
+     * @param int $sportId Sport ID
+     * @param int $teamSeasonRosterId Team season roster ID for the person
+     * @return array<int, array{game: object, stats: array<int, object>}>
+     */
+    public function getPersonGameStats(int $sportId, int $teamSeasonRosterId): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getPersonGameStats')) {
+            return [];
+        }
+
+        return $service->getPersonGameStats($teamSeasonRosterId);
+    }
+
+    /**
      * Initialize empty stat totals array for a sport
      *
      * Returns a zeroed array of all stat fields for the given sport.
@@ -210,7 +272,6 @@ class StatsService
         $gamesTable = $this->fetchTable('Games');
 
         $game = $gamesTable->find()
-            ->select(['Games.id'])
             ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
             ->where(['Games.id' => $gameId])
             ->first();
@@ -220,6 +281,29 @@ class StatsService
         }
 
         return $game->team_season->team->sport->id;
+    }
+
+    /**
+     * Get sport ID for a given team season
+     *
+     * @param int $teamSeasonId Team Season ID
+     * @return int|null Sport ID or null if not found
+     */
+    protected function getTeamSeasonSportId(int $teamSeasonId): ?int
+    {
+        /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
+        $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+
+        $teamSeason = $teamSeasonsTable->find()
+            ->contain(['Teams' => ['Sports']])
+            ->where(['TeamSeasons.id' => $teamSeasonId])
+            ->first();
+
+        if (!$teamSeason || !$teamSeason->team || !$teamSeason->team->sport) {
+            return null;
+        }
+
+        return $teamSeason->team->sport->id;
     }
 
     /**
