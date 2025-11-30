@@ -58,8 +58,6 @@ class PersonsController extends AppController
         $person = $this->Persons->get($id, contain: [
             'TeamSeasonRosters' => [
                 'TeamSeasons' => ['Teams' => ['Sports'], 'Seasons'],
-                'StatBasketGamePerson' => ['Games' => ['Opponents']],
-                'StatBasketSeasonPerson',
             ],
         ]);
         assert($person instanceof \App\Model\Entity\Person);
@@ -84,21 +82,13 @@ class PersonsController extends AppController
                 ];
             }
 
-            // Aggregate game stats for this roster
+            // Fetch stats only if this sport has service support
             $gameStats = [];
-            foreach ($roster->stat_basket_game_person as $gameStat) {
-                $gameId = $gameStat->game_id;
-                if (!isset($gameStats[$gameId])) {
-                    $gameStats[$gameId] = [
-                        'game' => $gameStat->game,
-                        'stats' => [],
-                    ];
-                }
-                $gameStats[$gameId]['stats'][] = $gameStat;
+            $seasonStats = null;
+            if ($this->Stats->hasSportSupport($sportId)) {
+                $seasonStats = $this->Stats->getPersonSeasonStats($sportId, (int)$roster->id);
+                $gameStats = $this->Stats->getPersonGameStats($sportId, (int)$roster->id);
             }
-
-            // Get season totals for this roster
-            $seasonStats = !empty($roster->stat_basket_season_person) ? $roster->stat_basket_season_person[0] : null;
 
             $rostersBySport[$sportId]['rosters'][] = [
                 'roster' => $roster,
@@ -108,7 +98,7 @@ class PersonsController extends AppController
             ];
 
             // Calculate career totals for sports with statistical support
-            if ($this->Stats->hasSportSupport($sportId) && $seasonStats) {
+            if ($this->Stats->hasSportSupport($sportId)) {
                 if (!isset($careerStatsBySport[$sportId])) {
                     $careerStatsBySport[$sportId] = [
                         'sport' => $sport,
@@ -119,30 +109,32 @@ class PersonsController extends AppController
                     ];
                 }
 
-                // Store individual season stats
-                $careerStatsBySport[$sportId]['seasons'][] = [
-                    'teamSeason' => $teamSeason,
-                    'stats' => $seasonStats,
-                ];
+                if ($seasonStats) {
+                    // Store individual season stats
+                    $careerStatsBySport[$sportId]['seasons'][] = [
+                        'teamSeason' => $teamSeason,
+                        'stats' => $seasonStats,
+                    ];
 
-                // Track year range
-                $startYear = $teamSeason->season->start ?? null;
-                $endYear = $teamSeason->season->end ?? null;
-                if ($startYear !== null) {
-                    $minYear = $careerStatsBySport[$sportId]['minYear'];
-                    if ($minYear === null || $startYear < $minYear) {
-                        $careerStatsBySport[$sportId]['minYear'] = $startYear;
+                    // Track year range
+                    $startYear = $teamSeason->season->start ?? null;
+                    $endYear = $teamSeason->season->end ?? null;
+                    if ($startYear !== null) {
+                        $minYear = $careerStatsBySport[$sportId]['minYear'];
+                        if ($minYear === null || $startYear < $minYear) {
+                            $careerStatsBySport[$sportId]['minYear'] = $startYear;
+                        }
                     }
-                }
-                if ($endYear !== null) {
-                    $maxYear = $careerStatsBySport[$sportId]['maxYear'];
-                    if ($maxYear === null || $endYear > $maxYear) {
-                        $careerStatsBySport[$sportId]['maxYear'] = $endYear;
+                    if ($endYear !== null) {
+                        $maxYear = $careerStatsBySport[$sportId]['maxYear'];
+                        if ($maxYear === null || $endYear > $maxYear) {
+                            $careerStatsBySport[$sportId]['maxYear'] = $endYear;
+                        }
                     }
-                }
 
-                // Add season stats to career totals
-                $this->Stats->addSeasonStats($sportId, $careerStatsBySport[$sportId]['totals'], $seasonStats);
+                    // Add season stats to career totals
+                    $this->Stats->addSeasonStats($sportId, $careerStatsBySport[$sportId]['totals'], $seasonStats);
+                }
             }
         }
 

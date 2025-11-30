@@ -28,18 +28,19 @@ $eav = $eav ?? [];
             <div class="col-md-4"><?= $this->Form->control('game_date', ['type' => 'date', 'class' => 'form-control']) ?></div>
             <div class="col-md-4">
                 <?= $this->Form->control('game_time', [
-                    'label' => 'Time (12-hour format)',
-                    'type' => 'text',
+                    'label' => 'Time',
+                    'type' => 'time',
                     'class' => 'form-control',
-                    'placeholder' => 'e.g., 7:00 PM',
+                    'id' => 'game-time-input',
                 ]) ?>
+                <small class="text-muted">Use time picker or type in 12-hour format (e.g., 7:00 PM)</small>
             </div>
             <div class="col-md-4">
                 <?= $this->Form->control('game_duration', [
-                    'label' => 'Duration (24-hour format)',
+                    'label' => 'Duration',
                     'type' => 'text',
                     'class' => 'form-control',
-                    'placeholder' => 'e.g., 02:30',
+                    'placeholder' => 'e.g., 2:30',
                 ]) ?>
             </div>
         </div>
@@ -249,6 +250,7 @@ $eav = $eav ?? [];
 document.addEventListener('DOMContentLoaded', function() {
     const placeSelect = document.getElementById('place-select');
     const siteSelect = document.getElementById('site-select');
+    const gameTimeInput = document.getElementById('game-time-input');
     const ajaxUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'ajaxSitesByPlace']) ?>';
 
     // Store the initial site_id if editing
@@ -281,6 +283,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error loading sites:', error);
                 siteSelect.innerHTML = '<option value="">Error loading sites</option>';
             });
+    }
+
+    // Handle 12-hour time format input
+    if (gameTimeInput) {
+        gameTimeInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+
+            // Check if input is in 12-hour format (contains AM/PM)
+            const twelveHourPattern = /^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)$/i;
+            const match = value.match(twelveHourPattern);
+
+            if (match) {
+                let hours = parseInt(match[1]);
+                const minutes = match[2];
+                const meridiem = match[3].toUpperCase();
+
+                // Convert to 24-hour format
+                if (meridiem === 'PM' && hours !== 12) {
+                    hours += 12;
+                } else if (meridiem === 'AM' && hours === 12) {
+                    hours = 0;
+                }
+
+                // Format as HH:MM for the time input
+                const formattedTime = String(hours).padStart(2, '0') + ':' + minutes;
+                this.value = formattedTime;
+            }
+        });
     }
 
     // Load sites when place changes

@@ -67,32 +67,52 @@ class BasketballStatsService
         $opponentTeamStats = null;
         $hasPeriodStats = false;
 
-        // Load box score stats if available
+        // Load box score stats if available using flexible final markers
         /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
         $boxTable = $this->fetchTable('StatBasketGameBox');
+        $finalMarkers = ['Z', 'F', 'FINAL'];
 
-        // Load team final stats (period Z, opponent_id 0)
+        // Load team final stats (any recognized final marker, opponent_id 0)
         $teamBox = $boxTable->find()
-            ->where(['game_id' => $gameId, 'opponent_id' => 0, 'period' => 'Z'])
+            ->where([
+                'game_id' => $gameId,
+                'opponent_id' => 0,
+                'period IN' => $finalMarkers,
+            ])
             ->first();
-
+        if (!$teamBox) {
+            // Fallback: if data was stored without opponent_id = 0, attempt with actual opponent id
+            $teamBox = $boxTable->find()
+                ->where([
+                    'game_id' => $gameId,
+                    'opponent_id' => $game->opponent_id ?? 0,
+                    'period IN' => $finalMarkers,
+                ])
+                ->first();
+        }
         if ($teamBox) {
             $teamBoxStats = $teamBox->toArray();
         }
 
-        // Load opponent final stats (period Z, with opponent_id)
+        // Load opponent final stats (recognized final marker, opponent id)
         $opponentId = $game->opponent_id ?? 0;
         $opponentBox = $boxTable->find()
-            ->where(['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => 'Z'])
+            ->where([
+                'game_id' => $gameId,
+                'opponent_id' => $opponentId,
+                'period IN' => $finalMarkers,
+            ])
             ->first();
-
         if ($opponentBox) {
             $opponentBoxStats = $opponentBox->toArray();
         }
 
-        // Load period stats for both teams (for half-by-half breakdowns)
+        // Load period stats excluding finals
         $periodStatsData = $boxTable->find()
-            ->where(['game_id' => $gameId, 'period !=' => 'Z'])
+            ->where([
+                'game_id' => $gameId,
+                'period NOT IN' => $finalMarkers,
+            ])
             ->orderBy(['period' => 'ASC'])
             ->all();
 
@@ -104,7 +124,7 @@ class BasketballStatsService
             }
         }
 
-        $hasPeriodStats = !empty($periodStatsData);
+        $hasPeriodStats = $periodStatsData->count() > 0;
 
         // Load player stats (period Z final stats)
         /** @var \App\Model\Table\StatBasketGamePersonTable $personTable */
@@ -155,6 +175,59 @@ class BasketballStatsService
     }
 
     /**
+     * Get basketball season statistics for display in team season view
+     *
+     * Loads all basketball-specific statistics for a team season.
+     *
+     * @param int $teamSeasonId Team Season ID
+     * @return array|null Array with keys: playerStats, teamStats, opponentStats
+     *                     Returns null if not a basketball season
+     */
+    public function getSeasonStats(int $teamSeasonId): ?array
+    {
+        /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
+        $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+
+        $teamSeason = $teamSeasonsTable->find()
+            ->contain(['Teams' => ['Sports']])
+            ->where(['TeamSeasons.id' => $teamSeasonId])
+            ->first();
+
+        if (!$teamSeason || !$teamSeason->team || !$teamSeason->team->sport) {
+            return null;
+        }
+
+        $sportName = strtolower($teamSeason->team->sport->sport_name);
+        if ($sportName !== 'basketball') {
+            return null;
+        }
+
+        // Load player stats
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $personTable */
+        $personTable = $this->fetchTable('StatBasketSeasonPerson');
+        $playerStats = $personTable->find()
+            ->contain(['TeamSeasonRosters' => ['Persons']])
+            ->where(['TeamSeasonRosters.team_season_id' => $teamSeasonId])
+            ->all();
+
+        // Load team stats
+        /** @var \App\Model\Table\StatBasketSeasonTeamTable $teamTable */
+        $teamTable = $this->fetchTable('StatBasketSeasonTeam');
+        $teamStats = $teamTable->find()
+            ->where(['team_season_id' => $teamSeasonId])
+            ->first();
+
+        // Load opponent stats
+        /** @var \App\Model\Table\StatBasketSeasonOpponentTable $opponentTable */
+        $opponentTable = $this->fetchTable('StatBasketSeasonOpponent');
+        $opponentStats = $opponentTable->find()
+            ->where(['team_season_id' => $teamSeasonId])
+            ->first();
+
+        return compact('playerStats', 'teamStats', 'opponentStats');
+    }
+
+    /**
      * Initialize basketball stats array with zero values
      *
      * @param string $type Stat type ('player', 'team', 'opponent')
@@ -194,5 +267,59 @@ class BasketballStatsService
             $value = $seasonStats->$field ?? 0;
             $totals[$field] += is_numeric($value) ? (int)$value : 0;
         }
+    }
+
+    /**
+     * Get a person's basketball season statistics by team season roster id
+     *
+     * @param int $teamSeasonRosterId Team season roster ID
+     * @return \App\Model\Entity\StatBasketSeasonPerson|null
+     */
+    public function getPersonSeasonStats(int $teamSeasonRosterId): ?\App\Model\Entity\StatBasketSeasonPerson
+    {
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $personTable */
+        $personTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson|null $row */
+        $row = $personTable->find()
+            ->where(['team_season_roster_id' => $teamSeasonRosterId])
+            ->first();
+
+        return $row;
+    }
+
+    /**
+     * Get a person's basketball game statistics grouped by game
+     *
+     * Returns an array of entries with 'game' (Game entity) and 'stats' (array of StatBasketGamePerson rows)
+     * similar to the structure expected by the Persons view template.
+     *
+     * @param int $teamSeasonRosterId Team season roster ID
+     * @return array<int, array{game: object, stats: array<int, object>}>
+     */
+    public function getPersonGameStats(int $teamSeasonRosterId): array
+    {
+        /** @var \App\Model\Table\StatBasketGamePersonTable $gpTable */
+        $gpTable = $this->fetchTable('StatBasketGamePerson');
+
+        $rows = $gpTable->find()
+            ->contain(['Games' => ['Opponents']])
+            ->where(['StatBasketGamePerson.team_season_roster_id' => $teamSeasonRosterId])
+            ->orderBy(['StatBasketGamePerson.game_id' => 'ASC', 'StatBasketGamePerson.period' => 'ASC'])
+            ->all();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $gameId = (int)$row->game_id;
+            if (!isset($grouped[$gameId])) {
+                $grouped[$gameId] = [
+                    'game' => $row->game,
+                    'stats' => [],
+                ];
+            }
+            $grouped[$gameId]['stats'][] = $row;
+        }
+
+        return array_values($grouped);
     }
 }

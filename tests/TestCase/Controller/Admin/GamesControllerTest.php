@@ -210,10 +210,10 @@ class GamesControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/games/view/1');
         $this->assertResponseOk();
-
-        // Should contain the basketball stats element conditionally
-        // Player stats tables may or may not exist depending on data
-        $this->assertResponseContains('Game Details');
+        // Should contain stats heading and a known box score field
+        $this->assertResponseContains('Game Statistics');
+        $this->assertResponseContains('FGM');
+        $this->assertResponseContains('PTS');
     }
 
     /**
@@ -225,7 +225,8 @@ class GamesControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/games/view/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('Game Details');
+        // Even with stats present, ensure the heading renders
+        $this->assertResponseContains('Game Statistics');
     }
 
     /**
