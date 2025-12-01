@@ -7,13 +7,35 @@
     <?= $this->Form->create($user) ?>
     <fieldset>
         <legend>User Details</legend>
-        <?= $this->Form->control('username') ?>
-        <?= $this->Form->control('email') ?>
-        <div class="input-group mb-3">
-            <?= $this->Form->control('password', ['type' => 'password', 'id' => 'admin-add-password']) ?>
-            <button type="button" class="btn btn-outline-secondary" id="toggle-admin-add-password" tabindex="-1">
-                <span class="bi bi-eye"></span>
-            </button>
+        <div class="row">
+            <div class="col-md-6">
+                <?= $this->Form->control('username', ['class' => 'form-control']) ?>
+            </div>
+            <div class="col-md-6">
+                <?= $this->Form->control('email', ['class' => 'form-control']) ?>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <?= $this->Form->control('first_name', ['label' => 'First Name', 'class' => 'form-control']) ?>
+            </div>
+            <div class="col-md-6">
+                <?= $this->Form->control('last_name', ['label' => 'Last Name', 'class' => 'form-control']) ?>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="admin-add-password" class="form-label">Password</label>
+            <div class="input-group">
+                <?= $this->Form->control('password', [
+                    'type' => 'password',
+                    'id' => 'admin-add-password',
+                    'class' => 'form-control',
+                    'label' => false
+                ]) ?>
+                <button type="button" class="btn btn-outline-secondary" id="toggle-admin-add-password" tabindex="-1">
+                    <span class="bi bi-eye"></span>
+                </button>
+            </div>
         </div>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -25,23 +47,28 @@
             });
         });
         </script>
-        <?= $this->Form->control('role', [
-            'type' => 'select',
-            'options' => [
-                'view' => 'Viewer',
-                'superadmin' => 'Admin'
-            ],
-            'default' => 'view'
-        ]) ?>
-        <?= $this->Form->control('status', [
-            'type' => 'select',
-            'options' => [
-                'active' => 'Active',
-                'pending' => 'Pending'
-            ],
-            'default' => 'active'
-        ]) ?>
+        <div class="row">
+            <div class="col-md-6">
+                <?= $this->Form->control('role', [
+                    'type' => 'select',
+                    'options' => [
+                        'user' => 'User',
+                        'admin' => 'Admin'
+                    ],
+                    'default' => 'user',
+                    'class' => 'form-select'
+                ]) ?>
+            </div>
+            <div class="col-md-6">
+                <?= $this->Form->control('active', [
+                    'type' => 'checkbox',
+                    'label' => 'Active',
+                    'checked' => true
+                ]) ?>
+            </div>
+        </div>
     </fieldset>
-    <?= $this->Form->button('Add User', ['class' => 'btn btn-primary']) ?>
+    <?= $this->Form->button('Add User', ['class' => 'btn btn-primary mt-3']) ?>
+    <?= $this->Html->link('Cancel', ['action' => 'index'], ['class' => 'btn btn-secondary mt-3']) ?>
     <?= $this->Form->end() ?>
 </div>

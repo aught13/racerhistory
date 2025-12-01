@@ -195,7 +195,7 @@ jobs:
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
           XDEBUG_MODE: coverage
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
 
       - name: Debug test environment
         run: |
@@ -224,14 +224,14 @@ jobs:
         if: ${{ matrix.coverage == true }}
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v4.6.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
           files: coverage.xml
           flags: php81-lowest,unittests
           name: codecov-racerhistory
           fail_ci_if_error: true
           verbose: true
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
         continue-on-error: false
 
       - name: Upload test results

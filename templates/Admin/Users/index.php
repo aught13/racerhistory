@@ -39,8 +39,10 @@
                         <tr>
                             <th><input type="checkbox" id="select-all-users"></th>
                             <th>Username</th>
+                            <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -50,8 +52,16 @@
                             <td><input type="checkbox" name="user_ids[]" value="<?= $user->id ?>" class="user-checkbox">
                             </td>
                             <td><?= h($user->username) ?></td>
+                            <td><?= h(trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))) ?: '<em>N/A</em>' ?></td>
                             <td><?= h($user->email) ?></td>
                             <td><?= h($user->role) ?></td>
+                            <td>
+                                <?php if ($user->active): ?>
+                                    <span class="badge bg-success">Active</span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning text-dark">Inactive</span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'approve', $user->id]) ?>"
                                     class="btn btn-sm btn-success">Approve</a>
@@ -83,7 +93,9 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Username</th>
+                        <th>Name</th>
                         <th>Email</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -94,7 +106,15 @@
                         foreach ($allUsers as $user) : ?>
                     <tr>
                         <td><?= h($user->username) ?></td>
+                        <td><?= h(trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))) ?: '<em>N/A</em>' ?></td>
                         <td><?= h($user->email) ?></td>
+                        <td>
+                            <?php if (isset($user->status) && $user->status === 'active'): ?>
+                                <span class="badge bg-success">Active</span>
+                            <?php else: ?>
+                                <span class="badge bg-warning text-dark">Inactive</span>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'manage', $user->id]) ?>"
                                 class="btn btn-sm btn-primary">Manage</a>
@@ -103,7 +123,7 @@
                         <?php endforeach;
                     else : ?>
                     <tr>
-                        <td colspan="3" class="text-center">No users found.</td>
+                        <td colspan="5" class="text-center">No users found.</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>

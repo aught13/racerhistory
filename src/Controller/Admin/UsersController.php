@@ -28,6 +28,9 @@ class UsersController extends AppController
 
         // Load UserManager component for admin-specific logic
         $this->loadComponent('UserManager');
+
+        // Load Authorization component
+        $this->loadComponent('Authorization.Authorization');
     }
 
     /**
@@ -40,8 +43,13 @@ class UsersController extends AppController
     {
         parent::beforeFilter($event);
 
-    // Allow login action without authentication
+        // Allow login action without authentication
         $this->Authentication->addUnauthenticatedActions(['login']);
+
+        // Skip authorization for login action only
+        if ($this->request->getParam('action') === 'login') {
+            $this->Authorization->skipAuthorization();
+        }
     }
 
     /**
@@ -61,11 +69,12 @@ class UsersController extends AppController
      */
     public function index()
     {
+        // Get inactive users (pending approval)
         $users = $this->Users->find()->where(['status !=' => 'active'])->all();
         $hasInactive = !$users->isEmpty();
 
-    // Include future associations for delete confirmation counts if needed (placeholder)
-        $allUsers = $this->Users->find()->all();
+        // Get all users for search table
+        $allUsers = $this->Users->find()->orderBy(['username' => 'ASC'])->all();
 
         // Fetch registration option
         $siteOptionsTable = $this->fetchTable('SiteOptions');
