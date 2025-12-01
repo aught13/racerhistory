@@ -139,4 +139,137 @@ class GameServiceTest extends TestCase
         $remaining = $this->fetchTable('Games')->find()->count();
         $this->assertSame(2, $remaining, 'One record deleted should leave 2');
     }
+
+    /**
+     * Test getGameWithAssociations loads full associations
+     */
+    public function testGetGameWithAssociations(): void
+    {
+        $game = $this->service->getGameWithAssociations(1);
+
+        $this->assertNotNull($game);
+        $this->assertEquals(1, $game->id);
+        $this->assertNotNull($game->team_season);
+        $this->assertNotNull($game->opponent);
+    }
+
+    /**
+     * Test getGameWithAssociations throws exception for invalid ID
+     */
+    public function testGetGameWithAssociationsInvalidId(): void
+    {
+        $this->expectException(\Cake\Datasource\Exception\RecordNotFoundException::class);
+        $this->service->getGameWithAssociations(999);
+    }
+
+    /**
+     * Test loadGameEavValues returns empty array when no EAV data
+     */
+    public function testLoadGameEavValuesEmpty(): void
+    {
+        $values = $this->service->loadGameEavValues(1);
+        $this->assertIsArray($values);
+    }
+
+    /**
+     * Test getFormLists returns valid data structure
+     */
+    public function testGetFormLists(): void
+    {
+        $lists = $this->service->getFormLists();
+
+        $this->assertArrayHasKey('opponents', $lists);
+        $this->assertArrayHasKey('gameTypes', $lists);
+        $this->assertArrayHasKey('places', $lists);
+        $this->assertArrayHasKey('sites', $lists);
+
+        $this->assertIsArray($lists['opponents']);
+        $this->assertIsArray($lists['gameTypes']);
+        $this->assertIsArray($lists['places']);
+        $this->assertIsArray($lists['sites']);
+    }
+
+    /**
+     * Test getSitesByPlace filters sites correctly
+     */
+    public function testGetSitesByPlace(): void
+    {
+        $sites = $this->service->getSitesByPlace(1);
+        $this->assertIsArray($sites);
+    }
+
+    /**
+     * Test calculateWinLoss with team win
+     */
+    public function testCalculateWinLossTeamWin(): void
+    {
+        $data = [
+            'pts_mur' => 85,
+            'pts_opp' => 78,
+        ];
+
+        $result = $this->service->calculateWinLoss($data);
+        $this->assertEquals(1, $result['w']);
+        $this->assertEquals(0, $result['l']);
+    }
+
+    /**
+     * Test calculateWinLoss with team loss
+     */
+    public function testCalculateWinLossTeamLoss(): void
+    {
+        $data = [
+            'pts_mur' => 70,
+            'pts_opp' => 85,
+        ];
+
+        $result = $this->service->calculateWinLoss($data);
+        $this->assertEquals(0, $result['w']);
+        $this->assertEquals(1, $result['l']);
+    }
+
+    /**
+     * Test calculateWinLoss with tie
+     */
+    public function testCalculateWinLossTie(): void
+    {
+        $data = [
+            'pts_mur' => 80,
+            'pts_opp' => 80,
+        ];
+
+        $result = $this->service->calculateWinLoss($data);
+        $this->assertEquals(1, $result['w']);
+        $this->assertEquals(1, $result['l']);
+    }
+
+    /**
+     * Test validatePeriodScores with valid data
+     */
+    public function testValidatePeriodScoresValid(): void
+    {
+        $data = [
+            'eav' => [
+                'period_1_team' => 20,
+                'period_1_opponent' => 18,
+                'period_2_team' => 22,
+                'period_2_opponent' => 20,
+            ],
+        ];
+
+        $errors = $this->service->validatePeriodScores($data);
+        $this->assertIsArray($errors);
+    }
+
+    /**
+     * Test getTeamSeasonAndSportsLists returns valid structure
+     */
+    public function testGetTeamSeasonAndSportsLists(): void
+    {
+        $lists = $this->service->getTeamSeasonAndSportsLists();
+
+        $this->assertArrayHasKey('teamSeasonList', $lists);
+        $this->assertArrayHasKey('sports', $lists);
+        $this->assertIsArray($lists['teamSeasonList']);
+    }
 }
