@@ -171,10 +171,13 @@ racerhistory/
 
 ### Code Coverage & Test Suite
 
-- **PHP Tests**: 348 tests / 998 assertions (controllers, models, integration, game flows & validation, basketball stats, service/controller refactor)
+- **PHP Tests**: 429 tests / 1153 assertions (controllers, models, integration, game flows & validation, basketball stats, policies, entities)
+- **PHP Coverage**: 70.87% line coverage (3586/5060 statements)
 - **JavaScript Coverage** (Jest): Statements 88%+, Branches 80%+, Functions 95%+, Lines 90%+
 - **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk, games management, basketball stats)
 - **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, Games, EAV, Persons, Images, StatBasket*)
+- **Entities**: Comprehensive tests for Sport, Team, SportConfig, SportStatRegistry with all methods covered
+- **Policies**: Complete authorization coverage (UserPolicy, ApplicationPolicy) with admin/user/guest scenarios
 - **Business Rules**: Comprehensive validation testing (season dates, cumulative scoring, future games, stat validation)
 - **Frontend**: Jest exercises confirm-delete modal, image selector, sport-aware forms, error branches
 
