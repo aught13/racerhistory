@@ -1,0 +1,8 @@
+{
+  "github-actions.workflows.pinned.workflows": [".github/workflows/ci.yml"],
+  "yaml.customTags": [
+    "!secret scalar"
+  ],
+  "github-actions.disable-validation": false,
+  "github-actions.validation.strictSecrets": false
+}

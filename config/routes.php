@@ -38,12 +38,9 @@ return function (RouteBuilder $routes): void {
         // AdminAuthMiddleware is handled globally in Application.php - no need to apply it here
 
         $routes->connect('/', ['controller' => 'Dashboard', 'action' => 'index']); // Admin root route
-        $routes->connect('/login', ['controller' => 'Users', 'action' => 'login']); // Admin login route
-        $routes->connect('/users', ['controller' => 'Users', 'action' => 'index']);
         $routes->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
             ->setPass(['id'])
             ->setPatterns(['id' => '\d+']);
-
 
         // Explicit route for AJAX sport-form-data endpoint (query param only)
         $routes->connect('/games/sport-form-data', [

@@ -75,6 +75,7 @@ class UserManagerComponent extends Component
     protected function obtainAuthResult(Controller $controller)
     {
         if ($controller->components()->has('Authentication')) {
+            /** @phpstan-ignore property.notFound */
             return $controller->Authentication->getResult();
         }
 
@@ -94,6 +95,7 @@ class UserManagerComponent extends Component
     protected function resolveIdentity(Controller $controller): mixed
     {
         $user = $controller->components()->has('Authentication')
+            /** @phpstan-ignore property.notFound */
             ? $controller->Authentication->getIdentity()
             : $controller->getRequest()->getAttribute('identity');
 
@@ -133,6 +135,7 @@ class UserManagerComponent extends Component
         }
 
         if ($controller->components()->has('Authentication')) {
+            /** @phpstan-ignore property.notFound */
             $controller->Authentication->logout();
         } else {
             $controller->getRequest()->getSession()->delete('Auth');
@@ -188,6 +191,7 @@ class UserManagerComponent extends Component
     public function logout(Controller $controller)
     {
         if ($controller->components()->has('Authentication')) {
+            /** @phpstan-ignore property.notFound */
             $controller->Authentication->logout();
         } else {
             $controller->getRequest()->getSession()->delete('Auth');

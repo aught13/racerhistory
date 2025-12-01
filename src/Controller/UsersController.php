@@ -13,6 +13,7 @@ use Cake\Http\Response;
  * This controller manages public user actions like login, logout, and registration.
  *
  * @property \App\Controller\Component\UserManagerComponent $UserManager
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class UsersController extends AppController
 {
@@ -25,8 +26,11 @@ class UsersController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
-    // FormProtection is configured in AppController; do not load it twice here.
+        // FormProtection is configured in AppController; do not load it twice here.
         $this->loadComponent('UserManager');
+
+        // Load Authorization component
+        $this->loadComponent('Authorization.Authorization');
     }
 
     /**
@@ -39,6 +43,12 @@ class UsersController extends AppController
     {
         parent::beforeFilter($event);
         $this->Authentication->addUnauthenticatedActions(['login', 'register', 'resetPassword']);
+
+        // Skip authorization for public actions
+        $action = $this->request->getParam('action');
+        if (in_array($action, ['login', 'logout', 'register', 'resetPassword'], true)) {
+            $this->Authorization->skipAuthorization();
+        }
     }
 
     /**
