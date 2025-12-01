@@ -30,17 +30,20 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 ## 🚀 Features
 
-### Authentication System
+### Authentication & Authorization System
 
-- User registration with validation
-- Secure login with password visibility controls
-- Password reset functionality
-- Session management with CakePHP Authentication plugin
+- **Modern Authorization** - CakeDC/Users plugin (v12.1) with policy-based access control
+- **User Management** - Registration, login, password reset with enhanced security
+- **Policy Framework** - Fine-grained permissions via Authorization plugin (v3.1)
+- **Identity-Based Auth** - Session management with `$this->identity()` pattern
+- **Role-Based Access** - Admin/user roles with superuser support
+- **Password Controls** - Visibility toggles and secure hashing
 
 ### Administrative Interface
 
+- **User Management** - Add, edit, approve users with first_name/last_name support
+- **Policy-Based Authorization** - Fine-grained access control via UserPolicy
 - Role-based admin dashboard
-- User management (add, edit, approve, manage)
 - Sports management (add, edit, delete, bulk operations with configurable sport settings)
 - Teams management (add, edit, delete, bulk operations with sport associations)
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
@@ -76,6 +79,8 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 ### Security Features
 
+- **Authorization Framework** - CakeDC/Users with policy-based access control
+- **Identity Management** - Secure session handling with Authentication plugin
 - CSRF protection on all forms
 - HTML escaping for XSS prevention
 - Password hashing with CakePHP security
@@ -109,9 +114,11 @@ composer install
 cp config/app_local.example.php config/app_local.php
 
 # Edit config/app_local.php with your database credentials
-# Run migrations
+# Run migrations (includes CakeDC/Users fields)
 bin/cake migrations migrate
 ```
+
+**Note**: The migrations add enhanced user fields (first_name, last_name, active, is_superuser, last_login, activation_date) for CakeDC/Users compatibility.
 
 ### 4. Development Server
 
@@ -139,6 +146,10 @@ racerhistory/
 │   ├── Model/              # Data layer
 │   │   ├── Entity/         # Data entities
 │   │   └── Table/          # Database tables
+│   ├── Policy/             # Authorization policies
+│   │   ├── UserPolicy.php      # User resource permissions
+│   │   ├── ApplicationPolicy.php  # Base policy
+│   │   └── RequestPolicy.php   # Request-level authorization
 │   └── View/               # View layer components
 ├── templates/              # View templates
 │   ├── layout/             # Layout templates
@@ -153,6 +164,7 @@ racerhistory/
 
 ### Application Documentation
 
+- **[Authorization Setup Guide](AUTHORIZATION_SETUP.md)** - CakeDC/Users migration and policy implementation
 - **[Templates Documentation](templates/README.md)** - Complete template system guide
 - **[Source Code Documentation](src/)** - Comprehensive PHPDoc annotations
 - **[Test Coverage](tests/)** - Unit and integration test suite
@@ -194,13 +206,23 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **Integration Tests**: Controller actions, authentication, form processing
 - **Fixtures**: Test data for consistent testing environment
 
-## 🔐 Security
+## 🔐 Security & Authorization
 
-### Authentication
+### Authentication & Authorization
 
-- **CakePHP Authentication Plugin** for secure user sessions
+- **CakeDC/Users Plugin** (v12.1) for comprehensive user management
+- **Authorization Plugin** (v3.1) for policy-based access control
+- **UserPolicy** with fine-grained permission rules
+- **Identity-Based Authentication** using `$this->identity()` pattern
 - **Password Hashing** using PHP's password_hash()
 - **Form Security** with CSRF tokens on all forms
+
+### Authorization Features
+
+- **Policy Classes**: UserPolicy, ApplicationPolicy, RequestPolicy
+- **Resource-Based Permissions**: Users can only edit their own data
+- **Admin Override**: Superuser role bypasses standard restrictions
+- **Public Access Control**: Explicit authorization skipping for public pages
 
 ### Input Validation
 
