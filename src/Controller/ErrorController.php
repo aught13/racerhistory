@@ -24,6 +24,8 @@ use Cake\Event\EventInterface;
  * Error Handling Controller
  *
  * Controller used by ExceptionRenderer to render error responses.
+ *
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class ErrorController extends AppController
 {
@@ -35,6 +37,8 @@ class ErrorController extends AppController
     public function initialize(): void
     {
     // Keep minimal init to avoid auth loops on error pages
+        // Load only Authorization component and skip all checks
+        $this->loadComponent('Authorization.Authorization');
     }
 
     /**
@@ -45,6 +49,9 @@ class ErrorController extends AppController
      */
     public function beforeFilter(EventInterface $event): void
     {
+        // Skip authorization for all error pages
+        $this->Authorization->skipAuthorization();
+
         // Allow unauthenticated access to error pages
         if (method_exists($this, 'Authentication')) {
             $this->Authentication->allowUnauthenticated(['error400', 'error404', 'error500']);

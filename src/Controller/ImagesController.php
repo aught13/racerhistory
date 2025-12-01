@@ -10,9 +10,22 @@ use Cake\Http\Response;
  * Public Images Controller
  *
  * @property \App\Model\Table\ImagesTable $Images
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class ImagesController extends AppController
 {
+    /**
+     * Initialization hook method.
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+
+        // Load Authorization component and skip all checks (public image serving)
+        $this->loadComponent('Authorization.Authorization');
+        $this->Authorization->skipAuthorization();
+    }
+
     /**
      * Public serve endpoint (no auth) for original or variant.
      * /images/serve/123?variant=thumb

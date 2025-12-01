@@ -28,10 +28,23 @@ use Cake\View\Exception\MissingTemplateException;
  *
  * This controller will render views from templates/Pages/
  *
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @link https://book.cakephp.org/5/en/controllers/pages-controller.html
  */
 class PagesController extends AppController
 {
+    /**
+     * Initialization hook method.
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+
+        // Load Authorization component and skip all checks (public pages)
+        $this->loadComponent('Authorization.Authorization');
+        $this->Authorization->skipAuthorization();
+    }
+
     /**
      * Displays a view
      *

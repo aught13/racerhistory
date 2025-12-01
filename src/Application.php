@@ -21,6 +21,13 @@ use Authentication\AuthenticationService;
 use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
 use Authentication\Middleware\AuthenticationMiddleware;
+use Authorization\AuthorizationService;
+use Authorization\AuthorizationServiceInterface;
+use Authorization\AuthorizationServiceProviderInterface;
+use Authorization\Middleware\AuthorizationMiddleware;
+use Authorization\Policy\MapResolver;
+use Authorization\Policy\OrmResolver;
+use Authorization\Policy\ResolverCollection;
 use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Datasource\FactoryLocator;
@@ -42,7 +49,9 @@ use Psr\Http\Message\ServerRequestInterface;
  *
  * @extends \Cake\Http\BaseApplication<\App\Application>
  */
-class Application extends BaseApplication implements AuthenticationServiceProviderInterface
+class Application extends BaseApplication implements
+    AuthenticationServiceProviderInterface,
+    AuthorizationServiceProviderInterface
 {
     /**
      * Load all the application configuration and bootstrap logic.
@@ -58,6 +67,13 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // The bake plugin requires fallback table classes to work properly
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
+
+        // Load CakeDC/Auth for authorization policies only
+        // We're not using the full Users plugin, just Auth for policies
+        $this->addPlugin('CakeDC/Auth', [
+            'bootstrap' => false, // Don't load their bootstrap config
+            'routes' => false,
+        ]);
 
         // Image variants configuration (central place)
         \Cake\Core\Configure::write('Images.variants', [
@@ -105,7 +121,11 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // This middleware will handle authentication and set the identity
             // on the request object.
             // It should be added before any middleware that requires authentication.
-            ->add(new AuthenticationMiddleware($this));
+            ->add(new AuthenticationMiddleware($this))
+
+            // Add Authorization Middleware AFTER Authentication
+            // This checks permissions based on policies and injects the service into identity
+            ->add(new AuthorizationMiddleware($this));
 
         return $middlewareQueue;
     }
@@ -154,6 +174,33 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         ]);
 
         assert($service instanceof AuthenticationServiceInterface);
+
+        return $service;
+    }
+
+    /**
+     * Returns a configured authorization service instance.
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request Server request
+     * @return \Authorization\AuthorizationServiceInterface
+     */
+    public function getAuthorizationService(ServerRequestInterface $request): AuthorizationServiceInterface
+    {
+        // Use a collection of resolvers
+        $mapResolver = new MapResolver();
+
+        // Map concrete ServerRequest class to RequestPolicy (not the interface)
+        $mapResolver->map(\Cake\Http\ServerRequest::class, \App\Policy\RequestPolicy::class);
+
+        // Create resolver collection with both map and ORM resolvers
+        $resolvers = new ResolverCollection([
+            $mapResolver,
+            new OrmResolver(),
+        ]);
+
+        $service = new AuthorizationService($resolvers);
+
+        assert($service instanceof AuthorizationServiceInterface);
 
         return $service;
     }
