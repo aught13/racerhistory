@@ -145,4 +145,163 @@ class SportConfigServiceTest extends TestCase
         $this->assertEquals('Half', $periodConfig['names'][2]);
         $this->assertEquals('Quarter', $periodConfig['names'][4]);
     }
+
+    /**
+     * Test getSportName method
+     */
+    public function testGetSportName(): void
+    {
+        // Basketball should return 'basketball'
+        $name = $this->sportConfigService->getSportName(1);
+        $this->assertEquals('basketball', $name);
+    }
+
+    /**
+     * Test getSportName with non-existent sport
+     */
+    public function testGetSportNameNonExistent(): void
+    {
+        $name = $this->sportConfigService->getSportName(999);
+        $this->assertEquals('unknown', $name);
+    }
+
+    /**
+     * Test getPeriodName method
+     */
+    public function testGetPeriodName(): void
+    {
+        // Basketball with 4 periods should be "Quarter"
+        $name = $this->sportConfigService->getPeriodName(1, 4);
+        $this->assertEquals('Quarter', $name);
+
+        // Basketball with 2 periods should be "Half"
+        $name = $this->sportConfigService->getPeriodName(1, 2);
+        $this->assertEquals('Half', $name);
+    }
+
+    /**
+     * Test getOfficials method
+     */
+    public function testGetOfficials(): void
+    {
+        $officials = $this->sportConfigService->getOfficials(1);
+        
+        $this->assertIsArray($officials);
+        $this->assertNotEmpty($officials);
+        // May be default officials or configured ones
+        $this->assertGreaterThanOrEqual(2, count($officials));
+    }
+
+    /**
+     * Test getStatTable method
+     */
+    public function testGetStatTable(): void
+    {
+        // Get basketball game team table
+        $table = $this->sportConfigService->getStatTable(1, 'game', 'team');
+        $this->assertEquals('stat_basket_game_team', $table);
+
+        // Get basketball season player table
+        $table = $this->sportConfigService->getStatTable(1, 'season', 'player');
+        $this->assertEquals('stat_basket_season_person', $table);
+    }
+
+    /**
+     * Test getStatTable with non-existent combination
+     */
+    public function testGetStatTableNonExistent(): void
+    {
+        $table = $this->sportConfigService->getStatTable(999, 'game', 'team');
+        $this->assertNull($table);
+    }
+
+    /**
+     * Test getAllStatFields method
+     */
+    public function testGetAllStatFields(): void
+    {
+        $fields = $this->sportConfigService->getAllStatFields(1);
+        
+        $this->assertIsArray($fields);
+        $this->assertArrayHasKey('player', $fields);
+        $this->assertArrayHasKey('team', $fields);
+        $this->assertArrayHasKey('opponent', $fields);
+    }
+
+    /**
+     * Test getFieldLabel method
+     */
+    public function testGetFieldLabel(): void
+    {
+        $label = $this->sportConfigService->getFieldLabel(1, 'FGM');
+        $this->assertEquals('Field Goals Made', $label);
+
+        $label = $this->sportConfigService->getFieldLabel(1, 'PTS');
+        $this->assertEquals('Points', $label);
+    }
+
+    /**
+     * Test getFieldLabel with unknown field returns field itself
+     */
+    public function testGetFieldLabelUnknown(): void
+    {
+        $label = $this->sportConfigService->getFieldLabel(1, 'UNKNOWN');
+        $this->assertEquals('UNKNOWN', $label);
+    }
+
+    /**
+     * Test getCalculatedField method
+     */
+    public function testGetCalculatedField(): void
+    {
+        $calc = $this->sportConfigService->getCalculatedField(1, 'FG%');
+        
+        $this->assertIsArray($calc);
+        $this->assertArrayHasKey('formula', $calc);
+        $this->assertArrayHasKey('condition', $calc);
+    }
+
+    /**
+     * Test getAllCalculatedFields method
+     */
+    public function testGetAllCalculatedFields(): void
+    {
+        $fields = $this->sportConfigService->getAllCalculatedFields(1);
+        
+        $this->assertIsArray($fields);
+        $this->assertArrayHasKey('FG%', $fields);
+        $this->assertArrayHasKey('3P%', $fields);
+        $this->assertArrayHasKey('FT%', $fields);
+    }
+
+    /**
+     * Test getConfig method with custom key
+     */
+    public function testGetConfig(): void
+    {
+        $periods = $this->sportConfigService->getConfig(1, 'periods');
+        $this->assertIsArray($periods);
+
+        $scoringType = $this->sportConfigService->getConfig(1, 'scoringType');
+        $this->assertEquals('cumulative', $scoringType);
+    }
+
+    /**
+     * Test getConfig with default value
+     */
+    public function testGetConfigWithDefault(): void
+    {
+        $value = $this->sportConfigService->getConfig(1, 'nonexistent_key', 'default_value');
+        $this->assertEquals('default_value', $value);
+    }
+
+    /**
+     * Test clearCache method doesn't throw errors
+     */
+    public function testClearCache(): void
+    {
+        $this->sportConfigService->clearCache(1);
+        // If we got here without exception, the test passes
+        $this->assertTrue(true);
+    }
 }
