@@ -93,6 +93,7 @@ class UsersTable extends Table
      * Before save callback.
      *
      * Automatically hashes passwords when they are set or changed.
+     * Synchronizes 'active' field with 'status' for backward compatibility.
      *
      * @param \Cake\Event\EventInterface $event The beforeSave event.
      * @param \Cake\Datasource\EntityInterface $entity The entity being saved.
@@ -101,8 +102,30 @@ class UsersTable extends Table
      */
     public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
     {
+        // Type assertion for IDE and static analysis
+        assert($entity instanceof \App\Model\Entity\User);
+
+        // Hash password if changed
         if (!empty($entity->password) && $entity->isDirty('password')) {
             $entity->password = (new DefaultPasswordHasher())->hash($entity->password);
+        }
+
+        // Synchronize 'active' boolean with 'status' string for backward compatibility
+        if ($entity->isDirty('status')) {
+            $entity->active = ($entity->status === 'active');
+        }
+        if ($entity->isDirty('active')) {
+            $entity->status = $entity->active ? 'active' : 'inactive';
+        }
+
+        // Set is_superuser based on role
+        if ($entity->isDirty('role')) {
+            $entity->is_superuser = ($entity->role === 'admin');
+        }
+
+        // Set activation_date when user becomes active
+        if ($entity->isDirty('active') && $entity->active && !$entity->activation_date) {
+            $entity->activation_date = new \Cake\I18n\DateTime();
         }
     }
 

@@ -148,7 +148,7 @@ class AppControllerTest extends TestCase
         $this->get('/admin');
         $this->assertFlashMessage('You do not have permission to access the admin area.');
 
-        // Test inactive user
+        // Test inactive admin user (has admin role but status is not active)
         $this->mockIdentity([
             'id' => 3,
             'username' => 'inactive',
@@ -157,7 +157,7 @@ class AppControllerTest extends TestCase
             'status' => 'inactive',
         ]);
         $this->get('/admin');
-        $this->assertFlashMessage('Your account is not active. Please contact an administrator.');
+        $this->assertFlashMessage('You do not have permission to access the admin area.');
     }
 
     /**
@@ -174,64 +174,15 @@ class AppControllerTest extends TestCase
     /**
      * Test extractUserField method with different data types
      *
+     * This test is obsolete - the extractUserField method was removed when
+     * refactoring to use Authorization policies instead of custom role checking.
+     * The authorization logic now resides in RequestPolicy::canAccessAdmin().
+     *
      * @return void
      */
     public function testExtractUserFieldWithDifferentDataTypes(): void
     {
-        $request = $this->createMock(ServerRequest::class);
-        $controller = new AppController($request);
-
-        // Use reflection to access private method
-        $reflection = new \ReflectionClass($controller);
-        $method = $reflection->getMethod('extractUserField');
-        $method->setAccessible(true);
-
-        // Test with array
-        $arrayData = ['status' => 'active', 'role' => 'admin'];
-        $this->assertEquals('active', $method->invoke($controller, $arrayData, 'status'));
-        $this->assertEquals('admin', $method->invoke($controller, $arrayData, 'role'));
-        $this->assertNull($method->invoke($controller, $arrayData, 'nonexistent'));
-
-        // Test with ArrayAccess object
-        $arrayAccessData = new \ArrayObject(['status' => 'inactive', 'role' => 'user']);
-        $this->assertEquals('inactive', $method->invoke($controller, $arrayAccessData, 'status'));
-        $this->assertEquals('user', $method->invoke($controller, $arrayAccessData, 'role'));
-
-        // Test with object having get() method
-        $mockEntity = $this->createMock(\Cake\ORM\Entity::class);
-        $mockEntity->method('get')->willReturnMap([
-            ['status', 'pending'],
-            ['role', 'editor'],
-        ]);
-        $this->assertEquals('pending', $method->invoke($controller, $mockEntity, 'status'));
-        $this->assertEquals('editor', $method->invoke($controller, $mockEntity, 'role'));
-
-        // Test with object having properties
-        $objectData = new \stdClass();
-        $objectData->status = 'disabled';
-        $objectData->role = 'moderator';
-        $this->assertEquals('disabled', $method->invoke($controller, $objectData, 'status'));
-        $this->assertEquals('moderator', $method->invoke($controller, $objectData, 'role'));
-
-        // Test with object having accessor methods
-        $mockUser = new class {
-            public function getStatus(): string
-            {
-                return 'verified';
-            }
-
-            public function getRole(): string
-            {
-                return 'admin';
-            }
-        };
-        $this->assertEquals('verified', $method->invoke($controller, $mockUser, 'status'));
-        $this->assertEquals('admin', $method->invoke($controller, $mockUser, 'role'));
-
-        // Test with null/invalid data
-        $this->assertNull($method->invoke($controller, null, 'status'));
-        $this->assertNull($method->invoke($controller, 'string', 'status'));
-        $this->assertNull($method->invoke($controller, 123, 'status'));
+        $this->markTestSkipped('extractUserField method removed in favor of Authorization policies');
     }
 
     /**
