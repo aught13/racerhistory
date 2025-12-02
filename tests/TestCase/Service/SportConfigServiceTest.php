@@ -185,7 +185,7 @@ class SportConfigServiceTest extends TestCase
     public function testGetOfficials(): void
     {
         $officials = $this->sportConfigService->getOfficials(1);
-        
+
         $this->assertIsArray($officials);
         $this->assertNotEmpty($officials);
         // May be default officials or configured ones
@@ -221,7 +221,7 @@ class SportConfigServiceTest extends TestCase
     public function testGetAllStatFields(): void
     {
         $fields = $this->sportConfigService->getAllStatFields(1);
-        
+
         $this->assertIsArray($fields);
         $this->assertArrayHasKey('player', $fields);
         $this->assertArrayHasKey('team', $fields);
@@ -255,7 +255,7 @@ class SportConfigServiceTest extends TestCase
     public function testGetCalculatedField(): void
     {
         $calc = $this->sportConfigService->getCalculatedField(1, 'FG%');
-        
+
         $this->assertIsArray($calc);
         $this->assertArrayHasKey('formula', $calc);
         $this->assertArrayHasKey('condition', $calc);
@@ -267,7 +267,7 @@ class SportConfigServiceTest extends TestCase
     public function testGetAllCalculatedFields(): void
     {
         $fields = $this->sportConfigService->getAllCalculatedFields(1);
-        
+
         $this->assertIsArray($fields);
         $this->assertArrayHasKey('FG%', $fields);
         $this->assertArrayHasKey('3P%', $fields);

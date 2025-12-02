@@ -63,7 +63,7 @@ class BasketballStatsServiceTest extends TestCase
         // Assuming game 1 exists but might not be basketball
         // This test validates the sport check logic
         $stats = $this->service->getGameStats(1);
-        
+
         // Either null (if not basketball) or array (if basketball)
         if ($stats !== null) {
             $this->assertIsArray($stats);
@@ -89,7 +89,7 @@ class BasketballStatsServiceTest extends TestCase
     public function testGetSeasonStatsNonBasketball(): void
     {
         $stats = $this->service->getSeasonStats(1);
-        
+
         // Either null (if not basketball) or array (if basketball)
         if ($stats !== null) {
             $this->assertIsArray($stats);
@@ -106,7 +106,7 @@ class BasketballStatsServiceTest extends TestCase
     public function testInitializeStatsPlayer(): void
     {
         $stats = $this->service->initializeStats('player');
-        
+
         $this->assertIsArray($stats);
         $this->assertArrayHasKey('GP', $stats);
         $this->assertArrayHasKey('PTS', $stats);
@@ -121,7 +121,7 @@ class BasketballStatsServiceTest extends TestCase
     public function testInitializeStatsTeam(): void
     {
         $stats = $this->service->initializeStats('team');
-        
+
         // Team stats may return empty array as per implementation
         $this->assertIsArray($stats);
     }
@@ -132,7 +132,7 @@ class BasketballStatsServiceTest extends TestCase
     public function testAddSeasonStats(): void
     {
         $seasonStatsTable = $this->fetchTable('StatBasketSeasonPerson');
-        
+
         $seasonStats = $seasonStatsTable->newEntity([
             'team_season_roster_id' => 1,
             'GP' => 10,
@@ -141,10 +141,10 @@ class BasketballStatsServiceTest extends TestCase
             'FGA' => 100,
             'PTS' => 150,
         ]);
-        
+
         $totals = $this->service->initializeStats('player');
         $this->service->addSeasonStats($totals, $seasonStats);
-        
+
         $this->assertSame(10, $totals['GP']);
         $this->assertSame(150, $totals['PTS']);
         $this->assertSame(50, $totals['FGM']);
@@ -175,7 +175,7 @@ class BasketballStatsServiceTest extends TestCase
     public function testInitializeStatsOpponent(): void
     {
         $stats = $this->service->initializeStats('opponent');
-        
+
         // Opponent stats may return empty array as per implementation
         $this->assertIsArray($stats);
     }
