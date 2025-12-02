@@ -73,7 +73,7 @@ class OpponentsControllerTest extends TestCase
     {
         $this->mockIdentity();
         $this->enableCsrfToken();
-        
+
         try {
             $this->delete('/admin/opponents/delete/999');
             $this->assertResponseError();
@@ -87,7 +87,7 @@ class OpponentsControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        
+
         // Missing required opponent_name
         $this->post('/admin/opponents/add', ['place_id' => 1]);
         // May re-render with errors or redirect
@@ -99,7 +99,7 @@ class OpponentsControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        
+
         // Try to edit with potentially invalid data
         $this->post('/admin/opponents/edit/1', ['opponent_name' => 'Valid Name', 'place_id' => 999]);
         // May succeed, fail, or redirect depending on validation

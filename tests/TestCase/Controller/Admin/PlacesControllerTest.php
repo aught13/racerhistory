@@ -72,7 +72,7 @@ class PlacesControllerTest extends TestCase
     {
         $this->mockIdentity();
         $this->enableCsrfToken();
-        
+
         try {
             $this->delete('/admin/places/delete/999');
             $this->assertResponseError();

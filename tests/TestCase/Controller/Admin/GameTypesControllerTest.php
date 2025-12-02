@@ -72,7 +72,7 @@ class GameTypesControllerTest extends TestCase
     {
         $this->mockIdentity();
         $this->enableCsrfToken();
-        
+
         try {
             $this->delete('/admin/game-types/delete/999');
             $this->assertResponseError();
@@ -86,7 +86,7 @@ class GameTypesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        
+
         // Missing required game_type_name
         $this->post('/admin/game-types/add', ['post' => 0, 'conf' => 0]);
         $this->assertTrue($this->_response->getStatusCode() >= 200);
