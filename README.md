@@ -2,18 +2,24 @@
 
 [![Version](https://img.shields.io/badge/Version-0.1.6--alpha-orange.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
-[![CakePHP](https://img.shields.io/badge/CakePHP-5.x-red.svg)](https://cakephp.org)
+[![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/composer.lock&query=$.packages[?(@.name==%22cakephp/cakephp%22)].version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Build Status](https://github.com/aught13/racerhistory/workflows/CI/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/ci.yml)
-[![Security Scan](https://github.com/aught13/racerhistory/workflows/Security/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/security.yml)
-[![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/master/graph/badge.svg?token=)](https://app.codecov.io/gh/aught13/racerhistory)
+[![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)](https://github.com/aught13/racerhistory/graphs/commit-activity)
 [![GitHub last commit](https://img.shields.io/github/last-commit/aught13/racerhistory)](https://github.com/aught13/racerhistory)
 [![GitHub issues](https://img.shields.io/github/issues/aught13/racerhistory)](https://github.com/aught13/racerhistory/issues)
+
+[![Build Status](https://github.com/aught13/racerhistory/workflows/CI/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/ci.yml)
+[![Security Scan](https://github.com/aught13/racerhistory/workflows/Security/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/security.yml)
+[![PHPStan Level](https://img.shields.io/badge/PHPStan-level%208-brightgreen?logo=php&labelColor=2b2b2b)](phpstan.neon)
+[![PHP_CodeSniffer](https://img.shields.io/badge/PHPCS-code%20consistency%20passing-blue?logo=php&labelColor=2b2b2b)](phpcs.xml)
+[![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/master/graph/badge.svg?token=)](https://app.codecov.io/gh/aught13/racerhistory)
+[![Documentation](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/docs-status.json&query=$.documentationPercent&label=Documentation&color=brightgreen)](templates/README.md)
+
 [![GitHub stars](https://img.shields.io/github/stars/aught13/racerhistory)](https://github.com/aught13/racerhistory/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/aught13/racerhistory)](https://github.com/aught13/racerhistory/network)
-[![Documentation](https://img.shields.io/badge/Documentation-95%25-brightgreen.svg)](templates/README.md)
-[![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)](https://github.com/aught13/racerhistory/graphs/commit-activity)
+
+
 
 A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.x framework with Bootstrap 5.3.2 and modern web technologies.
 

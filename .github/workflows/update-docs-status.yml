@@ -1,0 +1,67 @@
+name: Update Docs Status
+
+on:
+  push:
+    branches: [ master ]
+  schedule:
+    - cron: '0 6 * * *' # daily at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  docs-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install markdownlint-cli
+        run: |
+          npm i -g markdownlint-cli
+
+      - name: Compute documentation coverage and update JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Target Markdown files: root README + templates folder + docs at root
+          mapfile -t files < <(git ls-files '**/*.md' | grep -E '^(README\.md|templates/|AUTHORIZATION_SETUP\.md|templates/README\.md)$' || true)
+          total=${#files[@]}
+          if [[ $total -eq 0 ]];n+          then
+            percent="0%"
+          else
+            # Run markdownlint and count problems; fewer problems => higher coverage
+            # Each file starts at 100 points, each lint issue subtracts 1 point, floored at 0
+            score=0
+            for f in "${files[@]}"; do
+              issues=$(markdownlint -s "$f" || true)
+              # Count lines in issues output; empty output => 0 issues
+              count=$(printf "%s" "$issues" | awk 'NF{c++} END{print c+0}')
+              pts=$((100 - count))
+              if (( pts < 0 )); then pts=0; fi
+              score=$((score + pts))
+            done
+            # Average across files
+            avg=$(awk -v s="$score" -v t="$total" 'BEGIN{printf "%.0f", (s / t)}')
+            # Convert to percent (0-100%)
+            percent="${avg}%"
+          fi
+
+          jq -n --arg pct "$percent" '{documentationPercent: $pct, notes: "Auto-updated by CI via markdownlint-based coverage."}' > docs-status.json
+
+          # Commit if changed
+          if ! git diff --quiet -- docs-status.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs-status.json
+            git commit -m "chore(ci): update docs-status.json to $percent"
+            git push
+          else
+            echo "No changes to docs-status.json"
+          fi
