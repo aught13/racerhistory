@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/Version-0.1.6--alpha-orange.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
-[![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/composer.lock&query=$.packages[?(@.name==%22cakephp/cakephp%22)].version&label=CakePHP&color=red)](https://cakephp.org)
+[![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintained-Yes-green.svg)](https://github.com/aught13/racerhistory/graphs/commit-activity)
@@ -11,8 +11,8 @@
 
 [![Build Status](https://github.com/aught13/racerhistory/workflows/CI/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/aught13/racerhistory/workflows/Security/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/security.yml)
-[![PHPStan Level](https://img.shields.io/badge/PHPStan-level%208-brightgreen?logo=php&labelColor=2b2b2b)](phpstan.neon)
-[![PHP_CodeSniffer](https://img.shields.io/badge/PHPCS-code%20consistency%20passing-blue?logo=php&labelColor=2b2b2b)](phpcs.xml)
+<a href="https://phpstan.org/" target="_blank"><img alt="PHPStan" src="https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/aught13/racerhistory/master/phpstan.neon&query=$.parameters.level&label=PHPStan&prefix=level%20&color=brightgreen&style=flat"></a>
+<a href="https://github.com/squizlabs/PHP_CodeSniffer" target="_blank"><img alt="Code Consistency" src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/phpcs-status.json&query=$.status&label=PHPCS&color=blue&style=flat"></a>
 [![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/master/graph/badge.svg?token=)](https://app.codecov.io/gh/aught13/racerhistory)
 [![Documentation](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/docs-status.json&query=$.documentationPercent&label=Documentation&color=brightgreen)](templates/README.md)
 

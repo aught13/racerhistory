@@ -1,4 +1,4 @@
-name: Update Docs Status
+name: Update Status Badges
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  docs-coverage:
+  update-status:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,9 +22,35 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+
+      - name: Install PHP dependencies
+        run: composer install --no-progress --prefer-dist
+
       - name: Install markdownlint-cli
+        run: npm i -g markdownlint-cli
+
+      - name: Extract CakePHP version
+        shell: bash
         run: |
-          npm i -g markdownlint-cli
+          set -euo pipefail
+          version=$(jq -r '.packages[] | select(.name=="cakephp/cakephp") | .version' composer.lock)
+          jq -n --arg ver "$version" '{version: $ver, notes: "Auto-updated by CI from composer.lock"}' > cakephp-version.json
+
+      - name: Run PHPCS and update status
+        shell: bash
+        run: |
+          set -euo pipefail
+          if php vendor/bin/phpcs --standard=phpcs.xml src/ tests/ > /dev/null 2>&1; then
+            status="passing"
+          else
+            status="failing"
+          fi
+          jq -n --arg st "$status" '{status: $st, notes: "Auto-updated by CI based on PHPCS check results."}' > phpcs-status.json
 
       - name: Compute documentation coverage and update JSON
         shell: bash
@@ -33,7 +59,7 @@ jobs:
           # Target Markdown files: root README + templates folder + docs at root
           mapfile -t files < <(git ls-files '**/*.md' | grep -E '^(README\.md|templates/|AUTHORIZATION_SETUP\.md|templates/README\.md)$' || true)
           total=${#files[@]}
-          if [[ $total -eq 0 ]];n+          then
+          if [[ $total -eq 0 ]]; then
             percent="0%"
           else
             # Run markdownlint and count problems; fewer problems => higher coverage
@@ -55,13 +81,16 @@ jobs:
 
           jq -n --arg pct "$percent" '{documentationPercent: $pct, notes: "Auto-updated by CI via markdownlint-based coverage."}' > docs-status.json
 
-          # Commit if changed
-          if ! git diff --quiet -- docs-status.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add docs-status.json
-            git commit -m "chore(ci): update docs-status.json to $percent"
+      - name: Commit and push if changed
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if ! git diff --quiet -- docs-status.json phpcs-status.json cakephp-version.json; then
+            git add docs-status.json phpcs-status.json cakephp-version.json
+            git commit -m "chore(ci): update status badges"
             git push
           else
-            echo "No changes to docs-status.json"
+            echo "No changes to status files"
           fi
