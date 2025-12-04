@@ -159,4 +159,49 @@ class StatsServiceTest extends TestCase
         $this->assertSame(250, $totals['PTS'], 'PTS should be sum of both seasons');
         $this->assertSame(50, $totals['AST'], 'AST should be sum of both seasons');
     }
+
+    /**
+     * Test getGameStats returns null for non-existent game
+     */
+    public function testGetGameStatsNonExistent(): void
+    {
+        $stats = $this->service->getGameStats(999);
+        $this->assertNull($stats);
+    }
+
+    /**
+     * Test getSeasonStats returns null for non-existent team season
+     */
+    public function testGetSeasonStatsNonExistent(): void
+    {
+        $stats = $this->service->getSeasonStats(999);
+        $this->assertNull($stats);
+    }
+
+    /**
+     * Test getPersonSeasonStats returns null for non-existent roster
+     */
+    public function testGetPersonSeasonStatsNonExistent(): void
+    {
+        $stats = $this->service->getPersonSeasonStats(1, 999);
+        $this->assertNull($stats);
+    }
+
+    /**
+     * Test getPersonGameStats returns empty array for non-existent roster
+     */
+    public function testGetPersonGameStatsNonExistent(): void
+    {
+        $stats = $this->service->getPersonGameStats(1, 999);
+        $this->assertIsArray($stats);
+        $this->assertEmpty($stats);
+    }
+
+    /**
+     * Test hasSportSupport with invalid sport ID
+     */
+    public function testHasSportSupportInvalidId(): void
+    {
+        $this->assertFalse($this->service->hasSportSupport(999));
+    }
 }

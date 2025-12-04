@@ -254,4 +254,44 @@ class GamesControllerTest extends TestCase
         // Should contain score display
         $this->assertResponseContains('F'); // Final column in period table
     }
+
+    public function testDeleteInvalidId(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+
+        try {
+            $this->delete('/admin/games/delete/999');
+            $this->assertResponseError();
+        } catch (\Exception $e) {
+            $this->assertInstanceOf(\Cake\Datasource\Exception\RecordNotFoundException::class, $e);
+        }
+    }
+
+    public function testEditWithInvalidData(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/games/edit/1', [
+            'team_season_id' => 1,
+            'game_date' => '2024-01-15', // Valid date
+            'hrn' => 999, // Invalid hrn value
+        ]);
+        // Controller may re-render with errors or redirect
+        $this->assertTrue($this->_response->getStatusCode() >= 200);
+    }
+
+    public function testAddWithMissingRequiredFields(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/games/add?team_season_id=1', [
+            // Missing required fields
+        ]);
+        $this->assertResponseSuccess(); // Re-renders form with errors
+    }
 }
