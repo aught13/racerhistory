@@ -33,7 +33,7 @@ jobs:
           # Target Markdown files: root README + templates folder + docs at root
           mapfile -t files < <(git ls-files '**/*.md' | grep -E '^(README\.md|templates/|AUTHORIZATION_SETUP\.md|templates/README\.md)$' || true)
           total=${#files[@]}
-          if [[ $total -eq 0 ]];n+          then
+          if [[ $total -eq 0 ]]; then
             percent="0%"
           else
             # Run markdownlint and count problems; fewer problems => higher coverage
