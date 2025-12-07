@@ -25,11 +25,11 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '8.3'
           tools: composer
 
       - name: Install PHP dependencies
-        run: composer install --no-progress --prefer-dist
+        run: composer install --no-progress --prefer-dist --ignore-platform-req=php
 
       - name: Install markdownlint-cli
         run: npm i -g markdownlint-cli

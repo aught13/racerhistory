@@ -90,12 +90,12 @@ class GameService
         foreach ($values as $k => $v) {
             if (preg_match('/^period_(\d+)_mur$/', $k, $m)) {
                 $new = 'period_' . $m[1] . '_team';
-                if (!isset($values[$new]) || $values[$new] === '' || $values[$new] === null) {
+                if (empty($values[$new])) {
                     $values[$new] = $v;
                 }
             } elseif (preg_match('/^period_(\d+)_opp$/', $k, $m)) {
                 $new = 'period_' . $m[1] . '_opponent';
-                if (!isset($values[$new]) || $values[$new] === '' || $values[$new] === null) {
+                if (empty($values[$new])) {
                     $values[$new] = $v;
                 }
             }
@@ -542,8 +542,8 @@ class GameService
             ->first();
 
         /** @var \App\Model\Entity\TeamSeason|null $ts */
-        $ts = $game?->team_season;
-        $sportId = $ts?->team?->sport->id ?? null;
+        $ts = $game->team_season;
+        $sportId = $ts?->team->sport->id ?? null;
 
         if ($sportId) {
             /** @var \App\Model\Table\GameEavTable $gameEavTable */

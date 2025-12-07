@@ -423,6 +423,8 @@ class ImagesController extends AppController
                     ]);
                 }
 
+                // Re-check after chmod attempt; could be writable now
+                /** @phpstan-ignore booleanNot.alwaysTrue */
                 if (!is_writable($storageDir)) {
                     $writeErrors[] = 'Storage directory exists but not writable: ' . $storageDir;
                     \Cake\Log\Log::error(end($writeErrors));
@@ -456,7 +458,7 @@ class ImagesController extends AppController
                     if (function_exists('posix_getgrgid')) {
                         try {
                             $grp = posix_getgrgid($parentGroupId);
-                            if ($grp && isset($grp['name'])) {
+                            if ($grp && !empty($grp['name'])) {
                                 chgrp($storageDir, $grp['name']);
                             }
                         } catch (\Throwable $e) {
