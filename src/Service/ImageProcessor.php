@@ -25,20 +25,18 @@ class ImageProcessor
         } else {
             try {
                 if (class_exists(ImageManager::class)) {
-                    if (method_exists(ImageManager::class, 'gd')) {
-                        $this->manager = ImageManager::gd();
-                    } else {
-                        // Try array config (v3) then legacy string
-                        try {
-                            if (class_exists('Intervention\\Image\\Drivers\\Gd\\Driver')) {
-                                $driver = new \Intervention\Image\Drivers\Gd\Driver();
-                                $this->manager = new ImageManager($driver);
-                            } else {
-                                $this->manager = new ImageManager('gd');
-                            }
-                        } catch (\Throwable $inner) {
-                            $this->manager = null; // will degrade
+                    $this->manager = ImageManager::gd();
+                } else {
+                    // Try array config (v3) then legacy string
+                    try {
+                        if (class_exists('Intervention\\Image\\Drivers\\Gd\\Driver')) {
+                            $driver = new \Intervention\Image\Drivers\Gd\Driver();
+                            $this->manager = new ImageManager($driver);
+                        } else {
+                            $this->manager = new ImageManager('gd');
                         }
+                    } catch (\Throwable $inner) {
+                        $this->manager = null; // will degrade
                     }
                 }
             } catch (\Throwable $e) {

@@ -173,8 +173,6 @@ class Application extends BaseApplication implements
             'loginUrl' => '/users/login',
         ]);
 
-        assert($service instanceof AuthenticationServiceInterface);
-
         return $service;
     }
 
@@ -199,8 +197,6 @@ class Application extends BaseApplication implements
         ]);
 
         $service = new AuthorizationService($resolvers);
-
-        assert($service instanceof AuthorizationServiceInterface);
 
         return $service;
     }

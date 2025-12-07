@@ -89,7 +89,7 @@ class Team extends Entity
      */
     public function getFullDisplayName(): string
     {
-        $sportName = $this->sport?->sport_name ?? 'Unknown Sport';
+        $sportName = $this->sport->sport_name ?? 'Unknown Sport';
 
         return sprintf('%s (%s)', $this->team_name ?? 'Unknown Team', $sportName);
     }
