@@ -11,8 +11,10 @@ class ImageUsage extends Entity
         'image_id' => true,
         'model' => true,
         'foreign_key' => true,
+        'context' => true,
         'field' => true,
         'created' => true,
+        'modified' => true,
         'image' => true,
     ];
 }
