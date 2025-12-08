@@ -6,33 +6,37 @@ namespace App\Model\Table;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
-class ImageUsagesTable extends Table
+class ImagesImageTagsTable extends Table
 {
     /**
-     * Initialize table.
+     * Initialize table configuration.
      *
-     * @param array<string,mixed> $config Config.
+     * @param array<string,mixed> $config Configuration array.
+     * @return void
      */
     public function initialize(array $config): void
     {
         parent::initialize($config);
-        $this->setTable('image_usages');
+
+        $this->setTable('images_image_tags');
         $this->setPrimaryKey('id');
         $this->addBehavior('Timestamp');
+
         $this->belongsTo('Images', ['foreignKey' => 'image_id']);
+        $this->belongsTo('ImageTags', ['foreignKey' => 'image_tag_id']);
     }
 
     /**
      * Validation rules.
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance.
+     * @return \Cake\Validation\Validator
      */
     public function validationDefault(Validator $validator): Validator
     {
         $validator
             ->integer('image_id')->notEmptyString('image_id')
-            ->scalar('model')->maxLength('model', 120)->notEmptyString('model')
-            ->integer('foreign_key')->notEmptyString('foreign_key')
-            ->scalar('context')->maxLength('context', 80)->allowEmptyString('context')
-            ->scalar('field')->maxLength('field', 80)->allowEmptyString('field');
+            ->integer('image_tag_id')->notEmptyString('image_tag_id');
 
         return $validator;
     }

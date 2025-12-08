@@ -124,6 +124,8 @@ jobs:
             sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251130120000_AddCakeDcUsersFields.php || true
             # Expand Game Time Column migration (new)
             sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251130140000_ExpandGameTimeColumn.php || true
+            # Add Image Tags And Usages migration (new)
+            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251207090000_AddImageTagsAndUsages.php || true
             # (Removed obsolete image path migrations)
           else
             echo "Parent requires no type, updating migrations to untyped..."
@@ -147,6 +149,8 @@ jobs:
             sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251130120000_AddCakeDcUsersFields.php || true
             # Expand Game Time Column migration (new)
             sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251130140000_ExpandGameTimeColumn.php || true
+            # Add Image Tags And Usages migration (new)
+            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251207090000_AddImageTagsAndUsages.php || true
             # (Removed obsolete image path migrations)
           fi
 
@@ -161,6 +165,8 @@ jobs:
           grep -A 1 -B 1 "autoId" config/Migrations/20250817123000_CreateImagesTable.php || echo "no autoId in CreateImagesTable"
           echo "-- 20250811120000_CreateUsersTable.php --"
           grep -A 1 -B 1 "autoId" config/Migrations/20250817123100_CreateImageUsagesTable.php || echo "no autoId in CreateImageUsagesTable"
+          echo "-- 20251207090000_AddImageTagsAndUsages.php --"
+          grep -A 1 -B 1 "autoId" config/Migrations/20251207090000_AddImageTagsAndUsages.php || echo "no autoId in AddImageTagsAndUsages"
           # Removed obsolete migration files (AddStorageSubdir / ReplaceStorageSubdirWithStoragePath)
 
       - name: Run database migrations

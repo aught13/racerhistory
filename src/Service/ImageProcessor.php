@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Cake\ORM\TableRegistry;
+use Cake\Utility\Text;
 use Intervention\Image\ImageManager;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -118,7 +120,7 @@ class ImageProcessor
         foreach ($variantConfig as $name => $cfg) {
             $variantImage = clone $image;
             if (isset($cfg['fit'])) {
-                [$w,$h] = $cfg['fit'];
+                [$w, $h] = $cfg['fit'];
                 $variantImage->cover($w, $h);
             } elseif (isset($cfg['maxWidth'])) {
                 $mw = (int)$cfg['maxWidth'];
@@ -146,6 +148,181 @@ class ImageProcessor
             ],
             'variants' => $variants,
         ];
+    }
+
+    /**
+     * Attach tags to an image (creates tags on demand).
+     *
+     * @param int $imageId Image id.
+     * @param array<int|string,string> $tags Tag names or slugs.
+     * @return void
+     */
+    public function attachTags(int $imageId, array $tags): void
+    {
+        if (!$tags) {
+            return;
+        }
+
+        $tagsTable = $this->table('ImageTags');
+        $imagesTable = $this->table('Images');
+        $image = $imagesTable->get($imageId, ['contain' => ['ImageTags']]);
+
+        $tagEntities = [];
+        foreach ($tags as $tag) {
+            $name = trim((string)$tag);
+            if ($name === '') {
+                continue;
+            }
+            $slug = Text::slug($name) ?: strtolower($name);
+            $existing = $tagsTable->find()->where(['slug' => $slug])->first();
+            if (!$existing) {
+                $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
+                $tagsTable->save($existing);
+            }
+            /** @phpstan-ignore if.alwaysTrue */
+            if ($existing) {
+                $tagEntities[] = $existing;
+            }
+        }
+
+        if ($tagEntities) {
+            // @phpstan-ignore property.notFound
+            $imagesTable->ImageTags->link($image, $tagEntities);
+        }
+    }
+
+    /**
+     * Record an image usage (idempotent on same tuple).
+     *
+     * @param int $imageId Image ID.
+     * @param string $model Model name.
+     * @param int $foreignKey Foreign key value.
+     * @param string|null $context Optional context.
+     * @param string|null $field Optional field.
+     * @return void
+     */
+    public function recordUsage(
+        int $imageId,
+        string $model,
+        int $foreignKey,
+        ?string $context = null,
+        ?string $field = null,
+    ): void {
+        $usages = $this->table('ImageUsages');
+        $existing = $usages->find()->where([
+            'image_id' => $imageId,
+            'model' => $model,
+            'foreign_key' => $foreignKey,
+            'context' => $context,
+            'field' => $field,
+        ])->first();
+        if ($existing) {
+            return;
+        }
+        $usage = $usages->newEntity([
+            'image_id' => $imageId,
+            'model' => $model,
+            'foreign_key' => $foreignKey,
+            'context' => $context,
+            'field' => $field,
+        ]);
+        $usages->save($usage);
+    }
+
+    /**
+     * Get images that match all given tag slugs.
+     *
+     * @param array<int,string> $tagSlugs Tag slugs that must all be present.
+     * @param int $limit Result limit.
+     * @return array<int,\App\Model\Entity\Image>
+     */
+    public function getImagesByAllTags(array $tagSlugs, int $limit = 10): array
+    {
+        $tagSlugs = array_values(array_filter(array_map('strval', $tagSlugs)));
+        if (!$tagSlugs) {
+            return [];
+        }
+        $needed = count($tagSlugs);
+        $images = $this->table('Images');
+
+        $query = $images->find()
+            ->matching('ImageTags', function ($q) use ($tagSlugs) {
+                return $q->where(['ImageTags.slug IN' => $tagSlugs]);
+            })
+            ->group(['Images.id'])
+            ->having(['COUNT(DISTINCT ImageTags.slug) >=' => $needed])
+            ->limit($limit);
+
+        return $query->all()->toList();
+    }
+
+    /**
+     * Convenience: images tagged for a person.
+     *
+     * @param int $personId Person id.
+     * @param int $limit Limit.
+     * @return array<int,\App\Model\Entity\Image>
+     */
+    public function getImagesForPerson(int $personId, int $limit = 10): array
+    {
+        return $this->getImagesByAllTags(["person-{$personId}"], $limit);
+    }
+
+    /**
+     * Convenience: images tagged for a team season.
+     */
+    public function getImagesForTeamSeason(int $teamSeasonId, int $limit = 10): array
+    {
+        return $this->getImagesByAllTags(["teamseason-{$teamSeasonId}"], $limit);
+    }
+
+    /**
+     * Convenience: roster image (person + team season).
+     */
+    public function getRosterImages(int $personId, int $teamSeasonId, int $limit = 1): array
+    {
+        return $this->getImagesByAllTags([
+            "person-{$personId}",
+            "teamseason-{$teamSeasonId}",
+            'roster',
+        ], $limit);
+    }
+
+    /**
+     * Resolve or create and return ImageTags for provided slugs (utility for controllers).
+     *
+     * @param array<int,string> $tagSlugs Tag slugs.
+     * @return array<int,\App\Model\Entity\ImageTag>
+     */
+    public function ensureTags(array $tagSlugs): array
+    {
+        $tagsTable = $this->table('ImageTags');
+        $tags = [];
+        foreach ($tagSlugs as $slug) {
+            $slug = Text::slug($slug) ?: strtolower($slug);
+            $existing = $tagsTable->find()->where(['slug' => $slug])->first();
+            if (!$existing) {
+                $existing = $tagsTable->newEntity(['name' => $slug, 'slug' => $slug]);
+                $tagsTable->save($existing);
+            }
+            /** @phpstan-ignore if.alwaysTrue */
+            if ($existing) {
+                $tags[] = $existing;
+            }
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Simple TableLocator helper.
+     *
+     * @param string $alias Table alias.
+     * @return \Cake\ORM\Table
+     */
+    private function table(string $alias): \Cake\ORM\Table
+    {
+        return TableRegistry::getTableLocator()->get($alias);
     }
 
     /**

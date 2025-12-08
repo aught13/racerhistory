@@ -84,17 +84,20 @@ class ImagesController extends AppController
             if ($validation !== true) {
                 return $this->json(['success' => false, 'error' => $validation]);
             }
+            $tags = $this->collectTags();
             [$processed, $hash, $mime, $ext] = $this->processFile($file);
             $images = $this->fetchTable('Images');
             /** @var \App\Model\Entity\Image|null $existing */
             $existing = $images->find()->where(['hash' => $hash])->first();
             if ($existing) {
+                $this->applyTags($existing->id, $tags);
                 $this->maybeRecordUsage($existing->id);
 
                 return $this->json(['success' => true, 'image' => $this->serializeImage($existing)]);
             }
             $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename());
             if ($image) {
+                $this->applyTags($image->id, $tags);
                 $this->maybeRecordUsage($image->id);
 
                 return $this->json(['success' => true, 'image' => $this->serializeImage($image)]);
@@ -172,6 +175,7 @@ class ImagesController extends AppController
             $this->request->getData('foreign_key') ?? $this->request->getQuery('foreign_key'),
             $this->request->getData('field') ?? $this->request->getQuery('field'),
         ];
+        $context = $this->request->getData('context') ?? $this->request->getQuery('context');
         if (!$model || !$foreign || !$field) {
             return;
         }
@@ -180,7 +184,8 @@ class ImagesController extends AppController
             'image_id' => $imageId,
             'model' => $model,
             'foreign_key' => (int)$foreign,
-            'field' => $field,
+            'field' => (string)$field,
+            'context' => $context ? (string)$context : null,
         ])->first();
         if ($exists) {
             return;
@@ -190,6 +195,7 @@ class ImagesController extends AppController
             'model' => (string)$model,
             'foreign_key' => (int)$foreign,
             'field' => (string)$field,
+            'context' => $context ? (string)$context : null,
         ]);
         $usages->save($usage);
     }
@@ -312,6 +318,36 @@ class ImagesController extends AppController
         }
 
         return true;
+    }
+
+    /**
+     * Collect tags from request data or query (comma-separated or array).
+     *
+     * @return array<int,string>
+     */
+    private function collectTags(): array
+    {
+        $raw = $this->request->getData('tags') ?? $this->request->getQuery('tags') ?? [];
+        if (is_string($raw)) {
+            $raw = array_map('trim', explode(',', $raw));
+        }
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(fn($t) => trim((string)$t), $raw), fn($t) => $t !== ''));
+    }
+
+    /**
+     * Apply tags to an image via ImageProcessor service.
+     */
+    private function applyTags(int $imageId, array $tags): void
+    {
+        if (!$tags) {
+            return;
+        }
+        $processor = new ImageProcessor();
+        $processor->attachTags($imageId, $tags);
     }
 
     /**
