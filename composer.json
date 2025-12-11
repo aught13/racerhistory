@@ -50,6 +50,9 @@
             "cakephp/plugin-installer": true,
             "dealerdirect/phpcodesniffer-composer-installer": true
         },
+        "platform": {
+            "php": "8.3.28"
+        },
         "platform-check": true,
         "sort-packages": true
     },
