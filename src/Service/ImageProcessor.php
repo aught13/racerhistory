@@ -56,10 +56,14 @@ class ImageProcessor
      *
      * @param \Psr\Http\Message\UploadedFileInterface $file Uploaded image file.
      * @param array<string, array<string,mixed>> $variantConfig Variant configuration.
+     * @param array<string,mixed> $manipulations Optional image manipulations to apply.
      * @return array<string, mixed>
      */
-    public function process(UploadedFileInterface $file, array $variantConfig): array
-    {
+    public function process(
+        UploadedFileInterface $file,
+        array $variantConfig,
+        array $manipulations = [],
+    ): array {
         $stream = $file->getStream();
         $contents = $stream->getContents();
         if ($this->manager) {
@@ -114,6 +118,97 @@ class ImageProcessor
                 'variants' => $variants,
             ];
         }
+        // Apply manipulations to the original image if provided
+        if (!empty($manipulations)) {
+            $image = $this->applyManipulations($image, $manipulations);
+        }
+
+        $width = $image->width();
+        $height = $image->height();
+        $variants = [];
+        foreach ($variantConfig as $name => $cfg) {
+            $variantImage = clone $image;
+            if (isset($cfg['fit'])) {
+                [$w, $h] = $cfg['fit'];
+                $variantImage->cover($w, $h);
+            } elseif (isset($cfg['maxWidth'])) {
+                $mw = (int)$cfg['maxWidth'];
+                if ($variantImage->width() > $mw) {
+                    $variantImage->scale(width: $mw);
+                }
+            }
+            $mimeV = $variantImage->mime ?? 'image/jpeg';
+            $variants[$name] = [
+                'data' => (string)$variantImage->encode(),
+                'width' => $variantImage->width(),
+                'height' => $variantImage->height(),
+                'mime' => $mimeV,
+                'ext' => $this->inferExtension($mimeV),
+            ];
+        }
+
+        return [
+            'original' => [
+                'data' => (string)$image->encode(),
+                'width' => $width,
+                'height' => $height,
+                'mime' => $image->mime ?? 'image/jpeg',
+                'ext' => $this->inferExtension($image->mime ?? null),
+            ],
+            'variants' => $variants,
+        ];
+    }
+
+    /**
+     * Manipulate existing image file (for post-upload editing).
+     *
+     * @param string $fileContent Raw file content.
+     * @param string $mimeType MIME type of the image.
+     * @param array<string, array<string,mixed>> $variantConfig Variant configuration.
+     * @param array<string,mixed> $manipulations Image manipulations to apply.
+     * @return array<string, mixed>
+     */
+    public function manipulateExisting(
+        string $fileContent,
+        string $mimeType,
+        array $variantConfig,
+        array $manipulations,
+    ): array {
+        if ($this->manager === null) {
+            // Fallback if Intervention Image not available
+            return [
+                'original' => [
+                    'data' => $fileContent,
+                    'width' => 0,
+                    'height' => 0,
+                    'mime' => $mimeType,
+                    'ext' => $this->inferExtension($mimeType),
+                ],
+                'variants' => [],
+            ];
+        }
+
+        try {
+            $image = $this->manager->read($fileContent);
+        } catch (\Throwable $e) {
+            // Fallback on read failure
+            return [
+                'original' => [
+                    'data' => $fileContent,
+                    'width' => 0,
+                    'height' => 0,
+                    'mime' => $mimeType,
+                    'ext' => $this->inferExtension($mimeType),
+                ],
+                'variants' => [],
+            ];
+        }
+
+        // Apply manipulations to the original image
+        if (!empty($manipulations)) {
+            $image = $this->applyManipulations($image, $manipulations);
+        }
+
         $width = $image->width();
         $height = $image->height();
         $variants = [];
@@ -312,6 +407,81 @@ class ImageProcessor
         }
 
         return $tags;
+    }
+
+    /**
+     * Apply image manipulations (crop, rotate, brightness, contrast).
+     *
+     * @param mixed $image Image instance.
+     * @param array<string,mixed> $manipulations Manipulations array.
+     * @return mixed
+     */
+    private function applyManipulations(
+        mixed $image,
+        array $manipulations,
+    ): mixed {
+        // Crop: expects x, y, width, height
+        if (!empty($manipulations['crop'])) {
+            $crop = $manipulations['crop'];
+            if (isset($crop['x'], $crop['y'], $crop['width'], $crop['height'])) {
+                $x = (int)$crop['x'];
+                $y = (int)$crop['y'];
+                $w = (int)$crop['width'];
+                $h = (int)$crop['height'];
+                // Ensure bounds are valid
+                $maxW = $image->width();
+                $maxH = $image->height();
+                if ($x < 0) {
+                    $x = 0;
+                }
+                if ($y < 0) {
+                    $y = 0;
+                }
+                if ($x + $w > $maxW) {
+                    $w = $maxW - $x;
+                }
+                if ($y + $h > $maxH) {
+                    $h = $maxH - $y;
+                }
+                if ($w > 0 && $h > 0) {
+                    $image->crop($w, $h, $x, $y);
+                }
+            }
+        }
+
+        // Rotate: expects angle (degrees, 0-360)
+        if (!empty($manipulations['rotate'])) {
+            $angle = (int)$manipulations['rotate'];
+            if ($angle > 0 && $angle < 360) {
+                $image->rotate(-$angle); // Negative because Intervention rotates counter-clockwise
+            }
+        }
+
+        // Brightness: expects value (-100 to 100)
+        if (isset($manipulations['brightness'])) {
+            $brightness = (int)$manipulations['brightness'];
+            if ($brightness !== 0) {
+                $image->brightness($brightness);
+            }
+        }
+
+        // Contrast: expects value (-100 to 100)
+        if (isset($manipulations['contrast'])) {
+            $contrast = (int)$manipulations['contrast'];
+            if ($contrast !== 0) {
+                $image->contrast($contrast);
+            }
+        }
+
+        // Blur: expects value (0-100, optional)
+        if (!empty($manipulations['blur'])) {
+            $blur = (int)$manipulations['blur'];
+            if ($blur > 0 && $blur <= 100) {
+                $image->blur($blur);
+            }
+        }
+
+        return $image;
     }
 
     /**
