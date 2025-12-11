@@ -85,7 +85,8 @@ class ImagesController extends AppController
                 return $this->json(['success' => false, 'error' => $validation]);
             }
             $tags = $this->collectTags();
-            [$processed, $hash, $mime, $ext] = $this->processFile($file);
+            $manipulations = $this->collectManipulations();
+            [$processed, $hash, $mime, $ext] = $this->processFile($file, $manipulations);
             $images = $this->fetchTable('Images');
             /** @var \App\Model\Entity\Image|null $existing */
             $existing = $images->find()->where(['hash' => $hash])->first();
@@ -145,6 +146,15 @@ class ImagesController extends AppController
     }
 
     /**
+     * Display image upload form with basic manipulation preview.
+     */
+    public function uploadForm(): void
+    {
+        $this->request->allowMethod(['get']);
+        // Template: templates/Admin/Images/upload.php
+    }
+
+    /**
      * Edit image metadata (status or original_name only for now).
      */
     public function edit(int $id): ?Response
@@ -163,6 +173,248 @@ class ImagesController extends AppController
         $this->set(compact('image'));
 
         return null; // Allow auto-render
+    }
+
+    /**
+     * Manage tags for an image (view/edit).
+     */
+    public function tags(int $id): ?Response
+    {
+        $images = $this->fetchTable('Images');
+        $image = $images->get($id, ['contain' => ['ImageTags']]);
+
+        if ($this->request->is(['post', 'put', 'patch'])) {
+            $tagInput = (string)($this->request->getData('tags') ?? '');
+            $tags = array_filter(
+                array_map('trim', explode(',', $tagInput)),
+                fn($t) => $t !== ''
+            );
+
+            // Remove all existing tags first
+            $imageTags = $this->fetchTable('ImagesImageTags');
+            $imageTags->deleteAll(['image_id' => $id]);
+
+            // Apply new tags
+            if ($tags) {
+                $processor = new ImageProcessor();
+                $processor->attachTags($id, $tags);
+            }
+
+            $this->Flash->success('Tags updated');
+
+            return $this->redirect(['action' => 'tags', $id]);
+        }
+
+        // Load tags for display
+        $image = $images->get($id, ['contain' => ['ImageTags']]);
+        $currentTags = $image->image_tags ?? [];
+        $tagString = implode(', ', array_map(fn($t) => $t->name, $currentTags));
+
+        $this->set(compact('image', 'tagString', 'currentTags'));
+
+        return null;
+    }
+
+    /**
+     * View usage/references for an image.
+     */
+    public function usage(int $id): void
+    {
+        $images = $this->fetchTable('Images');
+        $image = $images->get($id);
+
+        $usages = $this->fetchTable('ImageUsages')
+            ->find()
+            ->where(['image_id' => $id])
+            ->orderByDesc('created')
+            ->all();
+
+        $this->set(compact('image', 'usages'));
+    }
+
+    /**
+     * Delete an image and all its references.
+     */
+    public function delete(int $id): Response
+    {
+        $this->request->allowMethod(['post', 'delete']);
+
+        $images = $this->fetchTable('Images');
+        $image = $images->get($id);
+
+        // Delete associations and files
+        $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $id]);
+        $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $id]);
+
+        // Delete physical files
+        $this->deleteImageFiles($image);
+
+        // Delete record
+        if ($images->delete($image)) {
+            $this->Flash->success('Image deleted');
+        } else {
+            $this->Flash->error('Could not delete image');
+        }
+
+        return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Bulk delete images.
+     */
+    public function bulkDelete(): Response
+    {
+        $this->request->allowMethod(['post']);
+
+        $ids = $this->request->getData('ids') ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+
+        $images = $this->fetchTable('Images');
+        $imagesToDelete = $images->find()
+            ->whereInList('id', $ids)
+            ->all();
+
+        $deleted = 0;
+        foreach ($imagesToDelete as $image) {
+            // Delete associations
+            $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $image->id]);
+            $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $image->id]);
+
+            // Delete files
+            $this->deleteImageFiles($image);
+
+            // Delete record
+            if ($images->delete($image)) {
+                $deleted++;
+            }
+        }
+
+        $this->Flash->success("Deleted {$deleted} image(s)");
+
+        return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Manipulate (crop, rotate, adjust) existing image.
+     * GET: Display manipulation form with preview
+     * POST: Apply manipulations and save
+     *
+     * @param int $id Image ID.
+     * @return \Cake\Http\Response
+     */
+    public function manipulate(int $id): Response
+    {
+        $images = $this->fetchTable('Images');
+        $image = $images->get($id);
+        /** @var \App\Model\Entity\Image $image */
+
+        if ($this->request->is('post')) {
+            // Apply manipulations
+            $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
+            $originalPath = $baseDir . $image->storage_path;
+
+            if (!is_file($originalPath)) {
+                $this->Flash->error('Original image file not found');
+
+                return $this->redirect(['action' => 'index']);
+            }
+
+            // Get manipulations from request
+            $manipulations = $this->collectManipulations();
+            if (empty($manipulations)) {
+                $this->Flash->warning('No manipulations specified');
+
+                return $this->redirect(['action' => 'manipulate', 'id' => $id]);
+            }
+
+            // Process with manipulations by directly working with the file content
+            $fileContent = file_get_contents($originalPath);
+            $variantConfig = (array)Configure::read('Images.variants', [
+                'thumb' => ['fit' => [150,150]],
+                'medium' => ['maxWidth' => 800],
+            ]);
+
+            // Process with manipulations
+            try {
+                $processor = new ImageProcessor();
+                // Call a direct manipulation method instead of process()
+                $processed = $processor->manipulateExisting(
+                    $fileContent,
+                    $image->mime_type ?? 'image/jpeg',
+                    $variantConfig,
+                    $manipulations,
+                );
+            } catch (\Throwable $e) {
+                \Cake\Log\Log::error('Image manipulation failed: ' . $e->getMessage());
+                $this->Flash->error('Failed to apply manipulations: ' . $e->getMessage());
+
+                return $this->redirect(['action' => 'manipulate', 'id' => $id]);
+            }
+
+            // Save manipulated image (overwrite original)
+            try {
+                $originalData = $processed['original']['data'];
+                if (file_put_contents($originalPath, $originalData) === false) {
+                    throw new \RuntimeException('Failed to write image file');
+                }
+
+                // Update variants
+                if ($image->variants && is_array($image->variants)) {
+                    foreach ($image->variants as $name => $variant) {
+                        if (isset($variant['path']) && isset($processed['variants'][$name])) {
+                            $variantPath = $baseDir . $variant['path'];
+                            if (!file_put_contents($variantPath, $processed['variants'][$name]['data'])) {
+                                throw new \RuntimeException("Failed to write variant {$name}");
+                            }
+                        }
+                    }
+                }
+
+                $this->Flash->success('Image manipulations applied successfully');
+
+                return $this->redirect(['action' => 'edit', 'id' => $id]);
+            } catch (\Throwable $e) {
+                \Cake\Log\Log::error('Failed to save manipulated image: ' . $e->getMessage());
+                $this->Flash->error('Failed to save manipulated image: ' . $e->getMessage());
+
+                return $this->redirect(['action' => 'manipulate', 'id' => $id]);
+            }
+        }
+
+        // GET: Display form with preview
+        $this->set(compact('image'));
+
+        return $this->render();
+    }
+
+    /**
+     * Delete physical image files.
+     */
+    private function deleteImageFiles(\App\Model\Entity\Image $image): void
+    {
+        $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
+        if (!$image->storage_path) {
+            return;
+        }
+
+        $originalPath = $baseDir . $image->storage_path;
+        if (is_file($originalPath)) {
+            unlink($originalPath);
+        }
+
+        // Delete variants
+        if ($image->variants && is_array($image->variants)) {
+            foreach ($image->variants as $variant) {
+                if (isset($variant['path'])) {
+                    $variantPath = $baseDir . $variant['path'];
+                    if (is_file($variantPath)) {
+                        unlink($variantPath);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -339,6 +591,63 @@ class ImagesController extends AppController
     }
 
     /**
+     * Collect image manipulations from request (crop, rotate, brightness, contrast).
+     */
+    private function collectManipulations(): array
+    {
+        $manipulations = [];
+
+        // Crop coordinates
+        $crop = $this->request->getData('crop');
+        if (is_array($crop) && isset($crop['x'], $crop['y'], $crop['width'], $crop['height'])) {
+            $manipulations['crop'] = [
+                'x' => (int)$crop['x'],
+                'y' => (int)$crop['y'],
+                'width' => (int)$crop['width'],
+                'height' => (int)$crop['height'],
+            ];
+        }
+
+        // Rotation angle
+        $rotate = $this->request->getData('rotate');
+        if ($rotate !== null && $rotate !== '') {
+            $angle = (int)$rotate;
+            if ($angle > 0 && $angle < 360) {
+                $manipulations['rotate'] = $angle;
+            }
+        }
+
+        // Brightness adjustment
+        $brightness = $this->request->getData('brightness');
+        if ($brightness !== null && $brightness !== '') {
+            $value = (int)$brightness;
+            if ($value >= -100 && $value <= 100) {
+                $manipulations['brightness'] = $value;
+            }
+        }
+
+        // Contrast adjustment
+        $contrast = $this->request->getData('contrast');
+        if ($contrast !== null && $contrast !== '') {
+            $value = (int)$contrast;
+            if ($value >= -100 && $value <= 100) {
+                $manipulations['contrast'] = $value;
+            }
+        }
+
+        // Blur
+        $blur = $this->request->getData('blur');
+        if ($blur !== null && $blur !== '') {
+            $value = (int)$blur;
+            if ($value > 0 && $value <= 100) {
+                $manipulations['blur'] = $value;
+            }
+        }
+
+        return $manipulations;
+    }
+
+    /**
      * Apply tags to an image via ImageProcessor service.
      */
     private function applyTags(int $imageId, array $tags): void
@@ -356,14 +665,14 @@ class ImagesController extends AppController
      * @param mixed $file Uploaded file.
      * @return array{0:array,1:string,2:string,3:string}
      */
-    private function processFile(mixed $file): array
+    private function processFile(mixed $file, array $manipulations = []): array
     {
         $variantConfig = (array)Configure::read('Images.variants', [
             'thumb' => ['fit' => [150,150]],
             'medium' => ['maxWidth' => 800],
         ]);
         $processor = new ImageProcessor();
-        $processed = $processor->process($file, $variantConfig);
+        $processed = $processor->process($file, $variantConfig, $manipulations);
         $hash = hash('sha256', $processed['original']['data']);
         $mime = $file->getClientMediaType();
         $ext = pathinfo($file->getClientFilename() ?? '', PATHINFO_EXTENSION) ?: $processed['original']['ext'];
