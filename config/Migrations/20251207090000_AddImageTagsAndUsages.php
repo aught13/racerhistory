@@ -33,26 +33,25 @@ class AddImageTagsAndUsages extends AbstractMigration
             ->addIndex(['image_id', 'image_tag_id'], ['unique' => true])
             ->create();
 
-        // image_usages (tracks where images are referenced)
-        $this->table('image_usages')
-            ->addColumn('id', 'integer', ['autoIncrement' => true, 'signed' => false])
-            ->addPrimaryKey(['id'])
-            ->addColumn('image_id', 'integer', ['null' => false, 'signed' => false])
-            ->addColumn('model', 'string', ['limit' => 120, 'null' => false])
-            ->addColumn('foreign_key', 'integer', ['null' => false, 'signed' => false])
-            ->addColumn('context', 'string', ['limit' => 80, 'null' => true, 'default' => null])
-            ->addColumn('field', 'string', ['limit' => 80, 'null' => true, 'default' => null])
-            ->addColumn('created', 'datetime', ['null' => true, 'default' => null])
-            ->addColumn('modified', 'datetime', ['null' => true, 'default' => null])
-            ->addIndex(['image_id'])
-            ->addIndex(['model', 'foreign_key'])
-            ->create();
+        // Update image_usages table to add context field if it doesn't exist
+        if ($this->hasTable('image_usages')) {
+            $table = $this->table('image_usages');
+            if (!$table->hasColumn('context')) {
+                $table->addColumn('context', 'string', ['limit' => 80, 'null' => true, 'default' => null])
+                    ->update();
+            }
+        }
     }
 
     public function down(): void
     {
         $this->table('images_image_tags')->drop()->save();
-        $this->table('image_usages')->drop()->save();
+        if ($this->hasTable('image_usages')) {
+            $table = $this->table('image_usages');
+            if ($table->hasColumn('context')) {
+                $table->removeColumn('context')->update();
+            }
+        }
         $this->table('image_tags')->drop()->save();
     }
 }
