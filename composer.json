@@ -68,5 +68,14 @@
         "cs-check": "phpcs --colors -p",
         "cs-fix": "phpcbf --colors -p",
         "test": "phpunit --colors=always"
+    },
+    "extra": {
+        "phpunit": {
+            "php-8.2": {
+                "require": {
+                    "phpunit/phpunit": "^10.5.5"
+                }
+            }
+        }
     }
 }

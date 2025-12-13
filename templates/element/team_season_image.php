@@ -29,14 +29,17 @@ $defaultClass = $sizeConfig['class'];
 $cssClass = trim($defaultClass . ' ' . $class);
 $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $style;
 
-echo '<!-- DEBUG: team_season_image = "' . h($teamSeason->team_season_image ?? 'NULL') . '" -->';
-
-echo '<!-- DEBUG: is_numeric = ' . (is_numeric($teamSeason->team_season_image ?? '') ? 'true' : 'false') . ' -->';
-
 if (!empty($teamSeason->team_season_image) && is_numeric($teamSeason->team_season_image)) {
-    $imageUrl = '/images/serve/' . $teamSeason->team_season_image;
-    if ($variant) { $imageUrl .= '?variant=' . urlencode($variant); }
-    echo '<img src="' . h($imageUrl) . '" alt="Season image" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy">';
+    $params = [
+        'w' => $width,
+        'h' => $height,
+        'fit' => 'cover',
+    ];
+    if ($variant) {
+        $params = ['variant' => $variant] + $params;
+    }
+    $imageUrl = $this->ImageServe->url((int)$teamSeason->team_season_image, $params);
+    echo '<img src="' . h($imageUrl) . '" alt="Season image" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
 } else {
     echo $this->Html->div('placeholder-image ' . $cssClass,
         $this->Html->tag('span', 'TS', [

@@ -27,18 +27,20 @@ class ImagesController extends AppController
     private ?string $lastPersistError = null;
 
     /**
-     * Controller initialization: unlock the 'upload' action from FormProtection.
-     * This allows multipart XHR requests without Cake token fields.
+     * Controller initialization: unlock actions from FormProtection when the UI
+     * uses custom (non-FormHelper) fields.
      */
     public function initialize(): void
     {
         parent::initialize();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            if (!in_array('upload', $current, true)) {
-                $current[] = 'upload';
-                $this->FormProtection->setConfig('unlockedActions', $current);
+            foreach (['upload', 'manipulate'] as $action) {
+                if (!in_array($action, $current, true)) {
+                    $current[] = $action;
+                }
             }
+            $this->FormProtection->setConfig('unlockedActions', $current);
         }
     }
 
@@ -119,7 +121,7 @@ class ImagesController extends AppController
      */
     public function serve(int $id): Response
     {
-        $this->request->allowMethod(['get']);
+        $this->request->allowMethod(['get', 'head']);
         $image = $this->loadImageOrFail($id);
         $variant = (string)$this->request->getQuery('variant');
         [$path, $mime] = $this->resolveImagePath($image, $variant);
@@ -310,12 +312,20 @@ class ImagesController extends AppController
         $image = $images->get($id);
         /** @var \App\Model\Entity\Image $image */
 
-        if ($this->request->is('post')) {
-            // Apply manipulations
-            $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
-            $originalPath = $baseDir . $image->storage_path;
+        \Cake\Log\Log::debug("Manipulate action called for image ID: {$id}");
+        \Cake\Log\Log::debug('Image entity: ' . json_encode($image->toArray()));
+        $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
+        $originalPath = $baseDir . $image->storage_path;
 
+        \Cake\Log\Log::debug("Original path: {$originalPath}");
+
+        if ($this->request->is('post')) {
+            $mode = (string)($this->request->getData('mode') ?? 'apply');
+
+            // Apply manipulations
+            // Verify file existence
             if (!is_file($originalPath)) {
+                \Cake\Log\Log::error("Image file not found: {$originalPath}");
                 $this->Flash->error('Original image file not found');
 
                 return $this->redirect(['action' => 'index']);
@@ -326,7 +336,7 @@ class ImagesController extends AppController
             if (empty($manipulations)) {
                 $this->Flash->warning('No manipulations specified');
 
-                return $this->redirect(['action' => 'manipulate', 'id' => $id]);
+                return $this->redirect(['action' => 'manipulate', $id]);
             }
 
             // Process with manipulations by directly working with the file content
@@ -342,7 +352,7 @@ class ImagesController extends AppController
                 // Call a direct manipulation method instead of process()
                 $processed = $processor->manipulateExisting(
                     $fileContent,
-                    $image->mime_type ?? 'image/jpeg',
+                    $image->mime ?? 'image/jpeg',
                     $variantConfig,
                     $manipulations,
                 );
@@ -350,36 +360,93 @@ class ImagesController extends AppController
                 \Cake\Log\Log::error('Image manipulation failed: ' . $e->getMessage());
                 $this->Flash->error('Failed to apply manipulations: ' . $e->getMessage());
 
-                return $this->redirect(['action' => 'manipulate', 'id' => $id]);
+                return $this->redirect(['action' => 'manipulate', $id]);
             }
 
             // Save manipulated image (overwrite original)
             try {
                 $originalData = $processed['original']['data'];
+
+                // If the image library isn't available, ImageProcessor falls back
+                // to returning the original bytes. Make that visible to the user
+                // so it doesn't look like the save silently failed.
+                $origWidth = (int)($processed['original']['width'] ?? 0);
+                $origHeight = (int)($processed['original']['height'] ?? 0);
+                if ($origWidth === 0 && $origHeight === 0) {
+                    $this->Flash->error(
+                        'Server-side image manipulation is unavailable (missing PHP GD/Imagick). '
+                        . 'Install `php-gd` (recommended) or `php-imagick`, then restart PHP/Apache.'
+                    );
+
+                    return $this->redirect(['action' => 'manipulate', $id]);
+                }
+
+                // Save-as-copy mode: keep the original image untouched and persist a new image record.
+                if ($mode === 'copy') {
+                    $mime = (string)($processed['original']['mime'] ?? $image->mime ?? 'image/jpeg');
+                    $ext = (string)($processed['original']['ext'] ?? $image->ext ?? 'jpg');
+                    $hash = hash('sha256', $originalData);
+                    $copyName = $image->original_name
+                        ? $image->original_name . ' (edited)'
+                        : $image->filename . ' (edited)';
+
+                    $new = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $copyName);
+                    if (!$new) {
+                        $detail = $this->lastPersistError ?: 'Unable to save image copy';
+                        $this->Flash->error($detail);
+
+                        return $this->redirect(['action' => 'manipulate', $id]);
+                    }
+
+                    $this->Flash->success('Saved manipulated image as a new copy');
+
+                    return $this->redirect(['action' => 'edit', $new->id]);
+                }
+
                 if (file_put_contents($originalPath, $originalData) === false) {
                     throw new \RuntimeException('Failed to write image file');
                 }
 
                 // Update variants
-                if ($image->variants && is_array($image->variants)) {
-                    foreach ($image->variants as $name => $variant) {
-                        if (isset($variant['path']) && isset($processed['variants'][$name])) {
-                            $variantPath = $baseDir . $variant['path'];
-                            if (!file_put_contents($variantPath, $processed['variants'][$name]['data'])) {
-                                throw new \RuntimeException("Failed to write variant {$name}");
-                            }
+                $variants = $image->variants;
+                if (is_string($variants)) {
+                    $variants = json_decode($variants, true);
+                }
+                if (is_array($variants)) {
+                    $dir = dirname($originalPath);
+                    foreach ($variants as $name => $variantMeta) {
+                        if (!isset($processed['variants'][$name])) {
+                            continue;
+                        }
+                        $file = is_array($variantMeta) ? ($variantMeta['file'] ?? null) : null;
+                        if (!$file) {
+                            continue;
+                        }
+                        $variantPath = $dir . DS . $file;
+                        if (!file_put_contents($variantPath, $processed['variants'][$name]['data'])) {
+                            throw new \RuntimeException("Failed to write variant {$name}");
                         }
                     }
                 }
 
+                // Update DB metadata so edit/serve endpoints reflect changes and cache-busting is possible.
+                $images->patchEntity($image, [
+                    'byte_size' => strlen($originalData),
+                    'hash' => hash('sha256', $originalData),
+                    'width' => (int)($processed['original']['width'] ?? $image->width),
+                    'height' => (int)($processed['original']['height'] ?? $image->height),
+                    'modified' => date('Y-m-d H:i:s'),
+                ], ['validate' => false]);
+                $images->saveOrFail($image);
+
                 $this->Flash->success('Image manipulations applied successfully');
 
-                return $this->redirect(['action' => 'edit', 'id' => $id]);
+                return $this->redirect(['action' => 'edit', $id]);
             } catch (\Throwable $e) {
                 \Cake\Log\Log::error('Failed to save manipulated image: ' . $e->getMessage());
                 $this->Flash->error('Failed to save manipulated image: ' . $e->getMessage());
 
-                return $this->redirect(['action' => 'manipulate', 'id' => $id]);
+                return $this->redirect(['action' => 'manipulate', $id]);
             }
         }
 
@@ -405,13 +472,20 @@ class ImagesController extends AppController
         }
 
         // Delete variants
-        if ($image->variants && is_array($image->variants)) {
-            foreach ($image->variants as $variant) {
-                if (isset($variant['path'])) {
-                    $variantPath = $baseDir . $variant['path'];
-                    if (is_file($variantPath)) {
-                        unlink($variantPath);
-                    }
+        $variants = $image->variants;
+        if (is_string($variants)) {
+            $variants = json_decode($variants, true);
+        }
+        if (is_array($variants)) {
+            $dir = dirname($originalPath);
+            foreach ($variants as $variantMeta) {
+                $file = is_array($variantMeta) ? ($variantMeta['file'] ?? null) : null;
+                if (!$file) {
+                    continue;
+                }
+                $variantPath = $dir . DS . $file;
+                if (is_file($variantPath)) {
+                    unlink($variantPath);
                 }
             }
         }

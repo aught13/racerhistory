@@ -201,6 +201,37 @@ class ImagesControllerTest extends TestCase
         $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    public function testPublicServeSupportsTransformParams(): void
+    {
+        if (!extension_loaded('gd') && !extension_loaded('imagick')) {
+            $this->markTestSkipped('Requires gd or imagick for image transformations');
+        }
+
+        $this->mockIdentity();
+        $tmp = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($tmp, $pngData);
+        $this->post('/admin/images/upload', [
+            'upload' => [
+                'tmp_name' => $tmp,
+                'name' => 'dot.png',
+                'type' => 'image/png',
+                'size' => strlen($pngData),
+                'error' => UPLOAD_ERR_OK,
+            ],
+        ]);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
+        $id = (int)$json['image']['id'];
+        $this->createdImageIds[] = $id;
+
+        // Trigger the transform code path.
+        $this->get('/images/serve/' . $id . '?w=1&h=1&fit=cover&fm=png&q=90');
+        $this->assertResponseOk();
+        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody());
+    }
+
     public function testPublicServeMissingVariantFallsBack(): void
     {
         // record 1 exists but has no variants, request a non-existent variant
@@ -224,6 +255,36 @@ class ImagesControllerTest extends TestCase
         $this->get('/admin/images/edit/1');
         $this->assertResponseOk();
         $this->assertStringContainsString('<form', (string)$this->_response->getBody(), 'Edit form should render');
+    }
+
+    public function testManipulatePostAcceptsCustomFields(): void
+    {
+        $this->mockIdentity();
+
+        // Ensure the fixture image file exists on disk so manipulate() can process it.
+        $dir = WWW_ROOT . 'img' . DS . 'storage' . DS . date('Y') . DS . date('m') . DS;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $path = $dir . 'seed.png';
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($path, $pngData);
+
+        $this->post('/admin/images/manipulate/1', [
+            'crop' => ['x' => 0, 'y' => 0, 'width' => 1, 'height' => 1],
+            'rotate' => '10',
+            'brightness' => '0',
+            'contrast' => '0',
+            'blur' => '0',
+        ]);
+
+        $this->assertResponseCode(302, 'Manipulate POST should redirect (not be blocked by FormProtection)');
+
+        // Best-effort cleanup (file may be overwritten during manipulate).
+        if (is_file($path)) {
+            unlink($path);
+        }
     }
 
     protected function tearDown(): void

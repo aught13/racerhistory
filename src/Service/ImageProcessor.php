@@ -93,7 +93,10 @@ class ImageProcessor
                 if ($tmp !== false) {
                     $width = imagesx($tmp);
                     $height = imagesy($tmp);
-                    imagedestroy($tmp);
+                    if (function_exists('imagedestroy')) {
+                        $fn = 'imagedestroy';
+                        $fn($tmp);
+                    }
                 }
             }
             $variants = [];

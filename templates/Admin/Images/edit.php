@@ -5,17 +5,48 @@ $this->assign('title', 'Edit Image');
   <h1 class="mb-4">Edit Image #<?= h($image->id) ?></h1>
   <div class="row g-4">
     <div class="col-md-4">
-      <?php $serveBase = '/images/serve/' . $image->id; ?>
+      <?php $serveUrl = $this->ImageServe->urlForImage($image); ?>
       <figure>
-        <img src="<?= h($serveBase) ?>" alt="Preview" class="img-fluid rounded border" />
+        <img src="<?= h($serveUrl) ?>" alt="Preview" class="img-fluid rounded border" />
         <figcaption class="mt-2 small text-muted">Original (public)</figcaption>
       </figure>
       <?php $variants = is_string($image->variants) ? json_decode($image->variants, true) : (array)$image->variants; ?>
       <?php if ($variants): ?>
         <div class="row g-2 mt-3">
           <?php foreach ($variants as $name => $meta): ?>
+            <?php
+              $meta = (array)$meta;
+              $vw = isset($meta['width']) && is_numeric($meta['width']) ? (int)$meta['width'] : null;
+              $vh = isset($meta['height']) && is_numeric($meta['height']) ? (int)$meta['height'] : null;
+              $vmime = isset($meta['mime']) ? (string)$meta['mime'] : '';
+
+              $thumbUrl = $this->ImageServe->urlForImage($image, ['variant' => (string)$name]);
+
+              // Prefer on-the-fly derivatives when a size is known.
+              if (($vw && $vw > 0) || ($vh && $vh > 0)) {
+                  $params = [];
+                  if ($vw && $vw > 0) {
+                      $params['w'] = $vw;
+                  }
+                  if ($vh && $vh > 0) {
+                      $params['h'] = $vh;
+                  }
+                  if (($vw && $vw > 0) && ($vh && $vh > 0)) {
+                      $params['fit'] = 'cover';
+                  }
+                  if ($vmime === 'image/png') {
+                      $params['fm'] = 'png';
+                  } elseif ($vmime === 'image/webp') {
+                      $params['fm'] = 'webp';
+                  } elseif ($vmime === 'image/jpeg') {
+                      $params['fm'] = 'jpg';
+                  }
+
+                $thumbUrl = $this->ImageServe->urlForImage($image, $params);
+              }
+            ?>
             <div class="col-4 text-center">
-              <img src="<?= h($serveBase . '?variant=' . rawurlencode($name)) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
+              <img src="<?= h($thumbUrl) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
               <div class="small mt-1"><?= h($name) ?></div>
             </div>
           <?php endforeach; ?>

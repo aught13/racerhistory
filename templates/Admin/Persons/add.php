@@ -86,8 +86,11 @@
 // Load self-hosted TinyMCE (installed via composer tinymce/tinymce) and initialize.
 // We expect the TinyMCE distribution to be published under /js/tinymce/ (see deployment notes).
     echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
+
+    $previewQsJson = json_encode($this->ImageServe->query(['w' => 150, 'h' => 150, 'fit' => 'cover'])) ?: '""';
     echo $this->Html->scriptBlock(<<<JS
 document.addEventListener('DOMContentLoaded', function () {
+    const previewQs = {$previewQsJson};
     var el = document.getElementById('bio-editor');
     if (!el || typeof tinymce === 'undefined') { return; }
     tinymce.init({
@@ -183,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Update the preview
                     const previewImg = imagePreview.querySelector('img');
-                    previewImg.src = data.image.url;
+                    previewImg.src = '/images/serve/' + data.image.id + previewQs + '&_ts=' + Date.now();
                     imagePreview.style.display = 'block';
                 })
                 .catch(error => {
@@ -204,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const imageId = imageField.value.trim();
             if (imageId && !isNaN(parseInt(imageId, 10))) {
                 const previewImg = imagePreview.querySelector('img');
-                previewImg.src = `/images/serve/\${imageId}`;
+                previewImg.src = '/images/serve/' + imageId + previewQs;
                 imagePreview.style.display = 'block';
             }
         }
