@@ -260,7 +260,14 @@ class ImageProcessor
 
         $tagsTable = $this->table('ImageTags');
         $imagesTable = $this->table('Images');
-        $image = $imagesTable->get($imageId, ['contain' => ['ImageTags']]);
+        /** @var \App\Model\Entity\Image $image */
+        $image = $imagesTable->get($imageId, contain: ['ImageTags']);
+
+        // Get existing tag IDs for this image
+        $existingTagIds = [];
+        foreach ($image->image_tags as $tag) {
+            $existingTagIds[] = $tag->id;
+        }
 
         $tagEntities = [];
         foreach ($tags as $tag) {
@@ -274,8 +281,7 @@ class ImageProcessor
                 $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
                 $tagsTable->save($existing);
             }
-            /** @phpstan-ignore if.alwaysTrue */
-            if ($existing) {
+            if (!in_array($existing->id, $existingTagIds)) {
                 $tagEntities[] = $existing;
             }
         }
@@ -340,12 +346,15 @@ class ImageProcessor
         $needed = count($tagSlugs);
         $images = $this->table('Images');
 
+        // Use select with tag_count and raw string in HAVING (CakePHP has issues with alias binding in HAVING)
         $query = $images->find()
+            ->select($images)
+            ->select(['tag_count' => $images->query()->func()->count('DISTINCT ImageTags.slug')])
             ->matching('ImageTags', function ($q) use ($tagSlugs) {
                 return $q->where(['ImageTags.slug IN' => $tagSlugs]);
             })
-            ->group(['Images.id'])
-            ->having(['COUNT(DISTINCT ImageTags.slug) >=' => $needed])
+            ->groupBy(['Images.id'])
+            ->having("tag_count >= {$needed}")
             ->limit($limit);
 
         return $query->all()->toList();

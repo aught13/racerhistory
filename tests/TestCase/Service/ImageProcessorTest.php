@@ -96,7 +96,7 @@ class ImageProcessorTest extends TestCase
         $this->assertNotNull($rosterTag);
 
         // Verify image has tags
-        $reloaded = $images->get($image->id, ['contain' => ['ImageTags']]);
+        $reloaded = $images->get($image->id, contain: ['ImageTags']);
         $this->assertCount(2, $reloaded->image_tags);
     }
 

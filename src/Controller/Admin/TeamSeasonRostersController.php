@@ -102,10 +102,10 @@ class TeamSeasonRostersController extends AppController
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
         $teamSeasonRoster = $this->TeamSeasonRosters->get(
             $id,
-            ['contain' => [
+            contain: [
                 'TeamSeasons' => ['Teams', 'Seasons'],
                 'Persons',
-            ]]
+            ]
         );
 
         if ($this->request->is(['patch', 'post', 'put'])) {
