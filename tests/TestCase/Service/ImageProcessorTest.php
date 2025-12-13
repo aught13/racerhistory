@@ -69,9 +69,17 @@ class ImageProcessorTest extends TestCase
 
         // Create a test image
         $image = $images->newEntity([
-            'hash' => 'test-hash-' . time(),
+            'filename' => 'test.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/test.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-hash-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
@@ -102,9 +110,17 @@ class ImageProcessorTest extends TestCase
 
         // Create a test image
         $image = $images->newEntity([
-            'hash' => 'test-hash-dup-' . time(),
+            'filename' => 'test2.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/test2.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-hash-dup-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
@@ -129,9 +145,17 @@ class ImageProcessorTest extends TestCase
 
         // Create a test image
         $image = $images->newEntity([
-            'hash' => 'test-usage-' . time(),
+            'filename' => 'usage.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/usage.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-usage-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
@@ -168,9 +192,17 @@ class ImageProcessorTest extends TestCase
 
         // Create a test image
         $image = $images->newEntity([
-            'hash' => 'test-usage-idem-' . time(),
+            'filename' => 'usage-idem.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/usage-idem.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-usage-idem-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
@@ -200,17 +232,33 @@ class ImageProcessorTest extends TestCase
 
         // Create test images
         $image1 = $images->newEntity([
-            'hash' => 'test-tag-1-' . time(),
+            'filename' => 'test1.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/test1.jpg',
             'original_name' => 'test1.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-tag-1-' . time(),
             'status' => 'active',
         ]);
         $images->save($image1);
 
         $image2 = $images->newEntity([
-            'hash' => 'test-tag-2-' . time(),
+            'filename' => 'test2.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/test2.jpg',
             'original_name' => 'test2.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-tag-2-' . time(),
             'status' => 'active',
         ]);
         $images->save($image2);
@@ -238,9 +286,17 @@ class ImageProcessorTest extends TestCase
 
         // Create test image
         $image = $images->newEntity([
-            'hash' => 'test-person-' . time(),
+            'filename' => 'person.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/person.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-person-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
@@ -266,9 +322,17 @@ class ImageProcessorTest extends TestCase
 
         // Create test image
         $image = $images->newEntity([
-            'hash' => 'test-teamseason-' . time(),
+            'filename' => 'team.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/team.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-teamseason-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
@@ -294,9 +358,17 @@ class ImageProcessorTest extends TestCase
 
         // Create test image
         $image = $images->newEntity([
-            'hash' => 'test-roster-' . time(),
+            'filename' => 'roster.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/roster.jpg',
             'original_name' => 'test.jpg',
             'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'test-roster-' . time(),
             'status' => 'active',
         ]);
         $images->save($image);
