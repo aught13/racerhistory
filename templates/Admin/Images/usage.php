@@ -7,9 +7,9 @@ $this->assign('title', 'Image Usage');
   <div class="row g-4">
     <!-- Image Preview -->
     <div class="col-md-4">
-      <?php $serveBase = '/images/serve/' . $image->id; ?>
+      <?php $serveUrl = $this->ImageServe->urlForImage($image); ?>
       <figure>
-        <img src="<?= h($serveBase) ?>" alt="Preview" class="img-fluid rounded border" />
+        <img src="<?= h($serveUrl) ?>" alt="Preview" class="img-fluid rounded border" />
         <figcaption class="mt-2 small text-muted">
           <strong><?= h($image->original_name) ?></strong><br>
           <?= h($image->width) ?>×<?= h($image->height) ?> • <?= h($image->byte_size) ?> bytes

@@ -22,8 +22,11 @@ $this->assign('title', 'Images');
         <td><?= h($img->id) ?></td>
         <td>
           <?php
-          // Build public serve URL (prefer variant) and fallback to direct file if exists
-          $thumbUrl = '/images/serve/' . $img->id . '?variant=thumb';
+          $thumbUrl = $this->ImageServe->urlForImage($img, [
+            'w' => 60,
+            'h' => 60,
+            'fit' => 'cover',
+          ]);
           ?>
           <img src="<?= h($thumbUrl) ?>" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" />
         </td>

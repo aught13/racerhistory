@@ -353,6 +353,7 @@ $this->assign('title', 'Add Team Season'); ?>
 
 <?php
 echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
+$previewQsJson = json_encode($this->ImageServe->query(['w' => 150, 'h' => 150, 'fit' => 'cover']));
 echo $this->Html->scriptBlock(<<<JS
 document.addEventListener('DOMContentLoaded', function(){
     function initEditor(id){
@@ -398,6 +399,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const btn = document.getElementById('select-team-season-image');
     const field = document.getElementById('team-season-image');
     const previewWrap = document.getElementById('team-season-image-preview');
+    const previewQs = {$previewQsJson};
     if (btn && field) {
         btn.addEventListener('click', function(e){
             e.preventDefault();
@@ -410,7 +412,16 @@ document.addEventListener('DOMContentLoaded', function(){
                 btn.disabled = true; btn.textContent = 'Uploading...';
                 fetch('/admin/images/upload', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').getAttribute('content') } })
                 .then(r => r.json())
-                .then(data => { if (!data.success || !data.image) { alert('Upload failed: ' + (data.error || 'Unknown error')); return; } field.value = data.image.id; const img = previewWrap.querySelector('img'); img.src = data.image.url; previewWrap.style.display = 'block'; })
+                .then(data => {
+                    if (!data.success || !data.image) {
+                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                        return;
+                    }
+                    field.value = data.image.id;
+                    const img = previewWrap.querySelector('img');
+                    img.src = '/images/serve/' + data.image.id + previewQs + '&_ts=' + Date.now();
+                    previewWrap.style.display = 'block';
+                })
                 .catch(err => { console.error(err); alert('Upload failed: ' + err.message); })
                 .finally(()=>{ btn.disabled = false; btn.textContent = 'Select / Upload'; });
             };
@@ -418,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function(){
         });
         if (field.value && !isNaN(parseInt(field.value, 10))) {
             const img = previewWrap.querySelector('img');
-            img.src = '/images/serve/' + field.value;
+            img.src = '/images/serve/' + field.value + previewQs;
             previewWrap.style.display = 'block';
         }
     }

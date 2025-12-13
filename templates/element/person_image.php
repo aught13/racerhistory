@@ -33,20 +33,20 @@ $defaultClass = $sizeConfig['class'];
 $cssClass = trim($defaultClass . ' ' . $class);
 $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $style;
 
-// Debug: Let's see what's actually in person_image
-echo '<!-- DEBUG: person_image = "' . h($person->person_image ?? 'NULL') . '" -->';
-echo '<!-- DEBUG: is_numeric = ' . (is_numeric($person->person_image) ? 'true' : 'false') . ' -->';
-
 // Build image URL
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
-    // Use direct URL path to avoid routing issues
-    $imageUrl = '/images/serve/' . $person->person_image;
+    $params = [
+        'w' => $width,
+        'h' => $height,
+        'fit' => 'cover',
+    ];
     if ($variant) {
-        $imageUrl .= '?variant=' . urlencode($variant);
+        $params = ['variant' => $variant] + $params;
     }
+    $imageUrl = $this->ImageServe->url((int)$person->person_image, $params);
 
     // Use direct img tag instead of Html->image() to avoid URL processing issues
-    echo '<img src="' . h($imageUrl) . '" alt="' . h($person->display ?? $person->first . ' ' . $person->last) . '" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy">';
+    echo '<img src="' . h($imageUrl) . '" alt="' . h($person->display ?? $person->first . ' ' . $person->last) . '" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
 } else {
     // Show placeholder if no image
     echo $this->Html->div('placeholder-image ' . $cssClass,
