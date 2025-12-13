@@ -48,7 +48,7 @@ class OpponentsController extends AppController
 
         // Get all opponents for opponent_current dropdown (sorted by name)
         $opponentsList = $this->fetchTable('Opponents')->find('list')
-            ->order(['Opponents.opponent_name' => 'ASC'])
+            ->orderBy(['Opponents.opponent_name' => 'ASC'])
             ->all();
 
         $this->set(compact('opponent', 'places', 'opponentsList'));
@@ -75,7 +75,7 @@ class OpponentsController extends AppController
 
         // Format places as "Name, State" sorted by name
         $placesQuery = $this->fetchTable('Places')->find()
-            ->order(['Places.place_name' => 'ASC'])
+            ->orderBy(['Places.place_name' => 'ASC'])
             ->all();
         $places = [];
         foreach ($placesQuery as $place) {
@@ -89,7 +89,7 @@ class OpponentsController extends AppController
         // Get all opponents except current one for opponent_current dropdown
         $opponentsList = $this->fetchTable('Opponents')->find('list')
             ->where(['Opponents.id !=' => $id])
-            ->order(['Opponents.opponent_name' => 'ASC'])
+            ->orderBy(['Opponents.opponent_name' => 'ASC'])
             ->all();
 
         $this->set(compact('opponent', 'places', 'opponentsList'));

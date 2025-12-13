@@ -78,7 +78,7 @@ class GamesTable extends Table
                 try {
                     $ts = $this->fetchTable('TeamSeasons');
                     /** @var \App\Model\Entity\TeamSeason $teamSeason */
-                    $teamSeason = $ts->get((int)$teamSeasonId, ['contain' => ['Teams' => ['Sports']]]);
+                    $teamSeason = $ts->get((int)$teamSeasonId, contain: ['Teams' => ['Sports']]);
                     if (!empty($teamSeason->team) && !empty($teamSeason->team->sport)) {
                         $sportId = $teamSeason->team->sport->id;
                     }
@@ -388,7 +388,7 @@ class GamesTable extends Table
                 ->where(['TeamSeasons.id' => $teamSeasonId])
                 ->first();
 
-            if (!$teamSeason->team || !$teamSeason->team->sport) {
+            if (!$teamSeason || !$teamSeason->team || !$teamSeason->team->sport) {
                 return $errors; // No validation if sport not found
             }
 
