@@ -35,7 +35,7 @@ class ImagesController extends AppController
         parent::initialize();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            foreach (['upload', 'manipulate'] as $action) {
+            foreach (['upload', 'manipulate', 'tags'] as $action) {
                 if (!in_array($action, $current, true)) {
                     $current[] = $action;
                 }
@@ -162,7 +162,7 @@ class ImagesController extends AppController
     public function edit(int $id): ?Response
     {
         $images = $this->fetchTable('Images');
-        $image = $images->get($id);
+        $image = $images->get($id, ['contain' => ['ImageTags']]);
         if ($this->request->is(['post','put','patch'])) {
             $images->patchEntity($image, $this->request->getData(), ['fields' => ['original_name','status']]);
             if ($images->save($image)) {
@@ -172,7 +172,8 @@ class ImagesController extends AppController
             }
             $this->Flash->error('Could not update image');
         }
-        $this->set(compact('image'));
+        $currentTags = $image->image_tags ?? [];
+        $this->set(compact('image', 'currentTags'));
 
         return null; // Allow auto-render
     }
@@ -184,23 +185,157 @@ class ImagesController extends AppController
     {
         $images = $this->fetchTable('Images');
         $image = $images->get($id, ['contain' => ['ImageTags']]);
+        // Prepare entity select lists for tag helpers
+        $persons = $this->fetchTable('Persons')
+            ->find()
+            ->select(['id', 'first', 'last'])
+            ->orderBy('last')
+            ->limit(200)
+            ->all();
+        $teams = $this->fetchTable('Teams')
+            ->find()
+            ->select(['id', 'team_name'])
+            ->orderBy('team_name')
+            ->limit(200)
+            ->all();
+
+        // Team Seasons with formatted labels: 'team name (start-end)'
+        $teamSeasonsRaw = $this->fetchTable('TeamSeasons')->find()
+            ->contain(['Teams', 'Seasons'])
+            ->orderBy(['TeamSeasons.id' => 'ASC'])
+            ->limit(200)
+            ->all();
+        $teamSeasons = [];
+        foreach ($teamSeasonsRaw as $ts) {
+            $teamName = $ts->team->team_name ?? 'Team';
+            $seasonLabel = '';
+            if ($ts->season) {
+                $start = $ts->season->start ?? null;
+                $end = $ts->season->end ?? null;
+                if ($start && $end && $start != $end) {
+                    $seasonLabel = " ({$start}-{$end})";
+                } elseif ($start) {
+                    $seasonLabel = " ({$start})";
+                }
+            }
+            $teamSeasons[] = [
+                'id' => $ts->id,
+                'label' => $teamName . $seasonLabel,
+            ];
+        }
+
+        // Games with team_season_id for filtering and formatted labels
+        $gamesRaw = $this->fetchTable('Games')->find()
+            ->contain(['TeamSeason' => ['Teams', 'Seasons'], 'Opponents'])
+            ->select([
+                'Games.id', 'Games.team_season_id', 'Games.game_date',
+                'Games.opponent_id', 'Games.pts_mur', 'Games.pts_opp',
+            ])
+            ->orderByDesc('Games.id')
+            ->limit(200)
+            ->all();
+        $games = [];
+        foreach ($gamesRaw as $g) {
+            $teamName = $g->team_season->team->team_name ?? 'Team';
+            $oppName = $g->opponent->opponent_name ?? 'Opponent';
+            $date = $g->game_date ? $g->game_date->format('Y-m-d') : '';
+            $score = $g->pts_mur !== null && $g->pts_opp !== null ? " {$g->pts_mur}-{$g->pts_opp}" : '';
+            $label = $teamName . ' vs ' . $oppName
+                . ($date ? ' (' . $date . ')' : '') . $score;
+            $games[] = [
+                'id' => $g->id,
+                'team_season_id' => $g->team_season_id,
+                'label' => $label,
+            ];
+        }
+
+        // Sites with Place info (place_name, place_state, site_name)
+        $sitesRaw = $this->fetchTable('Sites')->find()
+            ->contain(['Places'])
+            ->select([
+                'Sites.id', 'Sites.site_name',
+                'Places.place_name', 'Places.place_state',
+            ])
+            ->orderBy('Sites.site_name')
+            ->limit(200)
+            ->all();
+        $sites = [];
+        foreach ($sitesRaw as $s) {
+            $parts = array_filter([
+                $s->place->place_name ?? null,
+                $s->place->place_state ?? null,
+                $s->site_name ?? null,
+            ]);
+            $label = implode(', ', $parts) ?: 'Site #' . $s->id;
+            $sites[] = [
+                'id' => $s->id,
+                'label' => $label,
+            ];
+        }
+
+        // Opponents with opponent_name - opponent_mascot - place_name
+        $opponentsRaw = $this->fetchTable('Opponents')->find()
+            ->contain(['Places'])
+            ->select(['Opponents.id', 'Opponents.opponent_name', 'Opponents.opponent_mascot', 'Places.place_name'])
+            ->orderBy('Opponents.opponent_name')
+            ->limit(200)
+            ->all();
+        $opponents = [];
+        foreach ($opponentsRaw as $o) {
+            $parts = array_filter([$o->opponent_name, $o->opponent_mascot, $o->place->place_name ?? null]);
+            $label = implode(' - ', $parts) ?: 'Opponent #' . $o->id;
+            $opponents[] = [
+                'id' => $o->id,
+                'label' => $label,
+            ];
+        }
+
+        $sports = $this->fetchTable('Sports')
+            ->find()
+            ->select(['id', 'sport_name'])
+            ->orderBy('sport_name')
+            ->limit(200)
+            ->all();
+
+        // Roster entries with formatted labels: 'person name - team_name (start-end)'
+        $rostersTable = $this->fetchTable('TeamSeasonRosters');
+        $rostersRaw = $rostersTable->find()
+            ->contain(['Persons', 'TeamSeasons' => ['Teams', 'Seasons']])
+            ->orderByDesc('TeamSeasonRosters.id')
+            ->limit(200)
+            ->all();
+        $rosters = [];
+        foreach ($rostersRaw as $r) {
+            $personName = trim(($r->person->first ?? '') . ' ' . ($r->person->last ?? ''))
+                ?: 'Person #' . $r->person_id;
+            $teamName = $r->team_season?->team->team_name ?? 'Team';
+            $seasonLabel = '';
+            if ($r->team_season?->season) {
+                $start = $r->team_season->season->start ?? null;
+                $end = $r->team_season->season->end ?? null;
+                if ($start && $end && $start != $end) {
+                    $seasonLabel = " ({$start}-{$end})";
+                } elseif ($start) {
+                    $seasonLabel = " ({$start})";
+                }
+            }
+            $label = $personName . ' - ' . $teamName . $seasonLabel;
+            $rosters[] = [
+                'id' => $r->id,
+                'person_id' => $r->person_id,
+                'label' => $label,
+            ];
+        }
 
         if ($this->request->is(['post', 'put', 'patch'])) {
-            $tagInput = (string)($this->request->getData('tags') ?? '');
-            $tags = array_filter(
-                array_map('trim', explode(',', $tagInput)),
-                fn($t) => $t !== ''
-            );
-
             // Remove all existing tags first
             $imageTags = $this->fetchTable('ImagesImageTags');
             $imageTags->deleteAll(['image_id' => $id]);
 
-            // Apply new tags
-            if ($tags) {
-                $processor = new ImageProcessor();
-                $processor->attachTags($id, $tags);
-            }
+            // Build and apply tags using service
+            $data = $this->request->getData();
+            $tagging = new \App\Service\ImageTaggingService();
+            $tagging->applyFromData($id, $data);
 
             $this->Flash->success('Tags updated');
 
@@ -210,9 +345,73 @@ class ImagesController extends AppController
         // Load tags for display
         $image = $images->get($id, ['contain' => ['ImageTags']]);
         $currentTags = $image->image_tags ?? [];
-        $tagString = implode(', ', array_map(fn($t) => $t->name, $currentTags));
 
-        $this->set(compact('image', 'tagString', 'currentTags'));
+        // Format tags with proper display labels, especially for roster tags
+        $formattedTags = [];
+        $freeformTags = [];
+        $rosterService = new \App\Service\TeamSeasonRosterService();
+
+        foreach ($currentTags as $t) {
+            $slug = (string)($t->slug ?? '');
+            if (preg_match('/-[0-9]+$/', $slug)) {
+                // Record-based tag: check if it's a roster tag
+                if (str_starts_with($slug, 'team_season_roster-')) {
+                    $parts = explode('-', $slug, 2);
+                    $rosterId = isset($parts[1]) ? (int)$parts[1] : null;
+                    if ($rosterId) {
+                        $rosterData = $rosterService->getRosterDisplayData($rosterId);
+                        $t->name = $rosterData['team_season_label'] ?? $t->name;
+                    }
+                }
+                $formattedTags[] = $t;
+            } else {
+                $freeformTags[] = $t;
+            }
+        }
+
+        // Re-assemble currentTags with formatted versions
+        $currentTags = array_merge($formattedTags, $freeformTags);
+        $tagString = implode(', ', array_map(fn($t) => $t->name, $freeformTags));
+
+        // Determine currently selected person (if any) from record-based tags
+        $selectedPersonId = null;
+        $selectedPersonName = null;
+        $selectedRosterId = null;
+        foreach ($currentTags as $t) {
+            $slug = (string)($t->slug ?? '');
+            if (str_starts_with($slug, 'person-')) {
+                $parts = explode('-', $slug, 2);
+                $selectedPersonId = isset($parts[1]) ? (int)$parts[1] : null;
+                $selectedPersonName = $t->name ?? null;
+                break;
+            }
+        }
+        // find roster tag if present
+        foreach ($currentTags as $t) {
+            $slug = (string)($t->slug ?? '');
+            if (str_starts_with($slug, 'team_season_roster-')) {
+                $parts = explode('-', $slug, 2);
+                $selectedRosterId = isset($parts[1]) ? (int)$parts[1] : null;
+                break;
+            }
+        }
+
+        $this->set(compact(
+            'image',
+            'tagString',
+            'currentTags',
+            'persons',
+            'teams',
+            'teamSeasons',
+            'games',
+            'sites',
+            'opponents',
+            'sports',
+            'rosters',
+            'selectedPersonId',
+            'selectedPersonName',
+            'selectedRosterId'
+        ));
 
         return null;
     }
@@ -454,6 +653,124 @@ class ImagesController extends AppController
         $this->set(compact('image'));
 
         return $this->render();
+    }
+
+    /**
+     * Return roster entries for a given person as JSON (used by AJAX in tag UI).
+     * Query param: person_id
+     */
+    public function rosters(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $personId = (int)$this->request->getQuery('person_id');
+        if ($personId <= 0) {
+            return $this->json(['success' => true, 'rosters' => []]);
+        }
+
+        $rostersTable = $this->fetchTable('TeamSeasonRosters');
+        $rows = $rostersTable->find()
+            ->contain(['Persons', 'TeamSeasons' => ['Teams', 'Seasons']])
+            ->where(['TeamSeasonRosters.person_id' => $personId])
+            ->all();
+
+        $out = [];
+        foreach ($rows as $r) {
+            $pname = trim(($r->person->first ?? '') . ' ' . ($r->person->last ?? '')) ?: '#' . $r->person_id;
+
+            $teamSeason = $r->team_season ?? null;
+            $seasonLabel = '';
+            if ($teamSeason) {
+                $teamName = $teamSeason->team->team_name ?? 'Team';
+                if (!empty($teamSeason->season)) {
+                    $start = $teamSeason->season->start ?? null;
+                    $end = $teamSeason->season->end ?? null;
+                    if ($start && $end && $start != $end) {
+                        $seasonLabel = " ({$start}-{$end})";
+                    } elseif ($start) {
+                        $seasonLabel = " ({$start})";
+                    }
+                }
+                $label = $pname . ' — ' . $teamName . $seasonLabel;
+            } else {
+                $label = $pname;
+            }
+            $out[] = ['id' => $r->id, 'label' => $label];
+        }
+
+        return $this->json(['success' => true, 'rosters' => $out]);
+    }
+
+    /**
+     * Return person search results for a given query as JSON (used by AJAX in tag UI).
+     * Query param: q
+     */
+    public function persons(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $q = trim((string)$this->request->getQuery('q'));
+        if ($q === '') {
+            return $this->json(['success' => true, 'persons' => []]);
+        }
+
+        $personsTable = $this->fetchTable('Persons');
+        $like = '%' . str_replace('%', '\\%', $q) . '%';
+        $rows = $personsTable->find()
+            ->select(['id', 'first', 'last', 'full', 'display'])
+            ->where([
+                'OR' => [
+                    ['first LIKE' => $like],
+                    ['last LIKE' => $like],
+                    ['full LIKE' => $like],
+                    ['display LIKE' => $like],
+                ],
+            ])
+            ->orderBy(['last' => 'ASC', 'first' => 'ASC'])
+            ->limit(25)
+            ->all();
+
+        $out = [];
+        $rostersTable = $this->fetchTable('TeamSeasonRosters');
+        foreach ($rows as $r) {
+            $base = trim((string)($r->display ?? ''))
+                ?: trim((string)($r->full ?? '')
+                ?: (trim(($r->first ?? '') . ' ' . ($r->last ?? ''))));
+
+            // Try to find a recent roster entry to disambiguate persons with identical names
+            $latestRoster = $rostersTable->find()
+                ->select(['TeamSeasonRosters.id', 'TeamSeasonRosters.team_season_id'])
+                ->where(['TeamSeasonRosters.person_id' => $r->id])
+                ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
+                ->order(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
+                ->limit(1)
+                ->first();
+
+            $extra = '';
+            if ($latestRoster) {
+                $ts = $latestRoster->team_season ?? null;
+                if ($ts) {
+                    $teamName = $ts->team->team_name ?? null;
+                    $season = $ts->season ?? null;
+                    if ($teamName) {
+                        $seasonLabel = '';
+                        if ($season) {
+                            $start = $season->start ?? null;
+                            $end = $season->end ?? null;
+                            if ($start && $end && $start != $end) {
+                                $seasonLabel = " {$start}-{$end}";
+                            } elseif ($start) {
+                                $seasonLabel = " {$start}";
+                            }
+                        }
+                        $extra = trim($teamName . $seasonLabel);
+                    }
+                }
+            }
+
+            $label = $base . ($extra ? ' — ' . $extra : '');
+            $out[] = ['id' => $r->id, 'label' => $label];
+        }
+
+        return $this->json(['success' => true, 'persons' => $out]);
     }
 
     /**

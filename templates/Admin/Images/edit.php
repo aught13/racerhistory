@@ -109,57 +109,34 @@ $this->assign('title', 'Edit Image');
         <small class="form-text text-muted">Archived images won't be served</small>
       </div>
 
-      <!-- Tags Section -->
+      <!-- Tags (read-only here; editing happens on Manage Tags screen) -->
       <div class="card mb-4">
         <div class="card-header bg-light">
           <h6 class="mb-0">Tags</h6>
         </div>
         <div class="card-body">
-          <p class="mb-3 small text-muted">
-            Manage tags for this image. Tags help organize and categorize images by type, person, team, etc.
-          </p>
-          <div class="mb-3">
-            <label for="tagsInput" class="form-label">Image Tags</label>
-            <input
-              type="text"
-              class="form-control"
-              id="tagsInput"
-              name="tags"
-              placeholder="e.g., person-123, teamseason-456, roster"
-              value="<?= isset($tagString) ? h($tagString) : '' ?>"
-            />
-            <small class="form-text text-muted">
-              Enter comma-separated tags. Common tags: <code>person-{id}</code>, <code>teamseason-{id}</code>, <code>roster</code>
-            </small>
-          </div>
+          <p class="mb-3 small text-muted">Tags are listed here for reference. Use the <strong>View Tags</strong> action to manage tags.</p>
           <?php if (!empty($currentTags)): ?>
             <div class="d-flex flex-wrap gap-2 mb-3">
               <?php foreach ($currentTags as $tag): ?>
                 <span class="badge bg-secondary"><?= h($tag->name) ?></span>
               <?php endforeach; ?>
             </div>
+          <?php else: ?>
+            <div class="small text-muted">No tags assigned.</div>
           <?php endif; ?>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            onclick="document.getElementById('tagsForm').submit()"
-          >
-            Update Tags
-          </button>
+          <div class="mt-2">
+            <?= $this->Html->link('Manage Tags', ['action' => 'tags', $image->id], ['class' => 'btn btn-sm btn-info']) ?>
+          </div>
         </div>
       </div>
-
       <div class="d-flex gap-2">
         <?= $this->Form->button('Save Changes', ['class' => 'btn btn-success']) ?>
         <?= $this->Html->link('Back', ['action' => 'index'], ['class' => 'btn btn-secondary']) ?>
       </div>
       <?= $this->Form->end() ?>
 
-      <!-- Separate Form for Tags Update (POST) -->
-      <form id="tagsForm" method="post" action="<?= $this->Url->build(['action' => 'tags', $image->id]) ?>" style="display: none;">
-        <input type="hidden" name="tags" id="tagsFormInput" value="" />
-        <?= $this->Form->unlocked('tags') ?>
-      </form>
+      <!-- Note: Tags are managed on the Manage Tags screen -->
     </div>
   </div>
 </div>

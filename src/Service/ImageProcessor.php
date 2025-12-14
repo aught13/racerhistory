@@ -274,16 +274,50 @@ class ImageProcessor
 
         $tagEntities = [];
         foreach ($tags as $tag) {
-            $name = trim((string)$tag);
-            if ($name === '') {
-                continue;
+            // Support two formats: string tag name/slug OR ['slug' => 'person-1', 'name' => 'John Doe']
+            if (is_array($tag) && isset($tag['slug'])) {
+                $slug = (string)$tag['slug'];
+                $name = isset($tag['name']) ? (string)$tag['name'] : $slug;
+            } else {
+                $name = trim((string)$tag);
+                if ($name === '') {
+                    continue;
+                }
+                $slug = Text::slug($name) ?: strtolower($name);
             }
-            $slug = Text::slug($name) ?: strtolower($name);
+
             $existing = $tagsTable->find()->where(['slug' => $slug])->first();
             if (!$existing) {
                 $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
                 $tagsTable->save($existing);
+            } else {
+                // If the tag exists but has a generic name (like the slug itself or
+                // fixture-generated names like 'roster 1' or 'team season 1'), prefer
+                // the nicer provided name and overwrite the stored name.
+                $shouldUpdateName = false;
+                if ($name !== '') {
+                    $existingName = (string)($existing->name ?? '');
+                    if ($existingName === $existing->slug || strcasecmp($existingName, $existing->slug) === 0) {
+                        $shouldUpdateName = true;
+                    } else {
+                        // Match common generic patterns produced by fixtures or older code
+                        // e.g. 'roster 1', 'teamseason 1', 'team season 1', 'person 1'
+                        if (
+                            preg_match(
+                                '/^(?:roster|team ?season|team_season_roster|person)[\s_-]*\d+$/i',
+                                $existingName
+                            )
+                        ) {
+                            $shouldUpdateName = true;
+                        }
+                    }
+                }
+                if ($shouldUpdateName) {
+                    $existing->name = $name;
+                    $tagsTable->save($existing);
+                }
             }
+
             if (!in_array($existing->id, $existingTagIds)) {
                 $tagEntities[] = $existing;
             }
