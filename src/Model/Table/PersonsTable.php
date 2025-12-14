@@ -29,6 +29,8 @@ class PersonsTable extends Table
             'foreignKey' => 'person_id',
         ]);
 
+        $this->setEntityClass('App\Model\Entity\Person');
+
         // Add a callback to automatically set the full name
         $this->getEventManager()->on('Model.beforeSave', function ($event, $entity, $options): void {
             if ($entity instanceof \App\Model\Entity\Person) {
