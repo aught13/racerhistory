@@ -1,0 +1,395 @@
+/**
+ * Image Selector Modal Handler
+ *
+ * Provides functionality for browsing, selecting, and uploading images with cropping.
+ * Integrates with the image_selector_modal.php element.
+ */
+
+class ImageSelector {
+    constructor(modalId) {
+        this.modalId = modalId;
+        this.modal = document.getElementById(modalId);
+        if (!this.modal) {
+            console.error("Modal not found:", modalId);
+            return;
+        }
+
+        this.config = window.imageSelectorConfig?.[modalId] || {};
+        this.targetField = document.getElementById(this.config.targetFieldId);
+        this.selectedImageId = null;
+        this.cropper = null;
+        this.loadedImages = [];
+        // Default aspect ratio is 1 (square), can be overridden via config.aspectRatio
+        this.aspectRatio = this.config.aspectRatio ?? 1;
+
+        this.initElements();
+        this.bindEvents();
+    }
+
+    initElements() {
+        // Tab elements
+        this.selectTab = document.getElementById(`${this.modalId}-select-tab`);
+        this.uploadTab = document.getElementById(`${this.modalId}-upload-tab`);
+
+        // Gallery elements
+        this.searchInput = document.getElementById(`${this.modalId}-search`);
+        this.gallery = document.getElementById(`${this.modalId}-gallery`);
+
+        // Upload elements
+        this.fileInput = document.getElementById(`${this.modalId}-file-input`);
+        this.cropContainer = document.getElementById(
+            `${this.modalId}-crop-container`,
+        );
+        this.cropImage = document.getElementById(`${this.modalId}-crop-image`);
+        this.cropPreview = document.getElementById(
+            `${this.modalId}-crop-preview`,
+        );
+        this.noPreview = document.getElementById(`${this.modalId}-no-preview`);
+        this.cropControls = document.getElementById(
+            `${this.modalId}-crop-controls`,
+        );
+
+        // Buttons
+        this.selectBtn = document.getElementById(`${this.modalId}-select-btn`);
+        this.uploadBtn = document.getElementById(`${this.modalId}-upload-btn`);
+        this.rotateLeftBtn = document.getElementById(
+            `${this.modalId}-rotate-left`,
+        );
+        this.rotateRightBtn = document.getElementById(
+            `${this.modalId}-rotate-right`,
+        );
+        this.resetCropBtn = document.getElementById(
+            `${this.modalId}-reset-crop`,
+        );
+    }
+
+    bindEvents() {
+        // Modal shown event - load images
+        this.modal.addEventListener("shown.bs.modal", () =>
+            this.onModalShown(),
+        );
+
+        // Tab switching
+        this.selectTab?.addEventListener("shown.bs.tab", () =>
+            this.onSelectTabShown(),
+        );
+        this.uploadTab?.addEventListener("shown.bs.tab", () =>
+            this.onUploadTabShown(),
+        );
+
+        // Search
+        this.searchInput?.addEventListener("input", (e) =>
+            this.onSearch(e.target.value),
+        );
+
+        // File selection
+        this.fileInput?.addEventListener("change", (e) =>
+            this.onFileSelected(e),
+        );
+
+        // Crop controls
+        this.rotateLeftBtn?.addEventListener("click", () =>
+            this.cropper?.rotate(-90),
+        );
+        this.rotateRightBtn?.addEventListener("click", () =>
+            this.cropper?.rotate(90),
+        );
+        this.resetCropBtn?.addEventListener("click", () =>
+            this.cropper?.reset(),
+        );
+
+        // Action buttons
+        this.selectBtn?.addEventListener("click", () => this.onSelectImage());
+        this.uploadBtn?.addEventListener("click", () => this.onUploadImage());
+
+        // Gallery click delegation
+        this.gallery?.addEventListener("click", (e) => {
+            const card = e.target.closest("[data-image-id]");
+            if (card) {
+                this.onGalleryImageClick(card);
+            }
+        });
+    }
+
+    onModalShown() {
+        // Load images when modal opens (select tab is default)
+        this.loadImages();
+        // Ensure select button is visible since select tab is default active
+        this.selectBtn.style.display = "inline-block";
+        this.uploadBtn.style.display = "none";
+    }
+
+    onSelectTabShown() {
+        this.selectBtn.style.display = "inline-block";
+        this.uploadBtn.style.display = "none";
+        if (this.loadedImages.length === 0) {
+            this.loadImages();
+        }
+    }
+
+    onUploadTabShown() {
+        this.selectBtn.style.display = "none";
+        this.uploadBtn.style.display = "inline-block";
+    }
+
+    async loadImages() {
+        this.gallery.innerHTML =
+            '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+        try {
+            let url = "/admin/images/browse";
+            const params = new URLSearchParams();
+
+            if (this.config.tagFilter) {
+                params.append("tag", this.config.tagFilter);
+            }
+
+            if (params.toString()) {
+                url += "?" + params.toString();
+            }
+
+            console.log("Loading images from:", url, "Config:", this.config);
+
+            const response = await fetch(url, {
+                credentials: "same-origin",
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to load images");
+            }
+
+            const data = await response.json();
+            this.loadedImages = data.images || [];
+            this.renderGallery(this.loadedImages);
+        } catch (error) {
+            console.error("Error loading images:", error);
+            this.gallery.innerHTML =
+                '<div class="col-12"><div class="alert alert-danger">Failed to load images</div></div>';
+        }
+    }
+
+    renderGallery(images) {
+        if (!images || images.length === 0) {
+            this.gallery.innerHTML =
+                '<div class="col-12"><div class="alert alert-info">No images found</div></div>';
+            return;
+        }
+
+        this.gallery.innerHTML = images
+            .map(
+                (img) => `
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card image-card" data-image-id="${img.id}" style="cursor: pointer;">
+                    <img src="${img.thumbnail_url || img.url}" class="card-img-top" alt="Image ${img.id}" style="height: 150px; object-fit: cover;">
+                    <div class="card-body p-2">
+                        <small class="text-muted">#${img.id}</small>
+                        ${
+                            img.tags
+                                ? `<div class="mt-1">${img.tags
+                                      .slice(0, 2)
+                                      .map(
+                                          (t) =>
+                                              `<span class="badge bg-secondary badge-sm">${t}</span>`,
+                                      )
+                                      .join(" ")}</div>`
+                                : ""
+                        }
+                    </div>
+                </div>
+            </div>
+        `,
+            )
+            .join("");
+    }
+
+    onSearch(query) {
+        const filtered = this.loadedImages.filter((img) => {
+            const searchText =
+                `${img.id} ${img.original_name || ""} ${(img.tags || []).join(" ")}`.toLowerCase();
+            return searchText.includes(query.toLowerCase());
+        });
+        this.renderGallery(filtered);
+    }
+
+    onGalleryImageClick(card) {
+        // Remove previous selection
+        this.gallery
+            .querySelectorAll(".image-card")
+            .forEach((c) =>
+                c.classList.remove("border", "border-primary", "border-3"),
+            );
+
+        // Add selection to clicked card
+        card.classList.add("border", "border-primary", "border-3");
+        this.selectedImageId = parseInt(card.dataset.imageId, 10);
+    }
+
+    onSelectImage() {
+        if (!this.selectedImageId) {
+            alert("Please select an image");
+            return;
+        }
+
+        // Set the target field value
+        if (this.targetField) {
+            this.targetField.value = this.selectedImageId;
+
+            // Trigger change event for any listeners
+            this.targetField.dispatchEvent(
+                new Event("change", { bubbles: true }),
+            );
+        }
+
+        // Close modal
+        const bsModal = bootstrap.Modal.getInstance(this.modal);
+        bsModal?.hide();
+    }
+
+    onFileSelected(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Destroy existing cropper
+        if (this.cropper) {
+            this.cropper.destroy();
+            this.cropper = null;
+        }
+
+        // Read file and initialize cropper
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.cropImage.src = e.target.result;
+            this.cropContainer.style.display = "block";
+            this.cropPreview.style.display = "block";
+            this.noPreview.style.display = "none";
+            this.cropControls.style.display = "block";
+
+            // Initialize Cropper.js with configurable aspect ratio
+            this.cropper = new Cropper(this.cropImage, {
+                aspectRatio: this.aspectRatio,
+                viewMode: 1,
+                preview: this.cropPreview,
+                autoCropArea: 0.8,
+                responsive: true,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async onUploadImage() {
+        if (!this.cropper) {
+            alert("Please select an image first");
+            return;
+        }
+
+        this.uploadBtn.disabled = true;
+        this.uploadBtn.textContent = "Uploading...";
+
+        try {
+            // Calculate canvas dimensions based on aspect ratio
+            let canvasWidth = 800;
+            let canvasHeight = 800;
+            if (
+                this.aspectRatio &&
+                this.aspectRatio !== 0 &&
+                isFinite(this.aspectRatio)
+            ) {
+                // If aspect ratio is set, use it to determine dimensions
+                if (this.aspectRatio > 1) {
+                    // Wider than tall
+                    canvasHeight = Math.round(canvasWidth / this.aspectRatio);
+                } else {
+                    // Taller than wide
+                    canvasWidth = Math.round(canvasHeight * this.aspectRatio);
+                }
+            }
+
+            // Get cropped canvas
+            const canvas = this.cropper.getCroppedCanvas({
+                width: canvasWidth,
+                height: canvasHeight,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: "high",
+            });
+
+            // Convert to blob
+            const blob = await new Promise((resolve) =>
+                canvas.toBlob(resolve, "image/jpeg", 0.9),
+            );
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append("upload", blob, "cropped-image.jpg");
+
+            // Add context if provided (for auto-tagging)
+            if (this.config.uploadContext) {
+                formData.append(
+                    "context",
+                    JSON.stringify(this.config.uploadContext),
+                );
+            }
+
+            // Upload
+            const response = await fetch("/admin/images/upload", {
+                method: "POST",
+                body: formData,
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRF-Token":
+                        document.querySelector('meta[name="csrfToken"]')
+                            ?.content || "",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Upload failed");
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || "Upload failed");
+            }
+
+            // Set the target field value
+            if (this.targetField) {
+                this.targetField.value = data.image.id;
+                this.targetField.dispatchEvent(
+                    new Event("change", { bubbles: true }),
+                );
+            }
+
+            // Close modal
+            const bsModal = bootstrap.Modal.getInstance(this.modal);
+            bsModal?.hide();
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Upload failed: " + error.message);
+        } finally {
+            this.uploadBtn.disabled = false;
+            this.uploadBtn.textContent = "Upload & Crop";
+        }
+    }
+}
+
+// Auto-initialize image selectors when DOM is ready
+document.addEventListener("DOMContentLoaded", function () {
+    // Initialize all image selector modals found on the page
+    const modals = document.querySelectorAll('[id$="-image-selector"]');
+    modals.forEach((modal) => {
+        new ImageSelector(modal.id);
+    });
+});
+
+// Export for testing
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = ImageSelector;
+}
+

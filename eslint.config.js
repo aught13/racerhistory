@@ -35,6 +35,10 @@ module.exports = [
                 Blob: 'readonly',
                 File: 'readonly',
                 bootstrap: 'readonly',
+                Event: 'readonly',
+                URLSearchParams: 'readonly',
+                FileReader: 'readonly',
+                Cropper: 'readonly',
             }
         }
     },
