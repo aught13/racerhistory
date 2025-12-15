@@ -358,4 +358,68 @@ class ImagesControllerTest extends TestCase
 
         parent::tearDown();
     }
+
+    public function testBrowseRequiresAuthentication(): void
+    {
+        $this->get('/admin/images/browse');
+        $this->assertResponseCode(302, 'Unauthenticated request should redirect');
+    }
+
+    public function testBrowseReturnsJson(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse');
+        $this->assertResponseCode(200);
+        $this->assertSame('application/json', $this->_response->getHeaderLine('Content-Type'));
+    }
+
+    public function testBrowseReturnsAllImages(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Browse should succeed');
+        $this->assertIsArray($json['images'] ?? null, 'Images should be array');
+        // Images fixture has entries, check structure
+        if (!empty($json['images'])) {
+            $first = reset($json['images']);
+            $this->assertArrayHasKey('id', $first);
+            $this->assertArrayHasKey('url', $first);
+            $this->assertArrayHasKey('thumbnail_url', $first);
+            $this->assertArrayHasKey('original_name', $first);
+            $this->assertArrayHasKey('tags', $first);
+        }
+    }
+
+    public function testBrowseWithTagFilter(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse?tag=test-tag');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Browse with tag should succeed');
+        // May return empty array if no images have that tag
+        $this->assertIsArray($json['images'] ?? null);
+    }
+
+    public function testBrowseRespectLimitParameter(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse?limit=5');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false);
+        $this->assertLessThanOrEqual(5, count($json['images'] ?? []));
+    }
+
+    public function testBrowseClampLimitToMaximum(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse?limit=99999');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false);
+        $this->assertLessThanOrEqual(100, count($json['images'] ?? []));
+    }
 }

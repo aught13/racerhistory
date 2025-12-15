@@ -148,6 +148,46 @@ class ImagesController extends AppController
     }
 
     /**
+     * AJAX endpoint to browse images for modal selection.
+     * Optionally filter by tag.
+     */
+    public function browse(): Response
+    {
+        $this->request->allowMethod(['get']);
+        if (!$this->isAuthenticated()) {
+            return $this->json(['success' => false, 'error' => 'Unauthenticated']);
+        }
+
+        $tag = $this->request->getQuery('tag');
+        $limit = min((int)($this->request->getQuery('limit') ?? 50), 100);
+
+        $images = $this->fetchTable('Images');
+        $query = $images->find();
+
+        // Filter by tag if provided
+        if ($tag) {
+            $query->innerJoinWith('ImageTags', function ($q) use ($tag) {
+                return $q->where(['ImageTags.slug' => $tag]);
+            });
+        }
+
+        $query->contain(['ImageTags'])->orderByDesc('Images.id')->limit($limit);
+
+        $results = [];
+        foreach ($query->all() as $image) {
+            $results[] = [
+                'id' => $image->id,
+                'url' => '/images/serve/' . $image->id,
+                'thumbnail_url' => '/images/serve/' . $image->id . '?' . http_build_query(['w' => 300, 'h' => 300, 'fit' => 'cover']),
+                'original_name' => $image->original_name,
+                'tags' => array_map(fn($t) => $t->name, $image->image_tags ?? []),
+            ];
+        }
+
+        return $this->json(['success' => true, 'images' => $results]);
+    }
+
+    /**
      * Display image upload form with basic manipulation preview.
      */
     public function uploadForm(): void
@@ -965,20 +1005,43 @@ class ImagesController extends AppController
 
     /**
      * Collect tags from request data or query (comma-separated or array).
+     * Also handles context-based auto-tagging (e.g., from person edit page).
      *
      * @return array<int,string>
      */
     private function collectTags(): array
     {
+        $tags = [];
+
+        // Collect explicit tags
         $raw = $this->request->getData('tags') ?? $this->request->getQuery('tags') ?? [];
         if (is_string($raw)) {
             $raw = array_map('trim', explode(',', $raw));
         }
-        if (!is_array($raw)) {
-            return [];
+        if (is_array($raw)) {
+            $tags = array_values(array_filter(array_map(fn($t) => trim((string)$t), $raw), fn($t) => $t !== ''));
         }
 
-        return array_values(array_filter(array_map(fn($t) => trim((string)$t), $raw), fn($t) => $t !== ''));
+        // Handle context-based auto-tagging
+        $contextJson = $this->request->getData('context');
+        if ($contextJson && is_string($contextJson)) {
+            $context = json_decode($contextJson, true);
+            if (is_array($context) && isset($context['type'], $context['id'])) {
+                $type = strtolower((string)$context['type']);
+                $id = (int)$context['id'];
+
+                // Auto-tag based on context type
+                if ($type === 'person' && $id > 0) {
+                    $tags[] = "person-{$id}";
+                } elseif ($type === 'teamseason' && $id > 0) {
+                    $tags[] = "teamseason-{$id}";
+                } elseif ($type === 'game' && $id > 0) {
+                    $tags[] = "game-{$id}";
+                }
+            }
+        }
+
+        return array_values(array_unique($tags));
     }
 
     /**
@@ -1436,23 +1499,6 @@ class ImagesController extends AppController
             ->withType('image/png')
             ->withHeader('Cache-Control', 'public, max-age=60')
             ->withStringBody($data ?: '');
-    }
-
-    /**
-     * Browse recent images (simple paginated subset for now).
-     */
-    public function browse(): Response
-    {
-        $this->request->allowMethod(['get']);
-        $images = $this->fetchTable('Images')->find()->orderDesc('id')->limit(50)->all();
-
-        return $this->json([
-            'success' => true,
-            'images' => array_map(
-                fn($i) => $this->serializeImage($i),
-                $images->toList()
-            ),
-        ]);
     }
 
     /**
