@@ -72,7 +72,7 @@ class StatBasketGameBoxController extends AppController
         // Check if we have period stats already
         $periodStats = $boxTable->find()
             ->where(['game_id' => $gameId, 'period !=' => 'Z'])
-            ->order(['period' => 'ASC'])
+            ->orderBy(['period' => 'ASC'])
             ->all()
             ->toArray();
 
@@ -176,7 +176,7 @@ class StatBasketGameBoxController extends AppController
         $existingStats = [];
         $periodStats = $boxTable->find()
             ->where(['game_id' => $gameId, 'period !=' => 'Z'])
-            ->order(['period' => 'ASC'])
+            ->orderBy(['period' => 'ASC'])
             ->all();
 
         foreach ($periodStats as $stat) {

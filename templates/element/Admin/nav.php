@@ -82,6 +82,16 @@
                         href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'index']) ?>">
                         Team Season Rosters</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'index']) ?>">
+                        Images</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'bulkUploadForm']) ?>">
+                        <i class="bi bi-upload"></i> Upload Images</a>
+                </li>
                 <!-- Add more admin links here -->
             </ul>
             <ul class="navbar-nav ms-auto">

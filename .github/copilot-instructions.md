@@ -28,6 +28,199 @@ When creating or modifying CakePHP migrations:
 
 3. **Rollback Support**: Always implement both `up()` and `down()` methods for reversible migrations
 
+## Service Layer Architecture
+
+This project follows the [burzum/cakephp-service-layer](https://github.com/burzum/cakephp-service-layer) philosophy: **Business logic doesn't belong in the context of a database table and should be separated from any persistence layer.**
+
+### Core Principles
+
+1. **Separation of Concerns**: Business logic resides in service classes, NOT in table objects or controllers
+2. **Framework Independence**: Services are plain PHP classes that can be used in shell apps, CLI tools, APIs, or web controllers
+3. **Single Responsibility**: Each service owns the business logic for one specific entity or domain concept
+4. **Testability**: Services use constructor dependency injection for easy mocking and testing
+5. **Reusability**: Services provide both CRUD operations and domain-specific business logic in a reusable form
+
+### Service Structure Pattern
+
+All entity services follow this standard pattern:
+
+```php
+<?php
+declare(strict_types=1);
+
+namespace App\Service;
+
+use Cake\ORM\TableRegistry;
+
+class ExampleService
+{
+    private DependencyService $dependency;
+
+    /**
+     * Constructor with optional dependency injection.
+     * Enables easy mocking for tests while allowing production use without manual DI.
+     */
+    public function __construct(?DependencyService $dependency = null)
+    {
+        $this->dependency = $dependency ?? new DependencyService();
+    }
+
+    /**
+     * Get entity by ID.
+     */
+    public function getEntityById(int $id): ?\App\Model\Entity\Example
+    {
+        $table = TableRegistry::getTableLocator()->get('Examples');
+        return $table->get($id);
+    }
+
+    /**
+     * Get human-readable display label for UI/API.
+     * Returns "plain English" formatted strings.
+     */
+    public function getDisplayLabel(int $id): string
+    {
+        $entity = $this->getEntityById($id);
+        return $entity ? $entity->name : 'Example #' . $id;
+    }
+
+    /**
+     * Create new entity.
+     */
+    public function createEntity(array $data): \App\Model\Entity\Example|false
+    {
+        $table = TableRegistry::getTableLocator()->get('Examples');
+        $entity = $table->newEntity($data);
+        return $table->save($entity) ?: false;
+    }
+
+    /**
+     * Update existing entity.
+     */
+    public function updateEntity(int $id, array $data): \App\Model\Entity\Example|false
+    {
+        $table = TableRegistry::getTableLocator()->get('Examples');
+        $entity = $table->get($id);
+        $entity = $table->patchEntity($entity, $data);
+        return $table->save($entity) ?: false;
+    }
+
+    /**
+     * Delete entity.
+     */
+    public function deleteEntity(int $id): bool
+    {
+        $table = TableRegistry::getTableLocator()->get('Examples');
+        $entity = $table->get($id);
+        return $table->delete($entity);
+    }
+
+    /**
+     * Get all entities for listing.
+     */
+    public function getAllEntities(): array
+    {
+        $table = TableRegistry::getTableLocator()->get('Examples');
+        return $table->find()->order(['Examples.name' => 'ASC'])->all()->toArray();
+    }
+
+    /**
+     * Get entities formatted for select dropdowns.
+     */
+    public function getEntitiesForSelect(): array
+    {
+        $entities = $this->getAllEntities();
+        $results = [];
+        foreach ($entities as $entity) {
+            $results[] = [
+                'id' => $entity->id,
+                'label' => $this->getDisplayLabel($entity->id),
+            ];
+        }
+        return $results;
+    }
+}
+```
+
+### Existing Services
+
+- **PersonService**: Person display labels, search, CRUD
+- **TeamSeasonService**: Team+season display labels with sport prefixes, CRUD
+- **TeamSeasonRosterService**: Coordinates Person and TeamSeason services, roster CRUD
+- **SeasonService**: Season CRUD, display labels ("2023-2024" format)
+- **SportService**: Sport CRUD, alphabetical listing
+- **TeamService**: Team CRUD with gender-prefixed sport labels
+- **PlaceService**: Place CRUD with search, Site management (sites are venues within places), display labels
+- **OpponentService**: Opponent CRUD with search functionality
+- **GameService**: Complex basketball game stats and EAV metadata (uses older trait-based pattern)
+- **ImageTaggingService**: Delegates to entity services to build canonical tag slugs
+- **BasketballStatsService**: Sport-specific stats calculations
+- **SportConfigService**: Sport metadata and EAV configuration
+- **StatsService**: General statistics operations
+- **ImageProcessor**: Image processing operations
+
+### Controller Integration
+
+Controllers should **only contain view logic**. They:
+1. Receive HTTP request data
+2. Call service methods to perform business logic
+3. Pass service results to views for rendering
+4. Return responses (redirects, JSON, rendered templates)
+
+Controllers should NOT:
+- Perform complex queries directly on table objects
+- Contain business logic calculations
+- Format display data (that's the service's job via `getDisplayLabel()`)
+
+Example controller pattern:
+
+```php
+public function add()
+{
+    $this->request->allowMethod(['get', 'post']);
+
+    if ($this->request->is('post')) {
+        $data = $this->request->getData();
+        $entity = $this->exampleService->createEntity($data);
+
+        if ($entity) {
+            $this->Flash->success('Example created successfully.');
+            return $this->redirect(['action' => 'index']);
+        }
+        $this->Flash->error('Failed to create example.');
+    }
+
+    // Pass select options from service to view
+    $this->set('options', $this->exampleService->getOptionsForSelect());
+}
+```
+
+### Testing Services
+
+Services are easy to test in isolation:
+
+```php
+public function testCreateEntity()
+{
+    $service = new ExampleService();
+    $data = ['name' => 'Test Example'];
+
+    $entity = $service->createEntity($data);
+
+    $this->assertInstanceOf(Example::class, $entity);
+    $this->assertEquals('Test Example', $entity->name);
+}
+
+public function testWithMockedDependency()
+{
+    $mockDependency = $this->createMock(DependencyService::class);
+    $mockDependency->method('someMethod')->willReturn('mocked result');
+
+    $service = new ExampleService($mockDependency);
+    // Test service behavior with mocked dependency
+}
+```
+
 ## PHPUnit Testing Guidelines
 
 ### Test Execution Strategy

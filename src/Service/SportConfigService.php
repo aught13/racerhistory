@@ -506,6 +506,111 @@ class SportConfigService
     }
 
     /**
+     * Validate period scores against final scores for sports with cumulative scoring.
+     *
+     * This validates that period and overtime scores sum correctly to final scores
+     * for any sport configured with scoring_type = 'cumulative' (basketball, football, hockey, etc.).
+     *
+     * @param int $sportId Sport ID
+     * @param array $data Game and EAV data containing scores and period data
+     * @return array Error messages (empty if valid)
+     */
+    public function validatePeriodScores(int $sportId, array $data): array
+    {
+        $errors = [];
+
+        // Check if this sport uses cumulative scoring
+        $scoringType = $this->getConfig($sportId, 'scoringType', 'cumulative');
+        if ($scoringType !== 'cumulative') {
+            return $errors; // No validation needed for non-cumulative sports
+        }
+
+        $teamScore = isset($data['pts_mur']) ? (int)$data['pts_mur'] : 0;
+        $oppScore = isset($data['pts_opp']) ? (int)$data['pts_opp'] : 0;
+        $periods = isset($data['periods']) ? (int)$data['periods'] : 2;
+        $otPeriods = isset($data['ot']) ? (int)$data['ot'] : 0;
+
+        // Only validate if scores are present
+        if ($teamScore === 0 && $oppScore === 0) {
+            return $errors;
+        }
+
+        // Calculate sum of regular period scores
+        $teamPeriodSum = 0;
+        $oppPeriodSum = 0;
+        $hasPeriodData = false;
+
+        for ($i = 1; $i <= $periods; $i++) {
+            $teamKey = "period_{$i}_team";
+            $oppKey = "period_{$i}_opponent";
+
+            if (isset($data[$teamKey]) && $data[$teamKey] !== '') {
+                $teamPeriodSum += (int)$data[$teamKey];
+                $hasPeriodData = true;
+            }
+            if (isset($data[$oppKey]) && $data[$oppKey] !== '') {
+                $oppPeriodSum += (int)$data[$oppKey];
+                $hasPeriodData = true;
+            }
+        }
+
+        // Calculate sum of overtime period scores
+        $teamOtSum = 0;
+        $oppOtSum = 0;
+
+        for ($i = 1; $i <= $otPeriods; $i++) {
+            $teamKey = "overtime_{$i}_team";
+            $oppKey = "overtime_{$i}_opponent";
+
+            if (isset($data[$teamKey]) && $data[$teamKey] !== '') {
+                $teamOtSum += (int)$data[$teamKey];
+                $hasPeriodData = true;
+            }
+            if (isset($data[$oppKey]) && $data[$oppKey] !== '') {
+                $oppOtSum += (int)$data[$oppKey];
+                $hasPeriodData = true;
+            }
+        }
+
+        // Only validate if period data was provided
+        if (!$hasPeriodData) {
+            return $errors;
+        }
+
+        // If there are OT periods, regular periods must be tied
+        if ($otPeriods > 0 && $teamPeriodSum !== $oppPeriodSum) {
+            $errors[] = sprintf(
+                'Regular period scores must be tied when overtime periods exist. ' .
+                'Team: %d, Opponent: %d',
+                $teamPeriodSum,
+                $oppPeriodSum
+            );
+        }
+
+        // Total period + OT must equal final score
+        $teamTotalPeriods = $teamPeriodSum + $teamOtSum;
+        $oppTotalPeriods = $oppPeriodSum + $oppOtSum;
+
+        if ($teamTotalPeriods !== $teamScore) {
+            $errors[] = sprintf(
+                'Team period scores (%d) must equal final team score (%d)',
+                $teamTotalPeriods,
+                $teamScore
+            );
+        }
+
+        if ($oppTotalPeriods !== $oppScore) {
+            $errors[] = sprintf(
+                'Opponent period scores (%d) must equal final opponent score (%d)',
+                $oppTotalPeriods,
+                $oppScore
+            );
+        }
+
+        return $errors;
+    }
+
+    /**
      * Clear the configuration cache for a sport
      *
      * @param int $sportId Sport ID

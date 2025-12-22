@@ -33,26 +33,26 @@
                             <?= $this->Form->control('death', ['type' => 'date', 'class' => 'form-control', 'label' => ['text' => 'Death Date', 'class' => 'form-label']]); ?>
                         </div>
                         <div class="col-12 mb-3">
+                            <label class="form-label">Person Image</label>
                             <div class="row">
                                 <div class="col-md-8">
                                     <?= $this->Form->control('person_image', [
                                         'class' => 'form-control',
-                                        'label' => ['text' => 'Image ID', 'class' => 'form-label'],
-                                        'maxlength' => 162,
+                                        'label' => false,
+                                        'placeholder' => 'Image ID',
                                         'id' => 'person-image-field',
                                     ]); ?>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">&nbsp;</label>
-                                    <button type="button" class="btn btn-secondary form-control" id="select-person-image">
-                                        Select Image
+                                    <button type="button" class="btn btn-secondary form-control" data-bs-toggle="modal" data-bs-target="#person-image-selector">
+                                        Select/Upload Image
                                     </button>
                                 </div>
                             </div>
                             <div class="row mt-2">
                                 <div class="col-12">
                                     <div id="person-image-preview" class="mt-2" style="display: none;">
-                                        <img src="" alt="Profile Image Preview" class="img-thumbnail" style="max-height: 150px;">
+                                        <img src="" alt="Profile Image Preview" class="img-thumbnail" style="max-height: 200px;">
                                     </div>
                                 </div>
                             </div>
@@ -82,12 +82,27 @@
             </div>
         </div>
     </div>
-    <?php
-// Load self-hosted TinyMCE (installed via composer tinymce/tinymce) and initialize.
-// We expect the TinyMCE distribution to be published under /js/tinymce/ (see deployment notes).
-    echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
-    echo $this->Html->scriptBlock(<<<JS
+</div>
+
+<?php
+echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
+echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js', ['block' => true]);
+echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
+echo $this->Html->script('/js/image-selector.js', ['block' => true]);
+
+// Note: For add action, we can't use person-specific tagging since the person doesn't exist yet
+// Modal for general image selection (no auto-tagging on add)
+$modalId = 'person-image-selector';
+$targetFieldId = 'person-image-field';
+$tagFilter = null; // No filter since person doesn't exist yet
+$uploadContext = null; // No auto-tagging on add
+$aspectRatio = 1; // Square aspect ratio for profile images
+echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
+
+$previewQsJson = json_encode($this->ImageServe->query(['w' => 200, 'h' => 200, 'fit' => 'cover'])) ?: '""';
+echo $this->Html->scriptBlock(<<<JS
 document.addEventListener('DOMContentLoaded', function () {
+    const previewQs = {$previewQsJson};
     var el = document.getElementById('bio-editor');
     if (!el || typeof tinymce === 'undefined') { return; }
     tinymce.init({
@@ -138,78 +153,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Person image selector
-    const selectImageBtn = document.getElementById('select-person-image');
+    // Person image preview handler
     const imageField = document.getElementById('person-image-field');
     const imagePreview = document.getElementById('person-image-preview');
 
-    if (selectImageBtn && imageField) {
-        selectImageBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            // Create and use a file input to trigger the browser's file picker
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = function() {
-                if (!input.files || !input.files[0]) return;
-
-                const file = input.files[0];
-                const formData = new FormData();
-                formData.append('upload', file);
-
-                // Show loading state
-                selectImageBtn.disabled = true;
-                selectImageBtn.textContent = 'Uploading...';
-
-                // Use TinyMCE's upload handler (reusing the same endpoint)
-                fetch('/admin/images/upload', {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').getAttribute('content')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success || !data.image) {
-                        alert('Upload failed: ' + (data.error || 'Unknown error'));
-                        return;
-                    }
-
-                    // Store the image ID in the person_image field
-                    imageField.value = data.image.id;
-
-                    // Update the preview
-                    const previewImg = imagePreview.querySelector('img');
-                    previewImg.src = data.image.url;
-                    imagePreview.style.display = 'block';
-                })
-                .catch(error => {
-                    console.error('Error uploading image:', error);
-                    alert('Upload failed: ' + error.message);
-                })
-                .finally(() => {
-                    // Reset button state
-                    selectImageBtn.disabled = false;
-                    selectImageBtn.textContent = 'Select Image';
-                });
-            };
-            input.click();
-        });
-
-        // Show preview if image ID is already set
-        if (imageField.value) {
-            const imageId = imageField.value.trim();
-            if (imageId && !isNaN(parseInt(imageId, 10))) {
-                const previewImg = imagePreview.querySelector('img');
-                previewImg.src = `/images/serve/\${imageId}`;
-                imagePreview.style.display = 'block';
-            }
+    function updateImagePreview() {
+        const imageId = imageField.value.trim();
+        if (imageId && !isNaN(parseInt(imageId, 10))) {
+            const previewImg = imagePreview.querySelector('img');
+            previewImg.src = '/images/serve/' + imageId + previewQs + '&_ts=' + Date.now();
+            imagePreview.style.display = 'block';
+        } else {
+            imagePreview.style.display = 'none';
         }
+    }
+
+    // Listen for changes to the image field (from modal or manual entry)
+    if (imageField) {
+        imageField.addEventListener('change', updateImagePreview);
+
+        // Show initial preview if image ID is set
+        updateImagePreview();
     }
 });
 JS, ['block' => true]);
-    ?>
-</div>
+?>
+

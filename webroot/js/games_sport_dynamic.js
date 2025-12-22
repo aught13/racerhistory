@@ -1,7 +1,7 @@
 /*
  * Dynamic sport-aware game form enhancer
  */
-/* global URLSearchParams, module */
+/* global module */
 (function () {
     const select = document.getElementById('team-season-select');
     if (!select) return;

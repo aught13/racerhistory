@@ -38,5 +38,8 @@ class AppView extends View
      */
     public function initialize(): void
     {
+        parent::initialize();
+
+        $this->loadHelper('ImageServe');
     }
 }

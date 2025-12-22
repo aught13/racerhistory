@@ -42,6 +42,9 @@ return function (RouteBuilder $routes): void {
             ->setPass(['id'])
             ->setPatterns(['id' => '\d+']);
 
+        // Explicit bulk upload route
+        $routes->connect('/images/bulk-upload', ['controller' => 'Images', 'action' => 'bulkUpload']);
+
         // Explicit route for AJAX sport-form-data endpoint (query param only)
         $routes->connect('/games/sport-form-data', [
             'controller' => 'Games',

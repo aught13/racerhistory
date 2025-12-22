@@ -88,9 +88,21 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           if ! git diff --quiet -- docs-status.json phpcs-status.json cakephp-version.json; then
+            # Switch to update_ci branch
+            git fetch origin update_ci
+            git checkout update_ci
+
             git add docs-status.json phpcs-status.json cakephp-version.json
             git commit -m "chore(ci): update status badges"
-            git push
+            git push origin update_ci
+
+            echo "Pushed status updates to update_ci branch"
           else
             echo "No changes to status files"
           fi
+            git add docs-status.json phpcs-status.json cakephp-version.json
+            git commit -m "chore(ci): update status badges"
+            git push origin "$BRANCH_NAME"
+
+            echo "Pushed status updates to branch: $BRANCH_NAME"
+            echo "You can merge this branch to master when ready"

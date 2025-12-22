@@ -16,8 +16,7 @@ class PlacesFixture extends TestFixture
         $this->records = [
             [
                 'id' => 1,
-                'place_name' => 'Murray, KY',
-                'place_city' => 'Murray',
+                'place_name' => 'Murray',
                 'place_state' => 'KY',
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',

@@ -244,24 +244,6 @@ class GameServiceTest extends TestCase
     }
 
     /**
-     * Test validatePeriodScores with valid data
-     */
-    public function testValidatePeriodScoresValid(): void
-    {
-        $data = [
-            'eav' => [
-                'period_1_team' => 20,
-                'period_1_opponent' => 18,
-                'period_2_team' => 22,
-                'period_2_opponent' => 20,
-            ],
-        ];
-
-        $errors = $this->service->validatePeriodScores($data);
-        $this->assertIsArray($errors);
-    }
-
-    /**
      * Test getTeamSeasonAndSportsLists returns valid structure
      */
     public function testGetTeamSeasonAndSportsLists(): void

@@ -18,6 +18,7 @@ class ImageUsagesTable extends Table
         parent::initialize($config);
         $this->setTable('image_usages');
         $this->setPrimaryKey('id');
+        $this->addBehavior('Timestamp');
         $this->belongsTo('Images', ['foreignKey' => 'image_id']);
     }
 
@@ -30,7 +31,8 @@ class ImageUsagesTable extends Table
             ->integer('image_id')->notEmptyString('image_id')
             ->scalar('model')->maxLength('model', 120)->notEmptyString('model')
             ->integer('foreign_key')->notEmptyString('foreign_key')
-            ->scalar('field')->maxLength('field', 60)->notEmptyString('field');
+            ->scalar('context')->maxLength('context', 80)->allowEmptyString('context')
+            ->scalar('field')->maxLength('field', 80)->allowEmptyString('field');
 
         return $validator;
     }
