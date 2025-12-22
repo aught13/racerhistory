@@ -612,3 +612,9 @@ class CropSelector {
         return { x, y, width: Math.max(1, w), height: Math.max(1, h) };
     }
 }
+
+// Export class for CommonJS consumers (e.g., Jest tests)
+/* eslint-disable no-undef */
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = CropSelector;
+}
