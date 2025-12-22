@@ -7,6 +7,7 @@ use Cake\TestSuite\Fixture\TestFixture;
 class UsersFixture extends TestFixture
 {
     // Define the schema directly instead of importing
+    public array $schema = [];
 
     public function init(): void
     {

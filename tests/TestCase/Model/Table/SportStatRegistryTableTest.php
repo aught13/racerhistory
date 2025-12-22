@@ -147,21 +147,21 @@ class SportStatRegistryTableTest extends TestCase
         $this->SportStatRegistry->saveMany($entities);
 
         // Test findBySport - fixtures have 2 for sport_id=1, we add 1 more = 3 total
-        $sportResults = $this->SportStatRegistry->find('bySport', ['sport_id' => 1])->toArray();
+        $sportResults = $this->SportStatRegistry->find('bySport', sport_id: 1)->toArray();
         $this->assertCount(3, $sportResults);
 
         // Test findByContext - fixtures have 3 'game' records (2 for sport_id=1, 1 for sport_id=2)
-        $contextResults = $this->SportStatRegistry->find('byContext', ['context' => 'game'])->toArray();
+        $contextResults = $this->SportStatRegistry->find('byContext', context: 'game')->toArray();
         $this->assertCount(3, $contextResults);
 
         // Test findByEntityType - fixture has only 1 'player' record (basketball)
-        $entityResults = $this->SportStatRegistry->find('byEntityType', ['entity_type' => 'player'])->toArray();
+        $entityResults = $this->SportStatRegistry->find('byEntityType', entity_type: 'player')->toArray();
         $this->assertCount(1, $entityResults);
 
         // Test combination of finders
-        $combinedResults = $this->SportStatRegistry->find('bySport', ['sport_id' => 1])
-            ->find('byContext', ['context' => 'game'])
-            ->find('byEntityType', ['entity_type' => 'player'])
+        $combinedResults = $this->SportStatRegistry->find('bySport', sport_id: 1)
+            ->find('byContext', context: 'game')
+            ->find('byEntityType', entity_type: 'player')
             ->toArray();
 
         $this->assertGreaterThanOrEqual(1, count($combinedResults));

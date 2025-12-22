@@ -42,7 +42,7 @@ class ImageProcessorTest extends TestCase
         $mock = $this->getMockBuilder(UploadedFile::class)
             ->onlyMethods(['getStream'])
             ->disableOriginalConstructor()
-            ->getMock();
+            ->createMock(ImageProcessor::class);
         $mock->method('getStream')->will($this->throwException(new \RuntimeException('fail')));
         $processor = new ImageProcessor(null);
         $this->expectException(\RuntimeException::class);
@@ -417,8 +417,56 @@ class ImageProcessorTest extends TestCase
     {
         $ref = new \ReflectionClass($proc);
         $meth = $ref->getMethod('inferExtension');
-        $meth->setAccessible(true);
 
         return $meth->invoke($proc, $mime);
+    }
+
+    public function testRotateBeforeCropOrder(): void
+    {
+        // Build a simple in-memory PNG (100x50)
+        $im = imagecreatetruecolor(100, 50);
+        $bg = imagecolorallocate($im, 200, 0, 0);
+        imagefill($im, 0, 0, $bg);
+        ob_start();
+        imagepng($im);
+        $raw = (string)ob_get_clean();
+
+        $proc = new ImageProcessor();
+        $result = $proc->manipulateExisting(
+            $raw,
+            'image/png',
+            [],
+            [
+                'rotate' => 90,
+                'crop' => ['x' => 0, 'y' => 0, 'width' => 10, 'height' => 20],
+            ]
+        );
+
+        // If rotate happens first, then crop (0,0,10x20) on rotated 50x100 yields 10x20
+        $this->assertSame(10, $result['original']['width']);
+        $this->assertSame(20, $result['original']['height']);
+    }
+
+    public function testNegativeRotationAccepted(): void
+    {
+        // In-memory PNG (100x50)
+        $im = imagecreatetruecolor(100, 50);
+        $bg = imagecolorallocate($im, 0, 200, 0);
+        imagefill($im, 0, 0, $bg);
+        ob_start();
+        imagepng($im);
+        $raw = (string)ob_get_clean();
+
+        $proc = new ImageProcessor();
+        $result = $proc->manipulateExisting(
+            $raw,
+            'image/png',
+            [],
+            [ 'rotate' => -90 ]
+        );
+
+        // -90 should be treated like 270 CCW: width/height swap to 50x100
+        $this->assertSame(50, $result['original']['width']);
+        $this->assertSame(100, $result['original']['height']);
     }
 }

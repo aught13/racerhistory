@@ -13,7 +13,7 @@
  */
 
 $size = $size ?? 'medium';
-$variant = $variant ?? '';
+$variant = $variant ?? 'thumb';
 $class = $class ?? '';
 $style = $style ?? '';
 
@@ -35,15 +35,10 @@ $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $sty
 
 // Build image URL
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
-    $params = [
-        'w' => $width,
-        'h' => $height,
-        'fit' => 'cover',
-    ];
-    if ($variant) {
-        $params = ['variant' => $variant] + $params;
-    }
-    $imageUrl = $this->ImageServe->url((int)$person->person_image, $params);
+    // Prefer stored variants so custom thumbnail crops are honored
+    $imageUrl = $this->ImageServe->url((int)$person->person_image, [
+        'variant' => $variant,
+    ]);
 
     // Use direct img tag instead of Html->image() to avoid URL processing issues
     echo '<img src="' . h($imageUrl) . '" alt="' . h($person->display ?? $person->first . ' ' . $person->last) . '" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';

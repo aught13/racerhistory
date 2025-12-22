@@ -4,11 +4,13 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\ImageProcessor;
+use App\Service\ImageStorageService;
+use App\Service\ImageTaggingService;
 use Cake\Core\Configure;
-use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
+use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * Admin Images Controller
@@ -21,12 +23,6 @@ use Cake\Utility\Text;
 class ImagesController extends AppController
 {
     /**
-     * Holds last persistence error for image storage (directory or file write issues)
-     * so upload() can return a meaningful JSON error.
-     */
-    private ?string $lastPersistError = null;
-
-    /**
      * Controller initialization: unlock actions from FormProtection when the UI
      * uses custom (non-FormHelper) fields.
      */
@@ -35,7 +31,7 @@ class ImagesController extends AppController
         parent::initialize();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            foreach (['upload', 'manipulate', 'tags'] as $action) {
+            foreach (['upload', 'bulkUpload', 'bulkUploadForm', 'manipulate', 'tags', 'cropThumb'] as $action) {
                 if (!in_array($action, $current, true)) {
                     $current[] = $action;
                 }
@@ -60,52 +56,31 @@ class ImagesController extends AppController
             if (ob_get_length()) {
                 ob_clean();
             }
-            // Preflight: ensure base storage directory is writable (option 2 guidance)
-            $baseStorage = WWW_ROOT . 'img' . DS . 'storage' . DS;
-            if (!is_dir($baseStorage)) {
-                // attempt to create base directory if missing
-                mkdir($baseStorage, 0775, true);
+            $file = $this->extractUploaded();
+            if (!$file) {
+                return $this->json(['success' => false, 'error' => 'No file uploaded']);
             }
-            if (!is_writable($baseStorage)) {
-                $ownerUid = fileowner($baseStorage);
-                $ownerName = $ownerUid !== false && function_exists('posix_getpwuid')
-                    ? (posix_getpwuid($ownerUid)['name'] ?? (string)$ownerUid)
-                    : (string)$ownerUid;
-                $suggest = 'chgrp -R www-data ' . $baseStorage . ' && chmod -R 775 ' . $baseStorage;
 
-                $msg = 'Storage base not writable: ' . $baseStorage . ' (owner=' . $ownerName . ').';
-                $msg .= ' Run (as root): ' . $suggest;
+            $tagging = new ImageTaggingService();
+            $tags = $tagging->parseTagsFromRequest($this->request);
+            $manipulations = $this->collectManipulations();
+
+            $storage = new ImageStorageService();
+            $result = $storage->upload($file, $tags, $manipulations);
+
+            if (!empty($result['success'])) {
+                /** @var \App\Model\Entity\Image $image */
+                $image = $result['image'];
+                $this->maybeRecordUsage((int)$image->id);
 
                 return $this->json([
-                    'success' => false,
-                    'error' => $msg,
+                    'success' => true,
+                    'image' => $this->serializeImage($image),
+                    'existing' => (bool)($result['existing'] ?? false),
                 ]);
             }
-            $file = $this->extractUploaded();
-            $validation = $this->validateUpload($file);
-            if ($validation !== true) {
-                return $this->json(['success' => false, 'error' => $validation]);
-            }
-            $tags = $this->collectTags();
-            $manipulations = $this->collectManipulations();
-            [$processed, $hash, $mime, $ext] = $this->processFile($file, $manipulations);
-            $images = $this->fetchTable('Images');
-            /** @var \App\Model\Entity\Image|null $existing */
-            $existing = $images->find()->where(['hash' => $hash])->first();
-            if ($existing) {
-                $this->applyTags($existing->id, $tags);
-                $this->maybeRecordUsage($existing->id);
 
-                return $this->json(['success' => true, 'image' => $this->serializeImage($existing)]);
-            }
-            $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename());
-            if ($image) {
-                $this->applyTags($image->id, $tags);
-                $this->maybeRecordUsage($image->id);
-
-                return $this->json(['success' => true, 'image' => $this->serializeImage($image)]);
-            }
-            $detail = $this->lastPersistError ?: 'Unable to save image';
+            $detail = $result['error'] ?? $storage->getLastError() ?? 'Unable to save image';
 
             return $this->json(['success' => false, 'error' => $detail]);
         } catch (\Throwable $e) {
@@ -122,9 +97,29 @@ class ImagesController extends AppController
     public function serve(int $id): Response
     {
         $this->request->allowMethod(['get', 'head']);
-        $image = $this->loadImageOrFail($id);
         $variant = (string)$this->request->getQuery('variant');
-        [$path, $mime] = $this->resolveImagePath($image, $variant);
+        // Support legacy query-based sizing by mapping to a prebuilt variant.
+        // If callers pass w/h/fit without an explicit variant, serve the "thumb".
+        if ($variant === '') {
+            $w = $this->request->getQuery('w');
+            $h = $this->request->getQuery('h');
+            $fit = $this->request->getQuery('fit');
+            if ($w !== null || $h !== null || $fit !== null) {
+                $variant = 'thumb';
+            }
+        }
+
+        $storage = new ImageStorageService();
+        $image = $storage->loadImageOrFail($id);
+        [$path, $mime] = $storage->resolveImagePath($image, $variant);
+
+        \Cake\Log\Log::debug("Serve image #{$id}, variant: '{$variant}', path: {$path}, mime: {$mime}");
+        if (is_file($path)) {
+            \Cake\Log\Log::debug("File exists at {$path}, size: " . filesize($path) . ' bytes');
+        } else {
+            \Cake\Log\Log::debug("File NOT found at {$path}");
+        }
+
         $contents = is_file($path)
             ? (file_get_contents($path) ?: '')
             : '';
@@ -133,7 +128,15 @@ class ImagesController extends AppController
             return $this->placeholderTransparentPng();
         }
 
-        return $this->response->withType($mime)->withStringBody($contents);
+        // Add cache-busting headers
+        $response = $this->response
+            ->withType($mime)
+            ->withStringBody($contents)
+            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+            ->withHeader('Pragma', 'no-cache')
+            ->withHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT');
+
+        return $response;
     }
 
     /**
@@ -178,7 +181,11 @@ class ImagesController extends AppController
             $results[] = [
                 'id' => $image->id,
                 'url' => '/images/serve/' . $image->id,
-                'thumbnail_url' => '/images/serve/' . $image->id . '?' . http_build_query(['w' => 300, 'h' => 300, 'fit' => 'cover']),
+                'thumbnail_url' => '/images/serve/' . $image->id . '?' . http_build_query([
+                    'w' => 300,
+                    'h' => 300,
+                    'fit' => 'cover',
+                ]),
                 'original_name' => $image->original_name,
                 'tags' => array_map(fn($t) => $t->name, $image->image_tags ?? []),
             ];
@@ -197,261 +204,413 @@ class ImagesController extends AppController
     }
 
     /**
+     * Render bulk upload UI for multiple images with per-file tags/context.
+     */
+    public function bulkUploadForm(): void
+    {
+        $this->request->allowMethod(['get']);
+
+        // Load entity data using service layer
+        $teamSeasonService = new \App\Service\TeamSeasonService();
+        $teamSeasonLabels = $teamSeasonService->getTeamSeasonsForSelect();
+
+        $gameLabels = [];
+        $gamesTable = $this->fetchTable('Games');
+        foreach (
+            $gamesTable->find()
+            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
+            ->orderByDesc('Games.game_date')
+            ->limit(200)
+            ->all() as $g
+        ) {
+            $opp = $g->opponent->opponent_name ?? 'Opponent';
+            $date = $g->game_date ? $g->game_date->format('M j, Y') : '';
+            $label = $opp . ($date ? ' - ' . $date : '');
+            $gameLabels[] = [
+                'id' => $g->id,
+                'label' => $label,
+                'team_season_id' => $g->team_season_id,
+            ];
+        }
+
+        $placeService = new \App\Service\PlaceService();
+        $siteLabels = $placeService->getSitesForSelect();
+
+        $opponentService = new \App\Service\OpponentService();
+        $opponents = $opponentService->getOpponentsForSelect();
+
+        $teamService = new \App\Service\TeamService();
+        $teams = $teamService->getTeamsForSelect();
+
+        $sportService = new \App\Service\SportService();
+        $sports = $sportService->getSportsForSelect();
+
+        $this->set(compact(
+            'teamSeasonLabels',
+            'gameLabels',
+            'siteLabels',
+            'opponents',
+            'teams',
+            'sports',
+        ));
+
+        $this->viewBuilder()->setTemplate('bulk_upload');
+    }
+
+    /**
+     * Accept multiple uploads in one request with per-file tags/context.
+     */
+    public function bulkUpload(): Response
+    {
+        $this->request->allowMethod(['post']);
+
+        // Prevent stray output from corrupting JSON
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        if (!$this->isAuthenticated()) {
+            return $this->json(['success' => false, 'error' => 'Unauthenticated']);
+        }
+
+        try {
+            $files = $this->request->getData('uploads') ?? [];
+            if (!is_array($files) || $files === []) {
+                return $this->json(['success' => false, 'error' => 'No files uploaded']);
+            }
+
+            $tagsInput = $this->request->getData('tags') ?? [];
+            $contextInput = $this->request->getData('context') ?? [];
+
+            // Collect common entity tags that will apply to all files
+            $commonEntityTags = $this->buildCommonEntityTags($this->request->getData());
+
+            $storage = new ImageStorageService();
+
+            $results = [];
+            foreach ($files as $index => $file) {
+                // Normalize array-style uploads to PSR-7 UploadedFile
+                if (!$file instanceof UploadedFileInterface) {
+                    if (is_array($file) && !empty($file['tmp_name'])) {
+                        $file = new \Laminas\Diactoros\UploadedFile(
+                            $file['tmp_name'],
+                            (int)($file['size'] ?? 0),
+                            (int)($file['error'] ?? UPLOAD_ERR_OK),
+                            $file['name'] ?? null,
+                            $file['type'] ?? null,
+                        );
+                    } else {
+                        $results[] = [
+                            'index' => $index,
+                            'name' => is_array($file) ? ($file['name'] ?? null) : null,
+                            'success' => false,
+                            'error' => 'Invalid upload payload',
+                        ];
+                        continue;
+                    }
+                }
+
+                // Merge per-file tags with common entity tags
+                $fileTags = $this->collectBulkTags($tagsInput, $contextInput, (string)$index);
+                $allTags = array_merge($commonEntityTags, $fileTags);
+
+                $result = $storage->upload($file, $allTags, []);
+
+                $results[] = [
+                    'index' => $index,
+                    'name' => $file->getClientFilename(),
+                    'success' => !empty($result['success']),
+                    'existing' => $result['existing'] ?? false,
+                    'error' => $result['error'] ?? null,
+                    'image' => $result['image'] ?? null,
+                ];
+            }
+
+            $anySuccess = (bool)count(array_filter($results, fn($r) => !empty($r['success'])));
+
+            return $this->json([
+                'success' => $anySuccess,
+                'results' => $results,
+            ]);
+        } catch (\Throwable $e) {
+            \Cake\Log\Log::error('Bulk upload exception: ' . $e->getMessage());
+
+            return $this->json(['success' => false, 'error' => 'Upload failed: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Build entity-based tags from form data (mirrors ImageTaggingService::tagsForContext logic).
+     *
+     * @param array<string,mixed> $data
+     * @return array<int,array<string,string>>
+     */
+    private function buildCommonEntityTags(array $data): array
+    {
+        $tagsToApply = [];
+
+        $map = [
+            'person_select' => [
+                'prefix' => 'person-',
+                'service' => 'person',
+            ],
+            'roster_select' => [
+                'prefix' => 'team_season_roster-',
+                'service' => 'roster',
+            ],
+            'teamseason_select' => [
+                'prefix' => 'teamseason-',
+                'service' => 'teamseason',
+            ],
+            'game_select' => [
+                'prefix' => 'game-',
+                'table' => 'Games',
+                'label' => fn($r) => $r->opponent_name ?? 'game',
+            ],
+            'site_select' => [
+                'prefix' => 'site-',
+                'table' => 'Places',
+                'label' => fn($r) => $r->place_name ?? 'site',
+            ],
+            'opponent_select' => [
+                'prefix' => 'opponent-',
+                'table' => 'Opponents',
+                'label' => fn($r) => $r->opponent_name ?? 'opponent',
+            ],
+            'team_select' => [
+                'prefix' => 'team-',
+                'table' => 'Teams',
+                'label' => fn($r) => $r->team_name ?? 'team',
+            ],
+            'sport_select' => [
+                'prefix' => 'sport-',
+                'table' => 'Sports',
+                'label' => fn($r) => $r->sport_name ?? 'sport',
+            ],
+        ];
+
+        $personService = new \App\Service\PersonService();
+        $teamSeasonService = new \App\Service\TeamSeasonService();
+        $rosterService = new \App\Service\TeamSeasonRosterService();
+
+        // Check if roster is being set (takes priority over teamseason)
+        $hasRoster = !empty($data['roster_select']) && (int)$data['roster_select'] > 0;
+
+        foreach ($map as $field => $meta) {
+            // Skip teamseason_select if roster is being set
+            if ($hasRoster && $field === 'teamseason_select') {
+                continue;
+            }
+
+            // Skip other entity tags if roster is being set (only person allowed with roster)
+            $skipFields = ['game_select', 'site_select', 'opponent_select', 'team_select', 'sport_select'];
+            if ($hasRoster && in_array($field, $skipFields)) {
+                continue;
+            }
+
+            if (!empty($data[$field])) {
+                $id = (int)$data[$field];
+                if ($id > 0) {
+                    $slug = $meta['prefix'] . $id;
+
+                    // Use service layer for entities with dedicated services
+                    $display = '';
+                    if (isset($meta['service'])) {
+                        if ($meta['service'] === 'person') {
+                            $display = $personService->getDisplayLabel($id);
+                        } elseif ($meta['service'] === 'teamseason') {
+                            $display = $teamSeasonService->getSportDisplayLabel($id);
+                        } elseif ($meta['service'] === 'roster') {
+                            $rosterData = $rosterService->getRosterDisplayData($id);
+                            $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
+                        }
+                    } else {
+                        // Fallback to direct table lookup
+                        $table = TableRegistry::getTableLocator()->get($meta['table']);
+                        $row = $table->find()->select()->where(['id' => $id])->first();
+                        $display = $row ? (string)$meta['label']($row) : '';
+                    }
+
+                    if ($display) {
+                        $tagsToApply[] = [
+                            'slug' => $slug,
+                            'name' => $display,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Add common freeform tags
+        if (!empty($data['common_tags'])) {
+            $commonTags = $data['common_tags'];
+            if (is_string($commonTags)) {
+                $tags = array_values(array_filter(
+                    array_map('trim', explode(',', $commonTags)),
+                    fn($t) => $t !== ''
+                ));
+                foreach ($tags as $tag) {
+                    $tagsToApply[] = $tag;
+                }
+            }
+        }
+
+        return $tagsToApply;
+    }
+
+    /**
      * Edit image metadata (status or original_name only for now).
      */
     public function edit(int $id): ?Response
     {
         $images = $this->fetchTable('Images');
-        $image = $images->get($id, ['contain' => ['ImageTags']]);
-        if ($this->request->is(['post','put','patch'])) {
-            $images->patchEntity($image, $this->request->getData(), ['fields' => ['original_name','status']]);
-            if ($images->save($image)) {
-                $this->Flash->success('Image updated');
+        $image = $images->get($id, contain: ['ImageTags']);
 
-                return $this->redirect(['action' => 'index']);
+        // Handle basic image updates (original_name, status) only
+        if ($this->request->is(['post', 'put', 'patch'])) {
+            $data = (array)$this->request->getData();
+            $patchData = [];
+            if (array_key_exists('original_name', $data)) {
+                $patchData['original_name'] = (string)$data['original_name'];
             }
-            $this->Flash->error('Could not update image');
+            if (array_key_exists('status', $data)) {
+                $patchData['status'] = (string)$data['status'];
+            }
+            if ($patchData) {
+                $image = $images->patchEntity($image, $patchData);
+                if ($images->save($image)) {
+                    $this->Flash->success('Image updated');
+                } else {
+                    $this->Flash->error('Failed to update image');
+                }
+            }
+
+            return $this->redirect(['action' => 'edit', $id]);
         }
+
+        // Minimal data for edit template
         $currentTags = $image->image_tags ?? [];
         $this->set(compact('image', 'currentTags'));
 
-        return null; // Allow auto-render
+        return null;
     }
 
     /**
-     * Manage tags for an image (view/edit).
+     * Manage tags for an image.
      */
     public function tags(int $id): ?Response
     {
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id, ['contain' => ['ImageTags']]);
-        // Prepare entity select lists for tag helpers
-        $persons = $this->fetchTable('Persons')
-            ->find()
-            ->select(['id', 'first', 'last'])
-            ->orderBy('last')
-            ->limit(200)
-            ->all();
-        $teams = $this->fetchTable('Teams')
-            ->find()
-            ->select(['id', 'team_name'])
-            ->orderBy('team_name')
-            ->limit(200)
-            ->all();
+        $this->request->allowMethod(['get', 'post']);
 
-        // Team Seasons with formatted labels: 'team name (start-end)'
-        $teamSeasonsRaw = $this->fetchTable('TeamSeasons')->find()
-            ->contain(['Teams', 'Seasons'])
-            ->orderBy(['TeamSeasons.id' => 'ASC'])
-            ->limit(200)
-            ->all();
-        $teamSeasons = [];
-        foreach ($teamSeasonsRaw as $ts) {
-            $teamName = $ts->team->team_name ?? 'Team';
-            $seasonLabel = '';
-            if ($ts->season) {
-                $start = $ts->season->start ?? null;
-                $end = $ts->season->end ?? null;
-                if ($start && $end && $start != $end) {
-                    $seasonLabel = " ({$start}-{$end})";
-                } elseif ($start) {
-                    $seasonLabel = " ({$start})";
-                }
-            }
-            $teamSeasons[] = [
-                'id' => $ts->id,
-                'label' => $teamName . $seasonLabel,
-            ];
-        }
+        $images = $this->fetchTable('Images');
+        $image = $images->get($id, contain: ['ImageTags']);
+
+        // Service-based select lists (persons and rosters loaded via AJAX)
+        $teamService = new \App\Service\TeamService();
+        $teams = $teamService->getTeamsForSelect();
+
+        $teamSeasonService = new \App\Service\TeamSeasonService();
+        $teamSeasons = $teamSeasonService->getTeamSeasonsForSelect();
 
         // Games with team_season_id for filtering and formatted labels
-        $gamesRaw = $this->fetchTable('Games')->find()
-            ->contain(['TeamSeason' => ['Teams', 'Seasons'], 'Opponents'])
-            ->select([
-                'Games.id', 'Games.team_season_id', 'Games.game_date',
-                'Games.opponent_id', 'Games.pts_mur', 'Games.pts_opp',
-            ])
-            ->orderByDesc('Games.id')
+        $gameLabels = [];
+        $gamesTable = $this->fetchTable('Games');
+        foreach (
+            $gamesTable->find()
+            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
+            ->orderByDesc('Games.game_date')
             ->limit(200)
-            ->all();
-        $games = [];
-        foreach ($gamesRaw as $g) {
+            ->all() as $g
+        ) {
             $teamName = $g->team_season->team->team_name ?? 'Team';
             $oppName = $g->opponent->opponent_name ?? 'Opponent';
             $date = $g->game_date ? $g->game_date->format('Y-m-d') : '';
             $score = $g->pts_mur !== null && $g->pts_opp !== null ? " {$g->pts_mur}-{$g->pts_opp}" : '';
             $label = $teamName . ' vs ' . $oppName
                 . ($date ? ' (' . $date . ')' : '') . $score;
-            $games[] = [
+            $gameLabels[] = [
                 'id' => $g->id,
                 'team_season_id' => $g->team_season_id,
                 'label' => $label,
             ];
         }
+        $games = $gameLabels;
 
-        // Sites with Place info (place_name, place_state, site_name)
-        $sitesRaw = $this->fetchTable('Sites')->find()
-            ->contain(['Places'])
-            ->select([
-                'Sites.id', 'Sites.site_name',
-                'Places.place_name', 'Places.place_state',
-            ])
-            ->orderBy('Sites.site_name')
-            ->limit(200)
-            ->all();
-        $sites = [];
-        foreach ($sitesRaw as $s) {
-            $parts = array_filter([
-                $s->place->place_name ?? null,
-                $s->place->place_state ?? null,
-                $s->site_name ?? null,
-            ]);
-            $label = implode(', ', $parts) ?: 'Site #' . $s->id;
-            $sites[] = [
-                'id' => $s->id,
-                'label' => $label,
-            ];
-        }
+        $placeService = new \App\Service\PlaceService();
+        $sites = $placeService->getSitesForSelect();
 
-        // Opponents with opponent_name - opponent_mascot - place_name
-        $opponentsRaw = $this->fetchTable('Opponents')->find()
-            ->contain(['Places'])
-            ->select(['Opponents.id', 'Opponents.opponent_name', 'Opponents.opponent_mascot', 'Places.place_name'])
-            ->orderBy('Opponents.opponent_name')
-            ->limit(200)
-            ->all();
-        $opponents = [];
-        foreach ($opponentsRaw as $o) {
-            $parts = array_filter([$o->opponent_name, $o->opponent_mascot, $o->place->place_name ?? null]);
-            $label = implode(' - ', $parts) ?: 'Opponent #' . $o->id;
-            $opponents[] = [
-                'id' => $o->id,
-                'label' => $label,
-            ];
-        }
+        $opponentService = new \App\Service\OpponentService();
+        $opponents = $opponentService->getOpponentsForSelect();
 
-        $sports = $this->fetchTable('Sports')
-            ->find()
-            ->select(['id', 'sport_name'])
-            ->orderBy('sport_name')
-            ->limit(200)
-            ->all();
+        $sportService = new \App\Service\SportService();
+        $sports = $sportService->getSportsForSelect();
 
-        // Roster entries with formatted labels: 'person name - team_name (start-end)'
-        $rostersTable = $this->fetchTable('TeamSeasonRosters');
-        $rostersRaw = $rostersTable->find()
-            ->contain(['Persons', 'TeamSeasons' => ['Teams', 'Seasons']])
-            ->orderByDesc('TeamSeasonRosters.id')
-            ->limit(200)
-            ->all();
-        $rosters = [];
-        foreach ($rostersRaw as $r) {
-            $personName = trim(($r->person->first ?? '') . ' ' . ($r->person->last ?? ''))
-                ?: 'Person #' . $r->person_id;
-            $teamName = $r->team_season?->team->team_name ?? 'Team';
-            $seasonLabel = '';
-            if ($r->team_season?->season) {
-                $start = $r->team_season->season->start ?? null;
-                $end = $r->team_season->season->end ?? null;
-                if ($start && $end && $start != $end) {
-                    $seasonLabel = " ({$start}-{$end})";
-                } elseif ($start) {
-                    $seasonLabel = " ({$start})";
-                }
-            }
-            $label = $personName . ' - ' . $teamName . $seasonLabel;
-            $rosters[] = [
-                'id' => $r->id,
-                'person_id' => $r->person_id,
-                'label' => $label,
-            ];
-        }
-
-        if ($this->request->is(['post', 'put', 'patch'])) {
-            // Remove all existing tags first
-            $imageTags = $this->fetchTable('ImagesImageTags');
-            $imageTags->deleteAll(['image_id' => $id]);
-
-            // Build and apply tags using service
+        if ($this->request->is(['post'])) {
             $data = $this->request->getData();
-            $tagging = new \App\Service\ImageTaggingService();
+            $tagging = new ImageTaggingService();
             $tagging->applyFromData($id, $data);
-
             $this->Flash->success('Tags updated');
 
             return $this->redirect(['action' => 'tags', $id]);
         }
 
-        // Load tags for display
-        $image = $images->get($id, ['contain' => ['ImageTags']]);
+        // Tags for display and preselects
+        $image = $images->get($id, contain: ['ImageTags']);
         $currentTags = $image->image_tags ?? [];
 
-        // Format tags with proper display labels, especially for roster tags
         $formattedTags = [];
         $freeformTags = [];
-        $rosterService = new \App\Service\TeamSeasonRosterService();
-
         foreach ($currentTags as $t) {
             $slug = (string)($t->slug ?? '');
             if (preg_match('/-[0-9]+$/', $slug)) {
-                // Record-based tag: check if it's a roster tag
                 if (str_starts_with($slug, 'team_season_roster-')) {
-                    $parts = explode('-', $slug, 2);
-                    $rosterId = isset($parts[1]) ? (int)$parts[1] : null;
-                    if ($rosterId) {
-                        $rosterData = $rosterService->getRosterDisplayData($rosterId);
-                        $t->name = $rosterData['team_season_label'] ?? $t->name;
-                    }
+                    $rid = (int)substr($slug, strlen('team_season_roster-'));
+                    $display = (new \App\Service\TeamSeasonRosterService())->getRosterDisplayData($rid);
+                    $t->name = $display['team_season_label'] ?? $t->name;
                 }
                 $formattedTags[] = $t;
             } else {
                 $freeformTags[] = $t;
             }
         }
-
-        // Re-assemble currentTags with formatted versions
         $currentTags = array_merge($formattedTags, $freeformTags);
         $tagString = implode(', ', array_map(fn($t) => $t->name, $freeformTags));
 
-        // Determine currently selected person (if any) from record-based tags
         $selectedPersonId = null;
         $selectedPersonName = null;
         $selectedRosterId = null;
         foreach ($currentTags as $t) {
             $slug = (string)($t->slug ?? '');
             if (str_starts_with($slug, 'person-')) {
-                $parts = explode('-', $slug, 2);
-                $selectedPersonId = isset($parts[1]) ? (int)$parts[1] : null;
-                $selectedPersonName = $t->name ?? null;
+                $selectedPersonId = (int)substr($slug, strlen('person-'));
+                $selectedPersonName = (new \App\Service\PersonService())->getDisplayLabel($selectedPersonId);
                 break;
             }
         }
-        // find roster tag if present
         foreach ($currentTags as $t) {
             $slug = (string)($t->slug ?? '');
             if (str_starts_with($slug, 'team_season_roster-')) {
-                $parts = explode('-', $slug, 2);
-                $selectedRosterId = isset($parts[1]) ? (int)$parts[1] : null;
+                $selectedRosterId = (int)substr($slug, strlen('team_season_roster-'));
                 break;
             }
         }
 
         $this->set(compact(
             'image',
-            'tagString',
             'currentTags',
-            'persons',
             'teams',
             'teamSeasons',
             'games',
             'sites',
             'opponents',
             'sports',
-            'rosters',
+            'tagString',
             'selectedPersonId',
             'selectedPersonName',
             'selectedRosterId'
         ));
+
+        $this->viewBuilder()->setTemplate('tags');
 
         return null;
     }
@@ -486,6 +645,7 @@ class ImagesController extends AppController
         // Delete associations and files
         $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $id]);
         $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $id]);
+        (new ImageTaggingService())->pruneOrphanedTags();
 
         // Delete physical files
         $this->deleteImageFiles($image);
@@ -531,6 +691,8 @@ class ImagesController extends AppController
                 $deleted++;
             }
         }
+
+        (new ImageTaggingService())->pruneOrphanedTags();
 
         $this->Flash->success("Deleted {$deleted} image(s)");
 
@@ -578,12 +740,33 @@ class ImagesController extends AppController
                 return $this->redirect(['action' => 'manipulate', $id]);
             }
 
+            // Check for custom thumbnail crop
+            $thumbCrop = $this->request->getData('thumb_crop');
+            $hasThumbCrop = is_array($thumbCrop)
+                && !empty($thumbCrop['width'])
+                && !empty($thumbCrop['height']);
+
             // Process with manipulations by directly working with the file content
             $fileContent = file_get_contents($originalPath);
             $variantConfig = (array)Configure::read('Images.variants', [
-                'thumb' => ['fit' => [150,150]],
-                'medium' => ['maxWidth' => 800],
+                'thumb' => ['fit' => [150,150], 'format' => 'webp'],
+                'medium' => ['maxWidth' => 800, 'format' => 'webp'],
+                'webp' => ['format' => 'webp'],
             ]);
+
+            // If custom thumbnail crop provided, override thumb variant config
+            if ($hasThumbCrop) {
+                $variantConfig['thumb'] = [
+                    'crop' => [
+                        'x' => (int)($thumbCrop['x'] ?? 0),
+                        'y' => (int)($thumbCrop['y'] ?? 0),
+                        'width' => (int)$thumbCrop['width'],
+                        'height' => (int)$thumbCrop['height'],
+                    ],
+                    'fit' => [150, 150],
+                    'format' => 'webp',
+                ];
+            }
 
             // Process with manipulations
             try {
@@ -629,9 +812,10 @@ class ImagesController extends AppController
                         ? $image->original_name . ' (edited)'
                         : $image->filename . ' (edited)';
 
-                    $new = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $copyName);
+                    $storage = new ImageStorageService();
+                    $new = $storage->persistNewImage($images, $processed, $hash, $mime, $ext, $copyName);
                     if (!$new) {
-                        $detail = $this->lastPersistError ?: 'Unable to save image copy';
+                        $detail = $storage->getLastError() ?: 'Unable to save image copy';
                         $this->Flash->error($detail);
 
                         return $this->redirect(['action' => 'manipulate', $id]);
@@ -646,26 +830,31 @@ class ImagesController extends AppController
                     throw new \RuntimeException('Failed to write image file');
                 }
 
-                // Update variants
-                $variants = $image->variants;
-                if (is_string($variants)) {
-                    $variants = json_decode($variants, true);
+                // Regenerate variants: prefer existing filenames; generate if missing; update DB metadata.
+                $existingVariants = $image->variants;
+                if (is_string($existingVariants)) {
+                    $existingVariants = json_decode($existingVariants, true);
                 }
-                if (is_array($variants)) {
-                    $dir = dirname($originalPath);
-                    foreach ($variants as $name => $variantMeta) {
-                        if (!isset($processed['variants'][$name])) {
-                            continue;
-                        }
-                        $file = is_array($variantMeta) ? ($variantMeta['file'] ?? null) : null;
-                        if (!$file) {
-                            continue;
-                        }
-                        $variantPath = $dir . DS . $file;
-                        if (!file_put_contents($variantPath, $processed['variants'][$name]['data'])) {
-                            throw new \RuntimeException("Failed to write variant {$name}");
-                        }
+                $dir = dirname($originalPath);
+                $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
+                $newVariantsMeta = [];
+                foreach ((array)$processed['variants'] as $name => $meta) {
+                    $existingFile = null;
+                    if (is_array($existingVariants) && isset($existingVariants[$name]['file'])) {
+                        $existingFile = (string)$existingVariants[$name]['file'];
                     }
+                    $ext = (string)($meta['ext'] ?? $image->ext ?? 'jpg');
+                    $targetFile = $existingFile ?: ($baseName . '-' . $name . '.' . $ext);
+                    $variantPath = $dir . DS . $targetFile;
+                    if (file_put_contents($variantPath, (string)$meta['data']) === false) {
+                        throw new \RuntimeException("Failed to write variant {$name}");
+                    }
+                    $newVariantsMeta[$name] = [
+                        'file' => $targetFile,
+                        'width' => (int)($meta['width'] ?? null),
+                        'height' => (int)($meta['height'] ?? null),
+                        'mime' => (string)($meta['mime'] ?? ''),
+                    ];
                 }
 
                 // Update DB metadata so edit/serve endpoints reflect changes and cache-busting is possible.
@@ -675,6 +864,7 @@ class ImagesController extends AppController
                     'width' => (int)($processed['original']['width'] ?? $image->width),
                     'height' => (int)($processed['original']['height'] ?? $image->height),
                     'modified' => date('Y-m-d H:i:s'),
+                    'variants' => json_encode($newVariantsMeta),
                 ], ['validate' => false]);
                 $images->saveOrFail($image);
 
@@ -690,6 +880,152 @@ class ImagesController extends AppController
         }
 
         // GET: Display form with preview
+        $this->set(compact('image'));
+
+        return $this->render();
+    }
+
+    /**
+     * Crop the thumbnail variant with custom crop coordinates.
+     * Only regenerates the thumb variant without touching the original or other variants.
+     * GET: Display crop editor form
+     * POST: Apply crop and regenerate thumb variant
+     */
+    public function cropThumb(int $id): Response
+    {
+        $images = $this->fetchTable('Images');
+        $image = $images->get($id);
+        /** @var \App\Model\Entity\Image $image */
+
+        $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
+        $originalPath = $baseDir . $image->storage_path;
+
+        if ($this->request->is('post')) {
+            // Verify file exists
+            if (!is_file($originalPath)) {
+                \Cake\Log\Log::error("Image file not found: {$originalPath}");
+                $this->Flash->error('Original image file not found');
+
+                return $this->redirect(['action' => 'edit', $id]);
+            }
+
+            // Get crop coordinates
+            $crop = $this->request->getData('crop');
+            if (!is_array($crop) || empty($crop['width']) || empty($crop['height'])) {
+                $this->Flash->warning('No valid crop area specified');
+
+                return $this->redirect(['action' => 'cropThumb', $id]);
+            }
+
+            $cropX = (int)($crop['x'] ?? 0);
+            $cropY = (int)($crop['y'] ?? 0);
+            $cropWidth = (int)($crop['width'] ?? 0);
+            $cropHeight = (int)($crop['height'] ?? 0);
+
+            if ($cropWidth <= 0 || $cropHeight <= 0) {
+                $this->Flash->error('Invalid crop dimensions');
+
+                return $this->redirect(['action' => 'cropThumb', $id]);
+            }
+
+            try {
+                // Read original file
+                $fileContent = file_get_contents($originalPath);
+
+                // Build variant config with custom crop for thumb only
+                $variantConfig = [
+                    'thumb' => [
+                        'crop' => [
+                            'x' => $cropX,
+                            'y' => $cropY,
+                            'width' => $cropWidth,
+                            'height' => $cropHeight,
+                        ],
+                        'fit' => [150, 150],
+                        'format' => 'webp',
+                    ],
+                ];
+
+                // Generate new thumb variant
+                $processor = new ImageProcessor();
+                $processed = $processor->manipulateExisting(
+                    $fileContent,
+                    $image->mime ?? 'image/jpeg',
+                    $variantConfig,
+                    [],
+                );
+
+                if (!isset($processed['variants']['thumb'])) {
+                    throw new \RuntimeException('Thumb variant not generated');
+                }
+
+                // Get current variants from DB
+                $existingVariants = $image->variants;
+                if (is_string($existingVariants)) {
+                    $existingVariants = json_decode($existingVariants, true);
+                }
+                $existingVariants = is_array($existingVariants) ? $existingVariants : [];
+
+                // Write new thumb file to disk
+                $dir = dirname($originalPath);
+                $meta = $processed['variants']['thumb'];
+
+                // Reuse existing thumb filename or create new one
+                $existingFile = $existingVariants['thumb']['file'] ?? null;
+                $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
+                $ext = (string)($meta['ext'] ?? 'webp');
+                $targetFile = $existingFile ?: ($baseName . '-thumb.' . $ext);
+                $variantPath = $dir . DS . $targetFile;
+
+                $bytesWritten = file_put_contents($variantPath, (string)$meta['data']);
+                if ($bytesWritten === false) {
+                    throw new \RuntimeException('Failed to write thumb variant file');
+                }
+
+                \Cake\Log\Log::debug("Wrote {$bytesWritten} bytes to thumb variant: {$variantPath}");
+
+                // Update variants JSON with new thumb metadata
+                $existingVariants['thumb'] = [
+                    'file' => $targetFile,
+                    'width' => (int)($meta['width'] ?? 150),
+                    'height' => (int)($meta['height'] ?? 150),
+                    'mime' => (string)($meta['mime'] ?? 'image/webp'),
+                ];
+
+                // Update DB: Change hash to invalidate browser cache
+                $thumbHash = hash('sha256', (string)$meta['data']);
+                $variantsJson = json_encode($existingVariants);
+
+                \Cake\Log\Log::debug("Before save - Variants JSON: {$variantsJson}");
+
+                $image = $images->patchEntity($image, [
+                    'variants' => $variantsJson,
+                    'hash' => $thumbHash,
+                    'modified' => new \Cake\I18n\DateTime('now'),
+                ], ['validate' => false]);
+
+                $images->saveOrFail($image);
+
+                // Verify what was actually saved
+                $reloaded = $images->get($id);
+                \Cake\Log\Log::debug("After save - Image hash: {$reloaded->hash}");
+                \Cake\Log\Log::debug("After save - Image modified: {$reloaded->modified}");
+                \Cake\Log\Log::debug('After save - Variants JSON from DB: ' . ($reloaded->variants ?? 'NULL'));
+
+                \Cake\Log\Log::debug("Updated thumb variant for image #{$id}, new hash: {$thumbHash}");
+
+                $this->Flash->success('Thumbnail crop updated successfully');
+
+                return $this->redirect(['action' => 'edit', $id]);
+            } catch (\Throwable $e) {
+                \Cake\Log\Log::error('Failed to crop thumbnail: ' . $e->getMessage());
+                $this->Flash->error('Failed to crop thumbnail: ' . $e->getMessage());
+
+                return $this->redirect(['action' => 'cropThumb', $id]);
+            }
+        }
+
+        // GET: Display crop editor form
         $this->set(compact('image'));
 
         return $this->render();
@@ -937,8 +1273,56 @@ class ImagesController extends AppController
     }
 
     /**
-     * @return \Psr\Http\Message\UploadedFileInterface
+     * Build tags for a bulk-uploaded file by index.
+     *
+     * @param array<string|int,mixed>|string|null $tagsInput
+     * @param array<string|int,mixed>|string|null $contextInput
+     * @param string $index
+     * @return array<int,string|array>
      */
+    private function collectBulkTags(
+        array|string|null $tagsInput,
+        array|string|null $contextInput,
+        string $index,
+    ): array {
+        $tags = [];
+
+        $rawTags = null;
+        if (array_key_exists($index, $tagsInput)) {
+            $rawTags = $tagsInput[$index];
+        } elseif (array_key_exists((int)$index, $tagsInput)) {
+            $rawTags = $tagsInput[(int)$index];
+        } elseif (is_string($tagsInput)) {
+            $rawTags = $tagsInput;
+        }
+
+        if (is_string($rawTags)) {
+            $tags = array_values(array_filter(array_map('trim', explode(',', $rawTags)), fn($t) => $t !== ''));
+        } elseif (is_array($rawTags)) {
+            $tags = array_values(array_filter(array_map(fn($t) => trim((string)$t), $rawTags), fn($t) => $t !== ''));
+        }
+
+        $contextValue = null;
+        if (array_key_exists($index, $contextInput)) {
+            $contextValue = $contextInput[$index];
+        } elseif (array_key_exists((int)$index, $contextInput)) {
+            $contextValue = $contextInput[(int)$index];
+        } elseif (is_string($contextInput)) {
+            $contextValue = $contextInput;
+        }
+
+        if (is_string($contextValue)) {
+            $contextValue = trim($contextValue);
+            if ($contextValue !== '') {
+                $tags[] = [
+                    'slug' => 'context-' . Text::slug($contextValue, '-'),
+                    'name' => $contextValue,
+                ];
+            }
+        }
+
+        return $tags;
+    }
 
     /**
      * Extract uploaded file from request and normalize to PSR-7 UploadedFile.
@@ -962,89 +1346,6 @@ class ImagesController extends AppController
     }
 
     /**
-     * Validate uploaded file type and error state.
-     *
-     * @param mixed $file Uploaded file.
-     * @return string|bool True if valid otherwise error message.
-     */
-    private function validateUpload(mixed $file): bool|string
-    {
-        if (!$file || $file->getError() !== UPLOAD_ERR_OK) {
-            return 'No file uploaded';
-        }
-        // Reject zero-byte files explicitly
-        if ($file->getSize() === 0) {
-            return 'Empty file';
-        }
-        $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
-        $mime = $file->getClientMediaType();
-        if (!in_array($mime, $allowed, true)) {
-            return 'Unsupported file type';
-        }
-        // Basic structural validation (avoid trusting client mime)
-        $tmpPath = method_exists($file, 'getStream') ? $file->getStream()->getMetadata('uri') : null;
-        if ($tmpPath && is_file($tmpPath)) {
-            set_error_handler(static function () {
-                // Consume warnings from invalid image streams
-                return true;
-            });
-            try {
-                $imgInfo = getimagesize($tmpPath);
-            } finally {
-                // Pop the temporary handler we installed earlier so the active
-                // handler becomes whatever it was before.
-                restore_error_handler();
-            }
-            if ($imgInfo === false) {
-                return 'Invalid image data';
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Collect tags from request data or query (comma-separated or array).
-     * Also handles context-based auto-tagging (e.g., from person edit page).
-     *
-     * @return array<int,string>
-     */
-    private function collectTags(): array
-    {
-        $tags = [];
-
-        // Collect explicit tags
-        $raw = $this->request->getData('tags') ?? $this->request->getQuery('tags') ?? [];
-        if (is_string($raw)) {
-            $raw = array_map('trim', explode(',', $raw));
-        }
-        if (is_array($raw)) {
-            $tags = array_values(array_filter(array_map(fn($t) => trim((string)$t), $raw), fn($t) => $t !== ''));
-        }
-
-        // Handle context-based auto-tagging
-        $contextJson = $this->request->getData('context');
-        if ($contextJson && is_string($contextJson)) {
-            $context = json_decode($contextJson, true);
-            if (is_array($context) && isset($context['type'], $context['id'])) {
-                $type = strtolower((string)$context['type']);
-                $id = (int)$context['id'];
-
-                // Auto-tag based on context type
-                if ($type === 'person' && $id > 0) {
-                    $tags[] = "person-{$id}";
-                } elseif ($type === 'teamseason' && $id > 0) {
-                    $tags[] = "teamseason-{$id}";
-                } elseif ($type === 'game' && $id > 0) {
-                    $tags[] = "game-{$id}";
-                }
-            }
-        }
-
-        return array_values(array_unique($tags));
-    }
-
-    /**
      * Collect image manipulations from request (crop, rotate, brightness, contrast).
      */
     private function collectManipulations(): array
@@ -1062,11 +1363,12 @@ class ImagesController extends AppController
             ];
         }
 
-        // Rotation angle
+        // Rotation angle (allow negatives for straightening)
         $rotate = $this->request->getData('rotate');
         if ($rotate !== null && $rotate !== '') {
             $angle = (int)$rotate;
-            if ($angle > 0 && $angle < 360) {
+            // Accept a reasonable range including negatives; server will normalize
+            if ($angle >= -180 && $angle <= 180) {
                 $manipulations['rotate'] = $angle;
             }
         }
@@ -1099,389 +1401,6 @@ class ImagesController extends AppController
         }
 
         return $manipulations;
-    }
-
-    /**
-     * Apply tags to an image via ImageProcessor service.
-     */
-    private function applyTags(int $imageId, array $tags): void
-    {
-        if (!$tags) {
-            return;
-        }
-        $processor = new ImageProcessor();
-        $processor->attachTags($imageId, $tags);
-    }
-
-    /**
-     * Process uploaded file via ImageProcessor and return processed structure.
-     *
-     * @param mixed $file Uploaded file.
-     * @return array{0:array,1:string,2:string,3:string}
-     */
-    private function processFile(mixed $file, array $manipulations = []): array
-    {
-        $variantConfig = (array)Configure::read('Images.variants', [
-            'thumb' => ['fit' => [150,150]],
-            'medium' => ['maxWidth' => 800],
-        ]);
-        $processor = new ImageProcessor();
-        $processed = $processor->process($file, $variantConfig, $manipulations);
-        $hash = hash('sha256', $processed['original']['data']);
-        $mime = $file->getClientMediaType();
-        $ext = pathinfo($file->getClientFilename() ?? '', PATHINFO_EXTENSION) ?: $processed['original']['ext'];
-
-        return [$processed, $hash, $mime, $ext];
-    }
-
-    /**
-     * Persist image entity and return saved entity or null on failure.
-     *
-     * @param \Cake\Datasource\RepositoryInterface $images Images table instance.
-     * @param array<string,mixed> $processed Processed image data.
-     * @param string $hash Content hash.
-     * @param string $mime Mime type.
-     * @param string $ext File extension.
-     * @param string|null $originalName Original filename.
-     * @return \App\Model\Entity\Image|null
-     */
-    private function persistNewImage(
-        \Cake\Datasource\RepositoryInterface $images,
-        array $processed,
-        string $hash,
-        string $mime,
-        string $ext,
-        ?string $originalName,
-    ) {
-        $uuid = Text::uuid();
-        $subdir = date('Y') . '/' . date('m');
-        $storageDir = WWW_ROOT . 'img' . DS . 'storage' . DS . $subdir . DS;
-        $writeErrors = [];
-        if (!$this->createStorageDir($storageDir, $writeErrors)) {
-            $this->lastPersistError = end($writeErrors) ?: 'Storage directory not writable';
-
-            return null;
-        }
-        [$filename, $variantMeta] = $this->writeImageFiles($uuid, $ext, $storageDir, $processed, $writeErrors);
-        // If original write failed, abort
-        foreach ($writeErrors as $err) {
-            if (str_contains($err, 'Failed to write original image')) {
-                $this->lastPersistError = $err;
-
-                return null;
-            }
-        }
-        if ($writeErrors) {
-            \Cake\Log\Log::warning('Image write warnings: ' . implode('; ', $writeErrors));
-        }
-        $entityData = [
-            'filename' => $filename,
-            'storage_subdir' => $subdir,
-            'storage_path' => $subdir . '/' . $filename,
-            'original_name' => $originalName,
-            'mime' => $mime,
-            'ext' => $ext,
-            'byte_size' => strlen($processed['original']['data']),
-            'width' => $processed['original']['width'],
-            'height' => $processed['original']['height'],
-            'variants' => json_encode($variantMeta),
-            'hash' => $hash,
-            'status' => 'active',
-        ];
-        $image = $images->newEntity($entityData);
-
-        $saved = $images->save($image);
-
-        // Ensure we return the concrete Image entity type for static analysis
-        if ($saved instanceof \App\Model\Entity\Image) {
-            return $saved;
-        }
-
-        return null;
-    }
-
-    /**
-     * Ensure storage directory exists, capturing warnings instead of emitting them.
-     *
-     * @param string $storageDir Absolute directory path.
-     * @param array<int,string> $writeErrors Collector for warnings.
-     * @return bool Success
-     */
-    private function createStorageDir(string $storageDir, array &$writeErrors): bool
-    {
-        if (is_dir($storageDir)) {
-            // Extra safety: ensure directory is writable; attempt permission fix if not.
-            if (!is_writable($storageDir)) {
-                // Try to chmod; use try/catch for proper error handling
-                try {
-                    chmod($storageDir, 0775);
-                } catch (\Throwable $e) {
-                    \Cake\Log\Log::warning('Failed to chmod storage directory: ' . $e->getMessage(), [
-                        'storage_dir' => $storageDir,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                // Re-check after chmod attempt; could be writable now
-                /** @phpstan-ignore booleanNot.alwaysTrue */
-                if (!is_writable($storageDir)) {
-                    $writeErrors[] = 'Storage directory exists but not writable: ' . $storageDir;
-                    \Cake\Log\Log::error(end($writeErrors));
-
-                    return false;
-                }
-            }
-
-            return true;
-        }
-        $mkdirOk = false;
-        $this->withCapturedWarnings(function () use ($storageDir, &$mkdirOk) {
-            $oldUmask = umask(0002); // ensure group write bit preserved
-            $mkdirOk = mkdir($storageDir, 0775, true);
-            umask($oldUmask);
-        }, $writeErrors);
-        if (!$mkdirOk && !is_dir($storageDir)) {
-            $writeErrors[] = 'Failed to create storage directory: ' . $storageDir;
-            \Cake\Log\Log::error(end($writeErrors));
-
-            return false;
-        }
-        // Inherit parent group if possible so web server user (same group) can write future subdirs
-        $parent = dirname(rtrim($storageDir, DIRECTORY_SEPARATOR));
-        if (is_dir($parent)) {
-            try {
-                $parentGroupId = filegroup($parent);
-                $dirGroupId = filegroup($storageDir);
-
-                if ($parentGroupId !== false && $dirGroupId !== false && $parentGroupId !== $dirGroupId) {
-                    if (function_exists('posix_getgrgid')) {
-                        try {
-                            $grp = posix_getgrgid($parentGroupId);
-                            if ($grp && !empty($grp['name'])) {
-                                chgrp($storageDir, $grp['name']);
-                            }
-                        } catch (\Throwable $e) {
-                            \Cake\Log\Log::info('Could not change group ownership of storage directory', [
-                                'storage_dir' => $storageDir,
-                                'parent_group_id' => $parentGroupId,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                \Cake\Log\Log::info('Could not get file group information for storage directory setup', [
-                    'storage_dir' => $storageDir,
-                    'parent_dir' => $parent,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        // After recursive creation, enforce expected permissions (best effort)
-        try {
-            chmod($storageDir, 0775);
-        } catch (\Throwable $e) {
-            \Cake\Log\Log::warning('Could not set final permissions on storage directory', [
-                'storage_dir' => $storageDir,
-                'error' => $e->getMessage(),
-            ]);
-        }
-        if (!is_writable($storageDir)) {
-            $writeErrors[] = 'Created storage directory but not writable: ' . $storageDir;
-            \Cake\Log\Log::error(end($writeErrors));
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Write original and variant image files to disk.
-     *
-     * @param string $uuid Base uuid for filenames.
-     * @param string $ext Original extension.
-     * @param string $storageDir Directory to write to.
-     * @param array<string,mixed> $processed Processed image structure.
-     * @param array<int,string> $writeErrors Collector for warnings.
-     * @return array{0:string,1:array<string,mixed>} Filename of original, variant metadata.
-     */
-    private function writeImageFiles(
-        string $uuid,
-        string $ext,
-        string $storageDir,
-        array $processed,
-        array &$writeErrors,
-    ): array {
-        $filename = $uuid . '.' . $ext;
-        $this->withCapturedWarnings(
-            function () use ($storageDir, $filename, $processed, &$writeErrors) {
-                $target = $storageDir . $filename;
-                // Pre-flight directory writability check (defensive)
-                if (!is_dir($storageDir)) {
-                    $writeErrors[] = 'Target directory missing at write time: ' . $storageDir;
-                } elseif (!is_writable($storageDir)) {
-                    $writeErrors[] = 'Target directory not writable at write time: ' . $storageDir;
-                }
-                $data = $processed['original']['data'] ?? '';
-
-                try {
-                    $result = file_put_contents($target, $data);
-                    if ($result === false) {
-                        $err = error_get_last();
-                        $w = is_writable($storageDir) ? 'yes' : 'no';
-                        $errMsg = $err['message'] ?? 'n/a';
-                        $bytes = strlen((string)$data);
-                        $writeErrors[] = sprintf(
-                            'Failed to write original image (path=%s, writable=%s, bytes=%d, error=%s)',
-                            $target,
-                            $w,
-                            $bytes,
-                            $errMsg
-                        );
-
-                        // Attempt fallback low-level write
-                        try {
-                            $fh = fopen($target, 'wb');
-                            if ($fh) {
-                                $written = fwrite($fh, $data);
-                                fclose($fh);
-                                if ($written === false) {
-                                    $writeErrors[] = 'Fallback fwrite also failed for original image: ' . $target;
-                                } else {
-                                    // Remove failure marker if fallback succeeded
-                                                $writeErrors[] = 'Fallback fwrite succeeded for original image';
-                                }
-                            } else {
-                                $writeErrors[] = 'Could not open file for fallback write: ' . $target;
-                            }
-                        } catch (\Throwable $e) {
-                            $writeErrors[] = 'Fallback write attempt threw exception: ' . $e->getMessage();
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    $writeErrors[] = 'Exception during original image write: ' . $e->getMessage();
-                }
-            },
-            $writeErrors
-        );
-        $variantMeta = [];
-        foreach ($processed['variants'] as $name => $v) {
-            $vf = $uuid . '_' . $name . '.' . $v['ext'];
-            $this->withCapturedWarnings(function () use ($storageDir, $vf, $v, &$writeErrors) {
-                $vTarget = $storageDir . $vf;
-
-                try {
-                    $vResult = file_put_contents($vTarget, $v['data']);
-                    if ($vResult === false) {
-                        $err = error_get_last();
-                        $vErrMsg = $err['message'] ?? 'n/a';
-                        $writeErrors[] = sprintf(
-                            'Failed to write variant %s (path=%s, error=%s)',
-                            $vf,
-                            $vTarget,
-                            $vErrMsg
-                        );
-                    }
-                } catch (\Throwable $e) {
-                    $writeErrors[] = 'Exception during variant image write (' . $vf . '): ' . $e->getMessage();
-                }
-            }, $writeErrors);
-                $variantMeta[$name] = [
-                'file' => $vf,
-                'width' => $v['width'],
-                'height' => $v['height'],
-                'mime' => $v['mime'],
-                ];
-        }
-
-        return [$filename, $variantMeta];
-    }
-
-    /**
-     * Execute a callback capturing PHP warnings so they don't leak into JSON output.
-     *
-     * @param callable $callback Callback to execute.
-     * @param array<int,string> $collector Collector for warning messages (by reference outside caller builds array).
-     * @return void
-     */
-    private function withCapturedWarnings(callable $callback, array &$collector): void
-    {
-        set_error_handler(function ($severity, $message, $file, $line) use (&$collector) {
-            if (!(error_reporting() & $severity)) {
-                return false; // normal handling for suppressed severities
-            }
-            $collector[] = $message . ' @' . basename($file) . ':' . $line;
-
-            return true; // swallow
-        });
-        try {
-            $callback();
-        } finally {
-            // Always restore original error handler stack correctly
-            restore_error_handler();
-        }
-    }
-
-    /**
-     * Load image entity or throw RecordNotFoundException.
-     *
-     * @param int $id Image id.
-     * @return \App\Model\Entity\Image
-     */
-    private function loadImageOrFail(int $id)
-    {
-        $images = $this->fetchTable('Images');
-        $image = $images->find()->where(['id' => $id])->first();
-        if (!$image) {
-            throw new RecordNotFoundException('Image not found');
-        }
-
-        return $image;
-    }
-
-    /**
-     * Resolve path and mime for an image entity or id.
-     *
-     * @param mixed $image Image entity or numeric id.
-     * @param string $variant Variant name.
-     * @return array{0:string,1:string}
-     */
-    private function resolveImagePath(mixed $image, string $variant): array
-    {
-        $storagePath = $image->storage_path ?? null;
-        if ($storagePath) {
-            $path = WWW_ROOT . 'img' . DS . 'storage' . DS . str_replace(['../','..\\'], '', $storagePath);
-            $baseDir = dirname($path) . DS;
-        } else {
-            $subdir = $image->storage_subdir ?? (date('Y') . '/' . date('m'));
-            $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS . $subdir . DS;
-            $path = $baseDir . $image->filename;
-        }
-        $mime = $image->mime; // default to original mime
-        if ($variant) {
-            $raw = is_string($image->variants) ? json_decode($image->variants, true) : $image->variants;
-            if (isset($raw[$variant]['file'])) {
-                $path = $baseDir . $raw[$variant]['file'];
-                if (!empty($raw[$variant]['mime'])) {
-                    $mime = $raw[$variant]['mime'];
-                }
-            }
-        }
-        // Legacy fallback: if file not found in new public path, try old private path
-        if (!is_file($path)) {
-            $legacyBase = ROOT . DS . 'storage' . DS . 'images' . DS;
-            $legacyPath = $legacyBase . ($image->storage_path ?? ($image->storage_subdir . '/' . $image->filename));
-            if ($variant && isset($raw[$variant]['file'])) {
-                $legacyPath = dirname($legacyPath) . DS . $raw[$variant]['file'];
-            }
-            if (is_file($legacyPath)) {
-                $path = $legacyPath; // use legacy file
-            }
-        }
-
-        return [$path, $mime];
     }
 
     /**

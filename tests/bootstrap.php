@@ -16,6 +16,7 @@ declare(strict_types=1);
  */
 
 use Cake\Cache\Cache;
+use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\SchemaLoader;
 use Migrations\TestSuite\Migrator;
@@ -113,3 +114,11 @@ try {
 }
 
 // NOTE: Manual baseline seeding removed. Rely on fixtures declared per test case.
+
+// ----------------------------------------------------------------------
+// Test-only image storage isolation to avoid touching real files
+// ----------------------------------------------------------------------
+$testStorageRoot = TMP . 'tests' . DS . 'img' . DS . 'storage';
+$testLegacyRoot = TMP . 'tests' . DS . 'legacy-images';
+Configure::write('Images.storageRoot', $testStorageRoot);
+Configure::write('Images.legacyStorageRoot', $testLegacyRoot);

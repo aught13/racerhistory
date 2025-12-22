@@ -28,7 +28,7 @@ class GameEavTableEdgeTest extends TestCase
         // Simulate save failure by mocking Table
         $mock = $this->getMockBuilder(GameEavTable::class)
             ->onlyMethods(['save'])
-            ->getMock();
+            ->createMock(GameEavTable::class);
         $mock->method('save')->willReturn(false);
         $result = $mock->setAttribute(1, 'fail_key', 'fail_value');
         $this->assertFalse($result);

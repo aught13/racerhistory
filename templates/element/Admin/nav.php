@@ -89,8 +89,8 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'uploadForm']) ?>">
-                        <i class="bi bi-upload"></i> Upload Image</a>
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'bulkUploadForm']) ?>">
+                        <i class="bi bi-upload"></i> Upload Images</a>
                 </li>
                 <!-- Add more admin links here -->
             </ul>

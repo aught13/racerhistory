@@ -131,6 +131,16 @@ class ImageProcessor
         $variants = [];
         foreach ($variantConfig as $name => $cfg) {
             $variantImage = clone $image;
+            // Apply custom crop first if specified (for custom thumbnail positioning)
+            if (isset($cfg['crop']) && is_array($cfg['crop'])) {
+                $cx = (int)($cfg['crop']['x'] ?? 0);
+                $cy = (int)($cfg['crop']['y'] ?? 0);
+                $cw = (int)($cfg['crop']['width'] ?? $variantImage->width());
+                $ch = (int)($cfg['crop']['height'] ?? $variantImage->height());
+                if ($cw > 0 && $ch > 0) {
+                    $variantImage->crop($cw, $ch, $cx, $cy);
+                }
+            }
             if (isset($cfg['fit'])) {
                 [$w, $h] = $cfg['fit'];
                 $variantImage->cover($w, $h);
@@ -140,9 +150,17 @@ class ImageProcessor
                     $variantImage->scale(width: $mw);
                 }
             }
-            $mimeV = $variantImage->mime ?? 'image/jpeg';
+            // Respect format config for variants
+            $targetFormat = $cfg['format'] ?? null;
+            if ($targetFormat === 'webp') {
+                $encoded = (string)$variantImage->toWebp();
+                $mimeV = 'image/webp';
+            } else {
+                $encoded = (string)$variantImage->encode();
+                $mimeV = $variantImage->mime ?? 'image/jpeg';
+            }
             $variants[$name] = [
-                'data' => (string)$variantImage->encode(),
+                'data' => $encoded,
                 'width' => $variantImage->width(),
                 'height' => $variantImage->height(),
                 'mime' => $mimeV,
@@ -217,6 +235,16 @@ class ImageProcessor
         $variants = [];
         foreach ($variantConfig as $name => $cfg) {
             $variantImage = clone $image;
+            // Apply custom crop first if specified (for custom thumbnail positioning)
+            if (isset($cfg['crop']) && is_array($cfg['crop'])) {
+                $cx = (int)($cfg['crop']['x'] ?? 0);
+                $cy = (int)($cfg['crop']['y'] ?? 0);
+                $cw = (int)($cfg['crop']['width'] ?? $variantImage->width());
+                $ch = (int)($cfg['crop']['height'] ?? $variantImage->height());
+                if ($cw > 0 && $ch > 0) {
+                    $variantImage->crop($cw, $ch, $cx, $cy);
+                }
+            }
             if (isset($cfg['fit'])) {
                 [$w, $h] = $cfg['fit'];
                 $variantImage->cover($w, $h);
@@ -226,9 +254,17 @@ class ImageProcessor
                     $variantImage->scale(width: $mw);
                 }
             }
-            $mimeV = $variantImage->mime ?? 'image/jpeg';
+            // Respect format config for variants
+            $targetFormat = $cfg['format'] ?? null;
+            if ($targetFormat === 'webp') {
+                $encoded = (string)$variantImage->toWebp();
+                $mimeV = 'image/webp';
+            } else {
+                $encoded = (string)$variantImage->encode();
+                $mimeV = $variantImage->mime ?? 'image/jpeg';
+            }
             $variants[$name] = [
-                'data' => (string)$variantImage->encode(),
+                'data' => $encoded,
                 'width' => $variantImage->width(),
                 'height' => $variantImage->height(),
                 'mime' => $mimeV,
@@ -466,7 +502,17 @@ class ImageProcessor
         mixed $image,
         array $manipulations,
     ): mixed {
-        // Crop: expects x, y, width, height
+        // Rotate FIRST: expects angle (degrees, can be negative, normalized to 0..359)
+        if (isset($manipulations['rotate'])) {
+            $angle = (int)round((float)$manipulations['rotate']);
+            $angle = $angle % 360;
+            if ($angle !== 0) {
+                // Intervention rotates counter-clockwise; user input is clockwise
+                $image->rotate(-$angle);
+            }
+        }
+
+        // Crop AFTER rotation: expects x, y, width, height in rotated image coordinates
         if (!empty($manipulations['crop'])) {
             $crop = $manipulations['crop'];
             if (isset($crop['x'], $crop['y'], $crop['width'], $crop['height'])) {
@@ -474,7 +520,7 @@ class ImageProcessor
                 $y = (int)$crop['y'];
                 $w = (int)$crop['width'];
                 $h = (int)$crop['height'];
-                // Ensure bounds are valid
+                // Ensure bounds are valid (post-rotation size)
                 $maxW = $image->width();
                 $maxH = $image->height();
                 if ($x < 0) {
@@ -492,14 +538,6 @@ class ImageProcessor
                 if ($w > 0 && $h > 0) {
                     $image->crop($w, $h, $x, $y);
                 }
-            }
-        }
-
-        // Rotate: expects angle (degrees, 0-360)
-        if (!empty($manipulations['rotate'])) {
-            $angle = (int)$manipulations['rotate'];
-            if ($angle > 0 && $angle < 360) {
-                $image->rotate(-$angle); // Negative because Intervention rotates counter-clockwise
             }
         }
 

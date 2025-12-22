@@ -20,30 +20,8 @@ $this->assign('title', 'Edit Image');
               $vh = isset($meta['height']) && is_numeric($meta['height']) ? (int)$meta['height'] : null;
               $vmime = isset($meta['mime']) ? (string)$meta['mime'] : '';
 
-              $thumbUrl = $this->ImageServe->urlForImage($image, ['variant' => (string)$name]);
-
-              // Prefer on-the-fly derivatives when a size is known.
-              if (($vw && $vw > 0) || ($vh && $vh > 0)) {
-                  $params = [];
-                  if ($vw && $vw > 0) {
-                      $params['w'] = $vw;
-                  }
-                  if ($vh && $vh > 0) {
-                      $params['h'] = $vh;
-                  }
-                  if (($vw && $vw > 0) && ($vh && $vh > 0)) {
-                      $params['fit'] = 'cover';
-                  }
-                  if ($vmime === 'image/png') {
-                      $params['fm'] = 'png';
-                  } elseif ($vmime === 'image/webp') {
-                      $params['fm'] = 'webp';
-                  } elseif ($vmime === 'image/jpeg') {
-                      $params['fm'] = 'jpg';
-                  }
-
-                $thumbUrl = $this->ImageServe->urlForImage($image, $params);
-              }
+                // Always use the stored variant so custom crops (e.g., thumb) are shown.
+                $thumbUrl = $this->ImageServe->urlForImage($image, ['variant' => (string)$name]);
             ?>
             <div class="col-4 text-center">
               <img src="<?= h($thumbUrl) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
@@ -76,6 +54,11 @@ $this->assign('title', 'Edit Image');
 
       <!-- Quick Actions -->
       <div class="mt-3 d-grid gap-2">
+        <?= $this->Html->link(
+          'Crop Thumbnail',
+          ['action' => 'cropThumb', $image->id],
+          ['class' => 'btn btn-warning btn-sm']
+        ) ?>
         <?= $this->Html->link(
           'Manipulate Image',
           ['action' => 'manipulate', $image->id],
