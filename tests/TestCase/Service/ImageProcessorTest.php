@@ -42,7 +42,7 @@ class ImageProcessorTest extends TestCase
         $mock = $this->getMockBuilder(UploadedFile::class)
             ->onlyMethods(['getStream'])
             ->disableOriginalConstructor()
-            ->createMock(ImageProcessor::class);
+            ->getMock();
         $mock->method('getStream')->will($this->throwException(new \RuntimeException('fail')));
         $processor = new ImageProcessor(null);
         $this->expectException(\RuntimeException::class);
@@ -417,6 +417,9 @@ class ImageProcessorTest extends TestCase
     {
         $ref = new \ReflectionClass($proc);
         $meth = $ref->getMethod('inferExtension');
+        if (PHP_VERSION_ID < 80500) {
+            $meth->setAccessible(true);
+        }
 
         return $meth->invoke($proc, $mime);
     }

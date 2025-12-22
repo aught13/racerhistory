@@ -146,9 +146,9 @@ describe('ImageSelector', () => {
     });
 
     test('should bind all event listeners', () => {
-      const addEventSpy = jest.spyOn(imageSelector.modal, 'addEventListener');
+      jest.spyOn(imageSelector.modal, 'addEventListener');
       // Re-initialize to count new listeners
-      const newSelector = new ImageSelector('test-modal');
+      new ImageSelector('test-modal');
       expect(imageSelector.gallery).toBeTruthy();
     });
   });
@@ -196,7 +196,7 @@ describe('ImageSelector', () => {
           })
       );
 
-      const loadPromise = imageSelector.loadImages();
+      imageSelector.loadImages();
       expect(imageSelector.gallery.innerHTML).toContain('spinner-border');
 
       // Clean up

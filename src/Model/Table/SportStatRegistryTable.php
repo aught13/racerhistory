@@ -132,7 +132,7 @@ class SportStatRegistryTable extends Table
      * Find stat tables for a given sport
      *
      * @param \Cake\ORM\Query $query The query builder
-     * @param array $options Options array with 'sport_id'
+     * @param int $sport_id The sport identifier to filter by
      * @return \Cake\ORM\Query
      */
     public function findBySport(\Cake\ORM\Query $query, int $sport_id): \Cake\ORM\Query
