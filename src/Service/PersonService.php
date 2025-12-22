@@ -106,7 +106,7 @@ class PersonService
         $persons = TableRegistry::getTableLocator()->get('Persons');
 
         return $persons->find()
-            ->order(['Persons.last' => 'ASC', 'Persons.first' => 'ASC'])
+            ->orderBy(['Persons.last' => 'ASC', 'Persons.first' => 'ASC'])
             ->all()
             ->toArray();
     }

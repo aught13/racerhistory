@@ -135,32 +135,32 @@ class SportStatRegistryTable extends Table
      * @param array $options Options array with 'sport_id'
      * @return \Cake\ORM\Query
      */
-    public function findBySport(\Cake\ORM\Query $query, array $options): \Cake\ORM\Query
+    public function findBySport(\Cake\ORM\Query $query, int $sport_id): \Cake\ORM\Query
     {
-        return $query->where(['sport_id' => $options['sport_id']]);
+        return $query->where(['sport_id' => $sport_id]);
     }
 
     /**
      * Find stat tables for a specific context (game, season, career)
      *
      * @param \Cake\ORM\Query $query The query builder
-     * @param array $options Options array with 'context'
+     * @param string $context The context to filter by
      * @return \Cake\ORM\Query
      */
-    public function findByContext(\Cake\ORM\Query $query, array $options): \Cake\ORM\Query
+    public function findByContext(\Cake\ORM\Query $query, string $context): \Cake\ORM\Query
     {
-        return $query->where(['context' => $options['context']]);
+        return $query->where(['context' => $context]);
     }
 
     /**
      * Find stat tables for a specific entity type (team, player, opponent, box)
      *
      * @param \Cake\ORM\Query $query The query builder
-     * @param array $options Options array with 'entity_type'
+     * @param string $entity_type The entity type to filter by
      * @return \Cake\ORM\Query
      */
-    public function findByEntityType(\Cake\ORM\Query $query, array $options): \Cake\ORM\Query
+    public function findByEntityType(\Cake\ORM\Query $query, string $entity_type): \Cake\ORM\Query
     {
-        return $query->where(['entity_type' => $options['entity_type']]);
+        return $query->where(['entity_type' => $entity_type]);
     }
 }

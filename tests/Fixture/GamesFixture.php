@@ -9,6 +9,7 @@ use Cake\TestSuite\Fixture\TestFixture;
 class GamesFixture extends TestFixture
 {
     public string $table = 'games';
+    public array $schema = [];
 
     public function init(): void
     {

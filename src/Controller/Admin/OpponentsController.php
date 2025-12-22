@@ -35,7 +35,7 @@ class OpponentsController extends AppController
 
         // Format places as "Name, State" sorted by name
         $placesQuery = $this->fetchTable('Places')->find()
-            ->order(['Places.place_name' => 'ASC'])
+            ->orderBy(['Places.place_name' => 'ASC'])
             ->all();
         $places = [];
         foreach ($placesQuery as $place) {

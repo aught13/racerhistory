@@ -22,10 +22,9 @@ $this->assign('title', 'Images');
         <td><?= h($img->id) ?></td>
         <td>
           <?php
+          // Use stored thumb variant so custom crops are shown
           $thumbUrl = $this->ImageServe->urlForImage($img, [
-            'w' => 60,
-            'h' => 60,
-            'fit' => 'cover',
+            'variant' => 'thumb',
           ]);
           ?>
           <img src="<?= h($thumbUrl) ?>" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" />

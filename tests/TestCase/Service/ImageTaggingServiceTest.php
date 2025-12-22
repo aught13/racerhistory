@@ -110,4 +110,43 @@ class ImageTaggingServiceTest extends TestCase
         // Ensure 'John Doe' from freeform tags was not duplicated (it should be excluded)
         $this->assertSame('extra', $extraTag->slug);
     }
+
+    public function testParseTagsFromRequestAddsFriendlyTeamSeasonLabel(): void
+    {
+        $service = new ImageTaggingService();
+        $images = TableRegistry::getTableLocator()->get('Images');
+
+        $image = $images->newEntity([
+            'filename' => 'upload-teamseason.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/upload-teamseason.jpg',
+            'original_name' => 'upload-teamseason.jpg',
+            'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'upload-teamseason-' . time(),
+            'status' => 'active',
+        ]);
+        $images->save($image);
+
+        $request = new \Cake\Http\ServerRequest([
+            'post' => [
+                'context' => json_encode(['type' => 'teamseason', 'id' => 1]),
+            ],
+        ]);
+
+        $tags = $service->parseTagsFromRequest($request);
+        $this->assertNotEmpty($tags, 'Expected tags from context');
+
+        // Apply and fetch the tag
+        $service->attachTags((int)$image->id, $tags);
+        $tagsTable = TableRegistry::getTableLocator()->get('ImageTags');
+        $tsTag = $tagsTable->find()->where(['slug' => 'teamseason-1'])->first();
+
+        $this->assertNotNull($tsTag, 'teamseason-1 tag should be created');
+        $this->assertStringContainsString("Men's Basketball", (string)$tsTag->name);
+    }
 }

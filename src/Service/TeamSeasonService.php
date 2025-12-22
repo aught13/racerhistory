@@ -119,7 +119,7 @@ class TeamSeasonService
 
         return $teamSeasons->find()
             ->contain(['Teams' => ['Sports'], 'Seasons'])
-            ->order(['Seasons.start' => 'DESC', 'Teams.team_name' => 'ASC'])
+            ->orderBy(['Seasons.start' => 'DESC', 'Teams.team_name' => 'ASC'])
             ->all()
             ->toArray();
     }

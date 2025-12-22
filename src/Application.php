@@ -77,8 +77,9 @@ class Application extends BaseApplication implements
 
         // Image variants configuration (central place)
         \Cake\Core\Configure::write('Images.variants', [
-            'thumb' => ['fit' => [150,150]],
-            'medium' => ['maxWidth' => 800],
+            'thumb' => ['fit' => [150,150], 'format' => 'webp'],
+            'medium' => ['maxWidth' => 800, 'format' => 'webp'],
+            'webp' => ['format' => 'webp'], // WebP alternate of original
         ]);
     }
 

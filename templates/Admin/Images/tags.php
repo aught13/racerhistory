@@ -49,16 +49,6 @@ $this->assign('title', 'Manage Image Tags');
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Person</label>
-                  <?php
-                    // Build person name list for JS autocomplete mapping
-                    $personItems = [];
-                    foreach ($persons as $p) {
-                        $name = trim(($p->first ?? '') . ' ' . ($p->last ?? '')) ?: ('#' . $p->id);
-                        $personItems[] = ['id' => $p->id, 'name' => $name];
-                    }
-                    $personsJson = json_encode($personItems);
-                  ?>
-
                   <input
                     type="text"
                     name="person_search"
@@ -144,12 +134,6 @@ $this->assign('title', 'Manage Image Tags');
                   <label class="form-label">Team Season Roster Entry</label>
                   <select name="roster_select" id="roster_select" class="form-select" <?= empty($selectedPersonId) ? 'disabled' : '' ?> >
                     <option value="">-- select roster entry --</option>
-                    <?php if (!empty($selectedPersonId) && !empty($rosters)): ?>
-                      <?php foreach ($rosters as $r): ?>
-                        <?php if ((int)$r['person_id'] !== (int)$selectedPersonId) continue; ?>
-                        <option value="<?= h($r['id']) ?>" <?= isset($selectedRosterId) && $selectedRosterId == $r['id'] ? 'selected' : '' ?>><?= h($r['label']) ?></option>
-                      <?php endforeach; ?>
-                    <?php endif; ?>
                   </select>
                 </div>
               </div>
