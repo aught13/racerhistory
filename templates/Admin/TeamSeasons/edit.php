@@ -162,30 +162,29 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="team-season-image" class="form-label">Season Image (ID)</label>
-                        <div class="row g-2">
+                        <label class="form-label">Season Image</label>
+                        <div class="row">
                             <div class="col-md-8">
                                 <?= $this->Form->control('team_season_image', [
-                                    'type' => 'text',
                                     'class' => 'form-control',
                                     'label' => false,
-                                    'id' => 'team-season-image',
-                                    'maxlength' => 162,
-                                    'placeholder' => 'Numeric image id',
+                                    'placeholder' => 'Image ID',
+                                    'id' => 'team-season-image-field',
                                 ]) ?>
                             </div>
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-secondary w-100" id="select-team-season-image">Select / Upload</button>
+                                <button type="button" class="btn btn-secondary form-control" data-bs-toggle="modal" data-bs-target="#team-season-image-selector">
+                                    Select/Upload Image
+                                </button>
                             </div>
                         </div>
-                        <div id="team-season-image-preview" class="mt-2" style="<?= empty($teamSeason->team_season_image_entity) ? 'display:none;' : '' ?>">
-                            <?php if (!empty($teamSeason->team_season_image_entity)) : ?>
-                                <img src="<?= $this->Url->build('/images/serve/' . $teamSeason->team_season_image_entity->id . '?variant=thumb') ?>" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
-                            <?php else : ?>
-                                <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height:150px;">
-                            <?php endif; ?>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <div id="team-season-image-preview" class="mt-2" style="display: none;">
+                                    <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height: 200px;">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-text">Upload an image and store its numeric ID.</div>
                     </div>
 
                     <div class="mb-3">
@@ -296,76 +295,98 @@
                 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team season']) ?>
 
                 <?php
-                echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
-                echo $this->Html->scriptBlock(<<<JS
-                document.addEventListener('DOMContentLoaded', function(){
-                    function initEditor(id){
-                        if (!document.getElementById(id) || typeof tinymce === 'undefined') return;
-                        tinymce.init({
-                            license_key: 'gpl',
-                            selector: '#' + id,
-                            menubar: false,
-                            plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars',
-                            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview',
-                            quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
-                            image_title: true,
-                            automatic_uploads: true,
-                            images_upload_url: '/admin/images/upload',
-                            images_upload_credentials: true,
-                            convert_urls: false,
-                            images_upload_handler: function (blobInfo, progress) {
-                                return new Promise(function (resolve, reject) {
-                                        var xhr = new XMLHttpRequest();
-                                        xhr.open('POST', '/admin/images/upload');
-                                        xhr.withCredentials = true;
-                                        xhr.upload.onprogress = function (e) { if (e.lengthComputable) { progress(e.loaded / e.total * 100); } };
-                                        xhr.onload = function () {
-                                                if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
-                                                var raw = xhr.responseText; var json;
-                                                try { json = JSON.parse(raw); } catch(err){ return reject('Invalid JSON'); }
-                                                if (!json.success || !json.image || !json.image.url) { return reject(json.error || 'Upload failed'); }
-                                                resolve(json.image.url);
-                                        };
-                                        xhr.onerror = function(){ reject('Image upload failed'); };
-                                        var formData = new FormData();
-                                        formData.append('upload', blobInfo.blob(), blobInfo.filename());
-                                        var csrf = document.querySelector('meta[name="csrfToken"]');
-                                        if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf.getAttribute('content'));
-                                        xhr.send(formData);
-                                });
-                            }
-                        });
-                    }
-                    initEditor('team-season-preview');
-                    initEditor('team-season-recap');
+                // Image selector modal for team season images
+                $modalId = 'team-season-image-selector';
+                $targetFieldId = 'team-season-image-field';
+                $tagFilter = 'teamseason-' . $teamSeason->id;
+                $uploadContext = ['type' => 'teamseason', 'id' => $teamSeason->id];
+                $aspectRatio = 16 / 9; // Widescreen aspect ratio (16:9, covers 4:3, 5:4 formats)
+                echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
+                ?>
 
-                    const btn = document.getElementById('select-team-season-image');
-                    const field = document.getElementById('team-season-image');
-                    const previewWrap = document.getElementById('team-season-image-preview');
-                    if (btn && field) {
-                        btn.addEventListener('click', function(e){
-                            e.preventDefault();
-                            const input = document.createElement('input');
-                            input.type = 'file'; input.accept = 'image/*';
-                            input.onchange = function(){
-                                if (!input.files || !input.files[0]) return;
-                                const file = input.files[0];
-                                const formData = new FormData(); formData.append('upload', file);
-                                btn.disabled = true; btn.textContent = 'Uploading...';
-                                fetch('/admin/images/upload', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').getAttribute('content') } })
-                                .then(r => r.json())
-                                .then(data => { if (!data.success || !data.image) { alert('Upload failed: ' + (data.error || 'Unknown error')); return; } field.value = data.image.id; const img = previewWrap.querySelector('img'); img.src = data.image.url; previewWrap.style.display = 'block'; })
-                                .catch(err => { console.error(err); alert('Upload failed: ' + err.message); })
-                                .finally(()=>{ btn.disabled = false; btn.textContent = 'Select / Upload'; });
-                            };
-                            input.click();
-                        });
-                        if (field.value && !isNaN(parseInt(field.value, 10))) {
-                            const img = previewWrap.querySelector('img');
-                            img.src = '/images/serve/' + field.value;
-                            previewWrap.style.display = 'block';
+                <?php
+                echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
+                echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js', ['block' => true]);
+                echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
+                echo $this->Html->script('/js/image-selector.js', ['block' => true]);
+
+                $previewQsJson = json_encode($this->ImageServe->query(['w' => 200, 'h' => 200, 'fit' => 'cover'])) ?: '""';
+                echo $this->Html->scriptBlock(<<<JS
+document.addEventListener('DOMContentLoaded', function () {
+    const previewQs = {$previewQsJson};
+    function initEditor(id){
+        if (!document.getElementById(id) || typeof tinymce === 'undefined') return;
+        tinymce.init({
+            license_key: 'gpl',
+            selector: '#' + id,
+            menubar: false,
+            plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars',
+            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview | save',
+            quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
+            image_title: true,
+            automatic_uploads: true,
+            images_upload_url: '/admin/images/upload',
+            images_upload_credentials: true,
+            convert_urls: false,
+            images_upload_handler: function (blobInfo, progress) {
+                return new Promise(function (resolve, reject) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/admin/images/upload');
+                    xhr.withCredentials = true;
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) {
+                            progress(e.loaded / e.total * 100);
                         }
-                    }
+                    };
+                    xhr.onload = function () {
+                        if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
+                        var raw = xhr.responseText;
+                        var json;
+                        try { json = JSON.parse(raw); } catch (err) {
+                            console.error('TinyMCE upload invalid JSON response:', raw);
+                            return reject('Invalid JSON');
+                        }
+                        if (!json.success || !json.image || !json.image.url) {
+                            console.error('TinyMCE upload server response (error path):', json);
+                            return reject(json.error || 'Upload failed');
+                        }
+                        resolve(json.image.url);
+                    };
+                    xhr.onerror = function () { reject('Image upload failed'); };
+                    var formData = new FormData();
+                    formData.append('upload', blobInfo.blob(), blobInfo.filename());
+                    var csrf = document.querySelector('meta[name="csrfToken"]');
+                    if (csrf) { xhr.setRequestHeader('X-CSRF-Token', csrf.getAttribute('content')); }
+                    xhr.send(formData);
                 });
-                JS, ['block' => true]);
+            }
+        });
+    }
+    initEditor('team-season-preview');
+    initEditor('team-season-recap');
+
+    // Team season image preview handler
+    const imageField = document.getElementById('team-season-image-field');
+    const imagePreview = document.getElementById('team-season-image-preview');
+
+    function updateImagePreview() {
+        const imageId = imageField.value.trim();
+        if (imageId && !isNaN(parseInt(imageId, 10))) {
+            const previewImg = imagePreview.querySelector('img');
+            previewImg.src = '/images/serve/' + imageId + previewQs + '&_ts=' + Date.now();
+            imagePreview.style.display = 'block';
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    }
+
+    // Listen for changes to the image field (from modal or manual entry)
+    if (imageField) {
+        imageField.addEventListener('change', updateImagePreview);
+
+        // Show initial preview if image ID is set
+        updateImagePreview();
+    }
+});
+JS, ['block' => true]);
                 ?>

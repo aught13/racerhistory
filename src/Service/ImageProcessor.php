@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Cake\ORM\TableRegistry;
+use Cake\Utility\Text;
 use Intervention\Image\ImageManager;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -54,10 +56,14 @@ class ImageProcessor
      *
      * @param \Psr\Http\Message\UploadedFileInterface $file Uploaded image file.
      * @param array<string, array<string,mixed>> $variantConfig Variant configuration.
+     * @param array<string,mixed> $manipulations Optional image manipulations to apply.
      * @return array<string, mixed>
      */
-    public function process(UploadedFileInterface $file, array $variantConfig): array
-    {
+    public function process(
+        UploadedFileInterface $file,
+        array $variantConfig,
+        array $manipulations = [],
+    ): array {
         $stream = $file->getStream();
         $contents = $stream->getContents();
         if ($this->manager) {
@@ -87,7 +93,10 @@ class ImageProcessor
                 if ($tmp !== false) {
                     $width = imagesx($tmp);
                     $height = imagesy($tmp);
-                    imagedestroy($tmp);
+                    if (function_exists('imagedestroy')) {
+                        $fn = 'imagedestroy';
+                        $fn($tmp);
+                    }
                 }
             }
             $variants = [];
@@ -112,13 +121,28 @@ class ImageProcessor
                 'variants' => $variants,
             ];
         }
+        // Apply manipulations to the original image if provided
+        if (!empty($manipulations)) {
+            $image = $this->applyManipulations($image, $manipulations);
+        }
+
         $width = $image->width();
         $height = $image->height();
         $variants = [];
         foreach ($variantConfig as $name => $cfg) {
             $variantImage = clone $image;
+            // Apply custom crop first if specified (for custom thumbnail positioning)
+            if (isset($cfg['crop']) && is_array($cfg['crop'])) {
+                $cx = (int)($cfg['crop']['x'] ?? 0);
+                $cy = (int)($cfg['crop']['y'] ?? 0);
+                $cw = (int)($cfg['crop']['width'] ?? $variantImage->width());
+                $ch = (int)($cfg['crop']['height'] ?? $variantImage->height());
+                if ($cw > 0 && $ch > 0) {
+                    $variantImage->crop($cw, $ch, $cx, $cy);
+                }
+            }
             if (isset($cfg['fit'])) {
-                [$w,$h] = $cfg['fit'];
+                [$w, $h] = $cfg['fit'];
                 $variantImage->cover($w, $h);
             } elseif (isset($cfg['maxWidth'])) {
                 $mw = (int)$cfg['maxWidth'];
@@ -126,9 +150,17 @@ class ImageProcessor
                     $variantImage->scale(width: $mw);
                 }
             }
-            $mimeV = $variantImage->mime ?? 'image/jpeg';
+            // Respect format config for variants
+            $targetFormat = $cfg['format'] ?? null;
+            if ($targetFormat === 'webp') {
+                $encoded = (string)$variantImage->toWebp();
+                $mimeV = 'image/webp';
+            } else {
+                $encoded = (string)$variantImage->encode();
+                $mimeV = $variantImage->mime ?? 'image/jpeg';
+            }
             $variants[$name] = [
-                'data' => (string)$variantImage->encode(),
+                'data' => $encoded,
                 'width' => $variantImage->width(),
                 'height' => $variantImage->height(),
                 'mime' => $mimeV,
@@ -146,6 +178,405 @@ class ImageProcessor
             ],
             'variants' => $variants,
         ];
+    }
+
+    /**
+     * Manipulate existing image file (for post-upload editing).
+     *
+     * @param string $fileContent Raw file content.
+     * @param string $mimeType MIME type of the image.
+     * @param array<string, array<string,mixed>> $variantConfig Variant configuration.
+     * @param array<string,mixed> $manipulations Image manipulations to apply.
+     * @return array<string, mixed>
+     */
+    public function manipulateExisting(
+        string $fileContent,
+        string $mimeType,
+        array $variantConfig,
+        array $manipulations,
+    ): array {
+        if ($this->manager === null) {
+            // Fallback if Intervention Image not available
+            return [
+                'original' => [
+                    'data' => $fileContent,
+                    'width' => 0,
+                    'height' => 0,
+                    'mime' => $mimeType,
+                    'ext' => $this->inferExtension($mimeType),
+                ],
+                'variants' => [],
+            ];
+        }
+
+        try {
+            $image = $this->manager->read($fileContent);
+        } catch (\Throwable $e) {
+            // Fallback on read failure
+            return [
+                'original' => [
+                    'data' => $fileContent,
+                    'width' => 0,
+                    'height' => 0,
+                    'mime' => $mimeType,
+                    'ext' => $this->inferExtension($mimeType),
+                ],
+                'variants' => [],
+            ];
+        }
+
+        // Apply manipulations to the original image
+        if (!empty($manipulations)) {
+            $image = $this->applyManipulations($image, $manipulations);
+        }
+
+        $width = $image->width();
+        $height = $image->height();
+        $variants = [];
+        foreach ($variantConfig as $name => $cfg) {
+            $variantImage = clone $image;
+            // Apply custom crop first if specified (for custom thumbnail positioning)
+            if (isset($cfg['crop']) && is_array($cfg['crop'])) {
+                $cx = (int)($cfg['crop']['x'] ?? 0);
+                $cy = (int)($cfg['crop']['y'] ?? 0);
+                $cw = (int)($cfg['crop']['width'] ?? $variantImage->width());
+                $ch = (int)($cfg['crop']['height'] ?? $variantImage->height());
+                if ($cw > 0 && $ch > 0) {
+                    $variantImage->crop($cw, $ch, $cx, $cy);
+                }
+            }
+            if (isset($cfg['fit'])) {
+                [$w, $h] = $cfg['fit'];
+                $variantImage->cover($w, $h);
+            } elseif (isset($cfg['maxWidth'])) {
+                $mw = (int)$cfg['maxWidth'];
+                if ($variantImage->width() > $mw) {
+                    $variantImage->scale(width: $mw);
+                }
+            }
+            // Respect format config for variants
+            $targetFormat = $cfg['format'] ?? null;
+            if ($targetFormat === 'webp') {
+                $encoded = (string)$variantImage->toWebp();
+                $mimeV = 'image/webp';
+            } else {
+                $encoded = (string)$variantImage->encode();
+                $mimeV = $variantImage->mime ?? 'image/jpeg';
+            }
+            $variants[$name] = [
+                'data' => $encoded,
+                'width' => $variantImage->width(),
+                'height' => $variantImage->height(),
+                'mime' => $mimeV,
+                'ext' => $this->inferExtension($mimeV),
+            ];
+        }
+
+        return [
+            'original' => [
+                'data' => (string)$image->encode(),
+                'width' => $width,
+                'height' => $height,
+                'mime' => $image->mime ?? 'image/jpeg',
+                'ext' => $this->inferExtension($image->mime ?? null),
+            ],
+            'variants' => $variants,
+        ];
+    }
+
+    /**
+     * Attach tags to an image (creates tags on demand).
+     *
+     * @param int $imageId Image id.
+     * @param array<int|string,string> $tags Tag names or slugs.
+     * @return void
+     */
+    public function attachTags(int $imageId, array $tags): void
+    {
+        if (!$tags) {
+            return;
+        }
+
+        $tagsTable = $this->table('ImageTags');
+        $imagesTable = $this->table('Images');
+        /** @var \App\Model\Entity\Image $image */
+        $image = $imagesTable->get($imageId, contain: ['ImageTags']);
+
+        // Get existing tag IDs for this image
+        $existingTagIds = [];
+        foreach ($image->image_tags as $tag) {
+            $existingTagIds[] = $tag->id;
+        }
+
+        $tagEntities = [];
+        foreach ($tags as $tag) {
+            // Support two formats: string tag name/slug OR ['slug' => 'person-1', 'name' => 'John Doe']
+            if (is_array($tag) && isset($tag['slug'])) {
+                $slug = (string)$tag['slug'];
+                $name = isset($tag['name']) ? (string)$tag['name'] : $slug;
+            } else {
+                $name = trim((string)$tag);
+                if ($name === '') {
+                    continue;
+                }
+                $slug = Text::slug($name) ?: strtolower($name);
+            }
+
+            $existing = $tagsTable->find()->where(['slug' => $slug])->first();
+            if (!$existing) {
+                $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
+                $tagsTable->save($existing);
+            } else {
+                // If the tag exists but has a generic name (like the slug itself or
+                // fixture-generated names like 'roster 1' or 'team season 1'), prefer
+                // the nicer provided name and overwrite the stored name.
+                $shouldUpdateName = false;
+                if ($name !== '') {
+                    $existingName = (string)($existing->name ?? '');
+                    if ($existingName === $existing->slug || strcasecmp($existingName, $existing->slug) === 0) {
+                        $shouldUpdateName = true;
+                    } else {
+                        // Match common generic patterns produced by fixtures or older code
+                        // e.g. 'roster 1', 'teamseason 1', 'team season 1', 'person 1'
+                        if (
+                            preg_match(
+                                '/^(?:roster|team ?season|team_season_roster|person)[\s_-]*\d+$/i',
+                                $existingName
+                            )
+                        ) {
+                            $shouldUpdateName = true;
+                        }
+                    }
+                }
+                if ($shouldUpdateName) {
+                    $existing->name = $name;
+                    $tagsTable->save($existing);
+                }
+            }
+
+            if (!in_array($existing->id, $existingTagIds)) {
+                $tagEntities[] = $existing;
+            }
+        }
+
+        if ($tagEntities) {
+            // @phpstan-ignore property.notFound
+            $imagesTable->ImageTags->link($image, $tagEntities);
+        }
+    }
+
+    /**
+     * Record an image usage (idempotent on same tuple).
+     *
+     * @param int $imageId Image ID.
+     * @param string $model Model name.
+     * @param int $foreignKey Foreign key value.
+     * @param string|null $context Optional context.
+     * @param string|null $field Optional field.
+     * @return void
+     */
+    public function recordUsage(
+        int $imageId,
+        string $model,
+        int $foreignKey,
+        ?string $context = null,
+        ?string $field = null,
+    ): void {
+        $usages = $this->table('ImageUsages');
+        $existing = $usages->find()->where([
+            'image_id' => $imageId,
+            'model' => $model,
+            'foreign_key' => $foreignKey,
+            'context' => $context,
+            'field' => $field,
+        ])->first();
+        if ($existing) {
+            return;
+        }
+        $usage = $usages->newEntity([
+            'image_id' => $imageId,
+            'model' => $model,
+            'foreign_key' => $foreignKey,
+            'context' => $context,
+            'field' => $field,
+        ]);
+        $usages->save($usage);
+    }
+
+    /**
+     * Get images that match all given tag slugs.
+     *
+     * @param array<int,string> $tagSlugs Tag slugs that must all be present.
+     * @param int $limit Result limit.
+     * @return array<int,\App\Model\Entity\Image>
+     */
+    public function getImagesByAllTags(array $tagSlugs, int $limit = 10): array
+    {
+        $tagSlugs = array_values(array_filter(array_map('strval', $tagSlugs)));
+        if (!$tagSlugs) {
+            return [];
+        }
+        $needed = count($tagSlugs);
+        $images = $this->table('Images');
+
+        // Use select with tag_count and raw string in HAVING (CakePHP has issues with alias binding in HAVING)
+        $query = $images->find()
+            ->select($images)
+            ->select(['tag_count' => $images->query()->func()->count('DISTINCT ImageTags.slug')])
+            ->matching('ImageTags', function ($q) use ($tagSlugs) {
+                return $q->where(['ImageTags.slug IN' => $tagSlugs]);
+            })
+            ->groupBy(['Images.id'])
+            ->having("tag_count >= {$needed}")
+            ->limit($limit);
+
+        return $query->all()->toList();
+    }
+
+    /**
+     * Convenience: images tagged for a person.
+     *
+     * @param int $personId Person id.
+     * @param int $limit Limit.
+     * @return array<int,\App\Model\Entity\Image>
+     */
+    public function getImagesForPerson(int $personId, int $limit = 10): array
+    {
+        return $this->getImagesByAllTags(["person-{$personId}"], $limit);
+    }
+
+    /**
+     * Convenience: images tagged for a team season.
+     */
+    public function getImagesForTeamSeason(int $teamSeasonId, int $limit = 10): array
+    {
+        return $this->getImagesByAllTags(["teamseason-{$teamSeasonId}"], $limit);
+    }
+
+    /**
+     * Convenience: roster image (person + team season).
+     */
+    public function getRosterImages(int $personId, int $teamSeasonId, int $limit = 1): array
+    {
+        return $this->getImagesByAllTags([
+            "person-{$personId}",
+            "teamseason-{$teamSeasonId}",
+            'roster',
+        ], $limit);
+    }
+
+    /**
+     * Resolve or create and return ImageTags for provided slugs (utility for controllers).
+     *
+     * @param array<int,string> $tagSlugs Tag slugs.
+     * @return array<int,\App\Model\Entity\ImageTag>
+     */
+    public function ensureTags(array $tagSlugs): array
+    {
+        $tagsTable = $this->table('ImageTags');
+        $tags = [];
+        foreach ($tagSlugs as $slug) {
+            $slug = Text::slug($slug) ?: strtolower($slug);
+            $existing = $tagsTable->find()->where(['slug' => $slug])->first();
+            if (!$existing) {
+                $existing = $tagsTable->newEntity(['name' => $slug, 'slug' => $slug]);
+                $tagsTable->save($existing);
+            }
+            /** @phpstan-ignore if.alwaysTrue */
+            if ($existing) {
+                $tags[] = $existing;
+            }
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Apply image manipulations (crop, rotate, brightness, contrast).
+     *
+     * @param mixed $image Image instance.
+     * @param array<string,mixed> $manipulations Manipulations array.
+     * @return mixed
+     */
+    private function applyManipulations(
+        mixed $image,
+        array $manipulations,
+    ): mixed {
+        // Rotate FIRST: expects angle (degrees, can be negative, normalized to 0..359)
+        if (isset($manipulations['rotate'])) {
+            $angle = (int)round((float)$manipulations['rotate']);
+            $angle = $angle % 360;
+            if ($angle !== 0) {
+                // Intervention rotates counter-clockwise; user input is clockwise
+                $image->rotate(-$angle);
+            }
+        }
+
+        // Crop AFTER rotation: expects x, y, width, height in rotated image coordinates
+        if (!empty($manipulations['crop'])) {
+            $crop = $manipulations['crop'];
+            if (isset($crop['x'], $crop['y'], $crop['width'], $crop['height'])) {
+                $x = (int)$crop['x'];
+                $y = (int)$crop['y'];
+                $w = (int)$crop['width'];
+                $h = (int)$crop['height'];
+                // Ensure bounds are valid (post-rotation size)
+                $maxW = $image->width();
+                $maxH = $image->height();
+                if ($x < 0) {
+                    $x = 0;
+                }
+                if ($y < 0) {
+                    $y = 0;
+                }
+                if ($x + $w > $maxW) {
+                    $w = $maxW - $x;
+                }
+                if ($y + $h > $maxH) {
+                    $h = $maxH - $y;
+                }
+                if ($w > 0 && $h > 0) {
+                    $image->crop($w, $h, $x, $y);
+                }
+            }
+        }
+
+        // Brightness: expects value (-100 to 100)
+        if (isset($manipulations['brightness'])) {
+            $brightness = (int)$manipulations['brightness'];
+            if ($brightness !== 0) {
+                $image->brightness($brightness);
+            }
+        }
+
+        // Contrast: expects value (-100 to 100)
+        if (isset($manipulations['contrast'])) {
+            $contrast = (int)$manipulations['contrast'];
+            if ($contrast !== 0) {
+                $image->contrast($contrast);
+            }
+        }
+
+        // Blur: expects value (0-100, optional)
+        if (!empty($manipulations['blur'])) {
+            $blur = (int)$manipulations['blur'];
+            if ($blur > 0 && $blur <= 100) {
+                $image->blur($blur);
+            }
+        }
+
+        return $image;
+    }
+
+    /**
+     * Simple TableLocator helper.
+     *
+     * @param string $alias Table alias.
+     * @return \Cake\ORM\Table
+     */
+    private function table(string $alias): \Cake\ORM\Table
+    {
+        return TableRegistry::getTableLocator()->get($alias);
     }
 
     /**

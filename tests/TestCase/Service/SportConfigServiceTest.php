@@ -296,6 +296,87 @@ class SportConfigServiceTest extends TestCase
     }
 
     /**
+     * Test validatePeriodScores with valid cumulative sport data
+     */
+    public function testValidatePeriodScoresValid(): void
+    {
+        $data = [
+            'pts_mur' => 84,
+            'pts_opp' => 78,
+            'periods' => 2,
+            'ot' => 0,
+            'period_1_team' => 42,
+            'period_1_opponent' => 40,
+            'period_2_team' => 42,
+            'period_2_opponent' => 38,
+        ];
+
+        $errors = $this->sportConfigService->validatePeriodScores(1, $data); // Basketball
+        $this->assertEmpty($errors);
+    }
+
+    /**
+     * Test validatePeriodScores with mismatched totals
+     */
+    public function testValidatePeriodScoresInvalid(): void
+    {
+        $data = [
+            'pts_mur' => 100,
+            'pts_opp' => 78,
+            'periods' => 2,
+            'ot' => 0,
+            'period_1_team' => 42,
+            'period_1_opponent' => 40,
+            'period_2_team' => 42,
+            'period_2_opponent' => 38,
+        ];
+
+        $errors = $this->sportConfigService->validatePeriodScores(1, $data);
+        $this->assertNotEmpty($errors);
+        $this->assertStringContainsString('Team period scores', $errors[0]);
+    }
+
+    /**
+     * Test validatePeriodScores with overtime validation
+     */
+    public function testValidatePeriodScoresOvertimeMustBeTied(): void
+    {
+        $data = [
+            'pts_mur' => 85,
+            'pts_opp' => 82,
+            'periods' => 2,
+            'ot' => 1,
+            'period_1_team' => 40,
+            'period_1_opponent' => 38, // Team ahead by 2 after period 1
+            'period_2_team' => 40,
+            'period_2_opponent' => 39, // Team ahead by 1 after regulation (not tied!)
+            'overtime_1_team' => 5,
+            'overtime_1_opponent' => 5,
+        ];
+
+        $errors = $this->sportConfigService->validatePeriodScores(1, $data);
+        $this->assertNotEmpty($errors);
+        $this->assertStringContainsString('Regular period scores must be tied when overtime', $errors[0]);
+    }
+
+    /**
+     * Test validatePeriodScores skips non-cumulative sports
+     */
+    public function testValidatePeriodScoresSkipsNonCumulative(): void
+    {
+        // For a sport without cumulative scoring, validation should be skipped
+        // Assuming baseball (sport_id 7) has by_period scoring
+        $data = [
+            'pts_mur' => 5,
+            'pts_opp' => 3,
+            'periods' => 9,
+        ];
+
+        $errors = $this->sportConfigService->validatePeriodScores(7, $data);
+        $this->assertEmpty($errors); // Should not validate non-cumulative sports
+    }
+
+    /**
      * Test clearCache method doesn't throw errors
      */
     public function testClearCache(): void

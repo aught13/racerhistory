@@ -50,6 +50,9 @@
             "cakephp/plugin-installer": true,
             "dealerdirect/phpcodesniffer-composer-installer": true
         },
+        "platform": {
+            "php": "8.2.29"
+        },
         "platform-check": true,
         "sort-packages": true
     },
@@ -65,5 +68,14 @@
         "cs-check": "phpcs --colors -p",
         "cs-fix": "phpcbf --colors -p",
         "test": "phpunit --colors=always"
+    },
+    "extra": {
+        "phpunit": {
+            "php-8.2": {
+                "require": {
+                    "phpunit/phpunit": "^10.5.5"
+                }
+            }
+        }
     }
 }

@@ -23,6 +23,8 @@ use Cake\ORM\Entity;
  * @property string|null $storage_path
  * @property mixed $created
  * @property mixed $modified
+ *
+ * @property \App\Model\Entity\ImageTag[] $image_tags
  */
 class Image extends Entity
 {

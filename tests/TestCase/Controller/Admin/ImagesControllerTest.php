@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -24,6 +25,8 @@ class ImagesControllerTest extends TestCase
         'app.Images',
     ];
 
+    private string $storageRoot;
+
     /**
      * Collect created image IDs during tests so we can cleanup files on tearDown
      *
@@ -43,6 +46,7 @@ class ImagesControllerTest extends TestCase
         parent::setUp();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+        $this->storageRoot = rtrim((string)Configure::read('Images.storageRoot', WWW_ROOT . 'img' . DS . 'storage'), DS) . DS;
     }
 
     public function testUploadSuccess(): void
@@ -116,6 +120,78 @@ class ImagesControllerTest extends TestCase
         $this->assertResponseCode(200);
         $json = json_decode((string)$this->_response->getBody(), true);
         $this->assertFalse($json['success'] ?? true, 'Should fail with unsupported mime');
+    }
+
+    public function testBulkUploadRequiresAuth(): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($tmp, $pngData);
+        $this->post('/admin/images/bulk-upload', [
+            'uploads' => [[
+                'tmp_name' => $tmp,
+                'name' => 'dot.png',
+                'type' => 'image/png',
+                'size' => strlen($pngData),
+                'error' => UPLOAD_ERR_OK,
+            ]],
+        ]);
+        // Authorization middleware redirects unauthenticated admin requests
+        $this->assertRedirect();
+    }
+
+    public function testBulkUploadSuccess(): void
+    {
+        $this->mockIdentity();
+
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        $tmp1 = tempnam(sys_get_temp_dir(), 'img');
+        $tmp2 = tempnam(sys_get_temp_dir(), 'img');
+        file_put_contents($tmp1, $pngData);
+        file_put_contents($tmp2, $pngData);
+
+        $this->post('/admin/images/bulk-upload', [
+            'uploads' => [
+                [
+                    'tmp_name' => $tmp1,
+                    'name' => 'dot1.png',
+                    'type' => 'image/png',
+                    'size' => strlen($pngData),
+                    'error' => UPLOAD_ERR_OK,
+                ],
+                [
+                    'tmp_name' => $tmp2,
+                    'name' => 'dot2.png',
+                    'type' => 'image/png',
+                    'size' => strlen($pngData),
+                    'error' => UPLOAD_ERR_OK,
+                ],
+            ],
+            'tags' => [
+                '0' => 'person-1',
+                '1' => 'teamseason-2',
+            ],
+            'context' => [
+                '0' => 'Media Day',
+                '1' => 'Roster Headshot',
+            ],
+        ]);
+
+        if ($this->_response->getStatusCode() === 302) {
+            $this->fail('Unexpected redirect to ' . $this->_response->getHeaderLine('Location'));
+        }
+
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Bulk upload should succeed');
+        $this->assertCount(2, $json['results'] ?? [], 'Should return a result per file');
+
+        foreach ($json['results'] as $result) {
+            if (!empty($result['image']['id'])) {
+                $this->createdImageIds[] = (int)$result['image']['id'];
+            }
+            $this->assertTrue($result['success'] ?? false, 'Each file should succeed');
+        }
     }
 
     public function testServeOriginalAndVariant(): void
@@ -201,6 +277,37 @@ class ImagesControllerTest extends TestCase
         $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    public function testPublicServeSupportsTransformParams(): void
+    {
+        if (!extension_loaded('gd') && !extension_loaded('imagick')) {
+            $this->markTestSkipped('Requires gd or imagick for image transformations');
+        }
+
+        $this->mockIdentity();
+        $tmp = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($tmp, $pngData);
+        $this->post('/admin/images/upload', [
+            'upload' => [
+                'tmp_name' => $tmp,
+                'name' => 'dot.png',
+                'type' => 'image/png',
+                'size' => strlen($pngData),
+                'error' => UPLOAD_ERR_OK,
+            ],
+        ]);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
+        $id = (int)$json['image']['id'];
+        $this->createdImageIds[] = $id;
+
+        // Trigger the transform code path.
+        $this->get('/images/serve/' . $id . '?w=1&h=1&fit=cover&fm=png&q=90');
+        $this->assertResponseOk();
+        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody());
+    }
+
     public function testPublicServeMissingVariantFallsBack(): void
     {
         // record 1 exists but has no variants, request a non-existent variant
@@ -226,9 +333,39 @@ class ImagesControllerTest extends TestCase
         $this->assertStringContainsString('<form', (string)$this->_response->getBody(), 'Edit form should render');
     }
 
+    public function testManipulatePostAcceptsCustomFields(): void
+    {
+        $this->mockIdentity();
+
+        // Ensure the fixture image file exists on disk so manipulate() can process it.
+        $dir = $this->storageRoot . date('Y') . DS . date('m') . DS;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $path = $dir . 'seed.png';
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($path, $pngData);
+
+        $this->post('/admin/images/manipulate/1', [
+            'crop' => ['x' => 0, 'y' => 0, 'width' => 1, 'height' => 1],
+            'rotate' => '10',
+            'brightness' => '0',
+            'contrast' => '0',
+            'blur' => '0',
+        ]);
+
+        $this->assertResponseCode(302, 'Manipulate POST should redirect (not be blocked by FormProtection)');
+
+        // Best-effort cleanup (file may be overwritten during manipulate).
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
+
     protected function tearDown(): void
     {
-        // Remove any files created in webroot/img/storage during tests
+        // Remove any files created in configured storage during tests
         if (!empty($this->createdImageIds)) {
             $images = $this->getTableLocator()->get('Images');
             foreach ($this->createdImageIds as $id) {
@@ -239,7 +376,7 @@ class ImagesControllerTest extends TestCase
                 }
                 $storagePath = $record->storage_path ?? null;
                 if ($storagePath) {
-                    $base = WWW_ROOT . 'img' . DS . 'storage' . DS;
+                    $base = $this->storageRoot;
                     // sanitize path to avoid directory traversal or backslash issues
                     $sanitized = str_replace(['..', '\\'], '', $storagePath);
                     $full = $base . ltrim($sanitized, '/\\');
@@ -296,5 +433,69 @@ class ImagesControllerTest extends TestCase
         }
 
         parent::tearDown();
+    }
+
+    public function testBrowseRequiresAuthentication(): void
+    {
+        $this->get('/admin/images/browse');
+        $this->assertResponseCode(302, 'Unauthenticated request should redirect');
+    }
+
+    public function testBrowseReturnsJson(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse');
+        $this->assertResponseCode(200);
+        $this->assertSame('application/json', $this->_response->getHeaderLine('Content-Type'));
+    }
+
+    public function testBrowseReturnsAllImages(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Browse should succeed');
+        $this->assertIsArray($json['images'] ?? null, 'Images should be array');
+        // Images fixture has entries, check structure
+        if (!empty($json['images'])) {
+            $first = reset($json['images']);
+            $this->assertArrayHasKey('id', $first);
+            $this->assertArrayHasKey('url', $first);
+            $this->assertArrayHasKey('thumbnail_url', $first);
+            $this->assertArrayHasKey('original_name', $first);
+            $this->assertArrayHasKey('tags', $first);
+        }
+    }
+
+    public function testBrowseWithTagFilter(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse?tag=test-tag');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Browse with tag should succeed');
+        // May return empty array if no images have that tag
+        $this->assertIsArray($json['images'] ?? null);
+    }
+
+    public function testBrowseRespectLimitParameter(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse?limit=5');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false);
+        $this->assertLessThanOrEqual(5, count($json['images'] ?? []));
+    }
+
+    public function testBrowseClampLimitToMaximum(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/browse?limit=99999');
+        $this->assertResponseCode(200);
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false);
+        $this->assertLessThanOrEqual(100, count($json['images'] ?? []));
     }
 }

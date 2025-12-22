@@ -68,10 +68,10 @@ class GamesControllerTest extends TestCase
             'site_id' => 1,
             'hrn' => 1, // Home = 1, Road = -1, Neutral = 0
             'periods' => 2,
-            'period_1_mur' => '30',
-            'period_1_opp' => '28',
-            'period_2_mur' => '40',
-            'period_2_opp' => '35',
+            'period_1_team' => '30',
+            'period_1_opponent' => '28',
+            'period_2_team' => '40',
+            'period_2_opponent' => '35',
             'official_1' => 'Ref A',
         ];
 
@@ -79,7 +79,7 @@ class GamesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
 
         $eav = $this->getTableLocator()->get('GameEav');
-        $count = $eav->find()->where(['key' => 'period_2_mur'])->count();
+        $count = $eav->find()->where(['key' => 'period_2_team'])->count();
         $this->assertGreaterThan(0, $count);
     }
 
@@ -96,8 +96,8 @@ class GamesControllerTest extends TestCase
             // Validation allows only 1,2,3. Use 1 (home) instead of previously invalid 0 to ensure save.
             'hrn' => 1,
             'periods' => 2,
-            'period_1_mur' => '36',
-            'period_1_opp' => '31',
+            'period_1_team' => '36',
+            'period_1_opponent' => '31',
         ]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
     }

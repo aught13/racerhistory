@@ -294,8 +294,8 @@ class GamesController extends AppController
             // Auto-calculate W/L based on scores
             $data = $this->Game->calculateWinLoss($data);
 
-            // Validate period scores if present
-            $eavErrors = $this->Game->validatePeriodScores($data);
+            // Validate period scores if present (sport-agnostic via SportConfigService)
+            $eavErrors = $this->SportConfig->validatePeriodScores($sportId, $data);
             if (!empty($eavErrors)) {
                 foreach ($eavErrors as $error) {
                     $this->Flash->error($error);
@@ -361,8 +361,11 @@ class GamesController extends AppController
             // Auto-calculate W/L based on scores
             $data = $this->Game->calculateWinLoss($data);
 
-            // Validate period scores if present
-            $eavErrors = $this->Game->validatePeriodScores($data);
+            // Get sportId from game's team season for validation
+            $sportId = $game->team_season->team->sport->id ?? null;
+
+            // Validate period scores if present (sport-agnostic via SportConfigService)
+            $eavErrors = $sportId ? $this->SportConfig->validatePeriodScores($sportId, $data) : [];
             if (!empty($eavErrors)) {
                 foreach ($eavErrors as $error) {
                     $this->Flash->error($error);
