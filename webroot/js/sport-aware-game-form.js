@@ -1,4 +1,4 @@
-/* global module, URLSearchParams */
+/* global module */
 /**
  * Sport-Aware Games Form JavaScript
  * Handles dynamic form updates based on selected team season's sport

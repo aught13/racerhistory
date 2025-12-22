@@ -307,6 +307,14 @@ class ImageStorageService
         return $table;
     }
 
+    /**
+     * Get the configured storage root path for images.
+     *
+     * Returns the configured Images.storageRoot value or defaults to WWW_ROOT/img/storage/.
+     * Ensures the path ends with a directory separator.
+     *
+     * @return string The storage root path with trailing directory separator
+     */
     private function storageRoot(): string
     {
         $root = (string)Configure::read('Images.storageRoot', '');
@@ -317,6 +325,14 @@ class ImageStorageService
         return WWW_ROOT . 'img' . DS . 'storage' . DS;
     }
 
+    /**
+     * Get the configured legacy storage root path for images.
+     *
+     * Returns the configured Images.legacyStorageRoot value or defaults to ROOT/storage/images/.
+     * Ensures the path ends with a directory separator.
+     *
+     * @return string The legacy storage root path with trailing directory separator
+     */
     private function legacyStorageRoot(): string
     {
         $root = (string)Configure::read('Images.legacyStorageRoot', '');
