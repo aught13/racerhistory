@@ -92,9 +92,11 @@ class ImageStorageServiceTest extends TestCase
         foreach ($items as $item) {
             if (is_dir($item)) {
                 $this->clearDir($item);
-                @rmdir($item);
-            } else {
-                @unlink($item);
+                if (is_dir($item)) {
+                    rmdir($item);
+                }
+            } elseif (is_file($item) || is_link($item)) {
+                unlink($item);
             }
         }
     }
