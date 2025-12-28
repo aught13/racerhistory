@@ -99,7 +99,7 @@ jobs:
           echo "=== Updating migration autoId property (no hardcoded filenames) ==="
 
           shopt -s nullglob
-          migration_files=(config/Migrations/*.php)
+          migration_files=(config/Migrations/[0-9]*.php)
           echo "Found ${#migration_files[@]} migration file(s)."
 
           if echo "$PARENT_DECLARATION" | grep -q "bool.*autoId"; then
