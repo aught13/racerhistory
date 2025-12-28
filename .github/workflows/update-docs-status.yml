@@ -16,20 +16,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+      - name: Setup PHP + Composer
+        uses: ./.github/actions/setup-php-composer
         with:
           php-version: '8.3'
+          extensions: mbstring, intl, zip, curl, xml, json
           tools: composer
-
-      - name: Install PHP dependencies
-        run: composer install --no-progress --prefer-dist --ignore-platform-req=php
+          dependency-versions: 'highest'
+          composer-options: '--no-progress --prefer-dist --ignore-platform-req=php'
 
       - name: Install markdownlint-cli
         run: npm i -g markdownlint-cli
@@ -84,25 +87,34 @@ jobs:
       - name: Commit and push if changed
         shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if ! git diff --quiet -- docs-status.json phpcs-status.json cakephp-version.json; then
-            # Switch to update_ci branch
-            git fetch origin update_ci
-            git checkout update_ci
-
-            git add docs-status.json phpcs-status.json cakephp-version.json
-            git commit -m "chore(ci): update status badges"
-            git push origin update_ci
-
-            echo "Pushed status updates to update_ci branch"
-          else
+          if git diff --quiet -- docs-status.json phpcs-status.json cakephp-version.json; then
             echo "No changes to status files"
+            exit 0
           fi
-            git add docs-status.json phpcs-status.json cakephp-version.json
-            git commit -m "chore(ci): update status badges"
-            git push origin "$BRANCH_NAME"
 
-            echo "Pushed status updates to branch: $BRANCH_NAME"
-            echo "You can merge this branch to master when ready"
+          # We're currently on the workflow trigger branch (typically master) to ensure
+          # the status files reflect the latest code. Stash the generated JSON updates
+          # so we can switch branches without losing them.
+          git stash push -m "status-badges" -- docs-status.json phpcs-status.json cakephp-version.json
+
+          # Switch to (or create) update_ci branch, then apply the stashed changes.
+          git fetch origin update_ci || true
+          if git ls-remote --exit-code --heads origin update_ci > /dev/null 2>&1; then
+            git switch --force-create update_ci origin/update_ci
+          else
+            git switch --create update_ci
+          fi
+
+          # Restore files from the stash, overwriting whatever is in update_ci.
+          git restore --source=stash@{0} -- docs-status.json phpcs-status.json cakephp-version.json
+          git stash drop stash@{0}
+
+          git add docs-status.json phpcs-status.json cakephp-version.json
+          git commit -m "chore(ci): update status badges"
+          git push origin update_ci
+
+          echo "Pushed status updates to update_ci branch"

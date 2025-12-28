@@ -48,21 +48,15 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # v2.30.4
+      - name: Setup PHP + Composer
+        uses: ./.github/actions/setup-php-composer
         with:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, intl, pdo_mysql, zip, curl, xml, json
           ini-values: zend.assertions=1
           coverage: ${{ matrix.coverage == true && 'xdebug' || 'none' }}
-
-      - name: Composer install
-        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.0.0
-        with:
           dependency-versions: ${{ matrix.dependencies }}
           composer-options: ${{ matrix.php-version == '8.1' && '--ignore-platform-req=php' || matrix.composer-options }}
-        env:
-          COMPOSER_ALLOW_SUPERUSER: 1
 
       - name: Handle PHP 8.1 compatibility
         if: ${{ matrix.php-version == '8.1' && matrix.dependencies == 'lowest' }}
@@ -102,72 +96,28 @@ jobs:
           PARENT_DECLARATION=$(grep -A 1 -B 1 "autoId" vendor/cakephp/migrations/src/AbstractMigration.php | grep "public" || echo "not found")
           echo "Parent class has: $PARENT_DECLARATION"
 
+          echo "=== Updating migration autoId property (no hardcoded filenames) ==="
+
+          shopt -s nullglob
+          migration_files=(config/Migrations/[0-9]*.php)
+          echo "Found ${#migration_files[@]} migration file(s)."
+
           if echo "$PARENT_DECLARATION" | grep -q "bool.*autoId"; then
-            echo "Parent requires bool type, updating migrations..."
-            # Initial migration
-            sed -i 's/public $autoId = false;/public bool $autoId = false;/' config/Migrations/20250727202625_Initial.php || true
-            # Users table migration (newer)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250811120000_CreateUsersTable.php || true
-            # Persons table migration (newer)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250817120000_AddBioToPersons.php || true
-            # Images table migration
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250817123000_CreateImagesTable.php || true
-            # Image Usage table migration
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20250817123100_CreateImageUsagesTable.php || true
-            # Sport Configs table migration (new)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251003140000_CreateSportConfigs.php || true
-            # Enhance Games Table migration (new)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251003141000_EnhanceGamesTableForMultiSport.php || true
-            # Sport Stat Registry migration (new)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251012150000_CreateSportStatRegistry.php || true
-            # CakeDC Users Fields migration (new)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251130120000_AddCakeDcUsersFields.php || true
-            # Expand Game Time Column migration (new)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251130140000_ExpandGameTimeColumn.php || true
-            # Add Image Tags And Usages migration (new)
-            sed -i 's/public \$autoId = false;/public bool $autoId = false;/' config/Migrations/20251207090000_AddImageTagsAndUsages.php || true
-            # (Removed obsolete image path migrations)
+            echo "Parent requires typed bool (public bool \$autoId = <bool>;)."
+            for f in "${migration_files[@]}"; do
+              # Preserve existing true/false value and only normalize typing.
+              perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public bool \$autoId = $1;/g' "$f"
+            done
           else
-            echo "Parent requires no type, updating migrations to untyped..."
-            # Initial migration
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250727202625_Initial.php || true
-            # Users table migration (newer)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250811120000_CreateUsersTable.php || true
-            # Persons table migration (newer)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250817120000_AddBioToPersons.php || true
-            # Images table migration
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250817123000_CreateImagesTable.php || true
-            # Image Usage table migration
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20250817123100_CreateImageUsagesTable.php || true
-            # Sport Configs table migration (new)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251003140000_CreateSportConfigs.php || true
-            # Enhance Games Table migration (new)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251003141000_EnhanceGamesTableForMultiSport.php || true
-            # Sport Stat Registry migration (new)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251012150000_CreateSportStatRegistry.php || true
-            # CakeDC Users Fields migration (new)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251130120000_AddCakeDcUsersFields.php || true
-            # Expand Game Time Column migration (new)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251130140000_ExpandGameTimeColumn.php || true
-            # Add Image Tags And Usages migration (new)
-            sed -i 's/public bool $autoId = false;/public $autoId = false;/' config/Migrations/20251207090000_AddImageTagsAndUsages.php || true
-            # (Removed obsolete image path migrations)
+            echo "Parent requires untyped (public \$autoId = <bool>;)."
+            for f in "${migration_files[@]}"; do
+              # Preserve existing true/false value and only normalize typing.
+              perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public \$autoId = $1;/g' "$f"
+            done
           fi
 
-          echo "=== Final migration property ==="
-          echo "-- 20250727202625_Initial.php --"
-          grep -A 1 -B 1 "autoId" config/Migrations/20250727202625_Initial.php || echo "no autoId in Initial"
-          echo "-- 20250811120000_CreateUsersTable.php --"
-          grep -A 1 -B 1 "autoId" config/Migrations/20250811120000_CreateUsersTable.php || echo "no autoId in CreateUsersTable"
-          echo "-- 20250727202625_Initial.php --"
-          grep -A 1 -B 1 "autoId" config/Migrations/20250817120000_AddBioToPersons.php || echo "no autoId in AddBioToPersons"
-          echo "-- 20250811120000_CreateUsersTable.php --"
-          grep -A 1 -B 1 "autoId" config/Migrations/20250817123000_CreateImagesTable.php || echo "no autoId in CreateImagesTable"
-          echo "-- 20250811120000_CreateUsersTable.php --"
-          grep -A 1 -B 1 "autoId" config/Migrations/20250817123100_CreateImageUsagesTable.php || echo "no autoId in CreateImageUsagesTable"
-          echo "-- 20251207090000_AddImageTagsAndUsages.php --"
-          grep -A 1 -B 1 "autoId" config/Migrations/20251207090000_AddImageTagsAndUsages.php || echo "no autoId in AddImageTagsAndUsages"
-          # Removed obsolete migration files (AddStorageSubdir / ReplaceStorageSubdirWithStoragePath)
+          echo "=== Sample post-fix autoId lines ==="
+          grep -R --line-number -E 'public\s+(bool\s+)?\$autoId\s*=\s*(true|false)\s*;' config/Migrations/ || true
 
       - name: Run database migrations
         run: |
@@ -262,22 +212,16 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # v2.30.4
+      - name: Setup PHP + Composer
+        uses: ./.github/actions/setup-php-composer
         with:
           php-version: "8.3"
           extensions: mbstring, intl
-          coverage: none
           tools: cs2pr
+          coverage: none
           ini-values: memory_limit=512M
-
-      - name: Composer install
-        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.0.0
-        with:
           dependency-versions: "highest"
           composer-options: ""
-        env:
-          COMPOSER_ALLOW_SUPERUSER: 1
 
       - name: Copy configuration file
         run: cp config/app_local.example.php config/app_local.php
