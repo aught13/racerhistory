@@ -23,23 +23,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # v2.30.4
+      - name: Setup PHP + Composer
+        uses: ./.github/actions/setup-php-composer
         with:
           php-version: "8.3"
           extensions: mbstring, intl, zip, curl, xml, json
           tools: composer:v2
-
-      - name: Cache Composer packages
-        uses: actions/cache@v5
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-security-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-security-
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
+          dependency-versions: "highest"
 
       - name: Run Security Audit
         run: |
@@ -56,37 +46,3 @@ jobs:
         with:
           name: security-report
           path: security-report.json
-
-  phpstan-security:
-    name: PHPStan Security Analysis
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # v2.30.4
-        with:
-          php-version: "8.3"
-          extensions: mbstring, intl, zip, curl, xml, json
-          tools: composer:v2
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
-
-      - name: Copy configuration file for analysis
-        run: cp config/app_local.example.php config/app_local.php
-
-      - name: Run PHPStan Security Analysis
-        run: |
-          if [ -f vendor/bin/phpstan ]; then
-            vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=512M
-            echo "## PHPStan Security Analysis Completed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "PHPStan not available, skipping security analysis"
-            echo "## PHPStan Security Analysis Skipped" >> $GITHUB_STEP_SUMMARY
-          fi
-        continue-on-error: true
-        env:
-          SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144

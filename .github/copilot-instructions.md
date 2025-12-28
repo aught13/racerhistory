@@ -18,7 +18,6 @@ When creating or modifying CakePHP migrations:
     - Use `public bool $autoId = false;` for CakePHP migrations 4.x+ compatibility
     - Use `public $autoId = false;` for older versions
     - Check `vendor/cakephp/migrations/src/AbstractMigration.php` for current declaration
-    - **CI Compatibility:** The CI pipeline auto-adapts migration property typing at runtime. See `.github/workflows/ci.yml` (step: "Fix migration compatibility"). It inspects the parent class and rewrites all migration files to match the required property type (typed or untyped) before running migrations. This ensures migrations work across local and CI environments even if the required property type changes between CakePHP versions.
     - **Contributor Note:** Always use the property type required by your local CakePHP version. CI will rewrite as needed. Do not attempt runtime adaptation in migration code; rely on CI logic.
 
 2. **Database Compatibility**: Ensure migrations work across different MySQL versions:
@@ -141,24 +140,6 @@ class ExampleService
     }
 }
 ```
-
-### Existing Services
-
-- **PersonService**: Person display labels, search, CRUD
-- **TeamSeasonService**: Team+season display labels with sport prefixes, CRUD
-- **TeamSeasonRosterService**: Coordinates Person and TeamSeason services, roster CRUD
-- **SeasonService**: Season CRUD, display labels ("2023-2024" format)
-- **SportService**: Sport CRUD, alphabetical listing
-- **TeamService**: Team CRUD with gender-prefixed sport labels
-- **PlaceService**: Place CRUD with search, Site management (sites are venues within places), display labels
-- **OpponentService**: Opponent CRUD with search functionality
-- **GameService**: Complex basketball game stats and EAV metadata (uses older trait-based pattern)
-- **ImageTaggingService**: Delegates to entity services to build canonical tag slugs
-- **BasketballStatsService**: Sport-specific stats calculations
-- **SportConfigService**: Sport metadata and EAV configuration
-- **StatsService**: General statistics operations
-- **ImageProcessor**: Image processing operations
-
 ### Controller Integration
 
 Controllers should **only contain view logic**. They:
