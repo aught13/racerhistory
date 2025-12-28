@@ -88,33 +88,42 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           if git diff --quiet -- docs-status.json phpcs-status.json cakephp-version.json; then
             echo "No changes to status files"
             exit 0
           fi
 
-          # We're currently on the workflow trigger branch (typically master) to ensure
-          # the status files reflect the latest code. Stash the generated JSON updates
-          # so we can switch branches without losing them.
-          git stash push -m "status-badges" -- docs-status.json phpcs-status.json cakephp-version.json
+          worktree_dir=$(mktemp -d)
+          cleanup() {
+            git worktree remove --force "$worktree_dir" >/dev/null 2>&1 || true
+            rm -rf "$worktree_dir" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
 
-          # Switch to (or create) update_ci branch, then apply the stashed changes.
+          # Create or attach a worktree for update_ci without touching the current checkout.
           git fetch origin update_ci || true
           if git ls-remote --exit-code --heads origin update_ci > /dev/null 2>&1; then
-            git switch --force-create update_ci origin/update_ci
+            git worktree add "$worktree_dir" origin/update_ci
           else
-            git switch --create update_ci
+            git worktree add -b update_ci "$worktree_dir"
           fi
 
-          # Restore files from the stash, overwriting whatever is in update_ci.
-          git restore --source=stash@{0} -- docs-status.json phpcs-status.json cakephp-version.json
-          git stash drop stash@{0}
+          # Copy the generated files into the worktree and commit them there.
+          cp -f docs-status.json phpcs-status.json cakephp-version.json "$worktree_dir/"
 
-          git add docs-status.json phpcs-status.json cakephp-version.json
-          git commit -m "chore(ci): update status badges"
-          git push origin update_ci
+          (
+            cd "$worktree_dir"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            if git diff --quiet -- docs-status.json phpcs-status.json cakephp-version.json; then
+              echo "No changes to status files on update_ci"
+              exit 0
+            fi
+
+            git add docs-status.json phpcs-status.json cakephp-version.json
+            git commit -m "chore(ci): update status badges"
+            git push origin update_ci
+          )
 
           echo "Pushed status updates to update_ci branch"
