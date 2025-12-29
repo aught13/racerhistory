@@ -7,7 +7,6 @@
  *   });
  *   selector.setAspectRatio(16/9); // or null for free-form
  */
-// eslint-disable-next-line no-unused-vars
 class CropSelector {
     constructor(canvasId, imageId, options = {}) {
         this.canvas = document.getElementById(canvasId);

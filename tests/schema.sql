@@ -424,3 +424,36 @@ CREATE TABLE IF NOT EXISTS image_usages (
   modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(image_id) REFERENCES images(id)
 );
+
+-- Blog tables
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title VARCHAR(190) NOT NULL,
+  slug VARCHAR(190) NOT NULL UNIQUE,
+  excerpt TEXT NULL,
+  body TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'draft',
+  is_published BOOLEAN NOT NULL DEFAULT 0,
+  published_at DATETIME NULL,
+  hero_image_id INTEGER NULL,
+  created DATETIME NULL,
+  modified DATETIME NULL
+);
+
+CREATE TABLE IF NOT EXISTS blog_tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name VARCHAR(150) NOT NULL,
+  slug VARCHAR(150) NOT NULL UNIQUE,
+  created DATETIME NULL,
+  modified DATETIME NULL
+);
+
+CREATE TABLE IF NOT EXISTS blog_posts_blog_tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  blog_post_id INTEGER NOT NULL,
+  blog_tag_id INTEGER NOT NULL,
+  created DATETIME NULL,
+  modified DATETIME NULL,
+  FOREIGN KEY(blog_post_id) REFERENCES blog_posts(id),
+  FOREIGN KEY(blog_tag_id) REFERENCES blog_tags(id)
+);
