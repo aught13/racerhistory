@@ -5,7 +5,7 @@ namespace App\Controller\Admin;
 
 use App\Service\ImageProcessor;
 use App\Service\ImageStorageService;
-use App\Service\ImageTaggingService;
+use App\Service\TaggingService;
 use Cake\Core\Configure;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
@@ -61,11 +61,11 @@ class ImagesController extends AppController
                 return $this->json(['success' => false, 'error' => 'No file uploaded']);
             }
 
-            $tagging = new ImageTaggingService();
+            $tagging = TaggingService::forImages();
             $tags = $tagging->parseTagsFromRequest($this->request);
             $manipulations = $this->collectManipulations();
 
-            $storage = new ImageStorageService();
+            $storage = new ImageStorageService(null, $tagging);
             $result = $storage->upload($file, $tags, $manipulations);
 
             if (!empty($result['success'])) {
@@ -340,7 +340,7 @@ class ImagesController extends AppController
     }
 
     /**
-     * Build entity-based tags from form data (mirrors ImageTaggingService::tagsForContext logic).
+     * Build entity-based tags from form data (mirrors TaggingService::applyFromData logic).
      *
      * @param array<string,mixed> $data
      * @return array<int,array<string,string>>
@@ -547,7 +547,7 @@ class ImagesController extends AppController
 
         if ($this->request->is(['post'])) {
             $data = $this->request->getData();
-            $tagging = new ImageTaggingService();
+            $tagging = TaggingService::forImages();
             $tagging->applyFromData($id, $data);
             $this->Flash->success('Tags updated');
 
@@ -645,7 +645,7 @@ class ImagesController extends AppController
         // Delete associations and files
         $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $id]);
         $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $id]);
-        (new ImageTaggingService())->pruneOrphanedTags();
+        TaggingService::forImages()->pruneOrphanedTags();
 
         // Delete physical files
         $this->deleteImageFiles($image);
@@ -692,7 +692,7 @@ class ImagesController extends AppController
             }
         }
 
-        (new ImageTaggingService())->pruneOrphanedTags();
+        TaggingService::forImages()->pruneOrphanedTags();
 
         $this->Flash->success("Deleted {$deleted} image(s)");
 
