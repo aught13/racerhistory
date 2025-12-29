@@ -151,4 +151,70 @@ class TaggingServiceTest extends TestCase
         $count = $junction->find()->where(['blog_tag_id' => $tag->id, 'blog_post_id' => 1])->count();
         $this->assertSame(1, $count);
     }
+
+    public function testApplyFromDataAllowsMultiplePersonsWhenNoRosterSelected(): void
+    {
+        $service = TaggingService::forImages();
+        $images = TableRegistry::getTableLocator()->get('Images');
+
+        $image = $images->newEntity([
+            'filename' => 'tagtest-multi-person.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/tagtest-multi-person.jpg',
+            'original_name' => 'tagtest-multi-person.jpg',
+            'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'tagtest-multi-person-' . time(),
+            'status' => 'active',
+        ]);
+        $images->save($image);
+
+        $data = [
+            'person_select' => [1, 2],
+            'tags' => 'extra',
+        ];
+
+        $applied = $service->applyFromData((int)$image->id, $data);
+
+        $this->assertContains('person-1', $applied);
+        $this->assertContains('person-2', $applied);
+        $this->assertContains('extra', $applied);
+    }
+
+    public function testApplyFromDataIgnoresMultiplePersonsWhenRosterSelected(): void
+    {
+        $service = TaggingService::forImages();
+        $images = TableRegistry::getTableLocator()->get('Images');
+
+        $image = $images->newEntity([
+            'filename' => 'tagtest-roster-lock.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/tagtest-roster-lock.jpg',
+            'original_name' => 'tagtest-roster-lock.jpg',
+            'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'tagtest-roster-lock-' . time(),
+            'status' => 'active',
+        ]);
+        $images->save($image);
+
+        $data = [
+            'person_select' => [1, 2],
+            'roster_select' => 1,
+        ];
+
+        $applied = $service->applyFromData((int)$image->id, $data);
+
+        $this->assertContains('team_season_roster-1', $applied);
+        $this->assertContains('person-1', $applied);
+        $this->assertNotContains('person-2', $applied);
+    }
 }

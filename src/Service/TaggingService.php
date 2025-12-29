@@ -303,6 +303,27 @@ class TaggingService
         $map = $this->entityTagMap();
         $hasRoster = !empty($data['roster_select']) && (int)$data['roster_select'] > 0;
 
+        // Multi-person support: allow person_select to be a scalar, CSV string, or array of ids.
+        $personIds = [];
+        if (!$hasRoster && array_key_exists('person_select', $data)) {
+            $personIds = $this->parseIdList($data['person_select']);
+        }
+
+        // Handle persons first (and remove from the generic map loop).
+        if ($personIds) {
+            foreach ($personIds as $pid) {
+                $slug = 'person-' . $pid;
+                $display = $this->personService->getDisplayLabel($pid);
+                $tagsToApply[$slug] = ['slug' => $slug, 'name' => (string)$display];
+                $displayNames[] = (string)$display;
+            }
+        }
+
+        // Ensure generic loop doesn't treat person_select as scalar.
+        if (isset($map['person_select'])) {
+            unset($map['person_select']);
+        }
+
         foreach ($map as $field => $meta) {
             if ($hasRoster && $field === 'teamseason_select') {
                 continue;
@@ -385,6 +406,42 @@ class TaggingService
         }
 
         return $final;
+    }
+
+    /**
+     * Normalize an incoming id list value (scalar, CSV, or array) into unique positive ints.
+     *
+     * @param mixed $value
+     * @return array<int,int>
+     */
+    private function parseIdList(mixed $value): array
+    {
+        $raw = [];
+
+        if (is_array($value)) {
+            $raw = $value;
+        } elseif (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                $raw = [];
+            } elseif (str_contains($trimmed, ',')) {
+                $raw = array_map('trim', explode(',', $trimmed));
+            } else {
+                $raw = [$trimmed];
+            }
+        } elseif ($value !== null) {
+            $raw = [$value];
+        }
+
+        $ids = [];
+        foreach ($raw as $item) {
+            $id = (int)$item;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
     }
 
     /**

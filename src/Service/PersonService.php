@@ -86,9 +86,17 @@ class PersonService
             ->all();
 
         foreach ($personResults as $person) {
+            $label = (string)($person->display ?? '');
+            if ($label === '') {
+                $label = trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? ''));
+            }
+            if ($label === '') {
+                $label = 'Person #' . (string)$person->id;
+            }
+
             $results[] = [
                 'id' => $person->id,
-                'label' => $person->label,
+                'label' => $label,
                 'disambiguate' => null, // Can be enhanced with roster/team info
             ];
         }
