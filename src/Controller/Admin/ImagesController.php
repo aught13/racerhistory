@@ -408,35 +408,42 @@ class ImagesController extends AppController
                 continue;
             }
 
-            if (!empty($data[$field])) {
-                $id = (int)$data[$field];
-                if ($id > 0) {
-                    $slug = $meta['prefix'] . $id;
+            if (empty($data[$field])) {
+                continue;
+            }
 
-                    // Use service layer for entities with dedicated services
-                    $display = '';
-                    if (isset($meta['service'])) {
-                        if ($meta['service'] === 'person') {
-                            $display = $personService->getDisplayLabel($id);
-                        } elseif ($meta['service'] === 'teamseason') {
-                            $display = $teamSeasonService->getSportDisplayLabel($id);
-                        } elseif ($meta['service'] === 'roster') {
-                            $rosterData = $rosterService->getRosterDisplayData($id);
-                            $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
-                        }
-                    } else {
-                        // Fallback to direct table lookup
-                        $table = TableRegistry::getTableLocator()->get($meta['table']);
-                        $row = $table->find()->select()->where(['id' => $id])->first();
-                        $display = $row ? (string)$meta['label']($row) : '';
-                    }
+            $values = is_array($data[$field]) ? $data[$field] : [$data[$field]];
+            foreach ($values as $value) {
+                $id = (int)$value;
+                if ($id <= 0) {
+                    continue;
+                }
 
-                    if ($display) {
-                        $tagsToApply[] = [
-                            'slug' => $slug,
-                            'name' => $display,
-                        ];
+                $slug = $meta['prefix'] . $id;
+
+                // Use service layer for entities with dedicated services
+                $display = '';
+                if (isset($meta['service'])) {
+                    if ($meta['service'] === 'person') {
+                        $display = $personService->getDisplayLabel($id);
+                    } elseif ($meta['service'] === 'teamseason') {
+                        $display = $teamSeasonService->getSportDisplayLabel($id);
+                    } elseif ($meta['service'] === 'roster') {
+                        $rosterData = $rosterService->getRosterDisplayData($id);
+                        $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
                     }
+                } else {
+                    // Fallback to direct table lookup
+                    $table = TableRegistry::getTableLocator()->get($meta['table']);
+                    $row = $table->find()->select()->where(['id' => $id])->first();
+                    $display = $row ? (string)$meta['label']($row) : '';
+                }
+
+                if ($display) {
+                    $tagsToApply[] = [
+                        'slug' => $slug,
+                        'name' => $display,
+                    ];
                 }
             }
         }

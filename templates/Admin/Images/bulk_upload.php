@@ -83,17 +83,6 @@ const uploadBtn = document.getElementById('uploadAll');
 const statusBox = document.getElementById('uploadStatus');
 const csrfToken = document.querySelector('input[name="_csrfToken"]')?.value;
 
-// Entity tag references
-const personSelect = document.getElementById('person_select');
-const teamSeasonSelect = document.getElementById('teamseason_select');
-const gameSelect = document.getElementById('game_select');
-const rosterSelect = document.getElementById('roster_select');
-const commonTagsInput = document.getElementById('commonTags');
-const teamSelect = document.getElementById('team_select');
-const siteSelect = document.getElementById('site_select');
-const opponentSelect = document.getElementById('opponent_select');
-const sportSelect = document.getElementById('sport_select');
-
 
 function renderFileRows(files) {
     fileList.innerHTML = '';
@@ -134,7 +123,7 @@ function showStatus(type, message, details = '') {
     statusBox.appendChild(alert);
 }
 
-uploadBtn?.addEventListener('click', async () => {
+    uploadBtn?.addEventListener('click', async () => {
     const files = uploadsInput.files;
     if (!files || !files.length) {
         showStatus('danger', 'Please choose at least one image file.');
@@ -146,24 +135,12 @@ uploadBtn?.addEventListener('click', async () => {
     uploadBtn.setAttribute('disabled', 'disabled');
     statusBox.innerHTML = '';
 
-    const formData = new FormData();
-    if (csrfToken) {
-        formData.append('_csrfToken', csrfToken);
+    const formElement = document.getElementById('bulkUploadForm');
+    if (!formElement) {
+        showStatus('danger', 'Unable to locate the upload form.');
+        return;
     }
-    Array.from(files).forEach((file, index) => {
-        formData.append('uploads[' + index + ']', file);
-    });
-
-    // Add common entity tags to all files
-    if (personSelect?.value) formData.append('person_select', personSelect.value);
-    if (teamSeasonSelect?.value) formData.append('teamseason_select', teamSeasonSelect.value);
-    if (gameSelect?.value) formData.append('game_select', gameSelect.value);
-    if (teamSelect?.value) formData.append('team_select', teamSelect.value);
-    if (siteSelect?.value) formData.append('site_select', siteSelect.value);
-    if (opponentSelect?.value) formData.append('opponent_select', opponentSelect.value);
-    if (sportSelect?.value) formData.append('sport_select', sportSelect.value);
-    if (rosterSelect?.value) formData.append('roster_select', rosterSelect.value);
-    if (commonTagsInput?.value) formData.append('common_tags', commonTagsInput.value);
+    const formData = new FormData(formElement);
 
     try {
         const response = await fetch('/admin/images/bulk-upload', {
