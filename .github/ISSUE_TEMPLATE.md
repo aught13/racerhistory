@@ -4,7 +4,7 @@ This is a (multiple allowed):
 * [ ] enhancement
 * [ ] feature-discussion (RFC)
 
-* CakePHP Application Skeleton Version: EXACT RELEASE VERSION OR COMMIT HASH, HERE.
+* RacerHistory Version: 0.1.9-alpha (or commit hash)
 * Platform and Target: YOUR WEB-SERVER, DATABASE AND OTHER RELEVANT INFO AND HOW THE REQUEST IS BEING MADE, HERE.
 
 ### What you did

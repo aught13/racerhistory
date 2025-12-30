@@ -26,6 +26,7 @@ templates/
 │   ├── error.php           # Error layout
 │   └── email/              # Email layouts
 ├── Pages/                  # Static page templates
+├── Blog/                   # Public blog templates
 └── Users/                  # User authentication templates
 ```
 
@@ -160,6 +161,29 @@ Flash message templates for different message types:
   - Database connection verification
   - Plugin and configuration status
 - **Variables**: Various system status variables
+
+## Blog Templates
+
+### Blog/index.php
+- **Purpose**: Public blog listing for published posts
+- **Features**: Tag badges, optional hero image thumbnail, responsive card grid
+- **Variables**: `$posts` (array of BlogPost entities)
+
+### Blog/view.php
+- **Purpose**: Public blog post view by slug
+- **Features**: Optional hero image, tag badges, body rendered as paragraphs
+- **Variables**: `$post` (BlogPost entity)
+
+## Admin Blog Templates
+
+### Admin/BlogPosts/index.php
+- **Purpose**: Admin listing for all posts (draft/published)
+- **Variables**: `$posts` (array of BlogPost entities)
+
+### Admin/BlogPosts/edit.php
+- **Purpose**: Shared add/edit form for blog posts
+- **Features**: TinyMCE editor, hero/inline image selection, tag selection element
+- **Variables**: `$post` plus select-option arrays for tag selection
 
 ## Best Practices
 

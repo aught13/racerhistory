@@ -40,115 +40,34 @@
             <h5 class="mb-0">Entity Tags (Apply to All Files)</h5>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Person</label>
-                    <input
-                        type="text"
-                        name="person_search"
-                        id="person_search"
-                        list="personsList"
-                        class="form-control"
-                        placeholder="Search person by name"
-                        autocomplete="off"
-                    />
-                    <datalist id="personsList"></datalist>
-                    <input type="hidden" name="person_select" id="person_select" value="" />
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Team</label>
-                    <select name="team_select" id="team_select" class="form-select">
-                        <option value="">-- select team --</option>
-                        <?php if (isset($teams)): ?>
-                            <?php foreach ($teams as $t): ?>
-                                <option value="<?= h($t->id) ?>"><?= h($t->team_name) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Team Season</label>
-                    <select name="teamseason_select" id="teamseason_select" class="form-select">
-                        <option value="">-- select team season --</option>
-                        <?php if (isset($teamSeasonLabels)): ?>
-                            <?php foreach ($teamSeasonLabels as $ts): ?>
-                                <option value="<?= h($ts['id']) ?>"><?= h($ts['label']) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Game</label>
-                    <select name="game_select" id="game_select" class="form-select">
-                        <option value="">-- select game --</option>
-                        <?php if (isset($gameLabels)): ?>
-                            <?php foreach ($gameLabels as $g): ?>
-                                <option value="<?= h($g['id']) ?>" data-teamseason="<?= h($g['team_season_id'] ?? '') ?>"><?= h($g['label']) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                    <div class="form-text">Tip: Select a Team Season first to filter games</div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Site</label>
-                    <select name="site_select" id="site_select" class="form-select">
-                        <option value="">-- select site --</option>
-                        <?php if (isset($siteLabels)): ?>
-                            <?php foreach ($siteLabels as $s): ?>
-                                <option value="<?= h($s['id']) ?>"><?= h($s['label']) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Opponent</label>
-                    <select name="opponent_select" id="opponent_select" class="form-select">
-                        <option value="">-- select opponent --</option>
-                        <?php if (isset($opponents)): ?>
-                            <?php foreach ($opponents as $o): ?>
-                                <option value="<?= h($o['id']) ?>"><?= h($o['label']) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Sport</label>
-                    <select name="sport_select" id="sport_select" class="form-select">
-                        <option value="">-- select sport --</option>
-                        <?php if (isset($sports)): ?>
-                            <?php foreach ($sports as $sp): ?>
-                                <option value="<?= h($sp->id) ?>"><?= h($sp->sport_name) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Team Season Roster Entry</label>
-                    <select name="roster_select" id="roster_select" class="form-select" disabled>
-                        <option value="">-- select roster entry --</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label for="commonTags" class="form-label">Additional Freeform Tags (comma-separated)</label>
-                <input type="text" class="form-control" id="commonTags" placeholder="tag1, tag2, tag3">
-                <div class="form-text">These will be applied to all uploaded files along with entity tags.</div>
-            </div>
-
+            <?php
+            $sportsForSelect = [];
+            if (isset($sports) && is_iterable($sports)) {
+                foreach ($sports as $sp) {
+                    $sportsForSelect[] = ['id' => $sp->id ?? null, 'label' => $sp->sport_name ?? ''];
+                }
+            }
+            ?>
+            <?= $this->element('Admin/tag_selection', [
+                'teams' => $teams ?? [],
+                'teamSeasons' => $teamSeasonLabels ?? [],
+                'games' => $gameLabels ?? [],
+                'sites' => $siteLabels ?? [],
+                'opponents' => $opponents ?? [],
+                'sports' => $sportsForSelect,
+                'currentTags' => $currentTags ?? [],
+                'tagString' => '',
+                'freeform' => [
+                    'type' => 'text',
+                    'name' => 'common_tags',
+                    'label' => 'Additional Freeform Tags (comma-separated)',
+                    'help' => 'These will be applied to all uploaded files along with entity tags.',
+                    'attributes' => [
+                        'id' => 'commonTags',
+                        'placeholder' => 'tag1, tag2, tag3',
+                    ],
+                ],
+            ]) ?>
             <div class="alert alert-info small">
                 <strong>Note:</strong> Entity tags and freeform tags here apply to <strong>all</strong> uploaded files.
             </div>
@@ -163,125 +82,6 @@ const fileList = document.getElementById('fileList');
 const uploadBtn = document.getElementById('uploadAll');
 const statusBox = document.getElementById('uploadStatus');
 const csrfToken = document.querySelector('input[name="_csrfToken"]')?.value;
-
-// Entity tag references
-const personSearch = document.getElementById('person_search');
-const personSelect = document.getElementById('person_select');
-const personsList = document.getElementById('personsList');
-const teamSeasonSelect = document.getElementById('teamseason_select');
-const gameSelect = document.getElementById('game_select');
-const rosterSelect = document.getElementById('roster_select');
-const commonTagsInput = document.getElementById('commonTags');
-
-// Store game options for filtering by team season
-let allGameOptions = [];
-if (gameSelect) {
-    allGameOptions = Array.from(gameSelect.options).slice(1);
-}
-
-function filterGamesByTeamSeason() {
-    if (!gameSelect || !teamSeasonSelect) return;
-    const selectedTeamSeason = teamSeasonSelect.value;
-    gameSelect.innerHTML = '<option value="">-- select game --</option>';
-    if (!selectedTeamSeason) {
-        allGameOptions.forEach(opt => gameSelect.appendChild(opt.cloneNode(true)));
-    } else {
-        allGameOptions.forEach(opt => {
-            if (opt.getAttribute('data-teamseason') === selectedTeamSeason) {
-                gameSelect.appendChild(opt.cloneNode(true));
-            }
-        });
-    }
-}
-
-if (teamSeasonSelect) {
-    teamSeasonSelect.addEventListener('change', filterGamesByTeamSeason);
-}
-
-// Person search functionality (debounced)
-let lastPersons = [];
-
-function renderPersonDatalist(persons) {
-    if (!personsList) return;
-    personsList.innerHTML = '';
-    persons.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.label;
-        personsList.appendChild(opt);
-    });
-}
-
-function fetchPersons(query) {
-    if (!query || query.trim() === '') {
-        lastPersons = [];
-        renderPersonDatalist([]);
-        return Promise.resolve();
-    }
-    return fetch('/admin/images/persons?q=' + encodeURIComponent(query), {credentials: 'same-origin'})
-        .then(r => r.json())
-        .then(data => {
-            lastPersons = (data?.persons) || [];
-            renderPersonDatalist(lastPersons);
-        })
-        .catch(() => {
-            lastPersons = [];
-            renderPersonDatalist([]);
-        });
-}
-
-function debounce(fn, ms) {
-    let t = null;
-    return function (...args) {
-        if (t) clearTimeout(t);
-        t = setTimeout(() => fn.apply(this, args), ms);
-    };
-}
-
-function populateRostersForPerson(personId) {
-    if (!rosterSelect) return;
-    if (!personId) {
-        rosterSelect.innerHTML = '<option value="">-- select roster entry --</option>';
-        rosterSelect.disabled = true;
-        return;
-    }
-    fetch('/admin/images/rosters?person_id=' + encodeURIComponent(personId), {credentials: 'same-origin'})
-        .then(r => r.json())
-        .then(data => {
-            rosterSelect.innerHTML = '<option value="">-- select roster entry --</option>';
-            if (data?.rosters && Array.isArray(data.rosters)) {
-                data.rosters.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item.id;
-                    opt.textContent = item.label;
-                    rosterSelect.appendChild(opt);
-                });
-            }
-            rosterSelect.disabled = false;
-        })
-        .catch(() => {
-            rosterSelect.innerHTML = '<option value="">-- select roster entry --</option>';
-            rosterSelect.disabled = true;
-        });
-}
-
-if (personSearch) {
-    const debouncedFetch = debounce((val) => {
-        fetchPersons(val || '').then(() => {
-            // Try to match against last results
-            if (!personSelect?.value && val) {
-                const found = lastPersons.find(p => p.label.toLowerCase() === val.toLowerCase());
-                if (found) {
-                    personSelect.value = found.id;
-                }
-            }
-            populateRostersForPerson(personSelect?.value || '');
-        });
-    }, 250);
-
-    personSearch.addEventListener('input', (e) => {
-        debouncedFetch((e.target.value || '').trim());
-    });
-}
 
 
 function renderFileRows(files) {
@@ -323,7 +123,7 @@ function showStatus(type, message, details = '') {
     statusBox.appendChild(alert);
 }
 
-uploadBtn?.addEventListener('click', async () => {
+    uploadBtn?.addEventListener('click', async () => {
     const files = uploadsInput.files;
     if (!files || !files.length) {
         showStatus('danger', 'Please choose at least one image file.');
@@ -335,24 +135,12 @@ uploadBtn?.addEventListener('click', async () => {
     uploadBtn.setAttribute('disabled', 'disabled');
     statusBox.innerHTML = '';
 
-    const formData = new FormData();
-    if (csrfToken) {
-        formData.append('_csrfToken', csrfToken);
+    const formElement = document.getElementById('bulkUploadForm');
+    if (!formElement) {
+        showStatus('danger', 'Unable to locate the upload form.');
+        return;
     }
-    Array.from(files).forEach((file, index) => {
-        formData.append('uploads[' + index + ']', file);
-    });
-
-    // Add common entity tags to all files
-    if (personSelect?.value) formData.append('person_select', personSelect.value);
-    if (teamSeasonSelect?.value) formData.append('teamseason_select', teamSeasonSelect.value);
-    if (gameSelect?.value) formData.append('game_select', gameSelect.value);
-    if (document.getElementById('team_select')?.value) formData.append('team_select', document.getElementById('team_select').value);
-    if (document.getElementById('site_select')?.value) formData.append('site_select', document.getElementById('site_select').value);
-    if (document.getElementById('opponent_select')?.value) formData.append('opponent_select', document.getElementById('opponent_select').value);
-    if (document.getElementById('sport_select')?.value) formData.append('sport_select', document.getElementById('sport_select').value);
-    if (rosterSelect?.value) formData.append('roster_select', rosterSelect.value);
-    if (commonTagsInput?.value) formData.append('common_tags', commonTagsInput.value);
+    const formData = new FormData(formElement);
 
     try {
         const response = await fetch('/admin/images/bulk-upload', {

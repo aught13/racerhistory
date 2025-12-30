@@ -1,7 +1,5 @@
-/* eslint-env jest */
-
 beforeAll(() => {
-    if (typeof HTMLFormElement !== 'undefined') {
+    if (typeof HTMLFormElement !== "undefined") {
         HTMLFormElement.prototype.submit = function () {};
         HTMLFormElement.prototype.requestSubmit = function () {};
     }
@@ -9,41 +7,47 @@ beforeAll(() => {
 /** @jest-environment jsdom */
 // person-image.js error branch coverage tests
 
-const personImage = require('../person-image.js');
+const personImage = require("../person-image.js");
 
-describe('person-image error branches', () => {
+describe("person-image error branches", () => {
     beforeEach(() => {
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
         jest.resetAllMocks();
         // Clear any global fetch mock
         delete global.fetch;
     });
 
-    test('uploadFile - upload failure with fetch error', async () => {
+    test("uploadFile - upload failure with fetch error", async () => {
         // Mock fetch to reject
-        global.fetch = jest.fn(() => Promise.reject(new Error('Network error')));
+        global.fetch = jest.fn(() =>
+            Promise.reject(new Error("Network error")),
+        );
 
-        const blob = new Blob(['test'], { type: 'image/png' });
-        const file = new File([blob], 'test.png', { type: 'image/png' });
+        const blob = new Blob(["test"], { type: "image/png" });
+        const file = new File([blob], "test.png", { type: "image/png" });
 
-        await expect(personImage.uploadFile(file)).rejects.toThrow('Network error');
+        await expect(personImage.uploadFile(file)).rejects.toThrow(
+            "Network error",
+        );
     });
 
-    test('uploadFile - invalid mime type response', async () => {
+    test("uploadFile - invalid mime type response", async () => {
         // Mock server response with invalid JSON
         global.fetch = jest.fn(() =>
             Promise.resolve({
-                text: () => Promise.resolve('<html>Server Error</html>'),
-            })
+                text: () => Promise.resolve("<html>Server Error</html>"),
+            }),
         );
 
-        const blob = new Blob(['test'], { type: 'image/png' });
-        const file = new File([blob], 'test.png', { type: 'image/png' });
+        const blob = new Blob(["test"], { type: "image/png" });
+        const file = new File([blob], "test.png", { type: "image/png" });
 
-        await expect(personImage.uploadFile(file)).rejects.toThrow('Invalid JSON response');
+        await expect(personImage.uploadFile(file)).rejects.toThrow(
+            "Invalid JSON response",
+        );
     });
 
-    test('uploadFile - empty file handling', async () => {
+    test("uploadFile - empty file handling", async () => {
         // Mock successful response
         global.fetch = jest.fn(() =>
             Promise.resolve({
@@ -51,21 +55,23 @@ describe('person-image error branches', () => {
                     Promise.resolve(
                         JSON.stringify({
                             success: false,
-                            error: 'File is empty',
-                        })
+                            error: "File is empty",
+                        }),
                     ),
-            })
+            }),
         );
 
-        const emptyBlob = new Blob([], { type: 'image/png' });
-        const emptyFile = new File([emptyBlob], 'empty.png', { type: 'image/png' });
+        const emptyBlob = new Blob([], { type: "image/png" });
+        const emptyFile = new File([emptyBlob], "empty.png", {
+            type: "image/png",
+        });
 
         const result = await personImage.uploadFile(emptyFile);
         expect(result.success).toBe(false);
-        expect(result.error).toBe('File is empty');
+        expect(result.error).toBe("File is empty");
     });
 
-    test('uploadFile - server error response', async () => {
+    test("uploadFile - server error response", async () => {
         // Mock server error response
         global.fetch = jest.fn(() =>
             Promise.resolve({
@@ -73,35 +79,35 @@ describe('person-image error branches', () => {
                     Promise.resolve(
                         JSON.stringify({
                             success: false,
-                            error: 'Invalid file type',
-                        })
+                            error: "Invalid file type",
+                        }),
                     ),
-            })
+            }),
         );
 
-        const blob = new Blob(['test'], { type: 'text/plain' });
-        const file = new File([blob], 'test.txt', { type: 'text/plain' });
+        const blob = new Blob(["test"], { type: "text/plain" });
+        const file = new File([blob], "test.txt", { type: "text/plain" });
 
         const result = await personImage.uploadFile(file);
         expect(result.success).toBe(false);
-        expect(result.error).toBe('Invalid file type');
+        expect(result.error).toBe("Invalid file type");
     });
 
-    test('initPersonImageSelector - missing required elements', () => {
+    test("initPersonImageSelector - missing required elements", () => {
         // Empty DOM
-        document.body.innerHTML = '<div></div>';
+        document.body.innerHTML = "<div></div>";
 
         // Should handle missing elements gracefully
         expect(() => {
             personImage.initPersonImageSelector({
-                selectBtnId: 'missing-btn',
-                fieldId: 'missing-field',
-                previewId: 'missing-preview',
+                selectBtnId: "missing-btn",
+                fieldId: "missing-field",
+                previewId: "missing-preview",
             });
         }).not.toThrow();
     });
 
-    test('initPersonImageSelector - upload failure handling with alert', async () => {
+    test("initPersonImageSelector - upload failure handling with alert", async () => {
         document.body.innerHTML = `
             <input id="img-field" value="" />
             <div id="preview"><img id="pvimg" src="" /></div>
@@ -109,7 +115,9 @@ describe('person-image error branches', () => {
         `;
 
         // Mock upload failure
-        global.fetch = jest.fn(() => Promise.reject(new Error('Upload failed')));
+        global.fetch = jest.fn(() =>
+            Promise.reject(new Error("Upload failed")),
+        );
 
         // Mock alert to capture error display
         global.alert = jest.fn();
@@ -118,11 +126,15 @@ describe('person-image error branches', () => {
         const origCreate = document.createElement.bind(document);
         document.createElement = function (tag) {
             const el = origCreate(tag);
-            if (tag === 'input') {
+            if (tag === "input") {
                 el.click = function () {
-                    const fileBlob = new Blob(['data'], { type: 'image/png' });
-                    Object.defineProperty(el, 'files', {
-                        value: [new File([fileBlob], 'test.png', { type: 'image/png' })],
+                    const fileBlob = new Blob(["data"], { type: "image/png" });
+                    Object.defineProperty(el, "files", {
+                        value: [
+                            new File([fileBlob], "test.png", {
+                                type: "image/png",
+                            }),
+                        ],
                         configurable: true,
                     });
                     setTimeout(() => el.onchange && el.onchange());
@@ -132,19 +144,21 @@ describe('person-image error branches', () => {
         };
 
         personImage.initPersonImageSelector({
-            selectBtnId: 'select-btn',
-            fieldId: 'img-field',
-            previewId: 'preview',
-            uploadUrl: '/admin/images/upload',
+            selectBtnId: "select-btn",
+            fieldId: "img-field",
+            previewId: "preview",
+            uploadUrl: "/admin/images/upload",
         });
 
-        const selectBtn = document.getElementById('select-btn');
+        const selectBtn = document.getElementById("select-btn");
         selectBtn.click();
 
         // Wait for async operations
         await new Promise((resolve) => setTimeout(resolve, 10));
 
-        expect(global.alert).toHaveBeenCalledWith('Upload failed: Upload failed');
+        expect(global.alert).toHaveBeenCalledWith(
+            "Upload failed: Upload failed",
+        );
         expect(selectBtn.disabled).toBe(false); // Should re-enable button
 
         // Restore
@@ -152,7 +166,7 @@ describe('person-image error branches', () => {
         delete global.alert;
     });
 
-    test('initPersonImageSelector - upload success but no image in response', async () => {
+    test("initPersonImageSelector - upload success but no image in response", async () => {
         document.body.innerHTML = `
             <input id="img-field" value="" />
             <div id="preview"><img id="pvimg" src="" /></div>
@@ -163,7 +177,7 @@ describe('person-image error branches', () => {
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 text: () => Promise.resolve(JSON.stringify({ success: true })),
-            })
+            }),
         );
 
         global.alert = jest.fn();
@@ -171,11 +185,15 @@ describe('person-image error branches', () => {
         const origCreate = document.createElement.bind(document);
         document.createElement = function (tag) {
             const el = origCreate(tag);
-            if (tag === 'input') {
+            if (tag === "input") {
                 el.click = function () {
-                    const fileBlob = new Blob(['data'], { type: 'image/png' });
-                    Object.defineProperty(el, 'files', {
-                        value: [new File([fileBlob], 'test.png', { type: 'image/png' })],
+                    const fileBlob = new Blob(["data"], { type: "image/png" });
+                    Object.defineProperty(el, "files", {
+                        value: [
+                            new File([fileBlob], "test.png", {
+                                type: "image/png",
+                            }),
+                        ],
                         configurable: true,
                     });
                     setTimeout(() => el.onchange && el.onchange());
@@ -185,22 +203,22 @@ describe('person-image error branches', () => {
         };
 
         personImage.initPersonImageSelector({
-            selectBtnId: 'select-btn',
-            fieldId: 'img-field',
-            previewId: 'preview',
+            selectBtnId: "select-btn",
+            fieldId: "img-field",
+            previewId: "preview",
         });
 
-        document.getElementById('select-btn').click();
+        document.getElementById("select-btn").click();
 
         await new Promise((resolve) => setTimeout(resolve, 10));
 
-        expect(global.alert).toHaveBeenCalledWith('Upload failed');
+        expect(global.alert).toHaveBeenCalledWith("Upload failed");
 
         document.createElement = origCreate;
         delete global.alert;
     });
 
-    test('initPersonImageSelector - no files selected', async () => {
+    test("initPersonImageSelector - no files selected", async () => {
         document.body.innerHTML = `
             <input id="img-field" value="" />
             <div id="preview"><img id="pvimg" src="" /></div>
@@ -210,10 +228,10 @@ describe('person-image error branches', () => {
         const origCreate = document.createElement.bind(document);
         document.createElement = function (tag) {
             const el = origCreate(tag);
-            if (tag === 'input') {
+            if (tag === "input") {
                 el.click = function () {
                     // No files selected - empty FileList
-                    Object.defineProperty(el, 'files', {
+                    Object.defineProperty(el, "files", {
                         value: [],
                         configurable: true,
                     });
@@ -224,12 +242,12 @@ describe('person-image error branches', () => {
         };
 
         personImage.initPersonImageSelector({
-            selectBtnId: 'select-btn',
-            fieldId: 'img-field',
-            previewId: 'preview',
+            selectBtnId: "select-btn",
+            fieldId: "img-field",
+            previewId: "preview",
         });
 
-        const selectBtn = document.getElementById('select-btn');
+        const selectBtn = document.getElementById("select-btn");
         selectBtn.click();
 
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -240,29 +258,30 @@ describe('person-image error branches', () => {
         document.createElement = origCreate;
     });
 
-    test('setPreviewFromId - no imageId provided', () => {
-        document.body.innerHTML = '<div id="preview"><img id="pimg" src=""/></div>';
-        const img = document.getElementById('pimg');
+    test("setPreviewFromId - no imageId provided", () => {
+        document.body.innerHTML =
+            '<div id="preview"><img id="pimg" src=""/></div>';
+        const img = document.getElementById("pimg");
         const originalSrc = img.src;
 
         // Should return early with no imageId
         personImage.setPreviewFromId(null, img);
         personImage.setPreviewFromId(0, img);
-        personImage.setPreviewFromId('', img);
+        personImage.setPreviewFromId("", img);
 
         // Image src should not change
         expect(img.src).toBe(originalSrc);
     });
 
-    test('setPreviewFromId - missing parent element', () => {
+    test("setPreviewFromId - missing parent element", () => {
         // Create img element without parent
-        const img = document.createElement('img');
+        const img = document.createElement("img");
 
         // Should not throw when parentElement is null
         expect(() => {
             personImage.setPreviewFromId(5, img);
         }).not.toThrow();
 
-        expect(img.src).toContain('/images/serve/5');
+        expect(img.src).toContain("/images/serve/5");
     });
 });

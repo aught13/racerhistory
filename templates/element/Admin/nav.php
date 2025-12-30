@@ -79,8 +79,8 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'index']) ?>">
-                        Team Season Rosters</a>
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Blog', 'action' => 'index']) ?>">
+                        Blog</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"

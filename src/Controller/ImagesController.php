@@ -33,19 +33,20 @@ class ImagesController extends AppController
      */
     public function serve(int $id): Response
     {
-        $this->request->allowMethod(['get', 'head']);
+        $request = $this->getRequest();
+        $request->allowMethod(['get', 'head']);
         $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
         if (!$image) {
             throw new RecordNotFoundException('Image not found');
         }
-        $variant = (string)$this->request->getQuery('variant');
+        $variant = (string)$request->getQuery('variant');
         [$path, $mime] = $this->resolvePath($image, $variant);
 
         if (!is_file($path)) {
             return $this->placeholderTransparentPng();
         }
 
-        $hasVersion = (string)$this->request->getQuery('v') !== '';
+        $hasVersion = (string)$request->getQuery('v') !== '';
         $cacheControl = $hasVersion
             ? 'public, max-age=31536000, immutable'
             : 'private, max-age=0, must-revalidate';
@@ -62,7 +63,7 @@ class ImagesController extends AppController
 
         $etag = $this->buildEtag((string)($image->hash ?? ''), $variant, []);
 
-        return $this->response
+        return $this->getResponse()
             ->withType($mime)
             ->withHeader('ETag', $etag)
             ->withHeader('Cache-Control', $cacheControl)
@@ -79,7 +80,7 @@ class ImagesController extends AppController
      */
     private function extractTransformParams(): ?array
     {
-        $q = $this->request->getQueryParams();
+        $q = $this->getRequest()->getQueryParams();
         unset($q['variant'], $q['v']);
 
         $w = $q['w'] ?? null;
@@ -152,7 +153,7 @@ class ImagesController extends AppController
         if (is_file($cached)) {
             $body = file_get_contents($cached) ?: '';
             if ($body !== '') {
-                return $this->response
+                return $this->getResponse()
                     ->withType($outMime)
                     ->withHeader('ETag', $etag)
                     ->withHeader('Cache-Control', $cacheControl)
@@ -191,7 +192,7 @@ class ImagesController extends AppController
 
             file_put_contents($cached, $body);
 
-            return $this->response
+            return $this->getResponse()
                 ->withType($outMime)
                 ->withHeader('ETag', $etag)
                 ->withHeader('Cache-Control', $cacheControl)
@@ -203,7 +204,7 @@ class ImagesController extends AppController
                 return $this->placeholderTransparentPng();
             }
 
-            return $this->response
+            return $this->getResponse()
                 ->withType($mime)
                 ->withHeader('ETag', $etag)
                 ->withHeader('Cache-Control', $cacheControl)
@@ -301,7 +302,7 @@ class ImagesController extends AppController
             . 'AQAABQABDQottAAAAABJRU5ErkJggg==';
         $data = base64_decode($b64);
 
-        return $this->response
+        return $this->getResponse()
             ->withType('image/png')
             ->withHeader('Cache-Control', 'public, max-age=60')
             ->withStringBody($data ?: '');

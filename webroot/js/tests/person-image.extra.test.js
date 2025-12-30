@@ -1,34 +1,34 @@
-/* eslint-env jest */
-
 beforeAll(() => {
-    if (typeof HTMLFormElement !== 'undefined') {
+    if (typeof HTMLFormElement !== "undefined") {
         HTMLFormElement.prototype.submit = function () {};
         HTMLFormElement.prototype.requestSubmit = function () {};
     }
 });
 /** @jest-environment jsdom */
-const personImage = require('../person-image.js');
+const personImage = require("../person-image.js");
 
-describe('person-image extra coverage', () => {
+describe("person-image extra coverage", () => {
     beforeEach(() => {
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
         jest.resetAllMocks();
     });
 
-    test('uploadFile invalid JSON throws', async () => {
-        global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve('not json') }));
-        const blob = new Blob(['x'], { type: 'image/png' });
-        await expect(personImage.uploadFile(new File([blob], 'bad.png'))).rejects.toThrow(
-            'Invalid JSON response'
+    test("uploadFile invalid JSON throws", async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({ text: () => Promise.resolve("not json") }),
         );
+        const blob = new Blob(["x"], { type: "image/png" });
+        await expect(
+            personImage.uploadFile(new File([blob], "bad.png")),
+        ).rejects.toThrow("Invalid JSON response");
     });
 
-    test('setPreviewFromId early return with missing element', () => {
+    test("setPreviewFromId early return with missing element", () => {
         // Should not throw
         personImage.setPreviewFromId(10, null);
     });
 
-    test('initPersonImageSelector wires button and updates preview', async () => {
+    test("initPersonImageSelector wires button and updates preview", async () => {
         document.body.innerHTML = `
           <input id="img-field" value="" />
           <div id="preview"><img id="pvimg" src="" /></div>
@@ -41,23 +41,27 @@ describe('person-image extra coverage', () => {
                     Promise.resolve(
                         JSON.stringify({
                             success: true,
-                            image: { id: 77, url: '/images/serve/77' },
-                        })
+                            image: { id: 77, url: "/images/serve/77" },
+                        }),
                     ),
-            })
+            }),
         );
         // Monkey patch window.File / Blob if needed (jsdom provides basic)
-        const fileBlob = new Blob(['data'], { type: 'image/png' });
+        const fileBlob = new Blob(["data"], { type: "image/png" });
         // Simulate selection: intercept created input
         const clickSpies = [];
         const origCreate = document.createElement.bind(document);
         document.createElement = function (tag) {
             const el = origCreate(tag);
-            if (tag === 'input') {
+            if (tag === "input") {
                 // override click to directly trigger onchange with a fake file list
                 el.click = function () {
-                    Object.defineProperty(el, 'files', {
-                        value: [new File([fileBlob], 'a.png', { type: 'image/png' })],
+                    Object.defineProperty(el, "files", {
+                        value: [
+                            new File([fileBlob], "a.png", {
+                                type: "image/png",
+                            }),
+                        ],
                         configurable: true,
                     });
                     setTimeout(() => el.onchange && el.onchange());
@@ -67,17 +71,17 @@ describe('person-image extra coverage', () => {
             return el;
         };
         personImage.initPersonImageSelector({
-            selectBtnId: 'select-btn',
-            fieldId: 'img-field',
-            previewId: 'preview',
-            uploadUrl: '/admin/images/upload',
+            selectBtnId: "select-btn",
+            fieldId: "img-field",
+            previewId: "preview",
+            uploadUrl: "/admin/images/upload",
         });
-        document.getElementById('select-btn').click();
+        document.getElementById("select-btn").click();
         await new Promise((r) => setTimeout(r, 0));
-        const field = document.getElementById('img-field');
-        expect(field.value).toBe('77');
-        const img = document.getElementById('pvimg');
-        expect(img.src).toContain('/images/serve/77');
+        const field = document.getElementById("img-field");
+        expect(field.value).toBe("77");
+        const img = document.getElementById("pvimg");
+        expect(img.src).toContain("/images/serve/77");
         document.createElement = origCreate; // restore
     });
 });

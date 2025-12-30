@@ -1,6 +1,6 @@
-const SportAwareGameForm = require('../sport-aware-game-form');
+const SportAwareGameForm = require("../sport-aware-game-form");
 
-describe('SportAwareGameForm branch coverage', () => {
+describe("SportAwareGameForm branch coverage", () => {
     let container;
 
     beforeEach(() => {
@@ -11,47 +11,49 @@ describe('SportAwareGameForm branch coverage', () => {
             <input type="hidden" id="game-id-hidden" value="">
             <input type="text" name="period_1_mur" value="">
         `;
-        container = document.getElementById('sport-specific-section');
+        container = document.getElementById("sport-specific-section");
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
     });
 
-    test('renders fallback when no eavTemplate', async () => {
-        const sel = document.getElementById('team-season-select');
-        sel.value = '123';
+    test("renders fallback when no eavTemplate", async () => {
+        const sel = document.getElementById("team-season-select");
+        sel.value = "123";
 
         // mock fetch to return success=false
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
-            json: async () => ({ success: false, error: 'nope' }),
+            json: async () => ({ success: false, error: "nope" }),
         });
 
         const s = new SportAwareGameForm();
-        await s.updateSportFields('123');
+        await s.updateSportFields("123");
 
         expect(container.innerHTML).toMatch(/Game Details/);
         // sport indicator should show warning message text
-        expect(document.getElementById('current-sport').textContent).toMatch(/nope|Failed/);
+        expect(document.getElementById("current-sport").textContent).toMatch(
+            /nope|Failed/,
+        );
     });
 
-    test('renders number field with min/max and text field fallback', () => {
+    test("renders number field with min/max and text field fallback", () => {
         const s = new SportAwareGameForm();
         const numField = {
-            field_type: 'number',
-            field_name: 'numtest',
-            display_label: 'Number Test',
+            field_type: "number",
+            field_name: "numtest",
+            display_label: "Number Test",
             min: 0,
             max: 10,
             default_value: 5,
         };
         const textField = {
-            field_type: 'text',
-            field_name: 'texttest',
-            display_label: 'Text Test',
-            default_value: 'abc',
+            field_type: "text",
+            field_name: "texttest",
+            display_label: "Text Test",
+            default_value: "abc",
         };
 
         const htmlNum = s.renderField(numField);
@@ -64,38 +66,42 @@ describe('SportAwareGameForm branch coverage', () => {
         expect(htmlText).toMatch(/value="abc"/);
     });
 
-    test('updateSportFields handles non-ok fetch (throws and shows fallback)', async () => {
+    test("updateSportFields handles non-ok fetch (throws and shows fallback)", async () => {
         // simulate network error / non-ok
         global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
 
         const s = new SportAwareGameForm();
-        await s.updateSportFields('456');
+        await s.updateSportFields("456");
 
         expect(container.innerHTML).toMatch(/Game Details/);
-        expect(document.getElementById('current-sport').textContent).toMatch(/Failed/);
+        expect(document.getElementById("current-sport").textContent).toMatch(
+            /Failed/,
+        );
     });
 
-    test('maps period values to legacy inputs when data.values present', async () => {
+    test("maps period values to legacy inputs when data.values present", async () => {
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
                 success: true,
-                sportName: 'MockSport',
-                eavTemplate: { a: { field_name: 'x' } },
-                values: { period_1_team: '12' },
+                sportName: "MockSport",
+                eavTemplate: { a: { field_name: "x" } },
+                values: { period_1_team: "12" },
             }),
         });
 
-        const periodInput = document.createElement('input');
-        periodInput.name = 'period_1_mur';
+        const periodInput = document.createElement("input");
+        periodInput.name = "period_1_mur";
         document.body.appendChild(periodInput);
 
         const s = new SportAwareGameForm();
-        await s.updateSportFields('789');
+        await s.updateSportFields("789");
 
-        const matches = Array.from(document.getElementsByName('period_1_mur'));
-        const anyMatch = matches.some((el) => el.value === '12');
+        const matches = Array.from(document.getElementsByName("period_1_mur"));
+        const anyMatch = matches.some((el) => el.value === "12");
         expect(anyMatch).toBe(true);
-        expect(document.getElementById('current-sport').textContent).toBe('MockSport');
+        expect(document.getElementById("current-sport").textContent).toBe(
+            "MockSport",
+        );
     });
 });

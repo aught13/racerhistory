@@ -1,7 +1,5 @@
-/* eslint-env jest */
-
 beforeAll(() => {
-    if (typeof HTMLFormElement !== 'undefined') {
+    if (typeof HTMLFormElement !== "undefined") {
         HTMLFormElement.prototype.submit = function () {};
         HTMLFormElement.prototype.requestSubmit = function () {};
     }
@@ -9,12 +7,12 @@ beforeAll(() => {
 /** @jest-environment jsdom */
 // admin.modal.edge.test.js - Tests for admin.js confirm-delete/modal with missing/malformed elements
 
-describe('admin.js confirm-delete modal edge cases', () => {
+describe("admin.js confirm-delete modal edge cases", () => {
     let exports;
     beforeEach(() => {
         jest.resetModules();
-        document.body.innerHTML = '';
-        if (typeof window !== 'undefined') {
+        document.body.innerHTML = "";
+        if (typeof window !== "undefined") {
             delete window.showConfirmDelete;
             delete window.AdminToast;
         }
@@ -23,31 +21,36 @@ describe('admin.js confirm-delete modal edge cases', () => {
                 getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
             },
         };
-        exports = require('../admin.js');
+        exports = require("../admin.js");
     });
 
     afterEach(() => {
         // Clean up DOM and globals
-        document.body.innerHTML = '';
-        if (typeof window !== 'undefined') {
+        document.body.innerHTML = "";
+        if (typeof window !== "undefined") {
             delete window.showConfirmDelete;
             delete window.AdminToast;
         }
         global.bootstrap = undefined;
         // Restore HTMLFormElement methods if patched
-        if (typeof HTMLFormElement !== 'undefined') {
+        if (typeof HTMLFormElement !== "undefined") {
             HTMLFormElement.prototype.submit = function () {};
             HTMLFormElement.prototype.requestSubmit = function () {};
         }
     });
 
-    test('showConfirmDelete does nothing if modal missing', () => {
+    test("showConfirmDelete does nothing if modal missing", () => {
         expect(() =>
-            exports.showConfirmDelete({ deleteUrl: '/x', ids: 1, idsName: 'ids[]', formId: 'f' })
+            exports.showConfirmDelete({
+                deleteUrl: "/x",
+                ids: 1,
+                idsName: "ids[]",
+                formId: "f",
+            }),
         ).not.toThrow();
     });
 
-    test('showConfirmDelete does nothing if delete button missing', () => {
+    test("showConfirmDelete does nothing if delete button missing", () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -55,11 +58,16 @@ describe('admin.js confirm-delete modal edge cases', () => {
           </div>
         `;
         expect(() =>
-            exports.showConfirmDelete({ deleteUrl: '/x', ids: 1, idsName: 'ids[]', formId: 'f' })
+            exports.showConfirmDelete({
+                deleteUrl: "/x",
+                ids: 1,
+                idsName: "ids[]",
+                formId: "f",
+            }),
         ).not.toThrow();
     });
 
-    test('showConfirmDelete handles missing associated list gracefully', () => {
+    test("showConfirmDelete handles missing associated list gracefully", () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <form id="confirm-delete-modal-hidden-form"></form>
@@ -67,11 +75,16 @@ describe('admin.js confirm-delete modal edge cases', () => {
           </div>
         `;
         expect(() =>
-            exports.showConfirmDelete({ deleteUrl: '/x', ids: 1, idsName: 'ids[]', formId: 'f' })
+            exports.showConfirmDelete({
+                deleteUrl: "/x",
+                ids: 1,
+                idsName: "ids[]",
+                formId: "f",
+            }),
         ).not.toThrow();
     });
 
-    test('showConfirmDelete handles missing hidden form gracefully', () => {
+    test("showConfirmDelete handles missing hidden form gracefully", () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -79,7 +92,12 @@ describe('admin.js confirm-delete modal edge cases', () => {
           </div>
         `;
         expect(() =>
-            exports.showConfirmDelete({ deleteUrl: '/x', ids: 1, idsName: 'ids[]', formId: 'f' })
+            exports.showConfirmDelete({
+                deleteUrl: "/x",
+                ids: 1,
+                idsName: "ids[]",
+                formId: "f",
+            }),
         ).not.toThrow();
     });
 });

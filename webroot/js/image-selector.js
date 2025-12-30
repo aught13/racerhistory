@@ -19,8 +19,15 @@ class ImageSelector {
         this.selectedImageId = null;
         this.cropper = null;
         this.loadedImages = [];
-        // Default aspect ratio is 1 (square), can be overridden via config.aspectRatio
-        this.aspectRatio = this.config.aspectRatio ?? 1;
+        this.selectedFile = null;
+        this.tagForm = null;
+        this.skipCropToggle = null;
+        // Default aspect ratio is 1 (square), can be overridden via config.aspectRatio; null = free
+        this.aspectRatio =
+            typeof this.config.aspectRatio === "number" &&
+            isFinite(this.config.aspectRatio)
+                ? this.config.aspectRatio
+                : null;
 
         this.initElements();
         this.bindEvents();
@@ -47,6 +54,10 @@ class ImageSelector {
         this.noPreview = document.getElementById(`${this.modalId}-no-preview`);
         this.cropControls = document.getElementById(
             `${this.modalId}-crop-controls`,
+        );
+        this.tagForm = document.getElementById(`${this.modalId}-tag-form`);
+        this.skipCropToggle = document.getElementById(
+            `${this.modalId}-skip-crop`,
         );
 
         // Buttons
@@ -249,6 +260,11 @@ class ImageSelector {
         const file = event.target.files?.[0];
         if (!file) return;
 
+        this.selectedFile = file;
+        if (this.skipCropToggle) {
+            this.skipCropToggle.checked = false;
+        }
+
         // Destroy existing cropper
         if (this.cropper) {
             this.cropper.destroy();
@@ -284,7 +300,7 @@ class ImageSelector {
     }
 
     async onUploadImage() {
-        if (!this.cropper) {
+        if (!this.selectedFile) {
             alert("Please select an image first");
             return;
         }
@@ -293,42 +309,60 @@ class ImageSelector {
         this.uploadBtn.textContent = "Uploading...";
 
         try {
-            // Calculate canvas dimensions based on aspect ratio
-            let canvasWidth = 800;
-            let canvasHeight = 800;
-            if (
-                this.aspectRatio &&
-                this.aspectRatio !== 0 &&
-                isFinite(this.aspectRatio)
-            ) {
-                // If aspect ratio is set, use it to determine dimensions
-                if (this.aspectRatio > 1) {
-                    // Wider than tall
-                    canvasHeight = Math.round(canvasWidth / this.aspectRatio);
-                } else {
-                    // Taller than wide
-                    canvasWidth = Math.round(canvasHeight * this.aspectRatio);
+            const skipCrop = this.skipCropToggle?.checked;
+            let uploadBlob = null;
+            const uploadName = this.selectedFile.name || "upload.jpg";
+
+            if (!skipCrop && this.cropper) {
+                // Calculate canvas dimensions based on aspect ratio when configured
+                let canvasWidth = 800;
+                let canvasHeight = 800;
+                const cropOptions = {};
+                if (
+                    this.aspectRatio &&
+                    this.aspectRatio !== 0 &&
+                    isFinite(this.aspectRatio)
+                ) {
+                    if (this.aspectRatio > 1) {
+                        canvasHeight = Math.round(
+                            canvasWidth / this.aspectRatio,
+                        );
+                    } else {
+                        canvasWidth = Math.round(
+                            canvasHeight * this.aspectRatio,
+                        );
+                    }
+                    cropOptions.width = canvasWidth;
+                    cropOptions.height = canvasHeight;
                 }
+
+                const canvas = this.cropper.getCroppedCanvas(
+                    Object.keys(cropOptions).length ? cropOptions : undefined,
+                );
+
+                uploadBlob = await new Promise((resolve) =>
+                    canvas.toBlob(resolve, "image/jpeg", 0.9),
+                );
+            } else {
+                uploadBlob = this.selectedFile;
             }
-
-            // Get cropped canvas
-            const canvas = this.cropper.getCroppedCanvas({
-                width: canvasWidth,
-                height: canvasHeight,
-                imageSmoothingEnabled: true,
-                imageSmoothingQuality: "high",
-            });
-
-            // Convert to blob
-            const blob = await new Promise((resolve) =>
-                canvas.toBlob(resolve, "image/jpeg", 0.9),
-            );
 
             // Prepare form data
             const formData = new FormData();
-            formData.append("upload", blob, "cropped-image.jpg");
+            formData.append("upload", uploadBlob, uploadName);
+
+            if (this.tagForm) {
+                const tagData = new FormData(this.tagForm);
+                for (const [name, value] of tagData.entries()) {
+                    formData.append(name, value);
+                }
+            }
 
             // Add context if provided (for auto-tagging)
+            if (!uploadBlob) {
+                throw new Error("Unable to prepare image");
+            }
+
             if (this.config.uploadContext) {
                 formData.append(
                     "context",
@@ -393,4 +427,3 @@ document.addEventListener("DOMContentLoaded", function () {
 if (typeof module !== "undefined" && module.exports) {
     module.exports = ImageSelector;
 }
-

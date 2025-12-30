@@ -5,7 +5,7 @@ namespace App\Controller\Admin;
 
 use App\Service\ImageProcessor;
 use App\Service\ImageStorageService;
-use App\Service\ImageTaggingService;
+use App\Service\TaggingService;
 use Cake\Core\Configure;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
@@ -47,7 +47,7 @@ class ImagesController extends AppController
      */
     public function upload(): Response
     {
-        $this->request->allowMethod(['post']);
+        $this->getRequest()->allowMethod(['post']);
         if (!$this->isAuthenticated()) {
             return $this->json(['success' => false, 'error' => 'Unauthenticated']);
         }
@@ -61,11 +61,11 @@ class ImagesController extends AppController
                 return $this->json(['success' => false, 'error' => 'No file uploaded']);
             }
 
-            $tagging = new ImageTaggingService();
-            $tags = $tagging->parseTagsFromRequest($this->request);
+            $tagging = TaggingService::forImages();
+            $tags = $tagging->parseTagsFromRequest($this->getRequest());
             $manipulations = $this->collectManipulations();
 
-            $storage = new ImageStorageService();
+            $storage = new ImageStorageService(null, $tagging);
             $result = $storage->upload($file, $tags, $manipulations);
 
             if (!empty($result['success'])) {
@@ -96,14 +96,15 @@ class ImagesController extends AppController
      */
     public function serve(int $id): Response
     {
-        $this->request->allowMethod(['get', 'head']);
-        $variant = (string)$this->request->getQuery('variant');
+        $request = $this->getRequest();
+        $request->allowMethod(['get', 'head']);
+        $variant = (string)$request->getQuery('variant');
         // Support legacy query-based sizing by mapping to a prebuilt variant.
         // If callers pass w/h/fit without an explicit variant, serve the "thumb".
         if ($variant === '') {
-            $w = $this->request->getQuery('w');
-            $h = $this->request->getQuery('h');
-            $fit = $this->request->getQuery('fit');
+            $w = $request->getQuery('w');
+            $h = $request->getQuery('h');
+            $fit = $request->getQuery('fit');
             if ($w !== null || $h !== null || $fit !== null) {
                 $variant = 'thumb';
             }
@@ -129,7 +130,7 @@ class ImagesController extends AppController
         }
 
         // Add cache-busting headers
-        $response = $this->response
+        $response = $this->getResponse()
             ->withType($mime)
             ->withStringBody($contents)
             ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
@@ -144,7 +145,7 @@ class ImagesController extends AppController
      */
     public function index(): void
     {
-        $this->request->allowMethod(['get']);
+        $this->getRequest()->allowMethod(['get']);
         $images = $this->fetchTable('Images')->find()->orderByDesc('id')->limit(100)->all();
         $this->set(compact('images'));
         // Let Cake render the template normally (no explicit return of Response which caused blank output)
@@ -156,13 +157,14 @@ class ImagesController extends AppController
      */
     public function browse(): Response
     {
-        $this->request->allowMethod(['get']);
+        $request = $this->getRequest();
+        $request->allowMethod(['get']);
         if (!$this->isAuthenticated()) {
             return $this->json(['success' => false, 'error' => 'Unauthenticated']);
         }
 
-        $tag = $this->request->getQuery('tag');
-        $limit = min((int)($this->request->getQuery('limit') ?? 50), 100);
+        $tag = $request->getQuery('tag');
+        $limit = min((int)($request->getQuery('limit') ?? 50), 100);
 
         $images = $this->fetchTable('Images');
         $query = $images->find();
@@ -199,7 +201,7 @@ class ImagesController extends AppController
      */
     public function uploadForm(): void
     {
-        $this->request->allowMethod(['get']);
+        $this->getRequest()->allowMethod(['get']);
         // Template: templates/Admin/Images/upload.php
     }
 
@@ -208,7 +210,7 @@ class ImagesController extends AppController
      */
     public function bulkUploadForm(): void
     {
-        $this->request->allowMethod(['get']);
+        $this->getRequest()->allowMethod(['get']);
 
         // Load entity data using service layer
         $teamSeasonService = new \App\Service\TeamSeasonService();
@@ -262,7 +264,8 @@ class ImagesController extends AppController
      */
     public function bulkUpload(): Response
     {
-        $this->request->allowMethod(['post']);
+        $request = $this->getRequest();
+        $request->allowMethod(['post']);
 
         // Prevent stray output from corrupting JSON
         if (ob_get_length()) {
@@ -274,16 +277,16 @@ class ImagesController extends AppController
         }
 
         try {
-            $files = $this->request->getData('uploads') ?? [];
+            $files = $request->getData('uploads') ?? [];
             if (!is_array($files) || $files === []) {
                 return $this->json(['success' => false, 'error' => 'No files uploaded']);
             }
 
-            $tagsInput = $this->request->getData('tags') ?? [];
-            $contextInput = $this->request->getData('context') ?? [];
+            $tagsInput = $request->getData('tags') ?? [];
+            $contextInput = $request->getData('context') ?? [];
 
             // Collect common entity tags that will apply to all files
-            $commonEntityTags = $this->buildCommonEntityTags($this->request->getData());
+            $commonEntityTags = $this->buildCommonEntityTags((array)$request->getData());
 
             $storage = new ImageStorageService();
 
@@ -340,7 +343,7 @@ class ImagesController extends AppController
     }
 
     /**
-     * Build entity-based tags from form data (mirrors ImageTaggingService::tagsForContext logic).
+     * Build entity-based tags from form data (mirrors TaggingService::applyFromData logic).
      *
      * @param array<string,mixed> $data
      * @return array<int,array<string,string>>
@@ -408,35 +411,42 @@ class ImagesController extends AppController
                 continue;
             }
 
-            if (!empty($data[$field])) {
-                $id = (int)$data[$field];
-                if ($id > 0) {
-                    $slug = $meta['prefix'] . $id;
+            if (empty($data[$field])) {
+                continue;
+            }
 
-                    // Use service layer for entities with dedicated services
-                    $display = '';
-                    if (isset($meta['service'])) {
-                        if ($meta['service'] === 'person') {
-                            $display = $personService->getDisplayLabel($id);
-                        } elseif ($meta['service'] === 'teamseason') {
-                            $display = $teamSeasonService->getSportDisplayLabel($id);
-                        } elseif ($meta['service'] === 'roster') {
-                            $rosterData = $rosterService->getRosterDisplayData($id);
-                            $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
-                        }
-                    } else {
-                        // Fallback to direct table lookup
-                        $table = TableRegistry::getTableLocator()->get($meta['table']);
-                        $row = $table->find()->select()->where(['id' => $id])->first();
-                        $display = $row ? (string)$meta['label']($row) : '';
-                    }
+            $values = is_array($data[$field]) ? $data[$field] : [$data[$field]];
+            foreach ($values as $value) {
+                $id = (int)$value;
+                if ($id <= 0) {
+                    continue;
+                }
 
-                    if ($display) {
-                        $tagsToApply[] = [
-                            'slug' => $slug,
-                            'name' => $display,
-                        ];
+                $slug = $meta['prefix'] . $id;
+
+                // Use service layer for entities with dedicated services
+                $display = '';
+                if (isset($meta['service'])) {
+                    if ($meta['service'] === 'person') {
+                        $display = $personService->getDisplayLabel($id);
+                    } elseif ($meta['service'] === 'teamseason') {
+                        $display = $teamSeasonService->getSportDisplayLabel($id);
+                    } elseif ($meta['service'] === 'roster') {
+                        $rosterData = $rosterService->getRosterDisplayData($id);
+                        $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
                     }
+                } else {
+                    // Fallback to direct table lookup
+                    $table = TableRegistry::getTableLocator()->get($meta['table']);
+                    $row = $table->find()->select()->where(['id' => $id])->first();
+                    $display = $row ? (string)$meta['label']($row) : '';
+                }
+
+                if ($display) {
+                    $tagsToApply[] = [
+                        'slug' => $slug,
+                        'name' => $display,
+                    ];
                 }
             }
         }
@@ -467,8 +477,9 @@ class ImagesController extends AppController
         $image = $images->get($id, contain: ['ImageTags']);
 
         // Handle basic image updates (original_name, status) only
-        if ($this->request->is(['post', 'put', 'patch'])) {
-            $data = (array)$this->request->getData();
+        $request = $this->getRequest();
+        if ($request->is(['post', 'put', 'patch'])) {
+            $data = (array)$request->getData();
             $patchData = [];
             if (array_key_exists('original_name', $data)) {
                 $patchData['original_name'] = (string)$data['original_name'];
@@ -500,7 +511,8 @@ class ImagesController extends AppController
      */
     public function tags(int $id): ?Response
     {
-        $this->request->allowMethod(['get', 'post']);
+        $request = $this->getRequest();
+        $request->allowMethod(['get', 'post']);
 
         $images = $this->fetchTable('Images');
         $image = $images->get($id, contain: ['ImageTags']);
@@ -545,9 +557,9 @@ class ImagesController extends AppController
         $sportService = new \App\Service\SportService();
         $sports = $sportService->getSportsForSelect();
 
-        if ($this->request->is(['post'])) {
-            $data = $this->request->getData();
-            $tagging = new ImageTaggingService();
+        if ($request->is(['post'])) {
+            $data = $request->getData();
+            $tagging = TaggingService::forImages();
             $tagging->applyFromData($id, $data);
             $this->Flash->success('Tags updated');
 
@@ -637,7 +649,7 @@ class ImagesController extends AppController
      */
     public function delete(int $id): Response
     {
-        $this->request->allowMethod(['post', 'delete']);
+        $this->getRequest()->allowMethod(['post', 'delete']);
 
         $images = $this->fetchTable('Images');
         $image = $images->get($id);
@@ -645,7 +657,7 @@ class ImagesController extends AppController
         // Delete associations and files
         $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $id]);
         $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $id]);
-        (new ImageTaggingService())->pruneOrphanedTags();
+        TaggingService::forImages()->pruneOrphanedTags();
 
         // Delete physical files
         $this->deleteImageFiles($image);
@@ -665,9 +677,10 @@ class ImagesController extends AppController
      */
     public function bulkDelete(): Response
     {
-        $this->request->allowMethod(['post']);
+        $request = $this->getRequest();
+        $request->allowMethod(['post']);
 
-        $ids = $this->request->getData('ids') ?? [];
+        $ids = $request->getData('ids') ?? [];
         if (!is_array($ids)) {
             $ids = [];
         }
@@ -692,7 +705,7 @@ class ImagesController extends AppController
             }
         }
 
-        (new ImageTaggingService())->pruneOrphanedTags();
+        TaggingService::forImages()->pruneOrphanedTags();
 
         $this->Flash->success("Deleted {$deleted} image(s)");
 
@@ -713,6 +726,8 @@ class ImagesController extends AppController
         $image = $images->get($id);
         /** @var \App\Model\Entity\Image $image */
 
+        $request = $this->getRequest();
+
         \Cake\Log\Log::debug("Manipulate action called for image ID: {$id}");
         \Cake\Log\Log::debug('Image entity: ' . json_encode($image->toArray()));
         $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
@@ -720,8 +735,8 @@ class ImagesController extends AppController
 
         \Cake\Log\Log::debug("Original path: {$originalPath}");
 
-        if ($this->request->is('post')) {
-            $mode = (string)($this->request->getData('mode') ?? 'apply');
+        if ($request->is('post')) {
+            $mode = (string)($request->getData('mode') ?? 'apply');
 
             // Apply manipulations
             // Verify file existence
@@ -741,7 +756,7 @@ class ImagesController extends AppController
             }
 
             // Check for custom thumbnail crop
-            $thumbCrop = $this->request->getData('thumb_crop');
+            $thumbCrop = $request->getData('thumb_crop');
             $hasThumbCrop = is_array($thumbCrop)
                 && !empty($thumbCrop['width'])
                 && !empty($thumbCrop['height']);
@@ -897,10 +912,12 @@ class ImagesController extends AppController
         $image = $images->get($id);
         /** @var \App\Model\Entity\Image $image */
 
+        $request = $this->getRequest();
+
         $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
         $originalPath = $baseDir . $image->storage_path;
 
-        if ($this->request->is('post')) {
+        if ($request->is('post')) {
             // Verify file exists
             if (!is_file($originalPath)) {
                 \Cake\Log\Log::error("Image file not found: {$originalPath}");
@@ -910,7 +927,7 @@ class ImagesController extends AppController
             }
 
             // Get crop coordinates
-            $crop = $this->request->getData('crop');
+            $crop = $request->getData('crop');
             if (!is_array($crop) || empty($crop['width']) || empty($crop['height'])) {
                 $this->Flash->warning('No valid crop area specified');
 
@@ -1037,8 +1054,9 @@ class ImagesController extends AppController
      */
     public function rosters(): Response
     {
-        $this->request->allowMethod(['get']);
-        $personId = (int)$this->request->getQuery('person_id');
+        $request = $this->getRequest();
+        $request->allowMethod(['get']);
+        $personId = (int)$request->getQuery('person_id');
         if ($personId <= 0) {
             return $this->json(['success' => true, 'rosters' => []]);
         }
@@ -1082,8 +1100,9 @@ class ImagesController extends AppController
      */
     public function persons(): Response
     {
-        $this->request->allowMethod(['get']);
-        $q = trim((string)$this->request->getQuery('q'));
+        $request = $this->getRequest();
+        $request->allowMethod(['get']);
+        $q = trim((string)$request->getQuery('q'));
         if ($q === '') {
             return $this->json(['success' => true, 'persons' => []]);
         }
@@ -1116,7 +1135,7 @@ class ImagesController extends AppController
                 ->select(['TeamSeasonRosters.id', 'TeamSeasonRosters.team_season_id'])
                 ->where(['TeamSeasonRosters.person_id' => $r->id])
                 ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-                ->order(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
+                ->orderBy(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
                 ->limit(1)
                 ->first();
 
@@ -1189,12 +1208,13 @@ class ImagesController extends AppController
      */
     private function maybeRecordUsage(int $imageId): void
     {
+        $request = $this->getRequest();
         [$model, $foreign, $field] = [
-            $this->request->getData('model') ?? $this->request->getQuery('model'),
-            $this->request->getData('foreign_key') ?? $this->request->getQuery('foreign_key'),
-            $this->request->getData('field') ?? $this->request->getQuery('field'),
+            $request->getData('model') ?? $request->getQuery('model'),
+            $request->getData('foreign_key') ?? $request->getQuery('foreign_key'),
+            $request->getData('field') ?? $request->getQuery('field'),
         ];
-        $context = $this->request->getData('context') ?? $this->request->getQuery('context');
+        $context = $request->getData('context') ?? $request->getQuery('context');
         if (!$model || !$foreign || !$field) {
             return;
         }
@@ -1288,10 +1308,12 @@ class ImagesController extends AppController
         $tags = [];
 
         $rawTags = null;
-        if (array_key_exists($index, $tagsInput)) {
-            $rawTags = $tagsInput[$index];
-        } elseif (array_key_exists((int)$index, $tagsInput)) {
-            $rawTags = $tagsInput[(int)$index];
+        if (is_array($tagsInput)) {
+            if (array_key_exists($index, $tagsInput)) {
+                $rawTags = $tagsInput[$index];
+            } elseif (array_key_exists((int)$index, $tagsInput)) {
+                $rawTags = $tagsInput[(int)$index];
+            }
         } elseif (is_string($tagsInput)) {
             $rawTags = $tagsInput;
         }
@@ -1303,10 +1325,12 @@ class ImagesController extends AppController
         }
 
         $contextValue = null;
-        if (array_key_exists($index, $contextInput)) {
-            $contextValue = $contextInput[$index];
-        } elseif (array_key_exists((int)$index, $contextInput)) {
-            $contextValue = $contextInput[(int)$index];
+        if (is_array($contextInput)) {
+            if (array_key_exists($index, $contextInput)) {
+                $contextValue = $contextInput[$index];
+            } elseif (array_key_exists((int)$index, $contextInput)) {
+                $contextValue = $contextInput[(int)$index];
+            }
         } elseif (is_string($contextInput)) {
             $contextValue = $contextInput;
         }
@@ -1331,7 +1355,8 @@ class ImagesController extends AppController
      */
     private function extractUploaded()
     {
-        $file = $this->request->getData('upload') ?? $this->request->getData('file');
+        $request = $this->getRequest();
+        $file = $request->getData('upload') ?? $request->getData('file');
         if (is_array($file) && isset($file['tmp_name'])) {
             $file = new \Laminas\Diactoros\UploadedFile(
                 $file['tmp_name'],
@@ -1352,8 +1377,10 @@ class ImagesController extends AppController
     {
         $manipulations = [];
 
+        $request = $this->getRequest();
+
         // Crop coordinates
-        $crop = $this->request->getData('crop');
+        $crop = $request->getData('crop');
         if (is_array($crop) && isset($crop['x'], $crop['y'], $crop['width'], $crop['height'])) {
             $manipulations['crop'] = [
                 'x' => (int)$crop['x'],
@@ -1364,7 +1391,7 @@ class ImagesController extends AppController
         }
 
         // Rotation angle (allow negatives for straightening)
-        $rotate = $this->request->getData('rotate');
+        $rotate = $request->getData('rotate');
         if ($rotate !== null && $rotate !== '') {
             $angle = (int)$rotate;
             // Accept a reasonable range including negatives; server will normalize
@@ -1374,7 +1401,7 @@ class ImagesController extends AppController
         }
 
         // Brightness adjustment
-        $brightness = $this->request->getData('brightness');
+        $brightness = $request->getData('brightness');
         if ($brightness !== null && $brightness !== '') {
             $value = (int)$brightness;
             if ($value >= -100 && $value <= 100) {
@@ -1383,7 +1410,7 @@ class ImagesController extends AppController
         }
 
         // Contrast adjustment
-        $contrast = $this->request->getData('contrast');
+        $contrast = $request->getData('contrast');
         if ($contrast !== null && $contrast !== '') {
             $value = (int)$contrast;
             if ($value >= -100 && $value <= 100) {
@@ -1392,7 +1419,7 @@ class ImagesController extends AppController
         }
 
         // Blur
-        $blur = $this->request->getData('blur');
+        $blur = $request->getData('blur');
         if ($blur !== null && $blur !== '') {
             $value = (int)$blur;
             if ($value > 0 && $value <= 100) {
@@ -1414,7 +1441,7 @@ class ImagesController extends AppController
             'AQAABQABDQottAAAAABJRU5ErkJggg=='
         );
 
-        return $this->response
+        return $this->getResponse()
             ->withType('image/png')
             ->withHeader('Cache-Control', 'public, max-age=60')
             ->withStringBody($data ?: '');
@@ -1459,6 +1486,6 @@ class ImagesController extends AppController
      */
     private function json(array $payload): Response
     {
-        return $this->response->withType('application/json')->withStringBody(json_encode($payload));
+        return $this->getResponse()->withType('application/json')->withStringBody(json_encode($payload));
     }
 }
