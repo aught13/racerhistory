@@ -116,6 +116,24 @@ if ($selectedOpponentId) {
 $initialPersonCount = count($selectedPersons);
 $initialPersonIds = array_map(fn(array $p) => (int)$p['id'], $selectedPersons);
 $initialRosterId = (int)($selectedRosterId ?? 0);
+$unlockedFields = [
+    'person_search',
+    'person_select',
+    'team_select',
+    'teamseason_select',
+    'game_search',
+    'game_select',
+    'site_search',
+    'site_select',
+    'opponent_search',
+    'opponent_select',
+    'sport_select',
+    'roster_select',
+    'tags',
+];
+foreach ($unlockedFields as $field) {
+    $this->Form->unlockField($field);
+}
 ?>
 
 <div class="row">

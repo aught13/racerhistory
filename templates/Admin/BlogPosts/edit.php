@@ -16,6 +16,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
         'class' => 'needs-validation',
         'novalidate' => true,
     ]) ?>
+    <?php $this->Form->unlockField('is_published'); ?>
     <div class="row">
         <div class="col-lg-9">
             <div class="card mb-3">
@@ -75,21 +76,16 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
             <div class="card mb-3">
                 <div class="card-header"><h3 class="h6 mb-0">Publish</h3></div>
                 <div class="card-body">
-                    <?= $this->Form->control('status', [
-                        'options' => ['draft' => 'Draft', 'published' => 'Published'],
-                        'label' => ['text' => 'Status', 'class' => 'form-label'],
-                        'class' => 'form-select',
-                    ]) ?>
                     <?= $this->Form->control('is_published', [
                         'type' => 'checkbox',
-                        'label' => ['text' => 'Visible publicly', 'class' => 'form-check-label'],
+                        'label' => ['text' => 'Make this post publicly visible', 'class' => 'form-check-label'],
                         'class' => 'form-check-input',
-                        'hiddenField' => false,
-                        'div' => ['class' => 'form-check mt-2'],
+                        'div' => ['class' => 'form-check form-switch mb-3'],
                     ]) ?>
+                    <div class="form-text mb-3">Published posts are visible on the public blog. Uncheck to keep the post a draft.</div>
                     <?= $this->Form->control('published_at', [
                         'type' => 'datetime',
-                        'label' => ['text' => 'Publish At', 'class' => 'form-label mt-2'],
+                        'label' => ['text' => 'Publish At', 'class' => 'form-label'],
                         'class' => 'form-control',
                         'empty' => true,
                     ]) ?>
@@ -145,7 +141,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
 <?= $this->element('Admin/image_selector_modal', [
     'modalId' => $heroModalId,
     'targetFieldId' => $heroFieldId,
-    'tagFilter' => $uploadContext ? 'blogpost-' . $uploadContext['id'] : null,
+    'tagFilter' => null,
     'uploadContext' => $uploadContext,
     'aspectRatio' => 16 / 9,
 ]) ?>
@@ -153,7 +149,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
 <?= $this->element('Admin/image_selector_modal', [
     'modalId' => $inlineModalId,
     'targetFieldId' => $inlineFieldId,
-    'tagFilter' => $uploadContext ? 'blogpost-' . $uploadContext['id'] : null,
+    'tagFilter' => null,
     'uploadContext' => $uploadContext,
     'aspectRatio' => null,
 ]) ?>
