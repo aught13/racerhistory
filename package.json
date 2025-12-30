@@ -5,15 +5,19 @@
     "devDependencies": {
         "axe-core": "^4.10.3",
         "canvas": "^2.11.2",
+        "eslint": "^9.39.0",
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^29.7.0",
-        "jsdom": "^24.0.0"
+        "jsdom": "^24.0.0",
+        "prettier": "^3.5.1"
     },
     "scripts": {
         "test:js": "jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",
         "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
-        "lint:js:fix": "npx eslint 'webroot/js/**' --fix"
+        "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
+        "format:js": "npx prettier --write webroot/js",
+        "format:js:check": "npx prettier --check webroot/js"
     },
     "jest": {
         "testEnvironment": "jsdom",

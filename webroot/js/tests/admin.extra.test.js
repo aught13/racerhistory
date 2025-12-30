@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 // Additional tests: fallback (no bootstrap), multiple invocations cleanup, invalid JSON, toast helper
 
-describe('admin.js additional scenarios', () => {
+describe("admin.js additional scenarios", () => {
     function setupModalDom() {
         document.body.innerHTML = `
       <div id="confirm-delete-modal" style="display:none">
@@ -16,24 +16,30 @@ describe('admin.js additional scenarios', () => {
     let origRequestSubmit, origSubmit, origBootstrap;
     beforeEach(() => {
         // Reset DOM and globals
-        document.body.innerHTML = '';
-        origBootstrap = Object.prototype.hasOwnProperty.call(global, 'bootstrap')
+        document.body.innerHTML = "";
+        origBootstrap = Object.prototype.hasOwnProperty.call(
+            global,
+            "bootstrap",
+        )
             ? global.bootstrap
             : undefined;
         global.bootstrap = undefined;
         origRequestSubmit = Object.getOwnPropertyDescriptor(
             HTMLFormElement.prototype,
-            'requestSubmit'
+            "requestSubmit",
         );
-        origSubmit = Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, 'submit');
-        Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+        origSubmit = Object.getOwnPropertyDescriptor(
+            HTMLFormElement.prototype,
+            "submit",
+        );
+        Object.defineProperty(HTMLFormElement.prototype, "requestSubmit", {
             value: jest.fn(function () {
                 if (this.submit) this.submit();
             }),
             configurable: true,
             writable: true,
         });
-        Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+        Object.defineProperty(HTMLFormElement.prototype, "submit", {
             value: jest.fn(),
             configurable: true,
             writable: true,
@@ -42,19 +48,27 @@ describe('admin.js additional scenarios', () => {
         jest.useFakeTimers();
     });
     afterEach(() => {
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
         if (origBootstrap !== undefined) {
             global.bootstrap = origBootstrap;
         } else {
             delete global.bootstrap;
         }
         if (origRequestSubmit) {
-            Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', origRequestSubmit);
+            Object.defineProperty(
+                HTMLFormElement.prototype,
+                "requestSubmit",
+                origRequestSubmit,
+            );
         } else {
             delete HTMLFormElement.prototype.requestSubmit;
         }
         if (origSubmit) {
-            Object.defineProperty(HTMLFormElement.prototype, 'submit', origSubmit);
+            Object.defineProperty(
+                HTMLFormElement.prototype,
+                "submit",
+                origSubmit,
+            );
         } else {
             delete HTMLFormElement.prototype.submit;
         }
@@ -63,86 +77,93 @@ describe('admin.js additional scenarios', () => {
         jest.clearAllMocks();
     });
 
-    test('fallback path without bootstrap shows modal by setting display:block', () => {
+    test("fallback path without bootstrap shows modal by setting display:block", () => {
         setupModalDom();
-        const { showConfirmDelete } = require('../admin.js');
-        showConfirmDelete({ associated: JSON.stringify(['One']), formId: 'delete-form-sample' });
-        const modal = document.getElementById('confirm-delete-modal');
-        expect(modal.style.display).toBe('block');
+        const { showConfirmDelete } = require("../admin.js");
+        showConfirmDelete({
+            associated: JSON.stringify(["One"]),
+            formId: "delete-form-sample",
+        });
+        const modal = document.getElementById("confirm-delete-modal");
+        expect(modal.style.display).toBe("block");
     });
 
-    test('multiple invocations clean up previously injected inputs', () => {
+    test("multiple invocations clean up previously injected inputs", () => {
         setupModalDom();
         // provide a bootstrap mock so we also exercise that branch
-        global.bootstrap = { Modal: { getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })) } };
-        const { showConfirmDelete } = require('../admin.js');
-        const form = document.getElementById('delete-form-sample');
+        global.bootstrap = {
+            Modal: {
+                getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
+            },
+        };
+        const { showConfirmDelete } = require("../admin.js");
+        const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
         // first invocation
         showConfirmDelete({
-            deleteUrl: '/x',
+            deleteUrl: "/x",
             ids: JSON.stringify([1, 2]),
-            idsName: 'sport_ids[]',
-            formId: 'delete-form-sample',
-            bulkAction: 'delete',
+            idsName: "sport_ids[]",
+            formId: "delete-form-sample",
+            bulkAction: "delete",
         });
-        document.getElementById('confirm-delete-modal-delete-btn').click();
-        expect(form.querySelectorAll('.injected-delete').length).toBe(3); // 2 ids + bulk
+        document.getElementById("confirm-delete-modal-delete-btn").click();
+        expect(form.querySelectorAll(".injected-delete").length).toBe(3); // 2 ids + bulk
         // second invocation with different ids
         showConfirmDelete({
-            deleteUrl: '/x2',
+            deleteUrl: "/x2",
             ids: JSON.stringify([7]),
-            idsName: 'sport_ids[]',
-            formId: 'delete-form-sample',
-            bulkAction: 'delete',
+            idsName: "sport_ids[]",
+            formId: "delete-form-sample",
+            bulkAction: "delete",
         });
-        document.getElementById('confirm-delete-modal-delete-btn').click();
-        const injected = form.querySelectorAll('.injected-delete');
+        document.getElementById("confirm-delete-modal-delete-btn").click();
+        const injected = form.querySelectorAll(".injected-delete");
         expect(injected.length).toBe(2); // 1 id + bulk
         const idValues = Array.from(injected)
-            .filter((i) => i.name === 'sport_ids[]')
+            .filter((i) => i.name === "sport_ids[]")
             .map((i) => i.value);
-        expect(idValues).toEqual(['7']);
+        expect(idValues).toEqual(["7"]);
     });
 
-    test('invalid JSON associated and ids do not throw and produce no injected id inputs', () => {
+    test("invalid JSON associated and ids do not throw and produce no injected id inputs", () => {
         setupModalDom();
-        const { showConfirmDelete } = require('../admin.js');
-        const form = document.getElementById('delete-form-sample');
+        const { showConfirmDelete } = require("../admin.js");
+        const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
         expect(() =>
             showConfirmDelete({
-                deleteUrl: '/bad',
-                associated: 'not-json',
-                ids: 'nope',
-                idsName: 'sport_ids[]',
-                formId: 'delete-form-sample',
-            })
+                deleteUrl: "/bad",
+                associated: "not-json",
+                ids: "nope",
+                idsName: "sport_ids[]",
+                formId: "delete-form-sample",
+            }),
         ).not.toThrow();
-        document.getElementById('confirm-delete-modal-delete-btn').click();
-        expect(form.querySelectorAll('.injected-delete').length).toBe(0); // Ensure no inputs are injected
+        document.getElementById("confirm-delete-modal-delete-btn").click();
+        expect(form.querySelectorAll(".injected-delete").length).toBe(0); // Ensure no inputs are injected
     });
 
-    test('AdminToast creates and removes alert with default info type', () => {
+    test("AdminToast creates and removes alert with default info type", () => {
         // minimal DOM without modal still allows toast export
         document.body.innerHTML = '<div id="root"></div>';
-        const { AdminToast } = require('../admin.js');
-        AdminToast('Hello');
-        let alerts = document.querySelectorAll('.alert');
+        const { AdminToast } = require("../admin.js");
+        AdminToast("Hello");
+        let alerts = document.querySelectorAll(".alert");
         expect(alerts.length).toBe(1);
-        expect(alerts[0].className).toContain('alert-info');
+        expect(alerts[0].className).toContain("alert-info");
         jest.advanceTimersByTime(4000);
-        alerts = document.querySelectorAll('.alert');
+        alerts = document.querySelectorAll(".alert");
         expect(alerts.length).toBe(0);
     });
 
-    test('AdminToast with custom type warning', () => {
+    test("AdminToast with custom type warning", () => {
         document.body.innerHTML = '<div id="root"></div>';
-        const { AdminToast } = require('../admin.js');
-        AdminToast('Warn', 'warning');
-        const alert = document.querySelector('.alert');
+        const { AdminToast } = require("../admin.js");
+        AdminToast("Warn", "warning");
+        const alert = document.querySelector(".alert");
         expect(alert).not.toBeNull();
-        expect(alert.className).toContain('alert-warning');
+        expect(alert.className).toContain("alert-warning");
     });
 
     // (No global prototype override here; handled in beforeEach/afterEach)

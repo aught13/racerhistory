@@ -4,7 +4,7 @@
  */
 (function (root, factory) {
     /* eslint-disable no-undef */
-    if (typeof module !== 'undefined' && module && module.exports) {
+    if (typeof module !== "undefined" && module && module.exports) {
         // Node/CommonJS (Jest) environment
         module.exports = factory();
         /* eslint-enable no-undef */
@@ -12,22 +12,26 @@
         // Browser global
         root.PersonImage = factory();
     }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-    'use strict';
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+    "use strict";
 
-    async function uploadFile(file, uploadUrl = '/admin/images/upload', csrfToken = null) {
+    async function uploadFile(
+        file,
+        uploadUrl = "/admin/images/upload",
+        csrfToken = null,
+    ) {
         const formData = new FormData();
-        formData.append('upload', file, file.name || 'file');
+        formData.append("upload", file, file.name || "file");
 
         const headers = {};
         if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
+            headers["X-CSRF-Token"] = csrfToken;
         }
 
         const response = await fetch(uploadUrl, {
-            method: 'POST',
+            method: "POST",
             body: formData,
-            credentials: 'same-origin',
+            credentials: "same-origin",
             headers,
         });
 
@@ -36,20 +40,20 @@
         try {
             return JSON.parse(text);
         } catch {
-            throw new Error('Invalid JSON response');
+            throw new Error("Invalid JSON response");
         }
     }
 
     function setPreviewFromId(imageId, previewImgElem, variant = null) {
         if (!imageId || !previewImgElem) return;
-        let url = '/images/serve/' + encodeURIComponent(imageId);
+        let url = "/images/serve/" + encodeURIComponent(imageId);
         if (variant) {
-            url += '?variant=' + encodeURIComponent(variant);
+            url += "?variant=" + encodeURIComponent(variant);
         }
         previewImgElem.src = url;
         // Ensure container visible if wrapped
         if (previewImgElem.parentElement) {
-            previewImgElem.parentElement.style.display = 'block';
+            previewImgElem.parentElement.style.display = "block";
         }
     }
 
@@ -61,11 +65,11 @@
         const csrf = opts.csrf || null;
         if (!selectBtn || !imageField || !preview) return;
 
-        selectBtn.addEventListener('click', function (e) {
+        selectBtn.addEventListener("click", function (e) {
             e.preventDefault();
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
             input.onchange = async function () {
                 if (!input.files || !input.files[0]) return;
                 selectBtn.disabled = true;
@@ -73,25 +77,29 @@
                 try {
                     const json = await uploadFile(
                         file,
-                        opts.uploadUrl || '/admin/images/upload',
-                        csrf
+                        opts.uploadUrl || "/admin/images/upload",
+                        csrf,
                     );
                     if (json && json.success && json.image) {
                         imageField.value = json.image.id;
-                        const img = preview.querySelector('img');
+                        const img = preview.querySelector("img");
                         if (img) {
-                            setPreviewFromId(json.image.id, img, opts.variant || null);
+                            setPreviewFromId(
+                                json.image.id,
+                                img,
+                                opts.variant || null,
+                            );
                         }
                     } else {
-                        console.error('Upload failed', json);
-                        alert('Upload failed');
+                        console.error("Upload failed", json);
+                        alert("Upload failed");
                     }
                 } catch (_err) {
-                    console.error('Upload error', _err);
-                    alert('Upload failed: ' + _err.message);
+                    console.error("Upload error", _err);
+                    alert("Upload failed: " + _err.message);
                 } finally {
                     selectBtn.disabled = false;
-                    selectBtn.textContent = opts.buttonText || 'Select Image';
+                    selectBtn.textContent = opts.buttonText || "Select Image";
                 }
             };
             input.click();

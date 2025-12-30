@@ -23,9 +23,11 @@ class ImageSelector {
         this.tagForm = null;
         this.skipCropToggle = null;
         // Default aspect ratio is 1 (square), can be overridden via config.aspectRatio; null = free
-        this.aspectRatio = typeof this.config.aspectRatio === 'number' && isFinite(this.config.aspectRatio)
-            ? this.config.aspectRatio
-            : null;
+        this.aspectRatio =
+            typeof this.config.aspectRatio === "number" &&
+            isFinite(this.config.aspectRatio)
+                ? this.config.aspectRatio
+                : null;
 
         this.initElements();
         this.bindEvents();
@@ -54,7 +56,9 @@ class ImageSelector {
             `${this.modalId}-crop-controls`,
         );
         this.tagForm = document.getElementById(`${this.modalId}-tag-form`);
-        this.skipCropToggle = document.getElementById(`${this.modalId}-skip-crop`);
+        this.skipCropToggle = document.getElementById(
+            `${this.modalId}-skip-crop`,
+        );
 
         // Buttons
         this.selectBtn = document.getElementById(`${this.modalId}-select-btn`);
@@ -320,9 +324,13 @@ class ImageSelector {
                     isFinite(this.aspectRatio)
                 ) {
                     if (this.aspectRatio > 1) {
-                        canvasHeight = Math.round(canvasWidth / this.aspectRatio);
+                        canvasHeight = Math.round(
+                            canvasWidth / this.aspectRatio,
+                        );
                     } else {
-                        canvasWidth = Math.round(canvasHeight * this.aspectRatio);
+                        canvasWidth = Math.round(
+                            canvasHeight * this.aspectRatio,
+                        );
                     }
                     cropOptions.width = canvasWidth;
                     cropOptions.height = canvasHeight;
@@ -419,4 +427,3 @@ document.addEventListener("DOMContentLoaded", function () {
 if (typeof module !== "undefined" && module.exports) {
     module.exports = ImageSelector;
 }
-
