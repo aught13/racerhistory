@@ -2,39 +2,8 @@
 declare(strict_types=1);
 /** @var \App\Model\Entity\BlogPost[] $posts */
 ?>
-<div class="container mt-4" aria-label="Blog Posts">
-    <h1 class="h3">Blog Posts</h1>
-    <div class="mb-3">
-        <?= $this->Html->link('Add Post', ['action' => 'add'], ['class' => 'btn btn-primary']) ?>
-    </div>
-    <table class="table table-striped table-hover" aria-describedby="blog-posts-help">
-        <caption id="blog-posts-help" class="visually-hidden">List of blog posts</caption>
-        <thead>
-            <tr>
-                <th scope="col">Title</th>
-                <th scope="col">Status</th>
-                <th scope="col">Published</th>
-                <th scope="col" class="text-end">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($posts as $p): ?>
-            <tr>
-                <td><?= h($p->title) ?></td>
-                <td><?= h($p->status) ?></td>
-                <td><?= $p->is_published ? 'Yes' : 'No' ?></td>
-                <td class="text-end">
-                    <?= $this->Html->link('Edit', ['action' => 'edit', $p->id], ['class' => 'btn btn-sm btn-outline-secondary']) ?>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
-<?php
-$this->assign('title', 'Blog Posts');
-?>
-<div class="container py-4">
+<?php $this->assign('title', 'Blog Posts'); ?>
+<div class="container py-4" aria-label="Blog Posts">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 mb-0">Blog Posts</h1>
         <?= $this->Html->link('Add Post', ['action' => 'add'], ['class' => 'btn btn-primary']) ?>

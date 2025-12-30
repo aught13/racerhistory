@@ -187,12 +187,31 @@ class BlogPostService
         }
 
         $isPublished = (bool)($normalized['is_published'] ?? false);
-        if (!isset($normalized['status'])) {
-            $normalized['status'] = $isPublished ? 'published' : 'draft';
+        $normalized['status'] = $isPublished ? 'published' : 'draft';
+
+        $publishedAt = $normalized['published_at'] ?? null;
+        $publishedAtInstance = null;
+        if ($publishedAt instanceof \DateTimeInterface) {
+            $publishedAtInstance = $publishedAt instanceof \DateTimeImmutable
+                ? $publishedAt
+                : \DateTimeImmutable::createFromMutable($publishedAt);
+        } elseif (is_string($publishedAt) && $publishedAt !== '') {
+            try {
+                $publishedAtInstance = new \DateTimeImmutable($publishedAt);
+            } catch (\Exception) {
+                $publishedAtInstance = null;
+            }
         }
 
-        if ($isPublished && empty($normalized['published_at'])) {
-            $normalized['published_at'] = new \DateTimeImmutable();
+        if ($isPublished) {
+            if ($publishedAtInstance === null) {
+                $normalized['published_at'] = new \DateTimeImmutable();
+            }
+        } elseif ($publishedAtInstance !== null) {
+            $now = new \DateTimeImmutable();
+            if ($publishedAtInstance <= $now) {
+                $normalized['published_at'] = null;
+            }
         }
 
         return $normalized;
