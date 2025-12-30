@@ -33,6 +33,14 @@
 - ✅ `Admin/TeamSeasons/add.php` - Add team season form with popup helpers for creating teams/seasons via AJAX
 - ✅ `Admin/TeamSeasons/edit.php` - Edit team season form with validation-friendly inputs
 
+- ✅ `Admin/BlogPosts/index.php` - Blog post listing (draft/published) with basic actions
+- ✅ `Admin/BlogPosts/edit.php` - Add/edit blog post form with TinyMCE, hero/inline images, and tags
+
+## Public Blog Templates
+
+- ✅ `Blog/index.php` - Public blog listing of published posts
+- ✅ `Blog/view.php` - Public blog post view by slug
+
 ## Flash Message Elements
 
 - ✅ `element/flash/default.php` - Generic flash messages with customizable styling
