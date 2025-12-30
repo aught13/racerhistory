@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+$idPrefixBase = (string)($idPrefix ?? '');
+$idPrefixNormalized = $idPrefixBase !== '' ? (rtrim($idPrefixBase, '_') . '_') : '';
+$id = fn(string $name): string => $idPrefixNormalized . $name;
+
 $teams = is_iterable($teams ?? []) ? $teams : [];
 $teamSeasons = is_iterable($teamSeasons ?? []) ? $teamSeasons : [];
 $games = is_iterable($games ?? []) ? $games : [];
@@ -26,6 +30,8 @@ if (empty($freeform['attributes']['class'])) {
     $freeform['attributes']['class'] = 'form-control';
 }
 $freeform['value'] = (string)($freeform['value'] ?? '');
+$freeformId = $freeform['attributes']['id'] ?? 'tagsInput';
+$freeform['attributes']['id'] = $id($freeformId);
 
 $selectionOverrides = (array)($tagSelection ?? []);
 $selectedPersonIds = $selectionOverrides['selectedPersonIds'] ?? null;
@@ -139,22 +145,22 @@ foreach ($unlockedFields as $field) {
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Person</label>
-        <div id="selectedPersons" class="d-flex flex-wrap gap-2 mb-2"></div>
+        <div id="<?= h($id('selectedPersons')) ?>" class="d-flex flex-wrap gap-2 mb-2"></div>
         <input
             type="text"
             name="person_search"
-            id="person_search"
-            list="personsList"
+            id="<?= h($id('person_search')) ?>"
+            list="<?= h($id('personsList')) ?>"
             class="form-control"
             placeholder="Search person by name"
             autocomplete="off"
         />
         <div class="d-flex gap-2 mt-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="add_person_btn">Add Person</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="clear_persons_btn">Clear</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="<?= h($id('add_person_btn')) ?>">Add Person</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="<?= h($id('clear_persons_btn')) ?>">Clear</button>
         </div>
-        <datalist id="personsList"></datalist>
-        <div id="person_hidden_inputs">
+        <datalist id="<?= h($id('personsList')) ?>"></datalist>
+        <div id="<?= h($id('person_hidden_inputs')) ?>">
             <?php foreach ($selectedPersons as $p): ?>
                 <input type="hidden" name="person_select[]" value="<?= h((int)$p['id']) ?>" />
             <?php endforeach; ?>
@@ -164,7 +170,7 @@ foreach ($unlockedFields as $field) {
 
     <div class="col-md-6 mb-3">
         <label class="form-label">Team</label>
-        <select name="team_select" id="team_select" class="form-select">
+        <select name="team_select" id="<?= h($id('team_select')) ?>" class="form-select">
             <option value="">-- select team --</option>
             <?= $this->element('Admin/team_select_options', [
                 'teams' => $teams,
@@ -178,7 +184,7 @@ foreach ($unlockedFields as $field) {
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Team Season</label>
-        <select name="teamseason_select" id="teamseason_select" class="form-select">
+        <select name="teamseason_select" id="<?= h($id('teamseason_select')) ?>" class="form-select">
             <option value="">-- select team season --</option>
             <?php foreach ($teamSeasons as $ts): ?>
                 <option value="<?= h($ts['id']) ?>" <?= $selectedTeamSeasonId === (int)$ts['id'] ? 'selected' : '' ?>><?= h($ts['label']) ?></option>
@@ -191,16 +197,16 @@ foreach ($unlockedFields as $field) {
         <input
             type="text"
             name="game_search"
-            id="game_search"
-            list="gamesList"
+            id="<?= h($id('game_search')) ?>"
+            list="<?= h($id('gamesList')) ?>"
             class="form-control"
             placeholder="Search game"
             autocomplete="off"
             value="<?= h($selectedGameLabel) ?>"
             <?= $selectedTeamSeasonId ? '' : 'disabled' ?>
         />
-        <datalist id="gamesList"></datalist>
-        <input type="hidden" name="game_select" id="game_select" value="<?= h((int)$selectedGameId) ?>" />
+        <datalist id="<?= h($id('gamesList')) ?>"></datalist>
+        <input type="hidden" name="game_select" id="<?= h($id('game_select')) ?>" value="<?= h((int)$selectedGameId) ?>" />
         <div class="form-text">Must select a Team Season first.</div>
     </div>
 </div>
@@ -211,15 +217,15 @@ foreach ($unlockedFields as $field) {
         <input
             type="text"
             name="site_search"
-            id="site_search"
-            list="sitesList"
+            id="<?= h($id('site_search')) ?>"
+            list="<?= h($id('sitesList')) ?>"
             class="form-control"
             placeholder="Search site"
             autocomplete="off"
             value="<?= h($selectedSiteLabel) ?>"
         />
-        <datalist id="sitesList"></datalist>
-        <input type="hidden" name="site_select" id="site_select" value="<?= h((int)$selectedSiteId) ?>" />
+        <datalist id="<?= h($id('sitesList')) ?>"></datalist>
+        <input type="hidden" name="site_select" id="<?= h($id('site_select')) ?>" value="<?= h((int)$selectedSiteId) ?>" />
     </div>
 
     <div class="col-md-6 mb-3">
@@ -227,22 +233,22 @@ foreach ($unlockedFields as $field) {
         <input
             type="text"
             name="opponent_search"
-            id="opponent_search"
-            list="opponentsList"
+            id="<?= h($id('opponent_search')) ?>"
+            list="<?= h($id('opponentsList')) ?>"
             class="form-control"
             placeholder="Search opponent"
             autocomplete="off"
             value="<?= h($selectedOpponentLabel) ?>"
         />
-        <datalist id="opponentsList"></datalist>
-        <input type="hidden" name="opponent_select" id="opponent_select" value="<?= h((int)$selectedOpponentId) ?>" />
+        <datalist id="<?= h($id('opponentsList')) ?>"></datalist>
+        <input type="hidden" name="opponent_select" id="<?= h($id('opponent_select')) ?>" value="<?= h((int)$selectedOpponentId) ?>" />
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Sport</label>
-        <select name="sport_select" id="sport_select" class="form-select">
+        <select name="sport_select" id="<?= h($id('sport_select')) ?>" class="form-select">
             <option value="">-- select sport --</option>
             <?php foreach ($sports as $sp): ?>
                 <option value="<?= h($sp['id']) ?>" <?= $selectedSportId === (int)$sp['id'] ? 'selected' : '' ?>><?= h($sp['label']) ?></option>
@@ -252,7 +258,7 @@ foreach ($unlockedFields as $field) {
 
     <div class="col-md-6 mb-3">
         <label class="form-label">Team Season Roster Entry</label>
-        <select name="roster_select" id="roster_select" class="form-select" <?= $initialPersonCount === 1 ? '' : 'disabled' ?> >
+        <select name="roster_select" id="<?= h($id('roster_select')) ?>" class="form-select" <?= $initialPersonCount === 1 ? '' : 'disabled' ?> >
             <option value="">-- select roster entry --</option>
         </select>
         <div class="form-text">Must select a Person first. Other tags cannot be set when a Roster entry is selected.</div>
@@ -274,28 +280,31 @@ foreach ($unlockedFields as $field) {
 <?php
 $selectedRosterIdJs = (int)$initialRosterId;
 $initialSelectedPersonsJson = json_encode($selectedPersons, JSON_THROW_ON_ERROR);
+$tagIdPrefixJs = json_encode($idPrefixNormalized, JSON_THROW_ON_ERROR);
 $script = <<<JS
 (function () {
-    document.addEventListener('DOMContentLoaded', function () {
-        const list = document.getElementById('personsList');
-        const selectedPersonsEl = document.getElementById('selectedPersons');
-        const hiddenWrap = document.getElementById('person_hidden_inputs');
-        const search = document.getElementById('person_search');
-        const addBtn = document.getElementById('add_person_btn');
-        const clearBtn = document.getElementById('clear_persons_btn');
-        const rosterSelect = document.getElementById('roster_select');
-        const teamSeasonSelect = document.getElementById('teamseason_select');
-        const teamSelect = document.getElementById('team_select');
-        const sportSelect = document.getElementById('sport_select');
-        const gameSearch = document.getElementById('game_search');
-        const gameHidden = document.getElementById('game_select');
-        const gamesList = document.getElementById('gamesList');
-        const siteSearch = document.getElementById('site_search');
-        const siteHidden = document.getElementById('site_select');
-        const sitesList = document.getElementById('sitesList');
-        const opponentSearch = document.getElementById('opponent_search');
-        const opponentHidden = document.getElementById('opponent_select');
-        const opponentsList = document.getElementById('opponentsList');
+    const tagIdPrefix = {$tagIdPrefixJs};
+    const prefixed = (name) => tagIdPrefix ? tagIdPrefix + name : name;
+    const initialize = function () {
+        const list = document.getElementById(prefixed('personsList'));
+        const selectedPersonsEl = document.getElementById(prefixed('selectedPersons'));
+        const hiddenWrap = document.getElementById(prefixed('person_hidden_inputs'));
+        const search = document.getElementById(prefixed('person_search'));
+        const addBtn = document.getElementById(prefixed('add_person_btn'));
+        const clearBtn = document.getElementById(prefixed('clear_persons_btn'));
+        const rosterSelect = document.getElementById(prefixed('roster_select'));
+        const teamSeasonSelect = document.getElementById(prefixed('teamseason_select'));
+        const teamSelect = document.getElementById(prefixed('team_select'));
+        const sportSelect = document.getElementById(prefixed('sport_select'));
+        const gameSearch = document.getElementById(prefixed('game_search'));
+        const gameHidden = document.getElementById(prefixed('game_select'));
+        const gamesList = document.getElementById(prefixed('gamesList'));
+        const siteSearch = document.getElementById(prefixed('site_search'));
+        const siteHidden = document.getElementById(prefixed('site_select'));
+        const sitesList = document.getElementById(prefixed('sitesList'));
+        const opponentSearch = document.getElementById(prefixed('opponent_search'));
+        const opponentHidden = document.getElementById(prefixed('opponent_select'));
+        const opponentsList = document.getElementById(prefixed('opponentsList'));
         const initialSelectedPersons = {$initialSelectedPersonsJson};
         const selectedRosterId = {$selectedRosterIdJs};
         const endpoints = {
@@ -591,7 +600,6 @@ $script = <<<JS
                 debouncedFetch(val);
             });
 
-            // Picking an item from a datalist often triggers change; auto-add on change as well.
             search.addEventListener('change', () => {
                 addPersonFromLabel(search.value);
             });
@@ -612,9 +620,11 @@ $script = <<<JS
         if (teamSeasonSelect && gameSearch) {
             teamSeasonSelect.addEventListener('change', () => {
                 const hasTs = !!(teamSeasonSelect.value || '').trim();
+                if (!hasTs) {
+                    gameSearch.value = '';
+                    if (gameHidden) gameHidden.value = '';
+                }
                 gameSearch.disabled = !hasTs;
-                gameSearch.value = '';
-                if (gameHidden) gameHidden.value = '';
                 lastGames = [];
                 renderDatalist(gamesList, []);
             });
@@ -679,7 +689,13 @@ $script = <<<JS
         }
 
         init();
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        initialize();
+    }
 })();
 JS;
 

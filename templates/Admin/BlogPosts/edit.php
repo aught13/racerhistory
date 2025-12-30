@@ -150,12 +150,16 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
     <?= $this->Form->end() ?>
 </div>
 
+<?php
+$tagSelectionOptions = compact('teams', 'teamSeasons', 'games', 'sites', 'opponents', 'sports');
+?>
 <?= $this->element('Admin/image_selector_modal', [
     'modalId' => $heroModalId,
     'targetFieldId' => $heroFieldId,
     'tagFilter' => null,
     'uploadContext' => $uploadContext,
     'aspectRatio' => 16 / 9,
+    'tagSelectionOptions' => $tagSelectionOptions,
 ]) ?>
 
 <?= $this->element('Admin/image_selector_modal', [
@@ -164,6 +168,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
     'tagFilter' => null,
     'uploadContext' => $uploadContext,
     'aspectRatio' => null,
+    'tagSelectionOptions' => $tagSelectionOptions,
 ]) ?>
 
 <?php
