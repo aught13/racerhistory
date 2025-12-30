@@ -1,7 +1,5 @@
-/* eslint-env jest */
-
 beforeAll(() => {
-    if (typeof HTMLFormElement !== 'undefined') {
+    if (typeof HTMLFormElement !== "undefined") {
         HTMLFormElement.prototype.submit = function () {};
         HTMLFormElement.prototype.requestSubmit = function () {};
     }
@@ -9,15 +7,15 @@ beforeAll(() => {
 /** @jest-environment jsdom */
 // Accessibility audit tests for roster management element using axe-core
 
-const axeCore = require('axe-core');
+const axeCore = require("axe-core");
 
-describe('Roster Management Accessibility Audit', () => {
+describe("Roster Management Accessibility Audit", () => {
     beforeEach(() => {
         // Reset DOM
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
 
         // Add basic Bootstrap CSS classes mock for better styling context
-        const style = document.createElement('style');
+        const style = document.createElement("style");
         style.textContent = `
             .card { border: 1px solid #dee2e6; }
             .card-header { background: #f8f9fa; padding: 0.75rem 1.25rem; }
@@ -175,10 +173,10 @@ describe('Roster Management Accessibility Audit', () => {
         `;
 
         document.body.innerHTML = html;
-        return document.querySelector('.card');
+        return document.querySelector(".card");
     }
 
-    test('roster management element passes basic accessibility audit', async () => {
+    test("roster management element passes basic accessibility audit", async () => {
         const element = createRosterManagementElement();
         expect(element).toBeTruthy();
 
@@ -186,16 +184,16 @@ describe('Roster Management Accessibility Audit', () => {
             rules: {
                 // Focus on most important accessibility rules for data tables and forms
                 label: { enabled: true },
-                'button-name': { enabled: true },
-                'link-name': { enabled: true },
-                'th-has-data-cells': { enabled: true },
-                'td-headers-attr': { enabled: true },
-                'scope-attr-valid': { enabled: true },
-                'form-field-multiple-labels': { enabled: true },
-                'aria-valid-attr': { enabled: true },
-                'aria-required-attr': { enabled: true },
+                "button-name": { enabled: true },
+                "link-name": { enabled: true },
+                "th-has-data-cells": { enabled: true },
+                "td-headers-attr": { enabled: true },
+                "scope-attr-valid": { enabled: true },
+                "form-field-multiple-labels": { enabled: true },
+                "aria-valid-attr": { enabled: true },
+                "aria-required-attr": { enabled: true },
                 // Disable color-contrast that has canvas issues in jsdom
-                'color-contrast': { enabled: false },
+                "color-contrast": { enabled: false },
             },
         });
 
@@ -206,85 +204,90 @@ describe('Roster Management Accessibility Audit', () => {
         expect(results.passes.length).toBeGreaterThan(0);
     });
 
-    test('roster table has proper heading structure', async () => {
+    test("roster table has proper heading structure", async () => {
         createRosterManagementElement();
 
         const results = await axeCore.run(document.body, {
             rules: {
-                'th-has-data-cells': { enabled: true },
-                'scope-attr-valid': { enabled: true },
+                "th-has-data-cells": { enabled: true },
+                "scope-attr-valid": { enabled: true },
             },
         });
 
         // Check specifically for table heading violations
         const tableViolations = results.violations.filter(
-            (v) => v.id === 'th-has-data-cells' || v.id === 'scope-attr-valid'
+            (v) => v.id === "th-has-data-cells" || v.id === "scope-attr-valid",
         );
         expect(tableViolations).toHaveLength(0);
     });
 
-    test('form controls have proper labels', async () => {
+    test("form controls have proper labels", async () => {
         createRosterManagementElement();
 
         const results = await axeCore.run(document.body, {
             rules: {
                 label: { enabled: true },
-                'form-field-multiple-labels': { enabled: true },
+                "form-field-multiple-labels": { enabled: true },
             },
         });
 
         const labelViolations = results.violations.filter(
-            (v) => v.id === 'label' || v.id === 'form-field-multiple-labels'
+            (v) => v.id === "label" || v.id === "form-field-multiple-labels",
         );
         expect(labelViolations).toHaveLength(0);
     });
 
-    test('buttons and links have accessible names', async () => {
+    test("buttons and links have accessible names", async () => {
         createRosterManagementElement();
 
         const results = await axeCore.run(document.body, {
             rules: {
-                'button-name': { enabled: true },
-                'link-name': { enabled: true },
+                "button-name": { enabled: true },
+                "link-name": { enabled: true },
             },
         });
 
         const nameViolations = results.violations.filter(
-            (v) => v.id === 'button-name' || v.id === 'link-name'
+            (v) => v.id === "button-name" || v.id === "link-name",
         );
         expect(nameViolations).toHaveLength(0);
     });
 
-    test('images have appropriate alt text', async () => {
+    test("images have appropriate alt text", async () => {
         createRosterManagementElement();
 
         const results = await axeCore.run(document.body, {
             rules: {
-                'image-alt': { enabled: true },
+                "image-alt": { enabled: true },
             },
         });
 
-        const imageViolations = results.violations.filter((v) => v.id === 'image-alt');
+        const imageViolations = results.violations.filter(
+            (v) => v.id === "image-alt",
+        );
         expect(imageViolations).toHaveLength(0);
     });
 
-    test('modal dialog has proper ARIA attributes', async () => {
+    test("modal dialog has proper ARIA attributes", async () => {
         createRosterManagementElement();
 
-        const results = await axeCore.run(document.getElementById('confirm-delete-modal'), {
-            rules: {
-                'aria-valid-attr': { enabled: true },
-                'aria-required-attr': { enabled: true },
+        const results = await axeCore.run(
+            document.getElementById("confirm-delete-modal"),
+            {
+                rules: {
+                    "aria-valid-attr": { enabled: true },
+                    "aria-required-attr": { enabled: true },
+                },
             },
-        });
+        );
 
         const ariaViolations = results.violations.filter(
-            (v) => v.id === 'aria-valid-attr' || v.id === 'aria-required-attr'
+            (v) => v.id === "aria-valid-attr" || v.id === "aria-required-attr",
         );
         expect(ariaViolations).toHaveLength(0);
     });
 
-    test('empty roster state accessibility', async () => {
+    test("empty roster state accessibility", async () => {
         // Test empty state with just the info message
         document.body.innerHTML = `
             <main role="main">
@@ -309,8 +312,8 @@ describe('Roster Management Accessibility Audit', () => {
 
         const results = await axeCore.run(document.body, {
             rules: {
-                'link-name': { enabled: true },
-                'button-name': { enabled: true },
+                "link-name": { enabled: true },
+                "button-name": { enabled: true },
                 region: { enabled: false }, // Disable region check for test isolation
             },
         });
@@ -318,14 +321,14 @@ describe('Roster Management Accessibility Audit', () => {
         expect(results.violations).toHaveLength(0);
     });
 
-    test('keyboard navigation support indicators', async () => {
+    test("keyboard navigation support indicators", async () => {
         createRosterManagementElement();
 
         // Check that interactive elements are focusable
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        const buttons = document.querySelectorAll('button');
-        const links = document.querySelectorAll('a');
-        const selects = document.querySelectorAll('select');
+        const buttons = document.querySelectorAll("button");
+        const links = document.querySelectorAll("a");
+        const selects = document.querySelectorAll("select");
 
         // All interactive elements should be focusable (not have tabindex="-1")
         [...checkboxes, ...buttons, ...links, ...selects].forEach((element) => {
@@ -336,12 +339,12 @@ describe('Roster Management Accessibility Audit', () => {
         const results = await axeCore.run(document.body, {
             rules: {
                 tabindex: { enabled: true },
-                'skip-link': { enabled: true },
+                "skip-link": { enabled: true },
             },
         });
 
         const keyboardViolations = results.violations.filter(
-            (v) => v.id === 'tabindex' || v.id === 'skip-link'
+            (v) => v.id === "tabindex" || v.id === "skip-link",
         );
         expect(keyboardViolations).toHaveLength(0);
     });

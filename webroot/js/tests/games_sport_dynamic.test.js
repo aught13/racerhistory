@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-describe('games_sport_dynamic', () => {
+describe("games_sport_dynamic", () => {
     beforeEach(() => {
         document.body.innerHTML = `
             <select id="team-season-select" data-sport-url="/fake"></select>
@@ -15,20 +15,20 @@ describe('games_sport_dynamic', () => {
                 json: () =>
                     Promise.resolve({
                         success: true,
-                        sportName: 'Soccer',
+                        sportName: "Soccer",
                         eavTemplate: [],
                         values: {},
                     }),
-            })
+            }),
         );
     });
 
-    test('init does not throw and can fetch meta', async () => {
+    test("init does not throw and can fetch meta", async () => {
         // Require module and call fetchMeta directly
-        const mod = require('../games_sport_dynamic.js');
-        await mod.fetchMeta('1');
+        const mod = require("../games_sport_dynamic.js");
+        await mod.fetchMeta("1");
         expect(global.fetch).toHaveBeenCalled();
-        const name = document.getElementById('current-sport');
-        expect(name.textContent).toBe('Soccer');
+        const name = document.getElementById("current-sport");
+        expect(name.textContent).toBe("Soccer");
     });
 });

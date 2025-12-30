@@ -7,6 +7,7 @@ namespace App\Test\TestCase\Service;
 use App\Service\ImageProcessor;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
+use Intervention\Image\ImageManager;
 use Laminas\Diactoros\UploadedFile;
 
 class ImageProcessorTest extends TestCase
@@ -34,6 +35,21 @@ class ImageProcessorTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('original', $result);
         $this->assertArrayHasKey('variants', $result);
+    }
+
+    public function testProcessDegradedModeWithNoVariantsConfigured(): void
+    {
+        $processor = new ImageProcessor(null);
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, 'notanimage');
+        rewind($stream);
+        $file = new UploadedFile($stream, 9, UPLOAD_ERR_OK, 'bad.png', 'image/png');
+
+        $result = $processor->process($file, []);
+
+        $this->assertIsArray($result);
+        $this->assertSame([], $result['variants'] ?? null);
+        $this->assertSame('png', $result['original']['ext'] ?? null);
     }
 
     public function testProcessThrowsException(): void
@@ -97,7 +113,39 @@ class ImageProcessorTest extends TestCase
 
         // Verify image has tags
         $reloaded = $images->get($image->id, contain: ['ImageTags']);
-        $this->assertCount(2, $reloaded->image_tags);
+        $this->assertCount(2, (array)$reloaded->get('image_tags'));
+    }
+
+    public function testAttachTagsWithEmptyTagsIsNoOp(): void
+    {
+        $processor = new ImageProcessor(null);
+        $processor->attachTags(1, []);
+
+        $images = TableRegistry::getTableLocator()->get('Images');
+        $reloaded = $images->get(1, contain: ['ImageTags']);
+        $this->assertNotEmpty((array)$reloaded->get('image_tags'), 'Fixture should still have its original tags');
+    }
+
+    public function testAttachTagsUpdatesGenericExistingNameWhenBetterNameProvided(): void
+    {
+        $processor = new ImageProcessor(null);
+
+        $tagsTable = TableRegistry::getTableLocator()->get('ImageTags');
+        $existing = $tagsTable->newEntity([
+            'name' => 'person-999',
+            'slug' => 'person-999',
+        ]);
+        $tagsTable->saveOrFail($existing);
+
+        // Provide a nicer display name.
+        $processor->attachTags(1, [[
+            'slug' => 'person-999',
+            'name' => 'John Q Public',
+        ]]);
+
+        $reloaded = $tagsTable->find()->where(['slug' => 'person-999'])->first();
+        $this->assertNotNull($reloaded);
+        $this->assertSame('John Q Public', (string)$reloaded->name);
     }
 
     /**
@@ -276,6 +324,14 @@ class ImageProcessorTest extends TestCase
         $this->assertContains($image2->id, $ids);
     }
 
+    public function testGetImagesByAllTagsWithEmptyInputReturnsEmpty(): void
+    {
+        $processor = new ImageProcessor(null);
+
+        $this->assertSame([], $processor->getImagesByAllTags([]));
+        $this->assertSame([], $processor->getImagesByAllTags(['', '   ']));
+    }
+
     /**
      * Test getImagesForPerson convenience method.
      */
@@ -398,6 +454,16 @@ class ImageProcessorTest extends TestCase
         $this->assertSame('new-tag-2', $tags[1]->name);
     }
 
+    public function testEnsureTagsNormalizesSlugs(): void
+    {
+        $processor = new ImageProcessor(null);
+
+        $tags = $processor->ensureTags(['My Tag']);
+        $this->assertCount(1, $tags);
+        $this->assertSame('My-Tag', (string)$tags[0]->slug);
+        $this->assertSame('My-Tag', (string)$tags[0]->name);
+    }
+
     /**
      * Test ensureTags is idempotent.
      */
@@ -471,5 +537,83 @@ class ImageProcessorTest extends TestCase
         // -90 should be treated like 270 CCW: width/height swap to 50x100
         $this->assertSame(50, $result['original']['width']);
         $this->assertSame(100, $result['original']['height']);
+    }
+
+    public function testManipulateExistingDegradedWhenManagerMissing(): void
+    {
+        $proc = new ImageProcessor();
+
+        // Force manager=null regardless of environment so we cover the degraded branch.
+        $ref = new \ReflectionClass($proc);
+        $prop = $ref->getProperty('manager');
+        if (PHP_VERSION_ID < 80500) {
+            $prop->setAccessible(true);
+        }
+        $prop->setValue($proc, null);
+
+        $result = $proc->manipulateExisting('raw', 'image/png', ['thumb' => ['fit' => [10, 10]]], []);
+        $this->assertSame(0, $result['original']['width']);
+        $this->assertSame(0, $result['original']['height']);
+        $this->assertSame([], $result['variants']);
+    }
+
+    public function testManipulateExistingFallsBackWhenReadFails(): void
+    {
+        $proc = new ImageProcessor();
+        // Invalid bytes should cause Intervention read() to throw and we should degrade gracefully.
+        $result = $proc->manipulateExisting('not-an-image', 'image/png', ['thumb' => ['fit' => [10, 10]]], []);
+
+        $this->assertSame(0, $result['original']['width']);
+        $this->assertSame(0, $result['original']['height']);
+        $this->assertSame([], $result['variants']);
+    }
+
+    public function testProcessWithRealManagerCoversManipulationsAndVariantFormatting(): void
+    {
+        if (!extension_loaded('gd') && !extension_loaded('imagick')) {
+            $this->markTestSkipped('Requires gd or imagick for ImageManager-backed processing');
+        }
+
+        $im = imagecreatetruecolor(80, 40);
+        $bg = imagecolorallocate($im, 10, 20, 30);
+        imagefill($im, 0, 0, $bg);
+        ob_start();
+        imagepng($im);
+        $raw = (string)ob_get_clean();
+
+        $stream = fopen('php://memory', 'r+');
+        fwrite($stream, $raw);
+        rewind($stream);
+        $file = new UploadedFile($stream, strlen($raw), UPLOAD_ERR_OK, 'in.png', 'image/png');
+
+        // Use a real manager to ensure we hit the non-degraded path.
+        $manager = extension_loaded('imagick') ? ImageManager::imagick() : ImageManager::gd();
+        $proc = new ImageProcessor($manager);
+
+        $result = $proc->process(
+            $file,
+            [
+                'thumb' => ['fit' => [10, 10], 'format' => 'webp'],
+                'cropped' => ['crop' => ['x' => 0, 'y' => 0, 'width' => 10, 'height' => 10]],
+                'medium' => ['maxWidth' => 20],
+            ],
+            [
+                'rotate' => 90,
+                'crop' => ['x' => 0, 'y' => 0, 'width' => 10, 'height' => 20],
+                'brightness' => 10,
+                'contrast' => -10,
+                'blur' => 5,
+            ],
+        );
+
+        $this->assertArrayHasKey('original', $result);
+        $this->assertArrayHasKey('variants', $result);
+        $this->assertArrayHasKey('thumb', $result['variants']);
+        $this->assertSame('webp', $result['variants']['thumb']['ext'] ?? null);
+        $this->assertSame('image/webp', $result['variants']['thumb']['mime'] ?? null);
+
+        $this->assertArrayHasKey('cropped', $result['variants']);
+        $this->assertSame(10, (int)($result['variants']['cropped']['width'] ?? 0));
+        $this->assertSame(10, (int)($result['variants']['cropped']['height'] ?? 0));
     }
 }

@@ -5,7 +5,7 @@
 // test uses DOM APIs and module imports; no file system access needed here
 
 // Load the module under test after setting up DOM fixtures and mocking fetch
-describe('games_sport_dynamic HTML-fetch path', () => {
+describe("games_sport_dynamic HTML-fetch path", () => {
     let moduleExports;
 
     beforeEach(() => {
@@ -19,24 +19,24 @@ describe('games_sport_dynamic HTML-fetch path', () => {
     `;
     });
 
-    test('injects server-rendered HTML fragment when fetch returns HTML', async () => {
+    test("injects server-rendered HTML fragment when fetch returns HTML", async () => {
         // Mock fetch to return HTML fragment
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 ok: true,
                 text: () =>
                     Promise.resolve(
-                        '<div class="card"><div class="card-body"><input name="period_1_team" /></div></div>'
+                        '<div class="card"><div class="card-body"><input name="period_1_team" /></div></div>',
                     ),
-            })
+            }),
         );
 
-        moduleExports = require('../games_sport_dynamic');
+        moduleExports = require("../games_sport_dynamic");
 
         // Call fetchMeta helper directly to trigger the HTML fetch and injection
-        await moduleExports.fetchMeta('1');
+        await moduleExports.fetchMeta("1");
 
-        const section = document.getElementById('sport-specific-section');
+        const section = document.getElementById("sport-specific-section");
         expect(section.innerHTML).toContain('name="period_1_team"');
     });
 });

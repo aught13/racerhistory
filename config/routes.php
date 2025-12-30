@@ -45,6 +45,9 @@ return function (RouteBuilder $routes): void {
         // Explicit bulk upload route
         $routes->connect('/images/bulk-upload', ['controller' => 'Images', 'action' => 'bulkUpload']);
 
+        // Blog admin shortcut
+        $routes->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
+
         // Explicit route for AJAX sport-form-data endpoint (query param only)
         $routes->connect('/games/sport-form-data', [
             'controller' => 'Games',
@@ -83,6 +86,12 @@ return function (RouteBuilder $routes): void {
          * to use (in this case, templates/Pages/home.php)...
          */
         $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
+
+        // Public blog
+        $builder->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
+        $builder->connect('/blog/{slug}', ['controller' => 'Blog', 'action' => 'view'])
+            ->setPass(['slug'])
+            ->setPatterns(['slug' => '[a-zA-Z0-9_-]+']);
 
         /*
          * ...and connect the rest of 'Pages' controller's URLs.

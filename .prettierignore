@@ -1,0 +1,12 @@
+# Ignore third-party/editor bundles
+webroot/js/tinymce/**
+
+# Standard build artifacts
+coverage-js/**
+node_modules/**
+vendor/**
+
+# App runtime artifacts
+logs/**
+tmp/**
+storage/**

@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 // Tests for shared admin.js confirm delete logic
 
-describe('admin.js showConfirmDelete', () => {
+describe("admin.js showConfirmDelete", () => {
     let showConfirmDelete;
     beforeEach(() => {
         // Reset DOM
@@ -20,7 +20,7 @@ describe('admin.js showConfirmDelete', () => {
             },
         };
         // Reset requestSubmit
-        Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+        Object.defineProperty(HTMLFormElement.prototype, "requestSubmit", {
             value: jest.fn(function () {
                 // console.log('Forced mock requestSubmit called');
                 if (this.submit) {
@@ -31,40 +31,40 @@ describe('admin.js showConfirmDelete', () => {
             writable: true,
         });
         // Reset submit
-        Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+        Object.defineProperty(HTMLFormElement.prototype, "submit", {
             value: jest.fn(),
             configurable: true,
             writable: true,
         });
         jest.resetModules();
-        showConfirmDelete = require('../admin.js').showConfirmDelete;
+        showConfirmDelete = require("../admin.js").showConfirmDelete;
     });
     afterEach(() => {
         // Clean up DOM and globals
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
         delete global.bootstrap;
         jest.clearAllMocks();
     });
-    test('populates associated list and submits with injected inputs', () => {
-        const associated = JSON.stringify(['Item A', 'Item B']);
+    test("populates associated list and submits with injected inputs", () => {
+        const associated = JSON.stringify(["Item A", "Item B"]);
         const ids = JSON.stringify([11, 22]);
         showConfirmDelete({
-            deleteUrl: 'http://localhost/admin/delete/bulk',
+            deleteUrl: "http://localhost/admin/delete/bulk",
             associated,
             ids,
-            idsName: 'sport_ids[]',
-            formId: 'delete-form-sample',
-            bulkAction: 'delete',
+            idsName: "sport_ids[]",
+            formId: "delete-form-sample",
+            bulkAction: "delete",
         });
-        const list = document.getElementById('confirm-delete-modal-assoc');
+        const list = document.getElementById("confirm-delete-modal-assoc");
         expect(list.children.length).toBe(2);
-        const form = document.getElementById('delete-form-sample');
+        const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
-        document.getElementById('confirm-delete-modal-delete-btn').click();
-        expect(form.action).toContain('/admin/delete/bulk');
-        const injected = form.querySelectorAll('.injected-delete');
+        document.getElementById("confirm-delete-modal-delete-btn").click();
+        expect(form.action).toContain("/admin/delete/bulk");
+        const injected = form.querySelectorAll(".injected-delete");
         expect(injected.length).toBe(3); // 2 ids + bulk_action
-        const bulk = Array.from(injected).find((i) => i.name === 'bulk_action');
-        expect(bulk.value).toBe('delete');
+        const bulk = Array.from(injected).find((i) => i.name === "bulk_action");
+        expect(bulk.value).toBe("delete");
     });
 });

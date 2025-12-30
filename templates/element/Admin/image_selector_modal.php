@@ -17,6 +17,17 @@ $targetFieldId = $targetFieldId ?? 'image-field';
 $tagFilter = $tagFilter ?? null;
 $uploadContext = $uploadContext ?? null;
 $aspectRatio = $aspectRatio ?? 1;
+$tagSelectionOptions = array_merge([
+    'teams' => [],
+    'teamSeasons' => [],
+    'games' => [],
+    'sites' => [],
+    'opponents' => [],
+    'sports' => [],
+], (array)($tagSelectionOptions ?? []));
+$tagSelectorIdPrefix = $modalId . '_tag';
+$tagFormId = $modalId . '-tag-form';
+$skipCropId = $modalId . '-skip-crop';
 ?>
 
 <div class="modal fade" id="<?= h($modalId) ?>" tabindex="-1" aria-labelledby="<?= h($modalId) ?>Label" aria-hidden="true">
@@ -85,6 +96,42 @@ $aspectRatio = $aspectRatio ?? 1;
                                     <button type="button" class="btn btn-sm btn-outline-secondary" id="<?= h($modalId) ?>-reset-crop">
                                         <i class="bi bi-arrow-repeat"></i> Reset
                                     </button>
+                                </div>
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" id="<?= h($skipCropId) ?>">
+                                    <label class="form-check-label" for="<?= h($skipCropId) ?>">Upload original image without cropping</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-4 mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Tags for this upload</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="<?= h($tagFormId) ?>" class="m-0">
+                                        <?= $this->element('Admin/tag_selection', [
+                                            'teams' => $tagSelectionOptions['teams'],
+                                            'teamSeasons' => $tagSelectionOptions['teamSeasons'],
+                                            'games' => $tagSelectionOptions['games'],
+                                            'sites' => $tagSelectionOptions['sites'],
+                                            'opponents' => $tagSelectionOptions['opponents'],
+                                            'sports' => $tagSelectionOptions['sports'],
+                                            'currentTags' => [],
+                                            'tagString' => '',
+                                            'idPrefix' => $tagSelectorIdPrefix,
+                                            'freeform' => [
+                                                'label' => 'Additional tags (comma-separated slugs)',
+                                                'help' => 'Use entity slugs such as person-123 or teamseason-456 to tag this upload.',
+                                                'attributes' => [
+                                                    'rows' => 2,
+                                                    'id' => 'upload_tags',
+                                                ],
+                                            ],
+                                        ]) ?>
+                                    </form>
                                 </div>
                             </div>
                         </div>

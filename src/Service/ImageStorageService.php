@@ -14,22 +14,22 @@ use Psr\Http\Message\UploadedFileInterface;
  * ImageStorageService
  *
  * Handles upload validation, processing, persistence, and lookup of images.
- * Delegates tagging to ImageTaggingService and pixel work to ImageProcessor.
+ * Delegates tagging to TaggingService and pixel work to ImageProcessor.
  */
 class ImageStorageService
 {
     private ImageProcessor $processor;
-    private ImageTaggingService $tagging;
+    private TaggingService $tagging;
     private ?string $lastError = null;
 
     /**
      * @param \App\Service\ImageProcessor|null $processor Optional processor override
-     * @param \App\Service\ImageTaggingService|null $tagging Optional tagging override
+     * @param \App\Service\TaggingService|null $tagging Optional tagging override
      */
-    public function __construct(?ImageProcessor $processor = null, ?ImageTaggingService $tagging = null)
+    public function __construct(?ImageProcessor $processor = null, ?TaggingService $tagging = null)
     {
         $this->processor = $processor ?? new ImageProcessor();
-        $this->tagging = $tagging ?? new ImageTaggingService();
+        $this->tagging = $tagging ?? TaggingService::forImages();
     }
 
     /**

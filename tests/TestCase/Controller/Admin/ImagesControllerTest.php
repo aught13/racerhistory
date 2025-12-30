@@ -23,6 +23,9 @@ class ImagesControllerTest extends TestCase
 
     protected array $fixtures = [
         'app.Images',
+        'app.ImageTags',
+        'app.ImagesImageTags',
+        'app.ImageUsages',
     ];
 
     private string $storageRoot;
@@ -374,7 +377,7 @@ class ImagesControllerTest extends TestCase
                 } catch (\Throwable $e) {
                     continue;
                 }
-                $storagePath = $record->storage_path ?? null;
+                $storagePath = $record->get('storage_path');
                 if ($storagePath) {
                     $base = $this->storageRoot;
                     // sanitize path to avoid directory traversal or backslash issues
@@ -388,7 +391,8 @@ class ImagesControllerTest extends TestCase
                         }
                     }
                     // try variants
-                    $variants = is_string($record->variants) ? json_decode($record->variants, true) : $record->variants;
+                    $variantsRaw = $record->get('variants');
+                    $variants = is_string($variantsRaw) ? json_decode($variantsRaw, true) : $variantsRaw;
                     if (is_array($variants)) {
                         foreach ($variants as $v) {
                             if (!empty($v['file'])) {

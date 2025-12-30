@@ -25,7 +25,7 @@ class GamesExtendedFixture extends TestFixture
         'opponent_id' => ['type' => 'integer', 'length' => 11, 'null' => false],
         'place_id' => ['type' => 'integer', 'length' => 11, 'null' => false],
         'site_id' => ['type' => 'integer', 'length' => 11, 'null' => false],
-        'hrn' => ['type' => 'boolean', 'null' => true, 'default' => 0],
+        'hrn' => ['type' => 'integer', 'length' => 11, 'null' => true, 'default' => 0],
         'post' => ['type' => 'boolean', 'null' => true, 'default' => 0],
         'w' => ['type' => 'string', 'length' => 1, 'null' => true],
         'l' => ['type' => 'string', 'length' => 1, 'null' => true],

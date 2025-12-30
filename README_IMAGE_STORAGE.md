@@ -1,13 +1,13 @@
 Image Storage Guide
 
-This document explains how the image uploading stack works: the storage/persistence layer (`ImageStorageService`), the tagging helpers (`ImageTaggingService`), and the processing utilities (`ImageProcessor`). It also summarizes configuration knobs and test scaffolding that keep this pipeline reliable.
+This document explains how the image uploading stack works: the storage/persistence layer (`ImageStorageService`), the tagging helpers (`TaggingService`), and the processing utilities (`ImageProcessor`). It also summarizes configuration knobs and test scaffolding that keep this pipeline reliable.
 
 ## 1. High-level flow
 
 1. `ImagesController::persistNewImage` (and similar upload actions) accept a PSR-7 `UploadedFileInterface` and hand it to `ImageStorageService::upload()` along with any user-supplied tags/manipulations.
-2. `ImageStorageService` validates the upload, delegates pixel work to `ImageProcessor`, deduplicates by hash, writes the original and variant files, writes the `images` record, and finally hands off tag persistence to `ImageTaggingService`.
+2. `ImageStorageService` validates the upload, delegates pixel work to `ImageProcessor`, deduplicates by hash, writes the original and variant files, writes the `images` record, and finally hands off tag persistence to `TaggingService`.
 3. Uploaded files are immediately accessible through `ImageStorageService::resolveImagePath()` or the existing `ImagesController::serve()` action (which can wrap the raw bytes with ACL/caching logic).
-4. Tags flow through `ImageTaggingService::attachTags()`/`replaceTags()`; the service builds canonical slugs, enriches friendly names via dependent services (person/team/roster), and links them via the `ImageTags` HABTM table.
+4. Tags flow through `TaggingService::attachTags()`/`replaceTags()`; the service builds canonical slugs, enriches friendly names via dependent services (person/team/roster), and links them via the `ImageTags` HABTM table.
 5. `ImageProcessor` powers both freshly uploaded variants and the manipulation APIs (`manipulateExisting()`), so the `images` row always points to consistent metadata for the original and configured variants.
 
 ## 2. Storage layout and persistence
@@ -33,7 +33,11 @@ This document explains how the image uploading stack works: the storage/persiste
 ## 4. Image processing details
 
 - `ImageProcessor` relies on the `Intervention/Image` manager but gracefully degrades if the library is unavailable (falling back to native GD helpers). The optional manager may be injected for tests/mocks.
-- The `variants` configuration lives in `Configure::read('Images.variants', [])`, with a default of a `thumb` (150×150 cover) and `medium` (`maxWidth` 800).
+- The `variants` configuration lives in `Configure::read('Images.variants', [])` and is set centrally in `Application::bootstrap()`.
+- Current defaults include:
+	- `thumb` (150×150 cover) encoded as WebP
+	- `medium` (maxWidth 800) encoded as WebP
+	- `webp` (alternate WebP encoding of the original)
 - Each variant config can include:
 	- `fit` `[width, height]` → uses `cover()` to crop+fill
 	- `maxWidth` → scales down (maintaining aspect ratio)
@@ -41,7 +45,7 @@ This document explains how the image uploading stack works: the storage/persiste
 	- `crop` coordinates for explicit cropping prior to resizing
 - Manipulations (e.g., `rotate`, `crop`, `flip`) may be passed via the `$manipulations` array and are applied before variant generation by `applyManipulations()`.
 - The processor returns raw binary data, dimensions, MIME, and inferred extension for both the original and each variant; `ImageStorageService` uses those outputs to build metadata and write files.
-- Post-upload editing (e.g., re-cropping) uses `manipulateExisting()` with the saved file content, re-running the variant logic so `ImageTaggingService` or other callers can regenerate downstream assets.
+- Post-upload editing (e.g., re-cropping) uses `manipulateExisting()` with the saved file content, re-running the variant logic so `TaggingService` or other callers can regenerate downstream assets.
 
 ## 5. Tag lifecycle and maintenance
 
@@ -57,7 +61,7 @@ This document explains how the image uploading stack works: the storage/persiste
 |------------|---------|---------|
 | `Images.storageRoot` | Public storage root (must end with `/`). | `WWW_ROOT/img/storage/` |
 | `Images.legacyStorageRoot` | Legacy private storage root for backwards lookup. | `ROOT/storage/images/` |
-| `Images.variants` | Variant map passed to `ImageProcessor::process()` (see Section 4). | `['thumb' => ['fit' => [150, 150]], 'medium' => ['maxWidth' => 800]]` |
+| `Images.variants` | Variant map passed to `ImageProcessor::process()` (see Section 4). | `['thumb' => ['fit' => [150, 150], 'format' => 'webp'], 'medium' => ['maxWidth' => 800, 'format' => 'webp'], 'webp' => ['format' => 'webp']]` |
 | `Images.manipulations` | Optional manipulations applied during upload. | empty array |
 
 - `ImageProcessor` will fall back to native GD functions if the Intervention driver cannot be instantiated, so deployments without the PHP extension still work albeit with reduced capabilities.
