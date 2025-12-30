@@ -33,7 +33,11 @@ This document explains how the image uploading stack works: the storage/persiste
 ## 4. Image processing details
 
 - `ImageProcessor` relies on the `Intervention/Image` manager but gracefully degrades if the library is unavailable (falling back to native GD helpers). The optional manager may be injected for tests/mocks.
-- The `variants` configuration lives in `Configure::read('Images.variants', [])`, with a default of a `thumb` (150×150 cover) and `medium` (`maxWidth` 800).
+- The `variants` configuration lives in `Configure::read('Images.variants', [])` and is set centrally in `Application::bootstrap()`.
+- Current defaults include:
+	- `thumb` (150×150 cover) encoded as WebP
+	- `medium` (maxWidth 800) encoded as WebP
+	- `webp` (alternate WebP encoding of the original)
 - Each variant config can include:
 	- `fit` `[width, height]` → uses `cover()` to crop+fill
 	- `maxWidth` → scales down (maintaining aspect ratio)
@@ -57,7 +61,7 @@ This document explains how the image uploading stack works: the storage/persiste
 |------------|---------|---------|
 | `Images.storageRoot` | Public storage root (must end with `/`). | `WWW_ROOT/img/storage/` |
 | `Images.legacyStorageRoot` | Legacy private storage root for backwards lookup. | `ROOT/storage/images/` |
-| `Images.variants` | Variant map passed to `ImageProcessor::process()` (see Section 4). | `['thumb' => ['fit' => [150, 150]], 'medium' => ['maxWidth' => 800]]` |
+| `Images.variants` | Variant map passed to `ImageProcessor::process()` (see Section 4). | `['thumb' => ['fit' => [150, 150], 'format' => 'webp'], 'medium' => ['maxWidth' => 800, 'format' => 'webp'], 'webp' => ['format' => 'webp']]` |
 | `Images.manipulations` | Optional manipulations applied during upload. | empty array |
 
 - `ImageProcessor` will fall back to native GD functions if the Intervention driver cannot be instantiated, so deployments without the PHP extension still work albeit with reduced capabilities.

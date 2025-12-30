@@ -2,7 +2,9 @@
 
 ## Overview
 
-This application uses **CakePHP Authorization Plugin** with policy-based authorization. We use **CakeDC/Auth** only for its authorization infrastructure, not the full Users plugin.
+This application uses **CakePHP Authorization Plugin** with policy-based authorization. We load **CakeDC/Auth** only for its policy/authorization infrastructure (no routes/bootstrap), and we currently use in-app controllers/components for user management.
+
+Note: the database schema includes CakeDC/Users-style fields (via migrations) for compatibility, but the CakeDC/Users plugin is not currently the primary authentication UI in this app.
 
 ## Architecture
 

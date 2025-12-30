@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-0.1.6--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.1.9--alpha-orange.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -21,29 +21,31 @@
 
 
 
-A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.x framework with Bootstrap 5.3.2 and modern web technologies.
+A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2 and modern web tooling.
 
-## 🏁 Overview
+- Start here: [APPLICATION_SUMMARY.md](APPLICATION_SUMMARY.md)
+
+## Overview
 
 This project powers the racerhistory.com website, providing features for:
 
-- **User Authentication** - Secure registration, login, and password management
-- **Admin Dashboard** - Administrative interface for user and content management
-- **Historical Game Data** - Management system for sports historical data
+- **User Authentication** - Registration, login, logout, password reset
+- **Admin Dashboard** - Administrative interface for site data management
+- **Historical Game Data** - Sports/team/season/game management with sport-aware configuration
+- **Blog Engine** - Public blog with an admin editor, tagging, and hero images
 - **Responsive Design** - Mobile-first Bootstrap 5.3.2 interface
 
 Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web development.
 
-## 🚀 Features
+## Features
 
-### Authentication & Authorization System
+### Authentication & Authorization
 
-- **Modern Authorization** - CakeDC/Users plugin (v12.1) with policy-based access control
-- **User Management** - Registration, login, password reset with enhanced security
-- **Policy Framework** - Fine-grained permissions via Authorization plugin (v3.1)
-- **Identity-Based Auth** - Session management with `$this->identity()` pattern
-- **Role-Based Access** - Admin/user roles with superuser support
-- **Password Controls** - Visibility toggles and secure hashing
+- **Authentication**: CakePHP Authentication plugin (session + form)
+- **Authorization**: CakePHP Authorization plugin with policy checks
+- **Policy-based admin gating**: request-level authorization for `/admin/*`
+- **User management**: implemented in-app via `UsersController`, `Admin/UsersController`, and `UserManagerComponent`
+- **Compatibility**: the schema includes CakeDC/Users-style fields (via migrations), but the CakeDC/Users plugin is not currently wired as the primary auth UI
 
 ### Administrative Interface
 
@@ -76,6 +78,20 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
   - Refactored architecture: dedicated `StatBasketGameBoxController` for game/period box management and `BasketballStatsService` for consolidated data loading; `GamesController` now minimal sport-aware orchestrator
 - **Legacy Compatibility** - Maintains backward compatibility with existing game data
 
+### Blog
+
+- **Public blog**: `/blog` and `/blog/{slug}`
+- **Admin editor**: `/admin/blog-posts` with draft/publish workflow
+- **Rich editing**: TinyMCE integration with inline image uploads
+- **Tagging**: reuse the same tag infrastructure as images, with freeform tags and structured tags (team/team-season/game/site/opponent/sport/person/roster)
+
+### Images
+
+- **Upload + browse** in admin
+- **Public serving route**: `/images/serve/{id}`
+- **Variants** configured centrally (see `Application::bootstrap()`): thumb/medium plus WebP outputs
+- **Taggable** images via the tagging service layer
+
 ### UI/UX
 
 - **Bootstrap 5.3.2** responsive framework
@@ -85,20 +101,21 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 ### Security Features
 
-- **Authorization Framework** - CakeDC/Users with policy-based access control
-- **Identity Management** - Secure session handling with Authentication plugin
+- **Authorization Framework** - CakePHP Authorization plugin (policies) with request-level and entity-level checks
+- **Identity Management** - Secure session handling with CakePHP Authentication
 - CSRF protection on all forms
 - HTML escaping for XSS prevention
 - Password hashing with CakePHP security
 - CDN integrity verification for external resources
 
+## Requirements
 
 - **PHP 8.1+** with required extensions
-- **Composer** for dependency management
-- **MySQL/MariaDB** database
-- **Web server** (Apache/Nginx) or built-in PHP server
+- **Composer** for PHP dependencies
+- **MySQL/MariaDB** for production (tests typically use SQLite unless configured otherwise)
+- **Node.js 20+** (recommended) for JS linting/tests
 
-## 🔧 Installation
+## Installation
 
 ### 1. Clone Repository
 
@@ -138,7 +155,7 @@ bin/cake server --host 0.0.0.0 --port 8000
 
 Visit `http://localhost:8765` (or your configured port) to see the application.
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 racerhistory/
@@ -166,27 +183,20 @@ racerhistory/
 └── webroot/                # Public web assets
 ```
 
-## 📚 Documentation & Architecture
+## Documentation & Architecture
 
 ### Application Documentation
 
-- **[Authorization Setup Guide](AUTHORIZATION_SETUP.md)** - CakeDC/Users migration and policy implementation
-- **[Templates Documentation](templates/README.md)** - Complete template system guide
-- **[Source Code Documentation](src/)** - Comprehensive PHPDoc annotations
-- **[Test Coverage](tests/)** - Unit and integration test suite
+- **[Application Summary](APPLICATION_SUMMARY.md)** - What the app does and how modules fit together
+- **[Authorization Setup Guide](AUTHORIZATION_SETUP.md)** - Authentication/authorization design and policy patterns
+- **[Image Storage Guide](README_IMAGE_STORAGE.md)** - Image upload, variants, storage layout, tagging
+- **[Templates Documentation](templates/README.md)** - Template structure and UI element conventions
 
-### Code Coverage & Test Suite
+### Testing & Quality
 
-- **PHP Tests**: 480 tests / 1247 assertions (controllers, models, integration, game flows & validation, basketball stats, policies, entities, services)
-- **PHP Coverage**: 73.58% line coverage (3723/5060 statements)
-- **JavaScript Coverage** (Jest): Statements 88%+, Branches 80%+, Functions 95%+, Lines 90%+
-- **Controllers**: High integration coverage (auth, CRUD, AJAX add/search, bulk, games management, basketball stats)
-- **Models**: Validation & association tests (Sports, Teams, Seasons, TeamSeasons, Games, EAV, Persons, Images, StatBasket*)
-- **Entities**: Comprehensive tests for Sport, Team, SportConfig, SportStatRegistry with all methods covered
-- **Policies**: Complete authorization coverage (UserPolicy, ApplicationPolicy) with admin/user/guest scenarios
-- **Services**: Comprehensive coverage (GameService, StatsService, SportConfigService, BasketballStatsService, ImageProcessor)
-- **Business Rules**: Comprehensive validation testing (season dates, cumulative scoring, future games, stat validation)
-- **Frontend**: Jest exercises confirm-delete modal, image selector, sport-aware forms, error branches
+- **PHP**: PHPUnit, PHPStan, PHPCS
+- **JavaScript**: ESLint, Prettier, Jest (coverage thresholds enforced in CI)
+- VS Code tasks exist for common workflows (PHPUnit/PHPCS/PHPStan/Jest)
 
 ### Key Documentation Features
 
@@ -195,7 +205,7 @@ racerhistory/
 - **Security Guidelines**: CSRF, XSS prevention, and authentication practices
 - **Bootstrap Integration**: CDN integrity hashes and responsive design patterns
 
-## 🧪 Testing
+## Testing
 
 ### Run Test Suites
 
@@ -216,16 +226,13 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **Integration Tests**: Controller actions, authentication, form processing
 - **Fixtures**: Test data for consistent testing environment
 
-## 🔐 Security & Authorization
+## Security & Authorization
 
 ### Authentication & Authorization
 
-- **CakeDC/Users Plugin** (v12.1) for comprehensive user management
-- **Authorization Plugin** (v3.1) for policy-based access control
-- **UserPolicy** with fine-grained permission rules
-- **Identity-Based Authentication** using `$this->identity()` pattern
-- **Password Hashing** using PHP's password_hash()
-- **Form Security** with CSRF tokens on all forms
+- **CakePHP Authentication** (session + form) and **CakePHP Authorization** (policies)
+- Policies cover both request-level checks (admin access) and entity-level checks (user operations)
+- CSRF protection enabled globally
 
 ### Authorization Features
 
@@ -246,7 +253,7 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **HTTPS Enforcement** for production deployment
 - **Secure Headers** for XSS and clickjacking protection
 
-## 🎨 Frontend Technologies
+## Frontend Technologies
 
 ### CSS Framework
 
@@ -269,7 +276,7 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **Accessibility** with ARIA labels and semantic HTML
 - **Performance** optimized with CDN resources and minified assets
 
-## 🔄 Development Workflow
+## Development Workflow
 
 ### Code Standards
 
@@ -285,7 +292,7 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **PHPUnit** - Testing framework
 - **Composer** - Dependency management
 
-## 🚀 Deployment
+## Deployment
 
 ### Production Setup
 
@@ -301,7 +308,7 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - **Development**: Debug enabled, detailed error reporting
 - **Production**: Debug disabled, error logging, optimized autoloader
 
-## 🤝 Contributing
+## Contributing
 
 ### Code Contributions
 
@@ -317,7 +324,7 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 - Template changes need header documentation
 - API changes require PHPDoc updates
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -330,4 +337,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-### Built with ❤️ using CakePHP 5.x and Bootstrap
+### Built with CakePHP 5.x and Bootstrap

@@ -34,6 +34,19 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 - Test suite expanded to **348 tests / 998 assertions** validating refactored controller/service architecture, season totals update path, and stability across basketball stats operations.
 
+## [0.1.9-alpha] - 2025-12-30
+
+### Added
+
+- **Blog engine**: public blog routes (`/blog`, `/blog/{slug}`) with published-only listing.
+- **Admin blog editor**: `/admin/blog-posts` add/edit/delete with draft/publish workflow.
+- **Blog tagging + hero images**: posts support tags and `hero_image_id` integrated with the image selector/uploader.
+
+### Changed
+
+- **Image variants**: application config defines thumb/medium plus WebP variants (see `Application::bootstrap()`).
+- **Documentation refresh**: README and supporting docs updated to reflect current app modules and architecture.
+
 ## [0.1.6-alpha] - 2025-11-08
 
 ### Added
