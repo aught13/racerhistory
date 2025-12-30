@@ -83,6 +83,18 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
                         'div' => ['class' => 'form-check form-switch mb-3'],
                     ]) ?>
                     <div class="form-text mb-3">Published posts are visible on the public blog. Uncheck to keep the post a draft.</div>
+                    <?php if (!empty($post->slug) && ($post->is_published ?? false)) :
+                        $viewUrl = '/blog/' . rawurlencode((string)$post->slug);
+                    ?>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <?= $this->Html->link('View published post', $viewUrl, [
+                                'class' => 'btn btn-sm btn-outline-primary',
+                                'target' => '_blank',
+                                'rel' => 'noopener',
+                            ]) ?>
+                            <span class="text-muted small align-self-center">Opens in a new tab</span>
+                        </div>
+                    <?php endif; ?>
                     <?= $this->Form->control('published_at', [
                         'type' => 'datetime',
                         'label' => ['text' => 'Publish At', 'class' => 'form-label'],
@@ -237,13 +249,20 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
         const inlineField = document.getElementById('{$inlineFieldId}');
         function insertInlineImage() {
             const val = inlineField?.value?.trim();
-            if (!val || isNaN(parseInt(val, 10))) { return; }
+            if (!val || isNaN(parseInt(val, 10))) { return false; }
             const url = '/images/serve/' + val + '?w=800&fit=contain&_ts=' + Date.now();
-            if (window.tinymce?.activeEditor) {
-                window.tinymce.activeEditor.insertContent('<p><img src="' + url + '" alt="" /></p>');
+            const editor = window.tinymce?.activeEditor;
+            if (editor) {
+                editor.insertContent('<p><img src="' + url + '" alt="" /></p>');
+                return true;
             }
+            return false;
         }
-        inlineField?.addEventListener('change', insertInlineImage);
+        inlineField?.addEventListener('change', () => {
+            if (insertInlineImage()) {
+                inlineField.value = '';
+            }
+        });
 
     });
 })();
