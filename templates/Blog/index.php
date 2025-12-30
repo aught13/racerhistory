@@ -2,21 +2,11 @@
 declare(strict_types=1);
 /** @var \App\Model\Entity\BlogPost[] $posts */
 ?>
-<div class="container mt-4" aria-label="Public Blog">
-    <h1 class="h3">Blog</h1>
-    <div class="list-group">
-        <?php foreach ($posts as $p): ?>
-            <a class="list-group-item list-group-item-action" href="<?= $this->Url->build(['/blog/' . h($p->slug)]) ?>">
-                <strong><?= h($p->title) ?></strong>
-                <div class="small text-muted">
-                    <?= $p->published_at instanceof \DateTimeInterface ? h($p->published_at->format('M j, Y')) : h((string)$p->published_at) ?>
-                </div>
-            </a>
-        <?php endforeach; ?>
+<div class="container py-4" aria-label="Public Blog">
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4">
+        <h1 class="h3 mb-2 mb-md-0">Blog</h1>
+        <p class="text-muted mb-0">Latest stories, tagged and curated.</p>
     </div>
-</div>
-<div class="container py-4">
-    <h1 class="mb-4">Blog</h1>
     <div class="row g-4">
         <?php if (empty($posts)): ?>
             <div class="col-12">
