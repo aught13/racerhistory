@@ -54,3 +54,4 @@ security-report.json
 # Local helper scripts
 /bin/fix-permissions.sh
 
+.prettierrc.json
