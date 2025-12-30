@@ -53,6 +53,10 @@ if ($selectedPersonIds === null) {
 
 $personService = new \App\Service\PersonService();
 $rosterService = new \App\Service\TeamSeasonRosterService();
+$selectedGameLabelFromTag = '';
+$selectedSiteLabelFromTag = '';
+$selectedOpponentLabelFromTag = '';
+$selectedRosterLabelFromTag = '';
 foreach ($currentTags as $tag) {
     $slug = (string)($tag->slug ?? $tag['slug'] ?? '');
     if ($slug === '') {
@@ -64,20 +68,35 @@ foreach ($currentTags as $tag) {
         $selectedTeamSeasonId = (int)substr($slug, strlen('teamseason-'));
     } elseif (str_starts_with($slug, 'game-')) {
         $selectedGameId = (int)substr($slug, strlen('game-'));
+        if ($selectedGameLabelFromTag === '') {
+            $selectedGameLabelFromTag = (string)($tag->name ?? $tag['name'] ?? '');
+        }
     } elseif (str_starts_with($slug, 'site-')) {
         $selectedSiteId = (int)substr($slug, strlen('site-'));
+        if ($selectedSiteLabelFromTag === '') {
+            $selectedSiteLabelFromTag = (string)($tag->name ?? $tag['name'] ?? '');
+        }
     } elseif (str_starts_with($slug, 'opponent-')) {
         $selectedOpponentId = (int)substr($slug, strlen('opponent-'));
+        if ($selectedOpponentLabelFromTag === '') {
+            $selectedOpponentLabelFromTag = (string)($tag->name ?? $tag['name'] ?? '');
+        }
     } elseif (str_starts_with($slug, 'team-')) {
         $selectedTeamId = (int)substr($slug, strlen('team-'));
     } elseif (str_starts_with($slug, 'sport-')) {
         $selectedSportId = (int)substr($slug, strlen('sport-'));
     } elseif (str_starts_with($slug, 'team_season_roster-')) {
         $selectedRosterId = (int)substr($slug, strlen('team_season_roster-'));
+        if ($selectedRosterLabelFromTag === '') {
+            $selectedRosterLabelFromTag = (string)($tag->name ?? $tag['name'] ?? '');
+        }
         if (!$selectedPersonIds && $selectedRosterId) {
             $rosterData = $rosterService->getRosterDisplayData($selectedRosterId);
             $selectedPersonIds = [(int)($rosterData['person_id'] ?? 0)];
             $selectedPersonNames = [(string)($rosterData['person_label'] ?? '')];
+            if ($selectedRosterLabelFromTag === '') {
+                $selectedRosterLabelFromTag = (string)($rosterData['team_season_label'] ?? '');
+            }
         }
     }
 }
@@ -100,6 +119,7 @@ if ($selectedGameId) {
         }
     }
 }
+$selectedGameLabel = $selectedGameLabel !== '' ? $selectedGameLabel : $selectedGameLabelFromTag;
 $selectedSiteLabel = '';
 if ($selectedSiteId) {
     foreach ($sites as $s) {
@@ -109,6 +129,7 @@ if ($selectedSiteId) {
         }
     }
 }
+$selectedSiteLabel = $selectedSiteLabel !== '' ? $selectedSiteLabel : $selectedSiteLabelFromTag;
 $selectedOpponentLabel = '';
 if ($selectedOpponentId) {
     foreach ($opponents as $o) {
@@ -118,6 +139,9 @@ if ($selectedOpponentId) {
         }
     }
 }
+$selectedOpponentLabel = $selectedOpponentLabel !== '' ? $selectedOpponentLabel : $selectedOpponentLabelFromTag;
+
+$selectedRosterLabel = $selectedRosterLabelFromTag;
 
 $initialPersonCount = count($selectedPersons);
 $initialPersonIds = array_map(fn(array $p) => (int)$p['id'], $selectedPersons);
@@ -194,6 +218,7 @@ foreach ($unlockedFields as $field) {
 
     <div class="col-md-6 mb-3">
         <label class="form-label">Game</label>
+        <div id="<?= h($id('selectedGame')) ?>" class="d-flex flex-wrap gap-2 mb-2"></div>
         <input
             type="text"
             name="game_search"
@@ -258,6 +283,7 @@ foreach ($unlockedFields as $field) {
 
     <div class="col-md-6 mb-3">
         <label class="form-label">Team Season Roster Entry</label>
+        <div id="<?= h($id('selectedRoster')) ?>" class="d-flex flex-wrap gap-2 mb-2" data-initial-label="<?= h($selectedRosterLabel) ?>"></div>
         <select name="roster_select" id="<?= h($id('roster_select')) ?>" class="form-select" <?= $initialPersonCount === 1 ? '' : 'disabled' ?> >
             <option value="">-- select roster entry --</option>
         </select>
@@ -293,12 +319,14 @@ $script = <<<JS
         const addBtn = document.getElementById(prefixed('add_person_btn'));
         const clearBtn = document.getElementById(prefixed('clear_persons_btn'));
         const rosterSelect = document.getElementById(prefixed('roster_select'));
+        const selectedRosterEl = document.getElementById(prefixed('selectedRoster'));
         const teamSeasonSelect = document.getElementById(prefixed('teamseason_select'));
         const teamSelect = document.getElementById(prefixed('team_select'));
         const sportSelect = document.getElementById(prefixed('sport_select'));
         const gameSearch = document.getElementById(prefixed('game_search'));
         const gameHidden = document.getElementById(prefixed('game_select'));
         const gamesList = document.getElementById(prefixed('gamesList'));
+        const selectedGameEl = document.getElementById(prefixed('selectedGame'));
         const siteSearch = document.getElementById(prefixed('site_search'));
         const siteHidden = document.getElementById(prefixed('site_select'));
         const sitesList = document.getElementById(prefixed('sitesList'));
@@ -306,7 +334,7 @@ $script = <<<JS
         const opponentHidden = document.getElementById(prefixed('opponent_select'));
         const opponentsList = document.getElementById(prefixed('opponentsList'));
         const initialSelectedPersons = {$initialSelectedPersonsJson};
-        const selectedRosterId = {$selectedRosterIdJs};
+        let selectedRosterId = {$selectedRosterIdJs};
         const endpoints = {
             persons: '/admin/tag-lookups/persons',
             rosters: '/admin/tag-lookups/rosters',
@@ -322,6 +350,91 @@ $script = <<<JS
         let lastGames = [];
         let lastSites = [];
         let lastOpponents = [];
+
+        function renderRemovableBadge(containerEl, label, ariaLabel, onRemove) {
+            if (!containerEl) return;
+            containerEl.innerHTML = '';
+            const safeLabel = String(label || '').trim();
+            if (!safeLabel) return;
+
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-secondary d-inline-flex align-items-center gap-2';
+            badge.textContent = safeLabel;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm btn-light py-0 px-1';
+            btn.setAttribute('aria-label', ariaLabel);
+            btn.textContent = '×';
+            btn.addEventListener('click', onRemove);
+
+            badge.appendChild(btn);
+            containerEl.appendChild(badge);
+        }
+
+        function clearGameSelection() {
+            if (gameSearch) gameSearch.value = '';
+            if (gameHidden) gameHidden.value = '';
+            lastGames = [];
+            renderDatalist(gamesList, []);
+            renderSelectedGame();
+        }
+
+        function renderSelectedGame() {
+            if (!selectedGameEl || !gameHidden || !gameSearch) return;
+            const gameId = parseInt((gameHidden.value || '').trim(), 10);
+            if (!gameId) {
+                selectedGameEl.innerHTML = '';
+                return;
+            }
+            const label = (gameSearch.value || '').trim() || ('Game #' + gameId);
+            renderRemovableBadge(
+                selectedGameEl,
+                label,
+                'Remove ' + label,
+                () => {
+                    clearGameSelection();
+                }
+            );
+        }
+
+        function clearRosterSelection() {
+            if (!rosterSelect) return;
+            rosterSelect.value = '';
+            selectedRosterId = 0;
+            setPersonUiLocked(false);
+            setOtherTagInputsEnabled(true);
+            renderSelectedRoster();
+            renderSelectedPersons();
+        }
+
+        function renderSelectedRoster() {
+            if (!selectedRosterEl || !rosterSelect) return;
+            const rosterId = parseInt((rosterSelect.value || '').trim(), 10);
+            if (!rosterId) {
+                selectedRosterEl.innerHTML = '';
+                return;
+            }
+            let label = '';
+            if (rosterSelect.selectedIndex >= 0) {
+                const opt = rosterSelect.options[rosterSelect.selectedIndex];
+                if (opt && opt.value) {
+                    label = (opt.textContent || '').trim();
+                }
+            }
+            if (!label) {
+                label = (selectedRosterEl.dataset.initialLabel || '').trim() || ('Roster #' + rosterId);
+            }
+
+            renderRemovableBadge(
+                selectedRosterEl,
+                label,
+                'Remove ' + label,
+                () => {
+                    clearRosterSelection();
+                }
+            );
+        }
 
         function debounce(fn, ms) {
             let t = null;
@@ -417,6 +530,8 @@ $script = <<<JS
                 }
                 setPersonUiLocked(true);
                 setOtherTagInputsEnabled(false);
+                renderSelectedRoster();
+                renderSelectedGame();
                 return;
             }
 
@@ -429,6 +544,9 @@ $script = <<<JS
             } else {
                 setRosterEnabled(false);
             }
+
+            renderSelectedRoster();
+            renderSelectedGame();
         }
 
         function addPersonFromLabel(label) {
@@ -478,6 +596,7 @@ $script = <<<JS
             if (!personId) {
                 rosterSelect.innerHTML = '<option value="">-- select roster entry --</option>';
                 rosterSelect.disabled = true;
+                renderSelectedRoster();
                 return;
             }
             fetch(endpoints.rosters + '?person_id=' + encodeURIComponent(personId), {credentials: 'same-origin'})
@@ -496,10 +615,12 @@ $script = <<<JS
                         });
                     }
                     rosterSelect.disabled = false;
+                    renderSelectedRoster();
                 })
                 .catch(() => {
                     rosterSelect.innerHTML = '<option value="">-- select roster entry --</option>';
                     rosterSelect.disabled = true;
+                    renderSelectedRoster();
                 });
         }
 
@@ -633,18 +754,36 @@ $script = <<<JS
         if (gameSearch) {
             const debouncedGames = debounce((val) => fetchGames(val || ''), 250);
             gameSearch.addEventListener('input', (e) => {
-                const val = e.target.value || '';
+                const val = (e.target.value || '').trim();
+                if (val === '') {
+                    if (gameHidden) {
+                        gameHidden.value = '';
+                    }
+                    lastGames = [];
+                    renderDatalist(gamesList, []);
+                    renderSelectedGame();
+                    return;
+                }
                 debouncedGames(val);
             });
             gameSearch.addEventListener('change', () => {
                 setHiddenFromLabel(gameHidden, gameSearch.value, lastGames);
+                renderSelectedGame();
             });
         }
 
         if (siteSearch) {
             const debouncedSites = debounce((val) => fetchSites(val || ''), 250);
             siteSearch.addEventListener('input', (e) => {
-                const val = e.target.value || '';
+                const val = (e.target.value || '').trim();
+                if (val === '') {
+                    if (siteHidden) {
+                        siteHidden.value = '';
+                    }
+                    lastSites = [];
+                    renderDatalist(sitesList, []);
+                    return;
+                }
                 debouncedSites(val);
             });
             siteSearch.addEventListener('change', () => {
@@ -655,7 +794,15 @@ $script = <<<JS
         if (opponentSearch) {
             const debouncedOpps = debounce((val) => fetchOpponents(val || ''), 250);
             opponentSearch.addEventListener('input', (e) => {
-                const val = e.target.value || '';
+                const val = (e.target.value || '').trim();
+                if (val === '') {
+                    if (opponentHidden) {
+                        opponentHidden.value = '';
+                    }
+                    lastOpponents = [];
+                    renderDatalist(opponentsList, []);
+                    return;
+                }
                 debouncedOpps(val);
             });
             opponentSearch.addEventListener('change', () => {
@@ -665,18 +812,23 @@ $script = <<<JS
 
         if (rosterSelect) {
             rosterSelect.addEventListener('change', () => {
+                selectedRosterId = parseInt((rosterSelect.value || '').trim(), 10) || 0;
                 const hasRoster = !!(rosterSelect.value || '').trim();
                 if (!hasRoster) {
                     setPersonUiLocked(false);
                     setOtherTagInputsEnabled(true);
                     renderSelectedPersons();
+                    renderSelectedRoster();
                 } else {
                     if (selectedPersons.length !== 1) {
                         rosterSelect.value = '';
+                        selectedRosterId = 0;
+                        renderSelectedRoster();
                         return;
                     }
                     setPersonUiLocked(true);
                     setOtherTagInputsEnabled(false);
+                    renderSelectedRoster();
                 }
             });
         }
@@ -686,6 +838,8 @@ $script = <<<JS
                 rosterSelect.value = String(selectedRosterId);
             }
             renderSelectedPersons();
+            renderSelectedRoster();
+            renderSelectedGame();
         }
 
         init();

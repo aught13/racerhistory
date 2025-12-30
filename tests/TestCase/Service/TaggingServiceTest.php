@@ -23,6 +23,11 @@ class TaggingServiceTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.Places',
+        'app.Sites',
+        'app.Opponents',
+        'app.GameTypes',
+        'app.Games',
     ];
 
     public function testApplyFromDataGeneratesFriendlyLabelsForImage(): void
@@ -216,5 +221,66 @@ class TaggingServiceTest extends TestCase
         $this->assertContains('team_season_roster-1', $applied);
         $this->assertContains('person-1', $applied);
         $this->assertNotContains('person-2', $applied);
+    }
+
+    public function testApplyFromDataGeneratesFriendlyGameLabel(): void
+    {
+        $service = TaggingService::forImages();
+        $images = TableRegistry::getTableLocator()->get('Images');
+
+        $image = $images->newEntity([
+            'filename' => 'tagtest-game.jpg',
+            'storage_subdir' => '',
+            'storage_path' => 'test/tagtest-game.jpg',
+            'original_name' => 'tagtest-game.jpg',
+            'mime' => 'image/jpeg',
+            'ext' => 'jpg',
+            'byte_size' => 10,
+            'width' => 1,
+            'height' => 1,
+            'variants' => json_encode([]),
+            'hash' => 'tagtest-game-' . time(),
+            'status' => 'active',
+        ]);
+        $images->save($image);
+
+        $applied = $service->applyFromData((int)$image->id, [
+            'game_select' => 1,
+        ]);
+
+        $this->assertContains('game-1', $applied);
+
+        $tagsTable = TableRegistry::getTableLocator()->get('ImageTags');
+        $gameTag = $tagsTable->find()->where(['slug' => 'game-1'])->first();
+        $this->assertNotNull($gameTag);
+        $this->assertNotSame('1', (string)$gameTag->name);
+        $this->assertStringContainsString('2025-01-15', (string)$gameTag->name);
+        $this->assertStringContainsString('Belmont', (string)$gameTag->name);
+    }
+
+    public function testParseTagsFromRequestAddsFriendlyGameLabel(): void
+    {
+        $service = TaggingService::forImages();
+
+        $request = new ServerRequest([
+            'post' => [
+                'context' => json_encode(['type' => 'game', 'id' => 1]),
+            ],
+        ]);
+
+        $tags = $service->parseTagsFromRequest($request);
+        $this->assertNotEmpty($tags);
+
+        $found = null;
+        foreach ($tags as $tag) {
+            if (is_array($tag) && ($tag['slug'] ?? null) === 'game-1') {
+                $found = $tag;
+                break;
+            }
+        }
+
+        $this->assertNotNull($found);
+        $this->assertStringContainsString('2025-01-15', (string)$found['name']);
+        $this->assertStringContainsString('Belmont', (string)$found['name']);
     }
 }
