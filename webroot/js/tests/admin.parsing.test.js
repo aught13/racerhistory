@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-describe('admin parsing and fallback behaviors', () => {
+describe("admin parsing and fallback behaviors", () => {
     beforeEach(() => {
         document.body.innerHTML = `
             <div id="confirm-delete-modal">
@@ -10,33 +10,33 @@ describe('admin parsing and fallback behaviors', () => {
         `;
     });
 
-    test('renderAssociated accepts JSON string and arrays', () => {
-        const { __internals } = require('../../js/admin.js');
-        const modal = document.getElementById('confirm-delete-modal');
+    test("renderAssociated accepts JSON string and arrays", () => {
+        const { __internals } = require("../../js/admin.js");
+        const modal = document.getElementById("confirm-delete-modal");
         __internals.renderAssociated(modal, '["A","B"]');
-        expect(modal.querySelectorAll('li').length).toBe(2);
+        expect(modal.querySelectorAll("li").length).toBe(2);
 
-        modal.querySelector('#confirm-delete-modal-assoc').innerHTML = '';
-        __internals.renderAssociated(modal, ['C']);
-        expect(modal.querySelectorAll('li').length).toBe(1);
+        modal.querySelector("#confirm-delete-modal-assoc").innerHTML = "";
+        __internals.renderAssociated(modal, ["C"]);
+        expect(modal.querySelectorAll("li").length).toBe(1);
     });
 
-    test('renderAssociated handles non-JSON string fallback', () => {
-        const { __internals } = require('../../js/admin.js');
-        const modal = document.getElementById('confirm-delete-modal');
+    test("renderAssociated handles non-JSON string fallback", () => {
+        const { __internals } = require("../../js/admin.js");
+        const modal = document.getElementById("confirm-delete-modal");
         // non-json string should render as single item
-        __internals.renderAssociated(modal, 'not-json');
-        expect(modal.querySelectorAll('li').length).toBe(1);
+        __internals.renderAssociated(modal, "not-json");
+        expect(modal.querySelectorAll("li").length).toBe(1);
     });
 
-    test('submitTempForm attaches extra hidden fields and submits (via requestSubmit)', () => {
-        const { __internals } = require('../../js/admin.js');
+    test("submitTempForm attaches extra hidden fields and submits (via requestSubmit)", () => {
+        const { __internals } = require("../../js/admin.js");
         // create tokens source
-        const tokens = document.createElement('form');
-        const h = document.createElement('input');
-        h.type = 'hidden';
-        h.name = 'csrf';
-        h.value = 'tok';
+        const tokens = document.createElement("form");
+        const h = document.createElement("input");
+        h.type = "hidden";
+        h.name = "csrf";
+        h.value = "tok";
         tokens.appendChild(h);
         document.body.appendChild(tokens);
 
@@ -45,11 +45,13 @@ describe('admin parsing and fallback behaviors', () => {
             this.__submitted = true;
         };
 
-        __internals.submitTempForm('/x', tokens, [{ name: 'ids[]', value: '5' }]);
+        __internals.submitTempForm("/x", tokens, [
+            { name: "ids[]", value: "5" },
+        ]);
         const temp = document.querySelector('form[action="/x"]');
         expect(temp).toBeTruthy();
-        expect(temp.querySelector('input[name="csrf"]').value).toBe('tok');
-        expect(temp.querySelector('input[name="ids[]"]').value).toBe('5');
+        expect(temp.querySelector('input[name="csrf"]').value).toBe("tok");
+        expect(temp.querySelector('input[name="ids[]"]').value).toBe("5");
         expect(temp.__submitted).toBe(true);
     });
 });

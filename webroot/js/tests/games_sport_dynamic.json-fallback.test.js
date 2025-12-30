@@ -4,7 +4,7 @@
 
 // test uses DOM APIs and module imports; no file system access needed here
 
-describe('games_sport_dynamic JSON fallback', () => {
+describe("games_sport_dynamic JSON fallback", () => {
     let moduleExports;
 
     beforeEach(() => {
@@ -17,16 +17,16 @@ describe('games_sport_dynamic JSON fallback', () => {
     `;
     });
 
-    test('falls back to JSON and renders client-side when HTML fetch fails', async () => {
+    test("falls back to JSON and renders client-side when HTML fetch fails", async () => {
         const jsonResponse = {
             success: true,
-            sportName: 'Basketball',
+            sportName: "Basketball",
             eavTemplate: [
                 {
-                    field_name: 'period_1_team',
-                    display_label: 'P1 Team',
-                    field_type: 'number',
-                    field_group: 'scoring',
+                    field_name: "period_1_team",
+                    display_label: "P1 Team",
+                    field_type: "number",
+                    field_group: "scoring",
                 },
             ],
             values: {},
@@ -35,17 +35,17 @@ describe('games_sport_dynamic JSON fallback', () => {
         // First fetch (HTML) will fail (simulate network or non-OK), second fetch returns JSON
         global.fetch = jest
             .fn()
-            .mockImplementationOnce(() => Promise.reject(new Error('network')))
+            .mockImplementationOnce(() => Promise.reject(new Error("network")))
             .mockImplementationOnce(() =>
-                Promise.resolve({ json: () => Promise.resolve(jsonResponse) })
+                Promise.resolve({ json: () => Promise.resolve(jsonResponse) }),
             );
 
-        moduleExports = require('../games_sport_dynamic');
+        moduleExports = require("../games_sport_dynamic");
 
         // Call fetchMeta helper directly to trigger fallback JSON flow
-        await moduleExports.fetchMeta('1');
+        await moduleExports.fetchMeta("1");
 
-        const section = document.getElementById('sport-specific-section');
-        expect(section.innerHTML).toContain('P1 Team');
+        const section = document.getElementById("sport-specific-section");
+        expect(section.innerHTML).toContain("P1 Team");
     });
 });

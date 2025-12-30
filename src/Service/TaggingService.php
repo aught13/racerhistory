@@ -509,7 +509,12 @@ class TaggingService
                         $opponentName = (string)$row->opponent->opponent_name;
                     }
 
-                    return $this->formatGameTagLabel($row->game_date ?? null, $opponentName, (int)($row->hrn ?? 0), $id);
+                    return $this->formatGameTagLabel(
+                        $row->game_date ?? null,
+                        $opponentName,
+                        (int)($row->hrn ?? 0),
+                        $id
+                    );
                 },
             ],
             'site_select' => [

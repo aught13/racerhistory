@@ -14,10 +14,10 @@ class CropSelector {
         this.options = options;
 
         if (!this.canvas || !this.image) {
-            throw new Error('CropSelector: canvas or image element not found');
+            throw new Error("CropSelector: canvas or image element not found");
         }
 
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext("2d");
         this.isDragging = false;
         this.isResizing = false;
         this.resizeHandle = null;
@@ -37,7 +37,7 @@ class CropSelector {
         this.registerEvents();
 
         // Initialize when image loads
-        this.image.addEventListener('load', () => this.initializeCrop());
+        this.image.addEventListener("load", () => this.initializeCrop());
         if (this.image.complete && this.image.naturalWidth) {
             this.initializeCrop();
         }
@@ -63,15 +63,19 @@ class CropSelector {
     }
 
     registerEvents() {
-        this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
-        this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        this.canvas.addEventListener('mouseup', () => this.onMouseUp());
-        this.canvas.addEventListener('mouseleave', () => this.onMouseUp());
+        this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e));
+        this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e));
+        this.canvas.addEventListener("mouseup", () => this.onMouseUp());
+        this.canvas.addEventListener("mouseleave", () => this.onMouseUp());
 
         // Touch support
-        this.canvas.addEventListener('touchstart', (e) => this.onMouseDown(e.touches[0]));
-        this.canvas.addEventListener('touchmove', (e) => this.onMouseMove(e.touches[0]));
-        this.canvas.addEventListener('touchend', () => this.onMouseUp());
+        this.canvas.addEventListener("touchstart", (e) =>
+            this.onMouseDown(e.touches[0]),
+        );
+        this.canvas.addEventListener("touchmove", (e) =>
+            this.onMouseMove(e.touches[0]),
+        );
+        this.canvas.addEventListener("touchend", () => this.onMouseUp());
     }
 
     /**
@@ -129,7 +133,12 @@ class CropSelector {
         }
         const x = (canvasW - w) / 2;
         const y = (canvasH - h) / 2;
-        this.cropBox = { x: Math.round(x), y: Math.round(y), width: Math.round(w), height: Math.round(h) };
+        this.cropBox = {
+            x: Math.round(x),
+            y: Math.round(y),
+            width: Math.round(w),
+            height: Math.round(h),
+        };
         this.clampCropBox();
     }
 
@@ -140,8 +149,8 @@ class CropSelector {
         const parsed = Number(degrees) || 0;
         if (parsed === this.rotationDeg) return;
 
-        const oldAngle = (this.rotationDeg % 360) * Math.PI / 180;
-        const newAngle = (parsed % 360) * Math.PI / 180;
+        const oldAngle = ((this.rotationDeg % 360) * Math.PI) / 180;
+        const newAngle = ((parsed % 360) * Math.PI) / 180;
 
         // Current rotated-image rect from canvas cropBox
         const oldRotRect = {
@@ -154,10 +163,20 @@ class CropSelector {
         // Convert old rotated rect -> original image bbox
         const srcW = this.image.naturalWidth;
         const srcH = this.image.naturalHeight;
-        const originalRect = this._rotatedRectToOriginalBBox(oldRotRect, oldAngle, srcW, srcH);
+        const originalRect = this._rotatedRectToOriginalBBox(
+            oldRotRect,
+            oldAngle,
+            srcW,
+            srcH,
+        );
 
         // Project original bbox into new rotated-image bbox
-        const newRotRectRaw = this._originalRectToRotatedBBox(originalRect, newAngle, srcW, srcH);
+        const newRotRectRaw = this._originalRectToRotatedBBox(
+            originalRect,
+            newAngle,
+            srcW,
+            srcH,
+        );
 
         // Update angle and re-render to compute new canvas scale
         this.rotationDeg = parsed;
@@ -165,9 +184,19 @@ class CropSelector {
 
         // Clamp to rotated image bounds and enforce aspect ratio (shrink only), keep center
         const rotDims = this._rotatedDims(newAngle, srcW, srcH);
-        let newRotRect = this._clampRect(newRotRectRaw, { x: 0, y: 0, width: rotDims.w, height: rotDims.h });
+        let newRotRect = this._clampRect(newRotRectRaw, {
+            x: 0,
+            y: 0,
+            width: rotDims.w,
+            height: rotDims.h,
+        });
         if (this.aspectRatio) {
-            newRotRect = this._shrinkToRatio(newRotRect, this.aspectRatio, rotDims.w, rotDims.h);
+            newRotRect = this._shrinkToRatio(
+                newRotRect,
+                this.aspectRatio,
+                rotDims.w,
+                rotDims.h,
+            );
         }
 
         // Convert rotated rect to canvas cropBox
@@ -192,8 +221,14 @@ class CropSelector {
 
         this.cropBox.x = Math.max(0, Math.min(this.cropBox.x, canvasW - 1));
         this.cropBox.y = Math.max(0, Math.min(this.cropBox.y, canvasH - 1));
-        this.cropBox.width = Math.max(20, Math.min(this.cropBox.width, canvasW - this.cropBox.x));
-        this.cropBox.height = Math.max(20, Math.min(this.cropBox.height, canvasH - this.cropBox.y));
+        this.cropBox.width = Math.max(
+            20,
+            Math.min(this.cropBox.width, canvasW - this.cropBox.x),
+        );
+        this.cropBox.height = Math.max(
+            20,
+            Math.min(this.cropBox.height, canvasH - this.cropBox.y),
+        );
     }
 
     /**
@@ -204,18 +239,41 @@ class CropSelector {
         const h = this.handleSize;
 
         const handles = [
-            { name: 'tl', x: x - h / 2, y: y - h / 2, w: h, h: h },
-            { name: 'tr', x: x + width - h / 2, y: y - h / 2, w: h, h: h },
-            { name: 'bl', x: x - h / 2, y: y + height - h / 2, w: h, h: h },
-            { name: 'br', x: x + width - h / 2, y: y + height - h / 2, w: h, h: h },
-            { name: 't', x: x + width / 2 - h / 2, y: y - h / 2, w: h, h: h },
-            { name: 'b', x: x + width / 2 - h / 2, y: y + height - h / 2, w: h, h: h },
-            { name: 'l', x: x - h / 2, y: y + height / 2 - h / 2, w: h, h: h },
-            { name: 'r', x: x + width - h / 2, y: y + height / 2 - h / 2, w: h, h: h },
+            { name: "tl", x: x - h / 2, y: y - h / 2, w: h, h: h },
+            { name: "tr", x: x + width - h / 2, y: y - h / 2, w: h, h: h },
+            { name: "bl", x: x - h / 2, y: y + height - h / 2, w: h, h: h },
+            {
+                name: "br",
+                x: x + width - h / 2,
+                y: y + height - h / 2,
+                w: h,
+                h: h,
+            },
+            { name: "t", x: x + width / 2 - h / 2, y: y - h / 2, w: h, h: h },
+            {
+                name: "b",
+                x: x + width / 2 - h / 2,
+                y: y + height - h / 2,
+                w: h,
+                h: h,
+            },
+            { name: "l", x: x - h / 2, y: y + height / 2 - h / 2, w: h, h: h },
+            {
+                name: "r",
+                x: x + width - h / 2,
+                y: y + height / 2 - h / 2,
+                w: h,
+                h: h,
+            },
         ];
 
         for (const handle of handles) {
-            if (px >= handle.x && px < handle.x + handle.w && py >= handle.y && py < handle.y + handle.h) {
+            if (
+                px >= handle.x &&
+                px < handle.x + handle.w &&
+                py >= handle.y &&
+                py < handle.y + handle.h
+            ) {
                 return handle.name;
             }
         }
@@ -234,8 +292,12 @@ class CropSelector {
         if (!this.image.complete || !this.image.naturalWidth) return;
 
         const rect = this.canvas.getBoundingClientRect();
-        const px = (e.clientX - rect.left) * (this.canvas.width / (window.devicePixelRatio || 1) / rect.width);
-        const py = (e.clientY - rect.top) * (this.canvas.height / (window.devicePixelRatio || 1) / rect.height);
+        const px =
+            (e.clientX - rect.left) *
+            (this.canvas.width / (window.devicePixelRatio || 1) / rect.width);
+        const py =
+            (e.clientY - rect.top) *
+            (this.canvas.height / (window.devicePixelRatio || 1) / rect.height);
 
         const handle = this.getResizeHandle(px, py);
         if (handle) {
@@ -257,24 +319,32 @@ class CropSelector {
         if (!this.image.complete || !this.image.naturalWidth) return;
 
         const rect = this.canvas.getBoundingClientRect();
-        const px = (e.clientX - rect.left) * (this.canvas.width / (window.devicePixelRatio || 1) / rect.width);
-        const py = (e.clientY - rect.top) * (this.canvas.height / (window.devicePixelRatio || 1) / rect.height);
+        const px =
+            (e.clientX - rect.left) *
+            (this.canvas.width / (window.devicePixelRatio || 1) / rect.width);
+        const py =
+            (e.clientY - rect.top) *
+            (this.canvas.height / (window.devicePixelRatio || 1) / rect.height);
 
         // Update cursor
         if (!this.isDragging && !this.isResizing) {
             const handle = this.getResizeHandle(px, py);
             if (handle) {
                 const cursors = {
-                    tl: 'nwse-resize', tr: 'nesw-resize',
-                    bl: 'nesw-resize', br: 'nwse-resize',
-                    t: 'ns-resize', b: 'ns-resize',
-                    l: 'ew-resize', r: 'ew-resize',
+                    tl: "nwse-resize",
+                    tr: "nesw-resize",
+                    bl: "nesw-resize",
+                    br: "nwse-resize",
+                    t: "ns-resize",
+                    b: "ns-resize",
+                    l: "ew-resize",
+                    r: "ew-resize",
                 };
-                this.canvas.style.cursor = cursors[handle] || 'move';
+                this.canvas.style.cursor = cursors[handle] || "move";
             } else if (this.isInsideCropBox(px, py)) {
-                this.canvas.style.cursor = 'move';
+                this.canvas.style.cursor = "move";
             } else {
-                this.canvas.style.cursor = 'crosshair';
+                this.canvas.style.cursor = "crosshair";
             }
         }
 
@@ -286,37 +356,51 @@ class CropSelector {
             const ar = this.aspectRatio;
 
             switch (this.resizeHandle) {
-                case 'tl':
+                case "tl":
                     this.cropBox.width = Math.max(minSize, x + width - px);
-                    this.cropBox.height = ar ? this.cropBox.width / ar : Math.max(minSize, y + height - py);
+                    this.cropBox.height = ar
+                        ? this.cropBox.width / ar
+                        : Math.max(minSize, y + height - py);
                     this.cropBox.x = x + width - this.cropBox.width;
                     this.cropBox.y = y + height - this.cropBox.height;
                     break;
-                case 'tr':
+                case "tr":
                     this.cropBox.width = Math.max(minSize, px - x);
-                    this.cropBox.height = ar ? this.cropBox.width / ar : Math.max(minSize, y + height - py);
+                    this.cropBox.height = ar
+                        ? this.cropBox.width / ar
+                        : Math.max(minSize, y + height - py);
                     this.cropBox.y = y + height - this.cropBox.height;
                     break;
-                case 'bl':
+                case "bl":
                     this.cropBox.width = Math.max(minSize, x + width - px);
-                    this.cropBox.height = ar ? this.cropBox.width / ar : Math.max(minSize, py - y);
+                    this.cropBox.height = ar
+                        ? this.cropBox.width / ar
+                        : Math.max(minSize, py - y);
                     this.cropBox.x = x + width - this.cropBox.width;
                     break;
-                case 'br':
+                case "br":
                     this.cropBox.width = Math.max(minSize, px - x);
-                    this.cropBox.height = ar ? this.cropBox.width / ar : Math.max(minSize, py - y);
+                    this.cropBox.height = ar
+                        ? this.cropBox.width / ar
+                        : Math.max(minSize, py - y);
                     break;
-                case 't':
+                case "t":
                     if (ar) {
-                        this.cropBox.height = Math.max(minSize, y + height - py);
+                        this.cropBox.height = Math.max(
+                            minSize,
+                            y + height - py,
+                        );
                         this.cropBox.width = this.cropBox.height * ar;
                         this.cropBox.x = x + (width - this.cropBox.width) / 2;
                     } else {
-                        this.cropBox.height = Math.max(minSize, y + height - py);
+                        this.cropBox.height = Math.max(
+                            minSize,
+                            y + height - py,
+                        );
                     }
                     this.cropBox.y = y + height - this.cropBox.height;
                     break;
-                case 'b':
+                case "b":
                     if (ar) {
                         this.cropBox.height = Math.max(minSize, py - y);
                         this.cropBox.width = this.cropBox.height * ar;
@@ -325,7 +409,7 @@ class CropSelector {
                         this.cropBox.height = Math.max(minSize, py - y);
                     }
                     break;
-                case 'l':
+                case "l":
                     if (ar) {
                         this.cropBox.width = Math.max(minSize, x + width - px);
                         this.cropBox.height = this.cropBox.width / ar;
@@ -335,7 +419,7 @@ class CropSelector {
                     }
                     this.cropBox.x = x + width - this.cropBox.width;
                     break;
-                case 'r':
+                case "r":
                     if (ar) {
                         this.cropBox.width = Math.max(minSize, px - x);
                         this.cropBox.height = this.cropBox.width / ar;
@@ -357,8 +441,22 @@ class CropSelector {
             const newX = px - this.dragStartX;
             const newY = py - this.dragStartY;
 
-            this.cropBox.x = Math.max(0, Math.min(newX, (this.canvas.width / (window.devicePixelRatio || 1)) - this.cropBox.width));
-            this.cropBox.y = Math.max(0, Math.min(newY, (this.canvas.height / (window.devicePixelRatio || 1)) - this.cropBox.height));
+            this.cropBox.x = Math.max(
+                0,
+                Math.min(
+                    newX,
+                    this.canvas.width / (window.devicePixelRatio || 1) -
+                        this.cropBox.width,
+                ),
+            );
+            this.cropBox.y = Math.max(
+                0,
+                Math.min(
+                    newY,
+                    this.canvas.height / (window.devicePixelRatio || 1) -
+                        this.cropBox.height,
+                ),
+            );
 
             this.render();
             this.emitChange();
@@ -381,7 +479,11 @@ class CropSelector {
      * Render the image and crop box on canvas
      */
     render() {
-        if (!this.image.complete || !this.image.naturalWidth || !this.image.naturalHeight) {
+        if (
+            !this.image.complete ||
+            !this.image.naturalWidth ||
+            !this.image.naturalHeight
+        ) {
             return;
         }
 
@@ -392,7 +494,7 @@ class CropSelector {
         const maxH = 500;
 
         // Compute rotated bounding box
-        const rad = (this.rotationDeg % 360) * Math.PI / 180;
+        const rad = ((this.rotationDeg % 360) * Math.PI) / 180;
         const absCos = Math.abs(Math.cos(rad));
         const absSin = Math.abs(Math.sin(rad));
         const rotW = srcW * absCos + srcH * absSin;
@@ -408,7 +510,10 @@ class CropSelector {
         this.canvasToImageScale = 1 / fitScale; // canvas px -> rotated image px
 
         // If scale changed significantly, adjust crop box to keep relative size
-        if (oldScale > 0 && Math.abs(oldScale - this.canvasToImageScale) > 0.001) {
+        if (
+            oldScale > 0 &&
+            Math.abs(oldScale - this.canvasToImageScale) > 0.001
+        ) {
             const scaleRatio = oldScale / this.canvasToImageScale; // new canvas size relative
             this.cropBox.x = Math.round(this.cropBox.x * scaleRatio);
             this.cropBox.y = Math.round(this.cropBox.y * scaleRatio);
@@ -426,7 +531,7 @@ class CropSelector {
         const ctx = this.ctx;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = "high";
 
         // Draw image with rotation
         ctx.save();
@@ -440,19 +545,21 @@ class CropSelector {
 
         // Draw darkened areas outside crop box
         const { x, y, width, height } = this.cropBox;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         if (y > 0) ctx.fillRect(0, 0, displayW, y);
-        if (y + height < displayH) ctx.fillRect(0, y + height, displayW, displayH - (y + height));
+        if (y + height < displayH)
+            ctx.fillRect(0, y + height, displayW, displayH - (y + height));
         if (x > 0) ctx.fillRect(0, y, x, height);
-        if (x + width < displayW) ctx.fillRect(x + width, y, displayW - (x + width), height);
+        if (x + width < displayW)
+            ctx.fillRect(x + width, y, displayW - (x + width), height);
 
         // Draw crop box border
-        ctx.strokeStyle = '#0d6efd';
+        ctx.strokeStyle = "#0d6efd";
         ctx.lineWidth = 3;
         ctx.strokeRect(x, y, width, height);
 
         // Draw rule of thirds grid
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x + width / 3, y);
@@ -474,8 +581,8 @@ class CropSelector {
             [x + width - h / 2, y + height - h / 2],
         ];
 
-        ctx.fillStyle = '#0d6efd';
-        ctx.strokeStyle = '#fff';
+        ctx.fillStyle = "#0d6efd";
+        ctx.strokeStyle = "#fff";
         ctx.lineWidth = 2;
         for (const [hx, hy] of handles) {
             ctx.fillRect(hx, hy, h, h);
@@ -484,7 +591,7 @@ class CropSelector {
 
         // Draw edge handles
         const edgeSize = 6;
-        ctx.fillStyle = 'rgba(13, 110, 253, 0.8)';
+        ctx.fillStyle = "rgba(13, 110, 253, 0.8)";
         ctx.lineWidth = 1;
         const edges = [
             [x + width / 2 - edgeSize / 2, y - edgeSize / 2],
@@ -614,6 +721,6 @@ class CropSelector {
 
 // Export class for CommonJS consumers (e.g., Jest tests)
 /* eslint-disable no-undef */
-if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
     module.exports = CropSelector;
 }
