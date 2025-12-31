@@ -40,6 +40,9 @@ use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
+use Cake\Controller\Controller;
+use Cake\Event\EventInterface;
+use Cake\Event\EventManager;
 
 /**
  * Application setup class.
@@ -67,13 +70,6 @@ class Application extends BaseApplication implements
             // The bake plugin requires fallback table classes to work properly
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
-
-        // Load CakeDC/Auth for authorization policies only
-        // We're not using the full Users plugin, just Auth for policies
-        $this->addPlugin('CakeDC/Auth', [
-            'bootstrap' => false, // Don't load their bootstrap config
-            'routes' => false,
-        ]);
 
         // Image variants configuration (central place)
         \Cake\Core\Configure::write('Images.variants', [
@@ -126,7 +122,9 @@ class Application extends BaseApplication implements
 
             // Add Authorization Middleware AFTER Authentication
             // This checks permissions based on policies and injects the service into identity
-            ->add(new AuthorizationMiddleware($this));
+            ->add(new AuthorizationMiddleware($this, [
+                'requireAuthorizationCheck' => false,
+            ]));
 
         return $middlewareQueue;
     }
@@ -150,20 +148,28 @@ class Application extends BaseApplication implements
      */
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
-    // NOTE Authentication config pattern:
-    // We inline the identifier configuration inside the Form authenticator instead of
-    // supplying a top-level 'identifiers' key. The Authentication plugin (>=3.3) deprecates
-    // the implicit loadIdentifier() path that is triggered when global identifiers are
-    // declared. Embedding the identifier array here prevents the deprecated method call
-    // and keeps construction quiet during tests & runtime. If additional authenticators
-    // need to share this identifier later, extract it to a variable and reference the
-    // same array (still inline) rather than reinstating the global 'identifiers' option.
+        $serviceLoader = Configure::read('Auth.Authentication.serviceLoader');
+        if (is_string($serviceLoader) && class_exists($serviceLoader)) {
+            /** @var callable $loader */
+            $loader = new $serviceLoader();
+            $service = $loader($request);
+
+            // Keep app behavior consistent (admin redirects use ?redirect=...)
+            if (method_exists($service, 'setConfig')) {
+                $service->setConfig([
+                    'unauthenticatedRedirect' => '/users/login',
+                    'queryParam' => 'redirect',
+                ]);
+            }
+
+            return $service;
+        }
+
+        // Fallback (non-CakeDC auth service)
         $service = new AuthenticationService([
             'unauthenticatedRedirect' => '/users/login',
             'queryParam' => 'redirect',
         ]);
-
-        // Authenticators: session then form (inline identifier config to avoid deprecated loadIdentifier()).
         $service->loadAuthenticator('Authentication.Session');
         $service->loadAuthenticator('Authentication.Form', [
             'identifier' => 'Authentication.Password',
