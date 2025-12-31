@@ -76,6 +76,17 @@ return function (RouteBuilder $routes): void {
     $routes->setRouteClass(DashedRoute::class);
 
     $routes->scope('/', function (RouteBuilder $builder): void {
+        // CakeDC/Users (public auth UI)
+        // Intentionally connect only auth-related endpoints (no public CRUD).
+        $builder->connect('/login', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'login']);
+        $builder->connect('/logout', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'logout']);
+        $builder->connect('/register', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'register']);
+
+        // Backwards-compatible URLs (the app historically used /users/*)
+        $builder->connect('/users/login', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'login']);
+        $builder->connect('/users/logout', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'logout']);
+        $builder->connect('/users/register', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'register']);
+
         // Public image serve (unauthenticated)
         $builder->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
             ->setPass(['id'])

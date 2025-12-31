@@ -15,6 +15,37 @@ use Cake\Http\ServerRequest;
 class RequestPolicy
 {
     /**
+     * Check if user can access a given request.
+     *
+     * CakeDC/Users uses this via AuthorizationService::can($request, 'access')
+     * to validate redirect URLs after login.
+     *
+     * @param \Authorization\IdentityInterface|null $identity User identity
+     * @param \Cake\Http\ServerRequest $request Request object
+     * @return bool
+     */
+    public function canAccess(?IdentityInterface $identity, ServerRequest $request): bool
+    {
+        $path = $request->getUri()->getPath();
+
+        // Never allow redirecting into DebugKit.
+        if (str_starts_with($path, '/debug-kit')) {
+            return false;
+        }
+
+        $isAdminRequest =
+            ($request->getParam('prefix') === 'Admin')
+            || str_starts_with($path, '/admin');
+
+        if ($isAdminRequest) {
+            return $this->canAccessAdmin($identity, $request);
+        }
+
+        // Public pages are accessible.
+        return true;
+    }
+
+    /**
      * Check if user can access admin area
      *
      * @param \Authorization\IdentityInterface|null $identity User identity

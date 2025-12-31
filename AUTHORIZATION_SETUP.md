@@ -2,9 +2,9 @@
 
 ## Overview
 
-This application uses **CakePHP Authorization Plugin** with policy-based authorization. We load **CakeDC/Auth** only for its policy/authorization infrastructure (no routes/bootstrap), and we currently use in-app controllers/components for user management.
+This application uses **CakePHP Authorization Plugin** with policy-based authorization.
 
-Note: the database schema includes CakeDC/Users-style fields (via migrations) for compatibility, but the CakeDC/Users plugin is not currently the primary authentication UI in this app.
+Authentication UI is provided by **CakeDC/Users** (login/logout/password reset). The application keeps ownership of authorization logic via app policies (for example, request-level admin gating).
 
 ## Architecture
 
@@ -344,18 +344,7 @@ public function getAuthenticationService(ServerRequestInterface $request): Authe
 
 ### CakeDC/Auth Plugin Loading
 
-**Application.php:**
-```php
-$this->addPlugin('CakeDC/Auth', [
-    'bootstrap' => false, // Don't load their config (prevents 2FA dependencies)
-    'routes' => false,
-]);
-```
-
-**Why bootstrap = false?**
-- CakeDC/Auth's bootstrap config loads 2FA features (RobThree\Auth)
-- We don't need 2FA, only authorization infrastructure
-- Disabling bootstrap prevents "Class not found" errors for unused dependencies
+Plugins are loaded via [config/plugins.php](config/plugins.php). For CakeDC/Users integration, we disable the plugin middleware hook so the application can own the middleware queue (avoids duplicate Authentication/Authorization middlewares).
 
 ## Common Operations
 

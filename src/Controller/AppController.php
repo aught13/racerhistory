@@ -48,12 +48,14 @@ class AppController extends Controller
 
         $this->loadComponent('Flash');
 
-        // Only load authentication for admin controllers and user-related actions
-        // This prevents authentication from being enforced on all public pages
+        // Only load authentication for admin controllers and the app's own UsersController.
+        // CakeDC/Users manages its own auth component wiring via its SetupComponent.
         $isAdminController = str_contains($this->getRequest()->getParam('prefix') ?? '', 'Admin');
-        $isUsersController = $this->getRequest()->getParam('controller') === 'Users';
+        $isAppUsersController =
+            $this->getRequest()->getParam('plugin') === null
+            && $this->getRequest()->getParam('controller') === 'Users';
 
-        if (!($this instanceof ErrorController) && ($isAdminController || $isUsersController)) {
+        if (!($this instanceof ErrorController) && ($isAdminController || $isAppUsersController)) {
             // Treat the CSRF token as an unlocked field so FormProtector does not
             // expect it in the POST body (CsrfProtectionMiddleware removes it).
             $this->loadComponent('FormProtection', ['unlockedFields' => ['_csrfToken']]);
@@ -71,9 +73,13 @@ class AppController extends Controller
     {
         parent::beforeFilter($event);
 
-        // Allow unauthenticated access to login actions for Users controller
-        // Admin controllers handle authentication in their own beforeFilter
-        if (method_exists($this, 'Authentication') && $this->getRequest()->getParam('controller') === 'Users') {
+        // Allow unauthenticated access to login actions for the app's Users controller.
+        // Admin controllers and CakeDC/Users manage this separately.
+        if (
+            $this->getRequest()->getParam('plugin') === null
+            && method_exists($this, 'Authentication')
+            && $this->getRequest()->getParam('controller') === 'Users'
+        ) {
             $this->Authentication->allowUnauthenticated(['login', 'register']);
         }
     }
