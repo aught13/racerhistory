@@ -40,9 +40,6 @@ use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
-use Cake\Controller\Controller;
-use Cake\Event\EventInterface;
-use Cake\Event\EventManager;
 
 /**
  * Application setup class.
@@ -148,9 +145,50 @@ class Application extends BaseApplication implements
      */
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
+        // CakePHP Authentication 3.3+ deprecated configuring identifiers separately and/or
+        // calling loadIdentifier(). CakeDC/Users still loads identifiers from Auth.Identifiers,
+        // which triggers deprecations when AuthenticationService builds the AuthenticatorCollection.
+        // Keep CakeDC/Users in place, but move the Password identifier config onto the Form authenticator.
         $serviceLoader = Configure::read('Auth.Authentication.serviceLoader');
+        if ($serviceLoader === \CakeDC\Users\Loader\AuthenticationServiceLoader::class) {
+            Configure::write('Auth.Identifiers', []);
+            Configure::write('Auth.PasswordRehash.identifiers', []);
+
+            $authenticators = (array)Configure::read('Auth.Authenticators');
+
+            $sessionConfig = $authenticators['Session'] ?? null;
+            if (!is_array($sessionConfig)) {
+                $sessionConfig = [
+                    'className' => 'Authentication.Session',
+                    'skipTwoFactorVerify' => true,
+                    'sessionKey' => 'Auth',
+                ];
+            }
+
+            $formConfig = $authenticators['Form'] ?? null;
+            if (is_array($formConfig)) {
+                $formConfig['identifier'] = [
+                    'Password' => [
+                        'className' => 'Authentication.Password',
+                        'fields' => [
+                            'username' => ['username', 'email'],
+                            'password' => 'password',
+                        ],
+                        'resolver' => [
+                            'className' => 'Authentication.Orm',
+                            'finder' => 'active',
+                        ],
+                    ],
+                ];
+                Configure::write('Auth.Authenticators', [
+                    'Session' => $sessionConfig,
+                    'Form' => $formConfig,
+                ]);
+            }
+        }
+
         if (is_string($serviceLoader) && class_exists($serviceLoader)) {
-            /** @var callable $loader */
+            /** @var object&callable $loader */
             $loader = new $serviceLoader();
             $service = $loader($request);
 
