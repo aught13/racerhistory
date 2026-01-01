@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\GameEavUiService;
+use App\Service\GameViewService;
 use Cake\Http\Response;
 
 /**
@@ -18,6 +20,9 @@ use Cake\Http\Response;
  */
 class GamesController extends AppController
 {
+    private GameEavUiService $gameEavUi;
+    private GameViewService $gameView;
+
     /**
      * @var \App\Service\GameService Service for game-related business logic
      */
@@ -44,6 +49,9 @@ class GamesController extends AppController
         $this->loadService('Game');
         $this->loadService('SportConfig');
         $this->loadService('Stats');
+
+        $this->gameEavUi = new GameEavUiService();
+        $this->gameView = new GameViewService($this->Game, $this->SportConfig, $this->Stats, $this->gameEavUi);
     }
 
     /**
@@ -83,7 +91,7 @@ class GamesController extends AppController
                 // Prepare variables expected by the element
                 $eavTemplate = $metadata['eavTemplate'];
                 $eav = $metadata['values'];
-                $legacyMappedEav = $metadata['values']; // element expects this variable optionally
+                $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($metadata['values']);
                 $sportName = $metadata['sportName'];
 
                 $html = $this->viewBuilder()
@@ -185,61 +193,7 @@ class GamesController extends AppController
      */
     public function view(string $id): void
     {
-        /** @var \App\Model\Entity\Game $game */
-        $game = $this->Game->getGameWithAssociations((int)$id);
-        $eav = $this->loadGameEavArray((int)$id);
-
-        // Initialize stat variables with defaults
-        $teamBoxStats = [];
-        $opponentBoxStats = [];
-        $teamPeriodStats = [];
-        $opponentPeriodStats = [];
-        $playerStats = [];
-        $opponentPlayerStats = [];
-        $teamTeamStats = null;
-        $opponentTeamStats = null;
-        $hasSportConfig = false;
-        $hasPeriodStats = false;
-
-        if ($game->team_season && $game->team_season->team && $game->team_season->team->sport) {
-            $sportId = $game->team_season->team->sport->id;
-            $hasSportConfig = true;
-
-            // Load sport-specific stats via generic Stats service
-            $sportStats = $this->Stats->getGameStats((int)$id);
-
-            if ($sportStats) {
-                $teamBoxStats = $sportStats['teamBoxStats'] ?? [];
-                $opponentBoxStats = $sportStats['opponentBoxStats'] ?? [];
-                $teamPeriodStats = $sportStats['teamPeriodStats'] ?? [];
-                $opponentPeriodStats = $sportStats['opponentPeriodStats'] ?? [];
-                $playerStats = $sportStats['playerStats'] ?? [];
-                $opponentPlayerStats = $sportStats['opponentPlayerStats'] ?? [];
-                $teamTeamStats = $sportStats['teamTeamStats'] ?? null;
-                $opponentTeamStats = $sportStats['opponentTeamStats'] ?? null;
-                $hasPeriodStats = $sportStats['hasPeriodStats'] ?? false;
-            }
-
-            // Get field labels from SportConfigService
-            $fieldLabels = $this->SportConfig->getAllFieldLabels($sportId);
-            $this->set('fieldLabels', $fieldLabels);
-        }
-
-        $this->setSportAwareData($game);
-        $this->set(compact(
-            'game',
-            'eav',
-            'teamBoxStats',
-            'opponentBoxStats',
-            'teamPeriodStats',
-            'opponentPeriodStats',
-            'playerStats',
-            'opponentPlayerStats',
-            'teamTeamStats',
-            'opponentTeamStats',
-            'hasSportConfig',
-            'hasPeriodStats',
-        ));
+        $this->set($this->gameView->getViewData((int)$id));
     }
 
     /**
@@ -259,19 +213,11 @@ class GamesController extends AppController
         $game = $this->Games->newEmptyEntity();
         $game->set('team_season_id', $teamSeasonId);
 
-        // Get sportId from team season
-        /** @var \App\Model\Entity\TeamSeason $teamSeason */
-        $teamSeason = $this->fetchTable('TeamSeasons')->find()
-            ->contain(['Teams' => ['Sports']])
-            ->where(['TeamSeasons.id' => $teamSeasonId])
-            ->firstOrFail();
-        $sportId = $teamSeason->team->sport->id;
-        $periods = $game->periods ?? '2';
-        $overtime = $game->ot ?? '0';
-        /** @var \App\Model\Table\GameEavTable $gameEavTable */
-        $gameEavTable = $this->fetchTable('GameEav');
-        $gameEavTable->setSportConfigService($this->SportConfig);
-        $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
+        $metadata = $this->Game->getGameEavMetadata(null, $teamSeasonId);
+        $sportId = (int)$metadata['sportId'];
+        $sportName = (string)($metadata['sportName'] ?? '');
+        $sportConfigs = $metadata['configs'];
+        $eavTemplate = $metadata['eavTemplate'];
         $eav = [];
 
         if ($this->request->is('post')) {
@@ -301,8 +247,9 @@ class GamesController extends AppController
                     $this->Flash->error($error);
                 }
                 $this->setFormLists();
-                $this->setSportAwareData($game);
                 $eav = $data; // Keep user input for re-display
+                $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
+                $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
                 $this->set(compact('game', 'eav', 'eavTemplate'));
 
                 return null;
@@ -335,7 +282,8 @@ class GamesController extends AppController
         }
 
         $this->setFormLists();
-        $this->setSportAwareData($game);
+        $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
+        $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
         $this->set(compact('game', 'eav', 'eavTemplate'));
 
         return null;
@@ -354,6 +302,12 @@ class GamesController extends AppController
             ->where(['Games.id' => $id])
             ->firstOrFail();
 
+        $metadata = $this->Game->getGameEavMetadata((int)$id, null);
+        $sportId = (int)$metadata['sportId'];
+        $sportName = (string)($metadata['sportName'] ?? '');
+        $sportConfigs = $metadata['configs'];
+        $eavTemplate = $metadata['eavTemplate'];
+
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
             $this->Game->normalizeAssociatedInlineCreate($data);
@@ -370,15 +324,10 @@ class GamesController extends AppController
                 foreach ($eavErrors as $error) {
                     $this->Flash->error($error);
                 }
-                $eav = $this->loadGameEavArray((int)$id);
-                // Merge in the new data for re-display
-                foreach ($data as $key => $value) {
-                    if (strpos($key, 'period_') === 0 || strpos($key, 'overtime_') === 0) {
-                        $eav[$key] = $value;
-                    }
-                }
+                $eav = $this->gameEavUi->mergePostedPeriodAndOvertimeFields($metadata['values'], $data);
+                $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
                 $this->setFormLists($game->place_id);
-                $this->setSportAwareData($game);
+                $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
                 $this->set(compact('game', 'eav'));
 
                 return null;
@@ -403,10 +352,11 @@ class GamesController extends AppController
             $this->Flash->error(__('The game could not be saved. Please, try again.'));
         }
 
-        $eav = $this->loadGameEavArray((int)$id);
+        $eav = $metadata['values'];
+        $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
         /** @var \App\Model\Entity\Game $game */
         $this->setFormLists($game->place_id);
-        $this->setSportAwareData($game);
+        $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
         $this->set(compact('game', 'eav'));
 
         return null;
@@ -478,76 +428,5 @@ class GamesController extends AppController
         $this->set(array_merge($lists, $extra));
     }
 
-    /**
-     * Set sport-aware data for game forms based on the selected team's sport.
-     *
-     * @param \App\Model\Entity\Game $game Game entity
-     * @return void
-     */
-    private function setSportAwareData(\App\Model\Entity\Game $game): void
-    {
-        // Resolve sport information for dynamic EAV template building
-        $sportId = null;
-        $sportName = 'Unknown';
-
-        // Get sport information from team season
-        if ($game->get('team_season_id')) {
-            $teamSeason = $this->fetchTable('TeamSeasons')->find()
-                ->contain(['Teams' => ['Sports']])
-                ->where(['TeamSeasons.id' => $game->get('team_season_id')])
-                ->first();
-            if ($teamSeason && $teamSeason->team && $teamSeason->team->sport) {
-                $sportId = $teamSeason->team->sport->id;
-                $sportName = $teamSeason->team->sport->sport_name;
-            }
-        }
-
-        // Get sport-specific configurations
-        $sportConfigs = [];
-        $eavTemplate = [];
-        if ($sportId) {
-            $sportConfigsTable = $this->fetchTable('SportConfigs');
-            $sportConfigs = $sportConfigsTable->getFormattedConfigsForSport($sportId);
-
-            $gameEavTable = $this->fetchTable('GameEav');
-            $gameEavTable->setSportConfigService($this->SportConfig);
-            // Pass game's periods and overtime values to generate appropriate EAV fields
-            $periods = (string)($game->get('periods') ?: '2');
-            $overtime = (string)($game->get('ot') ?: '0');
-            $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
-
-            // When editing, map legacy stored keys (period_X_mur/opp) to new naming (period_X_team/opponent)
-            if ($game->id) {
-                $existing = $this->loadGameEavArray((int)$game->id);
-                foreach ($existing as $k => $v) {
-                    if (preg_match('/^period_(\d+)_mur$/', $k, $m)) {
-                        $newKey = 'period_' . $m[1] . '_team';
-                        if (!isset($existing[$newKey])) {
-                            $existing[$newKey] = $v;
-                        }
-                    } elseif (preg_match('/^period_(\d+)_opp$/', $k, $m)) {
-                        $newKey = 'period_' . $m[1] . '_opponent';
-                        if (!isset($existing[$newKey])) {
-                            $existing[$newKey] = $v;
-                        }
-                    }
-                }
-                // Expose mapped values separately so form element can access
-                $this->set('legacyMappedEav', $existing);
-            }
-        }
-
-        $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate'));
-    }
-
-    /**
-     * Load EAV attributes into an array for a game.
-     *
-     * @param int $gameId Game id
-     * @return array<string, mixed>
-     */
-    private function loadGameEavArray(int $gameId): array
-    {
-        return $this->Game->loadGameEavValues($gameId);
-    }
+    // Sport-aware UI vars and legacy EAV mapping are handled via GameService + GameEavUiService.
 }
