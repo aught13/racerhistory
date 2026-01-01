@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\PlaceService;
 use Cake\Http\Response;
 
 class OpponentsController extends AppController
@@ -33,18 +34,7 @@ class OpponentsController extends AppController
             $this->Flash->error('The opponent could not be saved.');
         }
 
-        // Format places as "Name, State" sorted by name
-        $placesQuery = $this->fetchTable('Places')->find()
-            ->orderBy(['Places.place_name' => 'ASC'])
-            ->all();
-        $places = [];
-        foreach ($placesQuery as $place) {
-            $label = $place->place_name;
-            if (!empty($place->place_state)) {
-                $label .= ', ' . $place->place_state;
-            }
-            $places[$place->id] = $label;
-        }
+        $places = (new PlaceService())->getPlacesList();
 
         // Get all opponents for opponent_current dropdown (sorted by name)
         $opponentsList = $this->fetchTable('Opponents')->find('list')
@@ -73,18 +63,7 @@ class OpponentsController extends AppController
             $this->Flash->error('The opponent could not be saved.');
         }
 
-        // Format places as "Name, State" sorted by name
-        $placesQuery = $this->fetchTable('Places')->find()
-            ->orderBy(['Places.place_name' => 'ASC'])
-            ->all();
-        $places = [];
-        foreach ($placesQuery as $place) {
-            $label = $place->place_name;
-            if (!empty($place->place_state)) {
-                $label .= ', ' . $place->place_state;
-            }
-            $places[$place->id] = $label;
-        }
+        $places = (new PlaceService())->getPlacesList();
 
         // Get all opponents except current one for opponent_current dropdown
         $opponentsList = $this->fetchTable('Opponents')->find('list')

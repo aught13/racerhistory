@@ -34,4 +34,8 @@ return [
     'Migrations' => ['onlyCli' => true],
 
     // Additional plugins here
+    'CakeDC/Users' => [
+        'routes' => false,
+        'middleware' => false,
+    ],
 ];

@@ -198,6 +198,18 @@ class GameServiceTest extends TestCase
         $this->assertIsArray($sites);
     }
 
+    public function testSearchGamesForSelectUsesHrnPunctuation(): void
+    {
+        $results = $this->service->searchGamesForSelect('Belmont', 1, 25);
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+
+        $labels = array_map(fn($g) => (string)($g['label'] ?? ''), $results);
+
+        $this->assertContains('Los Angeles Lakers Vs Belmont (2025-01-15) 80-70', $labels);
+        $this->assertContains('Los Angeles Lakers vs Belmont (2025-01-16) 65-72', $labels);
+    }
+
     /**
      * Test calculateWinLoss with team win
      */

@@ -797,4 +797,124 @@ class GameService
 
         return compact('teamSeasonList', 'sports');
     }
+
+    /**
+     * Get a recent-games list suitable for select/autocomplete UIs.
+     *
+     * @param int $limit
+     * @return array<int,array{id:int,label:string,team_season_id:int|null}>
+     */
+    public function getRecentGamesForSelect(int $limit = 200): array
+    {
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+
+        $query = $gamesTable->find()
+            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
+            ->orderByDesc('Games.game_date')
+            ->limit($limit);
+
+        $results = [];
+        foreach ($query->all() as $g) {
+            /** @var \App\Model\Entity\Game $g */
+            $results[] = [
+                'id' => (int)$g->id,
+                'team_season_id' => $g->team_season_id !== null ? (int)$g->team_season_id : null,
+                'label' => $this->formatGameSelectLabel($g),
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Search games for autocomplete/select UIs.
+     *
+     * @param string $query Search query (team/opponent)
+     * @param int|null $teamSeasonId Optional team season filter
+     * @param int $limit
+     * @return array<int,array{id:int,label:string,team_season_id:int|null}>
+     */
+    public function searchGamesForSelect(string $query = '', ?int $teamSeasonId = null, int $limit = 25): array
+    {
+        $query = trim($query);
+        $teamSeasonId = $teamSeasonId && $teamSeasonId > 0 ? $teamSeasonId : null;
+
+        if ($query === '' && $teamSeasonId === null) {
+            return [];
+        }
+
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+
+        $q = $gamesTable->find()
+            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
+            ->orderByDesc('Games.game_date')
+            ->limit($limit);
+
+        if ($teamSeasonId !== null) {
+            $q->where(['Games.team_season_id' => $teamSeasonId]);
+        }
+
+        if ($query !== '') {
+            $like = '%' . str_replace('%', '\\%', $query) . '%';
+            $q->where([
+                'OR' => [
+                    ['Opponents.opponent_name LIKE' => $like],
+                    ['Teams.team_name LIKE' => $like],
+                ],
+            ]);
+        }
+
+        $results = [];
+        foreach ($q->all() as $game) {
+            /** @var \App\Model\Entity\Game $game */
+            $results[] = [
+                'id' => (int)$game->id,
+                'team_season_id' => $game->team_season_id !== null ? (int)$game->team_season_id : null,
+                'label' => $this->formatGameSelectLabel($game),
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Format a stable, human-readable label for game selects.
+     */
+    private function formatGameSelectLabel(\App\Model\Entity\Game $game): string
+    {
+        $teamName = $game->team_season->team->team_name ?? 'Team';
+        $oppName = $game->opponent->opponent_name ?? 'Opponent';
+
+        $date = '';
+        if (!empty($game->game_date)) {
+            if ($game->game_date instanceof \Cake\I18n\Date) {
+                $date = $game->game_date->i18nFormat('yyyy-MM-dd');
+            } elseif ($game->game_date instanceof \DateTimeInterface) {
+                $date = $game->game_date->format('Y-m-d');
+            } else {
+                $date = (string)$game->game_date;
+            }
+        }
+
+        $score = $game->pts_mur !== null && $game->pts_opp !== null
+            ? " {$game->pts_mur}-{$game->pts_opp}"
+            : '';
+
+        $separator = match ((int)$game->hrn) {
+            1 => ' Vs ',
+            2 => ' @ ',
+            3 => ' vs ',
+            default => ' vs ',
+        };
+
+        $label = $teamName . $separator . $oppName;
+        if ($date !== '') {
+            $label .= ' (' . $date . ')';
+        }
+        $label .= $score;
+
+        return $label;
+    }
 }

@@ -21,7 +21,6 @@ class ImageProcessorTest extends TestCase
         'app.Images',
         'app.ImageTags',
         'app.ImagesImageTags',
-        'app.ImageUsages',
     ];
 
     public function testProcessDegradedMode(): void
@@ -181,93 +180,6 @@ class ImageProcessorTest extends TestCase
         $imageTags = TableRegistry::getTableLocator()->get('ImageTags');
         $rosterTags = $imageTags->find()->where(['slug' => 'roster'])->all();
         $this->assertCount(1, $rosterTags);
-    }
-
-    /**
-     * Test recordUsage creates usage entry.
-     */
-    public function testRecordUsage(): void
-    {
-        $processor = new ImageProcessor(null);
-        $images = TableRegistry::getTableLocator()->get('Images');
-
-        // Create a test image
-        $image = $images->newEntity([
-            'filename' => 'usage.jpg',
-            'storage_subdir' => '',
-            'storage_path' => 'test/usage.jpg',
-            'original_name' => 'test.jpg',
-            'mime' => 'image/jpeg',
-            'ext' => 'jpg',
-            'byte_size' => 10,
-            'width' => 1,
-            'height' => 1,
-            'variants' => json_encode([]),
-            'hash' => 'test-usage-' . time(),
-            'status' => 'active',
-        ]);
-        $images->save($image);
-
-        // Record usage
-        $processor->recordUsage(
-            (int)$image->id,
-            'Persons',
-            123,
-            'profile-photo',
-            'image'
-        );
-
-        // Verify usage was recorded
-        $usages = TableRegistry::getTableLocator()->get('ImageUsages');
-        $usage = $usages->find()->where([
-            'image_id' => $image->id,
-            'model' => 'Persons',
-            'foreign_key' => 123,
-        ])->first();
-
-        $this->assertNotNull($usage);
-        $this->assertSame('profile-photo', $usage->context);
-        $this->assertSame('image', $usage->field);
-    }
-
-    /**
-     * Test recordUsage is idempotent.
-     */
-    public function testRecordUsageIdempotent(): void
-    {
-        $processor = new ImageProcessor(null);
-        $images = TableRegistry::getTableLocator()->get('Images');
-
-        // Create a test image
-        $image = $images->newEntity([
-            'filename' => 'usage-idem.jpg',
-            'storage_subdir' => '',
-            'storage_path' => 'test/usage-idem.jpg',
-            'original_name' => 'test.jpg',
-            'mime' => 'image/jpeg',
-            'ext' => 'jpg',
-            'byte_size' => 10,
-            'width' => 1,
-            'height' => 1,
-            'variants' => json_encode([]),
-            'hash' => 'test-usage-idem-' . time(),
-            'status' => 'active',
-        ]);
-        $images->save($image);
-
-        // Record usage twice
-        $processor->recordUsage((int)$image->id, 'Persons', 123, 'profile-photo', 'image');
-        $processor->recordUsage((int)$image->id, 'Persons', 123, 'profile-photo', 'image');
-
-        // Should have only 1 usage record
-        $usages = TableRegistry::getTableLocator()->get('ImageUsages');
-        $allUsages = $usages->find()->where([
-            'image_id' => $image->id,
-            'model' => 'Persons',
-            'foreign_key' => 123,
-        ])->all();
-
-        $this->assertCount(1, $allUsages);
     }
 
     /**

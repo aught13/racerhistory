@@ -1,104 +1,73 @@
 <?php
 /**
- * CakeDC Users Plugin Configuration
+ * CakeDC/Users configuration overrides
  *
- * This file configures the CakeDC/Users plugin to work with our existing users table
- * and provides role-based authorization for admin and public access.
+ * The plugin loads its defaults from vendor/cakedc/users/config/users.php first,
+ * then loads this file via Users.config (see config/app.php).
  */
 
 return [
+    // Use the application's existing Users table (integer IDs)
     'Users' => [
-        // Table configuration - use our existing users table with integer IDs
         'table' => 'Users',
-        'primaryKey' => 'id',
-
-        // Disable UUID - we use integer IDs
-        'useUuid' => false,
-
-        // Email configuration
         'Email' => [
+            // Keep the plugin email field, but disable email-validation workflow for now.
             'required' => true,
-            'validate' => true,
+            'validate' => false,
         ],
-
-        // Registration configuration - controlled by site_options table
+        // Public site is read/search/view. Disable account creation outside /admin.
         'Registration' => [
-            'active' => true, // We'll check site_options in beforeFilter
-            'defaultRole' => 'user',
-            'allowSocialLogin' => false, // Disable social login for now
+            'active' => false,
         ],
-
-        // Profile fields
-        'Profile' => [
-            'viewTemplate' => 'CakeDC/Users.Profile/view',
-            'editTemplate' => 'CakeDC/Users.Profile/edit',
-            'fields' => [
-                'username' => true,
-                'email' => true,
-                'first_name' => true,
-                'last_name' => true,
-            ],
+        // Disable terms-of-service requirement in the plugin templates.
+        'Tos' => [
+            'required' => false,
         ],
-
-        // Google Authenticator / Two-Factor
-        'GoogleAuthenticator' => [
-            'login' => false, // Disable 2FA for now
-            'checker' => false,
-        ],
-
-        // reCAPTCHA - disabled
-        'reCaptcha' => [
-            'registration' => false,
-            'login' => false,
-        ],
-
-        // RememberMe
-        'RememberMe' => [
-            'active' => true,
-            'checked' => true,
-            'Cookie' => [
-                'name' => 'remember_me',
-                'expires' => '+1 month',
-            ],
-        ],
-
-        // Routes configuration
-        'routes' => [
-            'prefix' => false, // Login/register are NOT in admin prefix
-        ],
-
-        // Controller configuration
-        'controller' => [
-            'Users' => 'CakeDC/Users.Users',
-        ],
-
-        // Auth / Auth component configuration
-        'auth' => [
-            // Redirect after successful login
-            'loginRedirect' => '/',
-            // Redirect after successful logout
-            'logoutRedirect' => '/users/login',
-            // Unauthorized redirect
-            'unauthorizedRedirect' => '/users/login',
-        ],
-
-        // Key: field to identify user (username)
-        'Key' => [
-            'Data' => [
-                'username' => 'username',
-                'email' => 'email',
-            ],
-        ],
-
-        // Social authentication (disabled)
+        // Disable social login for now.
         'Social' => [
             'login' => false,
         ],
+    ],
 
-        // oneTimePasswordAuthenticator (disabled)
-        'OneTimePasswordAuthenticator' => [
-            'login' => false,
-            'checker' => false,
+    // Let the app keep ownership of authorization policies.
+    // (CakeDC/Users ships optional authorization wiring via Configure keys.)
+    'Auth' => [
+        'Authorization' => [
+            'enable' => false,
         ],
+        // SetupComponent checks `Auth.AuthorizationComponent.enable` (not `enabled`).
+        'AuthorizationComponent' => [
+            'enable' => false,
+        ],
+        // Ensure consistent redirect parameter.
+        'AuthenticationComponent' => [
+            'load' => true,
+            'requireIdentity' => false,
+        ],
+
+        // Make Form authentication deterministic:
+        // - Only attempts authentication on the login endpoints.
+        // - Ensures the expected field names match our login form.
+        'Authenticators' => [
+            'Form' => [
+                'fields' => [
+                    'username' => 'username',
+                    'password' => 'password',
+                ],
+                'loginUrl' => [
+                    '/users/login',
+                    '/login',
+                ],
+                // Use strict path comparison against the strings above.
+                'urlChecker' => [
+                    'className' => 'Authentication.Default',
+                ],
+            ],
+        ],
+    ],
+
+    // Disable magic-link login on the public site.
+    'OneTimeLogin' => [
+        'enabled' => false,
     ],
 ];

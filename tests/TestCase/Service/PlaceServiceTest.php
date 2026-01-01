@@ -117,6 +117,16 @@ class PlaceServiceTest extends TestCase
         }
     }
 
+    public function testGetPlacesList(): void
+    {
+        $service = new PlaceService();
+        $list = $service->getPlacesList(50);
+
+        $this->assertIsArray($list);
+        $this->assertArrayHasKey(1, $list);
+        $this->assertSame('Murray, KY', $list[1]);
+    }
+
     /**
      * Test createPlace.
      */

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\BasketballStatsService;
 use Cake\Http\Response;
 
 /**
@@ -21,6 +22,8 @@ class StatBasketGameBoxController extends AppController
      */
     protected \App\Service\SportConfigService $SportConfig;
 
+    private BasketballStatsService $basketballStatsService;
+
     /**
      * Initialization hook method.
      *
@@ -30,6 +33,8 @@ class StatBasketGameBoxController extends AppController
     {
         parent::initialize();
         $this->loadService('SportConfig');
+
+        $this->basketballStatsService = new BasketballStatsService();
     }
 
     /**
@@ -128,7 +133,13 @@ class StatBasketGameBoxController extends AppController
             // Update season totals if checkbox is selected (final period only)
             $addToTotals = $this->request->getData('add_to_totals');
             if ($addToTotals && $teamBox && $opponentBox) {
-                $this->updateSeasonTotals($game, $teamBox, $opponentBox, $originalTeamBox, $originalOpponentBox);
+                $this->basketballStatsService->applyGameBoxToSeasonTotals(
+                    $game,
+                    $teamBox,
+                    $opponentBox,
+                    $originalTeamBox,
+                    $originalOpponentBox,
+                );
             }
 
             $this->Flash->success(__('Game box scores have been saved.'));
@@ -288,102 +299,5 @@ class StatBasketGameBoxController extends AppController
         $this->set(compact('game', 'numPeriods', 'numOT', 'existingStats', 'fieldLabels'));
 
         return null;
-    }
-
-    /**
-     * Update season totals for team and opponent based on box score (final period only)
-     *
-     * @param \App\Model\Entity\Game $game Game entity
-     * @param \App\Model\Entity\StatBasketGameBox $teamBox Team box score (period Z)
-     * @param \App\Model\Entity\StatBasketGameBox $opponentBox Opponent box score (period Z)
-     * @param \App\Model\Entity\StatBasketGameBox|null $originalTeamBox Original team box (for updates)
-     * @param \App\Model\Entity\StatBasketGameBox|null $originalOpponentBox Original opponent box (for updates)
-     * @return void
-     */
-    private function updateSeasonTotals(
-        \App\Model\Entity\Game $game,
-        \App\Model\Entity\StatBasketGameBox $teamBox,
-        \App\Model\Entity\StatBasketGameBox $opponentBox,
-        ?\App\Model\Entity\StatBasketGameBox $originalTeamBox = null,
-        ?\App\Model\Entity\StatBasketGameBox $originalOpponentBox = null,
-    ): void {
-        if (!$game->team_season_id) {
-            return;
-        }
-
-        $teamSeasonTable = $this->fetchTable('StatBasketSeasonTeam');
-        $opponentSeasonTable = $this->fetchTable('StatBasketSeasonOpponent');
-
-        // Fields that should be summed for season totals
-        $sumFields = [
-            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
-            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS',
-            'TF', 'FD', 'BD', 'EB', 'PP', 'FB', 'BN', 'TIED', 'LC',
-        ];
-
-        // Update team season totals
-        $teamSeasonStat = $teamSeasonTable->find()
-            ->where(['team_season_id' => $game->team_season_id])
-            ->first();
-
-        if (!$teamSeasonStat) {
-            $teamSeasonStat = $teamSeasonTable->newEmptyEntity();
-            $teamSeasonStat->team_season_id = $game->team_season_id;
-        }
-
-        // If this is an edit, subtract the original values first
-        if ($originalTeamBox) {
-            foreach ($sumFields as $field) {
-                if ($teamSeasonStat->get($field) && $originalTeamBox->get($field)) {
-                    $current = (int)$teamSeasonStat->get($field);
-                    $original = (int)$originalTeamBox->get($field);
-                    $teamSeasonStat->set($field, max(0, $current - $original));
-                }
-            }
-        }
-
-        // Add the new values
-        foreach ($sumFields as $field) {
-            if ($teamBox->get($field)) {
-                $current = (int)($teamSeasonStat->get($field) ?? 0);
-                $new = (int)$teamBox->get($field);
-                $teamSeasonStat->set($field, $current + $new);
-            }
-        }
-
-        $teamSeasonTable->save($teamSeasonStat);
-
-        // Update opponent season totals
-        // Note: StatBasketSeasonOpponent stores cumulative opponent stats per team season (not per opponent)
-        $opponentSeasonStat = $opponentSeasonTable->find()
-            ->where(['team_season_id' => $game->team_season_id])
-            ->first();
-
-        if (!$opponentSeasonStat) {
-            $opponentSeasonStat = $opponentSeasonTable->newEmptyEntity();
-            $opponentSeasonStat->team_season_id = $game->team_season_id;
-        }
-
-        // If this is an edit, subtract the original values first
-        if ($originalOpponentBox) {
-            foreach ($sumFields as $field) {
-                if ($opponentSeasonStat->get($field) && $originalOpponentBox->get($field)) {
-                    $current = (int)$opponentSeasonStat->get($field);
-                    $original = (int)$originalOpponentBox->get($field);
-                    $opponentSeasonStat->set($field, max(0, $current - $original));
-                }
-            }
-        }
-
-        // Add the new values
-        foreach ($sumFields as $field) {
-            if ($opponentBox->get($field)) {
-                $current = (int)($opponentSeasonStat->get($field) ?? 0);
-                $new = (int)$opponentBox->get($field);
-                $opponentSeasonStat->set($field, $current + $new);
-            }
-        }
-
-        $opponentSeasonTable->save($opponentSeasonStat);
     }
 }

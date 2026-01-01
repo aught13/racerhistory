@@ -44,8 +44,8 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Authentication**: CakePHP Authentication plugin (session + form)
 - **Authorization**: CakePHP Authorization plugin with policy checks
 - **Policy-based admin gating**: request-level authorization for `/admin/*`
-- **User management**: implemented in-app via `UsersController`, `Admin/UsersController`, and `UserManagerComponent`
-- **Compatibility**: the schema includes CakeDC/Users-style fields (via migrations), but the CakeDC/Users plugin is not currently wired as the primary auth UI
+- **Public auth UI**: CakeDC/Users (login/logout/password reset). Public registration is disabled.
+- **Admin user management**: implemented in-app via `Admin/UsersController` (approve/edit users, roles)
 
 ### Administrative Interface
 

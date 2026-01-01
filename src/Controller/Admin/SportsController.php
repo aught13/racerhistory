@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\SportConfigAdminService;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 
@@ -20,6 +21,8 @@ use Cake\Http\Response;
  */
 class SportsController extends AppController
 {
+    private SportConfigAdminService $sportConfigAdminService;
+
     /**
      * Initialization hook method.
      *
@@ -28,6 +31,8 @@ class SportsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
+
+        $this->sportConfigAdminService = new SportConfigAdminService();
     }
 
     /**
@@ -71,10 +76,7 @@ class SportsController extends AppController
     {
         $sport = $this->Sports->get($id, contain: ['Teams']);
 
-        // Load sport configurations
-        /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-        $sportConfigs = $this->getTableLocator()->get('SportConfigs');
-        $configs = $sportConfigs->getFormattedConfigsForSport((int)$id);
+        $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
 
         $this->set(compact('sport', 'configs'));
     }
@@ -265,9 +267,7 @@ class SportsController extends AppController
     {
         try {
             $sport = $this->Sports->get($id);
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
-            $configs = $sportConfigs->getFormattedConfigsForSport((int)$id);
+            $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
 
             $this->set(compact('sport', 'configs'));
 
@@ -289,13 +289,11 @@ class SportsController extends AppController
     {
         try {
             $sport = $this->Sports->get($id);
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
 
             if ($this->request->is(['patch', 'post', 'put'])) {
                 $configData = $this->request->getData('configs', []);
 
-                if ($sportConfigs->saveBulkConfigs((int)$id, $configData)) {
+                if ($this->sportConfigAdminService->saveBulkConfigs((int)$id, $configData)) {
                     $this->Flash->success(__('Sport configurations have been updated.'));
 
                     return $this->redirect(['action' => 'configs', $id]);
@@ -304,28 +302,8 @@ class SportsController extends AppController
                 }
             }
 
-            $configs = $sportConfigs->getFormattedConfigsForSport((int)$id);
-
-            // If no configs exist at all, initialize with defaults
-            if (empty($configs['period_names']) && empty($configs['officials']) && empty($configs['settings'])) {
-                // Add default template only if there are no configs at all
-                $defaultTemplate = $sportConfigs->getDefaultConfigTemplate();
-                foreach ($defaultTemplate as $key => $data) {
-                    if (str_starts_with($key, 'period_name_')) {
-                        $periods = str_replace('period_name_', '', $key);
-                        $configs['period_names'][$periods] = $data;
-                    } elseif ($key === 'officials') {
-                        $configs['officials'] = $data;
-                    } else {
-                        $configs['settings'][$key] = $data;
-                    }
-                }
-            } else {
-                // Ensure all sections have at least empty arrays/structures
-                if (empty($configs['officials'])) {
-                    $configs['officials'] = ['value' => '', 'description' => ''];
-                }
-            }
+            $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
+            $configs = $this->sportConfigAdminService->normalizeFormattedConfigs($configs);
 
             $this->set(compact('sport', 'configs'));
 
@@ -350,8 +328,6 @@ class SportsController extends AppController
         try {
             // Verify sport exists (throws RecordNotFoundException if not)
             $this->Sports->get($id);
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
 
             $key = $this->request->getData('config_key');
             $value = $this->request->getData('config_value');
@@ -368,7 +344,7 @@ class SportsController extends AppController
                 $value = array_map('trim', explode(',', $value));
             }
 
-            $result = $sportConfigs->setConfig((int)$id, $key, $value, $description);
+            $result = $this->sportConfigAdminService->setConfig((int)$id, (string)$key, $value, (string)$description);
 
             if ($result) {
                 $this->Flash->success(__('Configuration added successfully.'));
@@ -396,14 +372,8 @@ class SportsController extends AppController
         try {
             // Verify sport exists (throws RecordNotFoundException if not)
             $this->Sports->get($id);
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
 
-            $config = $sportConfigs->find()
-                ->where(['sport_id' => $id, 'config_key' => $configKey])
-                ->first();
-
-            if ($config && $sportConfigs->delete($config)) {
+            if ($this->sportConfigAdminService->deleteConfig((int)$id, $configKey)) {
                 $this->Flash->success(__('Configuration deleted successfully.'));
             } else {
                 $this->Flash->error(__('Unable to delete configuration.'));
@@ -428,15 +398,8 @@ class SportsController extends AppController
         try {
             // Verify sport exists (throws RecordNotFoundException if not)
             $this->Sports->get($id);
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-            $sportConfigs = $this->getTableLocator()->get('SportConfigs');
 
-            // Delete existing configs
-            $sportConfigs->deleteAll(['sport_id' => $id]);
-
-            // Add default configs
-            $defaultTemplate = $sportConfigs->getDefaultConfigTemplate();
-            $success = $sportConfigs->saveBulkConfigs((int)$id, $defaultTemplate);
+            $success = $this->sportConfigAdminService->resetToDefaults((int)$id);
 
             if ($success) {
                 $this->Flash->success(__('Sport configurations have been reset to defaults.'));

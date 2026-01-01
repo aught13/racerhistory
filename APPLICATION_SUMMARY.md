@@ -10,7 +10,7 @@ RacerHistory is a CakePHP 5.2+ web application for managing historical sports da
 - Authorization uses the CakePHP Authorization plugin with policy checks.
 - Admin access is gated at the request level (policies) and enforced in the admin base controller.
 - User management (login/register/admin user CRUD) is implemented in-app (controllers + `UserManagerComponent`).
-- The database schema includes CakeDC/Users-style fields (via migrations) for compatibility, but the CakeDC/Users plugin is not currently the primary auth UI.
+- Public auth UI uses CakeDC/Users (login/logout/password reset). Public registration is disabled.
 
 Key files:
 - `src/Application.php` (middleware + plugin wiring)

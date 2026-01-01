@@ -152,6 +152,38 @@ class PlaceService
     }
 
     /**
+     * Get places as an associative list suitable for FormHelper selects.
+     *
+     * Format: "Place Name, ST" (state omitted when empty).
+     *
+     * @param int $limit
+     * @return array<int,string>
+     */
+    public function getPlacesList(int $limit = 500): array
+    {
+        $places = TableRegistry::getTableLocator()->get('Places');
+
+        $rows = $places->find()
+            ->orderBy(['Places.place_name' => 'ASC'])
+            ->limit($limit)
+            ->all();
+
+        $list = [];
+        foreach ($rows as $place) {
+            /** @var \App\Model\Entity\Place $place */
+            $label = (string)($place->place_name ?? '');
+            $state = (string)($place->place_state ?? '');
+            if ($state !== '') {
+                $label .= ', ' . $state;
+            }
+
+            $list[(int)$place->id] = $label;
+        }
+
+        return $list;
+    }
+
+    /**
      * Get a site by ID.
      *
      * @param int $siteId Site ID

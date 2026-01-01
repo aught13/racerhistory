@@ -90,6 +90,54 @@ class TeamSeasonRosterService
     }
 
     /**
+     * Get roster entries for a person formatted for tag-lookup/autocomplete UIs.
+     *
+     * @param int $personId
+     * @param int $limit
+     * @return array<int,array{id:int,label:string}>
+     */
+    public function getRostersForPersonLookup(int $personId, int $limit = 200): array
+    {
+        $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
+
+        $personLabel = $this->personService->getDisplayLabel($personId);
+
+        $rows = $rosters->find()
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
+            ->where(['TeamSeasonRosters.person_id' => $personId])
+            ->limit($limit)
+            ->all();
+
+        $out = [];
+        foreach ($rows as $r) {
+            /** @var \App\Model\Entity\TeamSeasonRosters $r */
+            $teamSeason = $r->team_season ?? null;
+            $seasonLabel = '';
+
+            $teamName = 'Team';
+            if ($teamSeason && $teamSeason->team) {
+                $teamName = $teamSeason->team->team_name ?? 'Team';
+            }
+            if ($teamSeason && !empty($teamSeason->season)) {
+                $start = $teamSeason->season->start ?? null;
+                $end = $teamSeason->season->end ?? null;
+                if ($start && $end && $start != $end) {
+                    $seasonLabel = " ({$start}-{$end})";
+                } elseif ($start) {
+                    $seasonLabel = " ({$start})";
+                }
+            }
+
+            $out[] = [
+                'id' => (int)$r->id,
+                'label' => $personLabel . ' — ' . $teamName . $seasonLabel,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Get combined display data for roster: person name + team season.
      *
      * @param int $rosterId

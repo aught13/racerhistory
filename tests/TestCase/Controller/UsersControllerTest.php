@@ -26,14 +26,9 @@ class UsersControllerTest extends TestCase
 
     public function testRegisterDisabled(): void
     {
-        // Explicitly toggle registration to disabled and assert flash
-        $table = $this->getTableLocator()->get('SiteOptions');
-        $opt = $table->find()->where(['option_key' => 'registration'])->first();
-        $opt->value = 'false';
-        $table->save($opt);
+        // CakeDC/Users registration is disabled for the public site.
         $this->get('/users/register');
-        $this->assertResponseOk();
-        $this->assertResponseContains('Registration is currently disabled.');
+        $this->assertResponseCode(404);
     }
 
     private function loginAsAdmin(): void
@@ -57,59 +52,32 @@ class UsersControllerTest extends TestCase
             'password' => 'wrong',
         ]);
         $this->assertResponseOk();
-        $this->assertResponseContains('Invalid username or password');
+        $this->assertResponseContains('Username or password is incorrect');
+    }
+
+    public function testLoginPostValidRedirectsToRedirectParam(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/users/login?redirect=/admin', [
+            'username' => 'admin',
+            'password' => 'password',
+        ]);
+        $this->assertRedirect('/admin');
     }
 
     public function testLoginRedirectsToAdminWhenRedirectParamPresent(): void
     {
-        // Inject authenticated session (bypass credential flow for deterministic redirect test)
-        $this->mockIdentity();
-        $this->enableCsrfToken();
-        $this->enableSecurityToken();
-        $this->post('/users/login?redirect=/admin', [
-            'redirect' => '/admin',
-        ]);
-        $this->assertRedirect('/admin');
+        $this->get('/users/login?redirect=/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('name="redirect"');
+        $this->assertResponseContains('value="/admin"');
     }
 
     public function testRegisterGet(): void
     {
         $this->get('/users/register');
-        $this->assertResponseOk();
-        $this->assertResponseContains('Register');
-    }
-
-    public function testRegisterPostValid(): void
-    {
-        $this->enableCsrfToken();
-        $this->enableSecurityToken();
-        $data = [
-            'username' => 'newuser',
-            'password' => 'newpassword',
-            'email' => 'newuser@example.com',
-            'role' => 'user',
-            'status' => 'active',
-        ];
-        $this->post('/users/register', $data);
-        // Controller may render form again or redirect; assert user persisted
-        $user = $this->getTableLocator()->get('Users')->find()->where(['username' => 'newuser'])->first();
-        $this->assertNotEmpty($user, 'User should have been created');
-    }
-
-    public function testRegisterPostInvalid(): void
-    {
-        $this->enableCsrfToken();
-        $this->enableSecurityToken();
-        $data = [
-            'username' => '', // invalid
-            'password' => '', // invalid
-            'email' => '', // invalid
-            'role' => '', // invalid
-            'status' => 'active',
-        ];
-        $this->post('/users/register', $data);
-        $this->assertResponseOk();
-        $this->assertResponseContains('Register');
+        $this->assertResponseCode(404);
     }
 
     public function testLogout(): void
@@ -123,31 +91,33 @@ class UsersControllerTest extends TestCase
     {
         $this->get('/users/resetPassword');
         $this->assertResponseOk();
-        $this->assertResponseContains('Reset Password');
+        $this->assertResponseContains('Enter your email address');
     }
 
     public function testResetPasswordPostValid(): void
     {
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
         $data = [
             'email' => 'admin@example.com',
         ];
         $this->post('/users/resetPassword', $data);
         $this->assertResponseOk();
-        $this->assertResponseContains('If your email exists, a reset link will be sent.');
+        $this->assertFlashMessage('If your email exists, a reset link will be sent.');
     }
 
     public function testResetPasswordPostInvalid(): void
     {
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
         $data = [
             'email' => '', // invalid
         ];
         $this->post('/users/resetPassword', $data);
         $this->assertResponseOk();
-        $this->assertResponseContains('If your email exists, a reset link will be sent.');
+        $this->assertFlashMessage('If your email exists, a reset link will be sent.');
     }
 
     // Add more tests for other actions as needed

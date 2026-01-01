@@ -25,7 +25,6 @@ class ImagesControllerTest extends TestCase
         'app.Images',
         'app.ImageTags',
         'app.ImagesImageTags',
-        'app.ImageUsages',
     ];
 
     private string $storageRoot;
