@@ -5,10 +5,11 @@ namespace App\Controller\Admin;
 
 use App\Service\GameService;
 use App\Service\ImageBrowseService;
-use App\Service\ImageProcessor;
+use App\Service\ImageEditService;
 use App\Service\ImageStorageService;
+use App\Service\PersonService;
 use App\Service\TaggingService;
-use Cake\Core\Configure;
+use App\Service\TeamSeasonRosterService;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
@@ -699,59 +700,16 @@ class ImagesController extends AppController
 
             // Check for custom thumbnail crop
             $thumbCrop = $request->getData('thumb_crop');
-            $hasThumbCrop = is_array($thumbCrop)
-                && !empty($thumbCrop['width'])
-                && !empty($thumbCrop['height']);
-
-            // Process with manipulations by directly working with the file content
-            $fileContent = file_get_contents($originalPath);
-            $variantConfig = (array)Configure::read('Images.variants', [
-                'thumb' => ['fit' => [150,150], 'format' => 'webp'],
-                'medium' => ['maxWidth' => 800, 'format' => 'webp'],
-                'webp' => ['format' => 'webp'],
-            ]);
-
-            // If custom thumbnail crop provided, override thumb variant config
-            if ($hasThumbCrop) {
-                $variantConfig['thumb'] = [
-                    'crop' => [
-                        'x' => (int)($thumbCrop['x'] ?? 0),
-                        'y' => (int)($thumbCrop['y'] ?? 0),
-                        'width' => (int)$thumbCrop['width'],
-                        'height' => (int)$thumbCrop['height'],
-                    ],
-                    'fit' => [150, 150],
-                    'format' => 'webp',
-                ];
-            }
-
-            // Process with manipulations
             try {
-                $processor = new ImageProcessor();
-                // Call a direct manipulation method instead of process()
-                $processed = $processor->manipulateExisting(
-                    $fileContent,
-                    $image->mime ?? 'image/jpeg',
-                    $variantConfig,
+                $result = (new ImageEditService())->manipulateImage(
+                    $images,
+                    $image,
                     $manipulations,
+                    $mode,
+                    is_array($thumbCrop) ? $thumbCrop : null,
                 );
-            } catch (\Throwable $e) {
-                \Cake\Log\Log::error('Image manipulation failed: ' . $e->getMessage());
-                $this->Flash->error('Failed to apply manipulations: ' . $e->getMessage());
 
-                return $this->redirect(['action' => 'manipulate', $id]);
-            }
-
-            // Save manipulated image (overwrite original)
-            try {
-                $originalData = $processed['original']['data'];
-
-                // If the image library isn't available, ImageProcessor falls back
-                // to returning the original bytes. Make that visible to the user
-                // so it doesn't look like the save silently failed.
-                $origWidth = (int)($processed['original']['width'] ?? 0);
-                $origHeight = (int)($processed['original']['height'] ?? 0);
-                if ($origWidth === 0 && $origHeight === 0) {
+                if (empty($result['success']) && ($result['status'] ?? null) === 'missing_library') {
                     $this->Flash->error(
                         'Server-side image manipulation is unavailable (missing PHP GD/Imagick). '
                         . 'Install `php-gd` (recommended) or `php-imagick`, then restart PHP/Apache.'
@@ -760,70 +718,11 @@ class ImagesController extends AppController
                     return $this->redirect(['action' => 'manipulate', $id]);
                 }
 
-                // Save-as-copy mode: keep the original image untouched and persist a new image record.
-                if ($mode === 'copy') {
-                    $mime = (string)($processed['original']['mime'] ?? $image->mime ?? 'image/jpeg');
-                    $ext = (string)($processed['original']['ext'] ?? $image->ext ?? 'jpg');
-                    $hash = hash('sha256', $originalData);
-                    $copyName = $image->original_name
-                        ? $image->original_name . ' (edited)'
-                        : $image->filename . ' (edited)';
-
-                    $storage = new ImageStorageService();
-                    $new = $storage->persistNewImage($images, $processed, $hash, $mime, $ext, $copyName);
-                    if (!$new) {
-                        $detail = $storage->getLastError() ?: 'Unable to save image copy';
-                        $this->Flash->error($detail);
-
-                        return $this->redirect(['action' => 'manipulate', $id]);
-                    }
-
+                if (!empty($result['success']) && ($result['status'] ?? null) === 'copied') {
                     $this->Flash->success('Saved manipulated image as a new copy');
 
-                    return $this->redirect(['action' => 'edit', $new->id]);
+                    return $this->redirect(['action' => 'edit', (int)$result['new_image_id']]);
                 }
-
-                if (file_put_contents($originalPath, $originalData) === false) {
-                    throw new \RuntimeException('Failed to write image file');
-                }
-
-                // Regenerate variants: prefer existing filenames; generate if missing; update DB metadata.
-                $existingVariants = $image->variants;
-                if (is_string($existingVariants)) {
-                    $existingVariants = json_decode($existingVariants, true);
-                }
-                $dir = dirname($originalPath);
-                $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
-                $newVariantsMeta = [];
-                foreach ((array)$processed['variants'] as $name => $meta) {
-                    $existingFile = null;
-                    if (is_array($existingVariants) && isset($existingVariants[$name]['file'])) {
-                        $existingFile = (string)$existingVariants[$name]['file'];
-                    }
-                    $ext = (string)($meta['ext'] ?? $image->ext ?? 'jpg');
-                    $targetFile = $existingFile ?: ($baseName . '-' . $name . '.' . $ext);
-                    $variantPath = $dir . DS . $targetFile;
-                    if (file_put_contents($variantPath, (string)$meta['data']) === false) {
-                        throw new \RuntimeException("Failed to write variant {$name}");
-                    }
-                    $newVariantsMeta[$name] = [
-                        'file' => $targetFile,
-                        'width' => (int)($meta['width'] ?? null),
-                        'height' => (int)($meta['height'] ?? null),
-                        'mime' => (string)($meta['mime'] ?? ''),
-                    ];
-                }
-
-                // Update DB metadata so edit/serve endpoints reflect changes and cache-busting is possible.
-                $images->patchEntity($image, [
-                    'byte_size' => strlen($originalData),
-                    'hash' => hash('sha256', $originalData),
-                    'width' => (int)($processed['original']['width'] ?? $image->width),
-                    'height' => (int)($processed['original']['height'] ?? $image->height),
-                    'modified' => date('Y-m-d H:i:s'),
-                    'variants' => json_encode($newVariantsMeta),
-                ], ['validate' => false]);
-                $images->saveOrFail($image);
 
                 $this->Flash->success('Image manipulations applied successfully');
 
@@ -888,90 +787,12 @@ class ImagesController extends AppController
             }
 
             try {
-                // Read original file
-                $fileContent = file_get_contents($originalPath);
-
-                // Build variant config with custom crop for thumb only
-                $variantConfig = [
-                    'thumb' => [
-                        'crop' => [
-                            'x' => $cropX,
-                            'y' => $cropY,
-                            'width' => $cropWidth,
-                            'height' => $cropHeight,
-                        ],
-                        'fit' => [150, 150],
-                        'format' => 'webp',
-                    ],
-                ];
-
-                // Generate new thumb variant
-                $processor = new ImageProcessor();
-                $processed = $processor->manipulateExisting(
-                    $fileContent,
-                    $image->mime ?? 'image/jpeg',
-                    $variantConfig,
-                    [],
-                );
-
-                if (!isset($processed['variants']['thumb'])) {
-                    throw new \RuntimeException('Thumb variant not generated');
-                }
-
-                // Get current variants from DB
-                $existingVariants = $image->variants;
-                if (is_string($existingVariants)) {
-                    $existingVariants = json_decode($existingVariants, true);
-                }
-                $existingVariants = is_array($existingVariants) ? $existingVariants : [];
-
-                // Write new thumb file to disk
-                $dir = dirname($originalPath);
-                $meta = $processed['variants']['thumb'];
-
-                // Reuse existing thumb filename or create new one
-                $existingFile = $existingVariants['thumb']['file'] ?? null;
-                $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
-                $ext = (string)($meta['ext'] ?? 'webp');
-                $targetFile = $existingFile ?: ($baseName . '-thumb.' . $ext);
-                $variantPath = $dir . DS . $targetFile;
-
-                $bytesWritten = file_put_contents($variantPath, (string)$meta['data']);
-                if ($bytesWritten === false) {
-                    throw new \RuntimeException('Failed to write thumb variant file');
-                }
-
-                \Cake\Log\Log::debug("Wrote {$bytesWritten} bytes to thumb variant: {$variantPath}");
-
-                // Update variants JSON with new thumb metadata
-                $existingVariants['thumb'] = [
-                    'file' => $targetFile,
-                    'width' => (int)($meta['width'] ?? 150),
-                    'height' => (int)($meta['height'] ?? 150),
-                    'mime' => (string)($meta['mime'] ?? 'image/webp'),
-                ];
-
-                // Update DB: Change hash to invalidate browser cache
-                $thumbHash = hash('sha256', (string)$meta['data']);
-                $variantsJson = json_encode($existingVariants);
-
-                \Cake\Log\Log::debug("Before save - Variants JSON: {$variantsJson}");
-
-                $image = $images->patchEntity($image, [
-                    'variants' => $variantsJson,
-                    'hash' => $thumbHash,
-                    'modified' => new \Cake\I18n\DateTime('now'),
-                ], ['validate' => false]);
-
-                $images->saveOrFail($image);
-
-                // Verify what was actually saved
-                $reloaded = $images->get($id);
-                \Cake\Log\Log::debug("After save - Image hash: {$reloaded->hash}");
-                \Cake\Log\Log::debug("After save - Image modified: {$reloaded->modified}");
-                \Cake\Log\Log::debug('After save - Variants JSON from DB: ' . ($reloaded->variants ?? 'NULL'));
-
-                \Cake\Log\Log::debug("Updated thumb variant for image #{$id}, new hash: {$thumbHash}");
+                (new ImageEditService())->cropThumbVariant($images, $image, [
+                    'x' => $cropX,
+                    'y' => $cropY,
+                    'width' => $cropWidth,
+                    'height' => $cropHeight,
+                ]);
 
                 $this->Flash->success('Thumbnail crop updated successfully');
 
@@ -1003,35 +824,8 @@ class ImagesController extends AppController
             return $this->json(['success' => true, 'rosters' => []]);
         }
 
-        $rostersTable = $this->fetchTable('TeamSeasonRosters');
-        $rows = $rostersTable->find()
-            ->contain(['Persons', 'TeamSeasons' => ['Teams', 'Seasons']])
-            ->where(['TeamSeasonRosters.person_id' => $personId])
-            ->all();
-
-        $out = [];
-        foreach ($rows as $r) {
-            $pname = trim(($r->person->first ?? '') . ' ' . ($r->person->last ?? '')) ?: '#' . $r->person_id;
-
-            $teamSeason = $r->team_season ?? null;
-            $seasonLabel = '';
-            if ($teamSeason) {
-                $teamName = $teamSeason->team->team_name ?? 'Team';
-                if (!empty($teamSeason->season)) {
-                    $start = $teamSeason->season->start ?? null;
-                    $end = $teamSeason->season->end ?? null;
-                    if ($start && $end && $start != $end) {
-                        $seasonLabel = " ({$start}-{$end})";
-                    } elseif ($start) {
-                        $seasonLabel = " ({$start})";
-                    }
-                }
-                $label = $pname . ' — ' . $teamName . $seasonLabel;
-            } else {
-                $label = $pname;
-            }
-            $out[] = ['id' => $r->id, 'label' => $label];
-        }
+        $service = new TeamSeasonRosterService();
+        $out = $service->getRostersForPersonLookup($personId, 200);
 
         return $this->json(['success' => true, 'rosters' => $out]);
     }
@@ -1049,63 +843,8 @@ class ImagesController extends AppController
             return $this->json(['success' => true, 'persons' => []]);
         }
 
-        $personsTable = $this->fetchTable('Persons');
-        $like = '%' . str_replace('%', '\\%', $q) . '%';
-        $rows = $personsTable->find()
-            ->select(['id', 'first', 'last', 'full', 'display'])
-            ->where([
-                'OR' => [
-                    ['first LIKE' => $like],
-                    ['last LIKE' => $like],
-                    ['full LIKE' => $like],
-                    ['display LIKE' => $like],
-                ],
-            ])
-            ->orderBy(['last' => 'ASC', 'first' => 'ASC'])
-            ->limit(25)
-            ->all();
-
-        $out = [];
-        $rostersTable = $this->fetchTable('TeamSeasonRosters');
-        foreach ($rows as $r) {
-            $base = trim((string)($r->display ?? ''))
-                ?: trim((string)($r->full ?? '')
-                ?: (trim(($r->first ?? '') . ' ' . ($r->last ?? ''))));
-
-            // Try to find a recent roster entry to disambiguate persons with identical names
-            $latestRoster = $rostersTable->find()
-                ->select(['TeamSeasonRosters.id', 'TeamSeasonRosters.team_season_id'])
-                ->where(['TeamSeasonRosters.person_id' => $r->id])
-                ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-                ->orderBy(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
-                ->limit(1)
-                ->first();
-
-            $extra = '';
-            if ($latestRoster) {
-                $ts = $latestRoster->team_season ?? null;
-                if ($ts) {
-                    $teamName = $ts->team->team_name ?? null;
-                    $season = $ts->season ?? null;
-                    if ($teamName) {
-                        $seasonLabel = '';
-                        if ($season) {
-                            $start = $season->start ?? null;
-                            $end = $season->end ?? null;
-                            if ($start && $end && $start != $end) {
-                                $seasonLabel = " {$start}-{$end}";
-                            } elseif ($start) {
-                                $seasonLabel = " {$start}";
-                            }
-                        }
-                        $extra = trim($teamName . $seasonLabel);
-                    }
-                }
-            }
-
-            $label = $base . ($extra ? ' — ' . $extra : '');
-            $out[] = ['id' => $r->id, 'label' => $label];
-        }
+        $service = new PersonService();
+        $out = $service->searchPersonsForImageTagging($q, 25);
 
         return $this->json(['success' => true, 'persons' => $out]);
     }
