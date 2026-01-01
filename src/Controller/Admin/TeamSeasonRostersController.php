@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\PersonService;
+use App\Service\TeamSeasonService;
 use Cake\Http\Response;
 
 /**
@@ -70,20 +72,9 @@ class TeamSeasonRostersController extends AppController
             $this->Flash->error(__('The team season roster could not be saved. Please, try again.'));
         }
 
-        $teamSeasonsQuery = $this->fetchTable('TeamSeasons')->find()
-            ->contain(['Teams', 'Seasons'])
-            ->select(['id', 'Teams.team_name', 'Seasons.start', 'Seasons.end'])
-            ->orderByDesc('Seasons.start')
-            ->limit(200);
+        $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
 
-        $teamSeasonsList = [];
-        foreach ($teamSeasonsQuery as $teamSeason) {
-            /** @var \App\Model\Entity\TeamSeason $teamSeason */
-            $teamName = $teamSeason->team->team_name;
-            $seasonRange = $teamSeason->season->start . '-' . $teamSeason->season->end;
-            $teamSeasonsList[$teamSeason->get('id')] = $teamName . ' (' . $seasonRange . ')';
-        }
-        $persons = $this->fetchTable('Persons')->find('list', limit: 200)->all();
+        $persons = (new PersonService())->getPersonsList(200);
         $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
 
         $this->set(compact('teamSeasonRoster', 'teamSeasonsList', 'persons', 'sports'));
@@ -122,25 +113,10 @@ class TeamSeasonRostersController extends AppController
             $this->Flash->error(__('The team season roster could not be saved. Please, try again.'));
         }
 
-        $teamSeasonsQuery = $this->fetchTable('TeamSeasons')->find()
-            ->contain(['Teams', 'Seasons'])
-            ->select(['id', 'Teams.team_name', 'Seasons.start', 'Seasons.end'])
-            ->orderByDesc('Seasons.start')
-            ->limit(200);
+        $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
 
-        $teamSeasonsList = [];
-        foreach ($teamSeasonsQuery as $teamSeason) {
-            /** @var \App\Model\Entity\TeamSeason $teamSeason */
-            $teamName = $teamSeason->team->team_name;
-            $seasonRange = $teamSeason->season->start . '-' . $teamSeason->season->end;
-            $teamSeasonsList[$teamSeason->get('id')] = $teamName . ' (' . $seasonRange . ')';
-        }
-        $persons = $this->fetchTable('Persons')->find('list', limit: 200)->all()->toArray();
-        $personIdExisting = $teamSeasonRoster->get('person_id');
-        if ($personIdExisting && !isset($persons[$personIdExisting])) {
-            $person = $this->fetchTable('Persons')->get($personIdExisting);
-            $persons[$person->get('id')] = (string)$person->get('display');
-        }
+        $personIdExisting = (int)$teamSeasonRoster->get('person_id');
+        $persons = (new PersonService())->getPersonsList(200, $personIdExisting ?: null);
         $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
 
         $this->set(compact('teamSeasonRoster', 'teamSeasonsList', 'persons', 'sports'));
@@ -239,12 +215,8 @@ class TeamSeasonRostersController extends AppController
         if ($this->request->is('post')) {
             $teamSeasonRoster = $this->TeamSeasonRosters->patchEntity($teamSeasonRoster, $this->request->getData());
             if ($this->TeamSeasonRosters->save($teamSeasonRoster)) {
-                // Build person label using entity virtual field
                 $personId = (int)$teamSeasonRoster->get('person_id');
-                $personsTable = (new \Cake\ORM\Locator\TableLocator())->get('Persons');
-                /** @var \App\Model\Entity\Person $person */
-                $person = $personsTable->get($personId);
-                $personLabel = $person->getLabel();
+                $personLabel = (new PersonService())->getDisplayLabel($personId);
                 $response = [
                     'success' => true,
                     'message' => 'Team season roster has been added successfully.',

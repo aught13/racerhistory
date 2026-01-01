@@ -67,12 +67,14 @@ class GameEavMultiSportTest extends TestCase
         $this->assertArrayHasKey('period_1_team', $template2);
         $this->assertArrayHasKey('period_2_team', $template2);
         $this->assertArrayNotHasKey('period_3_team', $template2);
-        $this->assertStringContainsString('Half', $template2['period_1_team']['label']);
+        $label2 = $template2['period_1_team']['display_label'] ?? $template2['period_1_team']['label'] ?? '';
+        $this->assertStringContainsString('Half', $label2);
 
         // Test 4-period basketball (quarters)
         $this->assertArrayHasKey('period_1_team', $template4);
         $this->assertArrayHasKey('period_4_team', $template4);
-        $this->assertStringContainsString('Quarter', $template4['period_1_team']['label']);
+        $label4 = $template4['period_1_team']['display_label'] ?? $template4['period_1_team']['label'] ?? '';
+        $this->assertStringContainsString('Quarter', $label4);
 
         // Test officials
         $this->assertArrayHasKey('official_1', $template2);
@@ -91,7 +93,8 @@ class GameEavMultiSportTest extends TestCase
 
         $this->assertArrayHasKey('overtime_1_team', $template);
         $this->assertArrayHasKey('overtime_1_opponent', $template);
-        $this->assertStringContainsString('OT', $template['overtime_1_team']['label']);
+            $labelOt = $template['overtime_1_team']['display_label'] ?? $template['overtime_1_team']['label'] ?? '';
+            $this->assertStringContainsString('OT', $labelOt);
 
         // Test with multiple overtimes
         $templateMultiOT = $this->GameEav->getEavTemplateForSport(1, '2', '3');
@@ -111,7 +114,8 @@ class GameEavMultiSportTest extends TestCase
         $this->assertArrayHasKey('period_1_team', $footballTemplate);
         $this->assertArrayHasKey('period_4_team', $footballTemplate);
         // Should use Quarter for 4-period sports
-        $this->assertStringContainsString('Quarter', $footballTemplate['period_1_team']['label']);
+            $labelFootball = $footballTemplate['period_1_team']['display_label'] ?? $footballTemplate['period_1_team']['label'] ?? '';
+            $this->assertStringContainsString('Quarter', $labelFootball);
     }
 
     /**

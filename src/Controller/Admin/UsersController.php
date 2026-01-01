@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\SiteOptionService;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
@@ -17,6 +18,8 @@ use Cake\Http\Response;
  */
 class UsersController extends AppController
 {
+    private SiteOptionService $siteOptionService;
+
     /**
      * Initialization hook method.
      *
@@ -25,6 +28,8 @@ class UsersController extends AppController
     public function initialize(): void
     {
         parent::initialize();
+
+        $this->siteOptionService = new SiteOptionService();
 
         // Load UserManager component for admin-specific logic
         $this->loadComponent('UserManager');
@@ -76,10 +81,7 @@ class UsersController extends AppController
         // Get all users for search table
         $allUsers = $this->Users->find()->orderBy(['username' => 'ASC'])->all();
 
-        // Fetch registration option
-        $siteOptionsTable = $this->fetchTable('SiteOptions');
-        $siteOption = $siteOptionsTable->find()->where(['option_key' => 'registration'])->first();
-        $registrationEnabled = !$siteOption || $siteOption->value === 'true';
+        $registrationEnabled = $this->siteOptionService->getBooleanOption('registration', true);
 
         $this->set(compact('users', 'hasInactive', 'allUsers', 'registrationEnabled'));
     }
@@ -187,21 +189,8 @@ class UsersController extends AppController
      */
     public function toggleRegistration()
     {
-        $siteOptionsTable = $this->fetchTable('SiteOptions');
-        $siteOption = $siteOptionsTable->find()->where(['option_key' => 'registration'])->first();
-        $newValue = $siteOption && $siteOption->value === 'false' ? 'true' : 'false';
-        if ($siteOption) {
-            $siteOption->value = $newValue;
-            $siteOptionsTable->save($siteOption);
-        } else {
-            $siteOption = $siteOptionsTable->newEntity([
-                'option_key' => 'registration',
-                'value' => $newValue,
-            ]);
-            $siteOptionsTable->save($siteOption);
-        }
-        $msg = $newValue === 'true' ? 'Registration enabled.' : 'Registration disabled.';
-        $this->Flash->success($msg);
+        $enabled = $this->siteOptionService->toggleBooleanOption('registration', true);
+        $this->Flash->success($enabled ? 'Registration enabled.' : 'Registration disabled.');
 
         return $this->redirect(['action' => 'index']);
     }

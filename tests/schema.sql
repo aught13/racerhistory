@@ -7,7 +7,20 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username VARCHAR(50) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL UNIQUE,
+  first_name VARCHAR(50) NULL,
+  last_name VARCHAR(50) NULL,
   password VARCHAR(255) NOT NULL,
+  token VARCHAR(255) NULL,
+  token_expires DATETIME NULL,
+  api_token VARCHAR(255) NULL,
+  activation_date DATETIME NULL,
+  tos_date DATETIME NULL,
+  active BOOLEAN NOT NULL DEFAULT 0,
+  is_superuser BOOLEAN NOT NULL DEFAULT 0,
+  secret VARCHAR(32) NULL,
+  secret_verified BOOLEAN NULL,
+  additional_data TEXT NULL,
+  last_login DATETIME NULL,
   role VARCHAR(20) NOT NULL DEFAULT 'user',
   status VARCHAR(20) NOT NULL DEFAULT 'inactive',
   created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -410,19 +423,6 @@ CREATE TABLE IF NOT EXISTS images_image_tags (
   UNIQUE(image_id, image_tag_id),
   FOREIGN KEY(image_id) REFERENCES images(id),
   FOREIGN KEY(image_tag_id) REFERENCES image_tags(id)
-);
-
--- Image Usages table (tracks where images are used)
-CREATE TABLE IF NOT EXISTS image_usages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  image_id INTEGER NOT NULL,
-  model VARCHAR(100) NOT NULL,
-  foreign_key INTEGER NOT NULL,
-  field VARCHAR(100) NOT NULL,
-  context VARCHAR(100) NULL,
-  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(image_id) REFERENCES images(id)
 );
 
 -- Blog tables

@@ -62,6 +62,19 @@ class TeamSeasonRosterServiceTest extends TestCase
         }
     }
 
+    public function testGetRostersForPersonLookup(): void
+    {
+        $results = $this->service->getRostersForPersonLookup(1, 25);
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+
+        $first = $results[0];
+        $this->assertArrayHasKey('id', $first);
+        $this->assertArrayHasKey('label', $first);
+        $this->assertStringContainsString('John Doe', (string)$first['label']);
+        $this->assertStringContainsString('Los Angeles Lakers', (string)$first['label']);
+    }
+
     public function testGetRosterDisplayData(): void
     {
         $data = $this->service->getRosterDisplayData(1);

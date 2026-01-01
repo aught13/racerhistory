@@ -81,6 +81,16 @@ return [
     ],
 
     /*
+     * CakeDC/Users
+     *
+     * The plugin loads its defaults first, then loads any extra config files
+     * listed in Users.config.
+     */
+    'Users' => [
+        'config' => ['users'],
+    ],
+
+    /*
      * Apply timestamps with the last modified time to static assets (js, css, images).
      * Will append a querystring parameter containing the time the file was modified.
      * This is useful for busting browser caches.

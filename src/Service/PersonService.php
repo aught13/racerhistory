@@ -105,6 +105,81 @@ class PersonService
     }
 
     /**
+     * Person lookup used by image tagging UI.
+     *
+     * Includes a best-effort "latest roster" context to help disambiguate
+     * identical names, while keeping the base label consistent.
+     */
+    public function searchPersonsForImageTagging(string $query, int $limit = 25): array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+
+        $personsTable = TableRegistry::getTableLocator()->get('Persons');
+        $teamSeasonRostersTable = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
+
+        $like = '%' . str_replace('%', '\\%', $query) . '%';
+
+        $rows = $personsTable->find()
+            ->select(['id', 'first', 'last', 'full', 'display'])
+            ->where([
+                'OR' => [
+                    ['Persons.first LIKE' => $like],
+                    ['Persons.last LIKE' => $like],
+                    ['Persons.full LIKE' => $like],
+                    ['Persons.display LIKE' => $like],
+                ],
+            ])
+            ->orderBy(['Persons.last' => 'ASC', 'Persons.first' => 'ASC'])
+            ->limit($limit)
+            ->all();
+
+        $out = [];
+        foreach ($rows as $person) {
+            $base = trim((string)($person->display ?? ''))
+                ?: trim((string)($person->full ?? ''))
+                ?: trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? ''));
+
+            $extra = '';
+            $latestRoster = $teamSeasonRostersTable->find()
+                ->select(['TeamSeasonRosters.id', 'TeamSeasonRosters.team_season_id'])
+                ->where(['TeamSeasonRosters.person_id' => $person->id])
+                ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
+                ->orderBy(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
+                ->limit(1)
+                ->first();
+
+            if ($latestRoster) {
+                $teamSeason = $latestRoster->team_season ?? null;
+                if ($teamSeason) {
+                    $teamName = $teamSeason->team->team_name ?? null;
+                    $season = $teamSeason->season ?? null;
+                    if ($teamName) {
+                        $seasonLabel = '';
+                        if ($season) {
+                            $start = $season->start ?? null;
+                            $end = $season->end ?? null;
+                            if ($start && $end && $start != $end) {
+                                $seasonLabel = " {$start}-{$end}";
+                            } elseif ($start) {
+                                $seasonLabel = " {$start}";
+                            }
+                        }
+                        $extra = trim($teamName . $seasonLabel);
+                    }
+                }
+            }
+
+            $label = $base . ($extra !== '' ? ' — ' . $extra : '');
+            $out[] = ['id' => $person->id, 'label' => $label];
+        }
+
+        return $out;
+    }
+
+    /**
      * Get all persons ordered by display name.
      *
      * @return array
@@ -182,5 +257,28 @@ class PersonService
         }
 
         return $results;
+    }
+
+    /**
+     * Get persons as an associative list suitable for FormHelper selects.
+     *
+     * Optionally ensures a specific person ID is present even if outside the limit.
+     *
+     * @param int $limit
+     * @param int|null $ensurePersonId
+     * @return array<int,string>
+     */
+    public function getPersonsList(int $limit = 200, ?int $ensurePersonId = null): array
+    {
+        $persons = TableRegistry::getTableLocator()->get('Persons');
+
+        /** @var array<int,string> $list */
+        $list = $persons->find('list', limit: $limit)->all()->toArray();
+
+        if ($ensurePersonId !== null && $ensurePersonId > 0 && !isset($list[$ensurePersonId])) {
+            $list[$ensurePersonId] = $this->getDisplayLabel($ensurePersonId);
+        }
+
+        return $list;
     }
 }

@@ -69,11 +69,6 @@ $this->assign('title', 'Edit Image');
           ['action' => 'tags', $image->id],
           ['class' => 'btn btn-info btn-sm']
         ) ?>
-        <?= $this->Html->link(
-          'View Usage',
-          ['action' => 'usage', $image->id],
-          ['class' => 'btn btn-secondary btn-sm']
-        ) ?>
         <?= $this->Form->postButton(
           'Delete Image',
           ['action' => 'delete', $image->id],
