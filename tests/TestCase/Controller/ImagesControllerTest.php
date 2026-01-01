@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\ImagesController;
+use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
@@ -180,6 +181,59 @@ class ImagesControllerTest extends TestCase
         $this->assertIsString($result[1]);
     }
 
+    public function testExtractTransformParamsReturnsNullWithoutValues(): void
+    {
+        $controller = $this->createImagesControllerWithQuery(['variant' => 'thumb', 'v' => '1']);
+        $method = $this->getPrivateMethod($controller, 'extractTransformParams');
+
+        $this->assertNull($method->invoke($controller));
+    }
+
+    public function testExtractTransformParamsFiltersAndNormalizesInputs(): void
+    {
+        $controller = $this->createImagesControllerWithQuery([
+            'w' => '84',
+            'h' => '0',
+            'fit' => 'Cover',
+            'fm' => 'jpeg',
+            'q' => '150',
+            'variant' => 'thumb',
+            'v' => '1',
+        ]);
+        $method = $this->getPrivateMethod($controller, 'extractTransformParams');
+
+        $this->assertSame([
+            'w' => 84,
+            'fit' => 'cover',
+            'fm' => 'jpg',
+            'q' => 100,
+        ], $method->invoke($controller));
+    }
+
+    public function testOutputFormatAndMimeHelpersCoverCommonCases(): void
+    {
+        $controller = $this->createImagesControllerWithQuery();
+        $output = $this->getPrivateMethod($controller, 'outputFormat');
+        $mimeToExt = $this->getPrivateMethod($controller, 'mimeToExt');
+
+        $this->assertSame(['image/jpeg', 'jpg'], $output->invoke($controller, 'jpg', 'image/png'));
+        $this->assertSame(['image/png', 'png'], $output->invoke($controller, 'png', 'image/jpeg'));
+        $this->assertSame(['image/webp', 'webp'], $output->invoke($controller, 'webp', 'image/jpeg'));
+        $this->assertSame(['image/png', 'png'], $output->invoke($controller, null, 'image/png'));
+        $this->assertSame('png', $mimeToExt->invoke($controller, 'image/png'));
+        $this->assertSame('webp', $mimeToExt->invoke($controller, 'image/webp'));
+        $this->assertSame('jpg', $mimeToExt->invoke($controller, 'application/octet-stream'));
+    }
+
+    public function testBuildEtagProducesConsistentValue(): void
+    {
+        $controller = $this->createImagesControllerWithQuery();
+        $method = $this->getPrivateMethod($controller, 'buildEtag');
+
+        $expected = '"' . hash('sha256', 'hash|thumb|[]') . '"';
+        $this->assertSame($expected, $method->invoke($controller, 'hash', 'thumb', []));
+    }
+
     private function computeEtag(string $hash, string $variant, array $transform): string
     {
         $basis = $hash . '|' . $variant . '|' . json_encode($transform);
@@ -210,5 +264,30 @@ class ImagesControllerTest extends TestCase
         file_put_contents($fullPath, $bytes);
 
         return $fullPath;
+    }
+
+    private function createImagesControllerWithQuery(array $query = []): ImagesController
+    {
+        $request = new ServerRequest([
+            'url' => '/images/serve/1',
+            'query' => $query,
+        ]);
+        $response = new Response();
+
+        return $this->getMockBuilder(ImagesController::class)
+            ->onlyMethods(['initialize'])
+            ->setConstructorArgs([$request, $response])
+            ->getMock();
+    }
+
+    private function getPrivateMethod(ImagesController $controller, string $name): \ReflectionMethod
+    {
+        $ref = new \ReflectionClass($controller);
+        $method = $ref->getMethod($name);
+        if (PHP_VERSION_ID < 80500) {
+            $method->setAccessible(true);
+        }
+
+        return $method;
     }
 }
