@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\GameService;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 class GameServiceTest extends TestCase
@@ -26,6 +27,9 @@ class GameServiceTest extends TestCase
         'app.Opponents',
         'app.Places',
         'app.Sites',
+        'app.SportConfigs',
+        'app.GameEav',
+        'app.SportStatRegistry',
     ];
 
     protected GameService $service;
@@ -265,5 +269,78 @@ class GameServiceTest extends TestCase
         $this->assertArrayHasKey('teamSeasonList', $lists);
         $this->assertArrayHasKey('sports', $lists);
         $this->assertIsArray($lists['teamSeasonList']);
+    }
+
+    public function testNormalizeAssociatedInlineCreateCreatesInlineEntities(): void
+    {
+        $data = [
+            'new_place' => [
+                'place_name' => 'Test Arena',
+                'place_city' => 'Hometown',
+                'place_state' => 'CA',
+            ],
+            'new_site' => ['site_name' => 'Field One'],
+            'new_opponent' => ['opponent_name' => 'Mock Rival'],
+            'new_game_type' => ['game_type_name' => 'Exhibition', 'post' => 1, 'conf' => 0],
+        ];
+
+        $this->service->normalizeAssociatedInlineCreate($data);
+
+        $this->assertNotEmpty($data['place_id']);
+        $this->assertNotEmpty($data['site_id']);
+        $this->assertNotEmpty($data['opponent_id']);
+        $this->assertNotEmpty($data['game_type_id']);
+
+        $places = TableRegistry::getTableLocator()->get('Places');
+        $place = $places->get($data['place_id']);
+        $this->assertSame('Test Arena', $place->place_name);
+    }
+
+    public function testLoadGameEavValuesReturnsFixtureMetadata(): void
+    {
+        $values = $this->service->loadGameEavValues(1);
+
+        $this->assertSame('35', $values['period_1_team']);
+        $this->assertSame('30', $values['period_1_opponent']);
+    }
+
+    public function testGetGameEavMetadataIncludesTemplateAndValues(): void
+    {
+        $metadata = $this->service->getGameEavMetadata(1);
+
+        $this->assertSame(1, $metadata['sportId']);
+        $this->assertSame('Basketball', $metadata['sportName']);
+        $this->assertArrayHasKey('period_1_team', $metadata['eavTemplate']);
+        $this->assertSame('35', $metadata['values']['period_1_team']);
+    }
+
+    public function testGetRecentGamesForSelectRespectsLimit(): void
+    {
+        $results = $this->service->getRecentGamesForSelect(2);
+
+        $this->assertCount(2, $results);
+    }
+
+    public function testSearchGamesForSelectFiltersByQuery(): void
+    {
+        $results = $this->service->searchGamesForSelect('Lakers');
+
+        $this->assertNotEmpty($results);
+        $labels = array_map(fn($row) => (string)($row['label'] ?? ''), $results);
+        $this->assertStringContainsString('Lakers', $labels[0]);
+    }
+
+    public function testApplySearchBuilderCriteriaAddsWhere(): void
+    {
+        $query = TableRegistry::getTableLocator()->get('Games')->find();
+        $this->service->applySearchBuilderCriteria($query, [
+            [
+                'origData' => '2',
+                'condition' => 'contains',
+                'value1' => 'Lakers',
+            ],
+        ]);
+
+        $this->assertGreaterThanOrEqual(1, $query->count());
     }
 }

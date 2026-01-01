@@ -84,7 +84,13 @@ class UsersControllerTest extends TestCase
     {
         $this->loginAsAdmin();
         $this->get('/users/logout');
-        $this->assertRedirect();
+        $this->assertRedirect('/users/login');
+    }
+
+    public function testUnknownActionRedirectsHome(): void
+    {
+        $this->get('/users/doesntExist');
+        $this->assertRedirect('/');
     }
 
     public function testResetPasswordGet(): void
