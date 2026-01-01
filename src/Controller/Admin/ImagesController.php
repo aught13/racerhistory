@@ -5,8 +5,10 @@ namespace App\Controller\Admin;
 
 use App\Service\GameService;
 use App\Service\ImageBrowseService;
+use App\Service\ImageDeleteService;
 use App\Service\ImageEditService;
 use App\Service\ImageStorageService;
+use App\Service\ImageTagUiService;
 use App\Service\PersonService;
 use App\Service\TaggingService;
 use App\Service\TeamSeasonRosterService;
@@ -487,28 +489,7 @@ class ImagesController extends AppController
         $teamSeasons = $teamSeasonService->getTeamSeasonsForSelect();
 
         // Games with team_season_id for filtering and formatted labels
-        $gameLabels = [];
-        $gamesTable = $this->fetchTable('Games');
-        foreach (
-            $gamesTable->find()
-            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
-            ->orderByDesc('Games.game_date')
-            ->limit(200)
-            ->all() as $g
-        ) {
-            $teamName = $g->team_season->team->team_name ?? 'Team';
-            $oppName = $g->opponent->opponent_name ?? 'Opponent';
-            $date = $g->game_date ? $g->game_date->format('Y-m-d') : '';
-            $score = $g->pts_mur !== null && $g->pts_opp !== null ? " {$g->pts_mur}-{$g->pts_opp}" : '';
-            $label = $teamName . ' vs ' . $oppName
-                . ($date ? ' (' . $date . ')' : '') . $score;
-            $gameLabels[] = [
-                'id' => $g->id,
-                'team_season_id' => $g->team_season_id,
-                'label' => $label,
-            ];
-        }
-        $games = $gameLabels;
+        $games = (new GameService())->getRecentGamesForSelect(200);
 
         $placeService = new \App\Service\PlaceService();
         $sites = $placeService->getSitesForSelect();
@@ -532,42 +513,9 @@ class ImagesController extends AppController
         $image = $images->get($id, contain: ['ImageTags']);
         $currentTags = $image->image_tags ?? [];
 
-        $formattedTags = [];
-        $freeformTags = [];
-        foreach ($currentTags as $t) {
-            $slug = (string)($t->slug ?? '');
-            if (preg_match('/-[0-9]+$/', $slug)) {
-                if (str_starts_with($slug, 'team_season_roster-')) {
-                    $rid = (int)substr($slug, strlen('team_season_roster-'));
-                    $display = (new \App\Service\TeamSeasonRosterService())->getRosterDisplayData($rid);
-                    $t->name = $display['team_season_label'] ?? $t->name;
-                }
-                $formattedTags[] = $t;
-            } else {
-                $freeformTags[] = $t;
-            }
-        }
-        $currentTags = array_merge($formattedTags, $freeformTags);
-        $tagString = implode(', ', array_map(fn($t) => $t->name, $freeformTags));
-
-        $selectedPersonId = null;
-        $selectedPersonName = null;
-        $selectedRosterId = null;
-        foreach ($currentTags as $t) {
-            $slug = (string)($t->slug ?? '');
-            if (str_starts_with($slug, 'person-')) {
-                $selectedPersonId = (int)substr($slug, strlen('person-'));
-                $selectedPersonName = (new \App\Service\PersonService())->getDisplayLabel($selectedPersonId);
-                break;
-            }
-        }
-        foreach ($currentTags as $t) {
-            $slug = (string)($t->slug ?? '');
-            if (str_starts_with($slug, 'team_season_roster-')) {
-                $selectedRosterId = (int)substr($slug, strlen('team_season_roster-'));
-                break;
-            }
-        }
+        $ui = (new ImageTagUiService())->formatTagsForUi($currentTags);
+        $currentTags = $ui['currentTags'];
+        $tagString = $ui['tagString'];
 
         $this->set(compact(
             'image',
@@ -578,10 +526,7 @@ class ImagesController extends AppController
             'sites',
             'opponents',
             'sports',
-            'tagString',
-            'selectedPersonId',
-            'selectedPersonName',
-            'selectedRosterId'
+            'tagString'
         ));
 
         $this->viewBuilder()->setTemplate('tags');
@@ -596,18 +541,9 @@ class ImagesController extends AppController
     {
         $this->getRequest()->allowMethod(['post', 'delete']);
 
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id);
+        $result = (new ImageDeleteService())->deleteImageById($id);
 
-        // Delete associations and files
-        $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $id]);
-        TaggingService::forImages()->pruneOrphanedTags();
-
-        // Delete physical files
-        $this->deleteImageFiles($image);
-
-        // Delete record
-        if ($images->delete($image)) {
+        if (!empty($result['deleted'])) {
             $this->Flash->success('Image deleted');
         } else {
             $this->Flash->error('Could not delete image');
@@ -629,26 +565,8 @@ class ImagesController extends AppController
             $ids = [];
         }
 
-        $images = $this->fetchTable('Images');
-        $imagesToDelete = $images->find()
-            ->whereInList('id', $ids)
-            ->all();
-
-        $deleted = 0;
-        foreach ($imagesToDelete as $image) {
-            // Delete associations
-            $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $image->id]);
-
-            // Delete files
-            $this->deleteImageFiles($image);
-
-            // Delete record
-            if ($images->delete($image)) {
-                $deleted++;
-            }
-        }
-
-        TaggingService::forImages()->pruneOrphanedTags();
+        $result = (new ImageDeleteService())->bulkDeleteImages($ids);
+        $deleted = (int)($result['deleted'] ?? 0);
 
         $this->Flash->success("Deleted {$deleted} image(s)");
 
@@ -847,41 +765,6 @@ class ImagesController extends AppController
         $out = $service->searchPersonsForImageTagging($q, 25);
 
         return $this->json(['success' => true, 'persons' => $out]);
-    }
-
-    /**
-     * Delete physical image files.
-     */
-    private function deleteImageFiles(\App\Model\Entity\Image $image): void
-    {
-        $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
-        if (!$image->storage_path) {
-            return;
-        }
-
-        $originalPath = $baseDir . $image->storage_path;
-        if (is_file($originalPath)) {
-            unlink($originalPath);
-        }
-
-        // Delete variants
-        $variants = $image->variants;
-        if (is_string($variants)) {
-            $variants = json_decode($variants, true);
-        }
-        if (is_array($variants)) {
-            $dir = dirname($originalPath);
-            foreach ($variants as $variantMeta) {
-                $file = is_array($variantMeta) ? ($variantMeta['file'] ?? null) : null;
-                if (!$file) {
-                    continue;
-                }
-                $variantPath = $dir . DS . $file;
-                if (is_file($variantPath)) {
-                    unlink($variantPath);
-                }
-            }
-        }
     }
 
     /**

@@ -222,7 +222,7 @@ vendor/bin/phpunit
 Coverage (CI only – requires Xdebug or PCOV) uses a separate config with coverage enabled:
 
 ```bash
-vendor/bin/phpunit --configuration phpunit.ci.xml
+vendor/bin/phpunit --configuration phpunit.ci.xml; echo EXIT:$?
 ```
 
 If you need an ad‑hoc subset without configuration (bypassing discovery logic), you can still run:
@@ -372,10 +372,10 @@ This project enforces modern JavaScript standards for all custom JS code (exclud
 
 ## PHPCS Verbose Standard Usage (Always for Assistant Runs)
 
-When the assistant (automation) runs PHPCS for diagnostic purposes, ALWAYS use the verbose, progress, and sniff-code enabled invocation limited to the first 200 lines to keep chat output compact:
+When the assistant (automation) runs PHPCS for diagnostic purposes, ALWAYS use the progress and sniff-code enabled with the echo of the exit so that there is a clear indication of the PHPCS exit status:
 
 ```bash
-php vendor/bin/phpcs --standard=phpcs.xml -p -s -v src/ tests/ | head -200
+php vendor/bin/phpcs --standard=phpcs.xml -p -s src/ tests/; echo EXIT:$?
 ```
 
 Rationale:
