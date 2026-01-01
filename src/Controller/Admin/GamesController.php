@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\GameEavMetaService;
 use App\Service\GameEavUiService;
+use App\Service\GameUpsertService;
 use App\Service\GameViewService;
 use Cake\Http\Response;
 
@@ -21,7 +23,9 @@ use Cake\Http\Response;
 class GamesController extends AppController
 {
     private GameEavUiService $gameEavUi;
+    private GameEavMetaService $gameEavMeta;
     private GameViewService $gameView;
+    private GameUpsertService $gameUpsert;
 
     /**
      * @var \App\Service\GameService Service for game-related business logic
@@ -51,7 +55,9 @@ class GamesController extends AppController
         $this->loadService('Stats');
 
         $this->gameEavUi = new GameEavUiService();
+        $this->gameEavMeta = new GameEavMetaService($this->Game, $this->gameEavUi);
         $this->gameView = new GameViewService($this->Game, $this->SportConfig, $this->Stats, $this->gameEavUi);
+        $this->gameUpsert = new GameUpsertService($this->Games, $this->Game, $this->SportConfig, $this->gameEavUi);
     }
 
     /**
@@ -68,44 +74,21 @@ class GamesController extends AppController
         $this->request->allowMethod(['get']);
         $gameId = (int)$this->request->getQuery('game_id');
         $teamSeasonId = (int)$this->request->getQuery('team_season_id');
-        $payload = ['success' => false];
 
-        try {
-            $metadata = $this->Game->getGameEavMetadata(
-                $gameId ?: null,
-                $teamSeasonId ?: null
-            );
+        $result = $this->gameEavMeta->getMetadataResult($gameId ?: null, $teamSeasonId ?: null);
+        $payload = $result['payload'];
 
-            $payload = [
-                'success' => true,
-                'sportId' => $metadata['sportId'],
-                'sportName' => $metadata['sportName'],
-                'configs' => $metadata['configs'],
-                'eavTemplate' => $metadata['eavTemplate'],
-                'values' => $metadata['values'],
-            ];
+        // If HTML fragment requested, render the server-side element and return HTML
+        $format = $this->request->getQuery('format');
+        if ($format === 'html' && !empty($payload['success']) && !empty($result['metadata'])) {
+            $vars = $this->gameEavMeta->buildSportSpecificFieldsElementVars($result['metadata']);
 
-            // If HTML fragment requested, render the server-side element and return HTML
-            $format = $this->request->getQuery('format');
-            if ($format === 'html') {
-                // Prepare variables expected by the element
-                $eavTemplate = $metadata['eavTemplate'];
-                $eav = $metadata['values'];
-                $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($metadata['values']);
-                $sportName = $metadata['sportName'];
+            $html = $this->viewBuilder()
+                ->setClassName('App\View\AppView')
+                ->build()
+                ->element('Admin/Games/sport_specific_fields', $vars);
 
-                $html = $this->viewBuilder()
-                    ->setClassName('App\View\AppView')
-                    ->build()
-                    ->element(
-                        'Admin/Games/sport_specific_fields',
-                        compact('eavTemplate', 'eav', 'legacyMappedEav', 'sportName')
-                    );
-
-                return $this->response->withType('text/html')->withStringBody($html);
-            }
-        } catch (\Throwable $e) {
-            $payload['error'] = 'Lookup failed';
+            return $this->response->withType('text/html')->withStringBody($html);
         }
 
         return $this->response
@@ -209,82 +192,27 @@ class GamesController extends AppController
             return $this->redirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
         }
 
-        /** @var \App\Model\Entity\Game $game */
-        $game = $this->Games->newEmptyEntity();
-        $game->set('team_season_id', $teamSeasonId);
-
-        $metadata = $this->Game->getGameEavMetadata(null, $teamSeasonId);
-        $sportId = (int)$metadata['sportId'];
-        $sportName = (string)($metadata['sportName'] ?? '');
-        $sportConfigs = $metadata['configs'];
-        $eavTemplate = $metadata['eavTemplate'];
-        $eav = [];
-
         if ($this->request->is('post')) {
-            $data = $this->request->getData();
+            $result = $this->gameUpsert->processAdd($teamSeasonId, $this->request->getData());
 
-            // Track if new opponent is being created
-            $newOpponentId = null;
-            if (!empty($data['new_opponent']['opponent_name'])) {
-                // Will be set in normalizeAssociatedInlineCreate
-                $trackNewOpponent = true;
+            foreach (($result['flashErrors'] ?? []) as $error) {
+                $this->Flash->error(__((string)$error));
+            }
+            if (!empty($result['flashSuccess'])) {
+                $this->Flash->success(__((string)$result['flashSuccess']));
+            }
+            if (!empty($result['redirect'])) {
+                return $this->redirect($result['redirect']);
             }
 
-            $this->Game->normalizeAssociatedInlineCreate($data);
+            $this->setFormLists();
+            $this->set($result['viewData'] ?? []);
 
-            // Check if opponent was just created
-            if (isset($trackNewOpponent) && !empty($data['opponent_id'])) {
-                $newOpponentId = $data['opponent_id'];
-            }
-
-            // Auto-calculate W/L based on scores
-            $data = $this->Game->calculateWinLoss($data);
-
-            // Validate period scores if present (sport-agnostic via SportConfigService)
-            $eavErrors = $this->SportConfig->validatePeriodScores($sportId, $data);
-            if (!empty($eavErrors)) {
-                foreach ($eavErrors as $error) {
-                    $this->Flash->error($error);
-                }
-                $this->setFormLists();
-                $eav = $data; // Keep user input for re-display
-                $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
-                $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
-                $this->set(compact('game', 'eav', 'eavTemplate'));
-
-                return null;
-            }
-
-            $game = $this->Games->patchEntity($game, $data);
-            if ($this->Games->save($game)) {
-                $this->Game->saveGameEavFromRequest((int)$game->get('id'), $data);
-                $this->Flash->success(__('The game has been saved.'));
-
-                // Redirect to edit opponent if a new one was created
-                if ($newOpponentId) {
-                    return $this->redirect([
-                        'prefix' => 'Admin',
-                        'controller' => 'Opponents',
-                        'action' => 'edit',
-                        $newOpponentId,
-                    ]);
-                }
-
-                return $this->redirect([
-                    'prefix' => 'Admin',
-                    'controller' => 'TeamSeasons',
-                    'action' => 'view',
-                    $teamSeasonId,
-                ]);
-            }
-            // Validation errors are handled via Flash messages and form re-rendering
-            $this->Flash->error(__('The game could not be saved. Please, try again.'));
+            return null;
         }
 
         $this->setFormLists();
-        $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
-        $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
-        $this->set(compact('game', 'eav', 'eavTemplate'));
+        $this->set($this->gameUpsert->getAddViewData($teamSeasonId));
 
         return null;
     }
@@ -296,68 +224,28 @@ class GamesController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        /** @var \App\Model\Entity\Game $game */
-        $game = $this->Games->find()
-            ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
-            ->where(['Games.id' => $id])
-            ->firstOrFail();
-
-        $metadata = $this->Game->getGameEavMetadata((int)$id, null);
-        $sportId = (int)$metadata['sportId'];
-        $sportName = (string)($metadata['sportName'] ?? '');
-        $sportConfigs = $metadata['configs'];
-        $eavTemplate = $metadata['eavTemplate'];
-
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $data = $this->request->getData();
-            $this->Game->normalizeAssociatedInlineCreate($data);
+            $result = $this->gameUpsert->processEdit((int)$id, $this->request->getData());
 
-            // Auto-calculate W/L based on scores
-            $data = $this->Game->calculateWinLoss($data);
-
-            // Get sportId from game's team season for validation
-            $sportId = $game->team_season->team->sport->id ?? null;
-
-            // Validate period scores if present (sport-agnostic via SportConfigService)
-            $eavErrors = $sportId ? $this->SportConfig->validatePeriodScores($sportId, $data) : [];
-            if (!empty($eavErrors)) {
-                foreach ($eavErrors as $error) {
-                    $this->Flash->error($error);
-                }
-                $eav = $this->gameEavUi->mergePostedPeriodAndOvertimeFields($metadata['values'], $data);
-                $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
-                $this->setFormLists($game->place_id);
-                $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
-                $this->set(compact('game', 'eav'));
-
-                return null;
+            foreach (($result['flashErrors'] ?? []) as $error) {
+                $this->Flash->error(__((string)$error));
+            }
+            if (!empty($result['flashSuccess'])) {
+                $this->Flash->success(__((string)$result['flashSuccess']));
+            }
+            if (!empty($result['redirect'])) {
+                return $this->redirect($result['redirect']);
             }
 
-            $game = $this->Games->patchEntity($game, $data);
-            if ($this->Games->save($game)) {
-                $this->Game->saveGameEavFromRequest((int)$game->get('id'), $data);
-                $this->Flash->success(__('The game has been saved.'));
+            $this->setFormLists($result['placeId'] ?? null);
+            $this->set($result['viewData'] ?? []);
 
-                // Redirect back to team season if we have the context
-                $teamSeasonId = $game->get('team_season_id');
-                if ($teamSeasonId) {
-                    return $this->redirect([
-                        'prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonId,
-                    ]);
-                }
-
-                return $this->redirect(['action' => 'index']);
-            }
-            // Validation errors are handled via Flash messages and form re-rendering
-            $this->Flash->error(__('The game could not be saved. Please, try again.'));
+            return null;
         }
 
-        $eav = $metadata['values'];
-        $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
-        /** @var \App\Model\Entity\Game $game */
-        $this->setFormLists($game->place_id);
-        $this->set(compact('sportId', 'sportName', 'sportConfigs', 'eavTemplate', 'legacyMappedEav'));
-        $this->set(compact('game', 'eav'));
+        $viewData = $this->gameUpsert->getEditViewData((int)$id);
+        $this->setFormLists($viewData['game']->place_id ?? null);
+        $this->set($viewData);
 
         return null;
     }
