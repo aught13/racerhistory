@@ -366,44 +366,6 @@ class ImageProcessor
     }
 
     /**
-     * Record an image usage (idempotent on same tuple).
-     *
-     * @param int $imageId Image ID.
-     * @param string $model Model name.
-     * @param int $foreignKey Foreign key value.
-     * @param string|null $context Optional context.
-     * @param string|null $field Optional field.
-     * @return void
-     */
-    public function recordUsage(
-        int $imageId,
-        string $model,
-        int $foreignKey,
-        ?string $context = null,
-        ?string $field = null,
-    ): void {
-        $usages = $this->table('ImageUsages');
-        $existing = $usages->find()->where([
-            'image_id' => $imageId,
-            'model' => $model,
-            'foreign_key' => $foreignKey,
-            'context' => $context,
-            'field' => $field,
-        ])->first();
-        if ($existing) {
-            return;
-        }
-        $usage = $usages->newEntity([
-            'image_id' => $imageId,
-            'model' => $model,
-            'foreign_key' => $foreignKey,
-            'context' => $context,
-            'field' => $field,
-        ]);
-        $usages->save($usage);
-    }
-
-    /**
      * Get images that match all given tag slugs.
      *
      * @param array<int,string> $tagSlugs Tag slugs that must all be present.

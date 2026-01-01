@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\GameService;
 use App\Service\OpponentService;
 use App\Service\PersonService;
 use App\Service\PlaceService;
+use App\Service\TeamSeasonRosterService;
 use Cake\Http\Response;
 
 /**
@@ -57,59 +59,15 @@ class TagLookupsController extends AppController
             return $this->json(['success' => true, 'games' => []]);
         }
 
-        /** @var \App\Model\Table\GamesTable $games */
-        $games = $this->fetchTable('Games');
-        $query = $games->find()
-            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
-            ->orderByDesc('Games.game_date')
-            ->limit(25);
-
-        if ($teamSeasonId > 0) {
-            $query->where(['Games.team_season_id' => $teamSeasonId]);
-        }
-
-        if ($q !== '') {
-            $like = '%' . str_replace('%', '\\%', $q) . '%';
-            $query->where([
-                'OR' => [
-                    ['Opponents.opponent_name LIKE' => $like],
-                    ['Teams.team_name LIKE' => $like],
-                ],
-            ]);
-        }
+        $service = new GameService();
+        $rows = $service->searchGamesForSelect($q, $teamSeasonId > 0 ? $teamSeasonId : null, 25);
 
         $out = [];
-        foreach ($query->all() as $g) {
-            $teamName = $g->team_season->team->team_name ?? 'Team';
-            $oppName = $g->opponent->opponent_name ?? 'Opponent';
-
-            $date = '';
-            if (!empty($g->game_date)) {
-                if ($g->game_date instanceof \Cake\I18n\Date) {
-                    $date = $g->game_date->i18nFormat('yyyy-MM-dd');
-                } elseif ($g->game_date instanceof \DateTimeInterface) {
-                    $date = $g->game_date->format('Y-m-d');
-                } else {
-                    $date = (string)$g->game_date;
-                }
-            }
-
-            $score = $g->pts_mur !== null && $g->pts_opp !== null ? " {$g->pts_mur}-{$g->pts_opp}" : '';
-
-            $separator = match ((int)($g->hrn ?? 0)) {
-                1 => ' Vs ',
-                2 => ' @ ',
-                3 => ' vs ',
-                default => ' vs ',
-            };
-
-            $label = $teamName . $separator . $oppName
-                . ($date ? ' (' . $date . ')' : '') . $score;
-
+        foreach ($rows as $row) {
             $out[] = [
-                'id' => (int)$g->id,
-                'team_season_id' => (int)$g->team_season_id,
-                'label' => $label,
+                'id' => (int)$row['id'],
+                'team_season_id' => (int)($row['team_season_id'] ?? 0),
+                'label' => (string)$row['label'],
             ];
         }
 
@@ -183,36 +141,15 @@ class TagLookupsController extends AppController
             return $this->json(['success' => true, 'rosters' => []]);
         }
 
-        /** @var \App\Model\Table\TeamSeasonRostersTable $rosters */
-        $rosters = $this->fetchTable('TeamSeasonRosters');
-        $rows = $rosters->find()
-            ->contain(['Persons', 'TeamSeasons' => ['Teams', 'Seasons']])
-            ->where(['TeamSeasonRosters.person_id' => $personId])
-            ->all();
+        $service = new TeamSeasonRosterService();
+        $rows = $service->getRostersForPersonLookup($personId, 200);
 
         $out = [];
-        foreach ($rows as $r) {
-            $pname = trim(($r->person->first ?? '') . ' ' . ($r->person->last ?? '')) ?: '#' . $r->person_id;
-
-            $teamSeason = $r->team_season ?? null;
-            $seasonLabel = '';
-            if ($teamSeason) {
-                $teamName = $teamSeason->team->team_name ?? 'Team';
-                if (!empty($teamSeason->season)) {
-                    $start = $teamSeason->season->start ?? null;
-                    $end = $teamSeason->season->end ?? null;
-                    if ($start && $end && $start != $end) {
-                        $seasonLabel = " ({$start}-{$end})";
-                    } elseif ($start) {
-                        $seasonLabel = " ({$start})";
-                    }
-                }
-                $label = $pname . ' — ' . $teamName . $seasonLabel;
-            } else {
-                $label = $pname;
-            }
-
-            $out[] = ['id' => (int)$r->id, 'label' => $label];
+        foreach ($rows as $row) {
+            $out[] = [
+                'id' => (int)$row['id'],
+                'label' => (string)$row['label'],
+            ];
         }
 
         return $this->json(['success' => true, 'rosters' => $out]);

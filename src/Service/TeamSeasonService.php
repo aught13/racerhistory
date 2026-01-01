@@ -188,4 +188,62 @@ class TeamSeasonService
 
         return $results;
     }
+
+    /**
+     * Get team seasons as an associative list suitable for FormHelper selects.
+     *
+     * @param int $limit
+     * @return array<int,string> Map of id => label
+     */
+    public function getTeamSeasonsList(int $limit = 200): array
+    {
+        $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
+
+        $rows = $teamSeasons->find()
+            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->orderBy(['Seasons.start' => 'DESC', 'Teams.team_name' => 'ASC'])
+            ->limit($limit)
+            ->all();
+
+        $list = [];
+        foreach ($rows as $ts) {
+            $list[(int)$ts->id] = $this->getSportDisplayLabel((int)$ts->id);
+        }
+
+        return $list;
+    }
+
+    /**
+     * Get team seasons as an associative list for roster forms.
+     *
+     * Format: "Team Name (Start-End)".
+     *
+     * @param int $limit
+     * @return array<int,string>
+     */
+    public function getTeamSeasonsListForRosterSelect(int $limit = 200): array
+    {
+        $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
+
+        $rows = $teamSeasons->find()
+            ->contain(['Teams', 'Seasons'])
+            ->select(['id', 'Teams.team_name', 'Seasons.start', 'Seasons.end'])
+            ->orderByDesc('Seasons.start')
+            ->limit($limit)
+            ->all();
+
+        $list = [];
+        foreach ($rows as $ts) {
+            /** @var \App\Model\Entity\TeamSeason $ts */
+            $teamName = (string)($ts->team->team_name ?? 'Team');
+            $start = $ts->season->start ?? null;
+            $end = $ts->season->end ?? null;
+            $seasonRange = trim((string)$start . '-' . (string)$end, '-');
+            $list[(int)$ts->id] = $seasonRange !== ''
+                ? $teamName . ' (' . $seasonRange . ')'
+                : $teamName;
+        }
+
+        return $list;
+    }
 }

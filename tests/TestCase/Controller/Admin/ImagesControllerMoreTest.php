@@ -17,7 +17,6 @@ class ImagesControllerMoreTest extends TestCase
         'app.Images',
         'app.ImageTags',
         'app.ImagesImageTags',
-        'app.ImageUsages',
         'app.Persons',
         'app.TeamSeasonRosters',
         'app.TeamSeasons',
@@ -241,15 +240,6 @@ class ImagesControllerMoreTest extends TestCase
         $image = $images->get(1, contain: ['ImageTags']);
         $slugs = array_map(fn($t) => $t->slug, $image->image_tags ?? []);
         $this->assertContains('freeform-tag', $slugs);
-    }
-
-    public function testUsageRenders(): void
-    {
-        $this->mockIdentity();
-
-        $this->get('/admin/images/usage/1');
-        $this->assertResponseOk();
-        $this->assertResponseContains('profile-photo');
     }
 
     public function testBulkDeleteDeletesOneImage(): void

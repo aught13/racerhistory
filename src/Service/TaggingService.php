@@ -296,7 +296,7 @@ class TaggingService
      * @param array $data Input array containing select values and raw tag strings.
      * @return array Structured tag data ready for persistence.
      */
-    private function buildTagsFromData(array $data): array
+    public function buildTagsFromData(array $data): array
     {
         $tagsToApply = [];
         $displayNames = [];

@@ -23,7 +23,6 @@ class ImagesTable extends Table
         $this->setTable('images');
         $this->setPrimaryKey('id');
         $this->addBehavior('Timestamp');
-        $this->hasMany('ImageUsages', ['foreignKey' => 'image_id']);
         $this->belongsToMany('ImageTags', [
             'foreignKey' => 'image_id',
             'targetForeignKey' => 'image_tag_id',

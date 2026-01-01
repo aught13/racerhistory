@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\GameService;
+use App\Service\ImageBrowseService;
 use App\Service\ImageProcessor;
 use App\Service\ImageStorageService;
 use App\Service\TaggingService;
@@ -18,7 +20,6 @@ use Psr\Http\Message\UploadedFileInterface;
  * Handles image upload, storage, and serving for the admin interface.
  *
  * @property \App\Model\Table\ImagesTable $Images
- * @property \App\Model\Table\ImageUsagesTable $ImageUsages
  */
 class ImagesController extends AppController
 {
@@ -71,7 +72,6 @@ class ImagesController extends AppController
             if (!empty($result['success'])) {
                 /** @var \App\Model\Entity\Image $image */
                 $image = $result['image'];
-                $this->maybeRecordUsage((int)$image->id);
 
                 return $this->json([
                     'success' => true,
@@ -164,36 +164,14 @@ class ImagesController extends AppController
         }
 
         $tag = $request->getQuery('tag');
-        $limit = min((int)($request->getQuery('limit') ?? 50), 100);
+        $limit = $request->getQuery('limit');
 
-        $images = $this->fetchTable('Images');
-        $query = $images->find();
+        $payload = (new ImageBrowseService())->browse(
+            is_string($tag) ? $tag : null,
+            $limit !== null ? (int)$limit : null,
+        );
 
-        // Filter by tag if provided
-        if ($tag) {
-            $query->innerJoinWith('ImageTags', function ($q) use ($tag) {
-                return $q->where(['ImageTags.slug' => $tag]);
-            });
-        }
-
-        $query->contain(['ImageTags'])->orderByDesc('Images.id')->limit($limit);
-
-        $results = [];
-        foreach ($query->all() as $image) {
-            $results[] = [
-                'id' => $image->id,
-                'url' => '/images/serve/' . $image->id,
-                'thumbnail_url' => '/images/serve/' . $image->id . '?' . http_build_query([
-                    'w' => 300,
-                    'h' => 300,
-                    'fit' => 'cover',
-                ]),
-                'original_name' => $image->original_name,
-                'tags' => array_map(fn($t) => $t->name, $image->image_tags ?? []),
-            ];
-        }
-
-        return $this->json(['success' => true, 'images' => $results]);
+        return $this->json($payload);
     }
 
     /**
@@ -216,24 +194,7 @@ class ImagesController extends AppController
         $teamSeasonService = new \App\Service\TeamSeasonService();
         $teamSeasonLabels = $teamSeasonService->getTeamSeasonsForSelect();
 
-        $gameLabels = [];
-        $gamesTable = $this->fetchTable('Games');
-        foreach (
-            $gamesTable->find()
-            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
-            ->orderByDesc('Games.game_date')
-            ->limit(200)
-            ->all() as $g
-        ) {
-            $opp = $g->opponent->opponent_name ?? 'Opponent';
-            $date = $g->game_date ? $g->game_date->format('M j, Y') : '';
-            $label = $opp . ($date ? ' - ' . $date : '');
-            $gameLabels[] = [
-                'id' => $g->id,
-                'label' => $label,
-                'team_season_id' => $g->team_season_id,
-            ];
-        }
+        $gameLabels = (new GameService())->getRecentGamesForSelect(200);
 
         $placeService = new \App\Service\PlaceService();
         $siteLabels = $placeService->getSitesForSelect();
@@ -628,23 +589,6 @@ class ImagesController extends AppController
     }
 
     /**
-     * View usage/references for an image.
-     */
-    public function usage(int $id): void
-    {
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id);
-
-        $usages = $this->fetchTable('ImageUsages')
-            ->find()
-            ->where(['image_id' => $id])
-            ->orderByDesc('created')
-            ->all();
-
-        $this->set(compact('image', 'usages'));
-    }
-
-    /**
      * Delete an image and all its references.
      */
     public function delete(int $id): Response
@@ -656,7 +600,6 @@ class ImagesController extends AppController
 
         // Delete associations and files
         $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $id]);
-        $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $id]);
         TaggingService::forImages()->pruneOrphanedTags();
 
         // Delete physical files
@@ -694,7 +637,6 @@ class ImagesController extends AppController
         foreach ($imagesToDelete as $image) {
             // Delete associations
             $this->fetchTable('ImagesImageTags')->deleteAll(['image_id' => $image->id]);
-            $this->fetchTable('ImageUsages')->deleteAll(['image_id' => $image->id]);
 
             // Delete files
             $this->deleteImageFiles($image);
@@ -1201,42 +1143,6 @@ class ImagesController extends AppController
                 }
             }
         }
-    }
-
-    /**
-     * Record usage if context passed.
-     */
-    private function maybeRecordUsage(int $imageId): void
-    {
-        $request = $this->getRequest();
-        [$model, $foreign, $field] = [
-            $request->getData('model') ?? $request->getQuery('model'),
-            $request->getData('foreign_key') ?? $request->getQuery('foreign_key'),
-            $request->getData('field') ?? $request->getQuery('field'),
-        ];
-        $context = $request->getData('context') ?? $request->getQuery('context');
-        if (!$model || !$foreign || !$field) {
-            return;
-        }
-        $usages = TableRegistry::getTableLocator()->get('ImageUsages');
-        $exists = $usages->find()->where([
-            'image_id' => $imageId,
-            'model' => $model,
-            'foreign_key' => (int)$foreign,
-            'field' => (string)$field,
-            'context' => $context ? (string)$context : null,
-        ])->first();
-        if ($exists) {
-            return;
-        }
-        $usage = $usages->newEntity([
-            'image_id' => $imageId,
-            'model' => (string)$model,
-            'foreign_key' => (int)$foreign,
-            'field' => (string)$field,
-            'context' => $context ? (string)$context : null,
-        ]);
-        $usages->save($usage);
     }
 
     /**

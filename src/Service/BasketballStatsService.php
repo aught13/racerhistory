@@ -322,4 +322,200 @@ class BasketballStatsService
 
         return array_values($grouped);
     }
+
+    /**
+     * Add a single player's final (period Z) game stat into their season totals.
+     *
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat
+     * @return bool
+     */
+    public function addGamePersonStatToSeasonTotals(\App\Model\Entity\StatBasketGamePerson $gameStat): bool
+    {
+        if (!$gameStat->team_season_roster_id || (string)$gameStat->period !== 'Z') {
+            return false;
+        }
+
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $seasonTable */
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson|null $seasonStat */
+        $seasonStat = $seasonTable->find()
+            ->where(['team_season_roster_id' => $gameStat->team_season_roster_id])
+            ->first();
+
+        if (!$seasonStat) {
+            $seasonStat = $seasonTable->newEmptyEntity();
+            $seasonStat->team_season_roster_id = $gameStat->team_season_roster_id;
+        }
+
+        $this->addSeasonPersonStatValues($seasonStat, $gameStat);
+
+        return (bool)$seasonTable->save($seasonStat);
+    }
+
+    /**
+     * Update season totals when a player's final game stat is edited.
+     *
+     * @param \App\Model\Entity\StatBasketGamePerson $original
+     * @param \App\Model\Entity\StatBasketGamePerson $updated
+     * @return bool
+     */
+    public function updateGamePersonStatSeasonTotals(
+        \App\Model\Entity\StatBasketGamePerson $original,
+        \App\Model\Entity\StatBasketGamePerson $updated,
+    ): bool {
+        if (!$updated->team_season_roster_id || (string)$updated->period !== 'Z') {
+            return false;
+        }
+
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $seasonTable */
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson|null $seasonStat */
+        $seasonStat = $seasonTable->find()
+            ->where(['team_season_roster_id' => $updated->team_season_roster_id])
+            ->first();
+
+        if (!$seasonStat) {
+            return $this->addGamePersonStatToSeasonTotals($updated);
+        }
+
+        $this->subtractSeasonPersonStatValues($seasonStat, $original);
+        $this->addSeasonPersonStatValues($seasonStat, $updated);
+
+        return (bool)$seasonTable->save($seasonStat);
+    }
+
+    /**
+     * Apply basketball team/opponent final box score (period Z) into season totals.
+     *
+     * @param \App\Model\Entity\Game $game
+     * @param \App\Model\Entity\StatBasketGameBox $teamBox
+     * @param \App\Model\Entity\StatBasketGameBox $opponentBox
+     * @param \App\Model\Entity\StatBasketGameBox|null $originalTeamBox
+     * @param \App\Model\Entity\StatBasketGameBox|null $originalOpponentBox
+     * @return bool
+     */
+    public function applyGameBoxToSeasonTotals(
+        \App\Model\Entity\Game $game,
+        \App\Model\Entity\StatBasketGameBox $teamBox,
+        \App\Model\Entity\StatBasketGameBox $opponentBox,
+        ?\App\Model\Entity\StatBasketGameBox $originalTeamBox = null,
+        ?\App\Model\Entity\StatBasketGameBox $originalOpponentBox = null,
+    ): bool {
+        if (!$game->team_season_id) {
+            return false;
+        }
+
+        /** @var \App\Model\Table\StatBasketSeasonTeamTable $teamSeasonTable */
+        $teamSeasonTable = $this->fetchTable('StatBasketSeasonTeam');
+        /** @var \App\Model\Table\StatBasketSeasonOpponentTable $opponentSeasonTable */
+        $opponentSeasonTable = $this->fetchTable('StatBasketSeasonOpponent');
+
+        $sumFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS',
+            'TF', 'FD', 'BD', 'EB', 'PP', 'FB', 'BN', 'TIED', 'LC',
+        ];
+
+        $teamSeasonStat = $teamSeasonTable->find()
+            ->where(['team_season_id' => $game->team_season_id])
+            ->first();
+
+        if (!$teamSeasonStat) {
+            $teamSeasonStat = $teamSeasonTable->newEmptyEntity();
+            $teamSeasonStat->team_season_id = $game->team_season_id;
+        }
+
+        if ($originalTeamBox) {
+            foreach ($sumFields as $field) {
+                $current = (int)($teamSeasonStat->get($field) ?? 0);
+                $originalValue = (int)($originalTeamBox->get($field) ?? 0);
+                if ($originalValue !== 0) {
+                    $teamSeasonStat->set($field, max(0, $current - $originalValue));
+                }
+            }
+        }
+        foreach ($sumFields as $field) {
+            $newValue = (int)($teamBox->get($field) ?? 0);
+            if ($newValue !== 0) {
+                $current = (int)($teamSeasonStat->get($field) ?? 0);
+                $teamSeasonStat->set($field, $current + $newValue);
+            }
+        }
+
+        $okTeam = (bool)$teamSeasonTable->save($teamSeasonStat);
+
+        $opponentSeasonStat = $opponentSeasonTable->find()
+            ->where(['team_season_id' => $game->team_season_id])
+            ->first();
+
+        if (!$opponentSeasonStat) {
+            $opponentSeasonStat = $opponentSeasonTable->newEmptyEntity();
+            $opponentSeasonStat->team_season_id = $game->team_season_id;
+        }
+
+        if ($originalOpponentBox) {
+            foreach ($sumFields as $field) {
+                $current = (int)($opponentSeasonStat->get($field) ?? 0);
+                $originalValue = (int)($originalOpponentBox->get($field) ?? 0);
+                if ($originalValue !== 0) {
+                    $opponentSeasonStat->set($field, max(0, $current - $originalValue));
+                }
+            }
+        }
+        foreach ($sumFields as $field) {
+            $newValue = (int)($opponentBox->get($field) ?? 0);
+            if ($newValue !== 0) {
+                $current = (int)($opponentSeasonStat->get($field) ?? 0);
+                $opponentSeasonStat->set($field, $current + $newValue);
+            }
+        }
+
+        $okOpponent = (bool)$opponentSeasonTable->save($opponentSeasonStat);
+
+        return $okTeam && $okOpponent;
+    }
+
+    /**
+     * Add stat values from a game stat into a season stat entity.
+     */
+    private function addSeasonPersonStatValues(
+        \App\Model\Entity\StatBasketSeasonPerson $seasonStat,
+        \App\Model\Entity\StatBasketGamePerson $gameStat,
+    ): void {
+        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
+
+        foreach ($fields as $field) {
+            $current = (int)($seasonStat->$field ?? 0);
+            $add = (int)($gameStat->$field ?? 0);
+            $seasonStat->$field = (string)($current + $add);
+        }
+
+        $currentPts = (int)($seasonStat->PTS ?? 0);
+        $addPts = (int)($gameStat->PTS ?? 0);
+        $seasonStat->PTS = $currentPts + $addPts;
+    }
+
+    /**
+     * Subtract stat values from a season stat entity.
+     */
+    private function subtractSeasonPersonStatValues(
+        \App\Model\Entity\StatBasketSeasonPerson $seasonStat,
+        \App\Model\Entity\StatBasketGamePerson $gameStat,
+    ): void {
+        $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
+
+        foreach ($fields as $field) {
+            $current = (int)($seasonStat->$field ?? 0);
+            $subtract = (int)($gameStat->$field ?? 0);
+            $seasonStat->$field = (string)max(0, $current - $subtract);
+        }
+
+        $currentPts = (int)($seasonStat->PTS ?? 0);
+        $subtractPts = (int)($gameStat->PTS ?? 0);
+        $seasonStat->PTS = max(0, $currentPts - $subtractPts);
+    }
 }

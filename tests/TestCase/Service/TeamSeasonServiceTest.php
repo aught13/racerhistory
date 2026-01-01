@@ -111,4 +111,12 @@ class TeamSeasonServiceTest extends TestCase
             $this->assertArrayHasKey('label', $first);
         }
     }
+
+    public function testGetTeamSeasonsListForRosterSelect(): void
+    {
+        $list = $this->service->getTeamSeasonsListForRosterSelect(50);
+        $this->assertIsArray($list);
+        $this->assertArrayHasKey(1, $list);
+        $this->assertSame('Los Angeles Lakers (2023-2024)', $list[1]);
+    }
 }
