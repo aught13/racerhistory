@@ -183,4 +183,27 @@ class PersonService
 
         return $results;
     }
+
+    /**
+     * Get persons as an associative list suitable for FormHelper selects.
+     *
+     * Optionally ensures a specific person ID is present even if outside the limit.
+     *
+     * @param int $limit
+     * @param int|null $ensurePersonId
+     * @return array<int,string>
+     */
+    public function getPersonsList(int $limit = 200, ?int $ensurePersonId = null): array
+    {
+        $persons = TableRegistry::getTableLocator()->get('Persons');
+
+        /** @var array<int,string> $list */
+        $list = $persons->find('list', limit: $limit)->all()->toArray();
+
+        if ($ensurePersonId !== null && $ensurePersonId > 0 && !isset($list[$ensurePersonId])) {
+            $list[$ensurePersonId] = $this->getDisplayLabel($ensurePersonId);
+        }
+
+        return $list;
+    }
 }

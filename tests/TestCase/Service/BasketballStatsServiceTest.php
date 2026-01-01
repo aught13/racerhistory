@@ -179,4 +179,113 @@ class BasketballStatsServiceTest extends TestCase
         // Opponent stats may return empty array as per implementation
         $this->assertIsArray($stats);
     }
+
+    public function testAddGamePersonStatToSeasonTotalsAddsValues(): void
+    {
+        /** @var \App\Model\Table\StatBasketGamePersonTable $gameTable */
+        $gameTable = $this->fetchTable('StatBasketGamePerson');
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $seasonTable */
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        /** @var \App\Model\Entity\StatBasketGamePerson $gameStat */
+        $gameStat = $gameTable->get(1);
+        /** @var \App\Model\Entity\StatBasketSeasonPerson $before */
+        $before = $seasonTable->find()->where(['team_season_roster_id' => 1])->firstOrFail();
+
+        $beforePts = (int)$before->PTS;
+        $beforeGp = (int)$before->GP;
+
+        $this->assertTrue($this->service->addGamePersonStatToSeasonTotals($gameStat));
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson $after */
+        $after = $seasonTable->find()->where(['team_season_roster_id' => 1])->firstOrFail();
+        $this->assertSame($beforePts + 22, (int)$after->PTS);
+        $this->assertSame((string)($beforeGp + 1), (string)$after->GP);
+    }
+
+    public function testUpdateGamePersonStatSeasonTotalsSubtractsAndAdds(): void
+    {
+        /** @var \App\Model\Table\StatBasketGamePersonTable $gameTable */
+        $gameTable = $this->fetchTable('StatBasketGamePerson');
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $seasonTable */
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        /** @var \App\Model\Entity\StatBasketGamePerson $original */
+        $original = $gameTable->get(1);
+        $updated = clone $original;
+        $updated->PTS = '30';
+        $updated->MIN = '40';
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson $seed */
+        $seed = $seasonTable->find()->where(['team_season_roster_id' => 1])->firstOrFail();
+
+        // Seed totals so they already include the original game stat.
+        $seed->PTS = (int)$seed->PTS + (int)$original->PTS;
+        $seed->GP = (string)((int)$seed->GP + (int)$original->GP);
+        $seasonTable->saveOrFail($seed);
+
+        $beforePts = (int)$seed->PTS;
+        $beforeGp = (int)$seed->GP;
+
+        $this->assertTrue($this->service->updateGamePersonStatSeasonTotals($original, $updated));
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson $after */
+        $after = $seasonTable->find()->where(['team_season_roster_id' => 1])->firstOrFail();
+        $this->assertSame($beforePts - 22 + 30, (int)$after->PTS);
+        $this->assertSame((string)($beforeGp - 1 + 1), (string)$after->GP);
+    }
+
+    public function testApplyGameBoxToSeasonTotalsAddsAndUpdates(): void
+    {
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+        /** @var \App\Model\Table\StatBasketGameBoxTable $boxTable */
+        $boxTable = $this->fetchTable('StatBasketGameBox');
+        /** @var \App\Model\Table\StatBasketSeasonTeamTable $teamSeasonTable */
+        $teamSeasonTable = $this->fetchTable('StatBasketSeasonTeam');
+        /** @var \App\Model\Table\StatBasketSeasonOpponentTable $opponentSeasonTable */
+        $opponentSeasonTable = $this->fetchTable('StatBasketSeasonOpponent');
+
+        /** @var \App\Model\Entity\Game $game */
+        $game = $gamesTable->get(1);
+        /** @var \App\Model\Entity\StatBasketGameBox $teamBox */
+        $teamBox = $boxTable->get(1);
+        /** @var \App\Model\Entity\StatBasketGameBox $opponentBox */
+        $opponentBox = $boxTable->get(2);
+
+        /** @var \App\Model\Entity\StatBasketSeasonTeam $teamBefore */
+        $teamBefore = $teamSeasonTable->find()->where(['team_season_id' => $game->team_season_id])->firstOrFail();
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent $oppBefore */
+        $oppBefore = $opponentSeasonTable->find()->where(['team_season_id' => $game->team_season_id])->firstOrFail();
+
+        $teamPtsBefore = (int)$teamBefore->PTS;
+        $oppPtsBefore = (int)$oppBefore->PTS;
+
+        $this->assertTrue($this->service->applyGameBoxToSeasonTotals($game, $teamBox, $opponentBox));
+
+        /** @var \App\Model\Entity\StatBasketSeasonTeam $teamAfter */
+        $teamAfter = $teamSeasonTable->find()->where(['team_season_id' => $game->team_season_id])->firstOrFail();
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent $oppAfter */
+        $oppAfter = $opponentSeasonTable->find()->where(['team_season_id' => $game->team_season_id])->firstOrFail();
+
+        $this->assertSame($teamPtsBefore + 78, (int)$teamAfter->PTS);
+        $this->assertSame($oppPtsBefore + 70, (int)$oppAfter->PTS);
+
+        $updatedTeamBox = clone $teamBox;
+        $updatedOpponentBox = clone $opponentBox;
+        $updatedTeamBox->PTS = '80';
+        $updatedOpponentBox->PTS = '72';
+
+        $this->assertTrue(
+            $this->service->applyGameBoxToSeasonTotals($game, $updatedTeamBox, $updatedOpponentBox, $teamBox, $opponentBox)
+        );
+
+        /** @var \App\Model\Entity\StatBasketSeasonTeam $teamAfterUpdate */
+        $teamAfterUpdate = $teamSeasonTable->find()->where(['team_season_id' => $game->team_season_id])->firstOrFail();
+        /** @var \App\Model\Entity\StatBasketSeasonOpponent $oppAfterUpdate */
+        $oppAfterUpdate = $opponentSeasonTable->find()->where(['team_season_id' => $game->team_season_id])->firstOrFail();
+
+        $this->assertSame($teamPtsBefore + 80, (int)$teamAfterUpdate->PTS);
+        $this->assertSame($oppPtsBefore + 72, (int)$oppAfterUpdate->PTS);
+    }
 }

@@ -425,19 +425,6 @@ CREATE TABLE IF NOT EXISTS images_image_tags (
   FOREIGN KEY(image_tag_id) REFERENCES image_tags(id)
 );
 
--- Image Usages table (tracks where images are used)
-CREATE TABLE IF NOT EXISTS image_usages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  image_id INTEGER NOT NULL,
-  model VARCHAR(100) NOT NULL,
-  foreign_key INTEGER NOT NULL,
-  field VARCHAR(100) NOT NULL,
-  context VARCHAR(100) NULL,
-  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY(image_id) REFERENCES images(id)
-);
-
 -- Blog tables
 CREATE TABLE IF NOT EXISTS blog_posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

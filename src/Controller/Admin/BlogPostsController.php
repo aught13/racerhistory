@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\BlogPostService;
+use App\Service\GameService;
 use Cake\Http\Response;
 
 class BlogPostsController extends AppController
@@ -102,9 +103,6 @@ class BlogPostsController extends AppController
 
     /**
      * Prepare shared form data for add/edit.
-     */
-    /**
-     * Prepare shared form data for add/edit.
      *
      * @param \App\Model\Entity\BlogPost $post The blog post being edited
      * @return void
@@ -113,28 +111,8 @@ class BlogPostsController extends AppController
     {
         $teams = (new \App\Service\TeamService())->getTeamsForSelect();
         $teamSeasons = (new \App\Service\TeamSeasonService())->getTeamSeasonsForSelect();
-        $gameLabels = [];
-        $gamesTable = $this->fetchTable('Games');
-        foreach (
-            $gamesTable->find()
-            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
-            ->orderByDesc('Games.game_date')
-            ->limit(200)
-            ->all() as $g
-        ) {
-            $teamName = $g->team_season->team->team_name ?? 'Team';
-            $oppName = $g->opponent->opponent_name ?? 'Opponent';
-            $date = $g->game_date ? $g->game_date->format('Y-m-d') : '';
-            $score = $g->pts_mur !== null && $g->pts_opp !== null ? " {$g->pts_mur}-{$g->pts_opp}" : '';
-            $label = $teamName . ' vs ' . $oppName
-                . ($date ? ' (' . $date . ')' : '') . $score;
-            $gameLabels[] = [
-                'id' => $g->id,
-                'team_season_id' => $g->team_season_id,
-                'label' => $label,
-            ];
-        }
-        $games = $gameLabels;
+
+        $games = (new GameService())->getRecentGamesForSelect(200);
 
         $siteService = new \App\Service\PlaceService();
         $sites = $siteService->getSitesForSelect();

@@ -124,4 +124,12 @@ class PersonServiceTest extends TestCase
             $this->assertArrayHasKey('label', $first);
         }
     }
+
+    public function testGetPersonsList(): void
+    {
+        $list = $this->service->getPersonsList(200);
+        $this->assertIsArray($list);
+        $this->assertArrayHasKey(1, $list);
+        $this->assertSame('John Doe', $list[1]);
+    }
 }
