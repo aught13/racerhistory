@@ -58,8 +58,12 @@ class TeamSeasonsTable extends Table
         $this->setTable('team_season');
         $this->setPrimaryKey('id');
         $this->addBehavior('Timestamp', [
-            'created' => 'created_at',
-            'modified' => 'updated_at',
+            'events' => [
+                'Model.beforeSave' => [
+                    'created_at' => 'new',
+                    'updated_at' => 'always',
+                ],
+            ],
         ]);
         $this->belongsTo('Teams', [
             'foreignKey' => 'team_id',

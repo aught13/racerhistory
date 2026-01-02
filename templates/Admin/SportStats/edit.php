@@ -14,7 +14,7 @@
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-body">
-                    <?= $this->Form->create($sportStatRegistry, ['class' => 'row g-3']) ?>
+                    <?= $this->Form->create($statRegistry, ['class' => 'row g-3']) ?>
 
                     <div class="col-md-6">
                         <div class="form-group">
@@ -84,7 +84,7 @@
                                 'placeholder' => 'e.g., "stat_basket_games"',
                                 'required' => true,
                                 'label' => false,
-                                'readonly' => !empty($sportStatRegistry->table_name), // Don't allow changing table name if it's already set
+                                'readonly' => !empty($statRegistry->table_name), // Don't allow changing table name if it's already set
                             ]) ?>
                             <div class="form-text">The actual database table name (without prefix)</div>
                         </div>
@@ -98,7 +98,7 @@
                                 'placeholder' => 'e.g., "id"',
                                 'required' => true,
                                 'label' => false,
-                                'value' => $sportStatRegistry->primary_key ?: 'id',
+                                'value' => $statRegistry->primary_key ?: 'id',
                             ]) ?>
                             <div class="form-text">The primary key column name in this table</div>
                         </div>
@@ -114,8 +114,8 @@
                                 <div id="field-mapping-container" class="mb-3">
                                     <?php
                                     $fieldMapping = [];
-                                    if (!empty($sportStatRegistry->field_mapping)) {
-                                        $decodedMapping = json_decode($sportStatRegistry->field_mapping, true);
+                                    if (!empty($statRegistry->field_mapping)) {
+                                        $decodedMapping = json_decode($statRegistry->field_mapping, true);
                                         if (is_array($decodedMapping)) {
                                             $fieldMapping = $decodedMapping;
                                         }
@@ -216,7 +216,7 @@
                             <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">Cancel</a>
                             <?= $this->Form->postLink(
                                 'Delete Configuration',
-                                ['action' => 'delete', $sportStatRegistry->id],
+                                ['action' => 'delete', $statRegistry->id],
                                 [
                                     'confirm' => 'Are you sure you want to delete this stat configuration? '
                                         . 'This action cannot be undone.',

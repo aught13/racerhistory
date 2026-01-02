@@ -231,7 +231,7 @@ class StatBasketGameBoxControllerTest extends TestCase
 
         $game = $games->newEntity([
             'team_season_id' => $season->id,
-            'game_date' => '2025-02-05',
+            'game_date' => '2023-11-15',
             'game_type_id' => 1,
             'opponent_id' => 1,
             'place_id' => 1,

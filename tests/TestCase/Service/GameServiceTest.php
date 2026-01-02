@@ -332,12 +332,14 @@ class GameServiceTest extends TestCase
 
     public function testApplySearchBuilderCriteriaAddsWhere(): void
     {
-        $query = TableRegistry::getTableLocator()->get('Games')->find();
+        $query = TableRegistry::getTableLocator()->get('Games')
+            ->find()
+            ->innerJoinWith('Opponents');
         $this->service->applySearchBuilderCriteria($query, [
             [
-                'origData' => '2',
+                'origData' => '4',
                 'condition' => 'contains',
-                'value1' => 'Lakers',
+                'value1' => 'Belmont',
             ],
         ]);
 
