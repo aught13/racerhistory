@@ -612,4 +612,82 @@ class SportsControllerTest extends TestCase
         $this->assertResponseNotContains('new_0');
         $this->assertResponseNotContains('new_1');
     }
+
+    public function testAddConfigValidatesKey(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $postData = [
+            'config_key' => '',
+            'config_value' => 'ShouldNotSave',
+            'description' => 'Missing key test',
+        ];
+
+        $this->post('/admin/sports/add-config/1', $postData);
+        $this->assertRedirect('/admin/sports/edit-configs/1');
+        $this->assertFlashMessage('Configuration key is required.');
+    }
+
+    public function testAddConfigCreatesValue(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $postData = [
+            'config_key' => 'test_color_palette',
+            'config_value' => 'Green,Blue',
+            'description' => 'Palette for theme tests',
+        ];
+
+        $this->post('/admin/sports/add-config/1', $postData);
+        $this->assertRedirect('/admin/sports/edit-configs/1');
+        $this->assertFlashMessage('Configuration added successfully.');
+
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseContains('test_color_palette');
+        $this->assertResponseContains('Green');
+        $this->assertResponseContains('Blue');
+    }
+
+    public function testDeleteConfigRemovesEntry(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->delete('/admin/sports/delete-config/1/officials');
+        $this->assertRedirect('/admin/sports/edit-configs/1');
+        $this->assertFlashMessage('Configuration deleted successfully.');
+
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseNotContains('Referee 1');
+    }
+
+    public function testResetConfigsRestoresDefaults(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        // Overwrite an existing config so we can verify the reset clears it.
+        $this->post('/admin/sports/edit-configs/1', [
+            'configs' => [
+                'officials' => [
+                    'value' => 'Custom Official',
+                    'description' => 'Temporary override',
+                ],
+            ],
+        ]);
+        $this->assertRedirect('/admin/sports/configs/1');
+
+        $this->post('/admin/sports/reset-configs/1');
+        $this->assertRedirect('/admin/sports/edit-configs/1');
+        $this->assertFlashMessage('Sport configurations have been reset to defaults.');
+
+        $this->get('/admin/sports/configs/1');
+        $this->assertResponseContains('Referee 1');
+    }
 }

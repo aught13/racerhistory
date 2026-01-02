@@ -273,7 +273,7 @@ class SportConfigsTable extends Table
                 'description' => 'Array of supported period counts',
             ],
             'officials' => [
-                'value' => ['Official 1', 'Official 2'],
+                'value' => ['Referee 1', 'Referee 2', 'Official 1'],
                 'description' => 'Array of official titles',
             ],
             'scoring_type' => [

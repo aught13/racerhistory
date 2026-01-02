@@ -148,10 +148,10 @@
                     </div>
                     <div class="col-md-4">
                         <h6><?= __('Officials') ?></h6>
-                        <p class="small text-muted">
-                            List of official types for this sport:<br>
-                            • Basketball: Referee 1, Referee 2, Official 3<br>
-                            • Football: Referee, Umpire, Head Linesman<br>
+                            <p class="small text-muted">
+                            List of officiating roles for this sport:<br>
+                            • Basketball: Crew Chief, Referee, Umpire<br>
+                            • Football: Referee, Umpire, Line Judge<br>
                             • Baseball: Home Plate, First Base, Second Base
                         </p>
                     </div>
