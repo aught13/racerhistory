@@ -84,8 +84,9 @@
                             <?php foreach ($statRegistries as $registry) : ?>
                             <tr>
                                 <td>
+                                    <?php $sportLabel = $registry->sport->sport_name ?? ('Sport #' . $registry->sport_id); ?>
                                     <a href="<?= $this->Url->build(['action' => 'index', $registry->sport_id]) ?>">
-                                        <?= h($registry->sport->sport_name) ?>
+                                        <?= h($sportLabel) ?>
                                     </a>
                                 </td>
                                 <td><?= ucfirst(h($registry->context)) ?></td>

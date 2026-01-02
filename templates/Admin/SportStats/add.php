@@ -15,7 +15,7 @@
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-body">
-                    <?= $this->Form->create($sportStatRegistry, ['class' => 'row g-3']) ?>
+                    <?= $this->Form->create($statRegistry, ['class' => 'row g-3']) ?>
 
                     <div class="col-md-6">
                         <div class="form-group">
