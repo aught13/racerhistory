@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller\Admin;
 
+use App\Controller\Admin\ImagesController;
 use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\Core\Configure;
+use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -500,5 +503,75 @@ class ImagesControllerTest extends TestCase
         $json = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($json['success'] ?? false);
         $this->assertLessThanOrEqual(100, count($json['images'] ?? []));
+    }
+
+    public function testBuildCommonEntityTagsSkipsOtherEntitiesWhenRosterSelected(): void
+    {
+        $controller = $this->createImagesControllerForPrivateMethods();
+        $method = $this->getPrivateMethod($controller, 'buildCommonEntityTags');
+
+        $data = [
+            'person_select' => 1,
+            'roster_select' => 1,
+            'teamseason_select' => 1,
+            'game_select' => 1,
+            'site_select' => 1,
+            'opponent_select' => 1,
+            'team_select' => 1,
+            'sport_select' => 1,
+            'common_tags' => 'sunset, team photo',
+        ];
+
+        $result = $method->invoke($controller, $data);
+
+        $slugs = [];
+        foreach ($result as $item) {
+            if (is_array($item) && !empty($item['slug'])) {
+                $slugs[] = $item['slug'];
+            }
+        }
+
+        $this->assertNotContains('teamseason-1', $slugs);
+        $this->assertNotContains('team-1', $slugs);
+        $this->assertContains('sunset', $result);
+        $this->assertContains('team photo', $result);
+        $this->assertGreaterThanOrEqual(1, count($slugs));
+    }
+
+    public function testCollectBulkTagsParsesTagArraysAndContext(): void
+    {
+        $controller = $this->createImagesControllerForPrivateMethods();
+        $method = $this->getPrivateMethod($controller, 'collectBulkTags');
+
+        $result = $method->invoke($controller, ['0' => ['person-1', ' teamseason-1 ']], ['0' => 'Media Day'], '0');
+
+        $this->assertContains('person-1', $result);
+        $this->assertContains('teamseason-1', $result);
+
+        $contextTags = array_values(array_filter($result, fn($item) => is_array($item) && ($item['slug'] ?? '') === 'context-media-day'));
+        $this->assertNotEmpty($contextTags, 'Context tag should be generated when context text is provided.');
+    }
+
+    private function createImagesControllerForPrivateMethods(): ImagesController
+    {
+        $request = new ServerRequest(['url' => '/admin/images']);
+        $response = new Response();
+        $controller = $this->getMockBuilder(ImagesController::class)
+            ->onlyMethods(['initialize'])
+            ->setConstructorArgs([$request, $response])
+            ->getMock();
+
+        return $controller;
+    }
+
+    private function getPrivateMethod(ImagesController $controller, string $name): \ReflectionMethod
+    {
+        $ref = new \ReflectionClass($controller);
+        $method = $ref->getMethod($name);
+        if (PHP_VERSION_ID < 80500) {
+            $method->setAccessible(true);
+        }
+
+        return $method;
     }
 }

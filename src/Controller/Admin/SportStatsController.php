@@ -17,6 +17,11 @@ use Cake\Http\Response;
 class SportStatsController extends AppController
 {
     /**
+     * @var \App\Model\Table\SportStatRegistryTable
+     */
+    protected \App\Model\Table\SportStatRegistryTable $SportStatRegistry;
+
+    /**
      * @var \App\Service\SportConfigService Service for sport configuration management
      */
     protected \App\Service\SportConfigService $SportConfig;
@@ -29,8 +34,8 @@ class SportStatsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->fetchTable('SportStatRegistry');
-        $this->loadService('SportConfig');
+        $this->SportStatRegistry = $this->fetchTable('SportStatRegistry');
+        $this->SportConfig = $this->loadService('SportConfig');
     }
 
     /**
@@ -63,18 +68,20 @@ class SportStatsController extends AppController
         $sport = null;
 
         if ($sportId !== null) {
-            $conditions['SportStatRegistry.sport_id'] = $sportId;
-            $sport = $this->fetchTable('Sports')->get($sportId);
+            $conditions['SportStatRegistry.sport_id'] = (int)$sportId;
+            $sport = $this->fetchTable('Sports')->find()->where(['id' => (int)$sportId])->first();
         }
 
-        $this->paginate = [
-            'contain' => ['Sports'],
-            'conditions' => $conditions,
-            'order' => ['SportStatRegistry.context' => 'ASC', 'SportStatRegistry.entity_type' => 'ASC'],
-        ];
+        $query = $this->SportStatRegistry->find()
+            ->contain(['Sports'])
+            ->where($conditions)
+            ->orderBy([
+                'SportStatRegistry.context' => 'ASC',
+                'SportStatRegistry.entity_type' => 'ASC',
+            ]);
 
-        $statRegistries = $this->paginate($this->SportStatRegistry);
-        $sports = $this->fetchTable('Sports')->find('list')->order('sport_name')->all();
+        $statRegistries = $this->paginate($query);
+        $sports = $this->fetchTable('Sports')->find('list')->orderBy(['sport_name' => 'ASC'])->all();
 
         $this->set(compact('statRegistries', 'sports', 'sport', 'sportId'));
     }
@@ -139,7 +146,7 @@ class SportStatsController extends AppController
             $this->Flash->error(__('The stat table configuration could not be saved. Please try again.'));
         }
 
-        $sports = $this->fetchTable('Sports')->find('list')->order('sport_name')->all();
+        $sports = $this->fetchTable('Sports')->find('list')->orderBy(['sport_name' => 'ASC'])->all();
         $contexts = [
             'game' => __('Game'),
             'season' => __('Season'),
@@ -210,7 +217,7 @@ class SportStatsController extends AppController
             }
         }
 
-        $sports = $this->fetchTable('Sports')->find('list')->order('sport_name')->all();
+        $sports = $this->fetchTable('Sports')->find('list')->orderBy(['sport_name' => 'ASC'])->all();
         $contexts = [
             'game' => __('Game'),
             'season' => __('Season'),

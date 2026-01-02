@@ -31,6 +31,9 @@ use Cake\Routing\RouteBuilder;
  * if required.
  */
 return function (RouteBuilder $routes): void {
+    // Use DashedRoute globally so dashed URLs inflect to CamelCase controllers/actions
+    $routes->setRouteClass(DashedRoute::class);
+
     $routes->prefix('Admin', function (RouteBuilder $routes) {
         // All routes here will be prefixed with `/admin`
         // And have the 'Admin' prefix.
@@ -47,6 +50,11 @@ return function (RouteBuilder $routes): void {
 
         // Blog admin shortcut
         $routes->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
+
+        // Sport stats filterable index: /admin/sport-stats/1
+        $routes->connect('/sport-stats/{sportId}', ['controller' => 'SportStats', 'action' => 'index'])
+            ->setPass(['sportId'])
+            ->setPatterns(['sportId' => '\\d+']);
 
         // Explicit route for AJAX sport-form-data endpoint (query param only)
         $routes->connect('/games/sport-form-data', [
@@ -73,8 +81,6 @@ return function (RouteBuilder $routes): void {
      * inconsistently cased URLs when used with `{plugin}`, `{controller}` and
      * `{action}` markers.
      */
-    $routes->setRouteClass(DashedRoute::class);
-
     $routes->scope('/', function (RouteBuilder $builder): void {
         // CakeDC/Users (public auth UI)
         // Intentionally connect only auth-related endpoints (no public CRUD).

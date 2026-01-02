@@ -294,4 +294,40 @@ class UserManagerComponentTest extends TestCase
         $user = $this->Users->find()->where(['id' => 2])->first();
         $this->assertEmpty($user);
     }
+
+    public function testProcessLoginInvalidResultShowsError(): void
+    {
+        $result = $this->createMock(ResultInterface::class);
+        $result->method('isValid')->willReturn(false);
+        $this->controller->Authentication->method('getResult')->willReturn($result);
+
+        $response = $this->component->processLogin($this->controller);
+        $this->assertNull($response);
+        $this->assertSame('Invalid username or password', $this->getFlashMessage());
+    }
+
+    public function testBulkActivateRequiresSelection(): void
+    {
+        $request = $this->controller->getRequest()->withParsedBody(['user_ids' => []]);
+        $this->controller->setRequest($request);
+
+        $result = $this->component->bulkActivate($this->controller);
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertSame('No users selected.', $this->getFlashMessage());
+    }
+
+    public function testBulkDeleteRequiresSelection(): void
+    {
+        $request = $this->controller->getRequest()->withParsedBody(['user_ids' => []]);
+        $this->controller->setRequest($request);
+
+        $result = $this->component->bulkDelete($this->controller);
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertSame('No users selected.', $this->getFlashMessage());
+    }
+
+    private function getFlashMessage(): ?string
+    {
+        return $this->controller->getRequest()->getSession()->read('Flash.flash.0.message');
+    }
 }

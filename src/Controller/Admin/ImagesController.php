@@ -866,8 +866,14 @@ class ImagesController extends AppController
         if (is_string($contextValue)) {
             $contextValue = trim($contextValue);
             if ($contextValue !== '') {
+                $slug = Text::slug($contextValue, '-');
+                $slug = strtolower($slug);
+                if ($slug === '') {
+                    $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $contextValue), '-'));
+                }
+
                 $tags[] = [
-                    'slug' => 'context-' . Text::slug($contextValue, '-'),
+                    'slug' => 'context-' . ($slug ?: 'context'),
                     'name' => $contextValue,
                 ];
             }

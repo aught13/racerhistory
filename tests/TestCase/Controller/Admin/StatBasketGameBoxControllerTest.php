@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -214,5 +215,70 @@ class StatBasketGameBoxControllerTest extends TestCase
 
         $this->post('/admin/stat-basket-game-box/game-box-periods/1', $data);
         $this->assertResponseSuccess();
+    }
+
+    public function testGameBoxRedirectsForNonBasketballGame(): void
+    {
+        $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
+        $games = TableRegistry::getTableLocator()->get('Games');
+
+        $season = $teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+        ]);
+        $teamSeasons->saveOrFail($season);
+
+        $game = $games->newEntity([
+            'team_season_id' => $season->id,
+            'game_date' => '2023-11-15',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+        ]);
+        $games->saveOrFail($game);
+
+        $this->get('/admin/stat-basket-game-box/game-box/' . $game->id);
+
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'edit', $game->id]);
+        $this->assertFlashMessage('Game box scores are currently only supported for basketball games.');
+    }
+
+    public function testGameBoxPostRedirectsToPeriodEntryWhenRequested(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'team' => ['PTS' => '80'],
+            'opponent' => ['PTS' => '72'],
+            'add_to_totals' => '1',
+            'add_periods' => '1',
+        ];
+
+        $this->post('/admin/stat-basket-game-box/game-box/1', $data);
+
+        $this->assertFlashMessage('Game box scores have been saved.');
+        $this->assertRedirect('/admin/stat-basket-game-box/game-box-periods/1');
+    }
+
+    public function testGameBoxPeriodsPostRedirectsToGameView(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'team_1' => ['PTS' => '34'],
+            'team_2' => ['PTS' => '42'],
+            'opponent_1' => ['PTS' => '30'],
+            'opponent_2' => ['PTS' => '35'],
+        ];
+
+        $this->post('/admin/stat-basket-game-box/game-box-periods/1', $data);
+
+        $this->assertFlashMessage('Period box scores have been saved.');
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
     }
 }
