@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "burzum/cakephp-service-layer",
-            "version": "3.0.0",
+            "version": "3.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/burzum/cakephp-service-layer.git",
-                "reference": "fbcdc2d1a98aa2953737c17a961acacbc3db3124"
+                "reference": "96568a528a8bd4c409bf904a5249640206eb8b17"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/burzum/cakephp-service-layer/zipball/fbcdc2d1a98aa2953737c17a961acacbc3db3124",
-                "reference": "fbcdc2d1a98aa2953737c17a961acacbc3db3124",
+                "url": "https://api.github.com/repos/burzum/cakephp-service-layer/zipball/96568a528a8bd4c409bf904a5249640206eb8b17",
+                "reference": "96568a528a8bd4c409bf904a5249640206eb8b17",
                 "shasum": ""
             },
             "require": {
@@ -53,9 +53,9 @@
             "description": "Service layer and domain / business model implementation for CakePHP",
             "support": {
                 "issues": "https://github.com/burzum/cakephp-service-layer/issues",
-                "source": "https://github.com/burzum/cakephp-service-layer/tree/3.0.0"
+                "source": "https://github.com/burzum/cakephp-service-layer/tree/3.1.0"
             },
-            "time": "2023-11-03T12:04:06+00:00"
+            "time": "2026-01-04T02:55:31+00:00"
         },
         {
             "name": "cakedc/auth",
@@ -6910,5 +6910,5 @@
     "platform-overrides": {
         "php": "8.2.29"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }
