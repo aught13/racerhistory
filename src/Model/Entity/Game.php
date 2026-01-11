@@ -16,8 +16,14 @@ use Cake\ORM\Entity;
  * @property string|null $game_time
  * @property string|null $game_duration
  * @property int|null $hrn
+ * @property int|null $periods
+ * @property int|null $ot
  * @property int|null $pts_mur
  * @property int|null $pts_opp
+ * @property int|null $mur_rk
+ * @property int|null $opp_rk
+ * @property int|null $w
+ * @property int|null $l
  * @property string|null $wl
  * @property int|null $attendance
  * @property string|null $notes
