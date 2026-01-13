@@ -34,11 +34,28 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
 <head>
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="turbo-refresh-method" content="morph">
+    <meta name="turbo-refresh-scroll" content="reset">
+    <meta name="theme-color" content="#002144">
+    <link rel="manifest" href="<?= $this->Url->build('/manifest.webmanifest') ?>">
+    <link rel="apple-touch-icon" href="<?= $this->Url->build('/img/logo.png') ?>">
     <title>
         <?= $cakeDescription ?>:
         <?= $this->fetch('title') ?>
     </title>
     <?= $this->Html->meta('icon') ?>
+
+    <script>
+        (function () {
+            var match = document.cookie.match(/(?:^|; )theme=([^;]*)/);
+            var theme = match ? decodeURIComponent(match[1]) : '';
+            if (theme === 'light' || theme === 'dark') {
+                document.documentElement.dataset.theme = theme;
+            } else {
+                delete document.documentElement.dataset.theme;
+            }
+        })();
+    </script>
 
 
     <!-- Bootstrap 5 CSS -->
@@ -47,10 +64,15 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <!-- Optional: Custom styles -->
     <?= $this->Html->css(['cake']) ?>
+    <?= $this->Html->css(['frontend']) ?>
 
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
+
+    <!-- Import maps + Hotwire (Turbo/Stimulus) -->
+    <?= $this->Html->importmap(require CONFIG . 'importmap.php') ?>
+    <?= $this->Html->script('hotwire/application', ['type' => 'module']) ?>
 
     <!-- jQuery (required for DataTables) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
@@ -62,15 +84,30 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <a class="rh-skip-link" href="#main-content">Skip to main content</a>
+    <nav class="navbar navbar-expand-lg rh-navbar mb-4" data-bs-theme="dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="<?= $this->Url->build('/') ?>">RacerHistory</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $this->Url->build('/') ?>">
+                <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="RacerHistory" width="28" height="28" loading="eager">
+                <span>RacerHistory</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    <li class="nav-item">
+                        <button
+                            type="button"
+                            class="btn btn-outline-light btn-sm"
+                            data-controller="theme-toggle"
+                            data-action="click->theme-toggle#toggle"
+                            aria-pressed="false">
+                            <i class="bi bi-circle-half" aria-hidden="true"></i>
+                            <span class="ms-1" data-theme-toggle-target="label">System</span>
+                        </button>
+                    </li>
                     <?php if ($this->getRequest()->getAttribute('identity')) : ?>
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text me-2">Logged in as:
@@ -88,7 +125,7 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
             </div>
         </div>
     </nav>
-    <main class="main">
+    <main id="main-content" class="main">
         <div class="container">
             <?= $this->Flash->render() ?>
             <?= $this->fetch('content') ?>

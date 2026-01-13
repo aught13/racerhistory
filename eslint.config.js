@@ -43,6 +43,23 @@ module.exports = [
         }
     },
     {
+        files: ['webroot/js/hotwire/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'module',
+            globals: {
+                window: 'readonly',
+                document: 'readonly',
+                console: 'readonly',
+                navigator: 'readonly',
+                fetch: 'readonly',
+                URL: 'readonly',
+                caches: 'readonly',
+                self: 'readonly',
+            }
+        }
+    },
+    {
         files: ['webroot/js/tests/**/*.js'],
         languageOptions: {
             ecmaVersion: 2022,

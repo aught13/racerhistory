@@ -51,6 +51,9 @@ security-report.json
 # Public image storage (user-generated content)
 /webroot/img/storage/
 
+# React (Vite) build output
+/webroot/spa/
+
 # Local helper scripts
 /bin/fix-permissions.sh
 

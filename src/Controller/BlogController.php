@@ -15,6 +15,27 @@ class BlogController extends AppController
     private BlogPostService $blogPostService;
 
     /**
+     * Detect whether this request originates from a Turbo Frame.
+     */
+    private function isTurboFrameRequest(): bool
+    {
+        return $this->request->getHeaderLine('Turbo-Frame') !== '';
+    }
+
+    /**
+     * For Turbo Frame requests, return a minimal frame-only response.
+     */
+    private function applyTurboFrameResponse(string $template): void
+    {
+        if (!$this->isTurboFrameRequest()) {
+            return;
+        }
+
+        $this->viewBuilder()->disableAutoLayout();
+        $this->viewBuilder()->setTemplate($template);
+    }
+
+    /**
      * Controller initialize: load components and services.
      */
     public function initialize(): void
@@ -43,6 +64,8 @@ class BlogController extends AppController
     {
         $posts = $this->blogPostService->getPublishedPosts();
         $this->set(compact('posts'));
+
+        $this->applyTurboFrameResponse('index_frame');
     }
 
     /**
@@ -56,5 +79,7 @@ class BlogController extends AppController
         }
 
         $this->set(compact('post'));
+
+        $this->applyTurboFrameResponse('view_frame');
     }
 }
