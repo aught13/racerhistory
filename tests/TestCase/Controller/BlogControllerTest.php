@@ -21,6 +21,7 @@ class BlogControllerTest extends TestCase
         $this->get('/blog');
         $this->assertResponseOk();
         $this->assertResponseContains('Blog');
+        $this->assertResponseContains('<turbo-frame id="blog">');
     }
 
     public function testView(): void
@@ -28,6 +29,7 @@ class BlogControllerTest extends TestCase
         $this->get('/blog/first-post');
         $this->assertResponseOk();
         $this->assertResponseContains('First Post');
+        $this->assertResponseContains('<turbo-frame id="blog">');
     }
 
     public function testViewNotFound(): void

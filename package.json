@@ -11,6 +11,7 @@
         "jsdom": "^24.0.0",
         "prettier": "^3.5.1"
     },
+    "dependencies": {},
     "scripts": {
         "test:js": "jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",

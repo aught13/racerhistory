@@ -139,14 +139,9 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
             ->setPass(['id'])
             ->setPatterns(['id' => '\\d+']);
-        /*
-         * Here, we are connecting '/' (base path) to a controller called 'Pages',
-         * its action called 'display', and we pass a param to select the view file
-         * to use (in this case, templates/Pages/home.php)...
-         */
-        $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
 
-        // Public blog
+        // Public server-rendered blog (Hotwire-enhanced)
+        $builder->connect('/', ['controller' => 'Blog', 'action' => 'index']);
         $builder->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
         $builder->connect('/blog/{slug}', ['controller' => 'Blog', 'action' => 'view'])
             ->setPass(['slug'])
