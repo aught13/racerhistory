@@ -51,7 +51,7 @@ class GamesController extends AppController
             ->matching('TeamSeason.Teams', function ($q) {
                 return $q->where([
                     'Teams.sport_id' => 1, // Basketball
-                    'Teams.gender' => 'M'
+                    'Teams.gender' => 'M',
                 ]);
             })
             ->orderByDesc('Games.game_date')

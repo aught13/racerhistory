@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PersonService;
 use App\Service\ImageProcessor;
-use App\Service\BlogPostService;
+use App\Service\PersonService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 
