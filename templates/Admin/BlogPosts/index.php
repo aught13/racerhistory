@@ -17,6 +17,7 @@ declare(strict_types=1);
                         <tr>
                             <th>Title</th>
                             <th>Status</th>
+                            <th>Pinned</th>
                             <th>Published</th>
                             <th>Tags</th>
                             <th class="text-end">Actions</th>
@@ -24,7 +25,7 @@ declare(strict_types=1);
                     </thead>
                     <tbody>
                         <?php if (empty($posts)): ?>
-                            <tr><td colspan="5" class="text-center text-muted py-4">No posts yet.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4">No posts yet.</td></tr>
                         <?php endif; ?>
                         <?php foreach ($posts as $post): ?>
                             <tr>
@@ -34,6 +35,19 @@ declare(strict_types=1);
                                         <span class="badge bg-success">Published</span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">Draft</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if (!empty($post->is_pinned)) : ?>
+                                        <span class="badge bg-warning text-dark">Pinned</span>
+                                        <?php if (!empty($post->pinned_rank)) : ?>
+                                            <span class="badge bg-light text-dark border">Rank <?= h((string)$post->pinned_rank) ?></span>
+                                        <?php endif; ?>
+                                        <?php if (!empty($post->pinned_until)) : ?>
+                                            <div class="small text-muted">Until <?= h($post->pinned_until->format('Y-m-d')) ?></div>
+                                        <?php endif; ?>
+                                    <?php else : ?>
+                                        <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-nowrap">
