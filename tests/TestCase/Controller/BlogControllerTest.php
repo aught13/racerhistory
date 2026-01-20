@@ -28,7 +28,7 @@ class BlogControllerTest extends TestCase
         $this->get('/blog/first-post');
         $this->assertResponseOk();
         $this->assertResponseContains('First Post');
-        $this->assertResponseContains('<turbo-frame id="blog-post-first-post"');
+        $this->assertResponseContains('<turbo-frame id="blog-post-view-first-post"');
     }
 
     public function testViewNotFound(): void

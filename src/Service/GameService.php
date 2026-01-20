@@ -565,24 +565,31 @@ class GameService
         $data = [];
         foreach ($games as $game) {
             /** @var \App\Model\Entity\Game $game */
-            $teamName = $game->team_season?->team?->team_name ?? '';
-            $seasonRange = $game->team_season?->season
-                ? $game->team_season->season->start . '-' . $game->team_season->season->end
-                : '';
+            $teamName = '';
+            $seasonRange = '';
+            if (!empty($game->team_season) && !empty($game->team_season->team)) {
+                $teamName = $game->team_season->team->team_name ?? '';
+            }
+            if (!empty($game->team_season) && !empty($game->team_season->season)) {
+                $seasonRange = $game->team_season->season->start . '-' . $game->team_season->season->end;
+            }
             $teamDisplay = $teamName . ($seasonRange ? ' (' . $seasonRange . ')' : '');
             if (!empty($game->mur_rk)) {
                 $teamDisplay .= '<div><span class="badge bg-secondary">#' . h($game->mur_rk) . '</span></div>';
             }
 
-            $oppName = $game->opponent?->opponent_name ?? '-';
+            $oppName = '-';
+            if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
+                $oppName = $game->opponent->opponent_name;
+            }
             if (!empty($game->opp_rk)) {
                 $oppName .= ' (#' . $game->opp_rk . ')';
             }
 
             $placeDisplay = '-';
-            if ($game->place) {
+            if (!empty($game->place)) {
                 $placeDisplay = ($game->place->place_name ?? '');
-                if (!empty($game->place?->place_state)) {
+                if (!empty($game->place->place_state)) {
                     $placeDisplay .= ', ' . $game->place->place_state;
                 }
             }
@@ -605,18 +612,18 @@ class GameService
                 'team_season' => $teamDisplay,
                 'hrn' => $hrnMap[$game->hrn] ?? '-',
                 'opponent' => $oppName,
-                'game_type' => $game->game_type?->game_type_name ?? '-',
+                'game_type' => !empty($game->game_type) ? ($game->game_type->game_type_name ?? '-') : '-',
                 'place' => $placeDisplay,
                 'score' => '<a href="/admin/games/view/' . $game->id . '" class="text-decoration-none">' .
                     h(($game->pts_mur ?? '') . ' - ' . ($game->pts_opp ?? '')) . '</a>',
-                'place_state' => $game->place?->place_state ?? '',
+                'place_state' => !empty($game->place) ? ($game->place->place_state ?? '') : '',
                 'mur_pts' => $game->pts_mur ?? '',
                 'opp_pts' => $game->pts_opp ?? '',
                 'mur_rk' => $game->mur_rk ?? '',
                 'opp_rk' => $game->opp_rk ?? '',
                 'result' => $result,
-                'conf' => $game->game_type?->conf ?? '',
-                'post' => $game->game_type?->post ?? '',
+                'conf' => !empty($game->game_type) ? ($game->game_type->conf ?? '') : '',
+                'post' => !empty($game->game_type) ? ($game->game_type->post ?? '') : '',
             ];
         }
 

@@ -95,16 +95,17 @@ class BlogPostService
             ->contain(['BlogTags', 'HeroImages'])
             ->where(['BlogPosts.is_published' => true]);
 
-        $pinnedExpr = $query->newExpr(
-            'CASE WHEN BlogPosts.is_pinned = TRUE THEN 1 ELSE 0 END'
-        );
+        $query->select($table);
 
-        $query->select($table)->select(['pinned_active' => $pinnedExpr]);
+        $schema = $table->getSchema();
+        if ($schema && method_exists($schema, 'hasColumn') && $schema->hasColumn('is_pinned')) {
+            return $query
+                ->orderByDesc('BlogPosts.is_pinned')
+                ->orderByDesc('BlogPosts.pinned_rank')
+                ->orderByDesc('BlogPosts.published_at');
+        }
 
-        return $query
-            ->orderByDesc($pinnedExpr)
-            ->orderByDesc('BlogPosts.pinned_rank')
-            ->orderByDesc('BlogPosts.published_at');
+        return $query->orderByDesc('BlogPosts.published_at');
     }
 
     /**
