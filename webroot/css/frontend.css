@@ -11,7 +11,7 @@
   --rh-main-max: 1220px;
   --rh-footer-max: 1440px;
   --rh-nav-height: 64px;
-  
+
   /* Light theme defaults */
   /* page gutter / deadspace color (light mode should be muted gray, not bright white) */
   --rh-bg: #444444;
@@ -52,14 +52,14 @@
 
 :root[data-theme="light"] {
   --rh-bg: #444444;
-  
+
   /* softer content tones for light mode to reduce glare */
   --rh-surface: #f3efe9;
   --rh-text: #0b0f14;
   --rh-muted: #5b6675;
   --rh-border: #e6e1d9;
   --rh-link: var(--rh-navy);
-  
+
   /* make the page gutters / area behind the content a muted grey */
   --rh-main-bg: #444444;
   --rh-content-bg: #efe9e3;
