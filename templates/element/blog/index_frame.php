@@ -179,19 +179,22 @@ if ($page === 1 && !empty($posts)) {
                 temp.innerHTML = html;
 
                 // Extract list items from the response
-                const newItems = temp.querySelectorAll('.blog-list-item');
+                const newItems = temp.querySelectorAll('.blog-list-item-frame');
                 const blogList = document.getElementById('blog-list');
 
                 if (newItems.length > 0) {
                     // Append new items
                     newItems.forEach(item => {
                         const cloned = item.cloneNode(true);
-                        cloned.addEventListener('click', function() {
-                            const slug = this.dataset.blogPost;
-                            if (slug) {
-                                loadBlogPost(slug);
-                            }
-                        });
+                        const clickable = cloned.querySelector('.blog-list-item');
+                        if (clickable) {
+                            clickable.addEventListener('click', function() {
+                                const slug = this.dataset.blogPost;
+                                if (slug) {
+                                    loadBlogPost(slug);
+                                }
+                            });
+                        }
                         blogList.appendChild(cloned);
                     });
 
@@ -228,6 +231,28 @@ if ($page === 1 && !empty($posts)) {
         }
     }
 
+    function setExpandedState(frame, expanded) {
+        frame.dataset.expanded = expanded ? 'true' : 'false';
+        frame.classList.toggle('blog-post-expanded', expanded);
+        const featured = frame.querySelector('.blog-featured');
+        if (featured) featured.style.display = expanded ? 'none' : '';
+        const listItem = frame.querySelector('.blog-list-item');
+        if (listItem) listItem.style.display = expanded ? 'none' : '';
+        if (!expanded) {
+            const viewFrame = frame.querySelector('turbo-frame[data-view-frame]');
+            if (viewFrame) viewFrame.innerHTML = '';
+        }
+    }
+
+    function collapseOtherPosts(activeContainerId) {
+        const expandedFrames = document.querySelectorAll('turbo-frame[id^="blog-post-"][data-expanded="true"]');
+        expandedFrames.forEach(frame => {
+            if (frame.id !== activeContainerId) {
+                setExpandedState(frame, false);
+            }
+        });
+    }
+
     function loadBlogPost(slug) {
         const containerId = 'blog-post-' + slug;
         const viewFrameId = 'blog-post-view-' + slug;
@@ -235,27 +260,25 @@ if ($page === 1 && !empty($posts)) {
         const viewFrame = document.getElementById(viewFrameId);
 
         if (existingFrame && existingFrame.dataset.expanded === 'true') {
-            existingFrame.dataset.expanded = 'false';
-            if (viewFrame) {
-                viewFrame.innerHTML = '';
-            }
-            const featured = existingFrame.querySelector('.blog-featured');
-            if (featured) featured.style.display = '';
-            const listItem = existingFrame.querySelector('.blog-list-item');
-            if (listItem) listItem.style.display = '';
-        } else {
-            const viewUrl = '<?= $this->Url->build(['action' => 'view']) ?>' + '/' + slug;
-            Turbo.visit(viewUrl, { frame: viewFrameId });
+            setExpandedState(existingFrame, false);
+            return;
+        }
 
-            if (existingFrame) {
-                existingFrame.dataset.expanded = 'true';
-                const featured = existingFrame.querySelector('.blog-featured');
-                if (featured) featured.style.display = 'none';
-                const listItem = existingFrame.querySelector('.blog-list-item');
-                if (listItem) listItem.style.display = 'none';
-            }
+        collapseOtherPosts(containerId);
+
+        const viewUrl = '<?= $this->Url->build(['action' => 'view']) ?>' + '/' + slug;
+        Turbo.visit(viewUrl, { frame: viewFrameId });
+
+        if (existingFrame) {
+            setExpandedState(existingFrame, true);
+        }
+
+        if (viewFrame) {
+            viewFrame.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
+
+    window.loadBlogPost = loadBlogPost;
 
     // Re-setup interactions when Turbo loads new content
     document.addEventListener('turbo:load', function() {

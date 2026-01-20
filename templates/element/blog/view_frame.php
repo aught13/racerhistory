@@ -46,15 +46,60 @@ declare(strict_types=1);
         if (closeBtn && !closeBtn.dataset.bound) {
             closeBtn.dataset.bound = 'true';
             closeBtn.addEventListener('click', function() {
-                const viewFrame = this.closest('turbo-frame[data-view-frame]');
-                if (viewFrame) {
-                    viewFrame.innerHTML = '';
+                const postContainer = this.closest('[data-blog-post]');
+                const slug = postContainer ? postContainer.dataset.blogPost : '';
+                if (slug && typeof window.loadBlogPost === 'function') {
+                    window.loadBlogPost(slug);
+                    return;
                 }
+
+                const viewFrame = this.closest('turbo-frame[data-view-frame]');
+                if (!viewFrame) {
+                    return;
+                }
+
+                const containerFrame = viewFrame.closest('turbo-frame[id^="blog-post-"]');
+                if (containerFrame) {
+                    containerFrame.dataset.expanded = 'false';
+                    containerFrame.classList.remove('blog-post-expanded');
+                    const featured = containerFrame.querySelector('.blog-featured');
+                    if (featured) featured.style.display = '';
+                    const listItem = containerFrame.querySelector('.blog-list-item');
+                    if (listItem) listItem.style.display = '';
+                }
+
+                viewFrame.innerHTML = '';
             });
         }
     }
 
+    function markBlogExpanded() {
+        const postView = document.querySelector('.blog-post-view[data-blog-post]');
+        if (!postView) {
+            return;
+        }
+
+        const slug = postView.dataset.blogPost;
+        if (!slug) {
+            return;
+        }
+
+        const containerFrame = document.getElementById('blog-post-' + slug);
+        if (!containerFrame) {
+            return;
+        }
+
+        containerFrame.dataset.expanded = 'true';
+        containerFrame.classList.add('blog-post-expanded');
+        const featured = containerFrame.querySelector('.blog-featured');
+        if (featured) featured.style.display = 'none';
+        const listItem = containerFrame.querySelector('.blog-list-item');
+        if (listItem) listItem.style.display = 'none';
+    }
+
     document.addEventListener('DOMContentLoaded', bindBlogCollapse);
     document.addEventListener('turbo:load', bindBlogCollapse);
+    document.addEventListener('DOMContentLoaded', markBlogExpanded);
+    document.addEventListener('turbo:frame-load', markBlogExpanded);
     </script>
 </turbo-frame>
