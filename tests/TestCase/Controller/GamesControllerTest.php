@@ -77,7 +77,8 @@ class GamesControllerTest extends TestCase
         $this->assertNotNull($game);
 
         $boxScore = $this->viewVariable('boxScore');
-        // Box score may be null if stats not available
+        // Box score may be null if stats not available; accept null or array/object
+        $this->assertTrue($boxScore === null || is_array($boxScore) || is_object($boxScore));
 
         $images = $this->viewVariable('images');
         $this->assertIsArray($images);

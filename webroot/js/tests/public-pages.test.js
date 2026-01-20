@@ -3,9 +3,9 @@
  * @jest-environment jsdom
  */
 
-describe('Public Pages', () => {
+describe("Public Pages", () => {
     beforeEach(() => {
-        document.body.innerHTML = '';
+        document.body.innerHTML = "";
 
         // Mock jQuery if not available
         if (!window.$) {
@@ -25,8 +25,8 @@ describe('Public Pages', () => {
         jest.clearAllMocks();
     });
 
-    describe('Seasons Page', () => {
-        test('should render season cards', () => {
+    describe("Seasons Page", () => {
+        test("should render season cards", () => {
             document.body.innerHTML = `
                 <div class="row" id="seasons-grid">
                     <div class="col-md-4 mb-4">
@@ -39,14 +39,14 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const grid = document.getElementById('seasons-grid');
-            const cards = grid.querySelectorAll('.season-card');
+            const grid = document.getElementById("seasons-grid");
+            const cards = grid.querySelectorAll(".season-card");
 
             expect(grid).not.toBeNull();
             expect(cards.length).toBe(1);
         });
 
-        test('should handle season detail tabs', () => {
+        test("should handle season detail tabs", () => {
             document.body.innerHTML = `
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
@@ -66,12 +66,12 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const tabs = document.querySelectorAll('.nav-link');
+            const tabs = document.querySelectorAll(".nav-link");
             expect(tabs.length).toBe(2);
-            expect(tabs[0].classList.contains('active')).toBe(true);
+            expect(tabs[0].classList.contains("active")).toBe(true);
         });
 
-        test('should display games in season', () => {
+        test("should display games in season", () => {
             document.body.innerHTML = `
                 <table class="table games-table">
                     <tbody>
@@ -87,20 +87,20 @@ describe('Public Pages', () => {
                 </table>
             `;
 
-            const table = document.querySelector('.games-table');
-            const rows = table.querySelectorAll('tbody tr');
+            const table = document.querySelector(".games-table");
+            const rows = table.querySelectorAll("tbody tr");
 
             expect(table).not.toBeNull();
             expect(rows.length).toBe(1);
 
-            const badge = rows[0].querySelector('.badge');
-            expect(badge.textContent).toBe('W');
-            expect(badge.classList.contains('bg-success')).toBe(true);
+            const badge = rows[0].querySelector(".badge");
+            expect(badge.textContent).toBe("W");
+            expect(badge.classList.contains("bg-success")).toBe(true);
         });
     });
 
-    describe('People Page', () => {
-        test('should render people table', () => {
+    describe("People Page", () => {
+        test("should render people table", () => {
             document.body.innerHTML = `
                 <table id="people-table" class="table">
                     <thead>
@@ -118,14 +118,14 @@ describe('Public Pages', () => {
                 </table>
             `;
 
-            const table = document.getElementById('people-table');
-            const rows = table.querySelectorAll('tbody tr');
+            const table = document.getElementById("people-table");
+            const rows = table.querySelectorAll("tbody tr");
 
             expect(table).not.toBeNull();
             expect(rows.length).toBe(1);
         });
 
-        test('should handle person profile tabs', () => {
+        test("should handle person profile tabs", () => {
             document.body.innerHTML = `
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
@@ -141,15 +141,15 @@ describe('Public Pages', () => {
                 </ul>
             `;
 
-            const tabs = document.querySelectorAll('.nav-link');
+            const tabs = document.querySelectorAll(".nav-link");
             expect(tabs.length).toBe(2);
-            expect(tabs[0].getAttribute('data-bs-target')).toBe('#seasons');
-            expect(tabs[1].getAttribute('data-bs-target')).toBe('#stats');
+            expect(tabs[0].getAttribute("data-bs-target")).toBe("#seasons");
+            expect(tabs[1].getAttribute("data-bs-target")).toBe("#stats");
         });
     });
 
-    describe('Games Page', () => {
-        test('should render games table', () => {
+    describe("Games Page", () => {
+        test("should render games table", () => {
             document.body.innerHTML = `
                 <table class="table games-table">
                     <thead>
@@ -169,14 +169,14 @@ describe('Public Pages', () => {
                 </table>
             `;
 
-            const table = document.querySelector('.games-table');
-            const rows = table.querySelectorAll('tbody tr');
+            const table = document.querySelector(".games-table");
+            const rows = table.querySelectorAll("tbody tr");
 
             expect(table).not.toBeNull();
             expect(rows.length).toBe(1);
         });
 
-        test('should display box score tables', () => {
+        test("should display box score tables", () => {
             document.body.innerHTML = `
                 <div class="box-score">
                     <h4>Murray State</h4>
@@ -203,20 +203,20 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const boxScore = document.querySelector('.box-score');
-            const rows = boxScore.querySelectorAll('tbody tr');
+            const boxScore = document.querySelector(".box-score");
+            const rows = boxScore.querySelectorAll("tbody tr");
 
             expect(boxScore).not.toBeNull();
             expect(rows.length).toBe(1);
 
-            const cells = rows[0].querySelectorAll('td');
-            expect(cells[0].textContent).toBe('John Doe');
-            expect(cells[2].textContent).toBe('18'); // Points
+            const cells = rows[0].querySelectorAll("td");
+            expect(cells[0].textContent).toBe("John Doe");
+            expect(cells[2].textContent).toBe("18"); // Points
         });
     });
 
-    describe('Stats Page', () => {
-        test('should render season selector', () => {
+    describe("Stats Page", () => {
+        test("should render season selector", () => {
             document.body.innerHTML = `
                 <div class="list-group">
                     <a href="/stats/season/1" class="list-group-item list-group-item-action">
@@ -228,12 +228,12 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const links = document.querySelectorAll('.list-group-item');
+            const links = document.querySelectorAll(".list-group-item");
             expect(links.length).toBe(2);
-            expect(links[0].getAttribute('href')).toBe('/stats/season/1');
+            expect(links[0].getAttribute("href")).toBe("/stats/season/1");
         });
 
-        test('should render stats table with percentages', () => {
+        test("should render stats table with percentages", () => {
             document.body.innerHTML = `
                 <table class="table stats-table">
                     <thead>
@@ -255,20 +255,20 @@ describe('Public Pages', () => {
                 </table>
             `;
 
-            const table = document.querySelector('.stats-table');
-            const rows = table.querySelectorAll('tbody tr');
+            const table = document.querySelector(".stats-table");
+            const rows = table.querySelectorAll("tbody tr");
 
             expect(table).not.toBeNull();
             expect(rows.length).toBe(1);
 
-            const cells = rows[0].querySelectorAll('td');
-            expect(cells[2].textContent).toBe('15.5'); // PPG
-            expect(cells[3].textContent).toBe('45.6'); // FG%
+            const cells = rows[0].querySelectorAll("td");
+            expect(cells[2].textContent).toBe("15.5"); // PPG
+            expect(cells[3].textContent).toBe("45.6"); // FG%
         });
     });
 
-    describe('Image Display', () => {
-        test('should render image cards', () => {
+    describe("Image Display", () => {
+        test("should render image cards", () => {
             document.body.innerHTML = `
                 <div class="row" id="images-grid">
                     <div class="col-md-3">
@@ -282,28 +282,28 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const images = document.querySelectorAll('.card img');
+            const images = document.querySelectorAll(".card img");
             expect(images.length).toBe(1);
-            expect(images[0].getAttribute('src')).toBe('/images/serve/1');
+            expect(images[0].getAttribute("src")).toBe("/images/serve/1");
         });
 
-        test('should handle image loading errors', () => {
-            const img = document.createElement('img');
-            img.src = '/images/serve/999';
-            img.alt = 'Test image';
+        test("should handle image loading errors", () => {
+            const img = document.createElement("img");
+            img.src = "/images/serve/999";
+            img.alt = "Test image";
 
             const errorCallback = jest.fn();
-            img.addEventListener('error', errorCallback);
+            img.addEventListener("error", errorCallback);
 
-            const event = new Event('error');
+            const event = new Event("error");
             img.dispatchEvent(event);
 
             expect(errorCallback).toHaveBeenCalled();
         });
     });
 
-    describe('Blog Post Display', () => {
-        test('should render blog post cards', () => {
+    describe("Blog Post Display", () => {
+        test("should render blog post cards", () => {
             document.body.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
@@ -318,19 +318,19 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const cards = document.querySelectorAll('.blog-post-card');
+            const cards = document.querySelectorAll(".blog-post-card");
             expect(cards.length).toBe(1);
 
-            const title = cards[0].querySelector('.card-title');
-            expect(title.textContent).toBe('Game Recap');
+            const title = cards[0].querySelector(".card-title");
+            expect(title.textContent).toBe("Game Recap");
 
-            const link = cards[0].querySelector('a');
-            expect(link.getAttribute('href')).toBe('/blog/1');
+            const link = cards[0].querySelector("a");
+            expect(link.getAttribute("href")).toBe("/blog/1");
         });
     });
 
-    describe('Responsive Behavior', () => {
-        test('should have responsive classes on cards', () => {
+    describe("Responsive Behavior", () => {
+        test("should have responsive classes on cards", () => {
             document.body.innerHTML = `
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                     <div class="card">Card content</div>
@@ -338,11 +338,11 @@ describe('Public Pages', () => {
             `;
 
             const col = document.querySelector('[class*="col-"]');
-            expect(col.classList.contains('col-12')).toBe(true);
-            expect(col.classList.contains('col-md-4')).toBe(true);
+            expect(col.classList.contains("col-12")).toBe(true);
+            expect(col.classList.contains("col-md-4")).toBe(true);
         });
 
-        test('should have mobile-friendly tables', () => {
+        test("should have mobile-friendly tables", () => {
             document.body.innerHTML = `
                 <div class="table-responsive">
                     <table class="table">
@@ -353,7 +353,7 @@ describe('Public Pages', () => {
                 </div>
             `;
 
-            const wrapper = document.querySelector('.table-responsive');
+            const wrapper = document.querySelector(".table-responsive");
             expect(wrapper).not.toBeNull();
         });
     });
