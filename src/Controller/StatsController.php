@@ -71,6 +71,7 @@ class StatsController extends AppController
 
         if (!$teamSeason) {
             $this->Flash->error('Season not found');
+
             return $this->redirect(['action' => 'index']);
         }
 
