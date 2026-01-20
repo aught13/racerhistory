@@ -2,38 +2,59 @@
 declare(strict_types=1);
 /** @var \App\Model\Entity\BlogPost $post */
 ?>
-<turbo-frame id="blog">
-    <p>
-        <a
-            href="<?= $this->Url->build(['action' => 'index']) ?>"
-            class="text-decoration-none"
-            data-turbo-frame="blog"
-            data-turbo-action="advance">← Back to blog</a>
-    </p>
-    <div class="d-flex flex-column gap-2 mb-3">
-        <h1 class="mb-0"><?= h($post->title) ?></h1>
-        <p class="text-muted mb-0">
-            <?php if ($post->published_at instanceof \DateTimeInterface): ?>
-                <?= h($post->published_at->format('F j, Y')) ?>
-            <?php else: ?>
-                <?= h($post->published_at ?? '') ?>
-            <?php endif; ?>
-        </p>
-    </div>
-    <?php if (!empty($post->hero_image_id)): ?>
-        <div class="mb-4 text-center">
-            <img src="/images/serve/<?= h($post->hero_image_id) ?>?w=1200&fit=contain" class="img-fluid rounded" alt="<?= h($post->title) ?>">
+<turbo-frame id="blog-post-view-<?= h($post->slug) ?>" class="blog-expanded-frame" data-view-frame>
+    <div class="blog-post-view p-4 rh-surface rounded mb-3" data-blog-post="<?= h($post->slug) ?>">
+        <div class="blog-collapse-row mb-3">
+            <button class="blog-collapse" type="button" aria-label="Collapse post">
+                <i class="bi bi-caret-up-fill" aria-hidden="true"></i>
+            </button>
         </div>
-    <?php endif; ?>
-    <?php if (!empty(trim((string)$post->excerpt))): ?>
-        <p class="lead mb-4"><?= h((string)$post->excerpt) ?></p>
-    <?php endif; ?>
-    <div class="mb-4 d-flex flex-wrap gap-2">
-        <?php foreach ((array)$post->blog_tags as $tag): ?>
-            <span class="badge bg-light text-dark border"><?= h($tag->name) ?></span>
-        <?php endforeach; ?>
+
+        <div class="d-flex flex-column gap-2 mb-3">
+            <h1 class="mb-0"><?= h($post->title) ?></h1>
+            <p class="text-muted mb-0">
+                <?php if ($post->published_at instanceof \DateTimeInterface): ?>
+                    <?= h($post->published_at->format('F j, Y')) ?>
+                <?php else: ?>
+                    <?= h($post->published_at ?? '') ?>
+                <?php endif; ?>
+            </p>
+        </div>
+
+        <?php if (!empty($post->hero_image_id)): ?>
+        <div class="mb-4 text-center">
+            <img src="/images/serve/<?= h($post->hero_image_id) ?>?w=1200&fit=contain" class="img-fluid rounded" alt="<?= h($post->title) ?>" style="object-fit: contain; max-height: 500px;">
+        </div>
+        <?php endif; ?>
+
+        <div class="fs-5 lh-lg blog-content">
+            <?= $this->Text->autoParagraph($post->body) ?>
+        </div>
+
+        <?php if (!empty($post->blog_tags)): ?>
+        <div class="blog-tags">
+            <?php foreach ((array)$post->blog_tags as $tag): ?>
+                <span class="blog-tag"><?= h($tag->name) ?></span>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </div>
-    <div class="fs-5 lh-lg">
-        <?= $this->Text->autoParagraph($post->body) ?>
-    </div>
+
+    <script>
+    function bindBlogCollapse() {
+        const closeBtn = document.querySelector('.blog-collapse');
+        if (closeBtn && !closeBtn.dataset.bound) {
+            closeBtn.dataset.bound = 'true';
+            closeBtn.addEventListener('click', function() {
+                const viewFrame = this.closest('turbo-frame[data-view-frame]');
+                if (viewFrame) {
+                    viewFrame.innerHTML = '';
+                }
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', bindBlogCollapse);
+    document.addEventListener('turbo:load', bindBlogCollapse);
+    </script>
 </turbo-frame>

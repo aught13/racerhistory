@@ -62,8 +62,16 @@ class BlogController extends AppController
      */
     public function index(): void
     {
-        $posts = $this->blogPostService->getPublishedPosts();
-        $this->set(compact('posts'));
+        $page = (int)$this->request->getQuery('page', 1);
+        $limit = (int)$this->request->getQuery('limit', 10);
+
+        $offset = max(0, ($page - 1) * $limit);
+        $result = $this->blogPostService->getPublishedPostsPage($limit, $offset);
+
+        $posts = $result['posts'];
+        $total = $result['total'];
+
+        $this->set(compact('posts', 'page', 'limit', 'total'));
 
         $this->applyTurboFrameResponse('index_frame');
     }

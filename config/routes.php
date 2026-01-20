@@ -147,6 +147,27 @@ return function (RouteBuilder $routes): void {
             ->setPass(['slug'])
             ->setPatterns(['slug' => '[a-zA-Z0-9_-]+']);
 
+        // Public frontend sections (Men's Basketball)
+        $builder->connect('/seasons', ['controller' => 'Seasons', 'action' => 'index']);
+        $builder->connect('/seasons/{id}', ['controller' => 'Seasons', 'action' => 'view'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
+
+        $builder->connect('/people', ['controller' => 'People', 'action' => 'index']);
+        $builder->connect('/people/{id}', ['controller' => 'People', 'action' => 'view'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
+
+        $builder->connect('/stats', ['controller' => 'Stats', 'action' => 'index']);
+        $builder->connect('/stats/season/{teamSeasonId}', ['controller' => 'Stats', 'action' => 'season'])
+            ->setPass(['teamSeasonId'])
+            ->setPatterns(['teamSeasonId' => '\\d+']);
+
+        $builder->connect('/games', ['controller' => 'Games', 'action' => 'index']);
+        $builder->connect('/games/{id}', ['controller' => 'Games', 'action' => 'view'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
+
         /*
          * ...and connect the rest of 'Pages' controller's URLs.
          */

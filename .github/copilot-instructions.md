@@ -1,393 +1,50 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization -->
-
-## Feedback Guidelines
-
-**Be direct and critical.** Use deep thinking and best logic when evaluating requests. Do not use excessive praise or positive affirmations. Be constructively critical when inefficient approaches are being taken. Focus on technical merit, performance, maintainability, and following established patterns rather than encouragement.
-
-This is a CakePHP 5.x web application project. Please generate code and suggestions that follow CakePHP 5.x best practices.
-
-Whenever you create or update a controller, component, or model, also create or update corresponding unit tests following CakePHP 5.x conventions. Unit tests should cover all public methods and expected behaviors, including validation and error handling.
-
-When generating templates, ensure they are compatible with Bootstrap 5.3.2 and follow the responsive design principles. Include appropriate ARIA attributes for accessibility.
-
-## Migration Guidelines
-
-When creating or modifying CakePHP migrations:
-
-1. **Property Type Declarations**: Always check the parent AbstractMigration class for property type requirements:
-    - Use `public bool $autoId = false;` for CakePHP migrations 4.x+ compatibility
-    - Use `public $autoId = false;` for older versions
-    - Check `vendor/cakephp/migrations/src/AbstractMigration.php` for current declaration
-    - **Contributor Note:** Always use the property type required by your local CakePHP version. CI will rewrite as needed. Do not attempt runtime adaptation in migration code; rely on CI logic.
-
-2. **Database Compatibility**: Ensure migrations work across different MySQL versions:
-    - Use standard SQL data types
-    - Avoid version-specific features unless necessary
-    - Test with MySQL 8.0 (current CI environment)
-
-3. **Rollback Support**: Always implement both `up()` and `down()` methods for reversible migrations
-
-## Service Layer Architecture
-
-This project follows the [burzum/cakephp-service-layer](https://github.com/burzum/cakephp-service-layer) philosophy: **Business logic doesn't belong in the context of a database table and should be separated from any persistence layer.**
-
-### Core Principles
-
-1. **Separation of Concerns**: Business logic resides in service classes, NOT in table objects or controllers
-2. **Framework Independence**: Services are plain PHP classes that can be used in shell apps, CLI tools, APIs, or web controllers
-3. **Single Responsibility**: Each service owns the business logic for one specific entity or domain concept
-4. **Testability**: Services use constructor dependency injection for easy mocking and testing
-5. **Reusability**: Services provide both CRUD operations and domain-specific business logic in a reusable form
-
-### Service Structure Pattern
-
-All entity services follow this standard pattern:
-
-```php
-<?php
-declare(strict_types=1);
-
-namespace App\Service;
-
-use Cake\ORM\TableRegistry;
-
-class ExampleService
-{
-    private DependencyService $dependency;
-
-    /**
-     * Constructor with optional dependency injection.
-     * Enables easy mocking for tests while allowing production use without manual DI.
-     */
-    public function __construct(?DependencyService $dependency = null)
-    {
-        $this->dependency = $dependency ?? new DependencyService();
-    }
-
-    /**
-     * Get entity by ID.
-     */
-    public function getEntityById(int $id): ?\App\Model\Entity\Example
-    {
-        $table = TableRegistry::getTableLocator()->get('Examples');
-        return $table->get($id);
-    }
-
-    /**
-     * Get human-readable display label for UI/API.
-     * Returns "plain English" formatted strings.
-     */
-    public function getDisplayLabel(int $id): string
-    {
-        $entity = $this->getEntityById($id);
-        return $entity ? $entity->name : 'Example #' . $id;
-    }
-
-    /**
-     * Create new entity.
-     */
-    public function createEntity(array $data): \App\Model\Entity\Example|false
-    {
-        $table = TableRegistry::getTableLocator()->get('Examples');
-        $entity = $table->newEntity($data);
-        return $table->save($entity) ?: false;
-    }
-
-    /**
-     * Update existing entity.
-     */
-    public function updateEntity(int $id, array $data): \App\Model\Entity\Example|false
-    {
-        $table = TableRegistry::getTableLocator()->get('Examples');
-        $entity = $table->get($id);
-        $entity = $table->patchEntity($entity, $data);
-        return $table->save($entity) ?: false;
-    }
-
-    /**
-     * Delete entity.
-     */
-    public function deleteEntity(int $id): bool
-    {
-        $table = TableRegistry::getTableLocator()->get('Examples');
-        $entity = $table->get($id);
-        return $table->delete($entity);
-    }
-
-    /**
-     * Get all entities for listing.
-     */
-    public function getAllEntities(): array
-    {
-        $table = TableRegistry::getTableLocator()->get('Examples');
-        return $table->find()->order(['Examples.name' => 'ASC'])->all()->toArray();
-    }
-
-    /**
-     * Get entities formatted for select dropdowns.
-     */
-    public function getEntitiesForSelect(): array
-    {
-        $entities = $this->getAllEntities();
-        $results = [];
-        foreach ($entities as $entity) {
-            $results[] = [
-                'id' => $entity->id,
-                'label' => $this->getDisplayLabel($entity->id),
-            ];
-        }
-        return $results;
-    }
-}
-```
-### Controller Integration
-
-Controllers should **only contain view logic**. They:
-1. Receive HTTP request data
-2. Call service methods to perform business logic
-3. Pass service results to views for rendering
-4. Return responses (redirects, JSON, rendered templates)
-
-Controllers should NOT:
-- Perform complex queries directly on table objects
-- Contain business logic calculations
-- Format display data (that's the service's job via `getDisplayLabel()`)
-
-Example controller pattern:
-
-```php
-public function add()
-{
-    $this->request->allowMethod(['get', 'post']);
-
-    if ($this->request->is('post')) {
-        $data = $this->request->getData();
-        $entity = $this->exampleService->createEntity($data);
-
-        if ($entity) {
-            $this->Flash->success('Example created successfully.');
-            return $this->redirect(['action' => 'index']);
-        }
-        $this->Flash->error('Failed to create example.');
-    }
-
-    // Pass select options from service to view
-    $this->set('options', $this->exampleService->getOptionsForSelect());
-}
-```
-
-### Testing Services
-
-Services are easy to test in isolation:
-
-```php
-public function testCreateEntity()
-{
-    $service = new ExampleService();
-    $data = ['name' => 'Test Example'];
-
-    $entity = $service->createEntity($data);
-
-    $this->assertInstanceOf(Example::class, $entity);
-    $this->assertEquals('Test Example', $entity->name);
-}
-
-public function testWithMockedDependency()
-{
-    $mockDependency = $this->createMock(DependencyService::class);
-    $mockDependency->method('someMethod')->willReturn('mocked result');
-
-    $service = new ExampleService($mockDependency);
-    // Test service behavior with mocked dependency
-}
-```
-
-## PHPUnit Testing Guidelines
-
-### Test Execution Strategy
-
-This project uses multiple PHPUnit majors across the CI matrix:
-
-- PHP 8.1 (lowest deps, coverage job) installs **PHPUnit 10.x**.
-- PHP 8.2 / 8.3 (highest deps) install **PHPUnit 11.x/12.x** (whichever the resolver selects within the composer constraint).
-
-Author tests so they are compatible with PHPUnit 10 features (avoid 11/12-only XML config elements or attributes). Do not rely on deprecated 9.x syntax.
-
-Primary local command (auto-discovers tests via `phpunit.xml.dist`):
-
-```bash
-vendor/bin/phpunit
-```
-
-Coverage (CI only – requires Xdebug or PCOV) uses a separate config with coverage enabled:
-
-```bash
-vendor/bin/phpunit --configuration phpunit.ci.xml; echo EXIT:$?
-```
-
-If you need an ad‑hoc subset without configuration (bypassing discovery logic), you can still run:
-
-```bash
-vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php tests/TestCase/Some/SpecificTest.php
-```
-
-### Test Writing Standards
-
-1. **Controller Tests**:
-    - Use CakePHP's `IntegrationTestTrait` for HTTP testing
-    - Handle authentication requirements in CI environments
-    - Expect redirects for unauthenticated admin access
-    - Include CSRF token handling for POST requests
-
-2. **Model Tests**:
-    - Test validation rules thoroughly
-    - Test custom finder methods
-    - Use fixtures for consistent test data
-    - Test entity accessor/mutator methods
-
-3. **Component Tests**:
-    - Mock external dependencies
-    - Test all public methods
-    - Test error conditions and edge cases
-
-4. **Template Requirements**:
-    - Ensure all referenced templates exist (e.g., `templates/Pages/display/home.php`)
-    - Missing templates cause 500 errors in controller tests
-
-### CI Compatibility Notes
-
-1. **PHPUnit Multi-Version Compatibility (10–12)**:
-    - Keep XML configs limited to syntax valid in PHPUnit 10 (phpunit.ci.xml uses a 10.x schema; phpunit.xml may target 12.x but must not introduce incompatible constructs needed by shared tests).
-    - Local quick run: `vendor/bin/phpunit` (uses phpunit.xml).
-    - Coverage run (CI only): `vendor/bin/phpunit --configuration phpunit.ci.xml` (generates coverage.xml using `<coverage><report>` block).
-    - Do not add `<coverage>` inside `<logging>` in phpunit.ci.xml (10.x warning trigger).
-    - Core tests (Application, View, Model, Component) must always pass in every matrix job.
-    - Integration tests should also pass; do not intentionally rely on environment-specific skips.
-
-2. **Database Setup**:
-    - Tests use MySQL 8.0 in CI with test database `racerhistory_test`
-    - Ensure `DATABASE_TEST_URL` environment variable is properly configured
-    - Bootstrap must successfully establish database connections
+<!-- Repo-specific Copilot instructions (CakePHP 5.2+) -->
 
-### Pre-commit PHPCS
+## Project snapshot
 
-Before committing code that changes PHP files, run the same PHPCS check the CI uses so issues are caught locally early. The CI pipeline runs PHPCS and pipes the checkstyle output to `cs2pr`; replicate that locally with:
+- CakePHP app with admin UI + public blog + public image serving; overview: `APPLICATION_SUMMARY.md`.
+- Routing: `config/routes.php` (Admin prefix `/admin`, public blog `/blog`, public image `/images/serve/:id`, read-only JSON API `/api/v1/*`).
 
-```bash
-vendor/bin/phpcs --report=checkstyle | cs2pr
-```
+## Architecture & conventions (important)
 
-If you want to auto-fix trivial issues first, run:
+- **Service layer owns business logic**: use `src/Service/*` (e.g. `GameUpsertService`, `ImageStorageService`, `BasketballStatsService`). Controllers orchestrate requests and delegate to services.
+- Services typically use optional constructor DI and fall back to `TableRegistry::getTableLocator()->get()` (see `src/Service/GameUpsertService.php`).
+- Admin controllers extend `src/Controller/Admin/AppController.php` (sets admin layout and enforces authz).
 
-```bash
-vendor/bin/phpcbf --standard=phpcs.xml
-```
+## AuthN/AuthZ (do this, don’t fight it)
 
-Run PHPCS and fix any remaining issues (or follow the `cs2pr` output) before committing. This keeps local commits aligned with CI expectations.
+- Middleware order is CSRF → Authentication → Authorization (see `src/Application.php`).
+- Admin access is **request-level authorization**: `Admin/AppController::beforeFilter()` calls `$this->Authorization->authorize($this->request, 'accessAdmin')` (policy: `src/Policy/RequestPolicy.php`).
+- Don’t implement `AuthorizationIdentityInterface` on the User entity; Authorization decorates the identity automatically (details in `AUTHORIZATION_SETUP.md`).
+- CakeDC/Users provides public auth UI endpoints (`/login`, `/logout`, `/register`); app owns admin gating.
 
-3. **Deprecation Handling**:
-    - CakePHP 5.x may show deprecation warnings - these are acceptable
-    - Use `patch()` instead of `set()` for entity updates to avoid deprecations
-    - Authentication plugin deprecations are expected and handled
+## Domain-specific hotspots
 
-### Test Organization
+- **Sport-aware Games**: EAV metadata + validation live in services (`GameService`, `SportConfigService`, `GameEavUiService`). Admin forms are dynamic via `webroot/js/sport-aware-game-form.js` + `webroot/js/games_sport_dynamic.js`.
+- **Images**: upload/variants/tagging pipeline is centralized (`ImageStorageService` → `ImageProcessor` → `TaggingService`); variants configured in `src/Application.php` (`Images.variants`). More detail: `README_IMAGE_STORAGE.md`.
 
-- **Core Tests**: Application, View, Model, Component (must pass 100%)
-- **Integration Tests**: Controller tests (may have CI-specific failures)
-- **Test Discovery**: Should find all 78+ tests across the test suite
+## Dev workflow (preferred commands)
 
-When adding new tests, ensure they follow these patterns and are compatible with the minimal execution approach used in CI.
+- PHP tests: `php vendor/bin/phpunit; echo EXIT:$?` (CI spans PHPUnit 10–12; keep tests compatible with PHPUnit 10).
+- PHP quality: `php vendor/bin/phpcs --standard=phpcs.xml src/ tests/; echo EXIT:$?` and `php vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G`.
+- JS quality: ESLint/Prettier/Jest apply to `webroot/js/` (excluding `webroot/js/tinymce/`); tests live in `webroot/js/tests/`; coverage thresholds enforced via `codecov.yml`.
 
-## Unit Test Constraints & Guardrails
+## Coverage & compatibility
 
-To keep the test suite stable across local and CI runs, follow these non-negotiable constraints:
+- Add/extend **PHPUnit** tests and **Jest** tests when changing behavior; keep overall coverage **≥ 80%** (PHP + JS) as the initial bar for new changes.
+- PHP coverage run: `php vendor/bin/phpunit --configuration phpunit.ci.xml` (produces `coverage.xml`).
+- JS coverage run: `npx jest --coverage` (or `npm run test:js`).
+- Note: CI/Codecov enforces stricter targets from `codecov.yml` (currently: PHP **98%**, JS **88%**, branches **80%**). Prefer meeting those when practical.
+- Keep tests compatible with **PHP 8.1–8.5+** and the CI’s PHPUnit range (write to PHPUnit 10-era APIs; avoid relying on newer-only features).
 
-1. Migrations & TimestampBehavior
-    - Any table that uses Cake's TimestampBehavior must define `created` and `modified` columns as `datetime` (not `timestamp` or `text`). This avoids type mismatches (DateTimeType) that break saves and cause controller tests to fail.
-    - Do not use adapter-specific TEXT fallbacks for these columns; rely on TimestampBehavior to populate values at save time.
-    - Always include reversible `up()` and `down()` methods when changing schema.
+## Test gotchas (this repo)
 
-2. Migrations `autoId` Property
-    - The `$autoId` property declaration in migrations must exactly match the parent `Migrations\AbstractMigration` signature used by the installed version.
-    - If the parent is typed, use: `public bool $autoId = false;`
-    - If the parent is untyped, use: `public $autoId = false;`
-    - When in doubt, check `vendor/cakephp/migrations/src/AbstractMigration.php` and update all new migrations consistently to avoid CI fatals.
+- Integration POSTs: enable tokens (`$this->enableCsrfToken(); $this->enableSecurityToken();`).
+- Flash assertions after render: call `$this->enableRetainFlashMessages();` first.
+- Auth in integration tests: use `tests/TestCase/Support/AuthTestTrait.php` session injection pattern (avoid request-attribute hacks).
 
-## Testing gotchas we've seen in this repo
+## Migrations (avoid CI breakage)
 
-Two recurring small test flakiness sources have shown up in the test suite: 1) flash messages consumed by the view and 2) timestamp fields being strings in some test contexts. Below are concrete mitigations to use when writing controllers, views and tests:
-
-- Flash messages are stored in session and the view/FlashHelper will "consume" them during render. When a test needs to assert on a flash after rendering (not after a redirect), enable flash retention in the test:
-    - In integration tests: call `$this->enableRetainFlashMessages();` before making the request. This prevents the test harness from discarding consumed messages and allows `assertFlashMessage()` to find them.
-
-- Prefer explicit, test-friendly timestamp handling:
-    - Fixtures and migrations should provide DateTime-compatible values where possible (use DateTime objects in factories or ensure the migration default types are `datetime` and not strings). This keeps templates that call `$entity->created_at->format()` safe.
-    - In templates, defensively handle timestamp fields in case they are strings in some test scenarios. For example:
-
-        ```php
-        if ($entity->created_at instanceof \DateTimeInterface) {
-                echo h($entity->created_at->format('M j, Y g:i A'));
-        } else {
-                echo h($entity->created_at);
-        }
-        ```
-
-These two patterns (use `enableRetainFlashMessages()` in tests and guard DateTime usage in templates) are low-cost and have stabilized our CI runs.
-
-3. Controller Action Outcomes in Tests
-    - Admin POST actions (approve/delete/bulk/toggle) must return a redirect response with a `Location` header (typically back to the index). Tests assert redirects via `assertRedirect()` or `assertRedirect('/admin/users')` and expect a flash message.
-    - For POST requests in tests, always include CSRF and Security tokens: use `$this->enableCsrfToken(); $this->enableSecurityToken();`.
-
-4. Authentication in Integration Tests
-    - Inject authenticated users using the legacy `Auth` session array only (as done in `AuthTestTrait`). Avoid injecting request attributes to prevent intermittent FormProtection issues in CI.
-
-5. Fixtures, Not Seeding
-    - Do not seed data in test bootstrap. Use fixtures for deterministic baselines.
-    - SiteOptions fixture must include `option_key = 'registration'` with `value = 'true'` as the default baseline; tests may toggle this value.
-
-6. DB Environment Assumptions
-    - CI runs tests on MySQL 8.0. Local test bootstrap defaults to in-memory SQLite unless explicitly forced to MySQL via environment. Keep schema and code adapter-agnostic and avoid DB-specific defaults where possible.
-
-Add @codecov-ai-reviewer review-- the assistant will review the PR and make suggestions.
-
-## JavaScript Workflow & Tooling
-
-This project enforces modern JavaScript standards for all custom JS code (excluding third-party libraries like TinyMCE):
-
-- **Linting:** All JS files in `webroot/js/` (except `webroot/js/tinymce/`) must pass ESLint checks using the config in `eslint.config.js`.
-- **Testing:** Jest is used for unit and coverage testing of JS. All new JS features should include corresponding tests in `webroot/js/tests/`.
-- **Coverage Targets:** Minimum coverage enforced: 88% for JS (lines), 80% for JS branch coverage. See `codecov.yml` and VS Code settings.
-- **Pre-commit:** All JS code must pass lint, format, and test checks before commit (see `.git/hooks/pre-commit`).
-
-## VS Code Configuration
-
-- **Recommended Extensions:** See `.vscode/extensions.json` for required PHP/JS tooling (ESLint, Prettier, Jest, PHPCS, PHPStan, PHPUnit, Intelephense).
-- **Settings:** `.vscode/settings.json` enforces linter/fixer ignores, coverage thresholds, and PHP/JS integration.
-- **Tasks:** `.vscode/tasks.json` provides build/test/lint/format tasks for both PHP and JS. Use these for consistent local workflow.
-
-## Commit & Branching Guidelines
-
-- Use clear, descriptive commit messages (e.g., `fix: correct image upload preview`, `feat: add admin bulk delete`).
-- Prefer feature branches for new work; open pull requests for review and CI validation.
-
-## PHPCS Verbose Standard Usage (Always for Assistant Runs)
-
-When the assistant (automation) runs PHPCS for diagnostic purposes, ALWAYS use the progress and sniff-code enabled with the echo of the exit so that there is a clear indication of the PHPCS exit status:
-
-```bash
-php vendor/bin/phpcs --standard=phpcs.xml -p -s src/ tests/; echo EXIT:$?
-```
-
-Rationale:
-- `-p` shows progress across many files so long-running scans are visibly active.
-- `-s` prints sniff codes to quickly map violations to their fixers/rules.
-- `-v` adds context (file list, timings) useful for performance/regression spotting.
-- `head -200` prevents flooding the conversation while still surfacing the first batch of issues (most actionable). If more context is needed, explicitly re-run without the `head` truncation.
-
-Auto-fixing reminder:
-```bash
-php vendor/bin/phpcbf --standard=phpcs.xml
-```
-Then re-run the verbose PHPCS command above to confirm a clean state.
-
-If a later task explicitly requests full, untruncated PHPCS output, omit the `| head -200` portion.
+- Implement reversible `up()` and `down()`.
+- TimestampBehavior tables must use `created`/`modified` as `datetime`.
+- Match the exact `$autoId` property type expected by `Migrations\AbstractMigration` in this install.

@@ -81,61 +81,169 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous">
     </script>
     <!-- DataTables and WYSIWYG editor scripts can be added here -->
+    <script>
+        function initNavBehavior() {
+            const body = document.body;
+            const head = document.querySelector('.rh-head');
+            const navLogo = document.querySelector('.rh-nav-logo');
+            const navWrap = document.querySelector('.rh-nav-wrap');
+            const scrollTopBtn = document.querySelector('.rh-scroll-top');
+
+            function setNavState(isStuck) {
+                if (isStuck) {
+                    body.classList.add('rh-nav-stuck');
+                    body.classList.add('rh-head-collapsed');
+                } else {
+                    body.classList.remove('rh-nav-stuck');
+                    body.classList.remove('rh-head-collapsed');
+                }
+            }
+
+            function updateNavState() {
+                if (!head || !navLogo) {
+                    setNavState(true);
+                    return;
+                }
+
+                const navHeight = navWrap?.offsetHeight ?? 0;
+                const headHeight = head.offsetHeight ?? 0;
+                const isStuck = window.scrollY >= Math.max(0, headHeight - navHeight);
+                setNavState(isStuck);
+            }
+
+            function handleScrollTopButton() {
+                if (!scrollTopBtn) {
+                    return;
+                }
+                const current = window.scrollY;
+                const show = current > (window.innerHeight * 1.25);
+                scrollTopBtn.classList.toggle('is-visible', show);
+            }
+
+            updateNavState();
+            handleScrollTopButton();
+
+            window.addEventListener('scroll', updateNavState, { passive: true });
+            window.addEventListener('scroll', handleScrollTopButton, { passive: true });
+
+            scrollTopBtn?.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initNavBehavior);
+        document.addEventListener('turbo:load', initNavBehavior);
+    </script>
 </head>
 
-<body>
+<?php
+$identity = $this->getRequest()->getAttribute('identity');
+$role = $identity && method_exists($identity, 'get') ? (string)$identity->get('role') : '';
+$isAdmin = $identity && (
+    in_array($role, ['admin', 'superadmin'], true) ||
+    (bool)($identity->get('is_superuser') ?? false)
+);
+$controller = (string)$this->request->getParam('controller');
+$action = (string)$this->request->getParam('action');
+$isMainPage = $action === 'index' && in_array($controller, ['Blog', 'Seasons', 'People', 'Stats', 'Games'], true);
+$bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-head' : ''));
+?>
+<body class="<?= h($bodyClass) ?>" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">
     <a class="rh-skip-link" href="#main-content">Skip to main content</a>
-    <nav class="navbar navbar-expand-lg rh-navbar mb-4" data-bs-theme="dark">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $this->Url->build('/') ?>">
-                <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="RacerHistory" width="28" height="28" loading="eager">
-                <span>RacerHistory</span>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-                    <li class="nav-item">
-                        <button
-                            type="button"
-                            class="btn btn-outline-light btn-sm"
-                            data-controller="theme-toggle"
-                            data-action="click->theme-toggle#toggle"
-                            aria-pressed="false">
-                            <i class="bi bi-circle-half" aria-hidden="true"></i>
-                            <span class="ms-1" data-theme-toggle-target="label">System</span>
-                        </button>
-                    </li>
-                    <?php if ($this->getRequest()->getAttribute('identity')) : ?>
-                    <li class="nav-item d-flex align-items-center">
-                        <span class="navbar-text me-2">Logged in as:
-                            <?= h($this->getRequest()->getAttribute('identity')->get('username')) ?></span>
-                        <a class="nav-link"
-                            href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'logout']) ?>">Logout</a>
-                    </li>
-                    <?php else : ?>
-                    <li class="nav-item">
-                        <a class="nav-link"
-                            href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'login']) ?>">Login</a>
-                    </li>
+    <div class="rh-page">
+        <header class="rh-header">
+            <?php if ($identity) : ?>
+            <div class="rh-user-bar" role="status">
+                <div class="rh-header-inner rh-header-row">
+                    <div class="rh-user-info">
+                        <span class="rh-user-label">Logged in as</span>
+                        <strong><?= h($identity->get('username')) ?></strong>
+                        <a class="rh-user-link" href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'logout', 'plugin' => false]) ?>">Logout</a>
+                    </div>
+                    <?php if ($isAdmin) : ?>
+                        <a class="rh-admin-link" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']) ?>">Admin Dashboard</a>
                     <?php endif; ?>
-                </ul>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($isMainPage) : ?>
+            <div class="rh-head" data-head>
+                <div class="rh-header-inner rh-head-inner">
+                    <div class="rh-head-logo">
+                        <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="RacerHistory" class="rh-hero-logo-img">
+                    </div>
+                    <div class="rh-ad-slot rh-ad-slot--header">Ad</div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+        </header>
+
+        <div class="rh-nav-wrap" data-nav>
+            <div class="rh-header-inner rh-nav-inner">
+                <nav class="navbar navbar-expand-lg rh-navbar" data-bs-theme="dark">
+                    <a class="navbar-brand rh-logo-link" href="<?= $this->Url->build('/') ?>" aria-label="RacerHistory Home">
+                        <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="" style="max-height: 32px; object-fit: contain;" loading="eager" class="rh-nav-logo">
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'index', 'plugin' => false]) ?>">Seasons</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="<?= $this->Url->build(['controller' => 'People', 'action' => 'index', 'plugin' => false]) ?>">People</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="<?= $this->Url->build(['controller' => 'Stats', 'action' => 'index', 'plugin' => false]) ?>">Stats</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index', 'plugin' => false]) ?>">Games</a>
+                            </li>
+                        </ul>
+                        <div class="rh-theme-toggle"></div>
+                    </div>
+                </nav>
+                <div class="rh-ad-slot rh-ad-slot--nav">Ad</div>
             </div>
         </div>
-    </nav>
-    <main id="main-content" class="main">
-        <div class="container">
-            <?= $this->Flash->render() ?>
-            <?= $this->fetch('content') ?>
-        </div>
-    </main>
-    <footer class="footer bg-light py-3 mt-4">
-        <div class="container text-center">
-            <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory</span>
-        </div>
-    </footer>
+
+        <main id="main-content" class="rh-main">
+            <div class="rh-main-bg">
+                <div class="rh-main-inner">
+                    <?= $this->Flash->render() ?>
+                    <?= $this->fetch('content') ?>
+                </div>
+            </div>
+        </main>
+
+        <footer class="rh-footer">
+            <div class="rh-footer-inner">
+                <div class="rh-footer-ad">Ad</div>
+                <div class="rh-footer-copy">
+                    <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory</span>
+                </div>
+                <div class="rh-footer-controls">
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-controller="theme-toggle"
+                        data-action="click->theme-toggle#toggle"
+                        aria-pressed="false">
+                        <i class="bi bi-circle-half" aria-hidden="true"></i>
+                        <span class="ms-1" data-theme-toggle-target="label">System</span>
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <button class="rh-scroll-top" type="button" aria-label="Scroll to top">
+        <i class="bi bi-arrow-up"></i>
+    </button>
 </body>
 
 </html>

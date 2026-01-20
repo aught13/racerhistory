@@ -246,4 +246,24 @@ class TeamSeasonService
 
         return $list;
     }
+
+    /**
+     * Get team seasons for a specific sport.
+     *
+     * @param string $sportName Sport name (e.g., "Men's Basketball")
+     * @return array<int,\App\Model\Entity\TeamSeason>
+     */
+    public function getTeamSeasonsForSport(string $sportName): array
+    {
+        $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
+
+        return $teamSeasons->find()
+            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->matching('Teams.Sports', function ($q) use ($sportName) {
+                return $q->where(['Sports.sport_name' => $sportName]);
+            })
+            ->orderByDesc('Seasons.start')
+            ->all()
+            ->toArray();
+    }
 }
