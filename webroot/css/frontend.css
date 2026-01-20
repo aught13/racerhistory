@@ -1,4 +1,8 @@
+
+/* stylelint-disable comment-empty-line-before */
+
 :root {
+
   /* Hard-coded brand palette (will be admin-configurable later) */
   --rh-gold: #ECAC00;
   --rh-navy: #002144;
@@ -7,9 +11,10 @@
   --rh-main-max: 1220px;
   --rh-footer-max: 1440px;
   --rh-nav-height: 64px;
-
+  
   /* Light theme defaults */
-  --rh-bg: #ffffff;
+  /* page gutter / deadspace color (light mode should be muted gray, not bright white) */
+  --rh-bg: #444444;
   --rh-surface: #f8f9fa;
   --rh-text: #0b0f14;
   --rh-muted: #5b6675;
@@ -24,7 +29,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --rh-bg: #0b1220;
+    /* system dark: use pure black for outer gutters for better contrast */
+    --rh-bg: #000000;
     --rh-surface: #121b2d;
     --rh-text: #eef2f7;
     --rh-muted: #b2bccb;
@@ -34,7 +40,7 @@
 }
 
 :root[data-theme="dark"] {
-  --rh-bg: #0b1220;
+  --rh-bg: #000000;
   --rh-surface: #121b2d;
   --rh-text: #eef2f7;
   --rh-muted: #b2bccb;
@@ -45,14 +51,18 @@
 }
 
 :root[data-theme="light"] {
-  --rh-bg: #ffffff;
-  --rh-surface: #f8f9fa;
+  --rh-bg: #444444;
+  
+  /* softer content tones for light mode to reduce glare */
+  --rh-surface: #f3efe9;
   --rh-text: #0b0f14;
   --rh-muted: #5b6675;
-  --rh-border: #d7dde5;
+  --rh-border: #e6e1d9;
   --rh-link: var(--rh-navy);
-  --rh-main-bg: #ffffff;
-  --rh-content-bg: #f5f1ed;
+  
+  /* make the page gutters / area behind the content a muted grey */
+  --rh-main-bg: #444444;
+  --rh-content-bg: #efe9e3;
 }
 
 html,
@@ -456,4 +466,66 @@ body {
 
 .blog-expanded-frame {
   max-height: none;
+}
+
+.blog-post-expanded .blog-list-item,
+.blog-post-expanded .blog-featured {
+  display: none;
+}
+
+.blog-post-view {
+  color: var(--rh-text);
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  padding: 2rem;
+  border-radius: 6px;
+}
+
+.blog-post-view .text-muted {
+  color: var(--rh-muted) !important;
+}
+
+.blog-content {
+  color: var(--rh-text);
+}
+
+/* Dark-mode specific tweaks for blog readability */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .blog-post-view {
+    /* slightly lighter panel than page surface for separation */
+    background: #0f2433;
+    border-color: rgba(255,255,255,0.04);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  }
+  :root:not([data-theme]) .blog-hero-title {
+    color: var(--rh-text);
+  }
+}
+
+:root[data-theme="dark"] .blog-post-view {
+  background: #0f2433;
+  border-color: rgba(255,255,255,0.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+
+:root[data-theme="dark"] .blog-hero-title {
+  color: var(--rh-text);
+}
+
+/* Collapse button visibility */
+:root[data-theme="dark"] .blog-collapse {
+  background: rgba(255,255,255,0.02);
+  color: var(--rh-muted);
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* Slight padding and radius adjustments to make expanded area distinct */
+:root[data-theme="light"] .blog-post-view {
+  background: var(--rh-surface);
+  border-color: rgba(0,0,0,0.04);
+  color: var(--rh-text);
+}
+
+.blog-post-expanded {
+  margin-bottom: 1.25rem;
 }

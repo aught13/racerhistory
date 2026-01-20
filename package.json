@@ -15,6 +15,7 @@
     },
     "scripts": {
         "test:js": "jest --env=jsdom --colors",
+        "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",
         "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
         "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
