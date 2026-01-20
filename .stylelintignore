@@ -1,0 +1,4 @@
+vendor/**
+webroot/js/tinymce/**
+coverage-js/**
+node_modules/**

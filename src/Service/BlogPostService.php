@@ -98,7 +98,7 @@ class BlogPostService
         $query->select($table);
 
         $schema = $table->getSchema();
-        if ($schema && method_exists($schema, 'hasColumn') && $schema->hasColumn('is_pinned')) {
+        if ($schema->hasColumn('is_pinned')) {
             return $query
                 ->orderByDesc('BlogPosts.is_pinned')
                 ->orderByDesc('BlogPosts.pinned_rank')
