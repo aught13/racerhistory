@@ -9,14 +9,16 @@
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^29.7.0",
         "jsdom": "^24.0.0",
-        "prettier": "^3.5.1"
+        "prettier": "^3.5.1",
+        "stylelint": "^16.26.1",
+        "stylelint-config-standard": "^37.0.0"
     },
-    "dependencies": {},
     "scripts": {
         "test:js": "jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",
         "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
         "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
+        "lint:css": "npx stylelint 'webroot/css/**/*.css'",
         "format:js": "npx prettier --write webroot/js",
         "format:js:check": "npx prettier --check webroot/js"
     },
