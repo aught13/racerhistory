@@ -38,7 +38,11 @@ class SeasonsControllerTest extends TestCase
         $this->get('/seasons');
         $this->assertResponseOk();
         $this->assertResponseContains('Seasons');
-        $this->assertResponseContains('Men\'s Basketball team seasons');
+        $this->assertResponseContains('Team Seasons');
+        // Ensure the table and controls are present in the rendered HTML
+        $this->assertResponseContains('id="seasons-table"');
+        $this->assertResponseContains('id="seasons-controls"');
+        $this->assertResponseContains('id="searchbuilder-panel"');
     }
 
     public function testIndexDisplaysTeamSeasons(): void

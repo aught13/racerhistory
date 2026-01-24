@@ -529,3 +529,180 @@ body {
 .blog-post-expanded {
   margin-bottom: 1.25rem;
 }
+
+/* DataTables SearchBuilder styling overrides (moved from Seasons template) */
+/* Keep these here so all pages using SearchBuilder inherit the theme */
+#seasons-table_filter { display: none !important; }
+
+.dt-button-collection,
+.dtsb-searchBuilder,
+.dtsb-builder,
+.dtsb-group,
+.dtsb-row,
+.dtsb-criteria,
+.dtsb-buttons {
+  background: var(--rh-surface);
+  color: var(--rh-text);
+  border: 1px solid var(--rh-border);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  border-radius: 6px;
+}
+
+.dt-button-collection {
+  z-index: 2050;
+  padding: 0.5rem;
+}
+
+.dtsb-input input,
+.dtsb-select select {
+  background: transparent;
+  color: var(--rh-text);
+  border: 1px solid var(--rh-border);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.dtsb-buttons .dtsb-add,
+.dtsb-buttons .dtsb-clearAll {
+  background: transparent;
+  color: var(--rh-text);
+  border: 1px solid var(--rh-border);
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Stronger overrides for select/options */
+:root .dtsb-builder .dropdown-menu,
+:root .dtsb-builder .dropdown-menu .dropdown-item,
+:root .dt-button-collection .dropdown-menu,
+:root .dt-button-collection .dropdown-menu .dropdown-item,
+:root .dtsb-select select,
+:root .dtsb-select select option,
+:root .dtsb-input select,
+:root .dtsb-input select option,
+:root .dtsb-condition select,
+:root .dtsb-condition select option,
+:root .dtsb-field select,
+:root .dtsb-field select option {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+  border-color: var(--rh-border) !important;
+}
+
+:root[data-theme="dark"] .dtsb-builder .dropdown-menu,
+:root[data-theme="dark"] .dtsb-builder .dropdown-menu .dropdown-item,
+:root[data-theme="dark"] .dt-button-collection .dropdown-menu,
+:root[data-theme="dark"] .dt-button-collection .dropdown-menu .dropdown-item,
+:root[data-theme="dark"] .dtsb-select select,
+:root[data-theme="dark"] .dtsb-select select option {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+}
+
+.dtsb-builder .dropdown-menu .dropdown-item,
+.dt-button-collection .dropdown-menu .dropdown-item {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Native select rendering fallbacks */
+.dtsb-select select,
+.dtsb-input select,
+.dtsb-condition select,
+.dtsb-field select {
+  -webkit-text-fill-color: var(--rh-text) !important;
+  color: var(--rh-text) !important;
+  background-color: var(--rh-surface) !important;
+  min-width: 120px;
+  padding: 0.25rem 0.5rem;
+}
+
+.dtsb-select select option,
+.dtsb-input select option,
+.dtsb-condition select option,
+.dtsb-field select option {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+}
+
+.dtsb-select select::-ms-expand { filter: invert(1); }
+.dtsb-select select { appearance: auto; }
+
+/* Inline SearchBuilder panel placement and styles */
+.searchbuilder-panel {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.searchbuilder-panel .dtsb-builder {
+  width: 100% !important;
+  box-shadow: none !important;
+}
+.searchbuilder-panel.d-none {
+  display: none !important;
+}
+.searchbuilder-panel.sb-open {
+  display: block !important;
+}
+
+/* Make panel look like a docked toolbar */
+.searchbuilder-panel .dtsb-builder {
+  border-radius: 6px;
+  padding: 0.5rem;
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+}
+
+/* Ensure panel and controls are responsive */
+@media (max-width: 767.98px) {
+  #seasons-controls {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .searchbuilder-panel .dtsb-builder {
+    overflow-x: auto;
+  }
+}
+
+/* Target SearchBuilder-specific classes observed in the page markup */
+.dtsb-data,
+.dtsb-dropDown,
+.dtsb-data.dtsb-dropDown,
+select.dtsb-data,
+select.dtsb-dropDown,
+select.dtsb-data.dtsb-dropDown {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+  border: 1px solid var(--rh-border) !important;
+  box-shadow: none !important;
+}
+
+.dtsb-option,
+.dtsb-notItalic,
+.dtsb-italic,
+select.dtsb-data option,
+select.dtsb-dropDown option,
+.dtsb-data option {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+}
+
+/* Ensure disabled/placeholder option is visible */
+select.dtsb-data option[disabled],
+select.dtsb-dropDown option[disabled] {
+  color: var(--rh-muted) !important;
+  background-color: var(--rh-surface) !important;
+}
+
+/* Highest specificity fallback */
+:root select.dtsb-data,
+:root select.dtsb-dropDown,
+:root .dtsb-data.dtsb-dropDown {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+}
+
+/* Dark-mode: make SearchBuilder action buttons use muted/grey text */
+:root[data-theme="dark"] div.dtsb-searchBuilder button.dtsb-button,
+:root[data-theme="dark"] .dtsb-searchBuilder button.dtsb-button {
+  color: var(--rh-muted) !important;
+}
