@@ -43,6 +43,23 @@
 - Flash assertions after render: call `$this->enableRetainFlashMessages();` first.
 - Auth in integration tests: use `tests/TestCase/Support/AuthTestTrait.php` session injection pattern (avoid request-attribute hacks).
 
+## Additional guidance for Copilot / AI contributors
+
+- Always create unit and integration tests for any controller that renders a page load. Include at minimum:
+	- **PHPUnit** tests covering server-side controller behavior and template output.
+	- **Jest** tests covering the page's frontend behavior and DOM interactions.
+	- **CSS** tests (node-level) that assert required selectors and theme adjustments are present.
+- All frontend page loads must fully utilize the project's Hotwire/Turbo frontend configuration and lifecycle (initialize on `turbo:load` as well as `DOMContentLoaded`).
+- Jest tests should use ES module imports for the code under test (prefer `import` and `export`), and tests/helpers should be converted to ESM when adding new modules.
+- Test and quality commands must be run in a blocking terminal and their exit codes observed. When automating or invoking from scripts, ensure the following tools are always executed and awaited in this order where practical:
+	1. `jest` (or `npm run test:js`)
+ 2. `phpunit`
+ 3. `eslint` followed by `prettier --check` (or `prettier --write` when fixing)
+ 4. `phpcs` then `phpcbf` (allow phpcbf to fix and re-run phpcs)
+ 5. `phpstan`
+
+	Use the repository task runners or the `run_in_terminal` pattern so the process waits for each command to finish and checks the exit code before proceeding.
+
 ## Migrations (avoid CI breakage)
 
 - Implement reversible `up()` and `down()`.

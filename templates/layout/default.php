@@ -68,14 +68,16 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
 
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
-    <?= $this->fetch('script') ?>
 
     <!-- Import maps + Hotwire (Turbo/Stimulus) -->
     <?= $this->Html->importmap(require CONFIG . 'importmap.php') ?>
     <?= $this->Html->script('hotwire/application', ['type' => 'module']) ?>
 
-    <!-- jQuery (required for DataTables) -->
+    <!-- jQuery (required for DataTables and many page scripts) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+
+    <?= $this->fetch('script') ?>
+
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous">
