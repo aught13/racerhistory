@@ -1,4 +1,3 @@
-/* eslint-env jest, browser */
 /** @jest-environment jsdom */
 
 describe("Seasons SearchBuilder integration (module)", () => {

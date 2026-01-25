@@ -2,7 +2,6 @@
  * Testable initializer for the Seasons DataTable + SearchBuilder integration.
  * Import with: `import initSeasons from './modules/seasons-init.js'`.
  */
-/* eslint-env browser */
 export default function initSeasons(opts = {}) {
     const tableSelector = opts.tableSelector || "#seasons-table";
     const controlsSelector = opts.controlsSelector || "#seasons-controls";

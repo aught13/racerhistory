@@ -1,5 +1,3 @@
-/* eslint-env jest, browser */
-/* global HTMLElement */
 
 import { jest } from "@jest/globals";
 

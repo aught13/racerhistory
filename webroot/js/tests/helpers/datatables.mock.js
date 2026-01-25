@@ -1,5 +1,3 @@
-/* eslint-env node, jest, browser */
-/* global module, HTMLElement */
 // Reusable DataTables + SearchBuilder mock helper for Jest tests (jsdom)
 module.exports = function setupDataTablesMock() {
     // minimal jQuery-like wrapper

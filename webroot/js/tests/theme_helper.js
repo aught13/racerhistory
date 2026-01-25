@@ -1,6 +1,4 @@
 // Minimal CommonJS helper duplicating theme behavior for tests
-/* eslint-env node */
-/* global module */
 function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
