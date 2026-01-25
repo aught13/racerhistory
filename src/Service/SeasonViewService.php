@@ -73,6 +73,8 @@ class SeasonViewService
         $roster = $this->getRosterForTeamSeason($teamSeasonId);
         $recordSummary = $this->getRecordSummary($teamSeasonId);
         $seasonStats = $this->statsService->getSeasonStats($teamSeasonId);
+        $seasonStatsElement = $this->statsService->getSeasonStatsElement($teamSeasonId);
+        $seasonStatsColumns = $this->statsService->getSeasonStatsColumns($teamSeasonId, $seasonStats);
 
         $seasonTag = "teamseason-{$teamSeasonId}";
         $posts = $this->blogPostService->getPublishedByTag($seasonTag, 50);
@@ -85,6 +87,8 @@ class SeasonViewService
             'roster' => $roster,
             'recordSummary' => $recordSummary,
             'seasonStats' => $seasonStats,
+            'seasonStatsElement' => $seasonStatsElement,
+            'seasonStatsColumns' => $seasonStatsColumns,
             'previewPosts' => $categorized['preview'],
             'reviewPosts' => $categorized['review'],
             'otherPosts' => $categorized['other'],

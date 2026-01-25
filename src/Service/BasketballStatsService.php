@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
+use Cake\Collection\CollectionInterface;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
@@ -225,6 +226,80 @@ class BasketballStatsService
             ->first();
 
         return compact('playerStats', 'teamStats', 'opponentStats');
+    }
+
+    /**
+     * Determine which season stats columns have data and should be displayed.
+     *
+     * @param \Cake\Collection\CollectionInterface|array|null $playerStats Player stat rows
+     * @param object|null $teamStats Team totals
+     * @param object|null $opponentStats Opponent totals
+     * @return array<string, string>
+     */
+    public function getSeasonStatColumns(
+        null|\Cake\Collection\CollectionInterface|array $playerStats,
+        ?object $teamStats,
+        ?object $opponentStats,
+    ): array {
+        $allColumns = [
+            'GP' => 'GP',
+            'GS' => 'GS',
+            'MIN' => 'MIN',
+            'FGM' => 'FGM',
+            'FGA' => 'FGA',
+            'TPM' => '3PM',
+            'TPA' => '3PA',
+            'FTM' => 'FTM',
+            'FTA' => 'FTA',
+            'ORB' => 'ORB',
+            'DRB' => 'DRB',
+            'RB' => 'RB',
+            'AST' => 'AST',
+            'STL' => 'STL',
+            'BS' => 'BS',
+            'TRN' => 'TRN',
+            'PF' => 'PF',
+            'PTS' => 'PTS',
+        ];
+
+        $visible = [];
+        foreach ($allColumns as $key => $label) {
+            if ($this->columnHasData($key, $playerStats, $teamStats, $opponentStats)) {
+                $visible[$key] = $label;
+            }
+        }
+
+        return $visible;
+    }
+
+    /**
+     * Determine whether a column has visible data.
+     *
+     * @param string $key Column key
+     * @param \Cake\Collection\CollectionInterface|array|null $playerStats Player stats
+     * @param object|null $teamStats Team totals
+     * @param object|null $opponentStats Opponent totals
+     * @return bool
+     */
+    protected function columnHasData(string $key, null|\Cake\Collection\CollectionInterface|array $playerStats, ?object $teamStats, ?object $opponentStats): bool
+    {
+        if ($playerStats) {
+            foreach ($playerStats as $stat) {
+                if (!empty($stat->$key)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($teamStats && !empty($teamStats->$key)) {
+            return true;
+        }
+
+        if ($opponentStats && !empty($opponentStats->$key)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

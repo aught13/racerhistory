@@ -21,8 +21,10 @@ class StatsServiceTest extends TestCase
     public array $fixtures = [
         'app.Sports',
         'app.Teams',
+        'app.Persons',
         'app.Seasons',
         'app.TeamSeasons',
+        'app.TeamSeasonRosters',
         'app.Games',
         'app.GameTypes',
         'app.Opponents',
@@ -176,6 +178,25 @@ class StatsServiceTest extends TestCase
     {
         $stats = $this->service->getSeasonStats(999);
         $this->assertNull($stats);
+    }
+
+    public function testGetSeasonStatsElementReturnsConfiguredPath(): void
+    {
+        $element = $this->service->getSeasonStatsElement(1);
+
+        $this->assertSame('Seasons/basketball_season_stats', $element);
+    }
+
+    public function testGetSeasonStatsColumnsIncludesPointsColumn(): void
+    {
+        $seasonStats = $this->service->getSeasonStats(1);
+
+        $this->assertIsArray($seasonStats);
+
+        $columns = $this->service->getSeasonStatsColumns(1, $seasonStats);
+
+        $this->assertIsArray($columns);
+        $this->assertArrayHasKey('PTS', $columns);
     }
 
     /**
