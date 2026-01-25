@@ -40,7 +40,9 @@ function setupBlogClicks(root) {
             const slug = item.dataset.blogPost;
             if (!slug) return;
             const container = item.closest("turbo-frame");
-            const viewFrame = container?.querySelector("turbo-frame[data-view-frame]");
+            const viewFrame = container?.querySelector(
+                "turbo-frame[data-view-frame]",
+            );
             if (!viewFrame) {
                 window.location.href = `/blog/${slug}`;
                 return;
@@ -138,7 +140,10 @@ function buildAdvancedColumns(hasThreePointShots) {
     );
 
     if (hasThreePointShots) {
-        columns.push({ label: "eFG%", value: (row) => formatPercent(row.efgPct) });
+        columns.push({
+            label: "eFG%",
+            value: (row) => formatPercent(row.efgPct),
+        });
     }
 
     columns.push({ label: "PTS", value: (row) => formatInteger(row.PTS) });
@@ -159,7 +164,9 @@ function mountAdvancedShootingTable(panel) {
         return;
     }
 
-    const container = panel.querySelector("[data-season-advanced-table-container]");
+    const container = panel.querySelector(
+        "[data-season-advanced-table-container]",
+    );
     if (!container) {
         panel.dataset.seasonAdvancedRendered = "true";
         return;
@@ -221,7 +228,8 @@ function mountAdvancedShootingTable(panel) {
 
     const columns = buildAdvancedColumns(hasThreePointShots);
     const table = document.createElement("table");
-    table.className = "table table-striped table-bordered table-sm js-datatable";
+    table.className =
+        "table table-striped table-bordered table-sm js-datatable";
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -268,12 +276,16 @@ function initSeasonStatsTabs(root) {
     if (!root) {
         return;
     }
-    const tabButtons = Array.from(root.querySelectorAll("[data-season-stats-tab]"));
+    const tabButtons = Array.from(
+        root.querySelectorAll("[data-season-stats-tab]"),
+    );
     if (!tabButtons.length) {
         return;
     }
 
-    const panels = Array.from(root.querySelectorAll("[data-season-stats-panel]"));
+    const panels = Array.from(
+        root.querySelectorAll("[data-season-stats-panel]"),
+    );
     const advancedPanel = root.querySelector("[data-season-advanced-stats]");
 
     tabButtons.forEach((button) => {
@@ -315,7 +327,9 @@ export default function initSeasonView(options = {}) {
         setupBlogClicks(section);
     });
 
-    document.querySelectorAll("[data-season-stats-tabs]").forEach(initSeasonStatsTabs);
+    document
+        .querySelectorAll("[data-season-stats-tabs]")
+        .forEach(initSeasonStatsTabs);
 
     return { tables };
 }

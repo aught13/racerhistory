@@ -28,15 +28,21 @@ $genderDisplay = match ($teamSeason->team->gender ?? '') {
 };
 $overallWins = $recordSummary['overall_wins'] ?? null;
 $overallLosses = $recordSummary['overall_losses'] ?? null;
+$overallTies = $recordSummary['overall_ties'] ?? null;
 $overallPct = $recordSummary['overall_pct'] ?? null;
 $confWins = $recordSummary['conf_wins'] ?? null;
 $confLosses = $recordSummary['conf_losses'] ?? null;
+$confTies = $recordSummary['conf_ties'] ?? null;
 $confPct = $recordSummary['conf_pct'] ?? null;
 $overallRecord = ($overallWins !== null || $overallLosses !== null)
-    ? sprintf('%s-%s', $overallWins ?? '—', $overallLosses ?? '—')
+    ? ($overallTies !== null
+        ? sprintf('%s-%s-%s', $overallWins ?? '—', $overallLosses ?? '—', $overallTies ?? '—')
+        : sprintf('%s-%s', $overallWins ?? '—', $overallLosses ?? '—'))
     : null;
 $confRecord = ($confWins !== null || $confLosses !== null)
-    ? sprintf('%s-%s', $confWins ?? '—', $confLosses ?? '—')
+    ? ($confTies !== null
+        ? sprintf('%s-%s-%s', $confWins ?? '—', $confLosses ?? '—', $confTies ?? '—')
+        : sprintf('%s-%s', $confWins ?? '—', $confLosses ?? '—'))
     : null;
 $heroImageId = $teamSeason->team_season_image ?: null;
 

@@ -22,7 +22,10 @@ class SiteService
     {
         $sites = TableRegistry::getTableLocator()->get('Sites');
 
-        return $sites->find()->where(['Sites.id' => $siteId])->first();
+        return $sites->find()
+            ->contain(['Places'])
+            ->where(['Sites.id' => $siteId])
+            ->first();
     }
 
     /**
@@ -36,6 +39,15 @@ class SiteService
         $site = $this->getSiteById($siteId);
         if (!$site) {
             return 'Site #' . $siteId;
+        }
+
+        $parts = array_filter([
+            $site->place->place_name ?? null,
+            $site->place->place_state ?? null,
+            $site->site_name ?? null,
+        ]);
+        if ($parts) {
+            return implode(', ', $parts);
         }
 
         return $site->site_name ?? 'Site #' . $siteId;
@@ -57,7 +69,15 @@ class SiteService
         }
 
         return $sites->find()
-            ->where(['Sites.site_name LIKE' => "%{$query}%"])
+            ->contain(['Places'])
+            ->leftJoinWith('Places')
+            ->where([
+                'OR' => [
+                    ['Sites.site_name LIKE' => "%{$query}%"],
+                    ['Places.place_name LIKE' => "%{$query}%"],
+                    ['Places.place_state LIKE' => "%{$query}%"],
+                ],
+            ])
             ->orderBy(['Sites.site_name' => 'ASC'])
             ->limit($limit)
             ->all()
@@ -75,6 +95,7 @@ class SiteService
         $sites = TableRegistry::getTableLocator()->get('Sites');
 
         return $sites->find()
+            ->contain(['Places'])
             ->orderBy(['Sites.site_name' => 'ASC'])
             ->limit($limit)
             ->all()
@@ -132,13 +153,69 @@ class SiteService
      */
     public function getSitesForSelect(): array
     {
-        $sites = $this->getAllSites();
+        $list = $this->getSitesList();
         $results = [];
-
-        foreach ($sites as $site) {
+        foreach ($list as $id => $label) {
             $results[] = [
-                'id' => $site->id,
-                'label' => $site->site_name,
+                'id' => $id,
+                'label' => $label,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get sites as an associative list suitable for FormHelper selects.
+     *
+     * @param int|null $placeId Optional place filter
+     * @param int $limit
+     * @return array<int,string>
+     */
+    public function getSitesList(?int $placeId = null, int $limit = 500): array
+    {
+        $sites = TableRegistry::getTableLocator()->get('Sites');
+
+        $query = $sites->find()
+            ->contain(['Places'])
+            ->orderBy(['Sites.site_name' => 'ASC'])
+            ->limit($limit);
+
+        if ($placeId) {
+            $query->where(['Sites.place_id' => $placeId]);
+        }
+
+        $list = [];
+        foreach ($query->all() as $site) {
+            $list[(int)$site->id] = $this->getDisplayLabel((int)$site->id);
+        }
+
+        return $list;
+    }
+
+    /**
+     * Get sites filtered by place for AJAX responses.
+     *
+     * @param int $placeId
+     * @return array<int,array{id:int,name:string}>
+     */
+    public function getSitesByPlace(int $placeId): array
+    {
+        if ($placeId <= 0) {
+            return [];
+        }
+
+        $sites = TableRegistry::getTableLocator()->get('Sites');
+        $query = $sites->find()
+            ->where(['Sites.place_id' => $placeId])
+            ->orderBy(['Sites.site_name' => 'ASC'])
+            ->all();
+
+        $results = [];
+        foreach ($query as $site) {
+            $results[] = [
+                'id' => (int)$site->id,
+                'name' => (string)($site->site_name ?? ''),
             ];
         }
 

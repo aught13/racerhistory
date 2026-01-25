@@ -248,6 +248,104 @@ class TeamSeasonService
     }
 
     /**
+     * Get team seasons as an associative list with sport and season range.
+     *
+     * Format: "Team Name (Sport) — Start-End".
+     *
+     * @param int $limit
+     * @return array<int,string>
+     */
+    public function getTeamSeasonsDetailedList(int $limit = 500): array
+    {
+        $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
+
+        $rows = $teamSeasons->find()
+            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->orderByDesc('Seasons.start')
+            ->limit($limit)
+            ->all();
+
+        $list = [];
+        foreach ($rows as $ts) {
+            /** @var \App\Model\Entity\TeamSeason $ts */
+            $sportName = $ts->team->sport->sport_name ?? 'Unknown';
+            $list[(int)$ts->id] = sprintf(
+                '%s (%s) — %s-%s',
+                ($ts->team->team_name ?? 'Team'),
+                $sportName,
+                ($ts->season->start ?? ''),
+                ($ts->season->end ?? '')
+            );
+        }
+
+        return $list;
+    }
+
+    /**
+     * Get overall and conference record summary for a team season.
+     *
+     * @param int $teamSeasonId
+     * @return array<string,int|float|null>
+     */
+    public function getRecordSummary(int $teamSeasonId): array
+    {
+        $gamesTable = TableRegistry::getTableLocator()->get('Games');
+        $query = $gamesTable->find();
+
+        $tieCondition = '((Games.pts_mur IS NOT NULL AND Games.pts_opp IS NOT NULL AND Games.pts_mur = Games.pts_opp)' .
+            " OR (Games.w = '1' AND Games.l = '1'))";
+
+        $row = $query
+            ->select([
+                'overall_wins' => $query->newExpr(
+                    "SUM(CASE WHEN {$tieCondition} THEN 0 WHEN Games.w IN ('1','W') THEN 1 ELSE 0 END)",
+                ),
+                'overall_losses' => $query->newExpr(
+                    "SUM(CASE WHEN {$tieCondition} THEN 0 WHEN Games.l IN ('1','L') THEN 1 ELSE 0 END)",
+                ),
+                'overall_ties' => $query->newExpr(
+                    "SUM(CASE WHEN {$tieCondition} THEN 1 ELSE 0 END)",
+                ),
+                'conf_wins' => $query->newExpr(
+                    "SUM(CASE WHEN GameTypes.conf = 1 AND {$tieCondition} THEN 0 " .
+                        "WHEN GameTypes.conf = 1 AND Games.w IN ('1','W') THEN 1 ELSE 0 END)",
+                ),
+                'conf_losses' => $query->newExpr(
+                    "SUM(CASE WHEN GameTypes.conf = 1 AND {$tieCondition} THEN 0 " .
+                        "WHEN GameTypes.conf = 1 AND Games.l IN ('1','L') THEN 1 ELSE 0 END)",
+                ),
+                'conf_ties' => $query->newExpr(
+                    "SUM(CASE WHEN GameTypes.conf = 1 AND {$tieCondition} THEN 1 ELSE 0 END)",
+                ),
+            ])
+            ->where(['Games.team_season_id' => $teamSeasonId])
+            ->leftJoinWith('GameTypes')
+            ->enableHydration(false)
+            ->first();
+
+        $ow = isset($row['overall_wins']) ? (int)$row['overall_wins'] : 0;
+        $ol = isset($row['overall_losses']) ? (int)$row['overall_losses'] : 0;
+        $ot = isset($row['overall_ties']) ? (int)$row['overall_ties'] : 0;
+        $cw = isset($row['conf_wins']) ? (int)$row['conf_wins'] : 0;
+        $cl = isset($row['conf_losses']) ? (int)$row['conf_losses'] : 0;
+        $ct = isset($row['conf_ties']) ? (int)$row['conf_ties'] : 0;
+
+        $overallTotal = $ow + $ol + $ot;
+        $confTotal = $cw + $cl + $ct;
+
+        return [
+            'overall_wins' => $ow,
+            'overall_losses' => $ol,
+            'overall_ties' => $ot,
+            'overall_pct' => $overallTotal > 0 ? round(($ow + (0.5 * $ot)) / $overallTotal, 3) : null,
+            'conf_wins' => $cw,
+            'conf_losses' => $cl,
+            'conf_ties' => $ct,
+            'conf_pct' => $confTotal > 0 ? round(($cw + (0.5 * $ct)) / $confTotal, 3) : null,
+        ];
+    }
+
+    /**
      * Get team seasons for a specific sport.
      *
      * @param string $sportName Sport name (e.g., "Men's Basketball")
