@@ -6,6 +6,8 @@
  * @var array<int,\App\Model\Entity\TeamSeasonRosters> $roster
  * @var array<string,int|float|null> $recordSummary
  * @var array{playerStats?:\Cake\Collection\CollectionInterface|null,teamStats?:object|null,opponentStats?:object|null}|null $seasonStats
+ * @var string|null $seasonStatsElement
+ * @var array<string,string> $seasonStatsColumns
  * @var array<int,\App\Model\Entity\BlogPost> $previewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $reviewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $otherPosts
@@ -57,6 +59,13 @@ $this->start('css'); ?>
 <?php $this->end(); ?>
 
 <div class="container py-4 season-view" data-season-view>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            [data-season-view] #season-games-table a {
+                color: #001f3f;
+            }
+        }
+    </style>
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
@@ -158,10 +167,10 @@ $this->start('css'); ?>
                                     <tr>
                                         <th>Date</th>
                                         <th>Opponent</th>
+                                        <th>Type</th>
                                         <th>Location</th>
                                         <th>Result</th>
                                         <th>Score</th>
-                                        <th>Type</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -178,6 +187,25 @@ $this->start('css'); ?>
                                                 }
                                                 ?>
                                                 <?= h($locationPrefix) ?> <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
+                                            </td>
+                                            <td>
+                                                <?php $type = $game->game_type ?? null; ?>
+                                                <?php $typeLabel = $type?->abr ?: ($type?->label ?? ''); ?>
+                                                <?php if (!empty($typeLabel)) : ?>
+                                                    <?php
+                                                    $badgeStyle = 'background-color:#6c757d;color:#ffffff;';
+                                                    if (!empty($type->post)) {
+                                                        if (!empty($type->conf)) {
+                                                            $badgeStyle = 'background-color:#FFD700;color:#001f3f;';
+                                                        } else {
+                                                            $badgeStyle = 'background-color:#001f3f;color:#FFD700;';
+                                                        }
+                                                    }
+                                                    ?>
+                                                    <span class="badge" style="<?= $badgeStyle ?>">
+                                                        <?= h($typeLabel) ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= h($game->place_name ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
@@ -201,7 +229,6 @@ $this->start('css'); ?>
                                                     <a href="<?= $gameUrl ?>">View</a>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?= h($game->game_type->label ?? ($game->game_type_id ?? '')) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -218,15 +245,20 @@ $this->start('css'); ?>
                     <h2 class="h5 mb-0">Season Statistics</h2>
                 </div>
                 <div class="card-body">
-                    <?php if (!empty($seasonStats) && ($seasonStats['playerStats'] || $seasonStats['teamStats'] || $seasonStats['opponentStats'])) : ?>
-                        <?= $this->element('Seasons/basketball_season_stats', [
-                            'teamSeason' => $teamSeason,
-                            'playerStats' => $seasonStats['playerStats'] ?? null,
-                            'teamStats' => $seasonStats['teamStats'] ?? null,
-                            'opponentStats' => $seasonStats['opponentStats'] ?? null,
-                        ]) ?>
+                    <?php if (!empty($seasonStatsElement)) : ?>
+                        <?php if (!empty($seasonStats)) : ?>
+                            <?= $this->element($seasonStatsElement, [
+                                'teamSeason' => $teamSeason,
+                                'playerStats' => $seasonStats['playerStats'] ?? null,
+                                'teamStats' => $seasonStats['teamStats'] ?? null,
+                                'opponentStats' => $seasonStats['opponentStats'] ?? null,
+                                'statsColumns' => $seasonStatsColumns ?? [],
+                            ]) ?>
+                        <?php else : ?>
+                            <p class="text-muted mb-0">Season stats are not available yet.</p>
+                        <?php endif; ?>
                     <?php else : ?>
-                        <p class="text-muted mb-0">Season stats are not available yet.</p>
+                        <p class="text-muted mb-0">Season stats are not available for this sport.</p>
                     <?php endif; ?>
                 </div>
             </section>

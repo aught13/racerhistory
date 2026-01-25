@@ -42,6 +42,15 @@ class StatsService
     ];
 
     /**
+     * Map of sport names to the season stats element used in the public site
+     *
+     * @var array<string, string>
+     */
+    protected array $seasonStatsElements = [
+        'basketball' => 'Seasons/basketball_season_stats',
+    ];
+
+    /**
      * Cached sport service instances
      *
      * @var array<string, object>
@@ -103,6 +112,53 @@ class StatsService
         }
 
         return $service->getSeasonStats($teamSeasonId);
+    }
+
+    /**
+     * Get the element path for the season stats section for a given team season
+     *
+     * @param int $teamSeasonId Team season ID
+     * @return string|null Element path or null if not configured
+     */
+    public function getSeasonStatsElement(int $teamSeasonId): ?string
+    {
+        $sportId = $this->getTeamSeasonSportId($teamSeasonId);
+        if (!$sportId) {
+            return null;
+        }
+
+        $sportName = $this->sportConfig->getSportName($sportId);
+        return $this->seasonStatsElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the visible column list for a season stats table
+     *
+     * @param int $teamSeasonId Team season ID
+     * @param array|null $seasonStats Season stats payload
+     * @return array<string, string> Column key/label pairs
+     */
+    public function getSeasonStatsColumns(int $teamSeasonId, ?array $seasonStats): array
+    {
+        if (empty($seasonStats)) {
+            return [];
+        }
+
+        $sportId = $this->getTeamSeasonSportId($teamSeasonId);
+        if (!$sportId) {
+            return [];
+        }
+
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getSeasonStatColumns')) {
+            return [];
+        }
+
+        return $service->getSeasonStatColumns(
+            $seasonStats['playerStats'] ?? null,
+            $seasonStats['teamStats'] ?? null,
+            $seasonStats['opponentStats'] ?? null,
+        );
     }
 
     /**
