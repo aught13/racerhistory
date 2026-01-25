@@ -27,6 +27,9 @@ module.exports = [
                 window: 'readonly',
                 document: 'readonly',
                 console: 'readonly',
+                $: 'readonly',
+                jQuery: 'readonly',
+                DataTable: 'readonly',
                 alert: 'readonly',
                 confirm: 'readonly',
                 fetch: 'readonly',
@@ -39,6 +42,43 @@ module.exports = [
                 URLSearchParams: 'readonly',
                 FileReader: 'readonly',
                 Cropper: 'readonly',
+            }
+        }
+    },
+    {
+        // Module files (ESM)
+        files: ['webroot/js/modules/**/*.js', 'webroot/js/modules/**/*.mjs', 'webroot/js/*-loader.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'module',
+            globals: {
+                window: 'readonly',
+                document: 'readonly',
+                console: 'readonly',
+                $: 'readonly',
+                jQuery: 'readonly',
+                navigator: 'readonly',
+                fetch: 'readonly',
+                URL: 'readonly',
+                caches: 'readonly',
+                self: 'readonly',
+            }
+        }
+    },
+    {
+        // CommonJS and other script-like module files
+        files: ['webroot/js/modules/**/*.cjs', 'webroot/js/**/*.cjs'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'script',
+            globals: {
+                window: 'readonly',
+                document: 'readonly',
+                console: 'readonly',
+                module: 'readonly',
+                global: 'readonly',
+                $: 'readonly',
+                jQuery: 'readonly',
             }
         }
     },
@@ -60,18 +100,21 @@ module.exports = [
         }
     },
     {
-        files: ['webroot/js/tests/**/*.js'],
+        files: ['webroot/js/tests/**/*.js', 'webroot/js/tests/**/*.mjs'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
             globals: {
                 describe: 'readonly',
+                it: 'readonly',
                 test: 'readonly',
                 expect: 'readonly',
                 beforeEach: 'readonly',
                 afterEach: 'readonly',
                 beforeAll: 'readonly',
                 afterAll: 'readonly',
+                spyOn: 'readonly',
+                sinon: 'readonly',
                 jest: 'readonly',
                 require: 'readonly',
                 global: 'readonly',
@@ -79,6 +122,12 @@ module.exports = [
                 Event: 'readonly',
                 HTMLFormElement: 'readonly',
                 MouseEvent: 'readonly',
+                document: 'readonly',
+                window: 'readonly',
+                $: 'readonly',
+                jQuery: 'readonly',
+                DataTable: 'readonly',
+                // avoid redeclaring built-in Node globals here
             }
         }
     }

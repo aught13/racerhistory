@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 
 const cssPath = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    "../../css/frontend.css"
+    "../../css/frontend.css",
 );
 
 const loadStyles = () => fs.readFileSync(cssPath, "utf8");
@@ -28,6 +28,8 @@ describe("Season view CSS", () => {
     });
 
     test("season image placeholder uses dashed border", () => {
-        expect(css).toMatch(/\.season-image-placeholder[\s\S]*border:\s*1px\s+dashed/i);
+        expect(css).toMatch(
+            /\.season-image-placeholder[\s\S]*border:\s*1px\s+dashed/i,
+        );
     });
 });

@@ -1,7 +1,6 @@
 /* eslint-env jest, browser */
 /** @jest-environment jsdom */
 
-
 describe("Seasons SearchBuilder integration (module)", () => {
     let teardown;
 
@@ -14,14 +13,14 @@ describe("Seasons SearchBuilder integration (module)", () => {
         teardown = setupDataTablesMock();
     });
 
-const setupDataTablesMock = require("./helpers/datatables.mock");
-const initSeasons = require("../../js/modules/seasons-init.cjs");
+    const setupDataTablesMock = require("./helpers/datatables.mock");
+    const initSeasons = require("../../js/modules/seasons-init.cjs");
 
     afterEach(() => {
-        if (typeof teardown === 'function') teardown();
+        if (typeof teardown === "function") teardown();
     });
 
-    test('module initializes DataTable and appends SearchBuilder to panel and toggles', () => {
+    test("module initializes DataTable and appends SearchBuilder to panel and toggles", () => {
         const result = initSeasons();
         expect(result).toBeTruthy();
         // button should be created

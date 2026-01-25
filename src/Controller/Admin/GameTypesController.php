@@ -8,6 +8,20 @@ use Cake\Http\Response;
 class GameTypesController extends AppController
 {
     /**
+     * Initialize controller and adjust FormProtection unlocked actions.
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+
+        if ($this->components()->has('FormProtection')) {
+            $current = (array)$this->FormProtection->getConfig('unlockedActions');
+            $current[] = 'delete';
+            $this->FormProtection->setConfig('unlockedActions', $current);
+        }
+    }
+
+    /**
      * List game types.
      */
     public function index(): void
@@ -66,6 +80,12 @@ class GameTypesController extends AppController
         $this->request->allowMethod(['post', 'delete']);
         $table = $this->fetchTable('GameTypes');
         $entity = $table->get($id);
+        if ($table->Games->exists(['game_type_id' => $entity->id])) {
+            $this->Flash->error('This game type cannot be deleted because games are associated with it.');
+
+            return $this->redirect(['action' => 'index']);
+        }
+
         if ($table->delete($entity)) {
             $this->Flash->success('The game type has been deleted.');
         } else {
