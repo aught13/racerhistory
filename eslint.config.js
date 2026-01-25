@@ -127,6 +127,10 @@ module.exports = [
                 $: 'readonly',
                 jQuery: 'readonly',
                 DataTable: 'readonly',
+                HTMLElement: 'readonly',
+                __dirname: 'readonly',
+                __filename: 'readonly',
+                module: 'readonly',
                 // avoid redeclaring built-in Node globals here
             }
         }

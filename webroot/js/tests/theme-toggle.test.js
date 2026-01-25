@@ -1,4 +1,3 @@
-/* eslint-env jest, node */
 let theme;
 
 // Helper to mock matchMedia
