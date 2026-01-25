@@ -144,4 +144,27 @@ class OpponentService
 
         return $results;
     }
+
+    /**
+     * Get opponents as an associative list suitable for FormHelper selects.
+     *
+     * @param int $limit
+     * @return array<int,string>
+     */
+    public function getOpponentsList(int $limit = 500): array
+    {
+        $opponents = TableRegistry::getTableLocator()->get('Opponents');
+
+        $rows = $opponents->find()
+            ->orderBy(['Opponents.opponent_name' => 'ASC'])
+            ->limit($limit)
+            ->all();
+
+        $list = [];
+        foreach ($rows as $opponent) {
+            $list[(int)$opponent->id] = (string)($opponent->opponent_name ?? '');
+        }
+
+        return $list;
+    }
 }

@@ -13,6 +13,18 @@ use Cake\ORM\TableRegistry;
  */
 class PlaceService
 {
+    private SiteService $siteService;
+
+    /**
+     * Constructor.
+     *
+     * @param \App\Service\SiteService|null $siteService Site service instance
+     */
+    public function __construct(?SiteService $siteService = null)
+    {
+        $this->siteService = $siteService ?? new SiteService();
+    }
+
     /**
      * Get a place by ID.
      *
@@ -191,9 +203,7 @@ class PlaceService
      */
     public function getSiteById(int $siteId): ?\App\Model\Entity\Site
     {
-        $sites = TableRegistry::getTableLocator()->get('Sites');
-
-        return $sites->find()->contain(['Places'])->where(['Sites.id' => $siteId])->first();
+        return $this->siteService->getSiteById($siteId);
     }
 
     /**
@@ -204,21 +214,7 @@ class PlaceService
      */
     public function getSiteDisplayLabel(int $siteId): string
     {
-        $site = $this->getSiteById($siteId);
-        if (!$site) {
-            return 'Site #' . $siteId;
-        }
-
-        $parts = array_filter([
-            $site->place->place_name ?? null,
-            $site->place->place_state ?? null,
-            $site->site_name ?? null,
-        ]);
-        if ($parts) {
-            return implode(', ', $parts);
-        }
-
-        return $site->site_name ?? 'Site #' . $siteId;
+        return $this->siteService->getDisplayLabel($siteId);
     }
 
     /**
@@ -230,25 +226,7 @@ class PlaceService
      */
     public function searchSites(string $query, int $limit = 20): array
     {
-        $sites = TableRegistry::getTableLocator()->get('Sites');
-
-        if (trim($query) === '') {
-            return [];
-        }
-
-        return $sites->find()
-            ->contain(['Places'])
-            ->where([
-                'OR' => [
-                    ['Sites.site_name LIKE' => "%{$query}%"],
-                    ['Places.place_name LIKE' => "%{$query}%"],
-                    ['Places.place_state LIKE' => "%{$query}%"],
-                ],
-            ])
-            ->orderBy(['Sites.site_name' => 'ASC'])
-            ->limit($limit)
-            ->all()
-            ->toArray();
+        return $this->siteService->searchSites($query, $limit);
     }
 
     /**
@@ -259,14 +237,7 @@ class PlaceService
      */
     public function getAllSites(int $limit = 500): array
     {
-        $sites = TableRegistry::getTableLocator()->get('Sites');
-
-        return $sites->find()
-            ->contain(['Places'])
-            ->orderBy(['Sites.site_name' => 'ASC'])
-            ->limit($limit)
-            ->all()
-            ->toArray();
+        return $this->siteService->getAllSites($limit);
     }
 
     /**
@@ -277,10 +248,7 @@ class PlaceService
      */
     public function createSite(array $data): \App\Model\Entity\Site|false
     {
-        $sites = TableRegistry::getTableLocator()->get('Sites');
-        $site = $sites->newEntity($data);
-
-        return $sites->save($site);
+        return $this->siteService->createSite($data);
     }
 
     /**
@@ -292,11 +260,7 @@ class PlaceService
      */
     public function updateSite(int $siteId, array $data): \App\Model\Entity\Site|false
     {
-        $sites = TableRegistry::getTableLocator()->get('Sites');
-        $site = $sites->get($siteId);
-        $sites->patchEntity($site, $data);
-
-        return $sites->save($site);
+        return $this->siteService->updateSite($siteId, $data);
     }
 
     /**
@@ -307,10 +271,7 @@ class PlaceService
      */
     public function deleteSite(int $siteId): bool
     {
-        $sites = TableRegistry::getTableLocator()->get('Sites');
-        $site = $sites->get($siteId);
-
-        return (bool)$sites->delete($site);
+        return $this->siteService->deleteSite($siteId);
     }
 
     /**
@@ -320,17 +281,6 @@ class PlaceService
      */
     public function getSitesForSelect(): array
     {
-        $sites = $this->getAllSites();
-        $results = [];
-
-        foreach ($sites as $site) {
-            $label = $this->getSiteDisplayLabel($site->id);
-            $results[] = [
-                'id' => $site->id,
-                'label' => $label,
-            ];
-        }
-
-        return $results;
+        return $this->siteService->getSitesForSelect();
     }
 }

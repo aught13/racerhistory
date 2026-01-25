@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use Cake\ORM\TableRegistry;
-
 /**
  * SeasonViewService
  *
@@ -13,26 +11,34 @@ use Cake\ORM\TableRegistry;
 class SeasonViewService
 {
     private TeamSeasonService $teamSeasonService;
-    private ImageProcessor $imageProcessor;
+    private ImageTagService $imageTagService;
     private StatsService $statsService;
     private BlogPostService $blogPostService;
+    private GameService $gameService;
+    private TeamSeasonRosterService $teamSeasonRosterService;
 
     /**
      * @param \App\Service\TeamSeasonService|null $teamSeasonService Team season service.
-     * @param \App\Service\ImageProcessor|null $imageProcessor Image processor.
+     * @param \App\Service\ImageTagService|null $imageTagService Image tag service.
      * @param \App\Service\StatsService|null $statsService Stats service.
      * @param \App\Service\BlogPostService|null $blogPostService Blog post service.
+     * @param \App\Service\GameService|null $gameService Game service.
+     * @param \App\Service\TeamSeasonRosterService|null $teamSeasonRosterService Roster service.
      */
     public function __construct(
         ?TeamSeasonService $teamSeasonService = null,
-        ?ImageProcessor $imageProcessor = null,
+        ?ImageTagService $imageTagService = null,
         ?StatsService $statsService = null,
         ?BlogPostService $blogPostService = null,
+        ?GameService $gameService = null,
+        ?TeamSeasonRosterService $teamSeasonRosterService = null,
     ) {
         $this->teamSeasonService = $teamSeasonService ?? new TeamSeasonService();
-        $this->imageProcessor = $imageProcessor ?? new ImageProcessor();
+        $this->imageTagService = $imageTagService ?? new ImageTagService();
         $this->statsService = $statsService ?? new StatsService();
         $this->blogPostService = $blogPostService ?? new BlogPostService();
+        $this->gameService = $gameService ?? new GameService();
+        $this->teamSeasonRosterService = $teamSeasonRosterService ?? new TeamSeasonRosterService();
     }
 
     /**
@@ -48,16 +54,15 @@ class SeasonViewService
             return ['teamSeason' => null];
         }
 
-        $images = $this->imageProcessor->getImagesForTeamSeason($teamSeasonId, 24);
-        $games = $this->getGamesForTeamSeason($teamSeasonId);
-        // Enrich games with computed display fields using GameService
-        $gameService = new GameService();
+        $images = $this->imageTagService->getImagesForTeamSeason($teamSeasonId, 24);
+        $games = $this->gameService->getGamesByTeamSeason($teamSeasonId, 'ASC');
+    // Enrich games with computed display fields using GameService
         foreach ($games as $g) {
             try {
-                $g->set('result_flag', $gameService->getResultFlag($g));
-                $g->set('place_name', $gameService->getPlaceName($g));
-                $g->set('place_state', $gameService->getPlaceState($g));
-                $g->set('site_name', $gameService->getSiteName($g));
+                $g->set('result_flag', $this->gameService->getResultFlag($g));
+                $g->set('place_name', $this->gameService->getPlaceName($g));
+                $g->set('place_state', $this->gameService->getPlaceState($g));
+                $g->set('site_name', $this->gameService->getSiteName($g));
                 // opponent prefix: hrn values -> 1: 'Vs', 3: 'vs', else '@'
                 $prefix = '@';
                 if (!empty($g->hrn) && (int)$g->hrn === 1) {
@@ -70,8 +75,8 @@ class SeasonViewService
                 // ignore enrichment errors
             }
         }
-        $roster = $this->getRosterForTeamSeason($teamSeasonId);
-        $recordSummary = $this->getRecordSummary($teamSeasonId);
+        $roster = $this->teamSeasonRosterService->getRosterForTeamSeason($teamSeasonId);
+        $recordSummary = $this->teamSeasonService->getRecordSummary($teamSeasonId);
         $seasonStats = $this->statsService->getSeasonStats($teamSeasonId);
         $seasonStatsElement = $this->statsService->getSeasonStatsElement($teamSeasonId);
         $seasonStatsColumns = $this->statsService->getSeasonStatsColumns($teamSeasonId, $seasonStats);
@@ -92,87 +97,6 @@ class SeasonViewService
             'previewPosts' => $categorized['preview'],
             'reviewPosts' => $categorized['review'],
             'otherPosts' => $categorized['other'],
-        ];
-    }
-
-    /**
-     * @param int $teamSeasonId
-     * @return array<int,\App\Model\Entity\Game>
-     */
-    private function getGamesForTeamSeason(int $teamSeasonId): array
-    {
-        $table = TableRegistry::getTableLocator()->get('Games');
-
-        return $table->find()
-            ->contain(['Opponents', 'Places', 'GameTypes', 'Sites'])
-            ->where(['Games.team_season_id' => $teamSeasonId])
-            ->orderByAsc('Games.game_date')
-            ->all()
-            ->toArray();
-    }
-
-    /**
-     * @param int $teamSeasonId
-     * @return array<int,\App\Model\Entity\TeamSeasonRosters>
-     */
-    private function getRosterForTeamSeason(int $teamSeasonId): array
-    {
-        $table = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
-
-        return $table->find()
-            ->contain(['Persons'])
-            ->where(['TeamSeasonRosters.team_season_id' => $teamSeasonId])
-            ->orderByAsc('TeamSeasonRosters.roster_number')
-            ->all()
-            ->toArray();
-    }
-
-    /**
-     * Get overall and conference record summary for a team season.
-     *
-     * @param int $teamSeasonId
-     * @return array<string,int|float|null>
-     */
-    private function getRecordSummary(int $teamSeasonId): array
-    {
-        $gamesTable = TableRegistry::getTableLocator()->get('Games');
-        $query = $gamesTable->find();
-
-        $row = $query
-            ->select([
-                'overall_wins' => $query->newExpr(
-                    "SUM(CASE WHEN Games.w IN ('1','W') THEN 1 ELSE 0 END)",
-                ),
-                'overall_losses' => $query->newExpr(
-                    "SUM(CASE WHEN Games.l IN ('1','L') THEN 1 ELSE 0 END)",
-                ),
-                'conf_wins' => $query->newExpr(
-                    "SUM(CASE WHEN GameTypes.conf = 1 AND Games.w IN ('1','W') THEN 1 ELSE 0 END)",
-                ),
-                'conf_losses' => $query->newExpr(
-                    "SUM(CASE WHEN GameTypes.conf = 1 AND Games.l IN ('1','L') THEN 1 ELSE 0 END)",
-                ),
-            ])
-            ->where(['Games.team_season_id' => $teamSeasonId])
-            ->leftJoinWith('GameTypes')
-            ->enableHydration(false)
-            ->first();
-
-        $ow = isset($row['overall_wins']) ? (int)$row['overall_wins'] : 0;
-        $ol = isset($row['overall_losses']) ? (int)$row['overall_losses'] : 0;
-        $cw = isset($row['conf_wins']) ? (int)$row['conf_wins'] : 0;
-        $cl = isset($row['conf_losses']) ? (int)$row['conf_losses'] : 0;
-
-        $overallTotal = $ow + $ol;
-        $confTotal = $cw + $cl;
-
-        return [
-            'overall_wins' => $ow,
-            'overall_losses' => $ol,
-            'overall_pct' => $overallTotal > 0 ? round($ow / $overallTotal, 3) : null,
-            'conf_wins' => $cw,
-            'conf_losses' => $cl,
-            'conf_pct' => $confTotal > 0 ? round($cw / $confTotal, 3) : null,
         ];
     }
 

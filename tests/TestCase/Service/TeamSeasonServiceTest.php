@@ -13,6 +13,8 @@ class TeamSeasonServiceTest extends TestCase
         'app.Teams',
         'app.Sports',
         'app.Seasons',
+        'app.Games',
+        'app.GameTypes',
     ];
 
     private TeamSeasonService $service;
@@ -60,6 +62,19 @@ class TeamSeasonServiceTest extends TestCase
     {
         $label = $this->service->getSportDisplayLabel(99999);
         $this->assertSame('Team Season #99999', $label);
+    }
+
+    public function testGetRecordSummary(): void
+    {
+        $summary = $this->service->getRecordSummary(1);
+        $this->assertSame(2, $summary['overall_wins']);
+        $this->assertSame(2, $summary['overall_losses']);
+        $this->assertSame(0, $summary['overall_ties']);
+        $this->assertEqualsWithDelta(0.5, $summary['overall_pct'], 0.001);
+        $this->assertSame(2, $summary['conf_wins']);
+        $this->assertSame(2, $summary['conf_losses']);
+        $this->assertSame(0, $summary['conf_ties']);
+        $this->assertEqualsWithDelta(0.5, $summary['conf_pct'], 0.001);
     }
 
     public function testGetAllTeamSeasons(): void

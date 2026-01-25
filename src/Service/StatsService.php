@@ -128,6 +128,7 @@ class StatsService
         }
 
         $sportName = $this->sportConfig->getSportName($sportId);
+
         return $this->seasonStatsElements[$sportName] ?? null;
     }
 

@@ -7,35 +7,35 @@ import initSeasonView from "../modules/season-view-init.mjs";
 describe("Season view init", () => {
     let teardown;
 
-        beforeEach(() => {
-                const advancedPayload = {
-                        players: [
-                                {
-                                        name: "Guard",
-                                        GP: 12,
-                                        FGM: 56,
-                                        FGA: 120,
-                                        TPM: 10,
-                                        TPA: 30,
-                                        FTM: 40,
-                                        FTA: 50,
-                                        PTS: 180,
-                                },
-                        ],
-                        teamTotals: {
-                                name: "Team Totals",
-                                GP: 30,
-                                FGM: 120,
-                                FGA: 260,
-                                TPM: 35,
-                                TPA: 80,
-                                FTM: 50,
-                                FTA: 70,
-                                PTS: 500,
-                        },
-                };
-                const advancedJson = JSON.stringify(advancedPayload);
-                document.body.innerHTML = `
+    beforeEach(() => {
+        const advancedPayload = {
+            players: [
+                {
+                    name: "Guard",
+                    GP: 12,
+                    FGM: 56,
+                    FGA: 120,
+                    TPM: 10,
+                    TPA: 30,
+                    FTM: 40,
+                    FTA: 50,
+                    PTS: 180,
+                },
+            ],
+            teamTotals: {
+                name: "Team Totals",
+                GP: 30,
+                FGM: 120,
+                FGA: 260,
+                TPM: 35,
+                TPA: 80,
+                FTM: 50,
+                FTA: 70,
+                PTS: 500,
+            },
+        };
+        const advancedJson = JSON.stringify(advancedPayload);
+        document.body.innerHTML = `
             <table id="season-games-table"></table>
             <table id="season-roster-table"></table>
             <div data-season-stats-tabs>
@@ -92,12 +92,16 @@ describe("Season view init", () => {
             expect(frameArg.id).toBe("blog-post-view-sample");
         }
 
-        const advancedTab = document.querySelector("[data-season-stats-tab='advanced']");
+        const advancedTab = document.querySelector(
+            "[data-season-stats-tab='advanced']",
+        );
         advancedTab?.dispatchEvent(
             new MouseEvent("click", { bubbles: true, cancelable: true }),
         );
         expect((global.__datatableCalls || []).length).toBe(4);
-        const advancedContainer = document.querySelector("[data-season-advanced-table-container]");
+        const advancedContainer = document.querySelector(
+            "[data-season-advanced-table-container]",
+        );
         expect(advancedContainer?.querySelector("table")).toBeTruthy();
     });
 });

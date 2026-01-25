@@ -6,7 +6,7 @@ namespace App\Controller\Admin;
 use App\Service\GameService;
 use App\Service\OpponentService;
 use App\Service\PersonService;
-use App\Service\PlaceService;
+use App\Service\SiteService;
 use App\Service\TeamSeasonRosterService;
 use Cake\Http\Response;
 
@@ -114,14 +114,14 @@ class TagLookupsController extends AppController
             return $this->json(['success' => true, 'sites' => []]);
         }
 
-        $service = new PlaceService();
+        $service = new SiteService();
         $rows = $service->searchSites($q, 25);
 
         $out = [];
         foreach ($rows as $row) {
             $out[] = [
                 'id' => (int)$row->id,
-                'label' => $service->getSiteDisplayLabel((int)$row->id),
+                'label' => $service->getDisplayLabel((int)$row->id),
             ];
         }
 

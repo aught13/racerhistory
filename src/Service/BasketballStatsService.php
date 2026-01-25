@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Service;
 
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
-use Cake\Collection\CollectionInterface;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
@@ -237,7 +236,7 @@ class BasketballStatsService
      * @return array<string, string>
      */
     public function getSeasonStatColumns(
-        null|\Cake\Collection\CollectionInterface|array $playerStats,
+        \Cake\Collection\CollectionInterface|array|null $playerStats,
         ?object $teamStats,
         ?object $opponentStats,
     ): array {
@@ -281,8 +280,12 @@ class BasketballStatsService
      * @param object|null $opponentStats Opponent totals
      * @return bool
      */
-    protected function columnHasData(string $key, null|\Cake\Collection\CollectionInterface|array $playerStats, ?object $teamStats, ?object $opponentStats): bool
-    {
+    protected function columnHasData(
+        string $key,
+        \Cake\Collection\CollectionInterface|array|null $playerStats,
+        ?object $teamStats,
+        ?object $opponentStats,
+    ): bool {
         if ($playerStats) {
             foreach ($playerStats as $stat) {
                 if (!empty($stat->$key)) {
@@ -313,10 +316,25 @@ class BasketballStatsService
         // Standard player stat fields
         if ($type === 'player') {
             return [
-                'GP' => 0, 'GS' => 0, 'MIN' => 0, 'FGM' => 0, 'FGA' => 0,
-                'TPM' => 0, 'TPA' => 0, 'FTM' => 0, 'FTA' => 0,
-                'ORB' => 0, 'DRB' => 0, 'RB' => 0, 'AST' => 0, 'STL' => 0,
-                'BS' => 0, 'TRN' => 0, 'PF' => 0, 'TF' => 0, 'PTS' => 0,
+                'GP' => 0,
+                'GS' => 0,
+                'MIN' => 0,
+                'FGM' => 0,
+                'FGA' => 0,
+                'TPM' => 0,
+                'TPA' => 0,
+                'FTM' => 0,
+                'FTA' => 0,
+                'ORB' => 0,
+                'DRB' => 0,
+                'RB' => 0,
+                'AST' => 0,
+                'STL' => 0,
+                'BS' => 0,
+                'TRN' => 0,
+                'PF' => 0,
+                'TF' => 0,
+                'PTS' => 0,
             ];
         }
 

@@ -5,7 +5,7 @@ namespace App\Controller;
 
 use App\Service\BasketballStatsService;
 use App\Service\GameService;
-use App\Service\ImageProcessor;
+use App\Service\ImageTagService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 
@@ -19,7 +19,7 @@ use Cake\Http\Exception\NotFoundException;
 class GamesController extends AppController
 {
     private ?BasketballStatsService $basketballStatsService = null;
-    private ImageProcessor $imageProcessor;
+    private ImageTagService $imageTagService;
 
     /**
      * Initialize controller.
@@ -29,7 +29,7 @@ class GamesController extends AppController
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
         $this->basketballStatsService = new BasketballStatsService();
-        $this->imageProcessor = new ImageProcessor();
+        $this->imageTagService = new ImageTagService();
     }
 
     /**
@@ -127,7 +127,7 @@ class GamesController extends AppController
         }
 
         // Get related images
-        $images = $this->imageProcessor->getImagesByAllTags(["game-{$id}"], 10);
+        $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 10);
 
         // Get related blog posts
         $blogPosts = $this->getBlogPostsByTag("game-{$id}");

@@ -119,4 +119,27 @@ class SportService
 
         return $results;
     }
+
+    /**
+     * Get sports as an associative list suitable for FormHelper selects.
+     *
+     * @param int $limit
+     * @return array<int,string>
+     */
+    public function getSportsList(int $limit = 500): array
+    {
+        $sports = TableRegistry::getTableLocator()->get('Sports');
+
+        $rows = $sports->find()
+            ->orderBy(['Sports.sport_name' => 'ASC'])
+            ->limit($limit)
+            ->all();
+
+        $list = [];
+        foreach ($rows as $sport) {
+            $list[(int)$sport->id] = (string)($sport->sport_name ?? '');
+        }
+
+        return $list;
+    }
 }

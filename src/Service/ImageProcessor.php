@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use Cake\ORM\TableRegistry;
-use Cake\Utility\Text;
 use Intervention\Image\ImageManager;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -293,76 +291,7 @@ class ImageProcessor
      */
     public function attachTags(int $imageId, array $tags): void
     {
-        if (!$tags) {
-            return;
-        }
-
-        $tagsTable = $this->table('ImageTags');
-        $imagesTable = $this->table('Images');
-        /** @var \App\Model\Entity\Image $image */
-        $image = $imagesTable->get($imageId, contain: ['ImageTags']);
-
-        // Get existing tag IDs for this image
-        $existingTagIds = [];
-        foreach ($image->image_tags as $tag) {
-            $existingTagIds[] = $tag->id;
-        }
-
-        $tagEntities = [];
-        foreach ($tags as $tag) {
-            // Support two formats: string tag name/slug OR ['slug' => 'person-1', 'name' => 'John Doe']
-            if (is_array($tag) && isset($tag['slug'])) {
-                $slug = (string)$tag['slug'];
-                $name = isset($tag['name']) ? (string)$tag['name'] : $slug;
-            } else {
-                $name = trim((string)$tag);
-                if ($name === '') {
-                    continue;
-                }
-                $slug = Text::slug($name) ?: strtolower($name);
-            }
-
-            $existing = $tagsTable->find()->where(['slug' => $slug])->first();
-            if (!$existing) {
-                $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
-                $tagsTable->save($existing);
-            } else {
-                // If the tag exists but has a generic name (like the slug itself or
-                // fixture-generated names like 'roster 1' or 'team season 1'), prefer
-                // the nicer provided name and overwrite the stored name.
-                $shouldUpdateName = false;
-                if ($name !== '') {
-                    $existingName = (string)($existing->name ?? '');
-                    if ($existingName === $existing->slug || strcasecmp($existingName, $existing->slug) === 0) {
-                        $shouldUpdateName = true;
-                    } else {
-                        // Match common generic patterns produced by fixtures or older code
-                        // e.g. 'roster 1', 'teamseason 1', 'team season 1', 'person 1'
-                        if (
-                            preg_match(
-                                '/^(?:roster|team ?season|team_season_roster|person)[\s_-]*\d+$/i',
-                                $existingName
-                            )
-                        ) {
-                            $shouldUpdateName = true;
-                        }
-                    }
-                }
-                if ($shouldUpdateName) {
-                    $existing->name = $name;
-                    $tagsTable->save($existing);
-                }
-            }
-
-            if (!in_array($existing->id, $existingTagIds)) {
-                $tagEntities[] = $existing;
-            }
-        }
-
-        if ($tagEntities) {
-            // @phpstan-ignore property.notFound
-            $imagesTable->ImageTags->link($image, $tagEntities);
-        }
+        (new ImageTagService())->attachTags($imageId, $tags);
     }
 
     /**
@@ -374,25 +303,7 @@ class ImageProcessor
      */
     public function getImagesByAllTags(array $tagSlugs, int $limit = 10): array
     {
-        $tagSlugs = array_values(array_filter(array_map('strval', $tagSlugs)));
-        if (!$tagSlugs) {
-            return [];
-        }
-        $needed = count($tagSlugs);
-        $images = $this->table('Images');
-
-        // Use select with tag_count and raw string in HAVING (CakePHP has issues with alias binding in HAVING)
-        $query = $images->find()
-            ->select($images)
-            ->select(['tag_count' => $images->query()->func()->count('DISTINCT ImageTags.slug')])
-            ->matching('ImageTags', function ($q) use ($tagSlugs) {
-                return $q->where(['ImageTags.slug IN' => $tagSlugs]);
-            })
-            ->groupBy(['Images.id'])
-            ->having("tag_count >= {$needed}")
-            ->limit($limit);
-
-        return $query->all()->toList();
+        return (new ImageTagService())->getImagesByAllTags($tagSlugs, $limit);
     }
 
     /**
@@ -404,7 +315,7 @@ class ImageProcessor
      */
     public function getImagesForPerson(int $personId, int $limit = 10): array
     {
-        return $this->getImagesByAllTags(["person-{$personId}"], $limit);
+        return (new ImageTagService())->getImagesForPerson($personId, $limit);
     }
 
     /**
@@ -412,7 +323,7 @@ class ImageProcessor
      */
     public function getImagesForTeamSeason(int $teamSeasonId, int $limit = 10): array
     {
-        return $this->getImagesByAllTags(["teamseason-{$teamSeasonId}"], $limit);
+        return (new ImageTagService())->getImagesForTeamSeason($teamSeasonId, $limit);
     }
 
     /**
@@ -420,11 +331,7 @@ class ImageProcessor
      */
     public function getRosterImages(int $personId, int $teamSeasonId, int $limit = 1): array
     {
-        return $this->getImagesByAllTags([
-            "person-{$personId}",
-            "teamseason-{$teamSeasonId}",
-            'roster',
-        ], $limit);
+        return (new ImageTagService())->getRosterImages($personId, $teamSeasonId, $limit);
     }
 
     /**
@@ -435,22 +342,7 @@ class ImageProcessor
      */
     public function ensureTags(array $tagSlugs): array
     {
-        $tagsTable = $this->table('ImageTags');
-        $tags = [];
-        foreach ($tagSlugs as $slug) {
-            $slug = Text::slug($slug) ?: strtolower($slug);
-            $existing = $tagsTable->find()->where(['slug' => $slug])->first();
-            if (!$existing) {
-                $existing = $tagsTable->newEntity(['name' => $slug, 'slug' => $slug]);
-                $tagsTable->save($existing);
-            }
-            /** @phpstan-ignore if.alwaysTrue */
-            if ($existing) {
-                $tags[] = $existing;
-            }
-        }
-
-        return $tags;
+        return (new ImageTagService())->ensureTags($tagSlugs);
     }
 
     /**
@@ -528,17 +420,6 @@ class ImageProcessor
         }
 
         return $image;
-    }
-
-    /**
-     * Simple TableLocator helper.
-     *
-     * @param string $alias Table alias.
-     * @return \Cake\ORM\Table
-     */
-    private function table(string $alias): \Cake\ORM\Table
-    {
-        return TableRegistry::getTableLocator()->get($alias);
     }
 
     /**

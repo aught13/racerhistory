@@ -197,6 +197,24 @@ class TeamSeasonRosterService
     }
 
     /**
+     * Get roster entries for a team season.
+     *
+     * @param int $teamSeasonId
+     * @return array<int,\App\Model\Entity\TeamSeasonRosters>
+     */
+    public function getRosterForTeamSeason(int $teamSeasonId): array
+    {
+        $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
+
+        return $rosters->find()
+            ->contain(['Persons'])
+            ->where(['TeamSeasonRosters.team_season_id' => $teamSeasonId])
+            ->orderByAsc('TeamSeasonRosters.roster_number')
+            ->all()
+            ->toArray();
+    }
+
+    /**
      * Create a new roster entry.
      *
      * @param array $data Roster data (person_id, team_season_id, jersey_number, etc.)
