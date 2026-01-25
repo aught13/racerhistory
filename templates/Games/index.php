@@ -33,26 +33,24 @@ $this->assign('title', 'Games');
                                 </a>
                             </td>
                             <td>
-                                <?php if ($game->hrn === 'H') : ?>
-                                    vs
-                                <?php else : ?>
-                                    @
+                                <?= h($game->opponent_prefix ?? '@') ?> <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
+                            </td>
+                            <td>
+                                <?= h($game->place_name ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
+                                <?php if (!empty($game->site_name)) : ?>
+                                    <div class="text-muted small"><?= h($game->site_name) ?></div>
                                 <?php endif; ?>
-                                <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
                             </td>
                             <td>
-                                <?= h($game->place->city ?? '') ?><?php if (!empty($game->place->state)) : ?>, <?= h($game->place->state) ?><?php endif; ?>
-                            </td>
-                            <td>
-                                <?php if (!empty($game->result)) : ?>
-                                    <span class="badge bg-<?= $game->result === 'W' ? 'success' : ($game->result === 'L' ? 'danger' : 'secondary') ?>">
-                                        <?= h($game->result) ?>
+                                <?php if (!empty($game->result_flag)) : ?>
+                                    <span class="badge bg-<?= $game->result_flag === 'W' ? 'success' : ($game->result_flag === 'L' ? 'danger' : 'secondary') ?>">
+                                        <?= h($game->result_flag) ?>
                                     </span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if ($game->mur_pts !== null && $game->opp_pts !== null) : ?>
-                                    <?= h($game->mur_pts) ?>-<?= h($game->opp_pts) ?>
+                                <?php if ($game->pts_mur !== null && $game->pts_opp !== null) : ?>
+                                    <?= h($game->pts_mur) ?>-<?= h($game->pts_opp) ?>
                                 <?php endif; ?>
                             </td>
                             <td>

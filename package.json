@@ -5,16 +5,20 @@
     "devDependencies": {
         "axe-core": "^4.10.3",
         "canvas": "^2.11.2",
+        "cross-env": "^10.1.0",
         "eslint": "^9.39.0",
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^29.7.0",
         "jsdom": "^24.0.0",
+        "babel-jest": "^29.7.0",
+        "@babel/core": "^7.22.9",
+        "@babel/preset-env": "^7.22.9",
         "prettier": "^3.5.1",
         "stylelint": "^16.26.1",
         "stylelint-config-standard": "^37.0.0"
     },
     "scripts": {
-        "test:js": "jest --env=jsdom --colors",
+        "test:js": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
         "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",
         "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
@@ -23,10 +27,19 @@
         "format:js": "npx prettier --write webroot/js",
         "format:js:check": "npx prettier --check webroot/js"
     },
+    "babel": {
+        "presets": [
+            "@babel/preset-env"
+        ]
+    },
     "jest": {
         "testEnvironment": "jsdom",
+        "transform": {
+            "^(?!.*webroot\\/js\\/tests).*\\.mjs$": "babel-jest"
+        },
         "testMatch": [
-            "**/webroot/js/tests/**/*.test.js"
+            "**/webroot/js/tests/**/*.test.js",
+            "**/webroot/js/tests/**/*.test.mjs"
         ],
         "collectCoverage": true,
         "collectCoverageFrom": [

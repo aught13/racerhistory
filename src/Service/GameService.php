@@ -416,6 +416,84 @@ class GameService
     }
 
     /**
+     * Return a display result flag for a game: 'W', 'L', or 'T' when determinable.
+     * Prefers explicit score totals, falls back to stored flags (`w`,`l`,`wl`).
+     *
+     * @param \App\Model\Entity\Game $game Game entity
+     * @return string|null
+     */
+    public function getResultFlag(\App\Model\Entity\Game $game): ?string
+    {
+        if ($game->pts_mur !== null && $game->pts_opp !== null) {
+            if ($game->pts_mur > $game->pts_opp) {
+                return 'W';
+            }
+            if ($game->pts_mur < $game->pts_opp) {
+                return 'L';
+            }
+            return 'T';
+        }
+
+        if (!empty($game->w) && ($game->w === 'W' || $game->w === 1)) {
+            return 'W';
+        }
+        if (!empty($game->l) && ($game->l === 'L' || $game->l === 1)) {
+            return 'L';
+        }
+        if (!empty($game->wl)) {
+            return (string)$game->wl;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get a human-friendly place name for a game (falls back to place_name/place_city).
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return string|null
+     */
+    public function getPlaceName(\App\Model\Entity\Game $game): ?string
+    {
+        if (empty($game->place)) {
+            return null;
+        }
+
+        // Backwards-compatible virtual field place_city maps to place_name
+        return $game->place->place_city ?? $game->place->place_name ?? null;
+    }
+
+    /**
+     * Get the place state for a game.
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return string|null
+     */
+    public function getPlaceState(\App\Model\Entity\Game $game): ?string
+    {
+        if (empty($game->place)) {
+            return null;
+        }
+
+        return $game->place->place_state ?? null;
+    }
+
+    /**
+     * Get the site name for a game if available.
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return string|null
+     */
+    public function getSiteName(\App\Model\Entity\Game $game): ?string
+    {
+        if (empty($game->site)) {
+            return null;
+        }
+
+        return $game->site->site_name ?? null;
+    }
+
+    /**
      * Save game EAV data from request data
      *
      * @param int $gameId Game ID

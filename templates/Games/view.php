@@ -28,22 +28,22 @@ $this->assign('title', 'Game Details');
                     <div class="row">
                         <div class="col-md-6 text-center">
                             <h3><?= h($game->team_season->team->team_name ?? 'Team') ?></h3>
-                            <?php if ($game->mur_rk) : ?>
+                            <?php if (!empty($game->mur_rk)) : ?>
                                 <p class="text-muted">#<?= h($game->mur_rk) ?></p>
                             <?php endif; ?>
-                            <h1 class="display-3"><?= h($game->mur_pts ?? '-') ?></h1>
-                            <?php if (!empty($game->result)) : ?>
-                                <span class="badge bg-<?= $game->result === 'W' ? 'success' : ($game->result === 'L' ? 'danger' : 'secondary') ?> fs-5">
-                                    <?= h($game->result) ?>
+                            <h1 class="display-3"><?= h($game->pts_mur ?? '-') ?></h1>
+                            <?php if (!empty($game->result_flag)) : ?>
+                                <span class="badge bg-<?= $game->result_flag === 'W' ? 'success' : ($game->result_flag === 'L' ? 'danger' : 'secondary') ?> fs-5">
+                                    <?= h($game->result_flag) ?>
                                 </span>
                             <?php endif; ?>
                         </div>
                         <div class="col-md-6 text-center">
                             <h3><?= h($game->opponent->opponent_name ?? 'Opponent') ?></h3>
-                            <?php if ($game->opp_rk) : ?>
+                            <?php if (!empty($game->opp_rk)) : ?>
                                 <p class="text-muted">#<?= h($game->opp_rk) ?></p>
                             <?php endif; ?>
-                            <h1 class="display-3"><?= h($game->opp_pts ?? '-') ?></h1>
+                            <h1 class="display-3"><?= h($game->pts_opp ?? '-') ?></h1>
                         </div>
                     </div>
                     <hr>
@@ -52,8 +52,11 @@ $this->assign('title', 'Game Details');
                             <strong><?= h($game->game_date?->format('l, F j, Y')) ?></strong>
                         </p>
                         <p class="mb-1">
-                            <?= h($game->place->city ?? '') ?><?php if (!empty($game->place->state)) : ?>, <?= h($game->place->state) ?><?php endif; ?>
+                            <?= h($game->place_name ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
                         </p>
+                        <?php if (!empty($game->site_name)) : ?>
+                            <p class="mb-1 text-muted small"><?= h($game->site_name) ?></p>
+                        <?php endif; ?>
                         <?php if (!empty($game->game_type->type_name)) : ?>
                             <p class="mb-0">
                                 <span class="badge bg-info"><?= h($game->game_type->type_name) ?></span>

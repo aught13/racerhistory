@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\BasketballStatsService;
+use App\Service\GameService;
 use App\Service\ImageProcessor;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
@@ -59,6 +60,25 @@ class GamesController extends AppController
             ->all()
             ->toArray();
 
+        // Enrich games with computed display fields
+        $gameService = new GameService();
+        foreach ($games as $g) {
+            try {
+                $g->set('result_flag', $gameService->getResultFlag($g));
+                $g->set('place_name', $gameService->getPlaceName($g));
+                $g->set('place_state', $gameService->getPlaceState($g));
+                $g->set('site_name', $gameService->getSiteName($g));
+                $prefix = '@';
+                if (!empty($g->hrn) && (int)$g->hrn === 1) {
+                    $prefix = 'Vs';
+                } elseif (!empty($g->hrn) && (int)$g->hrn === 3) {
+                    $prefix = 'vs';
+                }
+                $g->set('opponent_prefix', $prefix);
+            } catch (\Throwable $e) {
+            }
+        }
+
         $this->set(compact('games'));
     }
 
@@ -77,6 +97,23 @@ class GamesController extends AppController
 
         if (!$game) {
             throw new NotFoundException('Game not found');
+        }
+
+        // Enrich single game with computed display fields
+        try {
+            $gameService = new GameService();
+            $game->set('result_flag', $gameService->getResultFlag($game));
+            $game->set('place_name', $gameService->getPlaceName($game));
+            $game->set('place_state', $gameService->getPlaceState($game));
+            $game->set('site_name', $gameService->getSiteName($game));
+            $prefix = '@';
+            if (!empty($game->hrn) && (int)$game->hrn === 1) {
+                $prefix = 'Vs';
+            } elseif (!empty($game->hrn) && (int)$game->hrn === 3) {
+                $prefix = 'vs';
+            }
+            $game->set('opponent_prefix', $prefix);
+        } catch (\Throwable $e) {
         }
 
         // Try to get box score data

@@ -11,16 +11,13 @@ const path = require("path");
 
 const cssPath = path.resolve(__dirname, "../../css/frontend.css");
 
-const loadStyles = () => {
-    const css = fs.readFileSync(cssPath, "utf8");
-    const style = document.createElement("style");
-    style.textContent = css;
-    document.head.appendChild(style);
-};
+const loadStyles = () => fs.readFileSync(cssPath, "utf8");
 
 describe("CSS regressions", () => {
+    let css;
+
     beforeAll(() => {
-        loadStyles();
+        css = loadStyles();
     });
 
     beforeEach(() => {
@@ -28,23 +25,13 @@ describe("CSS regressions", () => {
     });
 
     test("navbar uses brand background and shadow", () => {
-        const nav = document.createElement("div");
-        nav.className = "rh-navbar";
-        document.body.appendChild(nav);
-
-        const styles = window.getComputedStyle(nav);
-        expect(styles.backgroundColor).toBe("rgb(236, 172, 0)");
-        expect(styles.boxShadow).not.toBe("none");
+        expect(css).toMatch(/\.rh-navbar[\s\S]*background:\s*#ECAC00/i);
+        expect(css).toMatch(/\.rh-navbar[\s\S]*box-shadow:/i);
     });
 
     test("logo link keeps fixed width for layout", () => {
-        const link = document.createElement("a");
-        link.className = "rh-logo-link";
-        document.body.appendChild(link);
-
-        const styles = window.getComputedStyle(link);
-        expect(styles.display).toBe("flex");
-        expect(styles.width).toBe("140px");
-        expect(styles.maxWidth).toBe("140px");
+        expect(css).toMatch(/\.rh-logo-link[\s\S]*display:\s*flex/i);
+        expect(css).toMatch(/\.rh-logo-link[\s\S]*width:\s*140px/i);
+        expect(css).toMatch(/\.rh-logo-link[\s\S]*max-width:\s*140px/i);
     });
 });

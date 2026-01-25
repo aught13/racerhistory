@@ -59,7 +59,7 @@ class SeasonsControllerTest extends TestCase
     {
         $this->get('/seasons/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('Season');
+        $this->assertResponseContains('Game Log');
     }
 
     public function testViewWithInvalidId(): void
@@ -80,14 +80,23 @@ class SeasonsControllerTest extends TestCase
         $images = $this->viewVariable('images');
         $this->assertIsArray($images);
 
-        $blogPosts = $this->viewVariable('blogPosts');
-        $this->assertIsArray($blogPosts);
+        $previewPosts = $this->viewVariable('previewPosts');
+        $this->assertIsArray($previewPosts);
+
+        $reviewPosts = $this->viewVariable('reviewPosts');
+        $this->assertIsArray($reviewPosts);
+
+        $otherPosts = $this->viewVariable('otherPosts');
+        $this->assertIsArray($otherPosts);
 
         $games = $this->viewVariable('games');
         $this->assertIsArray($games);
 
         $roster = $this->viewVariable('roster');
         $this->assertIsArray($roster);
+
+        $recordSummary = $this->viewVariable('recordSummary');
+        $this->assertIsArray($recordSummary);
     }
 
     public function testAuthorizationSkipped(): void
