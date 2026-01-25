@@ -15,6 +15,14 @@ class GameTypesControllerTest extends TestCase
     protected array $fixtures = [
         'app.Users',
         'app.GameTypes',
+        'app.Games',
+        'app.TeamSeasons',
+        'app.Teams',
+        'app.Seasons',
+        'app.Sports',
+        'app.Opponents',
+        'app.Places',
+        'app.Sites',
     ];
 
     public function testIndex(): void
@@ -30,7 +38,7 @@ class GameTypesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/game-types/add', ['game_type_name' => 'MTE', 'post' => 0, 'conf' => 0, 'ind' => 'MTE']);
+        $this->post('/admin/game-types/add', ['game_type_name' => 'MTE', 'post' => 0, 'conf' => 0, 'abr' => 'MTE']);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']);
     }
 
@@ -47,7 +55,7 @@ class GameTypesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/game-types/edit/1', ['game_type_name' => 'Updated Type', 'post' => 1, 'conf' => 1, 'ind' => 'UPD']);
+        $this->post('/admin/game-types/edit/1', ['game_type_name' => 'Updated Type', 'post' => 1, 'conf' => 1, 'abr' => 'UPD']);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']);
     }
 
@@ -64,8 +72,19 @@ class GameTypesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->delete('/admin/game-types/delete/1');
-        // May succeed or fail depending on associations
-        $this->assertTrue($this->_response->getStatusCode() >= 200);
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']);
+        $table = $this->getTableLocator()->get('GameTypes');
+        $this->assertNotNull($table->get(1));
+    }
+
+    public function testDeleteAllowedWhenNoGames(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->delete('/admin/game-types/delete/2');
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']);
+        $table = $this->getTableLocator()->get('GameTypes');
+        $this->assertSame(0, $table->find()->where(['id' => 2])->count());
     }
 
     public function testDeleteNonExistent(): void
@@ -90,6 +109,21 @@ class GameTypesControllerTest extends TestCase
         // Missing required game_type_name
         $this->post('/admin/game-types/add', ['post' => 0, 'conf' => 0]);
         $this->assertTrue($this->_response->getStatusCode() >= 200);
+    }
+
+    public function testAddRequiresAbrWhenPostOrConfSet(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/game-types/add', [
+            'game_type_name' => 'Postseason',
+            'post' => 1,
+            'conf' => 0,
+            'abr' => '',
+        ]);
+        $this->assertResponseOk();
     }
 
     public function testUnauthenticatedAccess(): void

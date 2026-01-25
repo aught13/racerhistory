@@ -378,7 +378,7 @@ class GameService
                 'game_type_name' => $data['new_game_type']['game_type_name'] ?? null,
                 'post' => $data['new_game_type']['post'] ?? 0,
                 'conf' => $data['new_game_type']['conf'] ?? 0,
-                'ind' => $data['new_game_type']['ind'] ?? null,
+                'abr' => $data['new_game_type']['abr'] ?? null,
             ]);
             if ($gameTypes->save($gt)) {
                 $data['game_type_id'] = $gt->get('id');
@@ -431,6 +431,7 @@ class GameService
             if ($game->pts_mur < $game->pts_opp) {
                 return 'L';
             }
+
             return 'T';
         }
 

@@ -19,14 +19,14 @@ class GameTypesFixture extends TestFixture
                 'game_type_name' => 'Conference',
                 'post' => 0,
                 'conf' => 1,
-                'ind' => null,
+                'abr' => null,
             ],
             [
                 'id' => 2,
                 'game_type_name' => 'NCAA Tournament',
                 'post' => 1,
                 'conf' => 0,
-                'ind' => 'NCAA',
+                'abr' => 'NCAA',
             ],
         ];
 

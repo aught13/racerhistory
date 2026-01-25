@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS game_types (
   game_type_name VARCHAR(100) NOT NULL,
   post BOOLEAN NOT NULL DEFAULT 0,
   conf BOOLEAN NOT NULL DEFAULT 0,
-  ind VARCHAR(10) NULL
+  abr VARCHAR(6) NULL
 );
 
 -- Opponents table
