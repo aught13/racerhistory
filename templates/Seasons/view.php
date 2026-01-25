@@ -1,234 +1,308 @@
 <?php
-declare(strict_types=1);
 /**
  * @var \App\Model\Entity\TeamSeason $teamSeason
  * @var array<int,\App\Model\Entity\Image> $images
- * @var array<int,\App\Model\Entity\BlogPost> $blogPosts
  * @var array<int,\App\Model\Entity\Game> $games
  * @var array<int,\App\Model\Entity\TeamSeasonRosters> $roster
+ * @var array<string,int|float|null> $recordSummary
+ * @var array{playerStats?:\Cake\Collection\CollectionInterface|null,teamStats?:object|null,opponentStats?:object|null}|null $seasonStats
+ * @var array<int,\App\Model\Entity\BlogPost> $previewPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $reviewPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $otherPosts
  */
-$this->assign('title', ($teamSeason->season->start ?? '') . '-' . ($teamSeason->season->end ?? '') . ' Season');
-?>
-<div class="container py-4">
-    <!-- Season Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'index']) ?>">Seasons</a>
-                    </li>
-                    <li class="breadcrumb-item active" aria-current="page">
-                        <?= h($teamSeason->season->start ?? '') ?>-<?= h($teamSeason->season->end ?? '') ?>
-                    </li>
-                </ol>
-            </nav>
-            <h1 class="display-5 mb-3">
-                <?= h($teamSeason->team->team_name ?? 'Team') ?>
-                <small class="text-muted"><?= h($teamSeason->season->start ?? '') ?>-<?= h($teamSeason->season->end ?? '') ?></small>
-            </h1>
-            <?php if (!empty($teamSeason->league)) : ?>
-                <p class="lead">
-                    <?= h($teamSeason->league) ?>
-                    <?php if (!empty($teamSeason->league_finish)) : ?>
-                        | <?= h($teamSeason->league_finish) ?> finish
+
+$seasonStart = $teamSeason->season->start ?? '';
+$seasonEnd = $teamSeason->season->end ?? '';
+$seasonLabel = ($seasonStart !== '' && $seasonEnd !== '')
+    ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
+    : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
+$teamName = $teamSeason->team->team_name ?? 'Team';
+$sportName = $teamSeason->team->sport->sport_name ?? 'Sport';
+$genderDisplay = match ($teamSeason->team->gender ?? '') {
+    'M' => "Men's",
+    'F' => "Women's",
+    'C' => 'Co-ed',
+    default => (string)($teamSeason->team->gender ?? ''),
+};
+$overallWins = $recordSummary['overall_wins'] ?? null;
+$overallLosses = $recordSummary['overall_losses'] ?? null;
+$overallPct = $recordSummary['overall_pct'] ?? null;
+$confWins = $recordSummary['conf_wins'] ?? null;
+$confLosses = $recordSummary['conf_losses'] ?? null;
+$confPct = $recordSummary['conf_pct'] ?? null;
+$overallRecord = ($overallWins !== null || $overallLosses !== null)
+    ? sprintf('%s-%s', $overallWins ?? '—', $overallLosses ?? '—')
+    : null;
+$confRecord = ($confWins !== null || $confLosses !== null)
+    ? sprintf('%s-%s', $confWins ?? '—', $confLosses ?? '—')
+    : null;
+$heroImageId = $teamSeason->team_season_image ?: null;
+
+$this->assign('title', $teamName . ' ' . $seasonLabel . ' Season');
+
+$this->start('css'); ?>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<?php $this->end(); ?>
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
+
+<?php $this->start('script'); ?>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>
+<?= $this->Html->script('season-view-init-loader', ['type' => 'module']) ?>
+<?php $this->end(); ?>
+
+<div class="container py-4 season-view" data-season-view>
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'index']) ?>">Seasons</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <?= h($teamName) ?> <?= h($seasonLabel) ?>
+            </li>
+        </ol>
+    </nav>
+
+    <?php if (!empty($heroImageId)) : ?>
+        <div class="season-hero-media mb-4">
+            <img
+                src="/images/serve/<?= h($heroImageId) ?>?w=1400&h=720&fit=cover"
+                alt="<?= h($teamName) ?> <?= h($seasonLabel) ?> Season"
+                class="img-fluid rounded season-hero-image"
+                loading="lazy">
+        </div>
+    <?php endif; ?>
+
+    <div class="season-hero card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
+                <div>
+                    <h1 class="display-6 mb-2">
+                        <?= h($teamName) ?>
+                        <small class="text-muted"><?= h($seasonLabel) ?></small>
+                    </h1>
+                    <p class="lead mb-2 text-muted"><?= h($sportName) ?> · <?= h($genderDisplay) ?></p>
+                    <?php if (!empty($teamSeason->league)) : ?>
+                        <p class="season-hero-meta mb-0">
+                            <?= h($teamSeason->league) ?>
+                            <?php if (!empty($teamSeason->league_finish)) : ?>
+                                · <?= h($teamSeason->league_finish) ?> finish
+                            <?php endif; ?>
+                        </p>
                     <?php endif; ?>
-                </p>
-            <?php endif; ?>
-            <?php if (!empty($teamSeason->record_display)) : ?>
-                <p class="fs-4">
-                    <span class="badge bg-primary"><?= h($teamSeason->record_display) ?> Record</span>
-                </p>
-            <?php endif; ?>
+                </div>
+                <div class="season-hero-stats d-flex flex-wrap gap-3">
+                    <div class="season-stat-card">
+                        <span class="season-stat-label">Overall</span>
+                        <strong class="season-stat-value"><?= h($overallRecord ?? '—') ?></strong>
+                        <span class="season-stat-subtext"><?= $overallPct !== null ? number_format((float)$overallPct, 3, '.', '') : '—' ?></span>
+                    </div>
+                    <div class="season-stat-card">
+                        <span class="season-stat-label">Conference</span>
+                        <strong class="season-stat-value"><?= h($confRecord ?? '—') ?></strong>
+                        <span class="season-stat-subtext"><?= $confPct !== null ? number_format((float)$confPct, 3, '.', '') : '—' ?></span>
+                    </div>
+                    <div class="season-stat-card">
+                        <span class="season-stat-label">Postseason</span>
+                        <strong class="season-stat-value"><?= h($teamSeason->last_post_game ?: '—') ?></strong>
+                    </div>
+                    <?php if (!empty($teamSeason->team_season_notes)) : ?>
+                        <div class="season-notes mt-4">
+                            <h3 class="h6 text-uppercase text-muted">Season Notes</h3>
+                            <p class="mb-0"><?= h($teamSeason->team_season_notes) ?></p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
-    <ul class="nav nav-tabs mb-4" id="seasonTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="games-tab" data-bs-toggle="tab" data-bs-target="#games"
-                    type="button" role="tab" aria-controls="games" aria-selected="true">
-                <i class="bi bi-calendar-event me-1"></i>Games
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="roster-tab" data-bs-toggle="tab" data-bs-target="#roster"
-                    type="button" role="tab" aria-controls="roster" aria-selected="false">
-                <i class="bi bi-people me-1"></i>Roster
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images"
-                    type="button" role="tab" aria-controls="images" aria-selected="false">
-                <i class="bi bi-image me-1"></i>Images
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="blog-tab" data-bs-toggle="tab" data-bs-target="#blog"
-                    type="button" role="tab" aria-controls="blog" aria-selected="false">
-                <i class="bi bi-newspaper me-1"></i>Stories
-            </button>
-        </li>
-    </ul>
-
-    <!-- Tabs Content -->
-    <div class="tab-content" id="seasonTabsContent">
-        <!-- Games Tab -->
-        <div class="tab-pane fade show active" id="games" role="tabpanel" aria-labelledby="games-tab">
-            <?php if (!empty($games)) : ?>
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Date</th>
-                                <th>Opponent</th>
-                                <th>Location</th>
-                                <th>Result</th>
-                                <th>Score</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($games as $game) : ?>
-                                <tr>
-                                    <td><?= h($game->game_date?->format('M j, Y')) ?></td>
-                                    <td>
-                                        <?php if ($game->hrn === 'H') : ?>
-                                            vs
-                                        <?php else : ?>
-                                            @
-                                        <?php endif; ?>
-                                        <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
-                                    </td>
-                                    <td>
-                                        <?= h($game->place->city ?? '') ?><?php if (!empty($game->place->state)) : ?>, <?= h($game->place->state) ?><?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if (!empty($game->result)) : ?>
-                                            <span class="badge bg-<?= $game->result === 'W' ? 'success' : ($game->result === 'L' ? 'danger' : 'secondary') ?>">
-                                                <?= h($game->result) ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($game->mur_pts !== null && $game->opp_pts !== null) : ?>
-                                            <?= h($game->mur_pts) ?>-<?= h($game->opp_pts) ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]) ?>"
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php else : ?>
-                <div class="alert alert-info">No games recorded for this season.</div>
+    <div class="row g-4">
+        <div class="col-12">
+            <?php if (!empty($previewPosts)) : ?>
+                <section class="card shadow-sm season-section">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Season Preview</h2>
+                    </div>
+                    <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $previewPosts]) ?>
+                    </div>
+                </section>
             <?php endif; ?>
-        </div>
 
-        <!-- Roster Tab -->
-        <div class="tab-pane fade" id="roster" role="tabpanel" aria-labelledby="roster-tab">
-            <?php if (!empty($roster)) : ?>
-                <div class="row g-3">
-                    <?php foreach ($roster as $rosterEntry) : ?>
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        <?php if (!empty($rosterEntry->jersey_number)) : ?>
-                                            #<?= h($rosterEntry->jersey_number) ?>
-                                        <?php endif; ?>
-                                        <?= h($rosterEntry->person->first_name ?? '') ?> <?= h($rosterEntry->person->last_name ?? '') ?>
-                                    </h5>
-                                    <p class="card-text">
-                                        <?php if (!empty($rosterEntry->roster_position)) : ?>
-                                            <span class="badge bg-secondary"><?= h($rosterEntry->roster_position) ?></span>
-                                        <?php endif; ?>
-                                        <?php if (!empty($rosterEntry->class_year)) : ?>
-                                            <span class="badge bg-info"><?= h($rosterEntry->class_year) ?></span>
-                                        <?php endif; ?>
-                                    </p>
-                                    <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $rosterEntry->person->id ?? 0]) ?>"
-                                       class="btn btn-sm btn-outline-primary">
-                                        View Profile
-                                    </a>
-                                </div>
-                            </div>
+            <?php if (!empty($reviewPosts)) : ?>
+                <section class="card shadow-sm season-section">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Season Recap</h2>
+                    </div>
+                    <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $reviewPosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <section class="card shadow-sm season-section" id="season-games">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">Game Log</h2>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($games)) : ?>
+                        <div class="table-responsive">
+                                        <table id="season-games-table" class="table table-striped table-hover align-middle js-datatable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Opponent</th>
+                                        <th>Location</th>
+                                        <th>Result</th>
+                                        <th>Score</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($games as $game) : ?>
+                                        <tr>
+                                            <td><?= h($game->game_date?->format('M j, Y')) ?></td>
+                                            <td>
+                                                <?php
+                                                $locationPrefix = '@';
+                                                if (!empty($game->hrn) && (int)$game->hrn === 1) {
+                                                    $locationPrefix = 'Vs';
+                                                } elseif (!empty($game->hrn) && (int)$game->hrn === 3) {
+                                                    $locationPrefix = 'vs';
+                                                }
+                                                ?>
+                                                <?= h($locationPrefix) ?> <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
+                                            </td>
+                                            <td>
+                                                <?= h($game->place_name ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
+                                                <?php if (!empty($game->site_name)) : ?>
+                                                    <div class="text-muted small"><?= h($game->site_name) ?></div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php $resultFlag = $game->result_flag ?? null; ?>
+                                                <?php if (!empty($resultFlag)) : ?>
+                                                    <span class="badge bg-<?= $resultFlag === 'W' ? 'success' : ($resultFlag === 'L' ? 'danger' : 'secondary') ?>">
+                                                        <?= h($resultFlag) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php $gameUrl = $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]); ?>
+                                                <?php if ($game->pts_mur !== null && $game->pts_opp !== null) : ?>
+                                                    <a href="<?= $gameUrl ?>"><?= h($game->pts_mur) ?>-<?= h($game->pts_opp) ?></a>
+                                                <?php else : ?>
+                                                    <a href="<?= $gameUrl ?>">View</a>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= h($game->game_type->label ?? ($game->game_type_id ?? '')) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-                    <?php endforeach; ?>
+                    <?php else : ?>
+                        <div class="alert alert-info mb-0">No games recorded for this season.</div>
+                    <?php endif; ?>
                 </div>
-            <?php else : ?>
-                <div class="alert alert-info">No roster information available.</div>
-            <?php endif; ?>
-        </div>
+            </section>
 
-        <!-- Images Tab -->
-        <div class="tab-pane fade" id="images" role="tabpanel" aria-labelledby="images-tab">
-            <?php if (!empty($images)) : ?>
-                <div class="row g-3">
-                    <?php foreach ($images as $image) : ?>
-                        <div class="col-6 col-md-4 col-lg-3">
-                            <div class="card h-100">
-                                <img src="/images/serve/<?= h($image->id) ?>?w=300&h=300&fit=cover"
-                                     class="card-img-top"
-                                     alt="<?= h($image->filename) ?>"
-                                     loading="lazy">
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+            <section class="card shadow-sm season-section" id="season-stats">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Season Statistics</h2>
                 </div>
-            <?php else : ?>
-                <div class="alert alert-info">No images available for this season.</div>
-            <?php endif; ?>
-        </div>
+                <div class="card-body">
+                    <?php if (!empty($seasonStats) && ($seasonStats['playerStats'] || $seasonStats['teamStats'] || $seasonStats['opponentStats'])) : ?>
+                        <?= $this->element('Seasons/basketball_season_stats', [
+                            'teamSeason' => $teamSeason,
+                            'playerStats' => $seasonStats['playerStats'] ?? null,
+                            'teamStats' => $seasonStats['teamStats'] ?? null,
+                            'opponentStats' => $seasonStats['opponentStats'] ?? null,
+                        ]) ?>
+                    <?php else : ?>
+                        <p class="text-muted mb-0">Season stats are not available yet.</p>
+                    <?php endif; ?>
+                </div>
+            </section>
 
-        <!-- Blog/Stories Tab -->
-        <div class="tab-pane fade" id="blog" role="tabpanel" aria-labelledby="blog-tab">
-            <?php if (!empty($blogPosts)) : ?>
-                <div class="row g-4">
-                    <?php foreach ($blogPosts as $post) : ?>
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="row g-0">
-                                    <?php if (!empty($post->hero_image_id)) : ?>
-                                        <div class="col-md-4">
-                                            <img src="/images/serve/<?= h($post->hero_image_id) ?>?w=400&h=300&fit=cover"
-                                                 class="img-fluid rounded-start h-100 w-100"
-                                                 style="object-fit: cover;"
-                                                 alt="<?= h($post->title) ?>"
-                                                 loading="lazy">
-                                        </div>
-                                    <?php endif; ?>
-                                    <div class="<?= !empty($post->hero_image_id) ? 'col-md-8' : 'col-12' ?>">
-                                        <div class="card-body">
-                                            <h5 class="card-title">
-                                                <a href="<?= $this->Url->build(['controller' => 'Blog', 'action' => 'view', $post->slug]) ?>"
-                                                   class="text-decoration-none">
-                                                    <?= h($post->title) ?>
+            <section class="card shadow-sm season-section" id="season-roster">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Roster</h2>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($roster)) : ?>
+                        <div class="table-responsive">
+                            <table id="season-roster-table" class="table table-striped table-hover align-middle js-datatable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Player</th>
+                                        <th>Position</th>
+                                        <th>Class</th>
+                                        <th>Profile</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($roster as $entry) : ?>
+                                        <tr>
+                                            <td><?= h($entry->roster_number ?? '') ?></td>
+                                            <td><?= h($entry->person->first_name ?? '') ?> <?= h($entry->person->last_name ?? '') ?></td>
+                                            <td><?= h($entry->roster_position ?? '') ?></td>
+                                            <td><?= h($entry->class_year ?? '') ?></td>
+                                            <td>
+                                                <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $entry->person->id ?? 0]) ?>" class="btn btn-sm btn-outline-primary">
+                                                    View Profile
                                                 </a>
-                                            </h5>
-                                            <?php if (!empty($post->excerpt)) : ?>
-                                                <p class="card-text"><?= h($post->excerpt) ?></p>
-                                            <?php endif; ?>
-                                            <p class="card-text">
-                                                <small class="text-muted">
-                                                    <?= h($post->published_at?->format('F j, Y')) ?>
-                                                </small>
-                                            </p>
-                                        </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else : ?>
+                        <div class="alert alert-info mb-0">No roster information available.</div>
+                    <?php endif; ?>
+                </div>
+            </section>
+
+            <?php if (!empty($images)) : ?>
+            <section class="card shadow-sm season-section" id="season-images">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Season Photos</h2>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($images)) : ?>
+                        <div class="row g-3">
+                            <?php foreach ($images as $image) : ?>
+                                <div class="col-6 col-md-4">
+                                    <div class="season-photo">
+                                        <img src="/images/serve/<?= h($image->id) ?>?w=480&h=360&fit=cover"
+                                             alt="<?= h($image->filename) ?>"
+                                             loading="lazy">
                                     </div>
                                 </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
-                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
-            <?php else : ?>
-                <div class="alert alert-info">No stories available for this season.</div>
+            </section>
+            <?php endif; ?>
+
+            <?php if (!empty($otherPosts)) : ?>
+            <section class="card shadow-sm season-section" id="season-other-posts">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">More Season Stories</h2>
+                </div>
+                <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $otherPosts]) ?>
+                    </div>
+            </section>
             <?php endif; ?>
         </div>
     </div>

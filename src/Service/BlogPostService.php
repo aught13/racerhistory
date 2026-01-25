@@ -70,6 +70,29 @@ class BlogPostService
     }
 
     /**
+     * Get published posts by a tag slug.
+     *
+     * @param string $tagSlug Tag slug
+     * @param int $limit Max number of posts
+     * @return array<int,\App\Model\Entity\BlogPost>
+     */
+    public function getPublishedByTag(string $tagSlug, int $limit = 20): array
+    {
+        $table = $this->posts();
+
+        return $table->find()
+            ->contain(['BlogTags', 'HeroImages'])
+            ->matching('BlogTags', function ($q) use ($tagSlug) {
+                return $q->where(['BlogTags.slug' => $tagSlug]);
+            })
+            ->where(['BlogPosts.is_published' => true])
+            ->orderByDesc('BlogPosts.published_at')
+            ->limit($limit)
+            ->all()
+            ->toArray();
+    }
+
+    /**
      * Get published posts with pagination metadata.
      *
      * @param int $limit Page size

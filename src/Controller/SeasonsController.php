@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\ImageProcessor;
+use App\Service\SeasonViewService;
 use App\Service\TeamSeasonService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
@@ -19,22 +19,36 @@ use Cake\Http\Exception\NotFoundException;
 class SeasonsController extends AppController
 {
     private TeamSeasonService $teamSeasonService;
-    private ImageProcessor $imageProcessor;
+    private SeasonViewService $seasonViewService;
 
+    /**
+     * Initialize controller.
+     */
     public function initialize(): void
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
         $this->teamSeasonService = new TeamSeasonService();
-        $this->imageProcessor = new ImageProcessor();
+        $this->seasonViewService = new SeasonViewService($this->teamSeasonService);
     }
 
+    /**
+     * Skip authorization for public actions.
+     *
+     * @param \Cake\Event\EventInterface $event Event instance.
+     * @return void
+     */
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
     }
 
+    /**
+     * List seasons.
+     *
+     * @return void
+     */
     public function index(): void
     {
         $table = $this->fetchTable('TeamSeasons');
@@ -74,10 +88,18 @@ class SeasonsController extends AppController
         $rawStats = $query
             ->select([
                 'team_season_id' => 'Games.team_season_id',
-                'overall_wins' => $query->newExpr("SUM(CASE WHEN Games.w IN ('1','W') THEN 1 ELSE 0 END)"),
-                'overall_losses' => $query->newExpr("SUM(CASE WHEN Games.l IN ('1','L') THEN 1 ELSE 0 END)"),
-                'conf_wins' => $query->newExpr("SUM(CASE WHEN GameTypes.conf = 1 AND Games.w IN ('1','W') THEN 1 ELSE 0 END)"),
-                'conf_losses' => $query->newExpr("SUM(CASE WHEN GameTypes.conf = 1 AND Games.l IN ('1','L') THEN 1 ELSE 0 END)"),
+                'overall_wins' => $query->newExpr(
+                    "SUM(CASE WHEN Games.w IN ('1','W') THEN 1 ELSE 0 END)",
+                ),
+                'overall_losses' => $query->newExpr(
+                    "SUM(CASE WHEN Games.l IN ('1','L') THEN 1 ELSE 0 END)",
+                ),
+                'conf_wins' => $query->newExpr(
+                    "SUM(CASE WHEN GameTypes.conf = 1 AND Games.w IN ('1','W') THEN 1 ELSE 0 END)",
+                ),
+                'conf_losses' => $query->newExpr(
+                    "SUM(CASE WHEN GameTypes.conf = 1 AND Games.l IN ('1','L') THEN 1 ELSE 0 END)",
+                ),
             ])
             ->where(['Games.team_season_id IN' => $teamSeasonIds])
             ->leftJoinWith('GameTypes')
@@ -92,69 +114,37 @@ class SeasonsController extends AppController
             $ol = (int)$row['overall_losses'];
             $cw = (int)$row['conf_wins'];
             $cl = (int)$row['conf_losses'];
+            $overallTotal = $ow + $ol;
+            $confTotal = $cw + $cl;
 
             $stats[$id] = [
                 'overall_wins' => $ow,
                 'overall_losses' => $ol,
-                'overall_pct' => ($ow + $ol) > 0 ? round($ow / ($ow + $ol), 3) : null,
+                'overall_pct' => $overallTotal > 0 ? round($ow / $overallTotal, 3) : null,
                 'conf_wins' => $cw,
                 'conf_losses' => $cl,
-                'conf_pct' => ($cw + $cl) > 0 ? round($cw / ($cw + $cl), 3) : null,
+                'conf_pct' => $confTotal > 0 ? round($cw / $confTotal, 3) : null,
             ];
         }
 
         return $stats;
     }
 
+    /**
+     * View a season.
+     *
+     * @param int $id TeamSeason ID.
+     * @return void
+     */
     public function view(int $id): void
     {
-        $teamSeason = $this->teamSeasonService->getTeamSeasonById($id);
+        $viewData = $this->seasonViewService->getViewData($id);
+        $teamSeason = $viewData['teamSeason'] ?? null;
         if (!$teamSeason) {
             throw new NotFoundException('Season not found');
         }
 
-        $images = $this->imageProcessor->getImagesForTeamSeason($id, 20);
-        $blogPosts = $this->getBlogPostsByTag("teamseason-{$id}");
-        $games = $this->getGamesForTeamSeason($id);
-        $roster = $this->getRosterForTeamSeason($id);
-
-        $this->set(compact('teamSeason', 'images', 'blogPosts', 'games', 'roster'));
-    }
-
-    private function getBlogPostsByTag(string $tagSlug): array
-    {
-        $table = $this->fetchTable('BlogPosts');
-        return $table->find()
-            ->contain(['BlogTags', 'HeroImages'])
-            ->matching('BlogTags', function ($q) use ($tagSlug) {
-                return $q->where(['BlogTags.slug' => $tagSlug]);
-            })
-            ->where(['BlogPosts.is_published' => true])
-            ->orderByDesc('BlogPosts.published_at')
-            ->limit(10)
-            ->all()
-            ->toArray();
-    }
-
-    private function getGamesForTeamSeason(int $teamSeasonId): array
-    {
-        $table = $this->fetchTable('Games');
-        return $table->find()
-            ->contain(['Opponents', 'Places', 'GameTypes'])
-            ->where(['Games.team_season_id' => $teamSeasonId])
-            ->orderByAsc('Games.game_date')
-            ->all()
-            ->toArray();
-    }
-
-    private function getRosterForTeamSeason(int $teamSeasonId): array
-    {
-        $table = $this->fetchTable('TeamSeasonRosters');
-        return $table->find()
-            ->contain(['Persons'])
-            ->where(['TeamSeasonRosters.team_season_id' => $teamSeasonId])
-            ->orderByAsc('TeamSeasonRosters.roster_number')
-            ->all()
-            ->toArray();
+        unset($viewData['teamSeason']);
+        $this->set(['teamSeason' => $teamSeason] + $viewData);
     }
 }

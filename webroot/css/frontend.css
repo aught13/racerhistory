@@ -109,6 +109,119 @@ a:hover {
 }
 
 .rh-nav-logo {
+.season-view .season-hero {
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+}
+
+.season-hero-media {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+}
+
+.season-hero-image {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+}
+
+.season-hero-meta {
+  color: var(--rh-muted);
+  font-weight: 500;
+}
+
+.season-hero-stats {
+  align-items: stretch;
+}
+
+.season-stat-card {
+  background: var(--rh-content-bg);
+  border: 1px solid var(--rh-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.season-stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rh-muted);
+}
+
+.season-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.season-stat-subtext {
+  font-size: 0.85rem;
+  color: var(--rh-muted);
+}
+
+.season-section {
+  border: 1px solid var(--rh-border);
+}
+
+.season-info-block {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.75rem;
+}
+
+.season-info-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--rh-muted);
+}
+
+.season-info-value {
+  font-weight: 600;
+}
+
+.season-notes {
+  background: var(--rh-content-bg);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.season-photo {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+}
+
+.season-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.season-image-placeholder {
+  border: 1px dashed var(--rh-border);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--rh-muted);
+  background: var(--rh-content-bg);
+}
+
+.season-view .dataTables_filter input {
+  border-radius: 999px;
+  border: 1px solid var(--rh-border);
+  padding: 0.35rem 0.75rem;
+  background: var(--rh-surface);
+  color: var(--rh-text);
+}
   transition: opacity 0.3s ease, transform 0.3s ease;
   opacity: 1;
   transform: scale(1);
