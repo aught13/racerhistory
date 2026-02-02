@@ -149,6 +149,7 @@ return function (RouteBuilder $routes): void {
 
         // Public frontend sections (Men's Basketball)
         $builder->connect('/seasons', ['controller' => 'Seasons', 'action' => 'index']);
+        $builder->connect('/seasons/splits', ['controller' => 'Seasons', 'action' => 'splits']);
         $builder->connect('/seasons/{id}', ['controller' => 'Seasons', 'action' => 'view'])
             ->setPass(['id'])
             ->setPatterns(['id' => '\\d+']);

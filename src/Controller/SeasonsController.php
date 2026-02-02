@@ -51,6 +51,44 @@ class SeasonsController extends AppController
      */
     public function index(): void
     {
+        $teamFilter = (string)$this->request->getQuery('team', 'all');
+        $this->set($this->buildIndexData() + [
+            'viewMode' => 'standard',
+            'teamFilter' => $teamFilter,
+        ]);
+
+        if ($this->request->getHeaderLine('Turbo-Frame') === 'seasons-table-frame') {
+            $this->viewBuilder()
+                ->setLayout(null)
+                ->setTemplate('frame');
+        }
+    }
+
+    /**
+     * Splits view.
+     *
+     * @return void
+     */
+    public function splits(): void
+    {
+        $teamFilter = (string)$this->request->getQuery('team', 'all');
+        $this->set($this->buildIndexData() + [
+            'viewMode' => 'splits',
+            'teamFilter' => $teamFilter,
+        ]);
+
+        if ($this->request->getHeaderLine('Turbo-Frame') === 'seasons-table-frame') {
+            $this->viewBuilder()
+                ->setLayout(null)
+                ->setTemplate('frame');
+        }
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function buildIndexData(): array
+    {
         $table = $this->fetchTable('TeamSeasons');
         $teamSeasons = $table->find()
             ->contain(['Teams' => ['Sports'], 'Seasons'])
@@ -66,7 +104,12 @@ class SeasonsController extends AppController
 
         $seasonStats = $this->calculateSeasonStats($teamSeasons);
 
-        $this->set(compact('teamSeasons', 'seasonStats'));
+        $recordSummaries = [];
+        foreach ($teamSeasons as $teamSeason) {
+            $recordSummaries[(int)$teamSeason->id] = $this->teamSeasonService->getRecordSummary((int)$teamSeason->id);
+        }
+
+        return compact('teamSeasons', 'seasonStats', 'recordSummaries');
     }
 
     /**

@@ -67,14 +67,51 @@ class TeamSeasonServiceTest extends TestCase
     public function testGetRecordSummary(): void
     {
         $summary = $this->service->getRecordSummary(1);
-        $this->assertSame(2, $summary['overall_wins']);
-        $this->assertSame(2, $summary['overall_losses']);
-        $this->assertSame(0, $summary['overall_ties']);
-        $this->assertEqualsWithDelta(0.5, $summary['overall_pct'], 0.001);
-        $this->assertSame(2, $summary['conf_wins']);
-        $this->assertSame(2, $summary['conf_losses']);
-        $this->assertSame(0, $summary['conf_ties']);
-        $this->assertEqualsWithDelta(0.5, $summary['conf_pct'], 0.001);
+        $overallTotals = $summary['Overall']['totals'] ?? [];
+        $overallSplits = $summary['Overall']['splits'] ?? [];
+        $confTotals = $summary['Conference']['totals'] ?? [];
+        $confSplits = $summary['Conference']['splits'] ?? [];
+        $confTournTotals = $summary['Conference Tournament']['totals'] ?? [];
+        $confTournSplits = $summary['Conference Tournament']['splits'] ?? [];
+        $postTotals = $summary['Postseason']['totals'] ?? [];
+        $postSplits = $summary['Postseason']['splits'] ?? [];
+
+        $this->assertSame('Overall', $summary['Overall']['label'] ?? null);
+        $this->assertSame('Conference', $summary['Conference']['label'] ?? null);
+        $this->assertSame('Conference Tournament', $summary['Conference Tournament']['label'] ?? null);
+        $this->assertSame('Postseason', $summary['Postseason']['label'] ?? null);
+
+        $this->assertSame(2, $overallTotals['W']);
+        $this->assertSame(1, $overallTotals['L']);
+        $this->assertSame(0, $overallTotals['T']);
+        $this->assertEqualsWithDelta(0.667, $overallTotals['Pct'], 0.001);
+
+        $this->assertSame(2, $confTotals['W']);
+        $this->assertSame(1, $confTotals['L']);
+        $this->assertSame(0, $confTotals['T']);
+        $this->assertEqualsWithDelta(0.667, $confTotals['Pct'], 0.001);
+
+        $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $overallSplits['Home']);
+        $this->assertSame(['W' => 0, 'L' => 1, 'T' => 0, 'Pct' => 0.0], $overallSplits['Road']);
+        $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $overallSplits['Neutral']);
+
+        $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $confSplits['Home']);
+        $this->assertSame(['W' => 0, 'L' => 1, 'T' => 0, 'Pct' => 0.0], $confSplits['Road']);
+        $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $confSplits['Neutral']);
+
+        $this->assertArrayNotHasKey('By Type', $confSplits);
+
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $confTournTotals);
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $confTournSplits['Home']);
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $confTournSplits['Road']);
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $confTournSplits['Neutral']);
+        $this->assertArrayNotHasKey('By Type', $confTournSplits);
+
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $postTotals);
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $postSplits['Home']);
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $postSplits['Road']);
+        $this->assertSame(['W' => 0, 'L' => 0, 'T' => 0, 'Pct' => null], $postSplits['Neutral']);
+        $this->assertArrayNotHasKey('By Type', $postSplits);
     }
 
     public function testGetAllTeamSeasons(): void

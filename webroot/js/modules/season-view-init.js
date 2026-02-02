@@ -9,8 +9,33 @@ const DEFAULT_TABLE_OPTIONS = {
     dom: "ftip",
 };
 
+const HEADER_CHECK_DELAY = 60;
+
+function hasTableHeaders(table) {
+    const headers = table?.querySelectorAll("thead th");
+    return Boolean(headers?.length);
+}
+
+function scheduleTableInit(table) {
+    if (!table || table.dataset.seasonTableInitScheduled === "true") {
+        return null;
+    }
+    table.dataset.seasonTableInitScheduled = "true";
+    window.setTimeout(() => {
+        table.dataset.seasonTableInitScheduled = "false";
+        initTable(table);
+    }, HEADER_CHECK_DELAY);
+    return null;
+}
+
 function initTable(table) {
     const $ = window.$;
+    if (!table) {
+        return null;
+    }
+    if (!hasTableHeaders(table)) {
+        return scheduleTableInit(table);
+    }
     if (!table || !$ || !$.fn || !$.fn.dataTable) {
         return null;
     }

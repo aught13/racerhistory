@@ -36,8 +36,16 @@ describe("Season view init", () => {
         };
         const advancedJson = JSON.stringify(advancedPayload);
         document.body.innerHTML = `
-            <table id="season-games-table"></table>
-            <table id="season-roster-table"></table>
+            <table id="season-games-table">
+                <thead>
+                    <tr><th>Game</th></tr>
+                </thead>
+            </table>
+            <table id="season-roster-table">
+                <thead>
+                    <tr><th>Player</th></tr>
+                </thead>
+            </table>
             <div data-season-stats-tabs>
                 <div class="nav nav-tabs" role="tablist">
                     <button class="nav-link active" type="button" data-season-stats-tab="general" aria-selected="true">General Stats</button>
@@ -45,7 +53,11 @@ describe("Season view init", () => {
                 </div>
                 <div class="tab-content">
                     <div class="tab-pane active" data-season-stats-panel="general">
-                        <table id="season-stats-table"></table>
+                        <table id="season-stats-table">
+                            <thead>
+                                <tr><th>#</th></tr>
+                            </thead>
+                        </table>
                     </div>
                     <div class="tab-pane d-none" data-season-stats-panel="advanced" data-season-advanced-stats='${advancedJson}'>
                         <div data-season-advanced-table-container>
@@ -103,5 +115,31 @@ describe("Season view init", () => {
             "[data-season-advanced-table-container]",
         );
         expect(advancedContainer?.querySelector("table")).toBeTruthy();
+    });
+
+    test("defers stats table initialization until headers exist", () => {
+        jest.useFakeTimers();
+        try {
+            const statsTable = document.querySelector("#season-stats-table");
+            if (!statsTable) {
+                throw new Error("stats table missing in fixture");
+            }
+            statsTable.innerHTML = "<tbody></tbody>";
+
+            initSeasonView();
+            expect((global.__datatableCalls || []).length).toBe(2);
+
+            statsTable.innerHTML = `
+                <thead>
+                    <tr><th>#</th><th>Player</th></tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            jest.runOnlyPendingTimers();
+
+            expect((global.__datatableCalls || []).length).toBe(3);
+        } finally {
+            jest.useRealTimers();
+        }
     });
 });
