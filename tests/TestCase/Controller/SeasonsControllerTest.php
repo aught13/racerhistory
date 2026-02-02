@@ -43,6 +43,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="seasons-table"');
         $this->assertResponseContains('id="seasons-controls"');
         $this->assertResponseContains('id="searchbuilder-panel"');
+        $this->assertResponseContains('id="seasons-table-frame"');
     }
 
     public function testIndexDisplaysTeamSeasons(): void
@@ -53,6 +54,25 @@ class SeasonsControllerTest extends TestCase
         // Check that view variable is set
         $teamSeasons = $this->viewVariable('teamSeasons');
         $this->assertIsArray($teamSeasons);
+        $recordSummaries = $this->viewVariable('recordSummaries');
+        $this->assertIsArray($recordSummaries);
+    }
+
+    public function testIndexPostseasonTypeLabelReplacesPct(): void
+    {
+        $this->get('/seasons');
+        $this->assertResponseOk();
+
+        $html = (string)$this->_response->getBody();
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+        $cell = $xpath->query('//table[@id="seasons-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($cell);
+        $this->assertSame('-', trim((string)$cell->textContent));
     }
 
     public function testView(): void
@@ -107,5 +127,42 @@ class SeasonsControllerTest extends TestCase
 
         $this->get('/seasons/1');
         $this->assertResponseOk();
+    }
+
+    public function testSplits(): void
+    {
+        $this->get('/seasons/splits?team=all');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Season Splits');
+        $this->assertResponseContains('id="season-splits-table"');
+        $this->assertResponseContains('id="seasons-table-frame"');
+    }
+
+    public function testSplitsTurboFrame(): void
+    {
+        $this->configRequest([
+            'headers' => ['Turbo-Frame' => 'seasons-table-frame'],
+        ]);
+        $this->get('/seasons/splits?team=all');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="seasons-table-frame"');
+        $this->assertResponseContains('id="season-splits-table"');
+    }
+
+    public function testSplitsPostseasonTypeShowsDashWhenMissing(): void
+    {
+        $this->get('/seasons/splits?team=all');
+        $this->assertResponseOk();
+
+        $html = (string)$this->_response->getBody();
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+        $cell = $xpath->query('//table[@id="season-splits-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($cell);
+        $this->assertSame('-', trim((string)$cell->textContent));
     }
 }

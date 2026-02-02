@@ -1,5 +1,6 @@
 // Reusable DataTables + SearchBuilder mock helper for Jest tests (jsdom)
 module.exports = function setupDataTablesMock() {
+    global.__datatableCalls = [];
     // minimal jQuery-like wrapper
     global.$ = function (selectorOrEl) {
         let el = null;
@@ -51,15 +52,22 @@ module.exports = function setupDataTablesMock() {
             },
         };
 
-        if (selectorOrEl === "#seasons-table") {
+        if (
+            selectorOrEl === "#seasons-table" ||
+            selectorOrEl === "#season-splits-table"
+        ) {
             wrapper.DataTable = function (opts) {
                 const api = {
                     settings: opts,
                     columns: { adjust: jest.fn() },
                     destroy: jest.fn(),
                 };
+                global.__datatableCalls.push({ el, opts, api });
                 if (opts && typeof opts.initComplete === "function") {
                     opts.initComplete.call(api);
+                }
+                if (opts && typeof opts.drawCallback === "function") {
+                    opts.drawCallback.call(api);
                 }
                 return api;
             };
@@ -93,5 +101,6 @@ module.exports = function setupDataTablesMock() {
 
     return function teardown() {
         delete global.$;
+        delete global.__datatableCalls;
     };
 };
