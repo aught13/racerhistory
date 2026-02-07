@@ -241,7 +241,8 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                         <td><?= h($teamLabel) ?></td>
                                         <td data-order="<?= h($seasonStart) ?>">
                                             <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $teamSeason->id]) ?>"
-                                               class="text-decoration-none">
+                                               class="text-decoration-none"
+                                               data-turbo-frame="_top">
                                                 <?= h($seasonLabel) ?>
                                             </a>
                                         </td>

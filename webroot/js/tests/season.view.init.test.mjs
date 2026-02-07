@@ -149,4 +149,27 @@ describe("Season view init", () => {
             jest.useRealTimers();
         }
     });
+
+    test("scopes initialization to a provided root", () => {
+        document.body.innerHTML = `
+            <div id="season-root">
+                <table id="season-games-table">
+                    <thead>
+                        <tr><th>Game</th></tr>
+                    </thead>
+                </table>
+            </div>
+            <table id="season-roster-table">
+                <thead>
+                    <tr><th>Player</th></tr>
+                </thead>
+            </table>
+        `;
+
+        const root = document.getElementById("season-root");
+        initSeasonView({ root });
+
+        expect((global.__datatableCalls || []).length).toBe(1);
+        expect(global.__datatableCalls[0].el?.id).toBe("season-games-table");
+    });
 });

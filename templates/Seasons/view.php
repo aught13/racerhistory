@@ -340,33 +340,92 @@ $this->start('css'); ?>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($roster)) : ?>
-                        <div class="table-responsive">
-                            <table id="season-roster-table" class="table table-striped table-hover align-middle js-datatable">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Player</th>
-                                        <th>Position</th>
-                                        <th>Class</th>
-                                        <th>Profile</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($roster as $entry) : ?>
-                                        <tr>
-                                            <td><?= h($entry->roster_number ?? '') ?></td>
-                                            <td><?= h($entry->person->first_name ?? '') ?> <?= h($entry->person->last_name ?? '') ?></td>
-                                            <td><?= h($entry->roster_position ?? '') ?></td>
-                                            <td><?= h($entry->class_year ?? '') ?></td>
-                                            <td>
-                                                <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $entry->person->id ?? 0]) ?>" class="btn btn-sm btn-outline-primary">
-                                                    View Profile
+                        <div class="season-roster-list">
+                            <?php foreach ($roster as $entry) : ?>
+                                <?php
+                                $person = $entry->person ?? null;
+                                $displayName = '';
+                                if ($person) {
+                                    $displayName = (string)($person->display
+                                        ?? $person->full
+                                        ?? trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? '')));
+                                }
+                                if ($displayName === '') {
+                                    $displayName = 'Unknown';
+                                }
+                                $personId = $person->id ?? 0;
+                                $profileUrl = $personId
+                                    ? $this->Url->build(['controller' => 'People', 'action' => 'view', $personId])
+                                    : null;
+                                $metaChips = [];
+                                if (!empty($entry->roster_position)) {
+                                    $metaChips[] = $entry->roster_position;
+                                }
+                                if (!empty($entry->roster_year)) {
+                                    $metaChips[] = $entry->roster_year;
+                                }
+                                if (!empty($entry->roster_height)) {
+                                    $metaChips[] = $entry->roster_height;
+                                }
+                                if (!empty($entry->roster_weight)) {
+                                    $metaChips[] = $entry->roster_weight;
+                                }
+                                ?>
+                                <div class="season-roster-card d-flex align-items-center gap-4 w-100 flex-wrap flex-lg-nowrap">
+                                    <div class="season-roster-main d-flex align-items-center gap-3 flex-grow-1">
+                                        <div class="season-roster-avatar position-relative">
+                                            <?= $this->element('person_image', [
+                                                'person' => $person,
+                                                'size' => 'small',
+                                                'class' => 'season-roster-avatar-img',
+                                                'style' => 'width: 72px; height: 72px;',
+                                            ]) ?>
+                                            <?php if ($entry->roster_number !== null && $entry->roster_number !== '') : ?>
+                                                <?php
+                                                $badgeValue = (string)$entry->roster_number;
+                                                $isSingleDigit = strlen($badgeValue) <= 1;
+                                                $badgeClass = 'season-roster-badge';
+                                                if ($isSingleDigit) {
+                                                    $badgeClass .= ' season-roster-badge--single';
+                                                }
+                                                $badgeRadius = $isSingleDigit ? '50%' : '999px';
+                                                $badgeSize = $isSingleDigit ? 'min-width: 24px; width: 24px; height: 24px; padding: 0;' : 'min-width: 24px; height: 24px; padding: 0 5px;';
+                                                ?>
+                                                <span class="<?= h($badgeClass) ?>" style="position: absolute; right: -4px; bottom: -4px; z-index: 100; background: #002144; color: #ffffff; border: 2px solid var(--rh-surface); border-radius: <?= h($badgeRadius) ?>; <?= h($badgeSize) ?> display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; line-height: 1; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); box-sizing: border-box;">
+                                                    <?= h($badgeValue) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="season-roster-text">
+                                            <?php if ($profileUrl) : ?>
+                                                <a class="season-roster-name" href="<?= h($profileUrl) ?>" style="color: inherit; text-decoration: none; font-weight: 700;">
+                                                    <?= h($displayName) ?>
                                                 </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                                            <?php else : ?>
+                                                <span class="season-roster-name" style="color: inherit; text-decoration: none; font-weight: 700;">
+                                                    <?= h($displayName) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <div class="season-roster-meta">
+                                                <?php if (!empty($metaChips)) : ?>
+                                                    <?php foreach ($metaChips as $chip) : ?>
+                                                        <span class="season-roster-chip"><?= h($chip) ?></span>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="season-roster-details">
+                                        <span class="season-roster-subtext" data-person-place><i class="fa-solid fa-location-dot"></i> —</span>
+                                        <span class="season-roster-subtext" data-person-previous><i class="fa-solid fa-school-flag"></i> —</span>
+                                    </div>
+                                    <?php if ($profileUrl) : ?>
+                                        <a class="season-roster-link" href="<?= h($profileUrl) ?>" style="padding: 0.45rem 0.9rem; border-radius: 6px; font-weight: 600; font-size: 0.75rem; text-decoration: none; line-height: 1.2;">
+                                            Full Bio <span aria-hidden="true">→</span>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     <?php else : ?>
                         <div class="alert alert-info mb-0">No roster information available.</div>

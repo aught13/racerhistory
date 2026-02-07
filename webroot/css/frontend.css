@@ -35,7 +35,7 @@
     --rh-text: #eef2f7;
     --rh-muted: #b2bccb;
     --rh-border: #28354d;
-    --rh-link: #8fc0ff;
+    --rh-link: var(--rh-gold);
   }
 }
 
@@ -45,7 +45,7 @@
   --rh-text: #eef2f7;
   --rh-muted: #b2bccb;
   --rh-border: #28354d;
-  --rh-link: #8fc0ff;
+  --rh-link: var(--rh-gold);
   --rh-main-bg: #444;
   --rh-content-bg: #555;
 }
@@ -73,10 +73,12 @@ body {
 
 a {
   color: var(--rh-link);
+  text-decoration: none;
 }
 
 a:hover {
   color: color-mix(in srgb, var(--rh-link), var(--rh-gold) 25%);
+  text-decoration: none;
 }
 
 .rh-navbar {
@@ -214,6 +216,236 @@ a:hover {
 
 .season-info-value {
   font-weight: 600;
+}
+
+.season-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.season-roster-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+  box-shadow: 0 2px 8px rgba(7, 20, 35, 0.06);
+  width: 100%;
+}
+
+.season-roster-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.season-roster-avatar {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.season-roster-avatar-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 14px rgba(7, 20, 35, 0.18);
+  display: block;
+}
+
+.season-roster-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--rh-navy) !important;
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--rh-surface) !important;
+  z-index: 100;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.season-roster-badge--single {
+  width: 24px;
+  min-width: 24px;
+  padding: 0;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+}
+
+#season-stats-table a,
+#season-stats-table a:link,
+#season-stats-table a:visited,
+#season-stats-table a:hover,
+#season-stats-table a:active,
+#season-stats-table a:focus {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+#season-stats-table a,
+#season-stats-table a:link,
+#season-stats-table a:visited,
+#season-stats-table a:hover,
+#season-stats-table a:active,
+#season-stats-table a:focus {
+  color: inherit;
+  text-decoration: none;
+}
+
+.season-roster-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* Player name - override link styling */
+.season-roster-name {
+  color: var(--rh-text) !important;
+  text-decoration: none !important;
+}
+
+a.season-roster-name {
+  color: currentColor !important;
+  text-decoration: none !important;
+  background: none !important;
+  border: none !important;
+  cursor: text;
+}
+
+a.season-roster-name:visited,
+a.season-roster-name:link,
+a.season-roster-name:hover,
+a.season-roster-name:focus,
+a.season-roster-name:active {
+  color: currentColor !important;
+  text-decoration: none !important;
+  background: none !important;
+}
+
+.season-roster-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: var(--rh-muted);
+  font-size: 0.8rem;
+}
+
+.season-roster-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--rh-muted);
+  min-width: 180px;
+  margin-left: auto;
+}
+
+.season-roster-subtext {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.season-roster-subtext i {
+  font-size: 0.85rem;
+  color: var(--rh-muted);
+}
+
+.season-roster-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  background: var(--rh-content-bg);
+  border: 1px solid var(--rh-border);
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--rh-muted);
+  white-space: nowrap;
+}
+
+/* Full Bio button - override all link styling */
+a.season-roster-link,
+button.season-roster-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.35rem !important;
+  padding: 0.45rem 0.9rem !important;
+  background-color: var(--rh-navy) !important;
+  color: var(--rh-gold) !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  border: 1px solid var(--rh-navy) !important;
+  margin-left: 1rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  line-height: 1.2 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-transform: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+a.season-roster-link:link,
+a.season-roster-link:visited,
+a.season-roster-link:hover,
+a.season-roster-link:active,
+a.season-roster-link:focus,
+button.season-roster-link:hover,
+button.season-roster-link:focus,
+button.season-roster-link:active {
+  background-color: var(--rh-gold) !important;
+  color: var(--rh-navy) !important;
+  text-decoration: none !important;
+  border-color: var(--rh-gold) !important;
+}
+
+@media (max-width: 768px) {
+  .season-roster-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .season-roster-link {
+    display: none;
+  }
+
+  .season-roster-details {
+    min-width: 0;
+    margin-left: 0;
+  }
 }
 
 .season-notes {
