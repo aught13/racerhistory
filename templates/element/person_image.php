@@ -31,7 +31,7 @@ $defaultClass = $sizeConfig['class'];
 
 // Build CSS
 $cssClass = trim($defaultClass . ' ' . $class);
-$cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $style;
+$cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; border-radius: 50%; " . $style;
 
 // Build image URL
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
@@ -43,13 +43,13 @@ if (!empty($person->person_image) && is_numeric($person->person_image)) {
     // Use direct img tag instead of Html->image() to avoid URL processing issues
     echo '<img src="' . h($imageUrl) . '" alt="' . h($person->display ?? $person->first . ' ' . $person->last) . '" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
 } else {
-    // Show placeholder if no image
+    // Show placeholder if no image - perfect circle to match photo avatars
     echo $this->Html->div('placeholder-image ' . $cssClass,
         $this->Html->tag('span', h(substr($person->display ?? $person->first ?? '?', 0, 1)), [
             'class' => 'd-flex align-items-center justify-content-center h-100 bg-secondary text-white fw-bold',
             'style' => 'font-size: ' . ($width * 0.4) . 'px;'
         ]),
-        ['style' => $cssStyle . ' background-color: #6c757d;']
+        ['style' => $cssStyle . ' background-color: #6c757d; border-radius: 50%; overflow: hidden;']
     );
 }
 ?>

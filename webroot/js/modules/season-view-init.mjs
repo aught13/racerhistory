@@ -52,32 +52,31 @@ function initTable(table) {
 }
 
 function setupBlogClicks(root) {
-    if (!root) {
+    if (!root || root.dataset.blogRootBound === "true") {
         return;
     }
-    const items = root.querySelectorAll(".blog-list-item");
-    items.forEach((item) => {
-        if (item.dataset.blogBound === "true") {
+    root.dataset.blogRootBound = "true";
+    root.addEventListener("click", (event) => {
+        const target = event?.target instanceof Element ? event.target : null;
+        const item = target?.closest(".blog-list-item");
+        if (!item || !root.contains(item)) {
             return;
         }
-        item.dataset.blogBound = "true";
-        item.addEventListener("click", () => {
-            const slug = item.dataset.blogPost;
-            if (!slug) return;
-            const container = item.closest("turbo-frame");
-            const viewFrame = container?.querySelector(
-                "turbo-frame[data-view-frame]",
-            );
-            if (!viewFrame) {
-                window.location.href = `/blog/${slug}`;
-                return;
-            }
-            if (window.Turbo && typeof window.Turbo.visit === "function") {
-                window.Turbo.visit(`/blog/${slug}`, { frame: viewFrame.id });
-            } else {
-                window.location.href = `/blog/${slug}`;
-            }
-        });
+        const slug = item.dataset.blogPost;
+        if (!slug) return;
+        const container = item.closest("turbo-frame");
+        const viewFrame = container?.querySelector(
+            "turbo-frame[data-view-frame]",
+        );
+        if (!viewFrame) {
+            window.location.href = `/blog/${slug}`;
+            return;
+        }
+        if (window.Turbo && typeof window.Turbo.visit === "function") {
+            window.Turbo.visit(`/blog/${slug}`, { frame: viewFrame.id });
+        } else {
+            window.location.href = `/blog/${slug}`;
+        }
     });
 }
 
@@ -342,19 +341,20 @@ export default function initSeasonView(options = {}) {
         "#season-roster-table",
         "#season-stats-table",
     ];
+    const root = options.root || document;
 
     const tables = selectors
-        .map((selector) => document.querySelector(selector))
+        .map((selector) => root.querySelector(selector))
         .filter(Boolean)
         .map((table) => initTable(table));
 
-    document.querySelectorAll("[data-season-blog]").forEach((section) => {
+    root.querySelectorAll("[data-season-blog]").forEach((section) => {
         setupBlogClicks(section);
     });
 
-    document
-        .querySelectorAll("[data-season-stats-tabs]")
-        .forEach(initSeasonStatsTabs);
+    root.querySelectorAll("[data-season-stats-tabs]").forEach((section) => {
+        initSeasonStatsTabs(section);
+    });
 
     return { tables };
 }

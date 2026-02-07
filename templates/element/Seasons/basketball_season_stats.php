@@ -115,9 +115,24 @@ if ($hasAdvancedShooting) {
                                         <td>
                                             <?php
                                             $person = $stat->team_season_roster->person ?? null;
-                                            $name = $person ? ($person->display ?? $person->full) : '';
-                                            echo h($name);
+                                            $name = '';
+                                            if ($person) {
+                                                $name = (string)($person->display
+                                                    ?? $person->full
+                                                    ?? trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? '')));
+                                            }
+                                            if ($name === '') {
+                                                $name = 'Unknown';
+                                            }
+                                            $personId = $person->id ?? 0;
                                             ?>
+                                            <?php if ($personId) : ?>
+                                                <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $personId]) ?>" style="color: inherit; text-decoration: none; font-weight: 700;">
+                                                    <?= h($name) ?>
+                                                </a>
+                                            <?php else : ?>
+                                                <span style="font-weight: 700;"><?= h($name) ?></span>
+                                            <?php endif; ?>
                                         </td>
                                         <?php foreach ($statsColumns as $key => $label) : ?>
                                             <td><?= h($stat->$key ?? '') ?></td>
