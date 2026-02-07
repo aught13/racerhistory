@@ -440,20 +440,30 @@ $this->start('css'); ?>
                 </div>
                 <div class="card-body">
                     <?php if (!empty($images)) : ?>
-                        <div class="row g-3">
+                        <div class="season-photos-grid" data-season-image-gallery>
                             <?php foreach ($images as $image) : ?>
-                                <div class="col-6 col-md-4">
-                                    <div class="season-photo">
-                                        <img src="/images/serve/<?= h($image->id) ?>?w=480&h=360&fit=cover"
-                                             alt="<?= h($image->filename) ?>"
-                                             loading="lazy">
-                                    </div>
+                                <div class="season-photo-thumb">
+                                    <img src="/images/serve/<?= h($image->id) ?>?w=240&h=180&fit=cover"
+                                         alt="<?= h($image->filename) ?>"
+                                         data-image-id="<?= h($image->id) ?>"
+                                         data-image-filename="<?= h($image->filename) ?>"
+                                         loading="lazy"
+                                         class="season-photo-thumb-img">
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>
             </section>
+
+            <!-- Image Popover Modal -->
+            <div class="season-image-modal" id="seasonImageModal" data-season-image-modal style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1050; align-items: center; justify-content: center;">
+                <button type="button" class="season-image-modal-close" aria-label="Close" data-modal-close style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; z-index: 1051;">×</button>
+                <picture class="season-image-modal-container" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center;">
+                    <source type="image/webp" data-modal-image-webp>
+                    <img src="" alt="" data-modal-image data-modal-image-fallback style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
+                </picture>
+            </div>
             <?php endif; ?>
 
             <?php if (!empty($otherPosts)) : ?>
