@@ -1,3 +1,5 @@
+import initBlogInteractions from './blog-interactions.mjs';
+
 const DEFAULT_TABLE_OPTIONS = {
     paging: false,
     info: false,
@@ -335,6 +337,71 @@ function initSeasonStatsTabs(root) {
     });
 }
 
+function setupImageGallery(root) {
+    if (!root) {
+        return;
+    }
+    const gallery = root.querySelector("[data-season-image-gallery]");
+    const modal = root.querySelector("[data-season-image-modal]");
+    if (!gallery || !modal) {
+        return;
+    }
+
+    const closeBtn = modal.querySelector("[data-modal-close]");
+    const modalImg = modal.querySelector("[data-modal-image-fallback]");
+    const modalWebp = modal.querySelector("[data-modal-image-webp]");
+    if (!modalImg) {
+        return;
+    }
+
+    // Close modal
+    function closeModal() {
+        modal.removeAttribute("data-modal-open");
+    }
+
+    closeBtn?.addEventListener("click", closeModal);
+
+    // Click outside to close
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Escape key to close
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modal.hasAttribute("data-modal-open")) {
+            closeModal();
+        }
+    });
+
+    // Image click handler
+    gallery.addEventListener("click", (event) => {
+        const img = event.target.closest(".season-photo-thumb-img");
+        if (!img) {
+            return;
+        }
+
+        const imageId = img.dataset.imageId;
+        const filename = img.dataset.imageFilename;
+        if (!imageId) {
+            return;
+        }
+
+        // Set WebP source
+        if (modalWebp) {
+            modalWebp.srcset = `/images/serve/${imageId}?format=webp`;
+        }
+
+        // Set fallback JPG
+        modalImg.src = `/images/serve/${imageId}`;
+        modalImg.alt = filename || "";
+
+        // Show modal
+        modal.setAttribute("data-modal-open", "true");
+    });
+}
+
 export default function initSeasonView(options = {}) {
     const selectors = options.tableSelectors || [
         "#season-games-table",
@@ -355,6 +422,9 @@ export default function initSeasonView(options = {}) {
     root.querySelectorAll("[data-season-stats-tabs]").forEach((section) => {
         initSeasonStatsTabs(section);
     });
+
+    setupImageGallery(root);
+    initBlogInteractions({ root });
 
     return { tables };
 }
