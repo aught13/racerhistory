@@ -1,10 +1,20 @@
+/** @jest-environment jsdom */
+import {
+    jest,
+    beforeAll,
+    beforeEach,
+    afterEach,
+    describe,
+    test,
+    expect,
+} from "@jest/globals";
+
 beforeAll(() => {
     if (typeof HTMLFormElement !== "undefined") {
         HTMLFormElement.prototype.submit = function () {};
         HTMLFormElement.prototype.requestSubmit = function () {};
     }
 });
-/** @jest-environment jsdom */
 
 describe("admin.js error-path branches", () => {
     beforeEach(() => {

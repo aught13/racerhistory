@@ -1,13 +1,9 @@
 /** @jest-environment jsdom */
 
+import { describe, test, expect, beforeEach, beforeAll } from "@jest/globals";
 import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
-const cssPath = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../../css/frontend.css",
-);
+const cssPath = "./webroot/css/frontend.css";
 
 const loadStyles = () => fs.readFileSync(cssPath, "utf8");
 

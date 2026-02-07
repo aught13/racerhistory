@@ -1,6 +1,13 @@
 /** @jest-environment jsdom */
 
-import { jest } from "@jest/globals";
+import {
+    jest,
+    describe,
+    test,
+    expect,
+    beforeEach,
+    afterEach,
+} from "@jest/globals";
 import setupDataTablesMock from "./helpers/datatables.mock.mjs";
 import initSeasons from "../modules/seasons-init.cjs";
 
@@ -143,7 +150,8 @@ describe("Seasons init loader", () => {
     });
 
     test("ignores unrelated turbo frame loads", async () => {
-        document.body.innerHTML = '<turbo-frame id="other-frame"></turbo-frame>';
+        document.body.innerHTML =
+            '<turbo-frame id="other-frame"></turbo-frame>';
         const { initSeasonsMock } = await setupLoader();
 
         document

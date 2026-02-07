@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import { jest, beforeEach, describe, test, expect } from "@jest/globals";
 
 // test uses DOM APIs and module imports; no file system access needed here
 

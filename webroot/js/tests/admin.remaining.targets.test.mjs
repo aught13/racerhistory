@@ -1,5 +1,14 @@
-let origSubmit, origRequestSubmit;
 /** @jest-environment jsdom */
+import {
+    jest,
+    beforeEach,
+    afterEach,
+    describe,
+    test,
+    expect,
+} from "@jest/globals";
+
+let origSubmit, origRequestSubmit;
 
 describe("admin.js remaining branch targets", () => {
     beforeEach(() => {
@@ -78,7 +87,7 @@ describe("admin.js remaining branch targets", () => {
         expect(assoc.length).toBeGreaterThanOrEqual(2);
     });
 
-    test("source submit uses submit() path when requestSubmit missing", () => {
+    test("source submit uses submit() path when requestSubmit missing", async () => {
         document.body.innerHTML = `
           <form id="srcNoReq" action="/act"></form>
           <div id="confirm-delete-modal"><ul id="confirm-delete-modal-assoc"></ul><button id="confirm-delete-modal-delete-btn" type="button">Delete</button></div>
