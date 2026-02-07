@@ -1,3 +1,5 @@
+import { jest, beforeEach, describe, test, expect } from "@jest/globals";
+
 describe("More coverage targets to reach branch threshold", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
@@ -26,7 +28,7 @@ describe("More coverage targets to reach branch threshold", () => {
         document.body.appendChild(src);
 
         const admin = await import("../../js/admin");
-        const internals = admin.__internals || {};
+        const internals = admin.default?.__internals || admin.__internals || {};
 
         // set context with ids being JSON number (parsed non-array branch)
         internals.setContext({

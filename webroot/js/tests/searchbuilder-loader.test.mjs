@@ -1,5 +1,13 @@
 /** @jest-environment jsdom */
 import {
+    jest,
+    beforeEach,
+    afterEach,
+    describe,
+    test,
+    expect,
+} from "@jest/globals";
+import {
     ensureSearchBuilderLoaded,
     resetSearchBuilderLoaderForTests,
     SEARCH_BUILDER_SRC,

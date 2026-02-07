@@ -1,4 +1,5 @@
 /** @jest-environment jsdom */
+import { jest } from "@jest/globals";
 // Tests for shared admin.js confirm delete logic
 
 describe("admin.js showConfirmDelete", () => {

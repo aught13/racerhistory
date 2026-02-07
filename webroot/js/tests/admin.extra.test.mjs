@@ -1,4 +1,12 @@
 /** @jest-environment jsdom */
+import {
+    jest,
+    beforeEach,
+    afterEach,
+    describe,
+    test,
+    expect,
+} from "@jest/globals";
 // Additional tests: fallback (no bootstrap), multiple invocations cleanup, invalid JSON, toast helper
 
 describe("admin.js additional scenarios", () => {
@@ -147,7 +155,9 @@ describe("admin.js additional scenarios", () => {
     test("AdminToast creates and removes alert with default info type", async () => {
         // minimal DOM without modal still allows toast export
         document.body.innerHTML = '<div id="root"></div>';
-        const { AdminToast } = await import("../admin.js");
+        const adminModule = await import("../admin.js");
+        const AdminToast =
+            adminModule.default.AdminToast || adminModule.AdminToast;
         AdminToast("Hello");
         let alerts = document.querySelectorAll(".alert");
         expect(alerts.length).toBe(1);
@@ -159,7 +169,9 @@ describe("admin.js additional scenarios", () => {
 
     test("AdminToast with custom type warning", async () => {
         document.body.innerHTML = '<div id="root"></div>';
-        const { AdminToast } = await import("../admin.js");
+        const adminModule = await import("../admin.js");
+        const AdminToast =
+            adminModule.default.AdminToast || adminModule.AdminToast;
         AdminToast("Warn", "warning");
         const alert = document.querySelector(".alert");
         expect(alert).not.toBeNull();
