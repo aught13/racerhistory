@@ -1,12 +1,11 @@
 /* crop-selector.branches.test.js
  * Focused tests for webroot/js/crop-selector.js
  */
-/* eslint-env jest */
 
 beforeEach(() => {
   jest.resetModules();
   document.body.innerHTML = "";
-  try { delete window.devicePixelRatio; } catch (e) {}
+  try { delete window.devicePixelRatio; } catch { /* ignore */ }
 });
 
 test('constructor throws when elements missing', () => {

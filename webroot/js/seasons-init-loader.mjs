@@ -1,3 +1,5 @@
+/* global window, document, setTimeout, console */
+// ...existing code...
 /* Loader for seasons init (ES module).
  * Imports the initializer module and boots it on DOM/turbo load events.
  */

@@ -1,7 +1,7 @@
 /* image-selector.crop.branches.test.js
  * Tests exercising crop and upload branches for image-selector.js
  */
-/* eslint-env jest */
+// ...existing code...
 
 beforeEach(() => {
   jest.resetModules();
@@ -30,9 +30,8 @@ test('onFileSelected initializes Cropper and displays UI', () => {
   document.body.appendChild(noPreview);
   document.body.appendChild(cropControls);
   document.body.appendChild(uploadBtn);
+  // Removed unused variable 'onloadFns' for ESLint
 
-  // Mock FileReader
-  const onloadFns = [];
   class MockReader {
     constructor() { this.onload = null; }
     readAsDataURL() { if (this.onload) this.onload({ target: { result: 'data:img' } }); }

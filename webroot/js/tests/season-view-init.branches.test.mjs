@@ -1,3 +1,4 @@
+/* global KeyboardEvent */
 /* season-view-init.branches.test.mjs
  * Focused tests for webroot/js/modules/season-view-init.mjs
  */

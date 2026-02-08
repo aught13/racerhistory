@@ -1,7 +1,7 @@
 /* games_sport_dynamic.branches3.test.js
  * Focused branch tests for webroot/js/games_sport_dynamic.js
  */
-/* eslint-env jest */
+// ...existing code...
 
 beforeEach(() => {
   jest.resetModules();
@@ -9,7 +9,7 @@ beforeEach(() => {
   // ensure any globals are clean
   try {
     delete window.$;
-  } catch (e) {}
+  } catch { /* ignore */ }
 });
 
 test('buildFieldControl creates number input with min/max and label', () => {
@@ -80,7 +80,7 @@ test('fetchMeta uses HTML fragment when available and updates sport name', async
   const sel = document.createElement('select');
   sel.id = 'team-season-select';
   sel.setAttribute('data-sport-url', '/sport-meta');
-  sel.value = '1';
+  sel.value = '';
   document.body.appendChild(sel);
   const section = document.createElement('div');
   section.id = 'sport-specific-section';
@@ -123,7 +123,8 @@ test('fetchMeta falls back to JSON and warns on failure', async () => {
 
   // first fetch throws (HTML path), second returns JSON success, third throws to hit warn
   const okJson = { success: true, sportName: 'Rugby', eavTemplate: [], values: {} };
-  global.fetch = jest.fn()
+  global.fetch = jest
+    .fn()
     .mockRejectedValueOnce(new Error('html fail'))
     .mockResolvedValueOnce({ json: async () => okJson });
 
@@ -131,6 +132,7 @@ test('fetchMeta falls back to JSON and warns on failure', async () => {
   const { fetchMeta } = mod;
 
   // first case: fallback JSON success
+  sel.value = '1';
   await fetchMeta('1');
   expect(document.getElementById('current-sport').textContent).toBe('Rugby');
 

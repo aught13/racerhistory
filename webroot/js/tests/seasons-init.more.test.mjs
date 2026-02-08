@@ -8,7 +8,7 @@ describe('seasons-init edge cases', () => {
     // clean any previous globals
     try {
       delete global.window;
-    } catch (e) {}
+    } catch { /* ignore */ }
     global.window = {};
     document.body.innerHTML = '';
   });
@@ -19,7 +19,7 @@ describe('seasons-init edge cases', () => {
 
   test('returns nulls when table selector not present', () => {
     // minimal jQuery shim that returns empty selection
-    function $(sel) {
+    function $() {
       return { length: 0, get() { return undefined; } };
     }
     $.fn = {};

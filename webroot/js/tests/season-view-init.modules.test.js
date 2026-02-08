@@ -27,10 +27,10 @@ describe("season view init module", () => {
 		jest.useFakeTimers();
 
 		const run = mod.default?.default || mod.default || mod;
-		const res = run({ root });
+		run({ root });
 		// scheduled flag should be set
-		const el = root.querySelector("#season-games-table");
-		expect(el.dataset.seasonTableInitScheduled).toBe("true");
+		const tableEl = root.querySelector("#season-games-table");
+		expect(tableEl.dataset.seasonTableInitScheduled).toBe("true");
 
 		// a timer should be scheduled to check headers
 		expect(jest.getTimerCount()).toBeGreaterThan(0);
@@ -56,7 +56,7 @@ describe("season view init module", () => {
 				isDataTable: () => false,
 			},
 		};
-		const $ = (el) => ({ DataTable: jest.fn(() => dtReturn) });
+		const $ = () => ({ DataTable: jest.fn(() => dtReturn) });
 		$.fn = $fn;
 		window.$ = $;
 

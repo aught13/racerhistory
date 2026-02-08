@@ -1,3 +1,4 @@
+/* global navigator */
 import { jest } from '@jest/globals';
 import { registerServiceWorker } from '../hotwire/pwa.js';
 

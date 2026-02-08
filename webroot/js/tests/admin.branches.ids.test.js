@@ -1,4 +1,4 @@
-/* eslint-env jest */
+// ...existing code...
 jest.disableAutomock();
 
 beforeEach(() => {

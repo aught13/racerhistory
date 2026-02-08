@@ -77,7 +77,7 @@ describe('SportAwareGameForm branches', () => {
 
     const html = document.getElementById('sport-specific-section').innerHTML;
     // number input present
-    expect(html).toMatch(/type=\"number\"/);
+    expect(html).toMatch(/type="number"/);
     // existing field value preserved (should not be default)
     const created = document.getElementById('period_1_mur');
     expect(created).toBeTruthy();

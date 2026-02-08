@@ -1,7 +1,7 @@
 /* seasons-init.modules.test.js
  * Focused tests for webroot/js/modules/seasons-init.js
  */
-/* eslint-env jest */
+// ...existing code...
 
 beforeEach(() => {
   jest.resetModules();
@@ -9,14 +9,12 @@ beforeEach(() => {
   // ensure clean global jQuery shim
   try {
     delete window.$;
-  } catch (e) {
-    // ignore
-  }
+  } catch { /* ignore */ }
 });
 
 test('returns null when no table present', () => {
   // mock minimal jQuery that returns empty selection
-  window.$ = (sel) => ({ length: 0, get: () => [] });
+  window.$ = () => ({ length: 0, get: () => [] });
   window.$.fn = { dataTable: { isDataTable: () => false } };
 
   const mod = require('../modules/seasons-init.js');
@@ -52,38 +50,37 @@ test('initializes DataTable and shows placeholder when SearchBuilder missing', (
   controls.id = 'seasons-controls';
   document.body.appendChild(controls);
 
-  // mock jQuery + DataTable without SearchBuilder
-  window.$ = function (sel) {
-    const isTableSel = sel === '#seasons-table' || sel === table || sel === table.id;
-    if (isTableSel) {
+    // mock jQuery + DataTable without SearchBuilder
+    window.$ = function (sel) {
+      const isTableSel = sel === '#seasons-table' || sel === table || sel === table.id;
+      if (isTableSel) {
+        return {
+          length: 1,
+          get: (i) => (typeof i === 'number' ? table : [table]),
+          DataTable: function (options) {
+            // simulate DataTable init lifecycle by calling initComplete
+            const apiObj = { columns: { adjust: () => ({ draw: () => {} }) } };
+            const thisArg = { api: () => apiObj };
+            if (options && typeof options.initComplete === 'function') {
+              options.initComplete.call(thisArg);
+            }
+            return { destroy: () => {}, api: () => apiObj };
+          },
+        };
+      }
       return {
-        length: 1,
-        get: (i) => (typeof i === 'number' ? table : [table]),
-        DataTable: function (options) {
-          // simulate DataTable init lifecycle by calling initComplete
-          const apiObj = { columns: { adjust: () => ({ draw: () => {} }) } };
-          const thisArg = { api: () => apiObj };
-          if (options && typeof options.initComplete === 'function') {
-            options.initComplete.call(thisArg);
-          }
-          return { destroy: () => {}, api: () => apiObj };
+        remove: () => {},
+        empty: () => {
+          const root = document.querySelector(sel);
+          if (root) root.innerHTML = '';
         },
+        append: (el) => {
+          const root = document.querySelector(sel);
+          if (root && el && el.nodeType) root.appendChild(el);
+        },
+        on: () => {},
       };
-    }
-    return {
-      remove: () => {},
-      empty: () => {
-        const root = document.querySelector(sel);
-        if (root) root.innerHTML = '';
-      },
-      append: (el) => {
-        const root = document.querySelector(sel);
-        if (root && el && el.nodeType) root.appendChild(el);
-      },
-      addClass: () => {},
-      on: () => {},
     };
-  };
   window.$.fn = { dataTable: { isDataTable: () => false, SearchBuilder: undefined } };
 
   const mod = require('../modules/seasons-init.js');
@@ -155,7 +152,7 @@ test('initializes DataTable and SearchBuilder when available', () => {
   window.$.fn = {
     dataTable: {
       isDataTable: () => false,
-      SearchBuilder: function (dtApi, opts) {
+      SearchBuilder: function () {
         this._container = document.createElement('div');
         this._container.textContent = 'SB';
         this.container = function () {

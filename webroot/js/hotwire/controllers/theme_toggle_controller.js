@@ -1,3 +1,5 @@
+/* global module */
+// ...existing code...
 import { Controller } from "@hotwired/stimulus";
 
 import { getThemePreference, setThemePreference } from "../theme.js";

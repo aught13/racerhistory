@@ -1,3 +1,5 @@
+/* global Element */
+// ...existing code...
 import initBlogInteractions from './blog-interactions.mjs';
 
 const DEFAULT_TABLE_OPTIONS = {
