@@ -26,7 +26,8 @@ describe("More coverage targets to reach branch threshold", () => {
         document.body.appendChild(src);
 
         const admin = await import("../../js/admin");
-        const internals = admin.__internals || {};
+        const adminCjs = admin.__internals ? admin : admin.default || (typeof require === 'function' ? require('../../js/admin') : admin);
+        const internals = adminCjs.__internals || (adminCjs.default && adminCjs.default.__internals) || {};
 
         // set context with ids being JSON number (parsed non-array branch)
         internals.setContext({

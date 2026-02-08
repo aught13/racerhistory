@@ -40,7 +40,8 @@
     "jest": {
         "testEnvironment": "jsdom",
         "transform": {
-            "\\.mjs$": "babel-jest"
+            "\\.mjs$": "babel-jest",
+            "\\.js$": "babel-jest"
         },
         "moduleFileExtensions": [
             "js",
