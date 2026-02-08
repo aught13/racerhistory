@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus";
 
 import { getThemePreference, setThemePreference } from "../theme.js";
 
-export default class extends Controller {
+export class ThemeToggleController extends Controller {
     static targets = ["label"];
 
     connect() {
@@ -50,4 +50,13 @@ export default class extends Controller {
         this.element.setAttribute("title", title);
         this.element.setAttribute("aria-label", title);
     }
+}
+
+export default ThemeToggleController;
+
+// CommonJS interop for test environments that transpile/require modules.
+/* istanbul ignore next */
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = ThemeToggleController;
+    module.exports.default = ThemeToggleController;
 }
