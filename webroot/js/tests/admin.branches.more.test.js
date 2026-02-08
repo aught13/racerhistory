@@ -72,7 +72,7 @@ test('submitTempForm falls back to submit when requestSubmit missing', () => {
   requestSpy.mockRestore();
   submitSpy.mockRestore();
 });
-/* eslint-env jest */
+// ...existing code...
 jest.disableAutomock();
 
 beforeEach(() => {

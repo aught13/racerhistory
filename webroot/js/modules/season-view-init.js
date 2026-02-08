@@ -1,3 +1,5 @@
+/* global Element */
+// ...existing code...
 const DEFAULT_TABLE_OPTIONS = {
     paging: false,
     info: false,

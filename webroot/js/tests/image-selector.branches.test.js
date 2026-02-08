@@ -1,7 +1,7 @@
 /* image-selector.branches.test.js
  * Focused tests for webroot/js/image-selector.js
  */
-/* eslint-env jest */
+// ...existing code...
 
 beforeEach(() => {
   jest.resetModules();

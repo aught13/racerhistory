@@ -47,7 +47,7 @@ describe('admin.js requestSubmit handling', () => {
     // remove requestSubmit and spy on submit
     try {
       delete HTMLFormElement.prototype.requestSubmit;
-    } catch (e) {
+      } catch {
       HTMLFormElement.prototype.requestSubmit = undefined;
     }
     HTMLFormElement.prototype.submit = jest.fn();

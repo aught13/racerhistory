@@ -22,8 +22,8 @@ describe("blog view init loader", () => {
                 value: "complete",
                 configurable: true,
             });
-        } catch (e) {
-            // ignore
+            } catch {
+                // ignore
         }
     });
 

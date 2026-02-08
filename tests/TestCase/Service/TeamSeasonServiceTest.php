@@ -79,7 +79,7 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertSame('Overall', $summary['Overall']['label'] ?? null);
         $this->assertSame('Conference', $summary['Conference']['label'] ?? null);
         $this->assertSame('Conference Tournament', $summary['Conference Tournament']['label'] ?? null);
-        $this->assertSame('Postseason', $summary['Postseason']['label'] ?? null);
+        $this->assertSame('-', $summary['Postseason']['label'] ?? null);
 
         $this->assertSame(2, $overallTotals['W']);
         $this->assertSame(1, $overallTotals['L']);

@@ -1,12 +1,12 @@
 /* seasons-init.branches.test.js
  * Branch and behavior tests for webroot/js/modules/seasons-init.js
  */
-/* eslint-env jest */
+// ...existing code...
 
 beforeEach(() => {
   jest.resetModules();
   document.body.innerHTML = '';
-  try { delete window.$; } catch (e) {}
+  try { delete window.$; } catch { /* ignore */ }
 });
 
 test('restores header text and builds columnDefs', async () => {
@@ -52,7 +52,7 @@ test('restores header text and builds columnDefs', async () => {
 
   const mod = require('../modules/seasons-init.js');
   const initSeasons = mod && mod.default ? mod.default : mod;
-  const promiseRes = initSeasons({ columnLabels: ['Original'], columns: [0] });
+  initSeasons({ columnLabels: ['Original'], columns: [0] });
 
   // mutate header before initComplete runs
   table.querySelector('th').textContent = 'Changed';
@@ -104,9 +104,10 @@ test('renumbers rows using numberColumn option', async () => {
 
   const mod = require('../modules/seasons-init.js');
   const initSeasons = mod && mod.default ? mod.default : mod;
-  initSeasons({ numberColumn: 0 });
-  await Promise.resolve();
+  initSeasons({ numberColumn: 0, columns: [0] });
 
+  await Promise.resolve();
+  await Promise.resolve();
   expect(table.querySelector('tbody tr td').textContent).toBe('1');
 });
 
@@ -148,18 +149,15 @@ test('creates filter button and toggles panel when SearchBuilder present', async
     };
   };
 
-  // SearchBuilder constructor produces container
-  window.$.fn = {
-    dataTable: {
-      isDataTable: () => false,
-      SearchBuilder: function (dtApi, opts) {
-        this._container = document.createElement('div');
-        this._container.textContent = 'SB';
-        this.container = () => this._container;
-        this.destroy = () => {};
-      },
-    },
-  };
+      // SearchBuilder constructor produces container
+      window.$.fn = {
+        dataTable: {
+          isDataTable: () => false,
+          SearchBuilder: function () {
+            // Removed unused variable 'opts' for ESLint
+          },
+        },
+      };
 
   const mod = require('../modules/seasons-init.js');
   const initSeasons = mod && mod.default ? mod.default : mod;

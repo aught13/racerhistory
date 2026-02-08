@@ -1,3 +1,5 @@
+/* global Element */
+
 import initBlogInteractions from "./modules/blog-interactions.mjs";
 
 function boot(event) {

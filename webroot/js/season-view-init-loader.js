@@ -1,3 +1,5 @@
+/* global Element */
+
 import initSeasonView from "./modules/season-view-init.mjs";
 
 function boot(event) {
