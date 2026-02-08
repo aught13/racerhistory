@@ -22,8 +22,8 @@ describe("blog view init loader", () => {
                 value: "complete",
                 configurable: true,
             });
-            } catch {
-                // ignore
+        } catch {
+            // ignore
         }
     });
 
@@ -70,7 +70,9 @@ describe("blog view init loader", () => {
         // should not have been called yet
         expect(initMock).not.toHaveBeenCalled();
 
-        document.dispatchEvent(new Event("DOMContentLoaded", { bubbles: true }));
+        document.dispatchEvent(
+            new Event("DOMContentLoaded", { bubbles: true }),
+        );
         await Promise.resolve();
 
         expect(initMock).toHaveBeenCalled();

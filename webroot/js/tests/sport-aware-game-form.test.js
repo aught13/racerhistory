@@ -20,7 +20,8 @@ describe("SportAwareGameForm", () => {
 
     test("constructor and fallback render", async () => {
         // Import as module - file exports class when required
-        const { default: Module } = await import("../../js/sport-aware-game-form.js");
+        const { default: Module } =
+            await import("../../js/sport-aware-game-form.js");
         // We expect it to instantiate without throwing
         const inst = new Module();
         expect(inst).toBeTruthy();
@@ -34,14 +35,16 @@ describe("SportAwareGameForm", () => {
     });
 
     test("utility methods", async () => {
-        const { default: Module } = await import("../../js/sport-aware-game-form.js");
+        const { default: Module } =
+            await import("../../js/sport-aware-game-form.js");
         const inst = new Module();
         expect(inst.capitalizeFirst("abc")).toBe("Abc");
         expect(inst.escapeHtml("<script>")).toBe("&lt;script&gt;");
     });
 
     test("renderSportFields produces grouped cards and correct inputs", async () => {
-        const { default: Module } = await import("../../js/sport-aware-game-form.js");
+        const { default: Module } =
+            await import("../../js/sport-aware-game-form.js");
         const inst = new Module();
 
         // Prepare a sample eavTemplate with two groups and number/text fields
@@ -94,7 +97,8 @@ describe("SportAwareGameForm", () => {
     });
 
     test("updateSportFields maps values to legacy inputs on success", async () => {
-        const { default: Module } = await import("../../js/sport-aware-game-form.js");
+        const { default: Module } =
+            await import("../../js/sport-aware-game-form.js");
         const inst = new Module();
 
         // Create legacy inputs expected to be set
@@ -127,7 +131,8 @@ describe("SportAwareGameForm", () => {
     });
 
     test("updateSportFields handles non-OK response and shows fallback", async () => {
-        const { default: Module } = await import("../../js/sport-aware-game-form.js");
+        const { default: Module } =
+            await import("../../js/sport-aware-game-form.js");
         const inst = new Module();
 
         // Mock non-OK response
@@ -144,7 +149,8 @@ describe("SportAwareGameForm", () => {
     });
 
     test("updateSportFields handles network error and shows fallback", async () => {
-        const { default: Module } = await import("../../js/sport-aware-game-form.js");
+        const { default: Module } =
+            await import("../../js/sport-aware-game-form.js");
         const inst = new Module();
 
         // Mock fetch to throw

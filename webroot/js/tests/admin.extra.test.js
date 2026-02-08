@@ -148,7 +148,12 @@ describe("admin.js additional scenarios", () => {
         // minimal DOM without modal still allows toast export
         document.body.innerHTML = '<div id="root"></div>';
         const mod = await import("../admin.js");
-        const AdminToast = mod.AdminToast || (mod.default && mod.default.AdminToast) || (typeof require === 'function' ? require('../admin.js').AdminToast : undefined);
+        const AdminToast =
+            mod.AdminToast ||
+            (mod.default && mod.default.AdminToast) ||
+            (typeof require === "function"
+                ? require("../admin.js").AdminToast
+                : undefined);
         AdminToast("Hello");
         let alerts = document.querySelectorAll(".alert");
         expect(alerts.length).toBe(1);
@@ -161,7 +166,12 @@ describe("admin.js additional scenarios", () => {
     test("AdminToast with custom type warning", async () => {
         document.body.innerHTML = '<div id="root"></div>';
         const mod = await import("../admin.js");
-        const AdminToast = mod.AdminToast || (mod.default && mod.default.AdminToast) || (typeof require === 'function' ? require('../admin.js').AdminToast : undefined);
+        const AdminToast =
+            mod.AdminToast ||
+            (mod.default && mod.default.AdminToast) ||
+            (typeof require === "function"
+                ? require("../admin.js").AdminToast
+                : undefined);
         AdminToast("Warn", "warning");
         const alert = document.querySelector(".alert");
         expect(alert).not.toBeNull();

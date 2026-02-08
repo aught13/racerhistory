@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\BasketballStatsService;
+use App\Service\BlogPostService;
 use App\Service\GameService;
+use App\Service\GameViewService;
 use App\Service\ImageTagService;
+use App\Service\StatsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 
@@ -18,8 +20,11 @@ use Cake\Http\Exception\NotFoundException;
  */
 class GamesController extends AppController
 {
-    private ?BasketballStatsService $basketballStatsService = null;
+    private GameService $gameService;
+    private GameViewService $gameViewService;
+    private StatsService $statsService;
     private ImageTagService $imageTagService;
+    private BlogPostService $blogPostService;
 
     /**
      * Initialize controller.
@@ -28,8 +33,11 @@ class GamesController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
-        $this->basketballStatsService = new BasketballStatsService();
+        $this->gameService = new GameService();
+        $this->gameViewService = new GameViewService($this->gameService);
+        $this->statsService = new StatsService();
         $this->imageTagService = new ImageTagService();
+        $this->blogPostService = new BlogPostService();
     }
 
     /**
@@ -61,13 +69,12 @@ class GamesController extends AppController
             ->toArray();
 
         // Enrich games with computed display fields
-        $gameService = new GameService();
         foreach ($games as $g) {
             try {
-                $g->set('result_flag', $gameService->getResultFlag($g));
-                $g->set('place_name', $gameService->getPlaceName($g));
-                $g->set('place_state', $gameService->getPlaceState($g));
-                $g->set('site_name', $gameService->getSiteName($g));
+                $g->set('result_flag', $this->gameService->getResultFlag($g));
+                $g->set('place_name', $this->gameService->getPlaceName($g));
+                $g->set('place_state', $this->gameService->getPlaceState($g));
+                $g->set('site_name', $this->gameService->getSiteName($g));
                 $prefix = '@';
                 if (!empty($g->hrn) && (int)$g->hrn === 1) {
                     $prefix = 'Vs';
@@ -89,23 +96,65 @@ class GamesController extends AppController
      */
     public function view(int $id): void
     {
-        $table = $this->fetchTable('Games');
-        $game = $table->find()
-            ->contain(['Opponents', 'Places', 'GameTypes', 'TeamSeason' => ['Teams', 'Seasons']])
-            ->where(['Games.id' => $id])
-            ->first();
+        $viewData = $this->buildGameViewData($id);
 
+        $this->set($viewData);
+    }
+
+    /**
+     * Render stats frame for Turbo requests.
+     *
+     * @param int $id Game ID
+     * @return void
+     */
+    public function stats(int $id): void
+    {
+        $viewData = $this->buildGameViewData($id);
+
+        $this->viewBuilder()
+            ->setLayout(null)
+            ->setTemplate('stats');
+
+        $this->set($viewData);
+    }
+
+    /**
+     * @param int $id Game ID
+     * @return array<string,mixed>
+     */
+    private function buildGameViewData(int $id): array
+    {
+        try {
+            $viewData = $this->gameViewService->getViewData($id);
+        } catch (\Throwable $e) {
+            throw new NotFoundException('Game not found');
+        }
+
+        $game = $viewData['game'] ?? null;
         if (!$game) {
             throw new NotFoundException('Game not found');
         }
 
-        // Enrich single game with computed display fields
+        $this->enrichGameDisplay($game);
+
+        $statsElement = $this->statsService->getGameStatsElement($id);
+        $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 12);
+        $blogPosts = $this->blogPostService->getPublishedByTag("game-{$id}", 12);
+
+        return $viewData + compact('game', 'statsElement', 'images', 'blogPosts');
+    }
+
+    /**
+     * @param \App\Model\Entity\Game $game Game entity
+     * @return void
+     */
+    private function enrichGameDisplay(object $game): void
+    {
         try {
-            $gameService = new GameService();
-            $game->set('result_flag', $gameService->getResultFlag($game));
-            $game->set('place_name', $gameService->getPlaceName($game));
-            $game->set('place_state', $gameService->getPlaceState($game));
-            $game->set('site_name', $gameService->getSiteName($game));
+            $game->set('result_flag', $this->gameService->getResultFlag($game));
+            $game->set('place_name', $this->gameService->getPlaceName($game));
+            $game->set('place_state', $this->gameService->getPlaceState($game));
+            $game->set('site_name', $this->gameService->getSiteName($game));
             $prefix = '@';
             if (!empty($game->hrn) && (int)$game->hrn === 1) {
                 $prefix = 'Vs';
@@ -114,47 +163,7 @@ class GamesController extends AppController
             }
             $game->set('opponent_prefix', $prefix);
         } catch (\Throwable $e) {
+            // ignore enrichment errors
         }
-
-        // Try to get box score data
-        $boxScore = null;
-        if ($this->basketballStatsService) {
-            try {
-                $boxScore = $this->basketballStatsService->getGameStats($id);
-            } catch (\Exception $e) {
-                // No box score available
-            }
-        }
-
-        // Get related images
-        $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 10);
-
-        // Get related blog posts
-        $blogPosts = $this->getBlogPostsByTag("game-{$id}");
-
-        $this->set(compact('game', 'boxScore', 'images', 'blogPosts'));
-    }
-
-    /**
-     * Get blog posts by tag slug.
-     *
-     * @param string $tagSlug Tag slug
-     * @return array<int,\App\Model\Entity\BlogPost>
-     */
-    private function getBlogPostsByTag(string $tagSlug): array
-    {
-        $table = $this->fetchTable('BlogPosts');
-        $posts = $table->find()
-            ->contain(['BlogTags', 'HeroImages'])
-            ->matching('BlogTags', function ($q) use ($tagSlug) {
-                return $q->where(['BlogTags.slug' => $tagSlug]);
-            })
-            ->where(['BlogPosts.is_published' => true])
-            ->orderByDesc('BlogPosts.published_at')
-            ->limit(10)
-            ->all()
-            ->toArray();
-
-        return $posts;
     }
 }

@@ -8,7 +8,8 @@ import { ensureSearchBuilderLoaded } from "./modules/searchbuilder-loader.mjs";
 let initSeasonsPromise;
 
 function getInitSeasons() {
-    const globalRef = typeof globalThis !== "undefined" ? globalThis : undefined;
+    const globalRef =
+        typeof globalThis !== "undefined" ? globalThis : undefined;
     const windowRef = typeof window !== "undefined" ? window : undefined;
     const mockInit =
         (globalRef && globalRef.__SEASONS_INIT_LOADER_MOCK__) ||
@@ -25,7 +26,8 @@ function getInitSeasons() {
 }
 
 function getSearchBuilderLoader() {
-    const globalRef = typeof globalThis !== "undefined" ? globalThis : undefined;
+    const globalRef =
+        typeof globalThis !== "undefined" ? globalThis : undefined;
     const windowRef = typeof window !== "undefined" ? window : undefined;
     const mockLoader =
         (globalRef && globalRef.__SEASONS_SEARCHBUILDER_LOADER_MOCK__) ||
@@ -119,7 +121,8 @@ function buildSplitsColumnLabels(hasTies) {
 }
 
 function getCellDataAttr(meta, name) {
-    const cell = meta?.settings?.aoData?.[meta.row]?.anCells?.[meta.col] || null;
+    const cell =
+        meta?.settings?.aoData?.[meta.row]?.anCells?.[meta.col] || null;
     if (!cell) {
         return null;
     }

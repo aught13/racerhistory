@@ -58,7 +58,7 @@ class GamesControllerTest extends TestCase
     {
         $this->get('/games/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('Game Details');
+        $this->assertResponseContains('Box Score');
     }
 
     public function testViewWithInvalidId(): void
@@ -76,15 +76,24 @@ class GamesControllerTest extends TestCase
         $game = $this->viewVariable('game');
         $this->assertNotNull($game);
 
-        $boxScore = $this->viewVariable('boxScore');
-        // Box score may be null if stats not available; accept null or array/object
-        $this->assertTrue($boxScore === null || is_array($boxScore) || is_object($boxScore));
+        $statsElement = $this->viewVariable('statsElement');
+        $this->assertTrue($statsElement === null || is_string($statsElement));
+
+        $teamBoxStats = $this->viewVariable('teamBoxStats');
+        $this->assertTrue(is_array($teamBoxStats) || $teamBoxStats === null);
 
         $images = $this->viewVariable('images');
         $this->assertIsArray($images);
 
         $blogPosts = $this->viewVariable('blogPosts');
         $this->assertIsArray($blogPosts);
+    }
+
+    public function testStatsFrame(): void
+    {
+        $this->get('/games/stats/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Player Stats');
     }
 
     public function testAuthorizationSkipped(): void
