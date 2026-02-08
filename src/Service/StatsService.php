@@ -51,6 +51,15 @@ class StatsService
     ];
 
     /**
+     * Map of sport names to the game stats element used in the public site
+     *
+     * @var array<string, string>
+     */
+    protected array $gameStatsElements = [
+        'basketball' => 'Games/basketball_game_stats',
+    ];
+
+    /**
      * Cached sport service instances
      *
      * @var array<string, object>
@@ -130,6 +139,24 @@ class StatsService
         $sportName = $this->sportConfig->getSportName($sportId);
 
         return $this->seasonStatsElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the element path for the game stats section for a given game
+     *
+     * @param int $gameId Game ID
+     * @return string|null Element path or null if not configured
+     */
+    public function getGameStatsElement(int $gameId): ?string
+    {
+        $sportId = $this->getGameSportId($gameId);
+        if (!$sportId) {
+            return null;
+        }
+
+        $sportName = $this->sportConfig->getSportName($sportId);
+
+        return $this->gameStatsElements[$sportName] ?? null;
     }
 
     /**

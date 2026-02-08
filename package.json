@@ -5,6 +5,7 @@
     "devDependencies": {
         "@babel/core": "^7.22.9",
         "@babel/preset-env": "^7.22.9",
+        "@hotwired/stimulus": "^3.2.2",
         "axe-core": "^4.10.3",
         "babel-jest": "^29.7.0",
         "babel-plugin-transform-import-meta": "^2.3.3",
@@ -82,7 +83,7 @@
     },
     "overrides": {
         "@mapbox/node-pre-gyp": {
-            "tar": "7.5.5"
+            "tar": "7.5.7"
         }
     }
 }

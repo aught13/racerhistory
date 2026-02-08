@@ -1,78 +1,91 @@
-import { jest } from '@jest/globals';
+import { jest } from "@jest/globals";
 
-jest.unstable_mockModule('@hotwired/stimulus', () => ({
-  Controller: class {},
+jest.unstable_mockModule("@hotwired/stimulus", () => ({
+    Controller: class {},
 }));
 
 let ThemeToggleController;
 
 beforeAll(async () => {
-  const mod = await import('../hotwire/controllers/theme_toggle_controller.js');
-  ThemeToggleController = mod.ThemeToggleController || mod.default;
+    const mod =
+        await import("../hotwire/controllers/theme_toggle_controller.js");
+    ThemeToggleController = mod.ThemeToggleController || mod.default;
 });
 
-describe('hotwire/theme_toggle_controller', () => {
-  beforeEach(() => {
-    document.body.innerHTML = '<button id="toggle"><span id="label"></span></button>';
-    document.cookie = 'theme=; Max-Age=0; Path=/;';
-  });
+describe("hotwire/theme_toggle_controller", () => {
+    beforeEach(() => {
+        document.body.innerHTML =
+            '<button id="toggle"><span id="label"></span></button>';
+        document.cookie = "theme=; Max-Age=0; Path=/;";
+    });
 
-  test('sync updates attributes and label for light mode', () => {
-    document.cookie = 'theme=light; Path=/;';
+    const setControllerElement = (controller, element) => {
+        Object.defineProperty(controller, "element", {
+            value: element,
+            configurable: true,
+        });
+    };
 
-    const controller = new ThemeToggleController();
-    controller.element = document.getElementById('toggle');
-    controller.hasLabelTarget = true;
-    controller.labelTarget = document.getElementById('label');
+    test("sync updates attributes and label for light mode", () => {
+        document.cookie = "theme=light; Path=/;";
 
-    controller.connect();
+        const controller = new ThemeToggleController();
+        setControllerElement(controller, document.getElementById("toggle"));
+        controller.hasLabelTarget = true;
+        controller.labelTarget = document.getElementById("label");
 
-    expect(controller.element.dataset.themeMode).toBe('light');
-    expect(controller.element.getAttribute('aria-pressed')).toBe('false');
-    expect(controller.labelTarget.textContent).toBe('Light');
-    expect(controller.element.getAttribute('title')).toContain('Theme: light');
-  });
+        controller.connect();
 
-  test('toggle cycles from system to light', () => {
-    const controller = new ThemeToggleController();
-    controller.element = document.getElementById('toggle');
-    controller.hasLabelTarget = true;
-    controller.labelTarget = document.getElementById('label');
+        expect(controller.element.dataset.themeMode).toBe("light");
+        expect(controller.element.getAttribute("aria-pressed")).toBe("false");
+        expect(controller.labelTarget.textContent).toBe("Light");
+        expect(controller.element.getAttribute("title")).toContain(
+            "Theme: light",
+        );
+    });
 
-    controller.toggle();
+    test("toggle cycles from system to light", () => {
+        const controller = new ThemeToggleController();
+        setControllerElement(controller, document.getElementById("toggle"));
+        controller.hasLabelTarget = true;
+        controller.labelTarget = document.getElementById("label");
 
-    expect(document.cookie).toContain('theme=light');
-    expect(controller.element.dataset.themeMode).toBe('light');
-    expect(controller.labelTarget.textContent).toBe('Light');
-  });
+        controller.toggle();
 
-  test('sync updates attributes and label for dark mode', () => {
-    document.cookie = 'theme=dark; Path=/;';
+        expect(document.cookie).toContain("theme=light");
+        expect(controller.element.dataset.themeMode).toBe("light");
+        expect(controller.labelTarget.textContent).toBe("Light");
+    });
 
-    const controller = new ThemeToggleController();
-    controller.element = document.getElementById('toggle');
-    controller.hasLabelTarget = true;
-    controller.labelTarget = document.getElementById('label');
+    test("sync updates attributes and label for dark mode", () => {
+        document.cookie = "theme=dark; Path=/;";
 
-    controller.sync();
+        const controller = new ThemeToggleController();
+        setControllerElement(controller, document.getElementById("toggle"));
+        controller.hasLabelTarget = true;
+        controller.labelTarget = document.getElementById("label");
 
-    expect(controller.element.dataset.themeMode).toBe('dark');
-    expect(controller.element.getAttribute('aria-pressed')).toBe('true');
-    expect(controller.labelTarget.textContent).toBe('Dark');
-    expect(controller.element.getAttribute('title')).toContain('Theme: dark');
-  });
+        controller.sync();
 
-  test('toggle cycles from dark to system', () => {
-    document.cookie = 'theme=dark; Path=/;';
+        expect(controller.element.dataset.themeMode).toBe("dark");
+        expect(controller.element.getAttribute("aria-pressed")).toBe("true");
+        expect(controller.labelTarget.textContent).toBe("Dark");
+        expect(controller.element.getAttribute("title")).toContain(
+            "Theme: dark",
+        );
+    });
 
-    const controller = new ThemeToggleController();
-    controller.element = document.getElementById('toggle');
-    controller.hasLabelTarget = true;
-    controller.labelTarget = document.getElementById('label');
+    test("toggle cycles from dark to system", () => {
+        document.cookie = "theme=dark; Path=/;";
 
-    controller.toggle();
+        const controller = new ThemeToggleController();
+        setControllerElement(controller, document.getElementById("toggle"));
+        controller.hasLabelTarget = true;
+        controller.labelTarget = document.getElementById("label");
 
-    expect(controller.element.dataset.themeMode).toBe('system');
-    expect(controller.labelTarget.textContent).toBe('System');
-  });
+        controller.toggle();
+
+        expect(controller.element.dataset.themeMode).toBe("system");
+        expect(controller.labelTarget.textContent).toBe("System");
+    });
 });

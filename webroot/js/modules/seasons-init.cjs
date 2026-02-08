@@ -59,8 +59,8 @@
             if (!table) {
                 return null;
             }
-            return Array.from(table.querySelectorAll("thead th")).map(
-                (th) => (th.textContent !== null ? th.textContent : ""),
+            return Array.from(table.querySelectorAll("thead th")).map((th) =>
+                th.textContent !== null ? th.textContent : "",
             );
         }
 
@@ -290,7 +290,9 @@
 
         const columnDefs = buildColumnDefs(columnLabels);
         if (columnDefs.length) {
-            dtOptions.columnDefs = columnDefs.concat(dtOptions.columnDefs || []);
+            dtOptions.columnDefs = columnDefs.concat(
+                dtOptions.columnDefs || [],
+            );
         }
 
         try {

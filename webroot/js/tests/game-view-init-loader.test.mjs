@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 
-describe("season-view-init-loader", () => {
+describe("game-view-init-loader", () => {
     beforeEach(() => {
         jest.resetModules();
         document.body.innerHTML = "";
@@ -9,7 +9,7 @@ describe("season-view-init-loader", () => {
     test("registers turbo event handlers and handles frame load", async () => {
         const addSpy = jest.spyOn(document, "addEventListener");
 
-        await import("../season-view-init-loader.js");
+        await import("../game-view-init-loader.js");
 
         const frameHandler = addSpy.mock.calls.find(
             (call) => call[0] === "turbo:frame-load",
@@ -29,7 +29,7 @@ describe("season-view-init-loader", () => {
     test("registers turbo:load handler and handles load event", async () => {
         const addSpy = jest.spyOn(document, "addEventListener");
 
-        await import("../season-view-init-loader.js");
+        await import("../game-view-init-loader.js");
 
         const loadHandler = addSpy.mock.calls.find(
             (call) => call[0] === "turbo:load",
