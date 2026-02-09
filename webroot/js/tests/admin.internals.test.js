@@ -44,6 +44,11 @@ describe("admin.js internals coverage", () => {
         expect(list.children[0].textContent).toContain("neither");
     });
 
+    test("renderAssociated returns early when modal missing", () => {
+        const { __internals } = require("../admin.js");
+        expect(() => __internals.renderAssociated(null, ["one"])).not.toThrow();
+    });
+
     test("submitTempForm attaches provided extra fields and tokens", () => {
         document.body.innerHTML = `
             <div>

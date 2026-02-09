@@ -1,7 +1,13 @@
 <?php
 declare(strict_types=1);
-/** @var array<int,\App\Model\Entity\Person> $people */
+/**
+ * @var array<int,\App\Model\Entity\Person> $people
+ * @var array<int,array{person:\App\Model\Entity\Person,teams:array<int,string>,years:array<int,string>}> $peopleRows
+ * @var int $peopleCount
+ */
 $this->assign('title', 'People');
+
+echo $this->element('People/table_assets');
 ?>
 <div class="container py-4">
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4">
@@ -9,39 +15,32 @@ $this->assign('title', 'People');
         <p class="text-muted mb-0">Players, coaches, and staff</p>
     </div>
 
-    <?php if (!empty($people)) : ?>
-        <!-- Search/Filter -->
-        <div class="mb-4">
-            <input type="text" id="peopleSearch" class="form-control" placeholder="Search by name...">
+    <?php if (!empty($peopleRows) || ($peopleCount ?? 0) > 0) : ?>
+        <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
+            <div class="people-searchbar input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="people-name-search" class="form-control" placeholder="Search people by name...">
+            </div>
+            <div id="people-controls" class="d-flex align-items-center gap-2"></div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-striped table-hover" id="peopleTable">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Name</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($people as $person) : ?>
+        <div id="people-searchbuilder-panel" class="searchbuilder-panel"></div>
+
+        <div class="people-table-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle" id="people-table"
+                       data-people-data-url="<?= h($this->Url->build(['controller' => 'People', 'action' => 'index', '?' => ['format' => 'json']])) ?>">
+                    <thead class="table-dark">
                         <tr>
-                            <td>
-                                <?= h($person->first_name) ?> <?= h($person->last_name) ?>
-                                <?php if (!empty($person->nickname)) : ?>
-                                    <small class="text-muted">"<?= h($person->nickname) ?>"</small>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $person->id]) ?>"
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View Profile
-                                </a>
-                            </td>
+                            <th>Name</th>
+                            <th>Teams</th>
+                            <th>Years Active</th>
+                            <th>Actions</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     <?php else : ?>
         <div class="alert alert-info">
@@ -51,15 +50,6 @@ $this->assign('title', 'People');
     <?php endif; ?>
 </div>
 
-<script>
-// Simple client-side search
-document.getElementById('peopleSearch')?.addEventListener('keyup', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#peopleTable tbody tr');
-
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
-</script>
+<?php $this->start('script'); ?>
+<?= $this->Html->script('people-index-init-loader', ['type' => 'module', 'ext' => '.mjs']) ?>
+<?php $this->end(); ?>

@@ -1,6 +1,7 @@
 /* searchbuilder-loader.test.mjs
  * Focused tests for webroot/js/modules/searchbuilder-loader.mjs
  */
+import { jest } from "@jest/globals";
 import {
     ensureSearchBuilderLoaded,
     resetSearchBuilderLoaderForTests,
@@ -36,6 +37,33 @@ test("loads script when constructor is missing", async () => {
     script.dispatchEvent(new Event("load"));
 
     await expect(promise).resolves.toBeUndefined();
+});
+
+test("waits for DataTables before injecting SearchBuilder", async () => {
+    jest.useFakeTimers();
+    try {
+        window.$ = { fn: {} };
+
+        const promise = ensureSearchBuilderLoaded();
+        expect(
+            document.head.querySelector(`script[src="${SEARCH_BUILDER_SRC}"]`),
+        ).toBeNull();
+
+        window.$.fn.dataTable = {};
+        jest.advanceTimersByTime(60);
+
+        const script = document.head.querySelector(
+            `script[src="${SEARCH_BUILDER_SRC}"]`,
+        );
+        expect(script).toBeTruthy();
+
+        window.$.fn.dataTable.SearchBuilder = function SB() {};
+        script.dispatchEvent(new Event("load"));
+
+        await expect(promise).resolves.toBeUndefined();
+    } finally {
+        jest.useRealTimers();
+    }
 });
 
 test("reuses the same promise while loading", async () => {
