@@ -40,6 +40,8 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('People');
         $this->assertResponseContains('Players, coaches, and staff');
+        $this->assertResponseContains('Teams');
+        $this->assertResponseContains('Years Active');
     }
 
     public function testIndexDisplaysPeople(): void
@@ -49,7 +51,66 @@ class PeopleControllerTest extends TestCase
 
         $people = $this->viewVariable('people');
         $this->assertIsArray($people);
-        $this->assertNotEmpty($people);
+        $this->assertSame([], $people);
+
+        $peopleRows = $this->viewVariable('peopleRows');
+        $this->assertIsArray($peopleRows);
+        $this->assertSame([], $peopleRows);
+
+        $peopleCount = $this->viewVariable('peopleCount');
+        $this->assertIsInt($peopleCount);
+        $this->assertGreaterThan(0, $peopleCount);
+    }
+
+    public function testIndexJsonReturnsPeopleRows(): void
+    {
+        $this->get('/people?format=json&draw=1&start=0&length=50');
+        $this->assertResponseOk();
+        $this->assertHeaderContains('Content-Type', 'application/json');
+
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($payload);
+        $this->assertSame(1, $payload['draw']);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertNotEmpty($payload['data']);
+
+        $rows = array_column($payload['data'], 1);
+        $this->assertNotEmpty($rows);
+        $this->assertStringContainsString('Los Angeles Lakers', $rows[0]);
+
+        $years = array_column($payload['data'], 2);
+        $this->assertNotEmpty($years);
+        $this->assertStringContainsString('/seasons/1', $years[0]);
+    }
+
+    public function testIndexJsonSearchBuilderFiltersTeams(): void
+    {
+        $query = http_build_query([
+            'format' => 'json',
+            'draw' => 1,
+            'start' => 0,
+            'length' => 50,
+            'searchBuilder' => [
+                'logic' => 'AND',
+                'criteria' => [
+                    [
+                        'data' => '1',
+                        'origData' => '1',
+                        'condition' => 'contains',
+                        'value1' => 'Lakers',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->get('/people?' . $query);
+        $this->assertResponseOk();
+
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($payload);
+        $this->assertGreaterThan(0, $payload['recordsFiltered']);
+        $this->assertNotEmpty($payload['data']);
+        $this->assertStringContainsString('Lakers', $payload['data'][0][1]);
     }
 
     public function testView(): void

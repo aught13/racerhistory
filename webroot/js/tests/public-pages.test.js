@@ -106,13 +106,17 @@ describe("Public Pages", () => {
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Role</th>
+                            <th>Teams</th>
+                            <th>Years Active</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>John Doe</td>
-                            <td>Player</td>
+                            <td>Lakers</td>
+                            <td>2023-24</td>
+                            <td><a href="/people/1">View</a></td>
                         </tr>
                     </tbody>
                 </table>

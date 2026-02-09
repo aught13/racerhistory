@@ -146,6 +146,44 @@ a:hover {
   white-space: nowrap;
 }
 
+.people-table-card {
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.people-table-card .table {
+  margin-bottom: 0;
+}
+
+.people-table-card thead th {
+  background: #0f2433;
+  color: #eef2f7;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.people-display-name {
+  color: var(--rh-muted);
+  font-size: 0.85rem;
+}
+
+.people-searchbar {
+  max-width: 420px;
+  width: 100%;
+}
+
+.people-searchbar .input-group-text {
+  background: var(--rh-content-bg);
+  border-color: var(--rh-border);
+  color: var(--rh-muted);
+}
+
+.people-searchbar .form-control {
+  background: var(--rh-content-bg);
+  border-color: var(--rh-border);
+}
+
 .season-hero-media {
   border-radius: 16px;
   overflow: hidden;
