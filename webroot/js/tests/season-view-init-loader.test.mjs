@@ -9,7 +9,7 @@ describe("season-view-init-loader", () => {
     test("registers turbo event handlers and handles frame load", async () => {
         const addSpy = jest.spyOn(document, "addEventListener");
 
-        await import("../season-view-init-loader.js");
+        await import("../season-view-init-loader.mjs");
 
         const frameHandler = addSpy.mock.calls.find(
             (call) => call[0] === "turbo:frame-load",
@@ -29,7 +29,7 @@ describe("season-view-init-loader", () => {
     test("registers turbo:load handler and handles load event", async () => {
         const addSpy = jest.spyOn(document, "addEventListener");
 
-        await import("../season-view-init-loader.js");
+        await import("../season-view-init-loader.mjs");
 
         const loadHandler = addSpy.mock.calls.find(
             (call) => call[0] === "turbo:load",

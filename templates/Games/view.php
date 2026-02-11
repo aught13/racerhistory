@@ -83,7 +83,7 @@ $this->start('css'); ?>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>
-<?= $this->Html->script('game-view-init-loader', ['type' => 'module']) ?>
+<?= $this->Html->script('game-view-init-loader', ['type' => 'module', 'ext' => '.mjs']) ?>
 <?php $this->end(); ?>
 
 <div class="container py-4 game-view" data-game-view>

@@ -183,6 +183,55 @@ function buildOptions() {
     };
 }
 
+/**
+ * Wait for jQuery and DataTables to be available.
+ * @param {number} maxAttempts - Maximum number of attempts
+ * @param {number} delayMs - Delay between attempts in milliseconds
+ * @returns {Promise<boolean>} - True when DataTables is available
+ */
+function isDataTablesAvailable() {
+    if (
+        typeof window.$ === "undefined" ||
+        typeof window.$.fn === "undefined"
+    ) {
+        return false;
+    }
+
+    const { DataTable, dataTable } = window.$.fn;
+    const hasDataTableFn =
+        typeof DataTable === "function" || typeof dataTable === "function";
+    const hasDataTableObj = dataTable && typeof dataTable === "object";
+    return hasDataTableFn || hasDataTableObj;
+}
+
+function waitForDataTables(maxAttempts = 20, delayMs = 100) {
+    return new Promise((resolve) => {
+        let attempts = 0;
+
+        function check() {
+            if (isDataTablesAvailable()) {
+                resolve(true);
+                return;
+            }
+
+            attempts += 1;
+            if (attempts >= maxAttempts) {
+                console.warn(
+                    "DataTables did not load after " +
+                        maxAttempts * delayMs +
+                        "ms",
+                );
+                resolve(false);
+                return;
+            }
+
+            setTimeout(check, delayMs);
+        }
+
+        check();
+    });
+}
+
 function boot(event) {
     if (event?.type === "turbo:frame-load") {
         const frame = event.target;
@@ -206,22 +255,45 @@ function boot(event) {
                     );
                     const panelEl = document.querySelector(opts.panelSelector);
 
+                    if (!tableEl) {
+                        console.debug(
+                            `[seasons-init] Table element not found: ${opts.tableSelector}`,
+                        );
+                    }
+                    if (!controlsEl) {
+                        console.debug(
+                            `[seasons-init] Controls element not found: ${opts.controlsSelector}`,
+                        );
+                    }
+                    if (!panelEl) {
+                        console.debug(
+                            `[seasons-init] Panel element not found: ${opts.panelSelector}`,
+                        );
+                    }
+
                     if (!tableEl || !controlsEl || !panelEl) {
                         if (remaining > 0) {
                             setTimeout(() => {
                                 attemptInit(remaining - 1);
                             }, 50);
+                        } else {
+                            console.warn(
+                                "[seasons-init] Required DOM elements not found after retries",
+                            );
                         }
                         return;
                     }
 
+                    console.debug(
+                        "[seasons-init] All DOM elements found, initializing",
+                    );
                     initSeasons(opts);
                 };
 
                 // Let the frame DOM settle before initializing DataTables.
-                setTimeout(() => {
+                Promise.resolve().then(() => {
                     attemptInit(5);
-                }, 0);
+                });
             };
 
             const loadSearchBuilder = getSearchBuilderLoader();
@@ -237,6 +309,32 @@ function boot(event) {
         });
 }
 
-document.addEventListener("DOMContentLoaded", boot);
-document.addEventListener("turbo:load", boot);
-document.addEventListener("turbo:frame-load", boot);
+// Enhanced boot with DataTables availability check
+async function enhancedBoot(event) {
+    if (event?.type === "turbo:frame-load") {
+        const frame = event.target;
+        if (!frame || frame.id !== "seasons-table-frame") {
+            return;
+        }
+    }
+
+    console.debug(
+        `[seasons-init-loader] Boot event triggered: ${event?.type || "initial"}`,
+    );
+
+    // Check if DataTables is available before attempting init
+    const hasDataTables = await waitForDataTables();
+    if (!hasDataTables) {
+        console.warn("Skipping seasons-init: DataTables not available on page");
+        return;
+    }
+
+    console.debug(
+        "[seasons-init-loader] DataTables available, initializing...",
+    );
+    boot(event);
+}
+
+document.addEventListener("DOMContentLoaded", enhancedBoot);
+document.addEventListener("turbo:load", enhancedBoot);
+document.addEventListener("turbo:frame-load", enhancedBoot);

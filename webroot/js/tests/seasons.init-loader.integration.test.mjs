@@ -113,6 +113,8 @@ describe("Seasons frame swap regression", () => {
 });
 
 describe("Seasons init loader", () => {
+    let teardown;
+
     const flushPromises = async (times = 1) => {
         for (let i = 0; i < times; i += 1) {
             await Promise.resolve();
@@ -120,8 +122,10 @@ describe("Seasons init loader", () => {
     };
 
     const setupLoader = async ({ rejectLoader } = {}) => {
-        await jest.resetModules();
-        const initSeasonsMock = jest.fn();
+        // Don't reset modules - keep setup from beforeEach
+        const initSeasonsMock = jest.fn((opts) => {
+            return { sb: null, table: null };
+        });
         const ensureSearchBuilderLoaded = rejectLoader
             ? jest.fn(() => Promise.reject(new Error("nope")))
             : jest.fn(() => Promise.resolve());
@@ -133,16 +137,26 @@ describe("Seasons init loader", () => {
         window.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ =
             ensureSearchBuilderLoaded;
 
-        await import("../seasons-init-loader.mjs");
-
+        // Import is already done in beforeEach, so mocks are ready
         return { initSeasonsMock, ensureSearchBuilderLoaded };
     };
 
     beforeEach(() => {
         document.body.innerHTML = "";
+        teardown = setupDataTablesMock();
+        if (global.$ && !window.$) {
+            window.$ = global.$;
+        }
+        // Import the loader once and keep it
+        if (typeof window.__SEASONS_INIT_LOADER_READY__ === "undefined") {
+            window.__SEASONS_INIT_LOADER_READY__ = import(
+                "../seasons-init-loader.mjs"
+            );
+        }
     });
 
     afterEach(() => {
+        if (typeof teardown === "function") teardown();
         delete globalThis.__SEASONS_INIT_LOADER_MOCK__;
         delete window.__SEASONS_INIT_LOADER_MOCK__;
         delete globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__;
@@ -150,17 +164,23 @@ describe("Seasons init loader", () => {
     });
 
     test("ignores unrelated turbo frame loads", async () => {
-        document.body.innerHTML =
-            '<turbo-frame id="other-frame"></turbo-frame>';
-        const { initSeasonsMock } = await setupLoader();
+        jest.useFakeTimers();
+        try {
+            document.body.innerHTML =
+                '<turbo-frame id="other-frame"></turbo-frame>';
+            const { initSeasonsMock } = await setupLoader();
 
-        document
-            .getElementById("other-frame")
-            .dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
+            document
+                .getElementById("other-frame")
+                .dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
 
-        await Promise.resolve();
+            jest.runOnlyPendingTimers();
+            await flushPromises(2);
 
-        expect(initSeasonsMock).not.toHaveBeenCalled();
+            expect(initSeasonsMock).not.toHaveBeenCalled();
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
     test("retries until splits table exists and computes columns", async () => {
