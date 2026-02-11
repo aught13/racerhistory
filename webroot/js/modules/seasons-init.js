@@ -26,6 +26,9 @@ export default function initSeasons(opts = {}) {
     const tableEl = $table.get(0);
 
     if (!$table.length) {
+        console.debug(
+            `[seasons-init] Table not found with selector "${tableSelector}"`,
+        );
         return { sb: null, table: null };
     }
 
@@ -278,9 +281,15 @@ export default function initSeasons(opts = {}) {
     try {
         seasonsTable = $table.DataTable(dtOptions);
         // expose for tests
+        console.debug(
+            `[seasons-init] DataTable initialized successfully for "${tableSelector}"`,
+        );
         return { sb: sbInstance, table: seasonsTable };
     } catch (err) {
-        console.debug(err);
+        console.error(
+            `[seasons-init] Failed to initialize DataTable for "${tableSelector}":`,
+            err,
+        );
         return { sb: null, table: null };
     }
 }
