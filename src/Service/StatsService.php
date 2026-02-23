@@ -60,6 +60,15 @@ class StatsService
     ];
 
     /**
+     * Map of sport names to the person game log element used in the public site
+     *
+     * @var array<string, string>
+     */
+    protected array $personGameLogElements = [
+        'basketball' => 'People/basketball_game_log',
+    ];
+
+    /**
      * Cached sport service instances
      *
      * @var array<string, object>
@@ -157,6 +166,22 @@ class StatsService
         $sportName = $this->sportConfig->getSportName($sportId);
 
         return $this->gameStatsElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the element path for a person's game log for a given sport
+     *
+     * @param int $sportId Sport ID
+     * @return string|null Element path or null if not configured
+     */
+    public function getPersonGameLogElement(int $sportId): ?string
+    {
+        $sportName = $this->sportConfig->getSportName($sportId);
+        if (!$sportName) {
+            return null;
+        }
+
+        return $this->personGameLogElements[$sportName] ?? null;
     }
 
     /**

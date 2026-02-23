@@ -4,6 +4,7 @@ describe("hotwire/native_bridge", () => {
     beforeEach(() => {
         jest.resetModules();
         jest.clearAllMocks();
+        delete globalThis.__HOTWIRE_NATIVE_BRIDGE__;
     });
 
     test("startNativeBridge ignores missing module", async () => {
@@ -18,6 +19,27 @@ describe("hotwire/native_bridge", () => {
         const { startNativeBridge } =
             await import("../hotwire/native_bridge.js");
         // Should handle both module-not-found and other errors gracefully
+        await expect(startNativeBridge()).resolves.toBeUndefined();
+    });
+
+    test("startNativeBridge calls start when available", async () => {
+        const start = jest.fn();
+        globalThis.__HOTWIRE_NATIVE_BRIDGE__ = { start };
+
+        const { startNativeBridge } =
+            await import("../hotwire/native_bridge.js");
+
+        await startNativeBridge();
+
+        expect(start).toHaveBeenCalled();
+    });
+
+    test("startNativeBridge ignores missing start function", async () => {
+        globalThis.__HOTWIRE_NATIVE_BRIDGE__ = {};
+
+        const { startNativeBridge } =
+            await import("../hotwire/native_bridge.js");
+
         await expect(startNativeBridge()).resolves.toBeUndefined();
     });
 });

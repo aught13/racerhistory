@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use App\Service\ImageProcessor;
 use App\Service\PersonService;
+use App\Service\StatsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Routing\Router;
@@ -20,6 +21,7 @@ class PeopleController extends AppController
 {
     private PersonService $personService;
     private ImageProcessor $imageProcessor;
+    protected StatsService $Stats;
 
     /**
      * Initialize controller.
@@ -28,6 +30,7 @@ class PeopleController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
+        $this->Stats = new StatsService();
         $this->personService = new PersonService();
         $this->imageProcessor = new ImageProcessor();
     }
@@ -458,10 +461,145 @@ class PeopleController extends AppController
         // Get roster entries (team seasons this person was on)
         $rosterEntries = $this->getRosterEntriesForPerson($id);
 
-        // Get game stats if available
-        $gameStats = $this->getGameStatsForPerson($id);
+        // Organize roster entries by sport and calculate career stats
+        $rostersBySport = [];
+        $careerStatsBySport = [];
 
-        $this->set(compact('person', 'images', 'blogPosts', 'rosterEntries', 'gameStats'));
+        foreach ($rosterEntries as $roster) {
+            $teamSeason = $roster->team_season ?? null;
+            $sport = $teamSeason?->team->sport ?? null;
+            if (!$sport) {
+                continue;
+            }
+
+            $sportId = $sport->id;
+            if (!isset($rostersBySport[$sportId])) {
+                $rostersBySport[$sportId] = [
+                    'sport' => $sport,
+                    'rosters' => [],
+                ];
+            }
+
+            $rostersBySport[$sportId]['rosters'][] = [
+                'roster' => $roster,
+                'teamSeason' => $teamSeason,
+            ];
+
+            if ($this->Stats->hasSportSupport($sportId)) {
+                if (!isset($careerStatsBySport[$sportId])) {
+                    $careerStatsBySport[$sportId] = [
+                        'sport' => $sport,
+                        'totals' => $this->Stats->initializeStats($sportId, 'player'),
+                        'seasons' => [],
+                        'minYear' => null,
+                        'maxYear' => null,
+                    ];
+                }
+
+                $seasonStats = $this->Stats->getPersonSeasonStats(
+                    $sportId,
+                    (int)$roster->id,
+                );
+                if ($seasonStats) {
+                    $careerStatsBySport[$sportId]['seasons'][] = [
+                        'teamSeason' => $teamSeason,
+                        'stats' => $seasonStats,
+                    ];
+
+                    $startYear = $teamSeason?->season->start ?? null;
+                    $endYear = $teamSeason?->season->end ?? null;
+                    if ($startYear !== null) {
+                        $minYear = $careerStatsBySport[$sportId]['minYear'];
+                        if ($minYear === null || $startYear < $minYear) {
+                            $careerStatsBySport[$sportId]['minYear'] = $startYear;
+                        }
+                    }
+                    if ($endYear !== null) {
+                        $maxYear = $careerStatsBySport[$sportId]['maxYear'];
+                        if ($maxYear === null || $endYear > $maxYear) {
+                            $careerStatsBySport[$sportId]['maxYear'] = $endYear;
+                        }
+                    }
+
+                    $this->Stats->addSeasonStats(
+                        $sportId,
+                        $careerStatsBySport[$sportId]['totals'],
+                        $seasonStats,
+                    );
+                }
+            }
+        }
+
+        $gameLogGroups = $this->buildGameLogGroups($rosterEntries);
+        $gameStats = [];
+
+        $this->set(
+            compact(
+                'person',
+                'images',
+                'blogPosts',
+                'rosterEntries',
+                'rostersBySport',
+                'careerStatsBySport',
+                'gameLogGroups',
+                'gameStats',
+            ),
+        );
+    }
+
+    /**
+     * Render the game log for a person and team season.
+     *
+     * @param int $personId Person ID
+     * @param int $teamSeasonId Team season ID
+     */
+    public function gameLog(int $personId, int $teamSeasonId): void
+    {
+        $person = $this->personService->getPersonById($personId);
+        if (!$person) {
+            throw new NotFoundException('Person not found');
+        }
+
+        $rosterTable = $this->fetchTable('TeamSeasonRosters');
+        $roster = $rosterTable->find()
+            ->contain(['TeamSeasons' => ['Teams' => ['Sports'], 'Seasons']])
+            ->where([
+                'TeamSeasonRosters.person_id' => $personId,
+                'TeamSeasonRosters.team_season_id' => $teamSeasonId,
+            ])
+            ->first();
+
+        if (!$roster) {
+            throw new NotFoundException('Roster entry not found');
+        }
+
+        $teamSeason = $roster->team_season ?? null;
+        $sport = $teamSeason?->team->sport ?? null;
+        $gameLogRows = [];
+        $gameLogElement = null;
+        if ($sport && $this->Stats->hasSportSupport((int)$sport->id)) {
+            $gameLogElement = $this->Stats->getPersonGameLogElement((int)$sport->id);
+            $gameLogRows = $this->Stats->getPersonGameStats(
+                (int)$sport->id,
+                (int)$roster->id,
+            );
+        }
+
+        $frameId = 'person-game-log-frame-' . $personId . '-' . $teamSeasonId;
+
+        $this->set(
+            compact(
+                'person',
+                'teamSeason',
+                'sport',
+                'gameLogRows',
+                'gameLogElement',
+                'frameId',
+            ),
+        );
+
+        $this->viewBuilder()->disableAutoLayout();
+        $this->viewBuilder()->setTemplate('game_log');
     }
 
     /**
@@ -497,7 +635,7 @@ class PeopleController extends AppController
     {
         $table = $this->fetchTable('TeamSeasonRosters');
         $entries = $table->find()
-            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
+            ->contain(['TeamSeasons' => ['Teams' => ['Sports'], 'Seasons']])
             ->where(['TeamSeasonRosters.person_id' => $personId])
             ->orderByDesc('Seasons.start')
             ->all()
@@ -507,27 +645,83 @@ class PeopleController extends AppController
     }
 
     /**
-     * Get game stats for a person.
+     * Build game log groups for supported sports.
      *
-     * @param int $personId Person ID
-     * @return array<int,\App\Model\Entity\StatBasketGamePerson>
+     * @param array<int,\App\Model\Entity\TeamSeasonRosters> $rosterEntries
+     * @return array<int,array{sportId:int,sport:\App\Model\Entity\Sport,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,rosterId:int,label:string,startYear:int}>,activeSeasonId:int|null}>
      */
-    private function getGameStatsForPerson(int $personId): array
+    private function buildGameLogGroups(array $rosterEntries): array
     {
-        try {
-            $table = $this->fetchTable('StatBasketGamePersons');
-            $stats = $table->find()
-                ->contain(['Games' => ['Opponents', 'TeamSeasons' => ['Seasons']]])
-                ->where(['StatBasketGamePersons.person_id' => $personId])
-                ->orderByDesc('Games.game_date')
-                ->limit(20)
-                ->all()
-                ->toArray();
+        $groups = [];
 
-            return $stats;
-        } catch (\Exception $e) {
-            // Table might not exist if basketball stats not enabled
-            return [];
+        foreach ($rosterEntries as $roster) {
+            $teamSeason = $roster->team_season ?? null;
+            $sport = $teamSeason?->team->sport ?? null;
+            if (!$sport) {
+                continue;
+            }
+
+            $sportId = (int)$sport->id;
+            if (!$this->Stats->hasSportSupport($sportId)) {
+                continue;
+            }
+
+            $teamSeasonId = (int)($teamSeason->id ?? 0);
+            if ($teamSeasonId <= 0) {
+                continue;
+            }
+
+            $season = $teamSeason->season ?? null;
+            $label = $this->formatSeasonLabel($season);
+            if ($label === '') {
+                $label = 'Season';
+            }
+
+            if (!isset($groups[$sportId])) {
+                $groups[$sportId] = [
+                    'sportId' => $sportId,
+                    'sport' => $sport,
+                    'seasons' => [],
+                    'activeSeasonId' => null,
+                ];
+            }
+
+            $groups[$sportId]['seasons'][$teamSeasonId] = [
+                'teamSeason' => $teamSeason,
+                'rosterId' => (int)$roster->id,
+                'label' => $label,
+                'startYear' => (int)($season->start ?? 0),
+            ];
         }
+
+        foreach ($groups as $sportId => $group) {
+            $seasons = array_values($group['seasons']);
+            usort(
+                $seasons,
+                static function (array $left, array $right): int {
+                    return $right['startYear'] <=> $left['startYear'];
+                },
+            );
+            $groups[$sportId]['seasons'] = $seasons;
+            $groups[$sportId]['activeSeasonId'] = $seasons[0]['teamSeason']->id ?? null;
+        }
+
+        return array_values($groups);
+    }
+
+    /**
+     * @param object|null $season
+     */
+    private function formatSeasonLabel(?object $season): string
+    {
+        $seasonStart = (string)($season->start ?? '');
+        $seasonEnd = (string)($season->end ?? '');
+        if ($seasonStart === '' && $seasonEnd === '') {
+            return '';
+        }
+
+        $suffix = $seasonEnd !== '' ? substr($seasonEnd, -2) : '';
+
+        return trim($seasonStart . '-' . $suffix, '-');
     }
 }

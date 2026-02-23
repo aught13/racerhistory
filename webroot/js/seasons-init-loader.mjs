@@ -190,10 +190,7 @@ function buildOptions() {
  * @returns {Promise<boolean>} - True when DataTables is available
  */
 function isDataTablesAvailable() {
-    if (
-        typeof window.$ === "undefined" ||
-        typeof window.$.fn === "undefined"
-    ) {
+    if (typeof window.$ === "undefined" || typeof window.$.fn === "undefined") {
         return false;
     }
 

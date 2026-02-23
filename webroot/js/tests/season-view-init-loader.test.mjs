@@ -42,4 +42,39 @@ describe("season-view-init-loader", () => {
 
         addSpy.mockRestore();
     });
+
+    test("boots immediately when document already loaded", async () => {
+        const originalDescriptor = Object.getOwnPropertyDescriptor(
+            document,
+            "readyState",
+        );
+        Object.defineProperty(document, "readyState", {
+            configurable: true,
+            get: () => "complete",
+        });
+
+        await expect(
+            import("../season-view-init-loader.mjs"),
+        ).resolves.toBeDefined();
+
+        if (originalDescriptor) {
+            Object.defineProperty(document, "readyState", originalDescriptor);
+        }
+    });
+
+    test("turbo:frame-load uses document when target is not Element", async () => {
+        const addSpy = jest.spyOn(document, "addEventListener");
+        await import("../season-view-init-loader.mjs");
+
+        const frameHandler = addSpy.mock.calls.find(
+            (call) => call[0] === "turbo:frame-load",
+        );
+        expect(frameHandler).toBeDefined();
+
+        expect(() =>
+            frameHandler[1]({ type: "turbo:frame-load", target: {} }),
+        ).not.toThrow();
+
+        addSpy.mockRestore();
+    });
 });
