@@ -124,7 +124,7 @@ describe("Seasons init loader", () => {
     const setupLoader = async ({ rejectLoader } = {}) => {
         // Don't reset modules - keep setup from beforeEach
         const initSeasonsMock = jest.fn((opts) => {
-            return { sb: null, table: null };
+            return { sb: null, table: null, opts };
         });
         const ensureSearchBuilderLoaded = rejectLoader
             ? jest.fn(() => Promise.reject(new Error("nope")))
@@ -149,9 +149,8 @@ describe("Seasons init loader", () => {
         }
         // Import the loader once and keep it
         if (typeof window.__SEASONS_INIT_LOADER_READY__ === "undefined") {
-            window.__SEASONS_INIT_LOADER_READY__ = import(
-                "../seasons-init-loader.mjs"
-            );
+            window.__SEASONS_INIT_LOADER_READY__ =
+                import("../seasons-init-loader.mjs");
         }
     });
 
@@ -172,7 +171,9 @@ describe("Seasons init loader", () => {
 
             document
                 .getElementById("other-frame")
-                .dispatchEvent(new Event("turbo:frame-load", { bubbles: true }));
+                .dispatchEvent(
+                    new Event("turbo:frame-load", { bubbles: true }),
+                );
 
             jest.runOnlyPendingTimers();
             await flushPromises(2);

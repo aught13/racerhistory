@@ -117,6 +117,9 @@ class PeopleControllerTest extends TestCase
     {
         $this->get('/people/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('Seasons');
+        $this->assertResponseContains('Game Log');
+        $this->assertResponseContains('Stories');
     }
 
     public function testViewWithInvalidId(): void
@@ -143,8 +146,32 @@ class PeopleControllerTest extends TestCase
         $rosterEntries = $this->viewVariable('rosterEntries');
         $this->assertIsArray($rosterEntries);
 
+        $rostersBySport = $this->viewVariable('rostersBySport');
+        $this->assertIsArray($rostersBySport);
+
+        $careerStatsBySport = $this->viewVariable('careerStatsBySport');
+        $this->assertIsArray($careerStatsBySport);
+
         $gameStats = $this->viewVariable('gameStats');
         $this->assertIsArray($gameStats);
+
+        $gameLogGroups = $this->viewVariable('gameLogGroups');
+        $this->assertIsArray($gameLogGroups);
+    }
+
+    public function testGameLogRendersFrame(): void
+    {
+        $this->get('/people/game-log/1/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('turbo-frame');
+        $this->assertResponseContains('person-game-log-frame-1-1');
+    }
+
+    public function testGameLogForMissingRosterReturns404(): void
+    {
+        $this->get('/people/game-log/1/9999');
+        $this->assertResponseError();
+        $this->assertResponseCode(404);
     }
 
     public function testAuthorizationSkipped(): void

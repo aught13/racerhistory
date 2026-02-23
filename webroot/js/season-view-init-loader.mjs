@@ -1,24 +1,25 @@
-/* global Element */
+const doc = globalThis.document;
+const El = globalThis.Element;
 
 import initSeasonView from "./modules/season-view-init.mjs";
 
 function boot(event) {
     if (event?.type === "turbo:frame-load") {
         const frame = event.target;
-        if (frame instanceof Element) {
+        if (frame instanceof El) {
             initSeasonView({ root: frame });
             return;
         }
     }
 
-    initSeasonView({ root: document });
+    initSeasonView({ root: doc });
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+if (doc.readyState === "loading") {
+    doc.addEventListener("DOMContentLoaded", boot);
 } else {
     boot();
 }
 
-document.addEventListener("turbo:load", boot);
-document.addEventListener("turbo:frame-load", boot);
+doc.addEventListener("turbo:load", boot);
+doc.addEventListener("turbo:frame-load", boot);

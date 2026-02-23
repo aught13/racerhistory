@@ -184,6 +184,20 @@ a:hover {
   border-color: var(--rh-border);
 }
 
+.person-view .person-bio {
+  line-height: 1.6;
+  color: var(--rh-muted);
+}
+
+.person-view .list-group-item {
+  border-color: var(--rh-border);
+  background: var(--rh-surface);
+}
+
+.person-view .list-group-item:hover {
+  background: var(--rh-content-bg);
+}
+
 .season-hero-media {
   border-radius: 16px;
   overflow: hidden;
