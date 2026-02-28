@@ -160,6 +160,13 @@ return function (RouteBuilder $routes): void {
             ->setPatterns(['id' => '\\d+']);
 
         $builder->connect('/stats', ['controller' => 'Stats', 'action' => 'index']);
+        $builder->connect('/stats/player-season', ['controller' => 'Stats', 'action' => 'playerSeason']);
+        $builder->connect('/stats/team-season', ['controller' => 'Stats', 'action' => 'teamSeason']);
+        $builder->connect('/stats/team-season-opponent', ['controller' => 'Stats', 'action' => 'teamSeasonOpponent']);
+        $builder->connect('/stats/player-career', ['controller' => 'Stats', 'action' => 'playerCareer']);
+        $builder->connect('/stats/player-game', ['controller' => 'Stats', 'action' => 'playerGame']);
+        $builder->connect('/stats/team-game', ['controller' => 'Stats', 'action' => 'teamGame']);
+        $builder->connect('/stats/opponent-player-game', ['controller' => 'Stats', 'action' => 'opponentPlayerGame']);
         $builder->connect('/stats/season/{teamSeasonId}', ['controller' => 'Stats', 'action' => 'season'])
             ->setPass(['teamSeasonId'])
             ->setPatterns(['teamSeasonId' => '\\d+']);
