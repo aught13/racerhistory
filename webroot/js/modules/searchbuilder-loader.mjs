@@ -31,6 +31,7 @@ export function ensureSearchBuilderLoaded() {
             }
 
             if (Date.now() - startedAt >= DATATABLES_TIMEOUT_MS) {
+                loadPromise = null;
                 reject(new Error("DataTables not available for SearchBuilder"));
                 return;
             }
@@ -63,6 +64,7 @@ export function ensureSearchBuilderLoaded() {
 
             function handleError() {
                 cleanup();
+                loadPromise = null;
                 reject(new Error("SearchBuilder script failed to load"));
             }
 
