@@ -123,17 +123,17 @@ function waitForCondition(checkFn, timeoutMs, intervalMs) {
  */
 async function ensureDataTablesLoaded() {
     if (!hasJquery()) {
-        await waitForCondition(hasJquery, 5000, 50);
+        await waitForCondition(hasJquery, 10000, 50); // Increased from 5000ms to 10000ms
     }
     if (!hasDataTables()) {
         await loadScript(DATATABLES_CORE_SRC);
-        await waitForCondition(hasDataTables, 3000, 50);
+        await waitForCondition(hasDataTables, 5000, 50); // Increased from 3000ms to 5000ms
     }
     await loadScript(DATATABLES_BOOTSTRAP_SRC);
     await loadScript(DATATABLES_SCROLLER_SRC);
     await loadScript(SEARCHBUILDER_SRC);
     await loadScript(SEARCHBUILDER_BOOTSTRAP_SRC);
-    await waitForCondition(hasSearchBuilder, 3000, 50);
+    await waitForCondition(hasSearchBuilder, 5000, 50); // Increased from 3000ms to 5000ms
 }
 
 /* ——— Public functions ———————————————————————————————— */

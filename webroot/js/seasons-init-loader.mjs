@@ -201,7 +201,7 @@ function isDataTablesAvailable() {
     return hasDataTableFn || hasDataTableObj;
 }
 
-function waitForDataTables(maxAttempts = 20, delayMs = 100) {
+function waitForDataTables(maxAttempts = 100, delayMs = 100) {
     return new Promise((resolve) => {
         let attempts = 0;
 

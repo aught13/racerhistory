@@ -1,7 +1,7 @@
 const SEARCH_BUILDER_SRC =
     "https://cdn.datatables.net/searchbuilder/1.4.2/js/dataTables.searchBuilder.min.js";
 const DATATABLES_WAIT_MS = 50;
-const DATATABLES_TIMEOUT_MS = 2000;
+const DATATABLES_TIMEOUT_MS = 10000; // Increased from 2000ms to 10000ms for Turbo navigation
 let loadPromise = null;
 
 function isSearchBuilderAvailable() {

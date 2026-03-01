@@ -83,7 +83,14 @@ CREATE TABLE IF NOT EXISTS games (
   pts_opp VARCHAR(3) NULL,
   mur_rk INTEGER NULL,
   opp_rk INTEGER NULL,
-  periods VARCHAR(2) NULL
+  periods VARCHAR(2) NULL,
+  ot VARCHAR(2) NULL,
+  attendance VARCHAR(7) NULL,
+  game_preview TEXT NULL,
+  game_recap TEXT NULL,
+  game_notes TEXT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Team season roster table

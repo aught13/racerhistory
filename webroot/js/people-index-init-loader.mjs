@@ -83,7 +83,7 @@ function loadScript(src) {
     });
 }
 
-function waitForDataTables(timeoutMs = 2000, intervalMs = 50) {
+function waitForDataTables(timeoutMs = 10000, intervalMs = 50) {
     if (hasDataTables()) {
         return Promise.resolve();
     }

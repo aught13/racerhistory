@@ -42,16 +42,19 @@ class GamesControllerTest extends TestCase
         $this->get('/games');
         $this->assertResponseOk();
         $this->assertResponseContains('Games');
-        $this->assertResponseContains('Men\'s Basketball game results');
+        $this->assertResponseContains('Explore Men\'s Basketball game history');
     }
 
-    public function testIndexDisplaysGames(): void
+    public function testIndexDisplaysSearchTypes(): void
     {
         $this->get('/games');
         $this->assertResponseOk();
 
-        $games = $this->viewVariable('games');
-        $this->assertIsArray($games);
+        $searchTypes = $this->viewVariable('searchTypes');
+        $this->assertIsArray($searchTypes);
+        $this->assertArrayHasKey('ranked', $searchTypes);
+        $this->assertArrayHasKey('overtime', $searchTypes);
+        $this->assertArrayHasKey('series', $searchTypes);
     }
 
     public function testView(): void
@@ -104,5 +107,146 @@ class GamesControllerTest extends TestCase
 
         $this->get('/games/1');
         $this->assertResponseOk();
+    }
+
+    // ─── New game search actions ──────────────────────────────────────
+
+    public function testRankedPage(): void
+    {
+        $this->get('/games/ranked');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Ranked Games');
+    }
+
+    public function testRankedJson(): void
+    {
+        $this->configRequest([
+            'headers' => ['Accept' => 'application/json'],
+        ]);
+        $this->get('/games/ranked?format=json');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+        $body = (string)$this->_response->getBody();
+        $data = json_decode($body, true);
+        $this->assertArrayHasKey('data', $data);
+    }
+
+    public function testOvertimePage(): void
+    {
+        $this->get('/games/overtime');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Overtime Games');
+    }
+
+    public function testOvertimeJson(): void
+    {
+        $this->get('/games/overtime?format=json');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+    }
+
+    public function testHundredPointPage(): void
+    {
+        $this->get('/games/hundred-point');
+        $this->assertResponseOk();
+        $this->assertResponseContains('100 Point Games');
+    }
+
+    public function testHundredPointJson(): void
+    {
+        $this->get('/games/hundred-point?format=json');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+    }
+
+    public function testOpenersPage(): void
+    {
+        $this->get('/games/openers');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Season Openers');
+    }
+
+    public function testOpenersWithType(): void
+    {
+        $this->get('/games/openers?type=home');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Season Openers');
+    }
+
+    public function testOpenersJson(): void
+    {
+        $this->get('/games/openers?format=json&type=season');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+    }
+
+    public function testStreaksPage(): void
+    {
+        $this->get('/games/streaks');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Winning');
+        $this->assertResponseContains('Streaks');
+    }
+
+    public function testStreaksLosing(): void
+    {
+        $this->get('/games/streaks?result=L&filter=home');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Losing');
+    }
+
+    public function testMarginsPage(): void
+    {
+        $this->get('/games/margins');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Biggest Wins');
+    }
+
+    public function testMarginsLoss(): void
+    {
+        $this->get('/games/margins?type=loss&filter=road');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Largest Losses');
+    }
+
+    public function testSeriesPage(): void
+    {
+        $this->get('/games/series');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Series History');
+        $this->assertResponseContains('Select an opponent');
+    }
+
+    public function testSeriesWithOpponent(): void
+    {
+        $this->get('/games/series?opponent_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Series History');
+    }
+
+    public function testSeriesJson(): void
+    {
+        $this->get('/games/series?opponent_id=1&format=json');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+    }
+
+    public function testSubNavOnAllPages(): void
+    {
+        $pages = [
+            '/games',
+            '/games/ranked',
+            '/games/overtime',
+            '/games/hundred-point',
+            '/games/openers',
+            '/games/streaks',
+            '/games/margins',
+            '/games/series',
+        ];
+        foreach ($pages as $url) {
+            $this->get($url);
+            $this->assertResponseOk();
+            $this->assertResponseContains('games-sub-nav');
+        }
     }
 }
