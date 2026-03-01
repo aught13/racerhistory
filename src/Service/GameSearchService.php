@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use Cake\I18n\Date;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Query\SelectQuery;
 
@@ -123,15 +122,24 @@ class GameSearchService
      *
      * @return array
      */
-    public function hundredPointGames(): array
+    public function hundredPointGames(string $filter = 'all'): array
     {
-        return $this->baseQuery()
-            ->where([
-                'OR' => [
-                    'Games.pts_mur >=' => 100,
-                    'Games.pts_opp >=' => 100,
-                ],
-            ])
+        $query = $this->baseQuery();
+
+        if ($filter === 'team') {
+            $pointsFilter = $query->newExpr()->add('CAST(Games.pts_mur AS INTEGER) >= :min_points');
+        } elseif ($filter === 'opponent') {
+            $pointsFilter = $query->newExpr()->add('CAST(Games.pts_opp AS INTEGER) >= :min_points');
+        } else {
+            $pointsFilter = $query->newExpr()->or([
+                'CAST(Games.pts_mur AS INTEGER) >= :min_points',
+                'CAST(Games.pts_opp AS INTEGER) >= :min_points',
+            ]);
+        }
+
+        return $query
+            ->where($pointsFilter)
+            ->bind(':min_points', 100, 'integer')
             ->orderByDesc('Games.game_date')
             ->all()
             ->toArray();
@@ -145,84 +153,43 @@ class GameSearchService
      */
     public function openers(string $type = 'season'): array
     {
-        $gamesTable = $this->fetchTable('Games');
+        $query = $this->baseQuery();
 
-        // Sub-query to find first game per team_season matching criteria
-        $subQuery = $gamesTable->find()
-            ->select([
-                'team_season_id' => 'Games.team_season_id',
-                'first_date' => $gamesTable->find()->func()->min('Games.game_date'),
-            ])
-            ->matching('TeamSeason.Teams', function ($q) {
-                return $q->where([
-                    'Teams.sport_id' => 1,
-                    'Teams.gender' => 'M',
-                ]);
-            })
-            ->where([
-                'OR' => [
-                    'Games.pts_mur IS NOT' => null,
-                    'Games.w IS NOT' => null,
-                ],
-            ]);
-
+        // Apply the opener filter to the candidate game set.
         switch ($type) {
             case 'home':
-                $subQuery->where(['Games.hrn' => 1]);
+                $query->where(['Games.hrn' => 1]);
                 break;
             case 'conf':
-                $subQuery->innerJoinWith('GameTypes', function ($q) {
+                $query->innerJoinWith('GameTypes', function ($q) {
                     return $q->where(['GameTypes.conf' => true]);
                 });
                 break;
             case 'conf_home':
-                $subQuery->where(['Games.hrn' => 1]);
-                $subQuery->innerJoinWith('GameTypes', function ($q) {
+                $query->where(['Games.hrn' => 1]);
+                $query->innerJoinWith('GameTypes', function ($q) {
                     return $q->where(['GameTypes.conf' => true]);
                 });
                 break;
             // 'season' = first game of each team_season (no extra filter)
         }
 
-        $subQuery->groupBy(['Games.team_season_id']);
+        $games = $query
+            ->orderByAsc('Games.game_date')
+            ->all()
+            ->toArray();
 
-        // Main query joining back to get the full game rows
+        $seenTeamSeasons = [];
         $results = [];
-        $openerRows = $subQuery->all()->toArray();
 
-        foreach ($openerRows as $row) {
-            $firstDate = $row->first_date;
-            if (!($firstDate instanceof Date)) {
-                $firstDate = new Date((string)$firstDate);
-            }
-            $game = $this->baseQuery()
-                ->where([
-                    'Games.team_season_id' => $row->team_season_id,
-                    'Games.game_date' => $firstDate,
-                ]);
-
-            // Re-apply the same type filters so we get the exact opening game
-            switch ($type) {
-                case 'home':
-                    $game->where(['Games.hrn' => 1]);
-                    break;
-                case 'conf':
-                    $game->innerJoinWith('GameTypes', function ($q) {
-                        return $q->where(['GameTypes.conf' => true]);
-                    });
-                    break;
-                case 'conf_home':
-                    $game->where(['Games.hrn' => 1]);
-                    $game->innerJoinWith('GameTypes', function ($q) {
-                        return $q->where(['GameTypes.conf' => true]);
-                    });
-                    break;
+        foreach ($games as $game) {
+            $teamSeasonId = (int)($game->team_season_id ?? 0);
+            if ($teamSeasonId <= 0 || isset($seenTeamSeasons[$teamSeasonId])) {
+                continue;
             }
 
-            $found = $game->first();
-            if ($found) {
-                $results[] = $found;
-            }
+            $seenTeamSeasons[$teamSeasonId] = true;
+            $results[] = $game;
         }
 
         // Sort descending by date

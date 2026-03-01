@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $searchTypes
@@ -8,7 +9,11 @@ declare(strict_types=1);
  */
 $this->assign('title', 'Season Openers');
 $openerType = $openerType ?? 'season';
-$ajaxUrl = $this->Url->build(['controller' => 'Games', 'action' => 'openers', '?' => ['format' => 'json', 'type' => $openerType]]);
+$ajaxUrl = $this->Url->build([
+    'controller' => 'Games',
+    'action' => 'openers',
+    '?' => ['format' => 'json', 'type' => $openerType],
+]);
 
 $openerLabels = [
     'season' => 'Season Opener',
@@ -20,7 +25,9 @@ $openerLabels = [
 <div class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a></li>
+            <li class="breadcrumb-item">
+                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a>
+            </li>
             <li class="breadcrumb-item active" aria-current="page">Openers</li>
         </ol>
     </nav>
@@ -31,7 +38,11 @@ $openerLabels = [
 
     <div class="btn-group mb-4" role="group" aria-label="Opener type">
         <?php foreach ($openerLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'openers', '?' => ['type' => $key]]) ?>"
+            <a href="<?= $this->Url->build([
+                'controller' => 'Games',
+                'action' => 'openers',
+                '?' => ['type' => $key],
+            ]) ?>"
                class="btn btn-sm <?= $openerType === $key ? 'btn-primary' : 'btn-outline-primary' ?>">
                 <?= h($label) ?>
             </a>
@@ -41,21 +52,26 @@ $openerLabels = [
     <?= $this->element('Stats/table_assets') ?>
 
     <div class="card">
+        <div class="card-header">
+            <strong>Overall Record:</strong> <span id="games-record-display">-</span>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive" id="games-table-wrap">
                 <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
-                       data-ajax-url="<?= h($ajaxUrl) ?>">
+                       data-ajax-url="<?= $ajaxUrl ?>"
+                       data-result-column="2">
                     <thead class="table-dark">
                         <tr>
                             <th>Date</th>
                             <th>Opponent</th>
                             <th>Result</th>
-                            <th>Score</th>
-                            <th>H/R/N</th>
                             <th>Margin</th>
-                            <th>OT</th>
                             <th>Pts For</th>
                             <th>Pts Against</th>
+                            <th>OT</th>
+                            <th>H/R/N</th>
+                            <th>Conf</th>
+                            <th>Game Type</th>
                             <th>Season</th>
                         </tr>
                     </thead>
