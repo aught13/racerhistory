@@ -47,7 +47,7 @@ module.exports = [
     },
     {
         // Module files (ESM)
-        files: ['webroot/js/modules/**/*.js', 'webroot/js/modules/**/*.mjs', 'webroot/js/*-loader.js', 'webroot/js/*-loader.mjs'],
+        files: ['webroot/js/modules/**/*.js', 'webroot/js/modules/**/*.mjs', 'webroot/js/*-loader.js', 'webroot/js/*-loader.mjs', 'webroot/js/*-init.mjs'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',

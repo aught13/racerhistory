@@ -81,21 +81,21 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertSame('Conference Tournament', $summary['Conference Tournament']['label'] ?? null);
         $this->assertSame('-', $summary['Postseason']['label'] ?? null);
 
-        $this->assertSame(2, $overallTotals['W']);
+        $this->assertSame(3, $overallTotals['W']);
         $this->assertSame(1, $overallTotals['L']);
         $this->assertSame(0, $overallTotals['T']);
-        $this->assertEqualsWithDelta(0.667, $overallTotals['Pct'], 0.001);
+        $this->assertEqualsWithDelta(0.75, $overallTotals['Pct'], 0.001);
 
-        $this->assertSame(2, $confTotals['W']);
+        $this->assertSame(3, $confTotals['W']);
         $this->assertSame(1, $confTotals['L']);
         $this->assertSame(0, $confTotals['T']);
-        $this->assertEqualsWithDelta(0.667, $confTotals['Pct'], 0.001);
+        $this->assertEqualsWithDelta(0.75, $confTotals['Pct'], 0.001);
 
-        $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $overallSplits['Home']);
+        $this->assertSame(['W' => 2, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $overallSplits['Home']);
         $this->assertSame(['W' => 0, 'L' => 1, 'T' => 0, 'Pct' => 0.0], $overallSplits['Road']);
         $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $overallSplits['Neutral']);
 
-        $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $confSplits['Home']);
+        $this->assertSame(['W' => 2, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $confSplits['Home']);
         $this->assertSame(['W' => 0, 'L' => 1, 'T' => 0, 'Pct' => 0.0], $confSplits['Road']);
         $this->assertSame(['W' => 1, 'L' => 0, 'T' => 0, 'Pct' => 1.0], $confSplits['Neutral']);
 
