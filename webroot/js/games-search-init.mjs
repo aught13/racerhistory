@@ -33,6 +33,17 @@ const NUMERIC_COLUMNS = [
 
 const SCROLLER_THRESHOLD = 75;
 
+function normalizeUrl(url) {
+    if (!url) {
+        return "";
+    }
+    try {
+        return new URL(url, window.location.origin).toString();
+    } catch {
+        return String(url);
+    }
+}
+
 function hasJquery() {
     return typeof window.$ === "function" && typeof window.$.fn === "object";
 }
@@ -126,11 +137,33 @@ function initGamesPage() {
     if (table) {
         // Only skip if table already has DataTable AND is in the DOM
         const hasDataTable =
+            hasJquery() &&
             window.$.fn.dataTable &&
             window.$.fn.dataTable.isDataTable(table) &&
             document.body.contains(table);
 
-        if (!hasDataTable && !initializingTables.has(table.id)) {
+        if (hasDataTable) {
+            try {
+                const dt = window.$(table).DataTable();
+                const nextUrl = normalizeUrl(table.dataset.ajaxUrl || "");
+                const currentUrl = normalizeUrl(
+                    typeof dt.ajax?.url === "function" ? dt.ajax.url() : "",
+                );
+
+                // Turbo navigation can preserve an existing DataTable instance.
+                // If the server rendered a different endpoint (e.g. new quick filter),
+                // force DataTables to fetch from the new URL.
+                if (nextUrl && nextUrl !== currentUrl) {
+                    dt.search("");
+                    if (typeof dt.searchBuilder?.rebuild === "function") {
+                        dt.searchBuilder.rebuild({});
+                    }
+                    dt.ajax.url(table.dataset.ajaxUrl).load();
+                }
+            } catch (err) {
+                console.warn("Failed to refresh existing games DataTable", err);
+            }
+        } else if (!initializingTables.has(table.id)) {
             initGamesDataTable(table);
         }
     }
@@ -148,9 +181,14 @@ function initGamesPage() {
  * @returns {string} Record as "W-L"
  */
 function calculateRecord(dt) {
-    // Get the Result/W-L column index from the table's data attribute, default to 6
-    const table = dt.table().node();
-    const resultColumn = parseInt(table.dataset.resultColumn || 6, 10);
+    // Get the Result/W-L column index from table data attribute when available.
+    let resultColumn = 6;
+    if (typeof dt?.table === "function") {
+        const tableNode = dt.table()?.node?.();
+        if (tableNode?.dataset?.resultColumn) {
+            resultColumn = parseInt(tableNode.dataset.resultColumn, 10);
+        }
+    }
 
     let wins = 0;
     let losses = 0;
@@ -194,6 +232,7 @@ function initGamesDataTable(table) {
 
     // Check if this table already has a DataTable instance - if so, skip re-initialization
     if (
+        hasJquery() &&
         window.$.fn.dataTable &&
         window.$.fn.dataTable.isDataTable(table)
     ) {
@@ -396,11 +435,32 @@ function initCardHover(container) {
     });
 }
 
+function cleanupGamesPage() {
+    const table = document.getElementById("games-results-table");
+    if (!table || !hasJquery() || !window.$.fn?.dataTable) {
+        return;
+    }
+
+    try {
+        if (window.$.fn.dataTable.isDataTable(table)) {
+            window.$(table).DataTable().destroy(true);
+        }
+    } catch (err) {
+        console.warn("Failed to clean up games DataTable before navigation", err);
+    }
+
+    const searchBuilderSlot = document.getElementById("games-searchbuilder-slot");
+    if (searchBuilderSlot) {
+        searchBuilderSlot.remove();
+    }
+}
+
 export {
     initGamesPage,
     initGamesDataTable,
     initDragScroll,
     initCardHover,
+    cleanupGamesPage,
     calculateRecord,
     updateRecordDisplay,
     NUMERIC_COLUMNS,
@@ -409,6 +469,12 @@ export {
 
 // Clear initialization tracking when navigating away
 document.addEventListener("turbo:before-fetch", () => {
+    cleanupGamesPage();
+    initializingTables.clear();
+});
+
+document.addEventListener("turbo:before-cache", () => {
+    cleanupGamesPage();
     initializingTables.clear();
 });
 

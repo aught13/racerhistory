@@ -150,6 +150,13 @@ class GamesControllerTest extends TestCase
         $this->get('/games/hundred-point');
         $this->assertResponseOk();
         $this->assertResponseContains('100 Point Games');
+        $this->assertResponseContains('Overall Record:');
+        $this->assertResponseContains('Game Type');
+        $this->assertResponseContains('All 100+ Games');
+        $this->assertResponseContains('Team 100+ (Pts For)');
+        $this->assertResponseContains('Opponent 100+ (Pts Against)');
+        $this->assertResponseNotContains('Season Type');
+        $this->assertResponseNotContains('<th>Score</th>');
     }
 
     public function testHundredPointJson(): void
@@ -157,6 +164,50 @@ class GamesControllerTest extends TestCase
         $this->get('/games/hundred-point?format=json');
         $this->assertResponseOk();
         $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $payload = json_decode($body, true);
+
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertCount(1, $payload['data']);
+
+        $row = $payload['data'][0];
+        $this->assertCount(11, $row);
+        $this->assertSame('W', strip_tags((string)$row[2]));
+        $this->assertSame('7', (string)$row[3]);
+        $this->assertSame('105', (string)$row[4]);
+        $this->assertSame('98', (string)$row[5]);
+        $this->assertSame('2', strip_tags((string)$row[6]));
+        $this->assertSame('H', strip_tags((string)$row[7]));
+        $this->assertStringContainsString('/games/series?opponent_id=1', (string)$row[1]);
+    }
+
+    public function testHundredPointJsonTeamFilter(): void
+    {
+        $this->get('/games/hundred-point?format=json&filter=team');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $payload = json_decode($body, true);
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertCount(1, $payload['data']);
+        $this->assertSame('105', (string)$payload['data'][0][4]);
+    }
+
+    public function testHundredPointJsonOpponentFilter(): void
+    {
+        $this->get('/games/hundred-point?format=json&filter=opponent');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $payload = json_decode($body, true);
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertCount(0, $payload['data']);
     }
 
     public function testOpenersPage(): void
@@ -164,6 +215,11 @@ class GamesControllerTest extends TestCase
         $this->get('/games/openers');
         $this->assertResponseOk();
         $this->assertResponseContains('Season Openers');
+        $this->assertResponseContains('Overall Record:');
+        $this->assertResponseContains('Game Type');
+        $this->assertResponseNotContains('Season Type');
+        $this->assertResponseNotContains('<th>Score</th>');
+        $this->assertResponseNotContains('&amp;amp;type=');
     }
 
     public function testOpenersWithType(): void
@@ -178,6 +234,20 @@ class GamesControllerTest extends TestCase
         $this->get('/games/openers?format=json&type=season');
         $this->assertResponseOk();
         $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $payload = json_decode($body, true);
+
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertIsArray($payload['data']);
+
+        if (!empty($payload['data'])) {
+            $row = $payload['data'][0];
+            $this->assertCount(11, $row);
+            $this->assertStringContainsString('/games/series?opponent_id=', (string)$row[1]);
+            $this->assertContains(strip_tags((string)$row[8]), ['Y', 'N']);
+        }
     }
 
     public function testStreaksPage(): void

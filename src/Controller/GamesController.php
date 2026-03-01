@@ -150,13 +150,20 @@ class GamesController extends AppController
      */
     public function hundredPoint(): ?Response
     {
+        $filter = (string)$this->getRequest()->getQuery('filter', 'all');
+        $allowed = ['all', 'team', 'opponent'];
+        if (!in_array($filter, $allowed, true)) {
+            $filter = 'all';
+        }
+
         if ($this->isJsonRequest()) {
-            $games = $this->gameSearchService->hundredPointGames();
+            $games = $this->gameSearchService->hundredPointGames($filter);
 
             return $this->jsonResponse($this->formatHundredPointRows($games));
         }
 
         $this->set('currentSearch', 'hundred-point');
+        $this->set('hundredPointFilter', $filter);
 
         return null;
     }
@@ -367,6 +374,26 @@ class GamesController extends AppController
     }
 
     /**
+     * Format OT display value.
+     *
+     * @param mixed $ot
+     * @return string
+     */
+    protected function otDisplay(mixed $ot): string
+    {
+        if ($ot === null) {
+            return '-';
+        }
+
+        $value = trim((string)$ot);
+        if ($value === '' || $value === '0') {
+            return '-';
+        }
+
+        return h($value);
+    }
+
+    /**
      * Format a game date as MM/DD/YYYY with a hidden ISO prefix for DataTables sorting.
      *
      * @param mixed $date
@@ -469,7 +496,7 @@ class GamesController extends AppController
                 abs($ptsMur - $ptsOpp),
                 $ptsMur,
                 $ptsOpp,
-                h((string)($g->ot ?? '1')),
+                $this->otDisplay($g->ot ?? null),
                 $this->hrnLabel((int)($g->hrn ?? 0)),
                 $isConf ? 'Y' : 'N',
                 $gameTypeDisplay,
@@ -497,22 +524,39 @@ class GamesController extends AppController
             $ptsMur = (int)($g->pts_mur ?? 0);
             $ptsOpp = (int)($g->pts_opp ?? 0);
             $isConf = (bool)($g->game_type->conf ?? false);
+            $seasonLabel = ($g->team_season->season->start ?? '') . '-'
+                . ($g->team_season->season->end ?? '');
+            $dateDisplay = $this->formatDate($g->game_date);
+            $gameTypeDisplay = $g->post
+                ? h((string)($g->game_type->abr ?? 'Post'))
+                : 'Regular';
+            $opponentDisplay = (string)($g->opponent->opponent_short
+                ?? $g->opponent->opponent_abbr
+                ?? $g->opponent->opponent_name
+                ?? '?');
             $rows[] = [
-                $this->formatDate($g->game_date),
                 $this->link(
-                    $g->opponent->opponent_name ?? '?',
-                    ['controller' => 'Games', 'action' => 'view', $g->id]
+                    $dateDisplay,
+                    ['controller' => 'Games', 'action' => 'view', $g->id],
+                    ['escape' => false]
+                ),
+                $this->link(
+                    $opponentDisplay,
+                    ['controller' => 'Games', 'action' => 'series',
+                     '?' => ['opponent_id' => $g->opponent->id ?? 0]]
                 ),
                 h($result ?? '-'),
-                $this->scoreStr($g),
-                $this->hrnLabel((int)($g->hrn ?? 0)),
                 abs($ptsMur - $ptsOpp),
-                h((string)($g->ot ?? '')),
-                $isConf ? 'Conf' : 'Non-Conf',
                 $ptsMur,
                 $ptsOpp,
-                $g->post ? 'Post' : 'Regular',
-                h(($g->team_season->season->start ?? '') . '-' . ($g->team_season->season->end ?? '')),
+                $this->otDisplay($g->ot ?? null),
+                $this->hrnLabel((int)($g->hrn ?? 0)),
+                $isConf ? 'Y' : 'N',
+                $gameTypeDisplay,
+                $this->link(
+                    $seasonLabel,
+                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0]
+                ),
             ];
         }
 
@@ -532,20 +576,40 @@ class GamesController extends AppController
             $result = $this->gameService->getResultFlag($g);
             $ptsMur = (int)($g->pts_mur ?? 0);
             $ptsOpp = (int)($g->pts_opp ?? 0);
+            $isConf = (bool)($g->game_type->conf ?? false);
+            $seasonLabel = ($g->team_season->season->start ?? '') . '-'
+                . ($g->team_season->season->end ?? '');
+            $dateDisplay = $this->formatDate($g->game_date);
+            $gameTypeDisplay = $g->post || $isConf
+                ? h((string)($g->game_type->abr ?? ($isConf ? 'Conf' : 'Post')))
+                : 'Regular';
+            $opponentDisplay = (string)($g->opponent->opponent_short
+                ?? $g->opponent->opponent_abbr
+                ?? $g->opponent->opponent_name
+                ?? '?');
             $rows[] = [
-                $this->formatDate($g->game_date),
                 $this->link(
-                    $g->opponent->opponent_name ?? '?',
-                    ['controller' => 'Games', 'action' => 'view', $g->id]
+                    $dateDisplay,
+                    ['controller' => 'Games', 'action' => 'view', $g->id],
+                    ['escape' => false]
+                ),
+                $this->link(
+                    $opponentDisplay,
+                    ['controller' => 'Games', 'action' => 'series',
+                     '?' => ['opponent_id' => $g->opponent->id ?? 0]]
                 ),
                 h($result ?? '-'),
-                $this->scoreStr($g),
-                $this->hrnLabel((int)($g->hrn ?? 0)),
                 abs($ptsMur - $ptsOpp),
-                h((string)($g->ot ?? '')),
                 $ptsMur,
                 $ptsOpp,
-                h(($g->team_season->season->start ?? '') . '-' . ($g->team_season->season->end ?? '')),
+                $this->otDisplay($g->ot ?? null),
+                $this->hrnLabel((int)($g->hrn ?? 0)),
+                $isConf ? 'Y' : 'N',
+                $gameTypeDisplay,
+                $this->link(
+                    $seasonLabel,
+                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0]
+                ),
             ];
         }
 
