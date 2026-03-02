@@ -270,6 +270,38 @@ class GamesController extends AppController
         return null;
     }
 
+    /**
+     * Search opponents for autocomplete (AJAX endpoint).
+     *
+     * @return \Cake\Http\Response
+     */
+    public function searchOpponents(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $q = trim((string)$this->request->getQuery('q'));
+
+        if ($q === '') {
+            return $this->response->withType('application/json')
+                ->withStringBody(json_encode(['success' => true, 'opponents' => []]));
+        }
+
+        $opponentService = new \App\Service\OpponentService();
+        $results = $opponentService->searchOpponents($q, 25);
+
+        $opponents = [];
+        foreach ($results as $opponent) {
+            $opponents[] = [
+                'id' => (int)$opponent->id,
+                'name' => (string)($opponent->opponent_name ?? ''),
+                'short' => (string)($opponent->opponent_short ?? ''),
+                'label' => (string)($opponent->opponent_name ?? 'Opponent #' . $opponent->id),
+            ];
+        }
+
+        return $this->response->withType('application/json')
+            ->withStringBody(json_encode(['success' => true, 'opponents' => $opponents]));
+    }
+
     // ─── Helper methods ───────────────────────────────────────────────
 
     /**

@@ -270,6 +270,15 @@ class GamesControllerTest extends TestCase
         $this->get('/games/margins');
         $this->assertResponseOk();
         $this->assertResponseContains('Biggest Wins');
+        $this->assertResponseContains('<th>#</th>');
+        $this->assertResponseContains('<th>Date</th>');
+        $this->assertResponseContains('<th>Opponent</th>');
+        $this->assertResponseContains('<th>Margin</th>');
+        $this->assertResponseContains('<th>Game Type</th>');
+        $this->assertResponseContains('<th>Conf</th>');
+        $this->assertResponseNotContains('<th>Result</th>');
+        $this->assertResponseNotContains('<th>OT</th>');
+        $this->assertResponseNotContains('<th>Score</th>');
     }
 
     public function testMarginsLoss(): void
@@ -277,6 +286,31 @@ class GamesControllerTest extends TestCase
         $this->get('/games/margins?type=loss&filter=road');
         $this->assertResponseOk();
         $this->assertResponseContains('Largest Losses');
+    }
+
+    public function testMarginsUsesDenseRankingAndTieDateSort(): void
+    {
+        $this->get('/games/margins?type=win&filter=overall');
+        $this->assertResponseOk();
+
+        $games = $this->viewVariable('games');
+        $this->assertIsArray($games);
+        $this->assertGreaterThanOrEqual(3, count($games));
+
+        // Highest margin first (id 3: 80-70, margin 10).
+        $this->assertSame(3, (int)$games[0]->id);
+        $this->assertSame(1, (int)($games[0]->rank ?? 0));
+
+        // Tied margins (7) share rank and are ordered by most recent date.
+        $this->assertSame(4, (int)$games[1]->id);
+        $this->assertSame(1, (int)$games[1]->game_date->format('n'));
+        $this->assertSame(20, (int)$games[1]->game_date->format('j'));
+        $this->assertSame(2, (int)($games[1]->rank ?? 0));
+
+        $this->assertSame(1, (int)$games[2]->id);
+        $this->assertSame(1, (int)$games[2]->game_date->format('n'));
+        $this->assertSame(15, (int)$games[2]->game_date->format('j'));
+        $this->assertSame(2, (int)($games[2]->rank ?? 0));
     }
 
     public function testSeriesPage(): void

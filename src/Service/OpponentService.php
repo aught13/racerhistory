@@ -42,7 +42,7 @@ class OpponentService
     }
 
     /**
-     * Search opponents by name.
+     * Search opponents by name or short name.
      *
      * @param string $query Search query
      * @param int $limit Result limit
@@ -57,7 +57,12 @@ class OpponentService
         }
 
         return $opponents->find()
-            ->where(['Opponents.opponent_name LIKE' => "%{$query}%"])
+            ->where([
+                'OR' => [
+                    'Opponents.opponent_name LIKE' => "%{$query}%",
+                    'Opponents.opponent_short LIKE' => "%{$query}%",
+                ],
+            ])
             ->orderBy(['Opponents.opponent_name' => 'ASC'])
             ->limit($limit)
             ->all()

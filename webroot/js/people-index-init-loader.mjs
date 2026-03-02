@@ -1,4 +1,3 @@
-/* global window, document, console */
 import { ensureSearchBuilderLoaded } from "./modules/searchbuilder-loader.mjs";
 
 let initPeoplePromise;

@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $searchTypes
@@ -18,13 +19,21 @@ $opponentName = $opponentName ?? null;
 
 $ajaxUrl = null;
 if ($selectedOpponent) {
-    $ajaxUrl = $this->Url->build(['controller' => 'Games', 'action' => 'series', '?' => ['opponent_id' => $selectedOpponent, 'format' => 'json']]);
+    $ajaxUrl = $this->Url->build([
+        'controller' => 'Games',
+        'action' => 'series',
+        '?' => ['opponent_id' => $selectedOpponent, 'format' => 'json'],
+    ]);
 }
 ?>
 <div class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a></li>
+            <li class="breadcrumb-item">
+                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">
+                    Games
+                </a>
+            </li>
             <li class="breadcrumb-item active" aria-current="page">Series History</li>
         </ol>
     </nav>
@@ -33,20 +42,29 @@ if ($selectedOpponent) {
 
     <h1 class="h3 mb-3">Series History</h1>
 
-    <form method="get" action="<?= $this->Url->build(['controller' => 'Games', 'action' => 'series']) ?>" class="row g-2 mb-4 align-items-end">
+    <form method="get"
+          action="<?= $this->Url->build(['controller' => 'Games', 'action' => 'series']) ?>"
+          class="row g-2 mb-4 align-items-end"
+          id="opponent-search-form">
         <div class="col-md-6">
-            <label for="opponent-select" class="form-label">Search by Opponent</label>
-            <select name="opponent_id" id="opponent-select" class="form-select">
-                <option value="">-- Select Opponent --</option>
-                <?php foreach ($opponents as $id => $name) : ?>
-                    <option value="<?= (int)$id ?>" <?= $selectedOpponent === $id ? 'selected' : '' ?>>
-                        <?= h($name) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+            <label for="opponent-search-input" class="form-label">Search by Opponent</label>
+            <input
+                type="text"
+                id="opponent-search-input"
+                class="form-control"
+                list="opponent-datalist"
+                placeholder="Type to search by name or abbreviation..."
+                autocomplete="off"
+                value="<?= $selectedOpponent ? h($opponentName) : '' ?>"
+            />
+            <datalist id="opponent-datalist"></datalist>
+            <input type="hidden"
+                   name="opponent_id"
+                   id="opponent-id-hidden"
+                   value="<?= $selectedOpponent ?? '' ?>" />
         </div>
         <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">
+            <button type="submit" class="btn btn-primary w-100" id="search-btn">
                 <i class="bi bi-search me-1"></i> Search
             </button>
         </div>
@@ -90,6 +108,67 @@ if ($selectedOpponent) {
             </div>
         </div>
 
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-subtitle text-muted">Last 10</h6>
+                        <p class="card-text fs-4 fw-bold mb-0"><?= h($record['last10']) ?></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-subtitle text-muted">Current Streak</h6>
+                        <p class="card-text fs-4 fw-bold mb-0">
+                            <?php if ($record['streak_type']) : ?>
+                                <span class="badge bg-<?= $record['streak_type'] === 'W' ? 'success' : 'danger' ?>">
+                                    <?= h($record['streak']) ?>
+                                </span>
+                            <?php else : ?>
+                                <span class="text-muted">-</span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-subtitle text-muted">Biggest Win</h6>
+                        <p class="card-text mb-0">
+                            <?php if ($record['biggest_win']) : ?>
+                                <strong><?= h($record['biggest_win_margin']) ?> pts</strong><br>
+                                <small class="text-muted">
+                                    <?= h((string)($record['biggest_win']->game_date ?? '')) ?>
+                                </small>
+                            <?php else : ?>
+                                <span class="text-muted">-</span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-subtitle text-muted">Biggest Loss</h6>
+                        <p class="card-text mb-0">
+                            <?php if ($record['biggest_loss']) : ?>
+                                <strong><?= h($record['biggest_loss_margin']) ?> pts</strong><br>
+                                <small class="text-muted">
+                                    <?= h((string)($record['biggest_loss']->game_date ?? '')) ?>
+                                </small>
+                            <?php else : ?>
+                                <span class="text-muted">-</span>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <?php if ($record['first_game']) : ?>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
@@ -102,10 +181,12 @@ if ($selectedOpponent) {
                                 <?php
                                 $fg = $record['first_game'];
                                 $fResult = $fg->result_flag ??
-                                    ((!empty($fg->w) && $fg->w !== '0') ? 'W' :
-                                    ((!empty($fg->l) && $fg->l !== '0') ? 'L' : '-'));
+                                    (!empty($fg->w) && $fg->w !== '0' ? 'W' :
+                                    (!empty($fg->l) && $fg->l !== '0' ? 'L' : '-'));
+                                $bgClass = $fResult === 'W' ? 'success' :
+                                    ($fResult === 'L' ? 'danger' : 'secondary');
                                 ?>
-                                <span class="badge bg-<?= $fResult === 'W' ? 'success' : ($fResult === 'L' ? 'danger' : 'secondary') ?>">
+                                <span class="badge bg-<?= $bgClass ?>">
                                     <?= h($fResult) ?>
                                 </span>
                                 <?= h($fg->pts_mur ?? '-') ?>-<?= h($fg->pts_opp ?? '-') ?>
@@ -123,10 +204,12 @@ if ($selectedOpponent) {
                                 <?php
                                 $lg = $record['last_game'];
                                 $lResult = $lg->result_flag ??
-                                    ((!empty($lg->w) && $lg->w !== '0') ? 'W' :
-                                    ((!empty($lg->l) && $lg->l !== '0') ? 'L' : '-'));
+                                    (!empty($lg->w) && $lg->w !== '0' ? 'W' :
+                                    (!empty($lg->l) && $lg->l !== '0' ? 'L' : '-'));
+                                $bgClass = $lResult === 'W' ? 'success' :
+                                    ($lResult === 'L' ? 'danger' : 'secondary');
                                 ?>
-                                <span class="badge bg-<?= $lResult === 'W' ? 'success' : ($lResult === 'L' ? 'danger' : 'secondary') ?>">
+                                <span class="badge bg-<?= $bgClass ?>">
                                     <?= h($lResult) ?>
                                 </span>
                                 <?= h($lg->pts_mur ?? '-') ?>-<?= h($lg->pts_opp ?? '-') ?>
@@ -147,7 +230,9 @@ if ($selectedOpponent) {
                 <div class="card-body p-0">
                     <div class="table-responsive" id="games-table-wrap">
                         <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
-                               <?php if ($ajaxUrl) : ?>data-ajax-url="<?= h($ajaxUrl) ?>"<?php endif; ?>>
+                               <?php if ($ajaxUrl) :
+                                    ?>data-ajax-url="<?= h($ajaxUrl) ?>"<?php
+                               endif; ?>>
                             <thead class="table-dark">
                                 <tr>
                                     <th>Date</th>
@@ -175,3 +260,107 @@ if ($selectedOpponent) {
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+(function() {
+    'use strict';
+
+    const searchInput = document.getElementById('opponent-search-input');
+    const datalist = document.getElementById('opponent-datalist');
+    const hiddenInput = document.getElementById('opponent-id-hidden');
+    const form = document.getElementById('opponent-search-form');
+
+    if (!searchInput || !datalist || !hiddenInput || !form) {
+        return;
+    }
+
+    let searchTimeout;
+    let selectedOpponentId = null;
+    let lastSearchQuery = '';
+
+    // AJAX search function
+    function searchOpponents(query) {
+        if (query.length < 2) {
+            datalist.innerHTML = '';
+            return;
+        }
+
+        const url = <?= json_encode($this->Url->build([
+            'controller' => 'Games',
+            'action' => 'searchOpponents',
+        ])) ?> + '?q=' + encodeURIComponent(query);
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && Array.isArray(data.opponents)) {
+                    datalist.innerHTML = '';
+                    data.opponents.forEach(opponent => {
+                        const option = document.createElement('option');
+                        option.value = opponent.label;
+                        option.setAttribute('data-id', opponent.id);
+                        option.setAttribute('data-short', opponent.short || '');
+                        datalist.appendChild(option);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Opponent search error:', err);
+            });
+    }
+
+    // Input event - trigger search with debounce
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+
+        clearTimeout(searchTimeout);
+
+        if (query !== lastSearchQuery) {
+            selectedOpponentId = null;
+            hiddenInput.value = '';
+        }
+
+        if (query.length >= 2) {
+            searchTimeout = setTimeout(() => {
+                lastSearchQuery = query;
+                searchOpponents(query);
+            }, 300);
+        } else {
+            datalist.innerHTML = '';
+        }
+    });
+
+    // Change event - set the opponent ID when selected from datalist
+    searchInput.addEventListener('change', function(e) {
+        const value = e.target.value.trim();
+
+        if (!value) {
+            hiddenInput.value = '';
+            selectedOpponentId = null;
+            return;
+        }
+
+        // Find matching option in datalist
+        const options = datalist.querySelectorAll('option');
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === value) {
+                const id = options[i].getAttribute('data-id');
+                if (id) {
+                    hiddenInput.value = id;
+                    selectedOpponentId = id;
+                }
+                break;
+            }
+        }
+    });
+
+    // Form submit validation
+    form.addEventListener('submit', function(e) {
+        if (!hiddenInput.value) {
+            e.preventDefault();
+            alert('Please select an opponent from the dropdown list.');
+            searchInput.focus();
+        }
+    });
+})();
+</script>
