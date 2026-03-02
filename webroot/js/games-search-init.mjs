@@ -236,7 +236,9 @@ function initGamesDataTable(table) {
         window.$.fn.dataTable &&
         window.$.fn.dataTable.isDataTable(table)
     ) {
-        console.debug(`Table ${table.id} already has DataTable instance, skipping re-init`);
+        console.debug(
+            `Table ${table.id} already has DataTable instance, skipping re-init`,
+        );
         return;
     }
 
@@ -446,10 +448,15 @@ function cleanupGamesPage() {
             window.$(table).DataTable().destroy(true);
         }
     } catch (err) {
-        console.warn("Failed to clean up games DataTable before navigation", err);
+        console.warn(
+            "Failed to clean up games DataTable before navigation",
+            err,
+        );
     }
 
-    const searchBuilderSlot = document.getElementById("games-searchbuilder-slot");
+    const searchBuilderSlot = document.getElementById(
+        "games-searchbuilder-slot",
+    );
     if (searchBuilderSlot) {
         searchBuilderSlot.remove();
     }

@@ -53,7 +53,30 @@ $filterLabels = [
         <?php endforeach; ?>
     </div>
 
-    <?php if (!empty($streaks)) : ?>
+    <?php
+        // Separate active streaks from ended ones
+        $activeStreaks = array_filter($streaks, function ($s) { return !empty($s['active']); });
+        $endedStreaks = array_filter($streaks, function ($s) { return empty($s['active']); });
+    ?>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <?php if (!empty($activeStreaks)) : ?>
+                <?php foreach ($activeStreaks as $streak) : ?>
+                    <?php
+                        $parts = explode('-', trim($streak['start_date']));
+                        $startDate = count($parts) === 3 ? sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]) : $streak['start_date'];
+                    ?>
+                    Current: <?= (int)$streak['length'] ?> <?= $resultType === 'W' ? 'wins' : 'losses' ?> in a row. Started: <?= h($startDate) ?> <?= h($streak['start_opponent']) ?>
+                <?php endforeach; ?>
+            <?php else : ?>
+                Current: None
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php if (!empty($endedStreaks)) : ?>
+        <h3 class="h5 mb-3">Top 20 <?= $resultType === 'W' ? 'Winning' : 'Losing' ?> Streaks</h3>
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -65,27 +88,35 @@ $filterLabels = [
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Started vs</th>
-                                <th>Ended vs</th>
-                                <th>Season</th>
+                                <th>Ended with <?= $resultType === 'W' ? 'Loss vs' : 'Win vs' ?></th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($streaks as $i => $streak) : ?>
+                            <?php foreach ($endedStreaks as $streak) : ?>
                                 <tr>
-                                    <td><?= $i + 1 ?></td>
+                                    <td><?= $streak['rank'] ?? '' ?></td>
                                     <td><strong><?= (int)$streak['length'] ?></strong></td>
-                                    <td><?= h($streak['start_date']) ?></td>
-                                    <td><?= h($streak['end_date']) ?></td>
+                                    <td><?php
+                                        $parts = explode('-', trim($streak['start_date']));
+                                        if (count($parts) === 3) {
+                                            echo h(sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]));
+                                        } else {
+                                            echo h($streak['start_date']);
+                                        }
+                                    ?></td>
+                                    <td><?php
+                                        $parts = explode('-', trim($streak['end_date']));
+                                        if (count($parts) === 3) {
+                                            echo h(sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]));
+                                        } else {
+                                            echo h($streak['end_date']);
+                                        }
+                                    ?></td>
                                     <td><?= h($streak['start_opponent']) ?></td>
                                     <td><?= h($streak['end_opponent']) ?></td>
-                                    <td><?= h($streak['season'] ?? '-') ?></td>
                                     <td>
-                                        <?php if (!empty($streak['active'])) : ?>
-                                            <span class="badge bg-success">Active</span>
-                                        <?php else : ?>
-                                            <span class="badge bg-secondary">Ended</span>
-                                        <?php endif; ?>
+                                        <span class="badge bg-secondary">Ended</span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -94,7 +125,7 @@ $filterLabels = [
                 </div>
             </div>
         </div>
-    <?php else : ?>
+    <?php elseif (empty($activeStreaks) && empty($endedStreaks)) : ?>
         <div class="alert alert-info">
             <i class="bi bi-info-circle me-2"></i>
             No streaks found with the selected filters.

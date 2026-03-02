@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $searchTypes
@@ -23,7 +24,11 @@ $filterLabels = [
 <div class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a></li>
+            <li class="breadcrumb-item">
+                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">
+                    Games
+                </a>
+            </li>
             <li class="breadcrumb-item active" aria-current="page">Margins</li>
         </ol>
     </nav>
@@ -34,11 +39,19 @@ $filterLabels = [
 
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="btn-group" role="group" aria-label="Margin type">
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'margins', '?' => ['type' => 'win', 'filter' => $filter]]) ?>"
+            <a href="<?= $this->Url->build([
+                'controller' => 'Games',
+                'action' => 'margins',
+                '?' => ['type' => 'win', 'filter' => $filter],
+            ]) ?>"
                class="btn btn-sm <?= $type === 'win' ? 'btn-success' : 'btn-outline-success' ?>">
                 Biggest Wins
             </a>
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'margins', '?' => ['type' => 'loss', 'filter' => $filter]]) ?>"
+            <a href="<?= $this->Url->build([
+                'controller' => 'Games',
+                'action' => 'margins',
+                '?' => ['type' => 'loss', 'filter' => $filter],
+            ]) ?>"
                class="btn btn-sm <?= $type === 'loss' ? 'btn-danger' : 'btn-outline-danger' ?>">
                 Largest Losses
             </a>
@@ -47,7 +60,11 @@ $filterLabels = [
 
     <div class="btn-group mb-4" role="group" aria-label="Filter">
         <?php foreach ($filterLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'margins', '?' => ['type' => $type, 'filter' => $key]]) ?>"
+            <a href="<?= $this->Url->build([
+                'controller' => 'Games',
+                'action' => 'margins',
+                '?' => ['type' => $type, 'filter' => $key],
+            ]) ?>"
                class="btn btn-sm <?= $filter === $key ? 'btn-primary' : 'btn-outline-primary' ?>">
                 <?= h($label) ?>
             </a>
@@ -62,35 +79,69 @@ $filterLabels = [
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th>Margin</th>
                                 <th>Date</th>
                                 <th>Opponent</th>
-                                <th>Score</th>
-                                <th>H/R/N</th>
-                                <th>OT</th>
+                                <th>Margin</th>
                                 <th>Pts For</th>
                                 <th>Pts Against</th>
+                                <th>H/R/N</th>
+                                <th>Conf</th>
+                                <th>Game Type</th>
                                 <th>Season</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($games as $i => $game) : ?>
+                            <?php foreach ($games as $game) : ?>
                                 <tr>
-                                    <td><?= $i + 1 ?></td>
-                                    <td><strong><?= (int)($game->margin ?? 0) ?></strong></td>
-                                    <td><?= h((string)($game->game_date ?? '-')) ?></td>
+                                    <td><?= (int)($game->rank ?? 0) ?></td>
                                     <td>
-                                        <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]) ?>">
-                                            <?= h($game->opponent->opponent_name ?? '?') ?>
+                                        <a href="<?= $this->Url->build([
+                                            'controller' => 'Games',
+                                            'action' => 'view',
+                                            $game->id,
+                                        ]) ?>">
+                                            <?= h($game->game_date?->format('m/d/Y') ?? '-') ?>
                                         </a>
                                     </td>
-                                    <td><?= h($game->pts_mur ?? '-') ?>-<?= h($game->pts_opp ?? '-') ?></td>
-                                    <td><?= \App\Service\GameSearchService::hrnLabel((int)($game->hrn ?? 0)) ?></td>
-                                    <td><?= h((string)($game->ot ?? '')) ?></td>
+                                    <td>
+                                        <a href="<?= $this->Url->build([
+                                            'controller' => 'Games',
+                                            'action' => 'series',
+                                            '?' => ['opponent_id' => $game->opponent->id ?? 0],
+                                        ]) ?>">
+                                            <?= h(
+                                                $game->opponent->opponent_short
+                                                ?? $game->opponent->opponent_abbr
+                                                ?? $game->opponent->opponent_name
+                                                ?? '?'
+                                            ) ?>
+                                        </a>
+                                    </td>
+                                    <td><strong><?= (int)($game->margin ?? 0) ?></strong></td>
                                     <td><?= (int)($game->pts_mur ?? 0) ?></td>
                                     <td><?= (int)($game->pts_opp ?? 0) ?></td>
+                                    <td><?= \App\Service\GameSearchService::hrnLabel((int)($game->hrn ?? 0)) ?></td>
+                                    <td><?= !empty($game->game_type?->conf) ? 'Y' : 'N' ?></td>
                                     <td>
-                                        <?= h(($game->team_season->season->start ?? '') . '-' . ($game->team_season->season->end ?? '')) ?>
+                                        <?php
+                                        $isConf = !empty($game->game_type?->conf);
+                                        $isPost = !empty($game->post);
+                                        $gameTypeDisplay = 'Regular';
+                                        if ($isPost || $isConf) {
+                                            $gameTypeDisplay = (string)(
+                                                $game->game_type->abr
+                                                ?? ($isConf ? 'Conf' : 'Post')
+                                            );
+                                        }
+                                        ?>
+                                        <?= h($gameTypeDisplay) ?>
+                                    </td>
+                                    <td>
+                                        <?= h(
+                                            ($game->team_season->season->start ?? '')
+                                            . '-'
+                                            . ($game->team_season->season->end ?? '')
+                                        ) ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

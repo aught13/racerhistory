@@ -247,28 +247,25 @@ class GameSearchService
         $currentStreak = 0;
         $streakStart = null;
         $streakStartOpp = '';
-        $streakSeason = '';
 
         foreach ($games as $game) {
             $result = $this->getResult($game);
             if ($result === $resultType) {
                 if ($currentStreak === 0) {
                     $streakStart = $game;
-                    $streakStartOpp = $game->opponent->opponent_name ?? '?';
-                    $streakSeason = ($game->team_season->season->start ?? '') .
-                        '-' . ($game->team_season->season->end ?? '');
+                    $streakStartOpp = $game->opponent->opponent_short ?? '?';
                 }
                 $currentStreak++;
             } else {
                 if ($currentStreak > 0) {
-                    // Save the streak that just ended - the previous game was the last of the streak
+                    // Save the streak that just ended
+                    // $game is the game that ended the streak (loss for winning streak, win for losing streak)
                     $streaks[] = [
                         'length' => $currentStreak,
-                        'start_date' => (string)($streakStart->game_date ?? ''),
-                        'end_date' => (string)($game->game_date ?? ''),
+                        'start_date' => $streakStart->game_date ? $streakStart->game_date->format('Y-m-d') : '',
+                        'end_date' => $game->game_date ? $game->game_date->format('Y-m-d') : '',
                         'start_opponent' => $streakStartOpp,
-                        'end_opponent' => $this->getPreviousOpponent($games, $game) ?? $streakStartOpp,
-                        'season' => $streakSeason,
+                        'end_opponent' => $game->opponent->opponent_short ?? '?',
                     ];
                 }
                 $currentStreak = 0;
@@ -281,21 +278,62 @@ class GameSearchService
             $lastGame = end($games);
             $streaks[] = [
                 'length' => $currentStreak,
-                'start_date' => (string)($streakStart->game_date ?? ''),
-                'end_date' => (string)($lastGame->game_date ?? ''),
+                'start_date' => $streakStart->game_date ? $streakStart->game_date->format('Y-m-d') : '',
+                'end_date' => $lastGame->game_date ? $lastGame->game_date->format('Y-m-d') : '',
                 'start_opponent' => $streakStartOpp,
-                'end_opponent' => $lastGame->opponent->opponent_name ?? '?',
-                'season' => $streakSeason,
+                'end_opponent' => $lastGame->opponent->opponent_short ?? '?',
                 'active' => true,
             ];
         }
 
-        // Sort by length descending
-        usort($streaks, function ($a, $b) {
-            return $b['length'] <=> $a['length'];
+        // Separate active streaks from ended ones
+        $activeStreaks = array_filter($streaks, function ($s) {
+            return !empty($s['active']);
+        });
+        $endedStreaks = array_filter($streaks, function ($s) {
+            return empty($s['active']);
         });
 
-        return array_slice($streaks, 0, $limit);
+        // Sort ended streaks: by length descending, then by end_date descending (most recent)
+        usort($endedStreaks, function ($a, $b) {
+            $lengthCmp = $b['length'] <=> $a['length'];
+            if ($lengthCmp !== 0) {
+                return $lengthCmp;
+            }
+            // Same length, sort by end_date descending (most recent)
+            return $b['end_date'] <=> $a['end_date'];
+        });
+
+        // Take top 20 unique lengths, max 100 total rows
+        $groupedByLength = [];
+        $lengthRanks = [];
+        $currentLengthRank = 0;
+        $totalRows = 0;
+
+        foreach ($endedStreaks as $streak) {
+            $length = $streak['length'];
+            if (!isset($lengthRanks[$length])) {
+                $currentLengthRank++;
+                $lengthRanks[$length] = $currentLengthRank;
+            }
+
+            // Stop if we've reached 20 unique lengths or 100 total rows
+            if ($currentLengthRank > $limit || $totalRows >= 100) {
+                break;
+            }
+
+            $streak['rank'] = $lengthRanks[$length];
+            $groupedByLength[] = $streak;
+            $totalRows++;
+        }
+
+        // Add active streaks at the beginning with rank 0
+        foreach ($activeStreaks as $streak) {
+            $streak['rank'] = 0;
+            array_unshift($groupedByLength, $streak);
+        }
+
+        return $groupedByLength;
     }
 
     /**
@@ -387,10 +425,90 @@ class GameSearchService
         }
 
         usort($games, function ($a, $b) {
-            return $b->margin <=> $a->margin;
+            $marginCmp = (int)($b->margin ?? 0) <=> (int)($a->margin ?? 0);
+            if ($marginCmp !== 0) {
+                return $marginCmp;
+            }
+
+            $aDate = $this->marginSortDateKey($a->game_date ?? null);
+            $bDate = $this->marginSortDateKey($b->game_date ?? null);
+
+            // For tied margins, prefer the most recent game.
+            return $bDate <=> $aDate;
         });
 
-        return array_slice($games, 0, $limit);
+        $rankedGames = [];
+        $marginRanks = [];
+        $currentMarginRank = 0;
+        $totalRows = 0;
+
+        foreach ($games as $game) {
+            $margin = (int)($game->margin ?? 0);
+            if (!isset($marginRanks[$margin])) {
+                $currentMarginRank++;
+                $marginRanks[$margin] = $currentMarginRank;
+            }
+
+            if ($currentMarginRank > $limit || $totalRows >= 100) {
+                break;
+            }
+
+            $game->set('rank', $marginRanks[$margin]);
+            $rankedGames[] = $game;
+            $totalRows++;
+        }
+
+        return $rankedGames;
+    }
+
+    /**
+     * Normalize margin date values to YYYY-MM-DD for stable sorting.
+     *
+     * Handles date objects, ISO strings, and legacy m/d/yy strings.
+     *
+     * @param mixed $date
+     * @return string
+     */
+    private function marginSortDateKey(mixed $date): string
+    {
+        if ($date === null) {
+            return '';
+        }
+
+        if ($date instanceof \DateTimeInterface) {
+            return $date->format('Y-m-d');
+        }
+
+        if (is_object($date) && method_exists($date, 'format')) {
+            try {
+                return (string)$date->format('Y-m-d');
+            } catch (\Throwable $e) {
+            }
+        }
+
+        $raw = trim((string)$date);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw) === 1) {
+            return $raw;
+        }
+
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/', $raw, $m) === 1) {
+            $month = (int)$m[1];
+            $day = (int)$m[2];
+            $year = (int)$m[3];
+
+            if ($year < 100) {
+                $currentTwoDigitYear = (int)date('y');
+                $year += $year <= $currentTwoDigitYear ? 2000 : 1900;
+            }
+
+            return sprintf('%04d-%02d-%02d', $year, $month, $day);
+        }
+
+        return $raw;
     }
 
     /**
@@ -459,13 +577,70 @@ class GameSearchService
             $record['first_game'] = end($games);
         }
 
+        // Calculate last 10 games record
+        $last10Wins = 0;
+        $last10Losses = 0;
+        $last10Games = array_slice($games, 0, 10);
+        foreach ($last10Games as $g) {
+            $result = $this->getResult($g);
+            if ($result === 'W') {
+                $last10Wins++;
+            } elseif ($result === 'L') {
+                $last10Losses++;
+            }
+        }
+        $record['last10'] = $last10Wins . '-' . $last10Losses;
+
+        // Calculate current streak
+        $streakType = null;
+        $streakCount = 0;
+        foreach ($games as $g) {
+            $result = $this->getResult($g);
+            if ($result === null) {
+                continue;
+            }
+            if ($streakType === null) {
+                $streakType = $result;
+                $streakCount = 1;
+            } elseif ($streakType === $result) {
+                $streakCount++;
+            } else {
+                break;
+            }
+        }
+        $record['streak'] = $streakType ? $streakType . $streakCount : '-';
+        $record['streak_count'] = $streakCount;
+        $record['streak_type'] = $streakType;
+
+        // Find biggest win and biggest loss
+        $biggestWin = null;
+        $biggestWinMargin = 0;
+        $biggestLoss = null;
+        $biggestLossMargin = 0;
+
         // Enrich games with computed display fields
         foreach ($games as $g) {
             $ptsMur = (int)($g->pts_mur ?? 0);
             $ptsOpp = (int)($g->pts_opp ?? 0);
-            $g->set('margin', abs($ptsMur - $ptsOpp));
-            $g->set('result_flag', $this->getResult($g));
+            $margin = $ptsMur - $ptsOpp;
+            $g->set('margin', abs($margin));
+            $result = $this->getResult($g);
+            $g->set('result_flag', $result);
+
+            // Track biggest wins/losses
+            if ($result === 'W' && $margin > $biggestWinMargin) {
+                $biggestWinMargin = $margin;
+                $biggestWin = $g;
+            } elseif ($result === 'L' && abs($margin) > $biggestLossMargin) {
+                $biggestLossMargin = abs($margin);
+                $biggestLoss = $g;
+            }
         }
+
+        $record['biggest_win'] = $biggestWin;
+        $record['biggest_win_margin'] = $biggestWinMargin;
+        $record['biggest_loss'] = $biggestLoss;
+        $record['biggest_loss_margin'] = $biggestLossMargin;
 
         return [
             'record' => $record,
