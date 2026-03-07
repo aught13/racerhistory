@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* Tests for webroot/js/games_sport_dynamic.js (CommonJS)
  */
 beforeEach(() => {
@@ -23,8 +25,8 @@ beforeEach(() => {
     document.body.appendChild(loading);
 });
 
-test("buildFieldControl produces number input with min/max and default", () => {
-    const mod = require("../games_sport_dynamic.js");
+test("buildFieldControl produces number input with min/max and default", async () => {
+    const { buildFieldControl } = await import("../games_sport_dynamic.js");
     const field = {
         field_name: "shots",
         display_label: "Shots",
@@ -33,7 +35,7 @@ test("buildFieldControl produces number input with min/max and default", () => {
         max: 10,
         default_value: 3,
     };
-    const wrapper = mod.buildFieldControl(field, {});
+    const wrapper = buildFieldControl(field, {});
     const input = wrapper.querySelector("input");
     expect(input).toBeTruthy();
     expect(input.type).toBe("number");
@@ -42,14 +44,14 @@ test("buildFieldControl produces number input with min/max and default", () => {
     expect(input.value).toBe("3");
 });
 
-test("groupFields groups by field_group", () => {
-    const mod = require("../games_sport_dynamic.js");
+test("groupFields groups by field_group", async () => {
+    const { groupFields } = await import("../games_sport_dynamic.js");
     const fields = [
         { field_name: "a", field_group: "offense" },
         { field_name: "b" },
         { field_name: "c", field_group: "offense" },
     ];
-    const groups = mod.groupFields(fields);
+    const groups = groupFields(fields);
     expect(Object.keys(groups)).toContain("offense");
     expect(Object.keys(groups)).toContain("general");
     expect(groups.offense.length).toBe(2);
@@ -61,8 +63,8 @@ test("fetchMeta HTML fragment path updates section and sport name", async () => 
         ok: true,
         text: () => Promise.resolve('<div data-sport-name="Soccer">HTML</div>'),
     });
-    const mod = require("../games_sport_dynamic.js");
-    await mod.fetchMeta("42");
+    const { fetchMeta } = await import("../games_sport_dynamic.js");
+    await fetchMeta("42");
     const section = document.getElementById("sport-specific-section");
     expect(section.innerHTML).toContain("HTML");
     const sportName = document.getElementById("current-sport");
@@ -96,8 +98,8 @@ test("fetchMeta falls back to JSON and renders EAV; loading hidden after", async
         });
     });
 
-    const mod = require("../games_sport_dynamic.js");
-    await mod.fetchMeta("99");
+    const { fetchMeta } = await import("../games_sport_dynamic.js");
+    await fetchMeta("99");
     const sportName = document.getElementById("current-sport");
     expect(sportName.textContent).toBe("Baseball");
     const section = document.getElementById("sport-specific-section");

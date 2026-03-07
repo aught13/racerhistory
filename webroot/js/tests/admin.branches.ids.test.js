@@ -1,13 +1,14 @@
-// ...existing code...
+import { jest } from "@jest/globals";
+
 jest.disableAutomock();
 
 beforeEach(() => {
     jest.resetModules();
 });
 
-test("buildExtraFields handles JSON array string and returns id entries", () => {
-    const admin = require("../admin.js");
-    const build = admin.__internals.buildExtraFields;
+test("buildExtraFields handles JSON array string and returns id entries", async () => {
+    const { __internals } = await import("../admin.js");
+    const build = __internals.buildExtraFields;
     const res = build({ ids: JSON.stringify([1, 2, 3]), idsName: "ids[]" });
     expect(Array.isArray(res)).toBe(true);
     expect(res.length).toBe(3);
@@ -15,24 +16,24 @@ test("buildExtraFields handles JSON array string and returns id entries", () => 
     expect(res[0].value).toBe("1");
 });
 
-test("buildExtraFields accepts numeric string fallback and trims", () => {
-    const admin = require("../admin.js");
-    const build = admin.__internals.buildExtraFields;
+test("buildExtraFields accepts numeric string fallback and trims", async () => {
+    const { __internals } = await import("../admin.js");
+    const build = __internals.buildExtraFields;
     const res = build({ ids: " 42 ", idsName: "id" });
     expect(res.length).toBe(1);
     expect(res[0].value).toBe("42");
 });
 
-test("buildExtraFields returns empty array for non-numeric invalid JSON", () => {
-    const admin = require("../admin.js");
-    const build = admin.__internals.buildExtraFields;
+test("buildExtraFields returns empty array for non-numeric invalid JSON", async () => {
+    const { __internals } = await import("../admin.js");
+    const build = __internals.buildExtraFields;
     const res = build({ ids: "not-json", idsName: "id" });
     expect(res.length).toBe(0);
 });
 
-test("buildExtraFields handles array input and skips empty/null values", () => {
-    const admin = require("../admin.js");
-    const build = admin.__internals.buildExtraFields;
+test("buildExtraFields handles array input and skips empty/null values", async () => {
+    const { __internals } = await import("../admin.js");
+    const build = __internals.buildExtraFields;
     const res = build({
         ids: ["", null, 7, " 8 ", { toString: () => "9" }],
         idsName: "ids[]",
@@ -43,18 +44,18 @@ test("buildExtraFields handles array input and skips empty/null values", () => {
     expect(vals).toEqual(expect.arrayContaining(["7", "8", "9"]));
 });
 
-test("buildExtraFields includes bulk_action when present", () => {
-    const admin = require("../admin.js");
-    const build = admin.__internals.buildExtraFields;
+test("buildExtraFields includes bulk_action when present", async () => {
+    const { __internals } = await import("../admin.js");
+    const build = __internals.buildExtraFields;
     const res = build({ ids: [1], idsName: "x", bulkAction: "delete" });
     expect(
         res.some((r) => r.name === "bulk_action" && r.value === "delete"),
     ).toBe(true);
 });
 
-test("buildExtraFields swallows toString errors and still returns others", () => {
-    const admin = require("../admin.js");
-    const build = admin.__internals.buildExtraFields;
+test("buildExtraFields swallows toString errors and still returns others", async () => {
+    const { __internals } = await import("../admin.js");
+    const build = __internals.buildExtraFields;
     const bad = {
         toString: () => {
             throw new Error("boom");

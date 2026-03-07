@@ -1,7 +1,6 @@
 /** @jest-environment jsdom */
 
-const { jest, describe, test, expect, beforeEach } = require("@jest/globals");
-
+import { jest } from "@jest/globals";
 const loadModule = async () => {
     await jest.resetModules();
     return await import("../modules/season-view-init.js");

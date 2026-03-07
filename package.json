@@ -1,11 +1,12 @@
 {
     "name": "racerhistory-admin-js",
     "private": true,
-    "type": "commonjs",
+    "type": "module",
     "devDependencies": {
         "@babel/core": "^7.22.9",
         "@babel/preset-env": "^7.22.9",
         "@hotwired/stimulus": "^3.2.2",
+        "@playwright/test": "^1.58.2",
         "axe-core": "^4.10.3",
         "babel-jest": "^29.7.0",
         "babel-plugin-transform-import-meta": "^2.3.3",
@@ -20,9 +21,14 @@
         "stylelint-config-standard": "^37.0.0"
     },
     "scripts": {
-        "test:js": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
+        "test:js": "cross-env jest --env=jsdom --colors",
         "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
         "test:js:watch": "jest --env=jsdom --watch",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui",
+        "test:e2e:headed": "playwright test --headed",
+        "test:e2e:debug": "playwright test --debug",
+        "playwright:install": "playwright install --with-deps chromium",
         "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
         "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
         "lint:css": "npx stylelint 'webroot/css/**/*.css'",
@@ -33,16 +39,13 @@
         "presets": [
             "@babel/preset-env"
         ],
-        "sourceType": "unambiguous",
-        "plugins": [
-            "transform-import-meta"
-        ]
+        "sourceType": "unambiguous"
     },
     "jest": {
         "testEnvironment": "jsdom",
+        "injectGlobals": true,
         "transform": {
-            "\\.mjs$": "babel-jest",
-            "\\.js$": "babel-jest"
+            "^.+\\.(js|mjs)$": "babel-jest"
         },
         "moduleFileExtensions": [
             "js",
@@ -56,6 +59,7 @@
         "collectCoverage": true,
         "collectCoverageFrom": [
             "webroot/js/**/*.js",
+            "webroot/js/**/*.mjs",
             "!webroot/js/tests/**",
             "!webroot/js/tinymce/**",
             "!vendor/**"
@@ -67,7 +71,8 @@
             "text-summary"
         ],
         "testPathIgnorePatterns": [
-            "<rootDir>/vendor/"
+            "<rootDir>/vendor/",
+            "<rootDir>/e2e/"
         ],
         "modulePathIgnorePatterns": [
             "<rootDir>/vendor/"
@@ -75,7 +80,8 @@
         "coveragePathIgnorePatterns": [
             "/vendor/",
             "/webroot/js/tinymce/",
-            "/webroot/js/tests/"
+            "/webroot/js/tests/",
+            "/e2e/"
         ],
         "setupFilesAfterEnv": [
             "<rootDir>/jest.setup.js"

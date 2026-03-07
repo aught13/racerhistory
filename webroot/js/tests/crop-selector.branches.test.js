@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* crop-selector.branches.test.js
  * Focused tests for webroot/js/crop-selector.js
  */
@@ -12,23 +14,33 @@ beforeEach(() => {
     }
 });
 
-test("constructor throws when elements missing", () => {
-    const CropSelector = require("../crop-selector.js");
+test("constructor throws when elements missing", async () => {
+    const _csmod = await import("../crop-selector.js");
+    const CropSelector = _csmod.default || _csmod;
     expect(() => new CropSelector("nope", "nope2")).toThrow();
 });
 
 test("initializeCrop sets full crop and emits change", async () => {
     const container = document.createElement("div");
-    container.clientWidth = 800;
+    Object.defineProperty(container, "clientWidth", {
+        value: 800,
+        configurable: true,
+    });
     const canvas = document.createElement("canvas");
     canvas.id = "cv";
     container.appendChild(canvas);
     document.body.appendChild(container);
     const img = document.createElement("img");
     img.id = "img";
-    img.naturalWidth = 400;
-    img.naturalHeight = 200;
-    img.complete = true;
+    Object.defineProperty(img, "naturalWidth", {
+        value: 400,
+        configurable: true,
+    });
+    Object.defineProperty(img, "naturalHeight", {
+        value: 200,
+        configurable: true,
+    });
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
     document.body.appendChild(img);
 
     // stub 2D context used by render
@@ -52,7 +64,8 @@ test("initializeCrop sets full crop and emits change", async () => {
     canvas.getContext = () => ctx;
 
     const onChange = jest.fn();
-    const CropSelector = require("../crop-selector.js");
+    const _csmod = await import("../crop-selector.js");
+    const CropSelector = _csmod.default || _csmod;
     const sel = new CropSelector(canvas.id, img.id, { onCropChange: onChange });
 
     // ensure initializeCrop ran (call explicitly to be deterministic)
@@ -69,16 +82,25 @@ test("initializeCrop sets full crop and emits change", async () => {
 
 test("setAspectRatio snaps crop to ratio", async () => {
     const container = document.createElement("div");
-    container.clientWidth = 800;
+    Object.defineProperty(container, "clientWidth", {
+        value: 800,
+        configurable: true,
+    });
     const canvas = document.createElement("canvas");
     canvas.id = "cv2";
     container.appendChild(canvas);
     document.body.appendChild(container);
     const img = document.createElement("img");
     img.id = "img2";
-    img.naturalWidth = 400;
-    img.naturalHeight = 200;
-    img.complete = true;
+    Object.defineProperty(img, "naturalWidth", {
+        value: 400,
+        configurable: true,
+    });
+    Object.defineProperty(img, "naturalHeight", {
+        value: 200,
+        configurable: true,
+    });
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
     document.body.appendChild(img);
 
     const ctx = {
@@ -98,7 +120,8 @@ test("setAspectRatio snaps crop to ratio", async () => {
     };
     canvas.getContext = () => ctx;
 
-    const CropSelector = require("../crop-selector.js");
+    const _csmod = await import("../crop-selector.js");
+    const CropSelector = _csmod.default || _csmod;
     const sel = new CropSelector(canvas.id, img.id, {});
     await Promise.resolve();
     sel.setAspectRatio(1);
@@ -108,18 +131,27 @@ test("setAspectRatio snaps crop to ratio", async () => {
     expect(Math.abs(width / height - 1)).toBeLessThan(0.01);
 });
 
-test("setCropBox and getCropBox round-trip with canvasToImageScale", () => {
+test("setCropBox and getCropBox round-trip with canvasToImageScale", async () => {
     const container = document.createElement("div");
-    container.clientWidth = 800;
+    Object.defineProperty(container, "clientWidth", {
+        value: 800,
+        configurable: true,
+    });
     const canvas = document.createElement("canvas");
     canvas.id = "cv3";
     container.appendChild(canvas);
     document.body.appendChild(container);
     const img = document.createElement("img");
     img.id = "img3";
-    img.naturalWidth = 400;
-    img.naturalHeight = 200;
-    img.complete = true;
+    Object.defineProperty(img, "naturalWidth", {
+        value: 400,
+        configurable: true,
+    });
+    Object.defineProperty(img, "naturalHeight", {
+        value: 200,
+        configurable: true,
+    });
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
     document.body.appendChild(img);
 
     const ctx = {
@@ -139,7 +171,8 @@ test("setCropBox and getCropBox round-trip with canvasToImageScale", () => {
     };
     canvas.getContext = () => ctx;
 
-    const CropSelector = require("../crop-selector.js");
+    const _csmod = await import("../crop-selector.js");
+    const CropSelector = _csmod.default || _csmod;
     const sel = new CropSelector(canvas.id, img.id, {});
     // set a known canvasToImageScale
     sel.canvasToImageScale = 2;
@@ -151,15 +184,21 @@ test("setCropBox and getCropBox round-trip with canvasToImageScale", () => {
     expect(cb.height).toBe(50);
 });
 
-test("getResizeHandle and isInsideCropBox detect positions", () => {
+test("getResizeHandle and isInsideCropBox detect positions", async () => {
     const canvas = document.createElement("canvas");
     canvas.id = "cv4";
     document.body.appendChild(canvas);
     const img = document.createElement("img");
     img.id = "img4";
-    img.naturalWidth = 200;
-    img.naturalHeight = 200;
-    img.complete = true;
+    Object.defineProperty(img, "naturalWidth", {
+        value: 200,
+        configurable: true,
+    });
+    Object.defineProperty(img, "naturalHeight", {
+        value: 200,
+        configurable: true,
+    });
+    Object.defineProperty(img, "complete", { value: true, configurable: true });
     document.body.appendChild(img);
     const ctx = {
         setTransform: () => {},
@@ -178,7 +217,8 @@ test("getResizeHandle and isInsideCropBox detect positions", () => {
     };
     canvas.getContext = () => ctx;
 
-    const CropSelector = require("../crop-selector.js");
+    const _csmod = await import("../crop-selector.js");
+    const CropSelector = _csmod.default || _csmod;
     const sel = new CropSelector(canvas.id, img.id, {});
     // set cropBox to known values
     sel.cropBox = { x: 10, y: 10, width: 100, height: 80 };

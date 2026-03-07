@@ -1,7 +1,8 @@
 /** @jest-environment node */
-const fs = require("fs");
-const path = require("path");
-
+import fs from "fs";
+import path from "path";
+// Note: __dirname computed relative to workspace root for Jest
+const __dirname = path.join(process.cwd(), "webroot", "js", "tests");
 describe("SearchBuilder CSS rules", () => {
     test("dark-mode SearchBuilder button color rule exists", () => {
         const cssPath = path.resolve(

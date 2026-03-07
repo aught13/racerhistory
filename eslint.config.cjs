@@ -8,14 +8,18 @@ module.exports = [
     {
         // Ignore third-party libraries, config and vendor files
         ignores: [
-            'eslint.config.js',
+            'eslint.config.cjs',
             'jest.setup.js',
+            'playwright.config.js',
+            'convert-tests-to-esm.mjs',
             'webroot/js/tinymce/**',
             'vendor/**',
             'node_modules/**',
             'tmp/**',
             'logs/**',
-            'coverage-js/**'
+            'coverage-js/**',
+            'playwright-report/**',
+            'test-results/**',
         ]
     },
     {
@@ -134,7 +138,40 @@ module.exports = [
                 __dirname: 'readonly',
                 __filename: 'readonly',
                 module: 'readonly',
-                // avoid redeclaring built-in Node globals here
+                process: 'readonly',
+                console: 'readonly',
+                setTimeout: 'readonly',
+                clearTimeout: 'readonly',
+                setInterval: 'readonly',
+                clearInterval: 'readonly',
+                Promise: 'readonly',
+                URL: 'readonly',
+                URLSearchParams: 'readonly',
+                fetch: 'readonly',
+                FormData: 'readonly',
+                MutationObserver: 'readonly',
+                navigator: 'readonly',
+                Node: 'readonly',
+            }
+        },
+        rules: {
+            'no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
+        }
+    },
+    {
+        // Playwright E2E test files
+        files: ['e2e/**/*.js', 'e2e/**/*.mjs', 'e2e/**/*.spec.js', 'e2e/**/*.test.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'module',
+            globals: {
+                test: 'readonly',
+                expect: 'readonly',
+                describe: 'readonly',
+                beforeEach: 'readonly',
+                afterEach: 'readonly',
+                beforeAll: 'readonly',
+                afterAll: 'readonly',
             }
         }
     }

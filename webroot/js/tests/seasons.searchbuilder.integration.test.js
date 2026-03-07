@@ -1,9 +1,12 @@
 /** @jest-environment jsdom */
 
+import { jest } from "@jest/globals";
 describe("Seasons SearchBuilder integration (module)", () => {
     let teardown;
+    let setupDataTablesMock;
+    let initSeasons;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         document.body.innerHTML = `
             <div id="seasons-controls" class="d-flex"></div>
             <div id="searchbuilder-panel" class="searchbuilder-panel"></div>
@@ -16,17 +19,20 @@ describe("Seasons SearchBuilder integration (module)", () => {
                 <tr><td class="text-muted seasons-row-number">0</td></tr>
             </tbody></table>
         `;
-        teardown = setupDataTablesMock();
-    });
 
-    const setupDataTablesMock = require("./helpers/datatables.mock");
-    const initSeasons = require("../../js/modules/seasons-init.cjs");
+        const mockModule = await import("./helpers/datatables.mock");
+        setupDataTablesMock = mockModule.default || mockModule;
+        teardown = setupDataTablesMock();
+
+        const seasonsModule = await import("../modules/seasons-init.cjs");
+        initSeasons = seasonsModule.default || seasonsModule;
+    });
 
     afterEach(() => {
         if (typeof teardown === "function") teardown();
     });
 
-    test("module initializes DataTable and appends SearchBuilder to panel and toggles", () => {
+    test("module initializes DataTable and appends SearchBuilder to panel and toggles", async () => {
         const result = initSeasons();
         expect(result).toBeTruthy();
         // button should be created
@@ -53,7 +59,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(btn.getAttribute("aria-expanded")).toBe("false");
     });
 
-    test("custom filter button id is respected", () => {
+    test("custom filter button id is respected", async () => {
         initSeasons({
             tableSelector: "#season-splits-table",
             controlsSelector: "#splits-controls",
@@ -63,7 +69,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(document.getElementById("splits-filter-btn")).toBeTruthy();
     });
 
-    test("renumbers rows when the table redraws", () => {
+    test("renumbers rows when the table redraws", async () => {
         document.querySelector("#seasons-table tbody").innerHTML = `
             <tr><td class="text-muted seasons-row-number">0</td></tr>
             <tr><td class="text-muted seasons-row-number">0</td></tr>
@@ -74,7 +80,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(rows[1].querySelector("td").textContent).toBe("2");
     });
 
-    test("adds placeholder when SearchBuilder is missing", () => {
+    test("adds placeholder when SearchBuilder is missing", async () => {
         delete global.$.fn.dataTable.SearchBuilder;
 
         initSeasons({
@@ -92,7 +98,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(btn.getAttribute("aria-expanded")).toBe("false");
     });
 
-    test("calls custom initComplete and drawCallback hooks", () => {
+    test("calls custom initComplete and drawCallback hooks", async () => {
         const initComplete = jest.fn();
         const drawCallback = jest.fn();
 
@@ -107,7 +113,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(drawCallback).toHaveBeenCalledTimes(1);
     });
 
-    test("applies column labels without changing visible headers", () => {
+    test("applies column labels without changing visible headers", async () => {
         document.querySelector("#seasons-table thead").innerHTML = `
             <tr>
                 <th rowspan="2">#</th>
@@ -156,12 +162,12 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(headerCells[1].textContent).toBe("L");
     });
 
-    test("returns nulls when table is missing", () => {
+    test("returns nulls when table is missing", async () => {
         const result = initSeasons({ tableSelector: "#missing-table" });
         expect(result).toEqual({ sb: null, table: null });
     });
 
-    test("renumbers rows using fallback when numberColumn is missing", () => {
+    test("renumbers rows using fallback when numberColumn is missing", async () => {
         document.querySelector("#seasons-table tbody").innerHTML = `
             <tr><td class="text-muted seasons-row-number">0</td></tr>
             <tr><td class="text-muted seasons-row-number">0</td></tr>
@@ -174,7 +180,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(rows[1].querySelector("td").textContent).toBe("2");
     });
 
-    test("handles SearchBuilder constructor errors", () => {
+    test("handles SearchBuilder constructor errors", async () => {
         global.$.fn.dataTable.SearchBuilder = jest.fn(() => {
             throw new Error("boom");
         });
@@ -186,7 +192,7 @@ describe("Seasons SearchBuilder integration (module)", () => {
         expect(placeholder).toBeTruthy();
     });
 
-    test("returns nulls when DataTable initialization throws", () => {
+    test("returns nulls when DataTable initialization throws", async () => {
         const original$ = global.$;
         global.$ = (selectorOrEl) => {
             const wrapper = original$(selectorOrEl);

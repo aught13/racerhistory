@@ -1,7 +1,12 @@
-const admin = require("../admin");
+import { jest } from "@jest/globals";
 
+let admin;
 describe("admin.js branch/error handling", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../admin.js");
+        admin = mod.default || mod;
+
         document.body.innerHTML = `
             <div id="confirm-delete-modal">
                 <ul id="confirm-delete-modal-assoc"></ul>

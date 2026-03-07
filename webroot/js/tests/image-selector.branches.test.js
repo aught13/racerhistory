@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* image-selector.branches.test.js
  * Focused tests for webroot/js/image-selector.js
  */
@@ -12,8 +14,9 @@ beforeEach(() => {
     global.bootstrap = { Modal: { getInstance: () => ({ hide: jest.fn() }) } };
 });
 
-test("constructor handles missing modal gracefully", () => {
-    const ImageSelector = require("../image-selector.js");
+test("constructor handles missing modal gracefully", async () => {
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector("no-such-modal");
     expect(inst.modal).toBeFalsy();
 });
@@ -41,7 +44,8 @@ test("loadImages renders gallery on success and handles failure", async () => {
         json: async () => ({ images: [{ id: 5, url: "/img5.jpg" }] }),
     });
 
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector("test-image-selector");
     await inst.loadImages();
     expect(gallery.innerHTML).toMatch(/image-card/);
@@ -61,7 +65,8 @@ test("onSearch filters rendered images", async () => {
     document.body.appendChild(modal);
 
     window.imageSelectorConfig = { "test-image-selector-2": {} };
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector("test-image-selector-2");
 
     inst.loadedImages = [
@@ -76,7 +81,7 @@ test("onSearch filters rendered images", async () => {
     expect(gallery.innerHTML).not.toMatch(/#1/);
 });
 
-test("onGalleryImageClick selects image and toggles classes", () => {
+test("onGalleryImageClick selects image and toggles classes", async () => {
     const modal = document.createElement("div");
     modal.id = "test-image-selector-3";
     const gallery = document.createElement("div");
@@ -89,7 +94,8 @@ test("onGalleryImageClick selects image and toggles classes", () => {
     document.body.appendChild(gallery);
 
     window.imageSelectorConfig = { "test-image-selector-3": {} };
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector("test-image-selector-3");
     inst.gallery = gallery; // ensure reference
     inst.onGalleryImageClick(card);
@@ -97,7 +103,7 @@ test("onGalleryImageClick selects image and toggles classes", () => {
     expect(card.classList.contains("border-primary")).toBe(true);
 });
 
-test("onSelectImage alerts when none selected and sets target when selected", () => {
+test("onSelectImage alerts when none selected and sets target when selected", async () => {
     const modal = document.createElement("div");
     modal.id = "test-image-selector-4";
     document.body.appendChild(modal);
@@ -111,7 +117,8 @@ test("onSelectImage alerts when none selected and sets target when selected", ()
         "test-image-selector-4": { targetFieldId: "target4" },
     };
 
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector("test-image-selector-4");
     // no selection
     inst.selectedImageId = null;
@@ -150,7 +157,8 @@ test("onUploadImage uses skipCrop path and updates target on success", async () 
     window.imageSelectorConfig = {
         "test-image-selector-5": { targetFieldId: "target5" },
     };
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector("test-image-selector-5");
     inst.uploadBtn = uploadBtn;
     inst.skipCropToggle = skip;

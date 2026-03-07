@@ -1,10 +1,12 @@
-describe("admin.js additional branches", () => {
+import { jest } from "@jest/globals";
+
+describe("js additional branches", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
         jest.resetModules();
     });
 
-    test("click delete falls back to temp form when source.getAttribute throws", () => {
+    test("click delete falls back to temp form when source.getAttribute throws", async () => {
         // Create modal and delete button expected by the handler
         document.body.innerHTML = `
       <div id="confirm-delete-modal">
@@ -23,8 +25,8 @@ describe("admin.js additional branches", () => {
         document.body.appendChild(source);
 
         // require module after DOM is set so IIFE runs and event listeners attach
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
 
         // set context to reference our broken source via formId
         internals.setContext({
@@ -46,7 +48,7 @@ describe("admin.js additional branches", () => {
         expect(temp).toBeTruthy();
     });
 
-    test("submitTempForm handles tokensSource.querySelectorAll throwing gracefully", () => {
+    test("submitTempForm handles tokensSource.querySelectorAll throwing gracefully", async () => {
         document.body.innerHTML = `
       <div id="confirm-delete-modal">
         <ul id="confirm-delete-modal-assoc"></ul>
@@ -60,8 +62,8 @@ describe("admin.js additional branches", () => {
         };
         document.body.appendChild(tokensSource);
 
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
 
         expect(() =>
             internals.submitTempForm("/x", tokensSource, [

@@ -3,6 +3,7 @@
  * @jest-environment jsdom
  */
 
+import { jest } from "@jest/globals";
 describe("Public Pages", () => {
     beforeEach(() => {
         document.body.innerHTML = "";

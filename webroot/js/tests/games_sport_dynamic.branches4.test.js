@@ -1,4 +1,4 @@
-const path = require("path");
+import { jest } from "@jest/globals";
 
 describe("games_sport_dynamic branches", () => {
     beforeEach(() => {
@@ -7,13 +7,11 @@ describe("games_sport_dynamic branches", () => {
         global.fetch = undefined;
     });
 
-    test("buildFieldControl creates number input with min/max", () => {
+    test("buildFieldControl creates number input with min/max", async () => {
         // ensure the module initializes (it early-returns if select missing)
         document.body.innerHTML =
             '<select id="team-season-select"></select><div id="sport-specific-section"></div><div id="sport-indicator"><span id="current-sport"></span></div><span id="sport-loading"></span>';
-        const mod = require(
-            path.resolve(__dirname, "../games_sport_dynamic.js"),
-        );
+        const mod = require("../games_sport_dynamic.js");
         const build = mod.buildFieldControl;
         const field = {
             field_name: "pts",
@@ -32,12 +30,10 @@ describe("games_sport_dynamic branches", () => {
         expect(label.textContent).toBe("Points");
     });
 
-    test("groupFields groups by field_group and defaults to general", () => {
+    test("groupFields groups by field_group and defaults to general", async () => {
         document.body.innerHTML =
             '<select id="team-season-select"></select><div id="sport-specific-section"></div><div id="sport-indicator"><span id="current-sport"></span></div><span id="sport-loading"></span>';
-        const mod = require(
-            path.resolve(__dirname, "../games_sport_dynamic.js"),
-        );
+        const mod = require("../games_sport_dynamic.js");
         const group = mod.groupFields;
         const fields = [
             { field_name: "a", field_group: "offense" },
@@ -51,13 +47,11 @@ describe("games_sport_dynamic branches", () => {
         expect(groups.general.length).toBe(1);
     });
 
-    test("renderEav renders grouped cards and inputs", () => {
+    test("renderEav renders grouped cards and inputs", async () => {
         // ensure module initialises and section exists
         document.body.innerHTML =
             '<select id="team-season-select"></select><div id="sport-specific-section"></div><div id="sport-indicator"><span id="current-sport"></span></div><span id="sport-loading"></span>';
-        const mod = require(
-            path.resolve(__dirname, "../games_sport_dynamic.js"),
-        );
+        const mod = require("../games_sport_dynamic.js");
         const template = [
             { field_name: "x", display_label: "X", field_group: "grp" },
             { field_name: "y", display_label: "Y", field_group: "grp" },
@@ -78,7 +72,7 @@ describe("games_sport_dynamic branches", () => {
       <div id="sport-indicator"><span id="current-sport"></span></div>
       <span id="sport-loading" style="display:none"></span>
     `;
-        const modPath = path.resolve(__dirname, "../games_sport_dynamic.js");
+        const modPath = "../games_sport_dynamic.js";
         const mod = require(modPath);
 
         // mock fetch: first call (HTML) returns fragment with data-sport-name
@@ -101,9 +95,7 @@ describe("games_sport_dynamic branches", () => {
       <div id="sport-indicator"><span id="current-sport"></span></div>
       <span id="sport-loading" style="display:none"></span>
     `;
-        const mod = require(
-            path.resolve(__dirname, "../games_sport_dynamic.js"),
-        );
+        const mod = require("../games_sport_dynamic.js");
 
         // first fetch rejects, second returns JSON
         global.fetch = jest

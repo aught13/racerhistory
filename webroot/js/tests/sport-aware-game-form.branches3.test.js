@@ -1,4 +1,4 @@
-const path = require("path");
+import { jest } from "@jest/globals";
 
 describe("SportAwareGameForm branch coverage", () => {
     beforeEach(() => {
@@ -8,9 +8,7 @@ describe("SportAwareGameForm branch coverage", () => {
     });
 
     test("maps EAV values to legacy inputs", async () => {
-        const SportAwareGameForm = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+        const SportAwareGameForm = require("../sport-aware-game-form.js");
 
         // DOM required by the class
         document.body.innerHTML = `
@@ -52,9 +50,7 @@ describe("SportAwareGameForm branch coverage", () => {
     });
 
     test("empty eavTemplate falls back to legacy fields", async () => {
-        const SportAwareGameForm = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+        const SportAwareGameForm = require("../sport-aware-game-form.js");
         document.body.innerHTML = `
       <select id="team-season-select" data-sport-url="/sport"></select>
       <div id="sport-indicator"><span id="current-sport"></span><div class="alert"></div></div>
@@ -80,9 +76,7 @@ describe("SportAwareGameForm branch coverage", () => {
     });
 
     test("non-ok response shows error and falls back", async () => {
-        const SportAwareGameForm = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+        const SportAwareGameForm = require("../sport-aware-game-form.js");
         document.body.innerHTML = `
       <select id="team-season-select" data-sport-url="/sport"></select>
       <div id="sport-indicator"><span id="current-sport"></span><div class="alert"></div></div>

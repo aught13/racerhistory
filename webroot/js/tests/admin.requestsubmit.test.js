@@ -1,15 +1,15 @@
-const path = require("path");
+import { jest } from "@jest/globals";
 
-describe("admin.js requestSubmit handling", () => {
+describe("js requestSubmit handling", () => {
     beforeEach(() => {
         jest.resetModules();
         // clear DOM
         document.body.innerHTML = "";
     });
 
-    test("submitTempForm uses requestSubmit when available", () => {
+    test("submitTempForm uses requestSubmit when available", async () => {
         // ensure admin attaches after DOM setup
-        const admin = require(path.resolve(__dirname, "../admin.js"));
+        const { __internals } = await import("../admin.js");
         // monkeypatch prototype so jsdom won't throw
         const orig = HTMLFormElement.prototype.requestSubmit;
         HTMLFormElement.prototype.requestSubmit = jest.fn();
@@ -24,7 +24,7 @@ describe("admin.js requestSubmit handling", () => {
         document.body.appendChild(tokens);
 
         // call internals.submitTempForm
-        admin.__internals.submitTempForm("/do-it", tokens, [
+        __internals.submitTempForm("/do-it", tokens, [
             { name: "x", value: "y" },
         ]);
 
@@ -40,8 +40,8 @@ describe("admin.js requestSubmit handling", () => {
         HTMLFormElement.prototype.requestSubmit = orig;
     });
 
-    test("submitTempForm falls back to submit when requestSubmit missing", () => {
-        const admin = require(path.resolve(__dirname, "../admin.js"));
+    test("submitTempForm falls back to submit when requestSubmit missing", async () => {
+        const { __internals } = await import("../admin.js");
         const origReq = HTMLFormElement.prototype.requestSubmit;
         const origSubmit = HTMLFormElement.prototype.submit;
         // remove requestSubmit and spy on submit
@@ -52,7 +52,7 @@ describe("admin.js requestSubmit handling", () => {
         }
         HTMLFormElement.prototype.submit = jest.fn();
 
-        admin.__internals.submitTempForm("/fallback", null, []);
+        __internals.submitTempForm("/fallback", null, []);
 
         const forms = document.body.querySelectorAll("form");
         expect(forms.length).toBeGreaterThan(0);
@@ -64,7 +64,7 @@ describe("admin.js requestSubmit handling", () => {
         HTMLFormElement.prototype.requestSubmit = origReq;
     });
 
-    test("delete button uses source.form requestSubmit when present", () => {
+    test("delete button uses source.form requestSubmit when present", async () => {
         // prepare DOM: source form and delete button
         document.body.innerHTML = `
       <form id="sourceForm" action="/fromsource"></form>
@@ -72,14 +72,14 @@ describe("admin.js requestSubmit handling", () => {
     `;
 
         // require admin after DOM is present so event handlers attach
-        const admin = require(path.resolve(__dirname, "../admin.js"));
+        const { __internals } = await import("../admin.js");
 
         const source = document.getElementById("sourceForm");
         // make requestSubmit available on the source form
         source.requestSubmit = jest.fn();
 
         // set context so code will use sourceForm
-        admin.__internals.setContext({
+        __internals.setContext({
             formId: "sourceForm",
             deleteUrl: "/will-not-use",
             ids: "7",

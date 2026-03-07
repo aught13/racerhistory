@@ -336,25 +336,6 @@ class GameSearchService
         return $groupedByLength;
     }
 
-    /**
-     * Get the opponent name of the game before $currentGame in the array.
-     *
-     * @param array $games Ordered games array
-     * @param object $currentGame The current game
-     * @return string|null
-     */
-    private function getPreviousOpponent(array $games, object $currentGame): ?string
-    {
-        $prev = null;
-        foreach ($games as $g) {
-            if ($g->id === $currentGame->id) {
-                return $prev ? ($prev->opponent->opponent_name ?? null) : null;
-            }
-            $prev = $g;
-        }
-
-        return null;
-    }
 
     /**
      * Margin records (biggest wins or losses).

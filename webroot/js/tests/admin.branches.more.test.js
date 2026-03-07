@@ -1,5 +1,9 @@
-const admin = require("../admin.js");
-const internals = admin && admin.__internals ? admin.__internals : {};
+import { jest } from "@jest/globals";
+
+jest.disableAutomock();
+
+let admin;
+let internals;
 
 afterEach(() => {
     // clean DOM and restore any spies
@@ -85,18 +89,16 @@ test("submitTempForm falls back to submit when requestSubmit missing", () => {
     requestSpy.mockRestore();
     submitSpy.mockRestore();
 });
-// ...existing code...
-jest.disableAutomock();
 
-beforeEach(() => {
+beforeEach(async () => {
     jest.resetModules();
+    const mod = await import("../admin.js");
+    admin = mod.default || mod;
+    internals = admin.__internals || {};
     document.body.innerHTML = "";
 });
 
 test("delete button uses source form and injects hidden fields then submits", () => {
-    const admin = require("../admin.js");
-    const internals = admin.__internals;
-
     // build DOM: modal, delete button, and a source form referenced by id
     document.body.innerHTML = `
     <div id="confirm-delete-modal">
@@ -137,9 +139,6 @@ test("delete button uses source form and injects hidden fields then submits", ()
 });
 
 test("delete button falls back to temp form when source.getAttribute throws", () => {
-    const admin = require("../admin.js");
-    const internals = admin.__internals;
-
     document.body.innerHTML = `
     <div id="confirm-delete-modal">
       <ul id="confirm-delete-modal-assoc"></ul>

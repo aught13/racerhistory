@@ -1,13 +1,13 @@
-const path = require("path");
+import { jest } from "@jest/globals";
 
-describe("admin.js source-getElementById throws handling", () => {
+describe("js source-getElementById throws handling", () => {
     beforeEach(() => {
         jest.resetModules();
         document.body.innerHTML = "";
     });
 
-    test("falls back to temp form when getElementById throws", () => {
-        const adminPath = path.resolve(__dirname, "../admin.js");
+    test("falls back to temp form when getElementById throws", async () => {
+        const adminPath = "../admin.js";
 
         // minimal modal and delete button
         document.body.innerHTML = `
@@ -22,10 +22,10 @@ describe("admin.js source-getElementById throws handling", () => {
         const origReq = HTMLFormElement.prototype.requestSubmit;
         HTMLFormElement.prototype.requestSubmit = jest.fn();
 
-        const admin = require(adminPath);
+        const { __internals } = await import(adminPath);
 
         // set context referring to a source form id that will cause getElementById to throw
-        admin.__internals.setContext({
+        __internals.setContext({
             formId: "sourceForm",
             deleteUrl: "/x",
             ids: "1",

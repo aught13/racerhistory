@@ -1,4 +1,6 @@
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 describe("games_sport_dynamic", () => {
     beforeEach(() => {
         document.body.innerHTML = `
@@ -25,8 +27,8 @@ describe("games_sport_dynamic", () => {
 
     test("init does not throw and can fetch meta", async () => {
         // Require module and call fetchMeta directly
-        const mod = require("../games_sport_dynamic.js");
-        await mod.fetchMeta("1");
+        const { fetchMeta } = await import("../games_sport_dynamic.js");
+        await fetchMeta("1");
         expect(global.fetch).toHaveBeenCalled();
         const name = document.getElementById("current-sport");
         expect(name.textContent).toBe("Soccer");

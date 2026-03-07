@@ -1,10 +1,12 @@
+import { jest } from "@jest/globals";
+
 describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
         jest.resetModules();
     });
 
-    test("admin uses source.requestSubmit when available", () => {
+    test("admin uses source.requestSubmit when available", async () => {
         document.body.innerHTML = `
       <div id="confirm-delete-modal">
         <ul id="confirm-delete-modal-assoc"></ul>
@@ -20,8 +22,8 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
         src.requestSubmit = jest.fn();
         document.body.appendChild(src);
 
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
 
         internals.setContext({
             formId: "srcRS",
@@ -35,7 +37,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
         expect(src.requestSubmit).toHaveBeenCalled();
     });
 
-    test("admin falls back to temp.requestSubmit when source missing but temp supports requestSubmit", () => {
+    test("admin falls back to temp.requestSubmit when source missing but temp supports requestSubmit", async () => {
         document.body.innerHTML = `
       <div id="confirm-delete-modal">
         <ul id="confirm-delete-modal-assoc"></ul>
@@ -49,8 +51,8 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
             /* noop */
         };
 
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
         internals.setContext({
             deleteUrl: "/tmpRS",
             ids: "[9]",
@@ -96,7 +98,8 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
             json: async () => ({ success: true, sportName: "Test", values }),
         });
 
-        const Saf = require("../../js/sport-aware-game-form");
+        const _safmod = await import("../sport-aware-game-form");
+        const Saf = _safmod.default || _safmod;
         const inst = new Saf();
         await inst.updateSportFields("1");
 
@@ -106,13 +109,13 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
         expect(document.getElementsByName("period_2_opp")[0].value).toBe("6");
     });
 
-    test("games_sport_dynamic number field without min/max leaves attributes absent", () => {
+    test("games_sport_dynamic number field without min/max leaves attributes absent", async () => {
         document.body.innerHTML =
             '<select id="team-season-select" data-sport-url="/test"></select><div id="sport-specific-section"></div>';
-        const gs = require("../../js/games_sport_dynamic");
+        const mod = await import("../games_sport_dynamic");
         const buildFieldControl =
-            gs.buildFieldControl ||
-            (gs.__internals && gs.__internals.buildFieldControl);
+            mod.buildFieldControl ||
+            (mod.__internals && mod.__internals.buildFieldControl);
         const meta = { field_name: "nolim", field_type: "number" };
         const control = buildFieldControl(meta, {});
         const input = control.querySelector("input");

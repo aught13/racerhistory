@@ -1,5 +1,6 @@
-const CropSelector = require("../crop-selector.js");
+import { jest } from "@jest/globals";
 
+let CropSelector;
 function mockCanvasContext() {
     return {
         setTransform: jest.fn(),
@@ -63,7 +64,11 @@ function setupCanvasAndImage() {
 }
 
 describe("crop-selector branch coverage", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../crop-selector.js");
+        CropSelector = mod.default || mod;
+
         document.body.innerHTML = "";
     });
 
