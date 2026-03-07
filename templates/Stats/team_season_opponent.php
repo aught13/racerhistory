@@ -74,4 +74,5 @@ $ajaxUrl = $this->Url->build(['controller' => 'Stats', 'action' => $ajaxAction, 
         </div>
     </div>
 </div>
-<?= $this->Html->script('stats-init-loader', ['type' => 'module', 'ext' => '.mjs']) ?>
+<?php $statsInitVer = @filemtime(WWW_ROOT . 'js' . DS . 'stats-init-loader.mjs') ?: 0; ?>
+<script type="module" src="/js/stats-init-loader.mjs?v=<?= $statsInitVer ?>"></script>

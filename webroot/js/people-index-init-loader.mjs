@@ -54,17 +54,7 @@ function loadScript(src) {
     return new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
-            if (existing.dataset.loaded === "true") {
-                resolve();
-                return;
-            }
-            existing.addEventListener("load", () => {
-                existing.dataset.loaded = "true";
-                resolve();
-            });
-            existing.addEventListener("error", () =>
-                reject(new Error(`Failed to load ${src}`)),
-            );
+            resolve();
             return;
         }
 
@@ -157,10 +147,44 @@ function boot() {
         });
 }
 
+function cleanupPeoplePage() {
+    const table = document.querySelector("#people-table");
+    if (!table || !hasJquery() || !window.$.fn?.dataTable) {
+        return;
+    }
+
+    try {
+        if (window.$.fn.dataTable.isDataTable(table)) {
+            // Remove custom search filter before destroying
+            if (table._peopleNameFilterFn) {
+                const filters = window.$.fn.dataTable?.ext?.search;
+                if (Array.isArray(filters)) {
+                    const idx = filters.indexOf(table._peopleNameFilterFn);
+                    if (idx >= 0) {
+                        filters.splice(idx, 1);
+                    }
+                }
+                delete table._peopleNameFilterFn;
+            }
+            window.$(table).DataTable().destroy(true);
+        }
+    } catch (err) {
+        console.warn("Failed to clean up people DataTable", err);
+    }
+
+    const panel = document.querySelector("#people-searchbuilder-panel");
+    if (panel) {
+        panel.innerHTML = "";
+    }
+}
+
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
 } else {
     boot();
 }
 
+document.addEventListener("turbo:before-cache", cleanupPeoplePage);
 document.addEventListener("turbo:load", boot);
+
+export { boot, cleanupPeoplePage };

@@ -163,19 +163,20 @@ describe("games-search-init ensureDataTablesLoaded then-chain", () => {
 
     test("initGamesDataTable destroys existing DataTable on freshTable", async () => {
         preloadScripts();
+        const { dtInstance, DataTableFn } = setupJQueryMock();
+        // Import module first (immediate-run finds no table → no-op)
+        const mod = await import("../games-search-init.mjs");
+
+        // Now add the table and set up mock return values for THIS call
         document.body.innerHTML = `
       <table id="games-results-table" data-ajax-url="/api/games">
         <thead><tr><th>Date</th></tr></thead>
         <tbody></tbody>
       </table>
     `;
-        const { dtInstance, DataTableFn } = setupJQueryMock();
-        // First call: isDataTable is false (normal path)
-        // After ensureDataTablesLoaded resolves, isDataTable on freshTable check:
         DataTableFn.isDataTable
             .mockReturnValueOnce(false) // guard at beginning of initGamesDataTable
             .mockReturnValue(true); // check inside .then()
-        const mod = await import("../games-search-init.mjs");
         mod.initGamesDataTable(document.getElementById("games-results-table"));
         await flush();
 

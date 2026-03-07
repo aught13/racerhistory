@@ -1,8 +1,12 @@
-// ...existing code...
 /* Loader for seasons init (ES module).
  * Imports the initializer module and boots it on DOM/turbo load events.
  */
 import { ensureSearchBuilderLoaded } from "./modules/searchbuilder-loader.mjs";
+
+const DATATABLES_CORE_SRC =
+    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
+const DATATABLES_BOOTSTRAP_SRC =
+    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
 
 let initSeasonsPromise;
 
@@ -184,9 +188,7 @@ function buildOptions() {
 
 /**
  * Wait for jQuery and DataTables to be available.
- * @param {number} maxAttempts - Maximum number of attempts
- * @param {number} delayMs - Delay between attempts in milliseconds
- * @returns {Promise<boolean>} - True when DataTables is available
+ * @returns {boolean} - True when DataTables is available
  */
 function isDataTablesAvailable() {
     if (typeof window.$ === "undefined" || typeof window.$.fn === "undefined") {
@@ -200,32 +202,75 @@ function isDataTablesAvailable() {
     return hasDataTableFn || hasDataTableObj;
 }
 
-function waitForDataTables(maxAttempts = 100, delayMs = 100) {
-    return new Promise((resolve) => {
-        let attempts = 0;
+function hasJquery() {
+    return typeof window.$ === "function" && typeof window.$.fn === "object";
+}
 
-        function check() {
-            if (isDataTablesAvailable()) {
-                resolve(true);
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+            // Script tag already in DOM (static HTML, Turbo head-merge, or
+            // previous dynamic injection). If it already executed, resolve.
+            // Otherwise wait for its load event.
+            if (existing.dataset.loaded === "true") {
+                resolve();
                 return;
             }
-
-            attempts += 1;
-            if (attempts >= maxAttempts) {
-                console.warn(
-                    "DataTables did not load after " +
-                        maxAttempts * delayMs +
-                        "ms",
-                );
-                resolve(false);
-                return;
-            }
-
-            setTimeout(check, delayMs);
+            existing.addEventListener("load", () => resolve());
+            existing.addEventListener("error", () =>
+                reject(new Error("Failed to load " + src)),
+            );
+            // If the script already fired load before we attached, resolve
+            // on next tick so waitForCondition can confirm the global.
+            setTimeout(resolve, 0);
+            return;
         }
 
-        check();
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.addEventListener("load", () => {
+            script.dataset.loaded = "true";
+            resolve();
+        });
+        script.addEventListener("error", () =>
+            reject(new Error("Failed to load " + src)),
+        );
+        document.head.appendChild(script);
     });
+}
+
+function waitForCondition(checkFn, timeoutMs, intervalMs) {
+    if (checkFn()) {
+        return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const tick = () => {
+            if (checkFn()) {
+                resolve();
+                return;
+            }
+            if (Date.now() - start >= timeoutMs) {
+                reject(new Error("Condition timed out"));
+                return;
+            }
+            setTimeout(tick, intervalMs);
+        };
+        setTimeout(tick, intervalMs);
+    });
+}
+
+async function ensureDataTablesLoaded() {
+    if (!hasJquery()) {
+        await waitForCondition(hasJquery, 10000, 50);
+    }
+    if (!isDataTablesAvailable()) {
+        await loadScript(DATATABLES_CORE_SRC);
+        await loadScript(DATATABLES_BOOTSTRAP_SRC);
+        await waitForCondition(isDataTablesAvailable, 5000, 50);
+    }
 }
 
 function boot(event) {
@@ -305,7 +350,7 @@ function boot(event) {
         });
 }
 
-// Enhanced boot with DataTables availability check
+// Enhanced boot with dynamic DataTables loading
 async function enhancedBoot(event) {
     if (event?.type === "turbo:frame-load") {
         const frame = event.target;
@@ -314,14 +359,24 @@ async function enhancedBoot(event) {
         }
     }
 
+    // For non-frame events, skip if no seasons table is on the page.
+    // Frame-load events may fire before content is settled, so we let
+    // boot() handle the retry logic in that case.
+    if (event?.type !== "turbo:frame-load") {
+        const { table } = inferActiveTable();
+        if (!table) {
+            return;
+        }
+    }
+
     console.debug(
         `[seasons-init-loader] Boot event triggered: ${event?.type || "initial"}`,
     );
 
-    // Check if DataTables is available before attempting init
-    const hasDataTables = await waitForDataTables();
-    if (!hasDataTables) {
-        console.warn("Skipping seasons-init: DataTables not available on page");
+    try {
+        await ensureDataTablesLoaded();
+    } catch (err) {
+        console.warn("Skipping seasons-init: DataTables failed to load", err);
         return;
     }
 
@@ -331,6 +386,49 @@ async function enhancedBoot(event) {
     boot(event);
 }
 
+function cleanupSeasonsPage() {
+    const selectors = ["#seasons-table", "#season-splits-table"];
+    for (const sel of selectors) {
+        const table = document.querySelector(sel);
+        if (!table || !hasJquery() || !window.$.fn?.dataTable) {
+            continue;
+        }
+        try {
+            if (window.$.fn.dataTable.isDataTable(table)) {
+                window.$(table).DataTable().destroy(true);
+            }
+        } catch (err) {
+            console.warn("Failed to clean up seasons DataTable", err);
+        }
+    }
+    const panel = document.querySelector("#searchbuilder-panel");
+    if (panel) {
+        panel.innerHTML = "";
+    }
+}
+
+export {
+    enhancedBoot,
+    boot,
+    cleanupSeasonsPage,
+    buildOptions,
+    inferActiveTable,
+    countTableColumns,
+    buildStandardColumnLabels,
+    buildSplitsColumnLabels,
+    getCellDataAttr,
+    isDataTablesAvailable,
+    ensureDataTablesLoaded,
+};
+
+document.addEventListener("turbo:before-cache", cleanupSeasonsPage);
+
 document.addEventListener("DOMContentLoaded", enhancedBoot);
 document.addEventListener("turbo:load", enhancedBoot);
 document.addEventListener("turbo:frame-load", enhancedBoot);
+
+// If this module was loaded during Turbo navigation (turbo:load already fired),
+// run immediately so the first visit via Turbo still initialises.
+if (document.readyState !== "loading") {
+    enhancedBoot();
+}
