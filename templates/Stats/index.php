@@ -30,4 +30,5 @@ $this->assign('title', 'Statistics');
         <?php endforeach; ?>
     </div>
 </div>
-<?= $this->Html->script('stats-init-loader', ['type' => 'module', 'ext' => '.mjs']) ?>
+<?php $statsInitVer = @filemtime(WWW_ROOT . 'js' . DS . 'stats-init-loader.mjs') ?: 0; ?>
+<script type="module" src="/js/stats-init-loader.mjs?v=<?= $statsInitVer ?>"></script>

@@ -12,6 +12,9 @@ function setupJQueryMock(_opts = {}) {
         },
         columns: { adjust: jest.fn() },
         on: jest.fn(),
+        settings: jest
+            .fn()
+            .mockReturnValue([{ nScrollHead: null, nScrollBody: null }]),
         destroy: jest.fn(),
     };
 
@@ -234,5 +237,99 @@ describe("stats-init-loader exports", () => {
         expect(mod.NUMERIC_COLUMNS).toContain("PTS");
         expect(mod.NUMERIC_COLUMNS).toContain("GP");
         expect(mod.SCROLLER_THRESHOLD).toBe(75);
+    });
+
+    test("fixScrollXHeaderAlignment returns early with null scroll containers", async () => {
+        setupJQueryMock();
+        const mod = await import("../stats-init-loader.mjs");
+        const dt = {
+            settings: () => [{ nScrollHead: null, nScrollBody: null }],
+        };
+        expect(() => mod.fixScrollXHeaderAlignment(dt)).not.toThrow();
+    });
+
+    test("fixScrollXHeaderAlignment returns early with undefined settings entry", async () => {
+        setupJQueryMock();
+        const mod = await import("../stats-init-loader.mjs");
+        const dt = { settings: () => [undefined] };
+        expect(() => mod.fixScrollXHeaderAlignment(dt)).not.toThrow();
+    });
+
+    test("fixScrollXHeaderAlignment sets header th widths to match body td widths", async () => {
+        setupJQueryMock();
+        document.body.innerHTML = `
+            <div class="dataTables_scrollHead">
+                <div class="dataTables_scrollHeadInner">
+                    <table>
+                        <thead><tr><th>Player</th><th>GP</th></tr></thead>
+                    </table>
+                </div>
+            </div>
+            <div class="dataTables_scrollBody">
+                <table>
+                    <tbody><tr><td>Ja Morant</td><td>33</td></tr></tbody>
+                </table>
+            </div>
+        `;
+        const scrollHead = document.querySelector(".dataTables_scrollHead");
+        const scrollBody = document.querySelector(".dataTables_scrollBody");
+        const mod = await import("../stats-init-loader.mjs");
+        const dt = {
+            settings: () => [{ nScrollHead: scrollHead, nScrollBody: scrollBody }],
+        };
+        mod.fixScrollXHeaderAlignment(dt);
+        const headThs = scrollHead.querySelectorAll("thead th");
+        expect(headThs[0].style.boxSizing).toBe("border-box");
+        expect(headThs[0].style.width).toBe("0px"); // JSDOM returns 0 from getBoundingClientRect
+        const headTable = scrollHead.querySelector(".dataTables_scrollHeadInner table");
+        expect(headTable.style.tableLayout).toBe("fixed");
+    });
+
+    test("fixScrollXHeaderAlignment returns early when body has no rows", async () => {
+        setupJQueryMock();
+        document.body.innerHTML = `
+            <div class="dataTables_scrollHead">
+                <div class="dataTables_scrollHeadInner">
+                    <table><thead><tr><th>Player</th></tr></thead></table>
+                </div>
+            </div>
+            <div class="dataTables_scrollBody">
+                <table><tbody></tbody></table>
+            </div>
+        `;
+        const scrollHead = document.querySelector(".dataTables_scrollHead");
+        const scrollBody = document.querySelector(".dataTables_scrollBody");
+        const mod = await import("../stats-init-loader.mjs");
+        const dt = {
+            settings: () => [{ nScrollHead: scrollHead, nScrollBody: scrollBody }],
+        };
+        expect(() => mod.fixScrollXHeaderAlignment(dt)).not.toThrow();
+        const headTable = scrollHead.querySelector(".dataTables_scrollHeadInner table");
+        expect(headTable.style.tableLayout).toBe("");
+    });
+
+    test("fixScrollXHeaderAlignment returns early when column counts differ", async () => {
+        setupJQueryMock();
+        document.body.innerHTML = `
+            <div class="dataTables_scrollHead">
+                <div class="dataTables_scrollHeadInner">
+                    <table><thead><tr><th>Player</th><th>GP</th></tr></thead></table>
+                </div>
+            </div>
+            <div class="dataTables_scrollBody">
+                <table>
+                    <tbody><tr><td>Only One Cell</td></tr></tbody>
+                </table>
+            </div>
+        `;
+        const scrollHead = document.querySelector(".dataTables_scrollHead");
+        const scrollBody = document.querySelector(".dataTables_scrollBody");
+        const mod = await import("../stats-init-loader.mjs");
+        const dt = {
+            settings: () => [{ nScrollHead: scrollHead, nScrollBody: scrollBody }],
+        };
+        expect(() => mod.fixScrollXHeaderAlignment(dt)).not.toThrow();
+        const headTable = scrollHead.querySelector(".dataTables_scrollHeadInner table");
+        expect(headTable.style.tableLayout).toBe("");
     });
 });

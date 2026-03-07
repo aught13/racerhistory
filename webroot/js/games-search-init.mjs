@@ -63,17 +63,7 @@ function loadScript(src) {
     return new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
-            if (existing.dataset.loaded === "true") {
-                resolve();
-                return;
-            }
-            existing.addEventListener("load", () => {
-                existing.dataset.loaded = "true";
-                resolve();
-            });
-            existing.addEventListener("error", () =>
-                reject(new Error("Failed to load " + src)),
-            );
+            resolve();
             return;
         }
 
@@ -490,8 +480,12 @@ document.addEventListener("DOMContentLoaded", () => {
     initGamesPage();
 });
 
-// For Turbo navigation, use a callback instead of passing the function directly
-// to ensure fresh DOM reference each time
 document.addEventListener("turbo:load", () => {
     initGamesPage();
 });
+
+// If this module was loaded during Turbo navigation (turbo:load already fired),
+// run immediately so the first visit via Turbo still initialises.
+if (document.readyState !== "loading") {
+    initGamesPage();
+}

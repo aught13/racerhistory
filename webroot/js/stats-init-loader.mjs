@@ -66,17 +66,7 @@ function loadScript(src) {
     return new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
-            if (existing.dataset.loaded === "true") {
-                resolve();
-                return;
-            }
-            existing.addEventListener("load", () => {
-                existing.dataset.loaded = "true";
-                resolve();
-            });
-            existing.addEventListener("error", () =>
-                reject(new Error("Failed to load " + src)),
-            );
+            resolve();
             return;
         }
 
@@ -238,15 +228,73 @@ function initStatsDataTable(table) {
                 dt.searchBuilder.container().appendTo(window.$(slot));
                 dt.searchBuilder.rebuild();
             }
-            /* Recalculate column widths after data load to fix header alignment */
+            /* Fix header/body alignment after each draw (scrollX + Bootstrap sort-icon padding mismatch) */
             dt.on("draw.dt", function () {
-                dt.columns.adjust();
+                fixScrollXHeaderAlignment(dt);
             });
             initDragScroll(table.closest(".table-responsive"));
         })
         .catch((err) => {
             console.warn("Stats DataTables init failed:", err.message);
         });
+}
+
+/**
+ * Fix header/body column alignment for DataTables scrollX.
+ *
+ * With scrollX + Bootstrap 5, header <th> cells receive 20px right-padding
+ * for sort indicators while body <td> cells use only 8px. Both tables use
+ * table-layout:auto, so the browser independently distributes the same total
+ * width, misaligning columns. This function reads the body's rendered column
+ * widths and applies them to the header using table-layout:fixed and
+ * box-sizing:border-box so the browser honours the values exactly.
+ *
+ * @param {object} dt - DataTables API instance
+ */
+function fixScrollXHeaderAlignment(dt) {
+    const settings = dt.settings()[0];
+    if (!settings) {
+        return;
+    }
+    const scrollHead = settings.nScrollHead;
+    const scrollBody = settings.nScrollBody;
+    if (!scrollHead || !scrollBody) {
+        return;
+    }
+    const headTable = scrollHead.querySelector(
+        ".dataTables_scrollHeadInner table",
+    );
+    const bodyFirstRow = scrollBody.querySelector("tbody tr:first-child");
+    const headThs = headTable
+        ? Array.from(headTable.querySelectorAll("thead th"))
+        : [];
+    if (!headTable || !bodyFirstRow || headThs.length === 0) {
+        return;
+    }
+    const bodyTds = Array.from(bodyFirstRow.querySelectorAll("td"));
+    if (bodyTds.length !== headThs.length) {
+        return;
+    }
+
+    /* Read body column rendered widths (border-box, auto-layout result) */
+    let totalWidth = 0;
+    const colWidths = bodyTds.map((td) => {
+        const w = td.getBoundingClientRect().width;
+        totalWidth += w;
+        return w;
+    });
+
+    /* Apply body widths to header -- border-box treats each width as the
+       full cell size, matching the body cell border-box */
+    headThs.forEach((th, i) => {
+        th.style.boxSizing = "border-box";
+        th.style.width = colWidths[i] + "px";
+        th.style.minWidth = colWidths[i] + "px";
+    });
+
+    /* Force fixed layout so the browser respects our explicit widths */
+    headTable.style.width = totalWidth + "px";
+    headTable.style.tableLayout = "fixed";
 }
 
 /**
@@ -313,12 +361,43 @@ function initCardHover(container) {
 export {
     initStatsPage,
     initStatsDataTable,
+    fixScrollXHeaderAlignment,
     initDragScroll,
     initCardHover,
+    cleanupStatsPage,
     NUMERIC_COLUMNS,
     SCROLLER_THRESHOLD,
 };
 
+function cleanupStatsPage() {
+    const table = document.getElementById("stats-results-table");
+    if (!table || !hasJquery() || !window.$.fn?.dataTable) {
+        return;
+    }
+
+    try {
+        if (window.$.fn.dataTable.isDataTable(table)) {
+            window.$(table).DataTable().destroy(true);
+        }
+    } catch (err) {
+        console.warn("Failed to clean up stats DataTable", err);
+    }
+
+    const slot = document.getElementById("stats-searchbuilder-slot");
+    if (slot) {
+        slot.remove();
+    }
+}
+
+// Clean up before Turbo caches the page
+document.addEventListener("turbo:before-cache", cleanupStatsPage);
+
 // Initialize on page load events
 document.addEventListener("DOMContentLoaded", initStatsPage);
 document.addEventListener("turbo:load", initStatsPage);
+
+// If this module was loaded during Turbo navigation (turbo:load already fired),
+// run immediately so the first visit via Turbo still initialises.
+if (document.readyState !== "loading") {
+    initStatsPage();
+}

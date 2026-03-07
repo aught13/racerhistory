@@ -167,8 +167,10 @@ describe("seasons-init-loader boot flow", () => {
             .fn()
             .mockResolvedValue(undefined);
 
-        // No table, controls, or panel in DOM
-        document.body.innerHTML = "";
+        // Table present but no controls or panel in DOM
+        document.body.innerHTML = `
+            <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+        `;
 
         setupJQueryMock();
         await import("../seasons-init-loader.mjs");

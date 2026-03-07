@@ -36,6 +36,9 @@ function setupJQueryMock() {
         rows: jest.fn().mockReturnValue({
             data: jest.fn().mockReturnValue({ each: jest.fn() }),
         }),
+        settings: jest
+            .fn()
+            .mockReturnValue([{ nScrollHead: null, nScrollBody: null }]),
         destroy: jest.fn(),
     };
 
@@ -202,7 +205,7 @@ describe("stats-init-loader ensureDataTablesLoaded then-chain", () => {
         expect(capturedOpts?.order).toEqual([[0, "desc"]]);
     });
 
-    test("draw.dt callback triggers columns.adjust", async () => {
+    test("draw.dt callback calls fixScrollXHeaderAlignment without error", async () => {
         preloadScripts();
         document.body.innerHTML = `
       <div class="card">
@@ -221,8 +224,10 @@ describe("stats-init-loader ensureDataTablesLoaded then-chain", () => {
             (c) => c[0] === "draw.dt",
         );
         expect(drawCall).toBeTruthy();
-        drawCall[1]();
-        expect(dtInstance.columns.adjust).toHaveBeenCalled();
+        // fixScrollXHeaderAlignment is called; it returns early when scroll
+        // containers are null, so no error and columns.adjust is not called
+        expect(() => drawCall[1]()).not.toThrow();
+        expect(dtInstance.columns.adjust).not.toHaveBeenCalled();
     });
 
     test("initStatsDataTable without card still works", async () => {

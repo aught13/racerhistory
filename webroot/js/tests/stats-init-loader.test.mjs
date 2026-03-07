@@ -49,6 +49,11 @@ describe("stats-init-loader module exports", () => {
         expect(typeof mod.initDragScroll).toBe("function");
     });
 
+    test("exports fixScrollXHeaderAlignment function", async () => {
+        const mod = await import("../stats-init-loader.mjs");
+        expect(typeof mod.fixScrollXHeaderAlignment).toBe("function");
+    });
+
     test("exports initCardHover function", async () => {
         const mod = await import("../stats-init-loader.mjs");
         expect(typeof mod.initCardHover).toBe("function");

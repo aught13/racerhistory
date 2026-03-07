@@ -257,7 +257,7 @@ describe("seasons-init-loader.mjs (coverage)", () => {
         });
     });
 
-    describe("waitForDataTables", () => {
+    describe("ensureDataTablesLoaded", () => {
         test("resolves when already available", async () => {
             document.body.innerHTML = `
                 <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
@@ -275,11 +275,30 @@ describe("seasons-init-loader.mjs (coverage)", () => {
             expect(initFn).toHaveBeenCalled();
         });
 
-        test("resolves false after max attempts (no jQuery)", async () => {
+        test("skips init when no table on page (e.g. blog)", async () => {
+            document.body.innerHTML = `<p>No seasons here</p>`;
             const initFn = jest.fn();
             globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
             globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
                 Promise.resolve();
+            jest.spyOn(console, "debug").mockImplementation(() => {});
+
+            await bootLoader();
+            await flushPromises();
+
+            expect(initFn).not.toHaveBeenCalled();
+        });
+
+        test("warns when DataTables fails to load", async () => {
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
+            const initFn = jest.fn();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+                Promise.resolve();
+            // No jQuery or DataTables set up
             const warnSpy = jest
                 .spyOn(console, "warn")
                 .mockImplementation(() => {});
@@ -287,13 +306,14 @@ describe("seasons-init-loader.mjs (coverage)", () => {
 
             jest.useFakeTimers();
             await bootLoader();
-            for (let i = 0; i < 110; i++) {
-                jest.advanceTimersByTime(100);
+            for (let i = 0; i < 220; i++) {
+                jest.advanceTimersByTime(50);
                 await Promise.resolve();
             }
 
             expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining("DataTables"),
+                expect.stringContaining("DataTables failed to load"),
+                expect.any(Error),
             );
         });
     });
@@ -316,7 +336,9 @@ describe("seasons-init-loader.mjs (coverage)", () => {
         });
 
         test("retries when DOM elements not found", async () => {
-            document.body.innerHTML = `<div id="seasons-table-frame"></div>`;
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-table-frame"></div>`;
             const initFn = jest.fn();
             globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
             globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
@@ -388,6 +410,10 @@ describe("seasons-init-loader.mjs (coverage)", () => {
 
     describe("isDataTablesAvailable branches", () => {
         test("false when $.fn undefined", async () => {
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
             window.$ = {};
             const initFn = jest.fn();
             globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
@@ -400,11 +426,16 @@ describe("seasons-init-loader.mjs (coverage)", () => {
 
             jest.useFakeTimers();
             await bootLoader();
-            for (let i = 0; i < 110; i++) {
-                jest.advanceTimersByTime(100);
+            // hasJquery() returns false since $.fn is undefined,
+            // so ensureDataTablesLoaded waits then times out.
+            for (let i = 0; i < 220; i++) {
+                jest.advanceTimersByTime(50);
                 await Promise.resolve();
             }
-            expect(warnSpy).toHaveBeenCalled();
+            expect(warnSpy).toHaveBeenCalledWith(
+                expect.stringContaining("DataTables failed to load"),
+                expect.any(Error),
+            );
         });
 
         test("true when dataTable is object (not function)", async () => {

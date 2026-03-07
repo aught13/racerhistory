@@ -9,7 +9,7 @@ function isSearchBuilderAvailable() {
 }
 
 function hasDataTables() {
-    return typeof window.$?.fn?.dataTable === "object";
+    return !!window.$?.fn?.dataTable;
 }
 
 export function ensureSearchBuilderLoaded() {
@@ -79,6 +79,10 @@ export function ensureSearchBuilderLoaded() {
     return loadPromise;
 }
 
+export function resetSearchBuilderLoader() {
+    loadPromise = null;
+}
+
 export function resetSearchBuilderLoaderForTests() {
     loadPromise = null;
     const scripts = Array.from(
@@ -86,5 +90,11 @@ export function resetSearchBuilderLoaderForTests() {
     );
     scripts.forEach((el) => el.remove());
 }
+
+// Reset cached promise on Turbo navigation so SearchBuilder can re-attach
+// after morph replaces the DOM.
+document.addEventListener("turbo:before-cache", () => {
+    loadPromise = null;
+});
 
 export { SEARCH_BUILDER_SRC };
