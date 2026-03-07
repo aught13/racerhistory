@@ -1,4 +1,5 @@
-// ...existing code...
+import { jest } from "@jest/globals";
+
 jest.disableAutomock();
 
 beforeEach(() => {
@@ -6,10 +7,10 @@ beforeEach(() => {
     document.body.innerHTML = "";
 });
 
-test("buildFieldControl creates number input with min/max", () => {
+test("buildFieldControl creates number input with min/max", async () => {
     document.body.innerHTML =
         '<select id="team-season-select"></select><div id="sport-specific-section"></div>';
-    const mod = require("../games_sport_dynamic.js");
+    const { buildFieldControl } = await import("../games_sport_dynamic.js");
     const field = {
         field_name: "goals",
         field_type: "number",
@@ -17,34 +18,34 @@ test("buildFieldControl creates number input with min/max", () => {
         max: 10,
         display_label: "Goals",
     };
-    const el = mod.buildFieldControl(field, {});
+    const el = buildFieldControl(field, {});
     const input = el.querySelector("input");
     expect(input.type).toBe("number");
     expect(input.min).toBe("0");
     expect(input.max).toBe("10");
 });
 
-test("groupFields groups by field_group", () => {
+test("groupFields groups by field_group", async () => {
     document.body.innerHTML =
         '<select id="team-season-select"></select><div id="sport-specific-section"></div>';
-    const mod = require("../games_sport_dynamic.js");
+    const { groupFields } = await import("../games_sport_dynamic.js");
     const fields = [
         { field_name: "a", field_group: "x" },
         { field_name: "b", field_group: "y" },
         { field_name: "c", field_group: "x" },
     ];
-    const groups = mod.groupFields(fields);
+    const groups = groupFields(fields);
     expect(Object.keys(groups).sort()).toEqual(["x", "y"]);
     expect(groups.x.length).toBe(2);
 });
 
-test("renderEav chunks fields into rows of up to 4", () => {
+test("renderEav chunks fields into rows of up to 4", async () => {
     document.body.innerHTML =
         '<select id="team-season-select"></select><div id="sport-specific-section"></div>';
-    const mod = require("../games_sport_dynamic.js");
+    const { renderEav } = await import("../games_sport_dynamic.js");
     const template = [];
     for (let i = 0; i < 9; i++) template.push({ field_name: "f" + i });
-    mod.renderEav(template, {});
+    renderEav(template, {});
     const section = document.getElementById("sport-specific-section");
     // should create groups -> one 'general' group with card body rows
     const rows = section.querySelectorAll(".card .card-body .row");
@@ -64,8 +65,8 @@ test("fetchMeta uses HTML path when available and updates sport name", async () 
     global.fetch = jest
         .fn()
         .mockResolvedValueOnce({ ok: true, text: async () => html });
-    const mod = require("../games_sport_dynamic.js");
-    await mod.fetchMeta("123");
+    const { fetchMeta } = await import("../games_sport_dynamic.js");
+    await fetchMeta("123");
     const section = document.getElementById("sport-specific-section");
     expect(section.innerHTML).toContain("fragment");
     const sn = document.getElementById("current-sport");
@@ -92,8 +93,8 @@ test("fetchMeta falls back to JSON and renders eav", async () => {
                 values: {},
             }),
         });
-    const mod = require("../games_sport_dynamic.js");
-    await mod.fetchMeta("321");
+    const { fetchMeta } = await import("../games_sport_dynamic.js");
+    await fetchMeta("321");
     const section = document.getElementById("sport-specific-section");
     expect(section.textContent).toContain("Sport-Specific Details");
     const sn = document.getElementById("current-sport");
@@ -114,8 +115,8 @@ describe("games_sport_dynamic helpers", () => {
         jest.resetModules();
     });
 
-    test("groupFields groups by field_group and defaults to general", () => {
-        const { groupFields } = require("../../js/games_sport_dynamic.js");
+    test("groupFields groups by field_group and defaults to general", async () => {
+        const { groupFields } = await import("../games_sport_dynamic.js");
         const fields = [
             { field_name: "a", field_group: "one" },
             { field_name: "b" },
@@ -130,10 +131,8 @@ describe("games_sport_dynamic helpers", () => {
         expect(grouped.general.length).toBe(1);
     });
 
-    test("buildFieldControl creates number input with min/max and text fallback", () => {
-        const {
-            buildFieldControl,
-        } = require("../../js/games_sport_dynamic.js");
+    test("buildFieldControl creates number input with min/max and text fallback", async () => {
+        const { buildFieldControl } = await import("../games_sport_dynamic.js");
         const numField = {
             field_name: "score",
             display_label: "Score",
@@ -159,8 +158,8 @@ describe("games_sport_dynamic helpers", () => {
         expect(input2.value).toBe("Alice");
     });
 
-    test("renderEav appends grouped cards to section", () => {
-        const { renderEav } = require("../../js/games_sport_dynamic.js");
+    test("renderEav appends grouped cards to section", async () => {
+        const { renderEav } = await import("../games_sport_dynamic.js");
         const template = [
             {
                 field_name: "f1",
@@ -187,10 +186,8 @@ describe("games_sport_dynamic helpers", () => {
         expect(section.querySelector('input[name="f2"]')).toBeTruthy();
     });
 
-    test("buildFieldControl uses default_value when existingValues missing", () => {
-        const {
-            buildFieldControl,
-        } = require("../../js/games_sport_dynamic.js");
+    test("buildFieldControl uses default_value when existingValues missing", async () => {
+        const { buildFieldControl } = await import("../games_sport_dynamic.js");
         const f = {
             field_name: "x",
             display_label: "X",
@@ -202,10 +199,8 @@ describe("games_sport_dynamic helpers", () => {
         expect(input.value).toBe("DEFAULT");
     });
 
-    test("buildFieldControl number input without min/max has empty attrs", () => {
-        const {
-            buildFieldControl,
-        } = require("../../js/games_sport_dynamic.js");
+    test("buildFieldControl number input without min/max has empty attrs", async () => {
+        const { buildFieldControl } = await import("../games_sport_dynamic.js");
         const nf = {
             field_name: "n",
             display_label: "N",
@@ -219,8 +214,8 @@ describe("games_sport_dynamic helpers", () => {
         expect(input.max).toBe("");
     });
 
-    test("renderEav with empty template leaves only heading and no cards", () => {
-        const { renderEav } = require("../../js/games_sport_dynamic.js");
+    test("renderEav with empty template leaves only heading and no cards", async () => {
+        const { renderEav } = await import("../games_sport_dynamic.js");
         const section = document.getElementById("sport-specific-section");
         renderEav([], {});
         expect(section.querySelectorAll(".card").length).toBe(0);
@@ -228,7 +223,9 @@ describe("games_sport_dynamic helpers", () => {
     });
 
     test("fetchMeta sets sport name and renders eavTemplate on success", async () => {
-        const mod = require("../../js/games_sport_dynamic.js");
+        const modImport = await import("../games_sport_dynamic.js");
+        const mod = modImport.default || modImport;
+        const { fetchMeta } = mod;
 
         global.fetch = jest.fn(() =>
             Promise.resolve({
@@ -243,7 +240,7 @@ describe("games_sport_dynamic helpers", () => {
             }),
         );
 
-        await mod.fetchMeta("42");
+        await fetchMeta("42");
         expect(document.getElementById("current-sport").textContent).toBe("S");
         // renderEav should have added a card for group 'g'
         const section = document.getElementById("sport-specific-section");
@@ -252,22 +249,26 @@ describe("games_sport_dynamic helpers", () => {
     });
 
     test("fetchMeta does not render when data.success is false", async () => {
-        const mod = require("../../js/games_sport_dynamic.js");
+        const modImport = await import("../games_sport_dynamic.js");
+        const mod = modImport.default || modImport;
+        const { fetchMeta } = mod;
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 ok: true,
                 json: () => Promise.resolve({ success: false }),
             }),
         );
-        await mod.fetchMeta("42");
+        await fetchMeta("42");
         const section = document.getElementById("sport-specific-section");
         expect(section.querySelectorAll(".card").length).toBe(0);
     });
 
     test("fetchMeta handles fetch rejection gracefully", async () => {
-        const mod = require("../../js/games_sport_dynamic.js");
+        const modImport = await import("../games_sport_dynamic.js");
+        const mod = modImport.default || modImport;
+        const { fetchMeta } = mod;
         global.fetch = jest.fn(() => Promise.reject(new Error("boom")));
-        await expect(mod.fetchMeta("42")).resolves.toBeUndefined();
+        await expect(fetchMeta("42")).resolves.toBeUndefined();
         const section = document.getElementById("sport-specific-section");
         expect(section.querySelectorAll(".card").length).toBe(0);
     });

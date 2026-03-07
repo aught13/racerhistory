@@ -3,6 +3,7 @@
  * @jest-environment jsdom
  */
 
+import { jest } from "@jest/globals";
 /* global CustomEvent */
 
 describe("Turbo Navigation", () => {

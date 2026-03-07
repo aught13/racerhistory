@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 describe("Coverage targets 4 - edge normalizations and multi-row rendering", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
@@ -11,7 +13,7 @@ describe("Coverage targets 4 - edge normalizations and multi-row rendering", () 
         }
     });
 
-    test("admin normalizes ids array removing empty and null and handles toString throwing element", () => {
+    test("admin normalizes ids array removing empty and null and handles toString throwing element", async () => {
         document.body.innerHTML =
             '<div id="confirm-delete-modal"><button id="confirm-delete-modal-delete-btn">Delete</button><form id="confirm-delete-modal-hidden-form"></form></div>';
         const badObj = {
@@ -19,8 +21,8 @@ describe("Coverage targets 4 - edge normalizations and multi-row rendering", () 
                 throw new Error("boom");
             },
         };
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
 
         // setContext with ids array containing empty, null, number, whitespace and an object that throws
         internals.setContext({
@@ -47,13 +49,13 @@ describe("Coverage targets 4 - edge normalizations and multi-row rendering", () 
         expect(vals).toEqual(expect.arrayContaining(["7", "8"]));
     });
 
-    test("games_sport_dynamic renderEav handles many fields across multiple rows", () => {
+    test("games_sport_dynamic renderEav handles many fields across multiple rows", async () => {
         // prepare DOM
         document.body.innerHTML =
             '<select id="team-season-select" data-sport-url="/test"></select><div id="sport-specific-section"></div>';
-        const gs = require("../../js/games_sport_dynamic");
+        const mod = await import("../games_sport_dynamic");
         const renderEav =
-            gs.renderEav || (gs.__internals && gs.__internals.renderEav);
+            mod.renderEav || (mod.__internals && mod.__internals.renderEav);
 
         const template = [];
         for (let i = 0; i < 9; i++) {
@@ -75,10 +77,11 @@ describe("Coverage targets 4 - edge normalizations and multi-row rendering", () 
         expect(rows.length).toBeGreaterThanOrEqual(3);
     });
 
-    test("sport-aware renderField renders number with min/max and text fallback when display_label missing", () => {
+    test("sport-aware renderField renders number with min/max and text fallback when display_label missing", async () => {
         document.body.innerHTML =
             '<select id="team-season-select" data-sport-url="/test"></select><div id="sport-specific-section"></div>';
-        const Saf = require("../../js/sport-aware-game-form");
+        const _safmod = await import("../sport-aware-game-form");
+        const Saf = _safmod.default || _safmod;
         const inst = new Saf();
         // call renderField directly by obtaining function from prototype
         const proto = Object.getPrototypeOf(inst);
@@ -98,11 +101,11 @@ describe("Coverage targets 4 - edge normalizations and multi-row rendering", () 
         expect(htmlText).toContain("<input");
     });
 
-    test("admin parseInt fallback handles + and whitespace numeric string", () => {
+    test("admin parseInt fallback handles + and whitespace numeric string", async () => {
         // Instead of firing the whole click flow (which depends on jsdom requestSubmit),
         // call the exported helper directly to assert the parseInt fallback behavior.
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
         const extra = internals.buildExtraFields({
             ids: " +42 ",
             idsName: "ids[]",

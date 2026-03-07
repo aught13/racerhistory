@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* seasons-init.modules.test.js
  * Focused tests for webroot/js/modules/seasons-init.js
  */
@@ -14,18 +16,18 @@ beforeEach(() => {
     }
 });
 
-test("returns null when no table present", () => {
+test("returns null when no table present", async () => {
     // mock minimal jQuery that returns empty selection
     window.$ = () => ({ length: 0, get: () => [] });
     window.$.fn = { dataTable: { isDataTable: () => false } };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     const res = initSeasons();
     expect(res).toEqual({ sb: null, table: null });
 });
 
-test("initializes DataTable and shows placeholder when SearchBuilder missing", () => {
+test("initializes DataTable and shows placeholder when SearchBuilder missing", async () => {
     // prepare DOM
     const table = document.createElement("table");
     table.id = "seasons-table";
@@ -90,8 +92,8 @@ test("initializes DataTable and shows placeholder when SearchBuilder missing", (
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     const res = initSeasons({ columnLabels: ["Col1"], columns: [0] });
 
     expect(res.table).not.toBeNull();
@@ -103,7 +105,7 @@ test("initializes DataTable and shows placeholder when SearchBuilder missing", (
     expect(ph.textContent).toMatch(/Advanced filter/);
 });
 
-test("initializes DataTable and SearchBuilder when available", () => {
+test("initializes DataTable and SearchBuilder when available", async () => {
     // prepare DOM similar to previous test
     const table = document.createElement("table");
     table.id = "seasons-table";
@@ -173,8 +175,8 @@ test("initializes DataTable and SearchBuilder when available", () => {
         },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     const res = initSeasons({ columnLabels: ["Col1"], columns: [0] });
 
     expect(res.table).not.toBeNull();
@@ -182,7 +184,7 @@ test("initializes DataTable and SearchBuilder when available", () => {
     expect(document.getElementById("seasons-filter-btn")).toBeTruthy();
 });
 
-test("restores header labels and invokes user callbacks", () => {
+test("restores header labels and invokes user callbacks", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -238,8 +240,8 @@ test("restores header labels and invokes user callbacks", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({
         columnLabels: ["Old A", "Old B"],
         dataTableOptions: { initComplete, drawCallback },
@@ -251,7 +253,7 @@ test("restores header labels and invokes user callbacks", () => {
     expect(drawCallback).toHaveBeenCalled();
 });
 
-test("handles SearchBuilder constructor error with placeholder", () => {
+test("handles SearchBuilder constructor error with placeholder", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -305,8 +307,8 @@ test("handles SearchBuilder constructor error with placeholder", () => {
         },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({ columnLabels: ["Col1"] });
 
     const placeholder = panel.querySelector(".p-3");
@@ -314,7 +316,7 @@ test("handles SearchBuilder constructor error with placeholder", () => {
     expect(placeholder.textContent).toMatch(/Advanced filter/);
 });
 
-test("renumberRows falls back to first cell when number column missing", () => {
+test("renumberRows falls back to first cell when number column missing", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -364,15 +366,15 @@ test("renumberRows falls back to first cell when number column missing", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({ numberColumn: 3 });
 
     const firstCell = table.querySelector("tbody td");
     expect(firstCell.textContent).toBe("1");
 });
 
-test("destroyExisting removes prior DataTable instance", () => {
+test("destroyExisting removes prior DataTable instance", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -418,14 +420,14 @@ test("destroyExisting removes prior DataTable instance", () => {
         dataTable: { isDataTable: () => true, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons();
 
     expect(destroySpy).toHaveBeenCalled();
 });
 
-test("applies columnDefs from columnLabels and preserves custom defs", () => {
+test("applies columnDefs from columnLabels and preserves custom defs", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -471,8 +473,8 @@ test("applies columnDefs from columnLabels and preserves custom defs", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({
         columnLabels: ["A", "B"],
         dataTableOptions: { columnDefs: [{ targets: 99, visible: false }] },
@@ -487,7 +489,7 @@ test("applies columnDefs from columnLabels and preserves custom defs", () => {
     );
 });
 
-test("returns nulls when controls or panel missing", () => {
+test("returns nulls when controls or panel missing", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -526,15 +528,15 @@ test("returns nulls when controls or panel missing", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     const res = initSeasons();
 
     expect(res.table).not.toBeNull();
     expect(document.getElementById("seasons-filter-btn")).toBeNull();
 });
 
-test("handles DataTable init failure and returns nulls", () => {
+test("handles DataTable init failure and returns nulls", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -573,14 +575,14 @@ test("handles DataTable init failure and returns nulls", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     const res = initSeasons();
 
     expect(res).toEqual({ sb: null, table: null });
 });
 
-test("adds placeholder when SearchBuilder missing and panel cleared", () => {
+test("adds placeholder when SearchBuilder missing and panel cleared", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -628,14 +630,14 @@ test("adds placeholder when SearchBuilder missing and panel cleared", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons();
 
     expect(panel.querySelector(".p-3")).toBeTruthy();
 });
 
-test("handles DataTable retrieval failure when already initialized", () => {
+test("handles DataTable retrieval failure when already initialized", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -674,14 +676,14 @@ test("handles DataTable retrieval failure when already initialized", () => {
         dataTable: { isDataTable: () => true, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     const res = initSeasons();
 
     expect(res).toEqual({ sb: null, table: null });
 });
 
-test("filter button toggles panel visibility", () => {
+test("filter button toggles panel visibility", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -729,8 +731,8 @@ test("filter button toggles panel visibility", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons();
 
     const btn = document.getElementById("seasons-filter-btn");
@@ -745,7 +747,7 @@ test("filter button toggles panel visibility", () => {
     expect(btn.getAttribute("aria-expanded")).toBe("false");
 });
 
-test("search builder with missing container uses placeholder", () => {
+test("search builder with missing container uses placeholder", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -798,14 +800,14 @@ test("search builder with missing container uses placeholder", () => {
         },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons();
 
     expect(panel.querySelector(".p-3")).toBeTruthy();
 });
 
-test("reuses SearchBuilder instance when initComplete runs twice", () => {
+test("reuses SearchBuilder instance when initComplete runs twice", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -875,8 +877,8 @@ test("reuses SearchBuilder instance when initComplete runs twice", () => {
         },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({ columnLabels: ["A"] });
 
     expect(sbFactory).toHaveBeenCalledTimes(1);
@@ -884,7 +886,7 @@ test("reuses SearchBuilder instance when initComplete runs twice", () => {
     expect(panelEmptyCalls).toBeGreaterThan(1);
 });
 
-test("skips empty column labels when building columnDefs", () => {
+test("skips empty column labels when building columnDefs", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -930,14 +932,14 @@ test("skips empty column labels when building columnDefs", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({ columnLabels: ["A", "", null] });
 
     expect(capturedOptions.columnDefs).toEqual([{ targets: 0, title: "A" }]);
 });
 
-test("renumberRows exits when no rows present", () => {
+test("renumberRows exits when no rows present", async () => {
     const table = document.createElement("table");
     table.id = "seasons-table";
     table.innerHTML = `
@@ -982,14 +984,14 @@ test("renumberRows exits when no rows present", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons();
 
     expect(table.querySelectorAll("tbody td").length).toBe(0);
 });
 
-test("restores headers for scroll head table when present", () => {
+test("restores headers for scroll head table when present", async () => {
     const wrapper = document.createElement("div");
     wrapper.className = "dataTables_wrapper";
     const table = document.createElement("table");
@@ -1047,8 +1049,8 @@ test("restores headers for scroll head table when present", () => {
         dataTable: { isDataTable: () => false, SearchBuilder: undefined },
     };
 
-    const mod = require("../modules/seasons-init.js");
-    const initSeasons = mod && mod.default ? mod.default : mod;
+    const mod = await import("../modules/seasons-init.js");
+    const initSeasons = mod.default || mod;
     initSeasons({ columnLabels: ["A", "B"] });
 
     expect(table.querySelectorAll("thead th")[0].textContent).toBe("A");

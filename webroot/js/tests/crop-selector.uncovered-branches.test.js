@@ -1,5 +1,6 @@
-const CropSelector = require("../crop-selector.js");
+import { jest } from "@jest/globals";
 
+let CropSelector;
 const createContext = () => ({
     setTransform: jest.fn(),
     save: jest.fn(),
@@ -71,7 +72,11 @@ const setupSelector = ({
 };
 
 describe("crop-selector uncovered branches", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../crop-selector.js");
+        CropSelector = mod.default || mod;
+
         jest.clearAllMocks();
         document.body.innerHTML = "";
         delete window.devicePixelRatio;

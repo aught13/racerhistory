@@ -1,7 +1,13 @@
+import { jest } from "@jest/globals";
+
 let gsd;
 
 describe("games_sport_dynamic helper branches", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../games_sport_dynamic.js");
+        gsd = mod.default || mod;
+
         document.body.innerHTML = `
             <select id="team-season-select" data-sport-url="/meta"></select>
             <div id="sport-specific-section"></div>
@@ -10,7 +16,7 @@ describe("games_sport_dynamic helper branches", () => {
         `;
         // Ensure module is evaluated after DOM is ready so it doesn't early-return
         jest.resetModules();
-        gsd = require("../games_sport_dynamic");
+        gsd = await import("../games_sport_dynamic");
     });
 
     afterEach(() => {
@@ -18,7 +24,7 @@ describe("games_sport_dynamic helper branches", () => {
         jest.restoreAllMocks();
     });
 
-    test("buildFieldControl produces number input with min/max and text input otherwise", () => {
+    test("buildFieldControl produces number input with min/max and text input otherwise", async () => {
         const num = {
             field_name: "n1",
             display_label: "N",
@@ -36,7 +42,7 @@ describe("games_sport_dynamic helper branches", () => {
         expect(txtEl.querySelector("input").type).toBe("text");
     });
 
-    test("groupFields groups by field_group and defaults to general", () => {
+    test("groupFields groups by field_group and defaults to general", async () => {
         const fields = [
             { field_name: "a", field_group: "one" },
             { field_name: "b" },
@@ -48,7 +54,7 @@ describe("games_sport_dynamic helper branches", () => {
         expect(grouped.one.length).toBe(2);
     });
 
-    test("renderEav renders cards for groups and creates inputs for fields", () => {
+    test("renderEav renders cards for groups and creates inputs for fields", async () => {
         const template = [
             { field_name: "f1", field_group: "grp", display_label: "F1" },
             { field_name: "f2", field_group: "grp", display_label: "F2" },
@@ -65,7 +71,7 @@ describe("games_sport_dynamic helper branches", () => {
         expect(labels.length).toBeGreaterThanOrEqual(2);
     });
 
-    test("renderEav with empty template clears section", () => {
+    test("renderEav with empty template clears section", async () => {
         const section = document.getElementById("sport-specific-section");
         section.innerHTML = '<div class="card"></div>';
         gsd.renderEav([], {});

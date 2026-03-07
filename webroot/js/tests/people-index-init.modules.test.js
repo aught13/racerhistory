@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* people-index-init.modules.test.js
  * Focused tests for webroot/js/modules/people-index-init.js
  */
@@ -13,17 +15,17 @@ describe("people-index-init", () => {
         }
     });
 
-    test("returns null when no table present", () => {
+    test("returns null when no table present", async () => {
         window.$ = () => ({ length: 0, get: () => [] });
         window.$.fn = { dataTable: { isDataTable: () => false } };
 
-        const mod = require("../modules/people-index-init.js");
-        const initPeople = mod && mod.default ? mod.default : mod;
+        const mod = await import("../modules/people-index-init.js");
+        const initPeople = mod.default || mod;
         const res = initPeople();
         expect(res).toEqual({ sb: null, table: null });
     });
 
-    test("initializes DataTable with scroller defaults and binds search", () => {
+    test("initializes DataTable with scroller defaults and binds search", async () => {
         const table = document.createElement("table");
         table.id = "people-table";
         table.innerHTML =
@@ -85,8 +87,8 @@ describe("people-index-init", () => {
         window.$.fn.dataTable.ext = { search: [] };
         window.$.fn.DataTable = function () {};
 
-        const mod = require("../modules/people-index-init.js");
-        const initPeople = mod && mod.default ? mod.default : mod;
+        const mod = await import("../modules/people-index-init.js");
+        const initPeople = mod.default || mod;
         const res = initPeople({ dataUrl: "/people?format=json" });
 
         expect(res.table).not.toBeNull();
@@ -101,7 +103,7 @@ describe("people-index-init", () => {
         expect(searchMock).toHaveBeenCalled();
     });
 
-    test("name filter matches data-person-search", () => {
+    test("name filter matches data-person-search", async () => {
         const table = document.createElement("table");
         table.id = "people-table";
         table.innerHTML =
@@ -159,8 +161,8 @@ describe("people-index-init", () => {
         window.$.fn.dataTable.ext = { search: filters };
         window.$.fn.DataTable = function () {};
 
-        const mod = require("../modules/people-index-init.js");
-        const initPeople = mod && mod.default ? mod.default : mod;
+        const mod = await import("../modules/people-index-init.js");
+        const initPeople = mod.default || mod;
         initPeople({ dataUrl: "" });
 
         expect(filters.length).toBe(1);
@@ -177,7 +179,7 @@ describe("people-index-init", () => {
         expect(filterFn(settings, ["John"], 0)).toBe(false);
     });
 
-    test("creates filter button and SearchBuilder when available", () => {
+    test("creates filter button and SearchBuilder when available", async () => {
         const table = document.createElement("table");
         table.id = "people-table";
         table.appendChild(document.createElement("thead"));
@@ -242,8 +244,8 @@ describe("people-index-init", () => {
         window.$.fn.dataTable.ext = { search: [] };
         window.$.fn.DataTable = function () {};
 
-        const mod = require("../modules/people-index-init.js");
-        const initPeople = mod && mod.default ? mod.default : mod;
+        const mod = await import("../modules/people-index-init.js");
+        const initPeople = mod.default || mod;
         initPeople();
 
         const btn = document.getElementById("people-filter-btn");

@@ -1,4 +1,4 @@
-const path = require("path");
+import { jest } from "@jest/globals";
 
 describe("SportAwareGameForm branches", () => {
     let origFetch;
@@ -23,9 +23,7 @@ describe("SportAwareGameForm branches", () => {
 
     test("handles non-ok fetch response by showing fallback", async () => {
         global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
-        const SportAware = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+        const SportAware = require("../sport-aware-game-form.js");
         const instance = new SportAware();
         // ensure select has a value so updateSportFields will run
         const sel = document.getElementById("team-season-select");
@@ -48,9 +46,7 @@ describe("SportAwareGameForm branches", () => {
         global.fetch = jest
             .fn()
             .mockResolvedValue({ ok: true, json: async () => json });
-        const SportAware = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+        const SportAware = require("../sport-aware-game-form.js");
         const instance = new SportAware();
         document.getElementById("team-season-select").value = "1";
 
@@ -66,10 +62,8 @@ describe("SportAwareGameForm branches", () => {
         ).toContain("Game Details");
     });
 
-    test("renderSportFields creates number inputs and preserves existing values", () => {
-        const SportAware = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+    test("renderSportFields creates number inputs and preserves existing values", async () => {
+        const SportAware = require("../sport-aware-game-form.js");
         const instance = new SportAware();
 
         // create an existing field to preserve its value
@@ -134,9 +128,7 @@ describe("SportAwareGameForm branches", () => {
         p2.name = "period_2_mur";
         document.body.appendChild(p2);
 
-        const SportAware = require(
-            path.resolve(__dirname, "../sport-aware-game-form.js"),
-        );
+        const SportAware = require("../sport-aware-game-form.js");
         const instance = new SportAware();
         document.getElementById("team-season-select").value = "9";
 

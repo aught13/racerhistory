@@ -1,7 +1,6 @@
 /** @jest-environment jsdom */
 
-const { jest, describe, test, expect, beforeEach } = require("@jest/globals");
-
+import { jest } from "@jest/globals";
 const resetAndMock = async () => {
     await jest.resetModules();
     // attach a global mock so the jest.mock factory can safely reference it

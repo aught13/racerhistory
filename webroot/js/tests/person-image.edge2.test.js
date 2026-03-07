@@ -1,8 +1,12 @@
 /** @jest-environment jsdom */
-const PI = require("../../js/person-image.js");
 
+import { jest } from "@jest/globals";
+let PI;
 describe("person-image edge behaviors", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../person-image.js");
+        PI = mod.default || mod;
         document.body.innerHTML = `
             <button id="select-btn">Select</button>
             <input id="image-field" />

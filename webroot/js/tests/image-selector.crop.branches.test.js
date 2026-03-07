@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* image-selector.crop.branches.test.js
  * Tests exercising crop and upload branches for image-selector.js
  */
@@ -11,7 +13,7 @@ beforeEach(() => {
     global.bootstrap = { Modal: { getInstance: () => ({ hide: jest.fn() }) } };
 });
 
-test("onFileSelected initializes Cropper and displays UI", () => {
+test("onFileSelected initializes Cropper and displays UI", async () => {
     // prepare DOM
     const modalId = "crop-modal";
     const modal = document.createElement("div");
@@ -57,7 +59,8 @@ test("onFileSelected initializes Cropper and displays UI", () => {
     };
     global.Cropper = jest.fn().mockImplementation(() => cropperMock);
 
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector(modalId);
 
     // simulate file selection event
@@ -101,7 +104,8 @@ test("onUploadImage handles crop path and upload failure/success", async () => {
     // Mock File selected
     const fakeFile = new Blob(["x"], { type: "image/jpeg" });
 
-    const ImageSelector = require("../image-selector.js");
+    const _ismod = await import("../image-selector.js");
+    const ImageSelector = _ismod.default || _ismod;
     const inst = new ImageSelector(modalId);
     inst.uploadBtn = uploadBtn;
     inst.selectedFile = fakeFile;

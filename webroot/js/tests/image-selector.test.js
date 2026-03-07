@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /**
  * Image Selector Tests
  *
@@ -10,7 +12,7 @@
  */
 
 // Import the ImageSelector class
-const ImageSelector = require("../image-selector.js");
+let ImageSelector;
 
 describe("ImageSelector", () => {
     let modal;
@@ -18,7 +20,12 @@ describe("ImageSelector", () => {
     let imageSelector;
     let mockModalInstance;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        // Load module
+        jest.resetModules();
+        const mod = await import("../image-selector.js");
+        ImageSelector = mod.default || mod;
+
         // Setup DOM
         document.body.innerHTML = `
       <div id="test-modal" class="modal fade">

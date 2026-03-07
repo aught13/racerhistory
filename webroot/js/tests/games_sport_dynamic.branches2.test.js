@@ -1,6 +1,8 @@
+import { jest } from "@jest/globals";
+
 describe("games_sport_dynamic additional branches", () => {
     let buildFieldControl, groupFields, renderEav;
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.resetModules();
         document.body.innerHTML = `
             <div id="sport-specific-section"></div>
@@ -8,13 +10,11 @@ describe("games_sport_dynamic additional branches", () => {
         `;
         // require after DOM setup so the IIFE in the module runs and exports helpers
 
-        const mod = require("../games_sport_dynamic");
-        buildFieldControl = mod.buildFieldControl;
-        groupFields = mod.groupFields;
-        renderEav = mod.renderEav;
+        ({ buildFieldControl, groupFields, renderEav } =
+            await import("../games_sport_dynamic"));
     });
 
-    test("buildFieldControl creates number input with min/max when field_type=number", () => {
+    test("buildFieldControl creates number input with min/max when field_type=number", async () => {
         const field = {
             field_name: "score",
             display_label: "Score",
@@ -30,7 +30,7 @@ describe("games_sport_dynamic additional branches", () => {
         expect(input.max).toBe("10");
     });
 
-    test("buildFieldControl falls back to text input for non-number types", () => {
+    test("buildFieldControl falls back to text input for non-number types", async () => {
         const field = {
             field_name: "note",
             display_label: "Note",
@@ -43,7 +43,7 @@ describe("games_sport_dynamic additional branches", () => {
         expect(input.value).toBe("hello");
     });
 
-    test("groupFields groups by field_group and renderEav creates cards", () => {
+    test("groupFields groups by field_group and renderEav creates cards", async () => {
         const fields = [
             { field_name: "a", field_group: "alpha", display_label: "A" },
             { field_name: "b", field_group: "beta", display_label: "B" },

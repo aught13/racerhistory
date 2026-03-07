@@ -21,7 +21,7 @@ beforeAll(async () => {
         theme = mod;
     } catch {
         // Fall back to the local CommonJS helper
-        theme = require("./theme_helper.js");
+        theme = await import("./theme_helper.js");
     }
 });
 
@@ -36,14 +36,14 @@ describe("theme toggle", () => {
         window.__rh_theme_mq_listener = null;
     });
 
-    test("explicit light and dark preferences set dataset.theme", () => {
+    test("explicit light and dark preferences set dataset.theme", async () => {
         theme.setThemePreference("light");
         expect(document.documentElement.dataset.theme).toBe("light");
         theme.setThemePreference("dark");
         expect(document.documentElement.dataset.theme).toBe("dark");
     });
 
-    test("system preference applies dark when matchMedia matches", () => {
+    test("system preference applies dark when matchMedia matches", async () => {
         mockMatchMedia(true);
         theme.setThemePreference("system");
         // when system, theme is set to dark or light string and themeSource present
@@ -54,14 +54,14 @@ describe("theme toggle", () => {
         expect(document.documentElement.dataset.theme).toBe("dark");
     });
 
-    test("system preference applies light when matchMedia does not match", () => {
+    test("system preference applies light when matchMedia does not match", async () => {
         mockMatchMedia(false);
         theme.setThemePreference("system");
         expect(document.documentElement.dataset.themeSource).toBe("system");
         expect(document.documentElement.dataset.theme).toBe("light");
     });
 
-    test("getThemePreference reads cookie or returns system when unset", () => {
+    test("getThemePreference reads cookie or returns system when unset", async () => {
         theme.setThemePreference("light");
         expect(theme.getThemePreference()).toBe("light");
         theme.setThemePreference("system");

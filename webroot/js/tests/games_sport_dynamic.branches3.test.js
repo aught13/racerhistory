@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 /* games_sport_dynamic.branches3.test.js
  * Focused branch tests for webroot/js/games_sport_dynamic.js
  */
@@ -14,7 +16,7 @@ beforeEach(() => {
     }
 });
 
-test("buildFieldControl creates number input with min/max and label", () => {
+test("buildFieldControl creates number input with min/max and label", async () => {
     // prepare DOM so module will export helpers
     const sel = document.createElement("select");
     sel.id = "team-season-select";
@@ -24,14 +26,10 @@ test("buildFieldControl creates number input with min/max and label", () => {
     section.id = "sport-specific-section";
     document.body.appendChild(section);
 
-    const mod = require("../games_sport_dynamic.js");
-    const m =
-        mod && mod.buildFieldControl
-            ? mod
-            : mod && mod.default
-              ? mod.default
-              : mod;
-    const { buildFieldControl } = m;
+    const module = await import("../games_sport_dynamic.js");
+    const buildFieldControl =
+        module.buildFieldControl ||
+        (module.default && module.default.buildFieldControl);
 
     const field = {
         field_name: "score",
@@ -52,7 +50,7 @@ test("buildFieldControl creates number input with min/max and label", () => {
     expect(label.textContent).toBe("Score");
 });
 
-test("groupFields groups by field_group and renderEav creates cards and rows", () => {
+test("groupFields groups by field_group and renderEav creates cards and rows", async () => {
     const sel = document.createElement("select");
     sel.id = "team-season-select";
     sel.setAttribute("data-sport-url", "/sport-meta");
@@ -61,8 +59,8 @@ test("groupFields groups by field_group and renderEav creates cards and rows", (
     section.id = "sport-specific-section";
     document.body.appendChild(section);
 
-    const mod = require("../games_sport_dynamic.js");
-    const { groupFields, renderEav } = mod;
+    const module = await import("../games_sport_dynamic.js");
+    const { groupFields, renderEav } = module.default || module;
 
     const fields = [
         { field_name: "a", field_group: "one" },
@@ -110,8 +108,8 @@ test("fetchMeta uses HTML fragment when available and updates sport name", async
         text: async () => '<div data-sport-name="Soccer">x</div>',
     });
 
-    const mod = require("../games_sport_dynamic.js");
-    const { fetchMeta } = mod;
+    const module = await import("../games_sport_dynamic.js");
+    const { fetchMeta } = module.default || module;
 
     await fetchMeta("1");
     expect(document.getElementById("current-sport").textContent).toBe("Soccer");
@@ -146,8 +144,8 @@ test("fetchMeta falls back to JSON and warns on failure", async () => {
         .mockRejectedValueOnce(new Error("html fail"))
         .mockResolvedValueOnce({ json: async () => okJson });
 
-    const mod = require("../games_sport_dynamic.js");
-    const { fetchMeta } = mod;
+    const module = await import("../games_sport_dynamic.js");
+    const { fetchMeta } = module.default || module;
 
     // first case: fallback JSON success
     sel.value = "1";

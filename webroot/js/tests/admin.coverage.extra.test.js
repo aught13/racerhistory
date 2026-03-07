@@ -5,6 +5,8 @@ beforeAll(() => {
     }
 });
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 // Extra admin tests to cover edge branches: bulkAction present/absent, missing modal, associated parse errors,
 // and temp form token copying fallback.
 
@@ -35,7 +37,7 @@ describe("admin.js extra coverage targets", () => {
         }
     });
 
-    test("showConfirmDelete fallback displays modal when bootstrap absent", () => {
+    test("showConfirmDelete fallback displays modal when bootstrap absent", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -43,7 +45,7 @@ describe("admin.js extra coverage targets", () => {
             <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // Should not throw and should set display:block when bootstrap missing
         expect(() =>
             showConfirmDelete({
@@ -57,7 +59,7 @@ describe("admin.js extra coverage targets", () => {
         ).toBeTruthy();
     });
 
-    test("JSON parse error fallback - createList should not throw", () => {
+    test("JSON parse error fallback - createList should not throw", async () => {
         // Create DOM structure safely without innerHTML
         const modal = document.createElement("div");
         modal.id = "confirm-delete-modal";
@@ -66,7 +68,7 @@ describe("admin.js extra coverage targets", () => {
         modal.appendChild(assocList);
         document.body.appendChild(modal);
 
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // ensure AdminToast exists and works
         const root = document.createElement("div");
         root.id = "root";
@@ -80,7 +82,7 @@ describe("admin.js extra coverage targets", () => {
         expect(assoc.children.length).toBeGreaterThanOrEqual(1);
     });
 
-    test("submitTempForm copies hidden inputs from tokens source", () => {
+    test("submitTempForm copies hidden inputs from tokens source", async () => {
         document.body.innerHTML = `
             <div id="confirm-delete-modal">
               <ul id="confirm-delete-modal-assoc"></ul>
@@ -90,7 +92,7 @@ describe("admin.js extra coverage targets", () => {
               <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
             </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // Remove the hidden form so fallback path must create temp form
         const hidden = document.getElementById(
             "confirm-delete-modal-hidden-form",
