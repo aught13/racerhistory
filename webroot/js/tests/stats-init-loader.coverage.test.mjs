@@ -275,13 +275,17 @@ describe("stats-init-loader exports", () => {
         const scrollBody = document.querySelector(".dataTables_scrollBody");
         const mod = await import("../stats-init-loader.mjs");
         const dt = {
-            settings: () => [{ nScrollHead: scrollHead, nScrollBody: scrollBody }],
+            settings: () => [
+                { nScrollHead: scrollHead, nScrollBody: scrollBody },
+            ],
         };
         mod.fixScrollXHeaderAlignment(dt);
         const headThs = scrollHead.querySelectorAll("thead th");
         expect(headThs[0].style.boxSizing).toBe("border-box");
         expect(headThs[0].style.width).toBe("0px"); // JSDOM returns 0 from getBoundingClientRect
-        const headTable = scrollHead.querySelector(".dataTables_scrollHeadInner table");
+        const headTable = scrollHead.querySelector(
+            ".dataTables_scrollHeadInner table",
+        );
         expect(headTable.style.tableLayout).toBe("fixed");
     });
 
@@ -301,10 +305,14 @@ describe("stats-init-loader exports", () => {
         const scrollBody = document.querySelector(".dataTables_scrollBody");
         const mod = await import("../stats-init-loader.mjs");
         const dt = {
-            settings: () => [{ nScrollHead: scrollHead, nScrollBody: scrollBody }],
+            settings: () => [
+                { nScrollHead: scrollHead, nScrollBody: scrollBody },
+            ],
         };
         expect(() => mod.fixScrollXHeaderAlignment(dt)).not.toThrow();
-        const headTable = scrollHead.querySelector(".dataTables_scrollHeadInner table");
+        const headTable = scrollHead.querySelector(
+            ".dataTables_scrollHeadInner table",
+        );
         expect(headTable.style.tableLayout).toBe("");
     });
 
@@ -326,10 +334,14 @@ describe("stats-init-loader exports", () => {
         const scrollBody = document.querySelector(".dataTables_scrollBody");
         const mod = await import("../stats-init-loader.mjs");
         const dt = {
-            settings: () => [{ nScrollHead: scrollHead, nScrollBody: scrollBody }],
+            settings: () => [
+                { nScrollHead: scrollHead, nScrollBody: scrollBody },
+            ],
         };
         expect(() => mod.fixScrollXHeaderAlignment(dt)).not.toThrow();
-        const headTable = scrollHead.querySelector(".dataTables_scrollHeadInner table");
+        const headTable = scrollHead.querySelector(
+            ".dataTables_scrollHeadInner table",
+        );
         expect(headTable.style.tableLayout).toBe("");
     });
 });

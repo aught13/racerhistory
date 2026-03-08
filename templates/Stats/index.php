@@ -9,7 +9,6 @@ declare(strict_types=1);
 $this->assign('title', 'Statistics');
 ?>
 <div class="container py-4">
-    <?= $this->element('Stats/sub_nav', ['statTypes' => $statTypes, 'statType' => '']) ?>
 
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4">
         <h1 class="h3 mb-2 mb-md-0">Statistics</h1>

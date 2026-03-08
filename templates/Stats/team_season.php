@@ -34,8 +34,6 @@ $ajaxUrl = $this->Url->build(['controller' => 'Stats', 'action' => $ajaxAction, 
         </ol>
     </nav>
 
-    <?= $this->element('Stats/sub_nav', ['statTypes' => $statTypes, 'statType' => $statType]) ?>
-
     <h1 class="h3 mb-4"><?= h($statTypeLabel) ?> Stats</h1>
 
     <?= $this->element('Stats/table_assets') ?>
