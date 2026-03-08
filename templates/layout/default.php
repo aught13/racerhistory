@@ -149,6 +149,7 @@ $isAdmin = $identity && (
 $controller = (string)$this->request->getParam('controller');
 $action = (string)$this->request->getParam('action');
 $isMainPage = $action === 'index' && in_array($controller, ['Blog', 'Seasons', 'People', 'Stats', 'Games'], true);
+$isStatsSection = $controller === 'Stats';
 $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-head' : ''));
 ?>
 <body class="<?= h($bodyClass) ?>" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">
@@ -184,17 +185,18 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         </header>
 
         <div class="rh-nav-wrap" data-nav>
-            <div class="rh-header-inner rh-nav-inner">
-                <nav class="navbar navbar-expand-lg rh-navbar" data-bs-theme="dark">
+            <nav class="navbar navbar-expand-lg rh-navbar" data-bs-theme="dark">
+                <div class="navbar-container">
                     <a class="navbar-brand rh-logo-link" href="<?= $this->Url->build('/') ?>" aria-label="RacerHistory Home">
                         <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="" style="max-height: 32px; object-fit: contain;" loading="eager" class="rh-nav-logo">
                     </a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <button class="navbar-toggler nav-link rh-nav-toggle-link" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Menu">
+                        <span class="navbar-toggler-text">Menu</span>
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav me-auto">
+                        <ul class="navbar-nav">
                             <li class="nav-item">
                                 <a class="nav-link" href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'index', 'plugin' => false]) ?>">Seasons</a>
                             </li>
@@ -207,13 +209,31 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
                             <li class="nav-item">
                                 <a class="nav-link" href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index', 'plugin' => false]) ?>">Games</a>
                             </li>
+                            <li class="nav-item ms-auto">
+                                <div class="rh-theme-toggle"></div>
+                            </li>
                         </ul>
-                        <div class="rh-theme-toggle"></div>
                     </div>
-                </nav>
-                <div class="rh-ad-slot rh-ad-slot--nav">Ad</div>
-            </div>
+                </div>
+            </nav>
         </div>
+
+        <?php if ($isStatsSection) : ?>
+        <div class="rh-stats-subnav-wrap">
+            <?= $this->element('Stats/sub_nav', [
+                'statTypes' => $this->getConfig('statTypes') ?? [
+                    'player-season' => 'Player Season',
+                    'team-season' => 'Team Season',
+                    'team-season-opponent' => 'Team Season Opponent',
+                    'player-career' => 'Player Career',
+                    'player-game' => 'Player Game',
+                    'team-game' => 'Team Game',
+                    'opponent-player-game' => 'Opponent Player Game',
+                ],
+                'statType' => $this->get('statType', ''),
+            ]) ?>
+        </div>
+        <?php endif; ?>
 
         <main id="main-content" class="rh-main">
             <div class="rh-main-bg">

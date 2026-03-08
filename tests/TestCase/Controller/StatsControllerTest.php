@@ -362,7 +362,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-sub-nav');
+        $this->assertResponseContains('rh-stats-subnav-wrap');
         $this->assertResponseContains('Player Season');
         $this->assertResponseContains('Team Season');
     }
@@ -371,35 +371,35 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/player-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-sub-nav');
+        $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
     public function testTeamSeasonContainsSubNav(): void
     {
         $this->get('/stats/team-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-sub-nav');
+        $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
     public function testPlayerCareerContainsSubNav(): void
     {
         $this->get('/stats/player-career');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-sub-nav');
+        $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
     public function testOpponentPlayerGameContainsSubNav(): void
     {
         $this->get('/stats/opponent-player-game');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-sub-nav');
+        $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
     public function testTeamGameContainsSubNav(): void
     {
         $this->get('/stats/team-game');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-sub-nav');
+        $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
     // ——— Stat types available on all pages ——

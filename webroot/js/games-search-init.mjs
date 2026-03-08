@@ -327,20 +327,7 @@ function initGamesDataTable(table) {
                 }
 
                 const dt = $table.DataTable(dtOptions);
-                const card = freshTable.closest(".card");
-                let slot = document.getElementById("games-searchbuilder-slot");
-                if (slot) {
-                    slot.innerHTML = "";
-                } else if (card) {
-                    slot = document.createElement("div");
-                    slot.id = "games-searchbuilder-slot";
-                    card.parentNode.insertBefore(slot, card);
-                }
-                if (slot) {
-                    new window.$.fn.dataTable.SearchBuilder(dt, {});
-                    dt.searchBuilder.container().appendTo(window.$(slot));
-                    dt.searchBuilder.rebuild();
-                }
+                setupGamesSearchBuilderUi(dt, freshTable);
                 dt.on("draw.dt", function () {
                     dt.columns.adjust();
                     updateRecordDisplay(dt);
@@ -365,6 +352,60 @@ function initGamesDataTable(table) {
                 initializingTables.delete(table.id);
             }
         });
+}
+
+function setupGamesSearchBuilderUi(dt, table) {
+    const card = table.closest(".card");
+    if (!card || !card.parentNode) {
+        return;
+    }
+
+    let controls = document.getElementById("games-controls");
+    if (!controls) {
+        controls = document.createElement("div");
+        controls.id = "games-controls";
+        controls.className =
+            "d-flex align-items-center justify-content-end gap-2 mb-2";
+        card.parentNode.insertBefore(controls, card);
+    }
+
+    let filterBtn = document.getElementById("games-filter-btn");
+    if (!filterBtn) {
+        filterBtn = document.createElement("button");
+        filterBtn.type = "button";
+        filterBtn.id = "games-filter-btn";
+        filterBtn.className = "btn btn-sm btn-outline-secondary";
+        filterBtn.innerHTML =
+            '<span><i class="bi bi-funnel"></i> Filter</span>';
+        filterBtn.setAttribute("aria-expanded", "false");
+        controls.appendChild(filterBtn);
+    }
+
+    let slot = document.getElementById("games-searchbuilder-slot");
+    if (!slot) {
+        slot = document.createElement("div");
+        slot.id = "games-searchbuilder-slot";
+        slot.className = "searchbuilder-panel d-none";
+        card.parentNode.insertBefore(slot, card);
+    } else {
+        slot.classList.add("searchbuilder-panel", "d-none");
+        slot.classList.remove("sb-open");
+        slot.innerHTML = "";
+    }
+
+    if (!filterBtn.dataset.sbToggleBound) {
+        filterBtn.addEventListener("click", () => {
+            const willOpen = slot.classList.contains("d-none");
+            slot.classList.toggle("d-none", !willOpen);
+            slot.classList.toggle("sb-open", willOpen);
+            filterBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        });
+        filterBtn.dataset.sbToggleBound = "true";
+    }
+
+    new window.$.fn.dataTable.SearchBuilder(dt, {});
+    dt.searchBuilder.container().appendTo(window.$(slot));
+    dt.searchBuilder.rebuild();
 }
 
 /**
@@ -449,6 +490,11 @@ function cleanupGamesPage() {
     );
     if (searchBuilderSlot) {
         searchBuilderSlot.remove();
+    }
+
+    const controls = document.getElementById("games-controls");
+    if (controls) {
+        controls.remove();
     }
 }
 
