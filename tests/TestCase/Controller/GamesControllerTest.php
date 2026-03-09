@@ -350,7 +350,8 @@ class GamesControllerTest extends TestCase
         foreach ($pages as $url) {
             $this->get($url);
             $this->assertResponseOk();
-            $this->assertResponseContains('games-sub-nav');
+            $this->assertResponseContains('rh-games-subnav-wrap');
+            $this->assertResponseContains('rh-games-navbar');
         }
     }
 }

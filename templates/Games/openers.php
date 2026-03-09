@@ -24,7 +24,6 @@ $openerLabels = [
 ?>
 <div class="container py-4">
 
-    <?= $this->element('Games/sub_nav', ['searchTypes' => $searchTypes, 'currentSearch' => $currentSearch]) ?>
 
     <h1 class="h3 mb-3">Season Openers</h1>
 

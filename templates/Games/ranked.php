@@ -16,7 +16,6 @@ $filterLabels = [
 ?>
 <div class="container py-4">
 
-    <?= $this->element('Games/sub_nav', ['searchTypes' => $searchTypes, 'currentSearch' => $currentSearch]) ?>
 
     <h1 class="h3 mb-3">Ranked Games</h1>
     <p class="text-muted">Games vs a ranked opponent or as a ranked team.</p>

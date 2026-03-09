@@ -150,6 +150,7 @@ $controller = (string)$this->request->getParam('controller');
 $action = (string)$this->request->getParam('action');
 $isMainPage = $action === 'index' && in_array($controller, ['Blog', 'Seasons', 'People', 'Stats', 'Games'], true);
 $isStatsSection = $controller === 'Stats';
+$isGamesSection = $controller === 'Games';
 $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-head' : ''));
 ?>
 <body class="<?= h($bodyClass) ?>" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">
@@ -231,6 +232,23 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
                     'opponent-player-game' => 'Opponent Player Game',
                 ],
                 'statType' => $this->get('statType', ''),
+            ]) ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($isGamesSection) : ?>
+        <div class="rh-games-subnav-wrap">
+            <?= $this->element('Games/sub_nav', [
+                'searchTypes' => $this->getConfig('searchTypes') ?? [
+                    'ranked' => 'Ranked',
+                    'overtime' => 'Overtime',
+                    'hundred-point' => '100 Point',
+                    'openers' => 'Openers',
+                    'streaks' => 'Streaks',
+                    'margins' => 'Margins',
+                    'series' => 'Series History',
+                ],
+                'currentSearch' => $this->get('currentSearch', ''),
             ]) ?>
         </div>
         <?php endif; ?>

@@ -15,7 +15,6 @@ $ajaxUrl = $this->Url->build([
 ?>
 <div class="container py-4">
 
-    <?= $this->element('Games/sub_nav', ['searchTypes' => $searchTypes, 'currentSearch' => $currentSearch]) ?>
 
     <h1 class="h3 mb-4">Overtime Games</h1>
 

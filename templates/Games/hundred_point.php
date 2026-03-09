@@ -21,7 +21,6 @@ $ajaxUrl = $this->Url->build([
 ?>
 <div class="container py-4">
 
-    <?= $this->element('Games/sub_nav', ['searchTypes' => $searchTypes, 'currentSearch' => $currentSearch]) ?>
 
     <h1 class="h3 mb-4">100 Point Games</h1>
     <p class="text-muted">Games where either team scored 100 or more points.</p>

@@ -746,7 +746,8 @@ button.season-roster-link:active {
     padding: 0.4rem 0.75rem;
   }
 
-  .rh-stats-subnav-wrap {
+  .rh-stats-subnav-wrap,
+  .rh-games-subnav-wrap {
     padding: 0.375rem 0;
   }
 }
@@ -754,7 +755,8 @@ button.season-roster-link:active {
 /* ===== RESPONSIVE NAVBAR STYLING ===== */
 
 .rh-navbar,
-.rh-stats-navbar {
+.rh-stats-navbar,
+.rh-games-navbar {
   padding: 0;
   background-color: inherit;
 }
@@ -774,7 +776,8 @@ button.season-roster-link:active {
   min-height: 64px;
 }
 
-.rh-stats-navbar .navbar-container {
+.rh-stats-navbar .navbar-container,
+.rh-games-navbar .navbar-container {
   min-height: 48px;
 }
 
@@ -847,11 +850,13 @@ button.season-roster-link:active {
 
 /* Collapsed stats nav toggle: show page title centered, icon right */
 @media (max-width: 1199px) {
-  .rh-stats-navbar .stats-brand {
+  .rh-stats-navbar .stats-brand,
+  .rh-games-navbar .games-brand {
     display: none;
   }
 
-  .rh-stats-navbar .rh-nav-toggle-link {
+  .rh-stats-navbar .rh-nav-toggle-link,
+  .rh-games-navbar .rh-nav-toggle-link {
     flex: 1 1 auto;
     width: 100%;
     min-width: 0;
@@ -860,13 +865,15 @@ button.season-roster-link:active {
     padding-right: 2.5rem;
   }
 
-  .rh-stats-navbar .rh-nav-toggle-link .navbar-toggler-text {
+  .rh-stats-navbar .rh-nav-toggle-link .navbar-toggler-text,
+  .rh-games-navbar .rh-nav-toggle-link .navbar-toggler-text {
     display: block;
     width: 100%;
     text-align: center;
   }
 
-  .rh-stats-navbar .rh-nav-toggle-link .navbar-toggler-icon {
+  .rh-stats-navbar .rh-nav-toggle-link .navbar-toggler-icon,
+  .rh-games-navbar .rh-nav-toggle-link .navbar-toggler-icon {
     position: absolute;
     right: 1rem;
     top: 50%;
@@ -905,11 +912,13 @@ button.season-roster-link:active {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
-.rh-stats-navbar .navbar-toggler-text {
+.rh-stats-navbar .navbar-toggler-text,
+.rh-games-navbar .navbar-toggler-text {
   color: #fff;
 }
 
-.rh-stats-navbar .navbar-toggler-icon {
+.rh-stats-navbar .navbar-toggler-icon,
+.rh-games-navbar .navbar-toggler-icon {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
@@ -944,7 +953,9 @@ button.season-roster-link:active {
 }
 
 .rh-stats-navbar .nav-link,
-.stats-nav-link {
+.stats-nav-link,
+.rh-games-navbar .nav-link,
+.games-nav-link {
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   border-radius: 0.375rem;
@@ -963,7 +974,9 @@ button.season-roster-link:active {
 }
 
 .rh-stats-navbar .nav-link.active,
-.stats-nav-link.active {
+.stats-nav-link.active,
+.rh-games-navbar .nav-link.active,
+.games-nav-link.active {
   color: var(--rh-navy);
   background: var(--rh-gold);
   border-color: var(--rh-gold);
@@ -972,35 +985,43 @@ button.season-roster-link:active {
 }
 
 .rh-stats-navbar .nav-link.active:hover,
-.stats-nav-link.active:hover {
+.stats-nav-link.active:hover,
+.rh-games-navbar .nav-link.active:hover,
+.games-nav-link.active:hover {
   background: #d49a00;
   border-color: #d49a00;
   transform: translateY(-1px);
 }
 
 /* Dark mode - sub-nav styling */
-.rh-stats-subnav-wrap {
+.rh-stats-subnav-wrap,
+.rh-games-subnav-wrap {
   background: var(--rh-navy);
   border-top: 1px solid rgba(236, 172, 0, 0.2);
   width: 100%;
 }
 
-.rh-stats-navbar {
+.rh-stats-navbar,
+.rh-games-navbar {
   max-width: var(--rh-main-max); /* constrain to content width */
   margin: 0 auto; /* center the navbar */
 }
 
-[data-theme="light"] .rh-stats-subnav-wrap {
+[data-theme="light"] .rh-stats-subnav-wrap,
+[data-theme="light"] .rh-games-subnav-wrap {
   background: #ffffff;
   border-top: 1px solid rgba(0, 33, 68, 0.1);
 }
 
-[data-theme="light"] .rh-stats-navbar .navbar-toggler-text {
+[data-theme="light"] .rh-stats-navbar .navbar-toggler-text,
+[data-theme="light"] .rh-games-navbar .navbar-toggler-text {
   color: var(--rh-navy);
 }
 
 [data-theme="light"] .rh-stats-navbar .nav-link,
-[data-theme="light"] .stats-nav-link {
+[data-theme="light"] .stats-nav-link,
+[data-theme="light"] .rh-games-navbar .nav-link,
+[data-theme="light"] .games-nav-link {
   color: var(--rh-navy);
   background: rgba(0, 33, 68, 0.05);
   border-color: rgba(0, 33, 68, 0.15);
@@ -1008,12 +1029,16 @@ button.season-roster-link:active {
 
 /* ensure dark mode text remains bright */
 [data-theme="dark"] .rh-stats-navbar .nav-link,
-[data-theme="dark"] .stats-nav-link {
+[data-theme="dark"] .stats-nav-link,
+[data-theme="dark"] .rh-games-navbar .nav-link,
+[data-theme="dark"] .games-nav-link {
   color: #fff;
 }
 
 [data-theme="light"] .rh-stats-navbar .nav-link:hover,
-[data-theme="light"] .stats-nav-link:hover {
+[data-theme="light"] .stats-nav-link:hover,
+[data-theme="light"] .rh-games-navbar .nav-link:hover,
+[data-theme="light"] .games-nav-link:hover {
   background: rgba(0, 33, 68, 0.1);
   border-color: rgba(0, 33, 68, 0.3);
 }
@@ -1031,7 +1056,8 @@ button.season-roster-link:active {
     min-height: 56px;
   }
 
-  .rh-stats-navbar .navbar-container {
+  .rh-stats-navbar .navbar-container,
+  .rh-games-navbar .navbar-container {
     min-height: 44px;
   }
 
@@ -1040,13 +1066,15 @@ button.season-roster-link:active {
     text-align: center;
   }
 
-  .stats-brand {
+  .stats-brand,
+  .games-brand {
     color: #fff;
     font-size: 0.95rem;
     font-weight: 600;
   }
 
-  [data-theme="light"] .stats-brand {
+  [data-theme="light"] .stats-brand,
+  [data-theme="light"] .games-brand {
     color: var(--rh-navy);
   }
 
@@ -1074,11 +1102,13 @@ button.season-roster-link:active {
     background: #ECAC00;
   }
 
-  .rh-stats-navbar .navbar-collapse {
+  .rh-stats-navbar .navbar-collapse,
+  .rh-games-navbar .navbar-collapse {
     background: var(--rh-navy);
   }
 
-  [data-theme="light"] .rh-stats-navbar .navbar-collapse {
+  [data-theme="light"] .rh-stats-navbar .navbar-collapse,
+  [data-theme="light"] .rh-games-navbar .navbar-collapse {
     background: #ffffff;
   }
 
@@ -1127,11 +1157,13 @@ button.season-roster-link:active {
     background: #ECAC00;
   }
 
-  .rh-stats-navbar .navbar-collapse {
+  .rh-stats-navbar .navbar-collapse,
+  .rh-games-navbar .navbar-collapse {
     background: var(--rh-navy);
   }
 
-  [data-theme="light"] .rh-stats-navbar .navbar-collapse {
+  [data-theme="light"] .rh-stats-navbar .navbar-collapse,
+  [data-theme="light"] .rh-games-navbar .navbar-collapse {
     background: #ffffff;
   }
 
@@ -1151,7 +1183,9 @@ button.season-roster-link:active {
   }
 
   .rh-stats-navbar .navbar-nav,
-  .stats-nav-list {
+  .stats-nav-list,
+  .rh-games-navbar .navbar-nav,
+  .games-nav-list {
     flex-direction: row;
     gap: 0.25rem;
     flex-wrap: wrap;
@@ -1160,7 +1194,9 @@ button.season-roster-link:active {
   }
 
   .rh-stats-navbar .nav-link,
-  .stats-nav-link {
+  .stats-nav-link,
+  .rh-games-navbar .nav-link,
+  .games-nav-link {
     padding: 0.4rem 0.6rem;
     font-size: 0.8125rem;
     margin: 0.125rem;
@@ -1210,23 +1246,27 @@ button.season-roster-link:active {
     color: var(--rh-navy);
   }
 
-  /* Stats nav remains collapsed - styled like mobile */
-  .rh-stats-navbar .navbar-container {
+  /* Stats/Games nav remains collapsed - styled like mobile */
+  .rh-stats-navbar .navbar-container,
+  .rh-games-navbar .navbar-container {
     min-height: 48px;
     padding: 0.5rem 0.875rem;
   }
 
-  .stats-brand {
+  .stats-brand,
+  .games-brand {
     color: #fff;
     font-size: 1rem;
     font-weight: 600;
   }
 
-  [data-theme="light"] .stats-brand {
+  [data-theme="light"] .stats-brand,
+  [data-theme="light"] .games-brand {
     color: var(--rh-navy);
   }
 
-  .rh-stats-navbar .navbar-collapse {
+  .rh-stats-navbar .navbar-collapse,
+  .rh-games-navbar .navbar-collapse {
     position: absolute;
     top: 100%;
     left: 0;
@@ -1238,23 +1278,28 @@ button.season-roster-link:active {
     background: var(--rh-navy);
   }
 
-  [data-theme="light"] .rh-stats-navbar .navbar-collapse {
+  [data-theme="light"] .rh-stats-navbar .navbar-collapse,
+  [data-theme="light"] .rh-games-navbar .navbar-collapse {
     background: #ffffff;
   }
 
-  .rh-stats-navbar .navbar-nav {
+  .rh-stats-navbar .navbar-nav,
+  .rh-games-navbar .navbar-nav {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.25rem;
     justify-content: center;
   }
 
-  .rh-stats-navbar .nav-item {
+  .rh-stats-navbar .nav-item,
+  .rh-games-navbar .nav-item {
     flex: 0 1 auto;
   }
 
   .rh-stats-navbar .nav-link,
-  .stats-nav-link {
+  .stats-nav-link,
+  .rh-games-navbar .nav-link,
+  .games-nav-link {
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
   }
@@ -1302,7 +1347,8 @@ button.season-roster-link:active {
     color: var(--rh-navy);
   }
 
-  .rh-stats-navbar .navbar-container {
+  .rh-stats-navbar .navbar-container,
+  .rh-games-navbar .navbar-container {
     min-height: 48px;
     padding: 0 1rem;
     display: flex;
@@ -1310,7 +1356,8 @@ button.season-roster-link:active {
     justify-content: center;
   }
 
-  .rh-stats-navbar .navbar-collapse {
+  .rh-stats-navbar .navbar-collapse,
+  .rh-games-navbar .navbar-collapse {
     display: flex !important;
     position: static;
     background: transparent;
@@ -1320,12 +1367,15 @@ button.season-roster-link:active {
     margin: 0 auto;
   }
 
-  .stats-brand {
+  .stats-brand,
+  .games-brand {
     display: none;
   }
 
   .rh-stats-navbar .navbar-nav,
-  .stats-nav-list {
+  .stats-nav-list,
+  .rh-games-navbar .navbar-nav,
+  .games-nav-list {
     flex-direction: row;
     gap: 0.5rem;
     width: 100%;
@@ -1334,25 +1384,30 @@ button.season-roster-link:active {
     overflow-x: visible;
   }
 
-  .rh-stats-navbar .nav-item {
+  .rh-stats-navbar .nav-item,
+  .rh-games-navbar .nav-item {
     flex: 0 1 auto;
   }
 
   .rh-stats-navbar .nav-link,
-  .stats-nav-link {
+  .stats-nav-link,
+  .rh-games-navbar .nav-link,
+  .games-nav-link {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
     margin: 0;
   }
 }
 
-.stats-nav-list {
+.stats-nav-list,
+.games-nav-list {
   list-style: none;
   margin:  0;
   padding: 0;
 }
 
-.stats-brand {
+.stats-brand,
+.games-brand {
   white-space: nowrap;
 }
 

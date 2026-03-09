@@ -4,12 +4,13 @@ declare(strict_types=1);
 /**
  * Games sub-navigation element.
  *
+ * Displays a compact navy/gold nav bar for all game search types on every /games/ page.
+ *
  * @var \App\View\AppView $this
- * @var array<string, string> $searchTypes
- * @var string $currentSearch
+ * @var array<string, string> $searchTypes Search slug => label map
+ * @var string $currentSearch Current active search type slug (empty string for index)
  */
 $currentSearch = $currentSearch ?? '';
-
 $actionMap = [
     'ranked' => 'ranked',
     'overtime' => 'overtime',
@@ -19,29 +20,39 @@ $actionMap = [
     'margins' => 'margins',
     'series' => 'series',
 ];
+$currentLabel = $currentSearch && isset($searchTypes[$currentSearch]) ? $searchTypes[$currentSearch] : 'Games';
 ?>
-<?php $this->append('css'); ?>
-<style>
-.games-sub-nav{background:var(--rh-navy,#002144);border-radius:.5rem;padding:.25rem;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.games-sub-nav-inner{display:flex;gap:.125rem;min-width:max-content}
-.games-sub-nav-link{color:rgba(255,255,255,.7);font-size:.8125rem;font-weight:500;padding:.375rem .75rem;border-radius:.375rem;white-space:nowrap;text-decoration:none;transition:color .15s,background .15s}
-.games-sub-nav-link:hover{color:#fff;background:rgba(255,255,255,.1);text-decoration:none}
-.games-sub-nav-link.active{color:var(--rh-navy,#002144);background:var(--rh-gold,#ECAC00);font-weight:600}
-</style>
-<?php $this->end(); ?>
-<nav class="games-sub-nav mb-4" aria-label="Games navigation">
-    <div class="games-sub-nav-inner" id="games-sub-nav">
-        <a class="games-sub-nav-link<?= $currentSearch === '' ? ' active' : '' ?>"
-           href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">
-            <i class="bi bi-grid-3x3-gap me-1"></i>All
-        </a>
-        <?php foreach ($searchTypes as $slug => $label) :
-            $action = $actionMap[$slug] ?? 'index';
-            ?>
-            <a class="games-sub-nav-link<?= $currentSearch === $slug ? ' active' : '' ?>"
-               href="<?= $this->Url->build(['controller' => 'Games', 'action' => $action]) ?>">
-                <?= h($label) ?>
-            </a>
-        <?php endforeach; ?>
+
+<nav class="navbar navbar-expand-xl rh-games-navbar" aria-label="Games type navigation" data-bs-theme="dark">
+    <div class="navbar-container">
+        <span class="navbar-brand games-brand"><?= h($currentLabel) ?></span>
+        <button class="navbar-toggler nav-link rh-nav-toggle-link" type="button" data-bs-toggle="collapse" data-bs-target="#gamesNav"
+                aria-controls="gamesNav" aria-expanded="false" aria-label="<?= h($currentLabel) ?>">
+            <span class="navbar-toggler-text"><?= h($currentLabel) ?></span>
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="gamesNav">
+            <ul class="navbar-nav games-nav-list">
+                <li class="nav-item">
+                    <a class="nav-link games-nav-link<?= $currentSearch === '' ? ' active' : '' ?>"
+                    href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>"
+                    <?= $currentSearch === '' ? 'aria-current="page"' : '' ?>>
+                        All
+                    </a>
+                </li>
+                <?php foreach ($searchTypes as $slug => $label) :
+                    $action = $actionMap[$slug] ?? 'index';
+                    $isActive = $currentSearch === $slug;
+                    ?>
+                    <li class="nav-item">
+                        <a class="nav-link games-nav-link<?= $isActive ? ' active' : '' ?>"
+                        href="<?= $this->Url->build(['controller' => 'Games', 'action' => $action]) ?>"
+                        <?= $isActive ? 'aria-current="page"' : '' ?>>
+                            <?= h($label) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
     </div>
 </nav>
