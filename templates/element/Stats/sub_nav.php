@@ -31,21 +31,21 @@ $currentLabel = $statType && isset($statTypes[$statType]) ? $statTypes[$statType
             <span class="navbar-toggler-text"><?= h($currentLabel) ?></span>
             <span class="navbar-toggler-icon"></span>
         </button>
-    </div>
-    <div class="collapse navbar-collapse" id="statsNav">
-        <ul class="navbar-nav stats-nav-list">
-            <?php foreach ($statTypes as $slug => $label) :
-                $action = $actionMap[$slug] ?? 'index';
-                $isActive = $statType === $slug;
-                ?>
-                <li class="nav-item">
-                    <a class="nav-link stats-nav-link<?= $isActive ? ' active' : '' ?>"
-                       href="<?= $this->Url->build(['controller' => 'Stats', 'action' => $action]) ?>"
-                       <?= $isActive ? 'aria-current="page"' : '' ?>>
-                        <?= h($label) ?>
-                    </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+        <div class="collapse navbar-collapse" id="statsNav">
+            <ul class="navbar-nav stats-nav-list">
+                <?php foreach ($statTypes as $slug => $label) :
+                    $action = $actionMap[$slug] ?? 'index';
+                    $isActive = $statType === $slug;
+                    ?>
+                    <li class="nav-item">
+                        <a class="nav-link stats-nav-link<?= $isActive ? ' active' : '' ?>"
+                        href="<?= $this->Url->build(['controller' => 'Stats', 'action' => $action]) ?>"
+                        <?= $isActive ? 'aria-current="page"' : '' ?>>
+                            <?= h($label) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
     </div>
 </nav>
