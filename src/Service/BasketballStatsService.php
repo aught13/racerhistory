@@ -997,6 +997,204 @@ class BasketballStatsService
     }
 
     /**
+     * Return ordered DataTables cell values for a player season stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getPlayerSeasonStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->GP ?? 0),
+            (int)($stat->GS ?? 0),
+            (int)($stat->MIN ?? 0),
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Return ordered DataTables cell values for a team season stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getTeamSeasonStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->GP ?? 0),
+            (int)($stat->MIN ?? 0),
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player career totals array.
+     *
+     * @param array<string, int> $totals
+     * @return array<int, int>
+     */
+    public function getPlayerCareerStatCells(array $totals): array
+    {
+        return [
+            (int)($totals['GP'] ?? 0),
+            (int)($totals['GS'] ?? 0),
+            (int)($totals['MIN'] ?? 0),
+            (int)($totals['FGM'] ?? 0),
+            (int)($totals['FGA'] ?? 0),
+            (int)($totals['TPM'] ?? 0),
+            (int)($totals['TPA'] ?? 0),
+            (int)($totals['FTM'] ?? 0),
+            (int)($totals['FTA'] ?? 0),
+            (int)($totals['ORB'] ?? 0),
+            (int)($totals['DRB'] ?? 0),
+            (int)($totals['RB'] ?? 0),
+            (int)($totals['AST'] ?? 0),
+            (int)($totals['STL'] ?? 0),
+            (int)($totals['BS'] ?? 0),
+            (int)($totals['TRN'] ?? 0),
+            (int)($totals['PF'] ?? 0),
+            (int)($totals['PTS'] ?? 0),
+        ];
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player game stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getPlayerGameStatCells(object $stat): array
+    {
+        return $this->getPlayerSeasonStatCells($stat);
+    }
+
+    /**
+     * Return ordered DataTables cell values for a team game box score stat.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getTeamGameStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Return the opponent player name from an opponent game stat record.
+     *
+     * @param object $stat
+     * @return string Raw (unescaped) name or empty string if absent.
+     */
+    public function getOpponentPlayerName(object $stat): string
+    {
+        return (string)($stat->name ?? '');
+    }
+
+    /**
+     * Return ordered DataTables cell values for an opponent game stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getOpponentPlayerGameStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->MIN ?? 0),
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Get player season stats for the legacy season view.
+     *
+     * Returns an array of StatBasketSeasonPerson entities each exposing
+     * a virtual `person` property for template compatibility.
+     *
+     * @param int $teamSeasonId
+     * @return array
+     */
+    public function getSeasonPlayerStatsList(int $teamSeasonId): array
+    {
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $table */
+        $table = $this->fetchTable('StatBasketSeasonPerson');
+
+        $stats = $table->find()
+            ->contain(['TeamSeasonRosters' => ['Persons']])
+            ->matching('TeamSeasonRosters.TeamSeasons', function ($q) use ($teamSeasonId) {
+                return $q->where(['TeamSeasons.id' => $teamSeasonId]);
+            })
+            ->orderByDesc('StatBasketSeasonPerson.PTS')
+            ->all()
+            ->toArray();
+
+        foreach ($stats as $stat) {
+            if ($stat->team_season_roster) {
+                $stat->set('person', $stat->team_season_roster->person);
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
      * Add stat values from a game stat into a season stat entity.
      */
     private function addSeasonPersonStatValues(

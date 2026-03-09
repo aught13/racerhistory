@@ -336,7 +336,6 @@ class GameSearchService
         return $groupedByLength;
     }
 
-
     /**
      * Margin records (biggest wins or losses).
      *

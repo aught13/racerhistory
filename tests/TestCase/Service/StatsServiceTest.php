@@ -225,4 +225,139 @@ class StatsServiceTest extends TestCase
     {
         $this->assertFalse($this->service->hasSportSupport(999));
     }
+
+    // ——— Stat cell delegation methods ————————
+
+    public function testGetPlayerSeasonStatCellsReturnsExpectedCount(): void
+    {
+        $statTable = $this->fetchTable('StatBasketSeasonPerson');
+        $stat = $statTable->newEntity([
+            'team_season_roster_id' => 1,
+            'GP' => 10, 'GS' => 8, 'MIN' => 250,
+            'FGM' => 45, 'FGA' => 90,
+            'TPM' => 12, 'TPA' => 30,
+            'FTM' => 18, 'FTA' => 24,
+            'ORB' => 15, 'DRB' => 35, 'RB' => 50,
+            'AST' => 22, 'STL' => 10, 'BS' => 5,
+            'TRN' => 12, 'PF' => 18, 'PTS' => 120,
+        ]);
+
+        $cells = $this->service->getPlayerSeasonStatCells(1, $stat);
+        $this->assertIsArray($cells);
+        $this->assertCount(18, $cells);
+        $this->assertSame(10, $cells[0]); // GP
+        $this->assertSame(120, $cells[17]); // PTS
+    }
+
+    public function testGetTeamSeasonStatCellsReturnsExpectedCount(): void
+    {
+        $statTable = $this->fetchTable('StatBasketSeasonPerson');
+        $stat = $statTable->newEntity([
+            'team_season_roster_id' => 1,
+            'GP' => 30, 'MIN' => 1200,
+            'FGM' => 400, 'FGA' => 900,
+            'TPM' => 100, 'TPA' => 300,
+            'FTM' => 200, 'FTA' => 280,
+            'ORB' => 150, 'DRB' => 350, 'RB' => 500,
+            'AST' => 200, 'STL' => 80, 'BS' => 40,
+            'TRN' => 120, 'PF' => 150, 'PTS' => 1100,
+        ]);
+
+        $cells = $this->service->getTeamSeasonStatCells(1, $stat);
+        $this->assertIsArray($cells);
+        $this->assertCount(17, $cells);
+        $this->assertSame(30, $cells[0]); // GP
+        $this->assertSame(1100, $cells[16]); // PTS
+    }
+
+    public function testGetPlayerCareerStatCellsReturnsExpectedCount(): void
+    {
+        $totals = [
+            'GP' => 100, 'GS' => 80, 'MIN' => 2500,
+            'FGM' => 450, 'FGA' => 900,
+            'TPM' => 120, 'TPA' => 300,
+            'FTM' => 180, 'FTA' => 240,
+            'ORB' => 150, 'DRB' => 350, 'RB' => 500,
+            'AST' => 220, 'STL' => 100, 'BS' => 50,
+            'TRN' => 120, 'PF' => 180, 'PTS' => 1200,
+        ];
+
+        $cells = $this->service->getPlayerCareerStatCells(1, $totals);
+        $this->assertIsArray($cells);
+        $this->assertCount(18, $cells);
+        $this->assertSame(100, $cells[0]); // GP
+        $this->assertSame(1200, $cells[17]); // PTS
+    }
+
+    public function testGetTeamGameStatCellsReturnsExpectedCount(): void
+    {
+        $statTable = $this->fetchTable('StatBasketSeasonPerson');
+        $stat = $statTable->newEntity([
+            'team_season_roster_id' => 1,
+            'FGM' => 40, 'FGA' => 85,
+            'TPM' => 10, 'TPA' => 28,
+            'FTM' => 15, 'FTA' => 20,
+            'ORB' => 12, 'DRB' => 30, 'RB' => 42,
+            'AST' => 18, 'STL' => 8, 'BS' => 4,
+            'TRN' => 10, 'PF' => 15, 'PTS' => 105,
+        ]);
+
+        $cells = $this->service->getTeamGameStatCells(1, $stat);
+        $this->assertIsArray($cells);
+        $this->assertCount(15, $cells);
+    }
+
+    public function testGetOpponentPlayerNameReturnsString(): void
+    {
+        $statTable = $this->fetchTable('StatBasketSeasonPerson');
+        $stat = $statTable->newEntity(['team_season_roster_id' => 1, 'name' => 'John Doe']);
+
+        $name = $this->service->getOpponentPlayerName(1, $stat);
+        $this->assertIsString($name);
+    }
+
+    public function testGetOpponentPlayerGameStatCellsReturnsExpectedCount(): void
+    {
+        $statTable = $this->fetchTable('StatBasketSeasonPerson');
+        $stat = $statTable->newEntity([
+            'team_season_roster_id' => 1,
+            'MIN' => 25,
+            'FGM' => 8, 'FGA' => 18,
+            'TPM' => 2, 'TPA' => 6,
+            'FTM' => 4, 'FTA' => 6,
+            'ORB' => 3, 'DRB' => 7, 'RB' => 10,
+            'AST' => 5, 'STL' => 2, 'BS' => 1,
+            'TRN' => 3, 'PF' => 4, 'PTS' => 22,
+        ]);
+
+        $cells = $this->service->getOpponentPlayerGameStatCells(1, $stat);
+        $this->assertIsArray($cells);
+        $this->assertCount(16, $cells);
+    }
+
+    public function testStatCellMethodsReturnEmptyForUnsupportedSport(): void
+    {
+        $statTable = $this->fetchTable('StatBasketSeasonPerson');
+        $stat = $statTable->newEntity(['team_season_roster_id' => 1]);
+
+        $this->assertSame([], $this->service->getPlayerSeasonStatCells(999, $stat));
+        $this->assertSame([], $this->service->getTeamSeasonStatCells(999, $stat));
+        $this->assertSame([], $this->service->getPlayerGameStatCells(999, $stat));
+        $this->assertSame([], $this->service->getTeamGameStatCells(999, $stat));
+        $this->assertSame([], $this->service->getOpponentPlayerGameStatCells(999, $stat));
+        $this->assertSame('', $this->service->getOpponentPlayerName(999, $stat));
+        $this->assertSame([], $this->service->getPlayerCareerStatCells(999, []));
+    }
+
+    public function testGetSeasonPlayerStatsListReturnsArrayForValidSeason(): void
+    {
+        $stats = $this->service->getSeasonPlayerStatsList(1);
+        $this->assertIsArray($stats);
+    }
+
+    public function testGetSeasonPlayerStatsListReturnsEmptyForInvalidSeason(): void
+    {
+        $stats = $this->service->getSeasonPlayerStatsList(9999);
+        $this->assertSame([], $stats);
+    }
 }

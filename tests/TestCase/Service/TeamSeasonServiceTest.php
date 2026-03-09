@@ -171,4 +171,46 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertArrayHasKey(1, $list);
         $this->assertSame('Los Angeles Lakers (2023-2024)', $list[1]);
     }
+
+    public function testGetPublicSeasonsListReturnsBaskeball(): void
+    {
+        $results = $this->service->getPublicSeasonsList('Basketball', 'M');
+        $this->assertIsArray($results);
+        $this->assertGreaterThan(0, count($results));
+
+        foreach ($results as $ts) {
+            $this->assertSame('Basketball', $ts->team->sport->sport_name);
+            $this->assertSame('M', $ts->team->gender);
+        }
+    }
+
+    public function testGetPublicSeasonsListEmptyFiltersReturnsAll(): void
+    {
+        $all = $this->service->getPublicSeasonsList('', '');
+        $filtered = $this->service->getPublicSeasonsList('Basketball', 'M');
+
+        $this->assertGreaterThanOrEqual(count($filtered), count($all));
+    }
+
+    public function testCalculateSeasonStatsReturnsExpectedShape(): void
+    {
+        $stats = $this->service->calculateSeasonStats([1]);
+        $this->assertIsArray($stats);
+
+        if (isset($stats[1])) {
+            $row = $stats[1];
+            $this->assertArrayHasKey('overall_wins', $row);
+            $this->assertArrayHasKey('overall_losses', $row);
+            $this->assertArrayHasKey('overall_pct', $row);
+            $this->assertArrayHasKey('conf_wins', $row);
+            $this->assertArrayHasKey('conf_losses', $row);
+            $this->assertArrayHasKey('conf_pct', $row);
+        }
+    }
+
+    public function testCalculateSeasonStatsEmptyInput(): void
+    {
+        $stats = $this->service->calculateSeasonStats([]);
+        $this->assertSame([], $stats);
+    }
 }
