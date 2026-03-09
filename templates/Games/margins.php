@@ -22,16 +22,6 @@ $filterLabels = [
 ];
 ?>
 <div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">
-                    Games
-                </a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">Margins</li>
-        </ol>
-    </nav>
 
     <?= $this->element('Games/sub_nav', ['searchTypes' => $searchTypes, 'currentSearch' => $currentSearch]) ?>
 

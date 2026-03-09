@@ -7,16 +7,6 @@ declare(strict_types=1);
 $this->assign('title', ($teamSeason->season->start ?? '') . '-' . ($teamSeason->season->end ?? '') . ' Stats');
 ?>
 <div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Stats', 'action' => 'index']) ?>">Statistics</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                <?= h($teamSeason->season->start ?? '') ?>-<?= h($teamSeason->season->end ?? '') ?>
-            </li>
-        </ol>
-    </nav>
 
     <h1 class="display-6 mb-4">
         <?= h($teamSeason->team->team_name ?? 'Team') ?>

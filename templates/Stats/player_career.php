@@ -25,14 +25,6 @@ $ajaxAction = $actionMap[$statType] ?? 'index';
 $ajaxUrl = $this->Url->build(['controller' => 'Stats', 'action' => $ajaxAction, '?' => ['sport' => $currentSport, 'format' => 'json']]);
 ?>
 <div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Stats', 'action' => 'index']) ?>">Statistics</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page"><?= h($statTypeLabel) ?></li>
-        </ol>
-    </nav>
 
     <h1 class="h3 mb-4"><?= h($statTypeLabel) ?> Stats</h1>
 
