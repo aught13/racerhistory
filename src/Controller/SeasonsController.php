@@ -89,20 +89,13 @@ class SeasonsController extends AppController
      */
     private function buildIndexData(): array
     {
-        $table = $this->fetchTable('TeamSeasons');
-        $teamSeasons = $table->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
-            ->matching('Teams.Sports', function ($q) {
-                return $q->where(['Sports.sport_name' => 'Basketball']);
-            })
-            ->matching('Teams', function ($q) {
-                return $q->where(['Teams.gender' => 'M']);
-            })
-            ->orderByDesc('Seasons.start')
-            ->all()
-            ->toArray();
+        $sport = ucfirst(strtolower((string)$this->request->getQuery('sport', 'Basketball')));
+        $gender = (string)$this->request->getQuery('gender', 'M');
 
-        $seasonStats = $this->calculateSeasonStats($teamSeasons);
+        $teamSeasons = $this->teamSeasonService->getPublicSeasonsList($sport, $gender);
+
+        $teamSeasonIds = array_map(static fn($ts) => (int)$ts->id, $teamSeasons);
+        $seasonStats = $this->teamSeasonService->calculateSeasonStats($teamSeasonIds);
 
         $recordSummaries = [];
         foreach ($teamSeasons as $teamSeason) {
@@ -110,67 +103,6 @@ class SeasonsController extends AppController
         }
 
         return compact('teamSeasons', 'seasonStats', 'recordSummaries');
-    }
-
-    /**
-     * @param array<int,\App\Model\Entity\TeamSeason> $teamSeasons
-     * @return array<int,array<string,int|float|null>>
-     */
-    private function calculateSeasonStats(array $teamSeasons): array
-    {
-        if (empty($teamSeasons)) {
-            return [];
-        }
-
-        $teamSeasonIds = array_map(static fn($ts) => (int)$ts->id, $teamSeasons);
-
-        /** @var \App\Model\Table\GamesTable $gamesTable */
-        $gamesTable = $this->fetchTable('Games');
-        $query = $gamesTable->find();
-
-        $rawStats = $query
-            ->select([
-                'team_season_id' => 'Games.team_season_id',
-                'overall_wins' => $query->newExpr(
-                    "SUM(CASE WHEN Games.w IN ('1','W') THEN 1 ELSE 0 END)",
-                ),
-                'overall_losses' => $query->newExpr(
-                    "SUM(CASE WHEN Games.l IN ('1','L') THEN 1 ELSE 0 END)",
-                ),
-                'conf_wins' => $query->newExpr(
-                    "SUM(CASE WHEN GameTypes.conf = 1 AND Games.w IN ('1','W') THEN 1 ELSE 0 END)",
-                ),
-                'conf_losses' => $query->newExpr(
-                    "SUM(CASE WHEN GameTypes.conf = 1 AND Games.l IN ('1','L') THEN 1 ELSE 0 END)",
-                ),
-            ])
-            ->where(['Games.team_season_id IN' => $teamSeasonIds])
-            ->leftJoinWith('GameTypes')
-            ->groupBy(['Games.team_season_id'])
-            ->enableHydration(false)
-            ->toArray();
-
-        $stats = [];
-        foreach ($rawStats as $row) {
-            $id = (int)$row['team_season_id'];
-            $ow = (int)$row['overall_wins'];
-            $ol = (int)$row['overall_losses'];
-            $cw = (int)$row['conf_wins'];
-            $cl = (int)$row['conf_losses'];
-            $overallTotal = $ow + $ol;
-            $confTotal = $cw + $cl;
-
-            $stats[$id] = [
-                'overall_wins' => $ow,
-                'overall_losses' => $ol,
-                'overall_pct' => $overallTotal > 0 ? round($ow / $overallTotal, 3) : null,
-                'conf_wins' => $cw,
-                'conf_losses' => $cl,
-                'conf_pct' => $confTotal > 0 ? round($cw / $confTotal, 3) : null,
-            ];
-        }
-
-        return $stats;
     }
 
     /**

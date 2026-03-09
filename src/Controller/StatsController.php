@@ -174,7 +174,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchPlayerSeasonStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatPlayerSeasonRows($results));
+            return $this->jsonResponse($this->formatPlayerSeasonRows($results, $sportId));
         }
 
         $this->set('statType', 'player-season');
@@ -197,7 +197,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamSeasonStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatTeamSeasonRows($results));
+            return $this->jsonResponse($this->formatTeamSeasonRows($results, $sportId));
         }
 
         $this->set('statType', 'team-season');
@@ -220,7 +220,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamSeasonOpponentStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatTeamSeasonRows($results));
+            return $this->jsonResponse($this->formatTeamSeasonRows($results, $sportId));
         }
 
         $this->set('statType', 'team-season-opponent');
@@ -243,7 +243,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchPlayerCareerStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatPlayerCareerRows($results));
+            return $this->jsonResponse($this->formatPlayerCareerRows($results, $sportId));
         }
 
         $this->set('statType', 'player-career');
@@ -266,7 +266,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchPlayerGameStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatPlayerGameRows($results));
+            return $this->jsonResponse($this->formatPlayerGameRows($results, $sportId));
         }
 
         $this->set('statType', 'player-game');
@@ -289,7 +289,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamGameStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatTeamGameRows($results));
+            return $this->jsonResponse($this->formatTeamGameRows($results, $sportId));
         }
 
         $this->set('statType', 'team-game');
@@ -312,7 +312,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchOpponentPlayerGameStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatOpponentPlayerGameRows($results));
+            return $this->jsonResponse($this->formatOpponentPlayerGameRows($results, $sportId));
         }
 
         $this->set('statType', 'opponent-player-game');
@@ -342,17 +342,7 @@ class StatsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        try {
-            $statsTable = $this->fetchTable('StatBasketSeasonPersons');
-            $playerStats = $statsTable->find()
-                ->contain(['Persons'])
-                ->where(['StatBasketSeasonPersons.team_season_id' => $teamSeasonId])
-                ->orderByDesc('StatBasketSeasonPersons.pts')
-                ->all()
-                ->toArray();
-        } catch (\Exception $e) {
-            $playerStats = [];
-        }
+        $playerStats = $this->statsService->getSeasonPlayerStatsList($teamSeasonId);
 
         $this->set(compact('teamSeason', 'playerStats'));
 
@@ -363,9 +353,10 @@ class StatsController extends AppController
      * Format player season results for DataTables JSON.
      *
      * @param array $results Service results
+     * @param int $sportId
      * @return array<int, array>
      */
-    protected function formatPlayerSeasonRows(array $results): array
+    protected function formatPlayerSeasonRows(array $results, int $sportId): array
     {
         $rows = [];
         foreach ($results as $row) {
@@ -380,29 +371,14 @@ class StatsController extends AppController
                 )
                 : '-';
 
-            $rows[] = [
-                $playerCell,
-                h($ts->team->team_name ?? '-'),
-                h(($ts->season->start ?? '') . '-' . ($ts->season->end ?? '')),
-                (int)($stat->GP ?? 0),
-                (int)($stat->GS ?? 0),
-                (int)($stat->MIN ?? 0),
-                (int)($stat->FGM ?? 0),
-                (int)($stat->FGA ?? 0),
-                (int)($stat->TPM ?? 0),
-                (int)($stat->TPA ?? 0),
-                (int)($stat->FTM ?? 0),
-                (int)($stat->FTA ?? 0),
-                (int)($stat->ORB ?? 0),
-                (int)($stat->DRB ?? 0),
-                (int)($stat->RB ?? 0),
-                (int)($stat->AST ?? 0),
-                (int)($stat->STL ?? 0),
-                (int)($stat->BS ?? 0),
-                (int)($stat->TRN ?? 0),
-                (int)($stat->PF ?? 0),
-                (int)($stat->PTS ?? 0),
-            ];
+            $rows[] = array_merge(
+                [
+                    $playerCell,
+                    h($ts->team->team_name ?? '-'),
+                    h(($ts->season->start ?? '') . '-' . ($ts->season->end ?? '')),
+                ],
+                $this->statsService->getPlayerSeasonStatCells($sportId, $stat)
+            );
         }
 
         return $rows;
@@ -412,9 +388,10 @@ class StatsController extends AppController
      * Format team season (and opponent) results for DataTables JSON.
      *
      * @param array $results Service results
+     * @param int $sportId
      * @return array<int, array>
      */
-    protected function formatTeamSeasonRows(array $results): array
+    protected function formatTeamSeasonRows(array $results, int $sportId): array
     {
         $rows = [];
         foreach ($results as $row) {
@@ -428,27 +405,13 @@ class StatsController extends AppController
                 )
                 : '-';
 
-            $rows[] = [
-                h($ts->team->team_name ?? '-'),
-                $seasonCell,
-                (int)($stat->GP ?? 0),
-                (int)($stat->MIN ?? 0),
-                (int)($stat->FGM ?? 0),
-                (int)($stat->FGA ?? 0),
-                (int)($stat->TPM ?? 0),
-                (int)($stat->TPA ?? 0),
-                (int)($stat->FTM ?? 0),
-                (int)($stat->FTA ?? 0),
-                (int)($stat->ORB ?? 0),
-                (int)($stat->DRB ?? 0),
-                (int)($stat->RB ?? 0),
-                (int)($stat->AST ?? 0),
-                (int)($stat->STL ?? 0),
-                (int)($stat->BS ?? 0),
-                (int)($stat->TRN ?? 0),
-                (int)($stat->PF ?? 0),
-                (int)($stat->PTS ?? 0),
-            ];
+            $rows[] = array_merge(
+                [
+                    h($ts->team->team_name ?? '-'),
+                    $seasonCell,
+                ],
+                $this->statsService->getTeamSeasonStatCells($sportId, $stat)
+            );
         }
 
         return $rows;
@@ -458,9 +421,10 @@ class StatsController extends AppController
      * Format player career results for DataTables JSON.
      *
      * @param array $results Service results
+     * @param int $sportId
      * @return array<int, array>
      */
-    protected function formatPlayerCareerRows(array $results): array
+    protected function formatPlayerCareerRows(array $results, int $sportId): array
     {
         $rows = [];
         foreach ($results as $row) {
@@ -475,28 +439,10 @@ class StatsController extends AppController
                 )
                 : '-';
 
-            $rows[] = [
-                $playerCell,
-                (int)$seasons,
-                (int)($totals['GP'] ?? 0),
-                (int)($totals['GS'] ?? 0),
-                (int)($totals['MIN'] ?? 0),
-                (int)($totals['FGM'] ?? 0),
-                (int)($totals['FGA'] ?? 0),
-                (int)($totals['TPM'] ?? 0),
-                (int)($totals['TPA'] ?? 0),
-                (int)($totals['FTM'] ?? 0),
-                (int)($totals['FTA'] ?? 0),
-                (int)($totals['ORB'] ?? 0),
-                (int)($totals['DRB'] ?? 0),
-                (int)($totals['RB'] ?? 0),
-                (int)($totals['AST'] ?? 0),
-                (int)($totals['STL'] ?? 0),
-                (int)($totals['BS'] ?? 0),
-                (int)($totals['TRN'] ?? 0),
-                (int)($totals['PF'] ?? 0),
-                (int)($totals['PTS'] ?? 0),
-            ];
+            $rows[] = array_merge(
+                [$playerCell, (int)$seasons],
+                $this->statsService->getPlayerCareerStatCells($sportId, $totals)
+            );
         }
 
         return $rows;
@@ -506,9 +452,10 @@ class StatsController extends AppController
      * Format player game results for DataTables JSON.
      *
      * @param array $results Service results
+     * @param int $sportId
      * @return array<int, array>
      */
-    protected function formatPlayerGameRows(array $results): array
+    protected function formatPlayerGameRows(array $results, int $sportId): array
     {
         $rows = [];
         foreach ($results as $row) {
@@ -530,29 +477,14 @@ class StatsController extends AppController
                 )
                 : '-';
 
-            $rows[] = [
-                $playerCell,
-                $opponentCell,
-                h((string)($game->game_date ?? '-')),
-                (int)($stat->GP ?? 0),
-                (int)($stat->GS ?? 0),
-                (int)($stat->MIN ?? 0),
-                (int)($stat->FGM ?? 0),
-                (int)($stat->FGA ?? 0),
-                (int)($stat->TPM ?? 0),
-                (int)($stat->TPA ?? 0),
-                (int)($stat->FTM ?? 0),
-                (int)($stat->FTA ?? 0),
-                (int)($stat->ORB ?? 0),
-                (int)($stat->DRB ?? 0),
-                (int)($stat->RB ?? 0),
-                (int)($stat->AST ?? 0),
-                (int)($stat->STL ?? 0),
-                (int)($stat->BS ?? 0),
-                (int)($stat->TRN ?? 0),
-                (int)($stat->PF ?? 0),
-                (int)($stat->PTS ?? 0),
-            ];
+            $rows[] = array_merge(
+                [
+                    $playerCell,
+                    $opponentCell,
+                    h((string)($game->game_date ?? '-')),
+                ],
+                $this->statsService->getPlayerGameStatCells($sportId, $stat)
+            );
         }
 
         return $rows;
@@ -562,9 +494,10 @@ class StatsController extends AppController
      * Format team game box score results for DataTables JSON.
      *
      * @param array $results Service results
+     * @param int $sportId
      * @return array<int, array>
      */
-    protected function formatTeamGameRows(array $results): array
+    protected function formatTeamGameRows(array $results, int $sportId): array
     {
         $rows = [];
         foreach ($results as $row) {
@@ -578,25 +511,13 @@ class StatsController extends AppController
                 )
                 : '-';
 
-            $rows[] = [
-                $opponentCell,
-                h((string)($game->game_date ?? '-')),
-                (int)($stat->FGM ?? 0),
-                (int)($stat->FGA ?? 0),
-                (int)($stat->TPM ?? 0),
-                (int)($stat->TPA ?? 0),
-                (int)($stat->FTM ?? 0),
-                (int)($stat->FTA ?? 0),
-                (int)($stat->ORB ?? 0),
-                (int)($stat->DRB ?? 0),
-                (int)($stat->RB ?? 0),
-                (int)($stat->AST ?? 0),
-                (int)($stat->STL ?? 0),
-                (int)($stat->BS ?? 0),
-                (int)($stat->TRN ?? 0),
-                (int)($stat->PF ?? 0),
-                (int)($stat->PTS ?? 0),
-            ];
+            $rows[] = array_merge(
+                [
+                    $opponentCell,
+                    h((string)($game->game_date ?? '-')),
+                ],
+                $this->statsService->getTeamGameStatCells($sportId, $stat)
+            );
         }
 
         return $rows;
@@ -606,14 +527,17 @@ class StatsController extends AppController
      * Format opponent player game results for DataTables JSON.
      *
      * @param array $results Service results
+     * @param int $sportId
      * @return array<int, array>
      */
-    protected function formatOpponentPlayerGameRows(array $results): array
+    protected function formatOpponentPlayerGameRows(array $results, int $sportId): array
     {
         $rows = [];
         foreach ($results as $row) {
             $stat = $row['stat'];
             $game = $row['game'] ?? null;
+
+            $nameCell = h($this->statsService->getOpponentPlayerName($sportId, $stat)) ?: '-';
 
             $opponentCell = $game
                 ? $this->link(
@@ -622,27 +546,14 @@ class StatsController extends AppController
                 )
                 : '-';
 
-            $rows[] = [
-                h((string)($stat->name ?? '-')),
-                $opponentCell,
-                h((string)($game->game_date ?? '-')),
-                (int)($stat->MIN ?? 0),
-                (int)($stat->FGM ?? 0),
-                (int)($stat->FGA ?? 0),
-                (int)($stat->TPM ?? 0),
-                (int)($stat->TPA ?? 0),
-                (int)($stat->FTM ?? 0),
-                (int)($stat->FTA ?? 0),
-                (int)($stat->ORB ?? 0),
-                (int)($stat->DRB ?? 0),
-                (int)($stat->RB ?? 0),
-                (int)($stat->AST ?? 0),
-                (int)($stat->STL ?? 0),
-                (int)($stat->BS ?? 0),
-                (int)($stat->TRN ?? 0),
-                (int)($stat->PF ?? 0),
-                (int)($stat->PTS ?? 0),
-            ];
+            $rows[] = array_merge(
+                [
+                    $nameCell,
+                    $opponentCell,
+                    h((string)($game->game_date ?? '-')),
+                ],
+                $this->statsService->getOpponentPlayerGameStatCells($sportId, $stat)
+            );
         }
 
         return $rows;

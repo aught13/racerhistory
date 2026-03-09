@@ -330,14 +330,14 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('data-ajax-url');
     }
 
-    // ——— Breadcrumb navigation ——————————————
+    // ——— Page structure ——————————————————————
 
-    public function testPlayerSeasonContainsBreadcrumb(): void
+    public function testPlayerSeasonContainsPageStructure(): void
     {
         $this->get('/stats/player-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('breadcrumb');
-        $this->assertResponseContains('Statistics');
+        $this->assertResponseContains('Player Season');
+        $this->assertResponseContains('stats-results-table');
     }
 
     // ——— Script inclusion ——————————————————
