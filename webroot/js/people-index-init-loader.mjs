@@ -1,5 +1,3 @@
-import { ensureSearchBuilderLoaded } from "./modules/searchbuilder-loader.mjs";
-
 let initPeoplePromise;
 const DATATABLES_CORE_SRC =
     "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
@@ -24,19 +22,6 @@ function getInitPeople() {
         );
     }
     return initPeoplePromise;
-}
-
-function getSearchBuilderLoader() {
-    const globalRef =
-        typeof globalThis !== "undefined" ? globalThis : undefined;
-    const windowRef = typeof window !== "undefined" ? window : undefined;
-    const mockLoader =
-        (globalRef && globalRef.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__) ||
-        (windowRef && windowRef.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__);
-    if (typeof mockLoader === "function") {
-        return mockLoader;
-    }
-    return ensureSearchBuilderLoaded;
 }
 
 function hasDataTables() {
@@ -121,18 +106,11 @@ function boot() {
                 const table = document.querySelector("#people-table");
                 const dataUrl = table?.dataset?.peopleDataUrl || "";
                 ensureDataTablesLoaded()
-                    .then(() =>
-                        getSearchBuilderLoader()().catch(() => undefined),
-                    )
                     .then(() => {
                         initPeopleIndex({
                             tableSelector: "#people-table",
-                            controlsSelector: "#people-controls",
-                            panelSelector: "#people-searchbuilder-panel",
-                            filterButtonId: "people-filter-btn",
                             searchInputSelector: "#people-name-search",
                             dataUrl: dataUrl || undefined,
-                            columns: [0, 1, 2],
                         });
                     })
                     .catch((err) => {
@@ -170,11 +148,6 @@ function cleanupPeoplePage() {
         }
     } catch (err) {
         console.warn("Failed to clean up people DataTable", err);
-    }
-
-    const panel = document.querySelector("#people-searchbuilder-panel");
-    if (panel) {
-        panel.innerHTML = "";
     }
 }
 

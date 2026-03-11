@@ -3,7 +3,7 @@ import { jest } from "@jest/globals";
 /**
  * Coverage tests for people-index-init-loader.mjs
  * Targets: loadScript, waitForDataTables, ensureDataTablesLoaded,
- *   hasJquery, hasDataTables, boot, getInitPeople, getSearchBuilderLoader
+ *   hasJquery, hasDataTables, boot, getInitPeople
  */
 
 beforeEach(() => {
@@ -13,9 +13,7 @@ beforeEach(() => {
     document.body.innerHTML = "";
     document.head.innerHTML = "";
     delete globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__;
-    delete globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__;
     delete window.__PEOPLE_INDEX_INIT_LOADER_MOCK__;
-    delete window.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__;
     delete window.$;
 });
 
@@ -57,39 +55,10 @@ function setupDT() {
 }
 
 describe("people-index-init-loader.mjs (coverage)", () => {
-    describe("getSearchBuilderLoader", () => {
-        test("uses global mock when provided", async () => {
-            const loaderMock = jest.fn().mockResolvedValue(undefined);
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = loaderMock;
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            setupDT();
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            await import("../people-index-init-loader.mjs");
-            await flushPromises();
-            expect(loaderMock).toHaveBeenCalled();
-        });
-
-        test("falls back to default ensureSearchBuilderLoaded", async () => {
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            // No SB mock - uses real ensureSearchBuilderLoaded
-            setupDT();
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            const _debugSpy = jest
-                .spyOn(console, "debug")
-                .mockImplementation(() => {});
-            await import("../people-index-init-loader.mjs");
-            await flushPromises();
-        });
-    });
-
     describe("hasDataTables / hasJquery", () => {
         test("returns false when $ not defined", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
             // No jQuery
             const _debugSpy = jest
                 .spyOn(console, "debug")
@@ -102,8 +71,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
         test("hasDataTables via $.fn.dataTable function", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
             const jq = jest.fn(() => ({ length: 0, get: () => null }));
             jq.fn = {
                 dataTable: jest.fn(),
@@ -119,8 +86,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
         test("loads new scripts by adding script elements", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
 
             // jQuery exists but no DataTables
             const jq = jest.fn(() => ({ length: 0, get: () => null }));
@@ -156,8 +121,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
 
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
 
             const jq = jest.fn(() => ({ length: 0, get: () => null }));
             jq.fn = {};
@@ -175,8 +138,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
         test("handles script load error", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
 
             const jq = jest.fn(() => ({ length: 0, get: () => null }));
             jq.fn = {};
@@ -207,8 +168,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
 
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
 
             const jq = jest.fn(() => ({ length: 0, get: () => null }));
             jq.fn = {};
@@ -232,8 +191,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
         test("resolves immediately when DataTables available", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
             setupDT();
             document.body.innerHTML = `<table id="people-table"></table>`;
             await import("../people-index-init-loader.mjs");
@@ -245,8 +202,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
         test("times out when DataTables never loads", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
 
             // jQuery + fn but no DataTable function
             const jq = jest.fn(() => ({
@@ -276,8 +231,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
                 <table id="people-table" data-people-data-url="/api/people"></table>`;
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
             setupDT();
             await import("../people-index-init-loader.mjs");
             await flushPromises();
@@ -289,8 +242,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
         test("boots on turbo:load event", async () => {
             const initMock = jest.fn();
             globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.resolve();
             setupDT();
             document.body.innerHTML = `<table id="people-table"></table>`;
             await import("../people-index-init-loader.mjs");
@@ -305,16 +256,5 @@ describe("people-index-init-loader.mjs (coverage)", () => {
             );
         });
 
-        test("SB loader rejection still calls initPeople", async () => {
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-            globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = () =>
-                Promise.reject(new Error("SB fail"));
-            setupDT();
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            await import("../people-index-init-loader.mjs");
-            await flushPromises();
-            expect(initMock).toHaveBeenCalled();
-        });
     });
 });

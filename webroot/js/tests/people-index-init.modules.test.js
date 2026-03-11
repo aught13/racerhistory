@@ -22,7 +22,7 @@ describe("people-index-init", () => {
         const mod = await import("../modules/people-index-init.js");
         const initPeople = mod.default || mod;
         const res = initPeople();
-        expect(res).toEqual({ sb: null, table: null });
+        expect(res).toEqual({ table: null });
     });
 
     test("initializes DataTable with scroller defaults and binds search", async () => {
@@ -83,7 +83,6 @@ describe("people-index-init", () => {
         window.$.fn = {};
         window.$.fn.dataTable = function () {};
         window.$.fn.dataTable.isDataTable = () => false;
-        window.$.fn.dataTable.SearchBuilder = undefined;
         window.$.fn.dataTable.ext = { search: [] };
         window.$.fn.DataTable = function () {};
 
@@ -109,14 +108,6 @@ describe("people-index-init", () => {
         table.innerHTML =
             '<thead><tr><th>Name</th></tr></thead><tbody><tr data-person-search="john doe"><td>John</td></tr></tbody>';
         document.body.appendChild(table);
-
-        const panel = document.createElement("div");
-        panel.id = "people-searchbuilder-panel";
-        document.body.appendChild(panel);
-
-        const controls = document.createElement("div");
-        controls.id = "people-controls";
-        document.body.appendChild(controls);
 
         const input = document.createElement("input");
         input.id = "people-name-search";
@@ -157,7 +148,6 @@ describe("people-index-init", () => {
         window.$.fn = {};
         window.$.fn.dataTable = function () {};
         window.$.fn.dataTable.isDataTable = () => false;
-        window.$.fn.dataTable.SearchBuilder = undefined;
         window.$.fn.dataTable.ext = { search: filters };
         window.$.fn.DataTable = function () {};
 
@@ -177,79 +167,5 @@ describe("people-index-init", () => {
 
         input.value = "sally";
         expect(filterFn(settings, ["John"], 0)).toBe(false);
-    });
-
-    test("creates filter button and SearchBuilder when available", async () => {
-        const table = document.createElement("table");
-        table.id = "people-table";
-        table.appendChild(document.createElement("thead"));
-        table.appendChild(document.createElement("tbody"));
-        document.body.appendChild(table);
-
-        const panel = document.createElement("div");
-        panel.id = "people-searchbuilder-panel";
-        document.body.appendChild(panel);
-
-        const controls = document.createElement("div");
-        controls.id = "people-controls";
-        document.body.appendChild(controls);
-
-        const input = document.createElement("input");
-        input.id = "people-name-search";
-        document.body.appendChild(input);
-
-        window.$ = function (sel) {
-            if (sel === "#people-table" || sel === table) {
-                return {
-                    length: 1,
-                    get: (i) => (typeof i === "number" ? table : [table]),
-                    DataTable: function (options) {
-                        const apiObj = {
-                            columns: { adjust: () => ({ draw: () => {} }) },
-                            table: () => ({ node: () => table }),
-                        };
-                        const thisArg = {
-                            api: () => apiObj,
-                            table: () => ({ node: () => table }),
-                        };
-                        if (
-                            options &&
-                            typeof options.initComplete === "function"
-                        ) {
-                            options.initComplete.call(thisArg);
-                        }
-                        return { destroy: () => {}, api: () => apiObj };
-                    },
-                };
-            }
-            return {
-                remove: () => {},
-                empty: () => {},
-                append: (el) => {
-                    const root = document.querySelector(sel);
-                    if (root && el) root.appendChild(el);
-                },
-                addClass: () => {},
-            };
-        };
-        window.$.fn = {};
-        window.$.fn.dataTable = function () {};
-        window.$.fn.dataTable.isDataTable = () => false;
-        window.$.fn.dataTable.SearchBuilder = function () {
-            this._container = document.createElement("div");
-            this._container.className = "dtsb-searchBuilder";
-            this.container = () => this._container;
-            this.destroy = () => {};
-        };
-        window.$.fn.dataTable.ext = { search: [] };
-        window.$.fn.DataTable = function () {};
-
-        const mod = await import("../modules/people-index-init.js");
-        const initPeople = mod.default || mod;
-        initPeople();
-
-        const btn = document.getElementById("people-filter-btn");
-        expect(btn).toBeTruthy();
-        expect(panel.querySelector(".dtsb-searchBuilder")).toBeTruthy();
     });
 });
