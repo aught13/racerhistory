@@ -7,12 +7,9 @@ describe("people-index-init-loader", () => {
         }
     };
 
-    const setupLoader = async ({ rejectLoader } = {}) => {
+    const setupLoader = async () => {
         await jest.resetModules();
         const initPeopleMock = jest.fn();
-        const ensureSearchBuilderLoaded = rejectLoader
-            ? jest.fn(() => Promise.reject(new Error("nope")))
-            : jest.fn(() => Promise.resolve());
 
         window.$ = function () {
             return {};
@@ -24,13 +21,10 @@ describe("people-index-init-loader", () => {
 
         globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initPeopleMock;
         window.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initPeopleMock;
-        globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ =
-            ensureSearchBuilderLoaded;
-        window.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__ = ensureSearchBuilderLoaded;
 
         await import("../people-index-init-loader.mjs");
 
-        return { initPeopleMock, ensureSearchBuilderLoaded };
+        return { initPeopleMock };
     };
 
     beforeEach(() => {
@@ -40,22 +34,11 @@ describe("people-index-init-loader", () => {
     afterEach(() => {
         delete globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__;
         delete window.__PEOPLE_INDEX_INIT_LOADER_MOCK__;
-        delete globalThis.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__;
-        delete window.__PEOPLE_SEARCHBUILDER_LOADER_MOCK__;
         delete window.$;
     });
 
     test("boots on import and calls init", async () => {
-        const { initPeopleMock, ensureSearchBuilderLoaded } =
-            await setupLoader();
-        await flushPromises(2);
-
-        expect(ensureSearchBuilderLoaded).toHaveBeenCalled();
-        expect(initPeopleMock).toHaveBeenCalled();
-    });
-
-    test("falls back to init when SearchBuilder loader rejects", async () => {
-        const { initPeopleMock } = await setupLoader({ rejectLoader: true });
+        const { initPeopleMock } = await setupLoader();
         await flushPromises(2);
 
         expect(initPeopleMock).toHaveBeenCalled();

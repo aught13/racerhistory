@@ -74,43 +74,38 @@ class PeopleControllerTest extends TestCase
         $this->assertArrayHasKey('data', $payload);
         $this->assertNotEmpty($payload['data']);
 
+        $firstRow = $payload['data'][0];
+        $this->assertCount(3, $firstRow);
+
+        $nameHtml = $firstRow[0];
+        $this->assertStringContainsString('<a href=', $nameHtml);
+        $this->assertStringContainsString('/people/', $nameHtml);
+
         $rows = array_column($payload['data'], 1);
         $this->assertNotEmpty($rows);
-        $this->assertStringContainsString('Los Angeles Lakers', $rows[0]);
+        $this->assertStringContainsString('LAL', $rows[0]);
 
         $years = array_column($payload['data'], 2);
         $this->assertNotEmpty($years);
         $this->assertStringContainsString('/seasons/1', $years[0]);
     }
 
-    public function testIndexJsonSearchBuilderFiltersTeams(): void
+    public function testIndexJsonHonorsDescendingNameOrder(): void
     {
-        $query = http_build_query([
-            'format' => 'json',
-            'draw' => 1,
-            'start' => 0,
-            'length' => 50,
-            'searchBuilder' => [
-                'logic' => 'AND',
-                'criteria' => [
-                    [
-                        'data' => '1',
-                        'origData' => '1',
-                        'condition' => 'contains',
-                        'value1' => 'Lakers',
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->get('/people?' . $query);
+        $this->get('/people?format=json&draw=2&start=0&length=50&order[0][column]=0&order[0][dir]=desc');
         $this->assertResponseOk();
+        $this->assertHeaderContains('Content-Type', 'application/json');
 
         $payload = json_decode((string)$this->_response->getBody(), true);
         $this->assertIsArray($payload);
-        $this->assertGreaterThan(0, $payload['recordsFiltered']);
-        $this->assertNotEmpty($payload['data']);
-        $this->assertStringContainsString('Lakers', $payload['data'][0][1]);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertCount(2, $payload['data']);
+
+        $firstNameHtml = $payload['data'][0][0] ?? '';
+        $secondNameHtml = $payload['data'][1][0] ?? '';
+
+        $this->assertStringContainsString('Jane Smith', $firstNameHtml);
+        $this->assertStringContainsString('John Doe', $secondNameHtml);
     }
 
     public function testView(): void

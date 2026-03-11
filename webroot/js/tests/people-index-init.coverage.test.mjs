@@ -6,7 +6,7 @@ import { jest } from "@jest/globals";
  *   server-side mode, client-side filter, error handling
  */
 
-let jq, DataTableFn, dtInstance, sbMock;
+let jq, DataTableFn, dtInstance;
 
 function setupMocks() {
     dtInstance = {
@@ -23,14 +23,6 @@ function setupMocks() {
 
     DataTableFn = jest.fn().mockReturnValue(dtInstance);
     DataTableFn.isDataTable = jest.fn().mockReturnValue(false);
-
-    sbMock = {
-        destroy: jest.fn(),
-        container: jest.fn().mockReturnValue(document.createElement("div")),
-        dom: { container: document.createElement("div") },
-    };
-
-    const SBConstructor = jest.fn().mockReturnValue(sbMock);
 
     jq = jest.fn((sel) => {
         if (typeof sel === "string") {
@@ -64,12 +56,11 @@ function setupMocks() {
         dataTable: Object.assign(jest.fn(), {
             isDataTable: DataTableFn.isDataTable,
             ext: { search: [] },
-            SearchBuilder: SBConstructor,
         }),
     };
     window.$ = jq;
 
-    return { dtInstance, DataTableFn, sbMock, SBConstructor };
+    return { dtInstance, DataTableFn };
 }
 
 beforeEach(() => {
@@ -90,7 +81,7 @@ describe("people-index-init.js (coverage)", () => {
         // No jQuery
         const mod = await import("../modules/people-index-init.js");
         const result = mod.default();
-        expect(result).toEqual({ sb: null, table: null });
+        expect(result).toEqual({ table: null });
     });
 
     test("returns null when $.fn.DataTable is missing", async () => {
@@ -99,7 +90,7 @@ describe("people-index-init.js (coverage)", () => {
         window.$.fn = {};
         const mod = await import("../modules/people-index-init.js");
         const result = mod.default();
-        expect(result).toEqual({ sb: null, table: null });
+        expect(result).toEqual({ table: null });
     });
 
     test("returns null when table not found", async () => {
@@ -107,14 +98,12 @@ describe("people-index-init.js (coverage)", () => {
         setupMocks();
         const mod = await import("../modules/people-index-init.js");
         const result = mod.default({ tableSelector: "#people-table" });
-        expect(result).toEqual({ sb: null, table: null });
+        expect(result).toEqual({ table: null });
     });
 
     test("destroys existing DataTable on re-init", async () => {
         document.body.innerHTML = `
             <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
             <input id="people-name-search" />
         `;
         const { dtInstance: _dt, DataTableFn: DT } = setupMocks();
@@ -126,11 +115,9 @@ describe("people-index-init.js (coverage)", () => {
         expect(DT.isDataTable).toHaveBeenCalled();
     });
 
-    test("initComplete triggers setupSearchBuilder and setupNameFilter", async () => {
+    test("initComplete triggers setupNameFilter", async () => {
         document.body.innerHTML = `
             <table id="people-table"><thead><tr><th>Name</th><th>Team</th><th>Pos</th></tr></thead><tbody><tr><td>A</td><td>B</td><td>C</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
             <input id="people-name-search" />
         `;
         setupMocks();
@@ -161,90 +148,12 @@ describe("people-index-init.js (coverage)", () => {
         };
         opts.initComplete.call(context);
 
-        // Button should be created in controls
-        const btn = document.getElementById("people-filter-btn");
-        expect(btn).toBeTruthy();
-    });
-
-    test("filter button toggles panel visibility", async () => {
-        document.body.innerHTML = `
-            <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel" class="d-none"></div>
-            <input id="people-name-search" />
-        `;
-        setupMocks();
-        const mod = await import("../modules/people-index-init.js");
-        mod.default();
-
-        const opts = DataTableFn.mock.calls[0]?.[0];
-        const context = {
-            api: jest.fn().mockReturnValue({
-                columns: {
-                    adjust: jest.fn().mockReturnValue({ draw: jest.fn() }),
-                },
-                draw: jest.fn(),
-                table: jest.fn().mockReturnValue({
-                    node: jest
-                        .fn()
-                        .mockReturnValue(
-                            document.querySelector("#people-table"),
-                        ),
-                }),
-                search: jest.fn().mockReturnThis(),
-            }),
-        };
-        opts.initComplete.call(context);
-
-        const btn = document.getElementById("people-filter-btn");
-        btn.click();
-        const _panel = document.querySelector("#people-searchbuilder-panel");
-        // After first click, panel should be visible
-        expect(btn.getAttribute("aria-expanded")).toBe("true");
-
-        btn.click();
-        // After second click, panel should be hidden again
-        expect(btn.getAttribute("aria-expanded")).toBe("false");
-    });
-
-    test("SearchBuilder unavailable shows placeholder", async () => {
-        document.body.innerHTML = `
-            <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
-        `;
-        setupMocks();
-        delete window.$.fn.dataTable.SearchBuilder;
-        const mod = await import("../modules/people-index-init.js");
-        mod.default();
-
-        const opts = DataTableFn.mock.calls[0]?.[0];
-        const context = {
-            api: jest.fn().mockReturnValue({
-                columns: {
-                    adjust: jest.fn().mockReturnValue({ draw: jest.fn() }),
-                },
-                draw: jest.fn(),
-                table: jest.fn().mockReturnValue({
-                    node: jest
-                        .fn()
-                        .mockReturnValue(
-                            document.querySelector("#people-table"),
-                        ),
-                }),
-            }),
-        };
-        opts.initComplete.call(context);
-
-        const panel = document.querySelector("#people-searchbuilder-panel");
-        expect(panel.classList.contains("d-none")).toBe(true);
+        expect(adjustFn).toHaveBeenCalled();
     });
 
     test("server-side mode uses search() on input", async () => {
         document.body.innerHTML = `
             <table id="people-table" data-people-data-url="/api/people"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
             <input id="people-name-search" />
         `;
         setupMocks();
@@ -287,8 +196,6 @@ describe("people-index-init.js (coverage)", () => {
                     <tr data-person-search="Jane Doe"><td>Jane Doe</td></tr>
                 </tbody>
             </table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
             <input id="people-name-search" />
         `;
         const { dtInstance: _dt } = setupMocks();
@@ -398,26 +305,6 @@ describe("people-index-init.js (coverage)", () => {
         opts.drawCallback.call(apiMock);
     });
 
-    test("destroyExisting handles SearchBuilder with dom.container", async () => {
-        document.body.innerHTML = `
-            <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"><button id="people-filter-btn">F</button></div>
-            <div id="people-searchbuilder-panel"></div>
-        `;
-        setupMocks();
-        DataTableFn.isDataTable.mockReturnValue(true);
-        const mod = await import("../modules/people-index-init.js");
-
-        // First call creates table + sb
-        mod.default();
-
-        // Second call should destroy existing
-        DataTableFn.isDataTable.mockReturnValue(true);
-        mod.default();
-
-        expect(dtInstance.destroy).toHaveBeenCalled();
-    });
-
     test("DataTable construction error returns null", async () => {
         document.body.innerHTML = `
             <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
@@ -431,34 +318,8 @@ describe("people-index-init.js (coverage)", () => {
             .mockImplementation(() => {});
         const mod = await import("../modules/people-index-init.js");
         const result = mod.default();
-        expect(result).toEqual({ sb: null, table: null });
+        expect(result).toEqual({ table: null });
         expect(debugSpy).toHaveBeenCalled();
-    });
-
-    test("SearchBuilder creation error shows fallback", async () => {
-        document.body.innerHTML = `
-            <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
-        `;
-        const { SBConstructor } = setupMocks();
-        SBConstructor.mockImplementation(() => {
-            throw new Error("SB error");
-        });
-        const mod = await import("../modules/people-index-init.js");
-        mod.default();
-
-        const opts = DataTableFn.mock.calls[0]?.[0];
-        const context = {
-            api: jest.fn().mockReturnValue({
-                columns: {
-                    adjust: jest.fn().mockReturnValue({ draw: jest.fn() }),
-                },
-                draw: jest.fn(),
-                table: jest.fn().mockReturnValue({ node: jest.fn() }),
-            }),
-        };
-        opts.initComplete.call(context);
     });
 
     test("setupNameFilter with no search input does nothing", async () => {
@@ -494,35 +355,5 @@ describe("people-index-init.js (coverage)", () => {
 
         const opts = DataTableFn.mock.calls[0]?.[0];
         expect(opts.pageLength).toBe(25);
-    });
-
-    test("setupSearchBuilder reuses existing sbInstance", async () => {
-        document.body.innerHTML = `
-            <table id="people-table"><thead><tr><th>Name</th></tr></thead><tbody><tr><td>A</td></tr></tbody></table>
-            <div id="people-controls"></div>
-            <div id="people-searchbuilder-panel"></div>
-        `;
-        const { SBConstructor } = setupMocks();
-        const mod = await import("../modules/people-index-init.js");
-        mod.default();
-
-        const opts = DataTableFn.mock.calls[0]?.[0];
-        const apiMock = {
-            columns: { adjust: jest.fn().mockReturnValue({ draw: jest.fn() }) },
-            draw: jest.fn(),
-            table: jest.fn().mockReturnValue({
-                node: jest
-                    .fn()
-                    .mockReturnValue(document.querySelector("#people-table")),
-            }),
-        };
-        const context = { api: jest.fn().mockReturnValue(apiMock) };
-
-        // First call creates SB
-        opts.initComplete.call(context);
-        expect(SBConstructor).toHaveBeenCalledTimes(1);
-
-        // Second call via drawCallback should reuse
-        opts.drawCallback.call(context);
     });
 });

@@ -16,15 +16,10 @@ echo $this->element('People/table_assets');
     </div>
 
     <?php if (!empty($peopleRows) || ($peopleCount ?? 0) > 0) : ?>
-        <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
-            <div class="people-searchbar input-group">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="people-name-search" class="form-control" placeholder="Search people by name...">
-            </div>
-            <div id="people-controls" class="d-flex align-items-center gap-2"></div>
+        <div class="people-searchbar input-group mb-3">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="people-name-search" class="form-control" placeholder="Search people by name...">
         </div>
-
-        <div id="people-searchbuilder-panel" class="searchbuilder-panel"></div>
 
         <div class="people-table-card shadow-sm">
             <div class="table-responsive">
@@ -35,7 +30,6 @@ echo $this->element('People/table_assets');
                             <th>Name</th>
                             <th>Teams</th>
                             <th>Years Active</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody></tbody>

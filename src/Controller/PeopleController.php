@@ -8,6 +8,7 @@ use App\Service\PersonService;
 use App\Service\StatsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
+use Cake\ORM\Query\SelectQuery;
 use Cake\Routing\Router;
 
 /**
@@ -86,28 +87,14 @@ class PeopleController extends AppController
         $search = (string)($this->request->getQuery('search')['value'] ?? '');
         $search = trim($search);
 
-        $searchBuilder = $this->request->getData(
-            'searchBuilder',
-            $this->request->getQuery('searchBuilder'),
-        );
-
         $total = $table->find()->count();
 
         $query = $table->find()
-            ->select(['id', 'first', 'last', 'full', 'display'])
-            ->orderByAsc('Persons.last')
-            ->orderByAsc('Persons.first');
+            ->select(['id', 'first', 'last', 'full', 'display']);
 
-        $needsRosterJoin = false;
-        if (!empty($searchBuilder['criteria'])) {
-            $needsRosterJoin = $this->applyPeopleSearchBuilderCriteria(
-                $query,
-                $searchBuilder['criteria'],
-                $searchBuilder['logic'] ?? 'AND',
-            );
-        }
+        $this->applyDataTablesOrderToPeopleQuery($query);
 
-        if ($search !== '' && empty($searchBuilder['criteria'])) {
+        if ($search !== '') {
             $query->where([
                 'OR' => [
                     'Persons.first LIKE' => '%' . $search . '%',
@@ -116,10 +103,6 @@ class PeopleController extends AppController
                     'Persons.display LIKE' => '%' . $search . '%',
                 ],
             ]);
-        }
-
-        if ($needsRosterJoin) {
-            $query->distinct(['Persons.id']);
         }
 
         $filtered = $query->count();
@@ -142,6 +125,39 @@ class PeopleController extends AppController
         $this->response = $this->response
             ->withType('application/json')
             ->withStringBody((string)json_encode($payload));
+    }
+
+    /**
+     * Apply DataTables order settings to the People index query.
+     *
+     * Currently we only support server-side ordering by the Name column.
+     */
+    private function applyDataTablesOrderToPeopleQuery(SelectQuery $query): void
+    {
+        $order = $this->request->getQuery('order');
+        $direction = 'asc';
+
+        if (is_array($order) && !empty($order)) {
+            $firstOrder = reset($order);
+            if (is_array($firstOrder)) {
+                $requestedDirection = strtolower((string)($firstOrder['dir'] ?? 'asc'));
+                if (in_array($requestedDirection, ['asc', 'desc'], true)) {
+                    $direction = $requestedDirection;
+                }
+            }
+        }
+
+        if ($direction === 'desc') {
+            $query
+                ->orderByDesc('Persons.last')
+                ->orderByDesc('Persons.first');
+
+            return;
+        }
+
+        $query
+            ->orderByAsc('Persons.last')
+            ->orderByAsc('Persons.first');
     }
 
     /**
@@ -184,9 +200,9 @@ class PeopleController extends AppController
             $rosters = $rosterMap[(int)$person->id] ?? [];
 
             foreach ($rosters as $roster) {
-                $teamName = $roster->team_season->team->team_name ?? null;
-                if ($teamName) {
-                    $teams[$teamName] = true;
+                $teamAbbr = $roster->team_season->team->abbr ?? null;
+                if ($teamAbbr) {
+                    $teams[$teamAbbr] = true;
                 }
 
                 $season = $roster->team_season->season ?? null;
@@ -249,7 +265,13 @@ class PeopleController extends AppController
                 $name = $display !== '' ? $display : 'Unknown';
             }
 
-            $nameHtml = '<div class="fw-semibold">' . $this->escape($name) . '</div>';
+            $personUrl = Router::url([
+                'controller' => 'People',
+                'action' => 'view',
+                $person->id,
+            ]);
+            $nameHtml = '<a href="' . $this->escape($personUrl) . '" class="fw-semibold text-decoration-none">'
+                . $this->escape($name) . '</a>';
             if ($display !== '' && $display !== $name) {
                 $nameHtml .= '<div class="people-display-name">' . $this->escape($display) . '</div>';
             }
@@ -272,16 +294,7 @@ class PeopleController extends AppController
                 $yearsHtml = implode(', ', $yearLinks);
             }
 
-            $actionUrl = Router::url([
-                'controller' => 'People',
-                'action' => 'view',
-                $person->id,
-            ]);
-            $actionHtml = '<a href="' . $this->escape($actionUrl) . '"'
-                . ' class="btn btn-sm btn-outline-primary">'
-                . '<i class="bi bi-eye"></i> View Profile</a>';
-
-            $data[] = [$nameHtml, $teamsHtml, $yearsHtml, $actionHtml];
+            $data[] = [$nameHtml, $teamsHtml, $yearsHtml];
         }
 
         return $data;
@@ -294,150 +307,6 @@ class PeopleController extends AppController
     private function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-    }
-
-    /**
-     * @param \Cake\ORM\Query $query
-     * @param array $criteria
-     * @param string $logic
-     * @return bool True when roster joins are required.
-     */
-    private function applyPeopleSearchBuilderCriteria(
-        \Cake\ORM\Query $query,
-        array $criteria,
-        string $logic = 'AND',
-    ): bool {
-        $conditions = [];
-        $needsRosterJoin = false;
-
-        foreach ($criteria as $criterion) {
-            if (isset($criterion['criteria'])) {
-                $subQuery = $this->fetchTable('Persons')->find();
-                $subJoin = $this->applyPeopleSearchBuilderCriteria(
-                    $subQuery,
-                    $criterion['criteria'],
-                    $criterion['logic'] ?? 'AND',
-                );
-                $needsRosterJoin = $needsRosterJoin || $subJoin;
-                $subConditions = $subQuery->clause('where');
-                if ($subConditions) {
-                    $conditions[] = $subConditions;
-                }
-                continue;
-            }
-
-            $origData = $criterion['origData'] ?? $criterion['data'] ?? null;
-            $condition = $criterion['condition'] ?? '=';
-            $value1 = $criterion['value1'] ?? $criterion['value'] ?? '';
-            $value2 = $criterion['value2'] ?? '';
-
-            $field = match ($origData) {
-                '0', 'name' => 'Persons.full',
-                '1', 'teams' => 'Teams.team_name',
-                '2', 'years' => 'Seasons.start',
-                default => null,
-            };
-
-            if (!$field) {
-                continue;
-            }
-
-            if ($field === 'Teams.team_name' || $field === 'Seasons.start') {
-                $needsRosterJoin = true;
-            }
-
-            if ($field === 'Persons.full') {
-                $conditions[] = $this->buildSearchCondition(
-                    ['Persons.first', 'Persons.last', 'Persons.full', 'Persons.display'],
-                    $condition,
-                    $value1,
-                    $value2,
-                );
-                continue;
-            }
-
-            if ($field === 'Seasons.start') {
-                $conditions[] = $this->buildSearchCondition(
-                    ['Seasons.start', 'Seasons.end'],
-                    $condition,
-                    $value1,
-                    $value2,
-                );
-                continue;
-            }
-
-            $conditions[] = $this->buildSearchCondition(
-                [$field],
-                $condition,
-                $value1,
-                $value2,
-            );
-        }
-
-        if ($needsRosterJoin) {
-            $query->leftJoinWith('TeamSeasonRosters.TeamSeasons.Teams')
-                ->leftJoinWith('TeamSeasonRosters.TeamSeasons.Seasons');
-        }
-
-        if ($conditions) {
-            $query->where([$logic => $conditions]);
-        }
-
-        return $needsRosterJoin;
-    }
-
-    /**
-     * @param array<int,string> $fields
-     * @param string $condition
-     * @param mixed $value1
-     * @param mixed $value2
-     * @return array
-     */
-    private function buildSearchCondition(
-        array $fields,
-        string $condition,
-        mixed $value1,
-        mixed $value2,
-    ): array {
-        $value1 = (string)$value1;
-        $value2 = (string)$value2;
-
-        $buildFieldCondition = function (string $field) use (
-            $condition,
-            $value1,
-            $value2,
-        ): array {
-            return match ($condition) {
-                '=' => [$field => $value1],
-                '!=' => [$field . ' !=' => $value1],
-                'contains' => [$field . ' LIKE' => '%' . $value1 . '%'],
-                '!contains' => [$field . ' NOT LIKE' => '%' . $value1 . '%'],
-                'starts' => [$field . ' LIKE' => $value1 . '%'],
-                '!starts' => [$field . ' NOT LIKE' => $value1 . '%'],
-                'ends' => [$field . ' LIKE' => '%' . $value1],
-                '!ends' => [$field . ' NOT LIKE' => '%' . $value1],
-                '>' => [$field . ' >' => $value1],
-                '<' => [$field . ' <' => $value1],
-                '>=' => [$field . ' >=' => $value1],
-                '<=' => [$field . ' <=' => $value1],
-                'between' => [$field . ' >=' => $value1, $field . ' <=' => $value2],
-                '!between' => ['OR' => [$field . ' <' => $value1, $field . ' >' => $value2]],
-                'null' => [$field . ' IS' => null],
-                '!null' => [$field . ' IS NOT' => null],
-                default => [$field . ' LIKE' => '%' . $value1 . '%'],
-            };
-        };
-
-        $clauses = [];
-        foreach ($fields as $field) {
-            $clauses[] = $buildFieldCondition($field);
-        }
-
-        if (count($clauses) === 1) {
-            return $clauses[0];
-        }
-
-        return ['OR' => $clauses];
     }
 
     /**

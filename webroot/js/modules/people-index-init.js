@@ -1,15 +1,10 @@
 /* people-index-init.js (ES module)
- * Initializer for People index DataTable + SearchBuilder + name search.
+ * Initializer for People index DataTable + name search.
  */
 export default function initPeopleIndex(options = {}) {
     const tableSelector = options.tableSelector || "#people-table";
-    const controlsSelector = options.controlsSelector || "#people-controls";
-    const panelSelector =
-        options.panelSelector || "#people-searchbuilder-panel";
-    const filterButtonId = options.filterButtonId || "people-filter-btn";
     const searchInputSelector =
         options.searchInputSelector || "#people-name-search";
-    const sbColumns = options.columns || [0, 1, 2];
     const dataUrl = options.dataUrl || "";
     const { dataTableOptions: userDataTableOptions } = options;
     const useServerSide = Boolean(dataUrl);
@@ -20,14 +15,14 @@ export default function initPeopleIndex(options = {}) {
         (typeof window.$.fn.DataTable !== "function" &&
             typeof window.$.fn.dataTable !== "function")
     ) {
-        return { sb: null, table: null };
+        return { table: null };
     }
 
     const $table = window.$(tableSelector);
     const tableEl = $table.get(0);
 
     if (!$table.length) {
-        return { sb: null, table: null };
+        return { table: null };
     }
 
     let peopleTable = null;
@@ -38,8 +33,6 @@ export default function initPeopleIndex(options = {}) {
             peopleTable = null;
         }
     }
-
-    let sbInstance = null;
 
     function destroyExisting() {
         try {
@@ -62,123 +55,7 @@ export default function initPeopleIndex(options = {}) {
             delete tableEl._peopleNameFilterFn;
         }
 
-        try {
-            if (sbInstance) {
-                if (typeof sbInstance.destroy === "function") {
-                    sbInstance.destroy();
-                } else if (sbInstance.dom && sbInstance.dom.container) {
-                    window.$(sbInstance.dom.container).remove();
-                } else if (typeof sbInstance.container === "function") {
-                    window.$(sbInstance.container()).remove();
-                }
-            }
-        } catch {
-            /* no-op */
-        }
-        sbInstance = null;
-
-        const panelEl = document.querySelector(panelSelector);
-        const existingBtn = document.getElementById(filterButtonId);
-        if (existingBtn && existingBtn.parentNode) {
-            existingBtn.parentNode.removeChild(existingBtn);
-        }
-        if (panelEl) {
-            panelEl.innerHTML = "";
-        }
         window.$(".dt-button-collection").remove();
-    }
-
-    function setupSearchBuilder(dtApi) {
-        const controlsEl = document.querySelector(controlsSelector);
-        const panelEl = document.querySelector(panelSelector);
-        if (!controlsEl || !panelEl) {
-            return null;
-        }
-
-        let btn = document.getElementById(filterButtonId);
-        if (!btn) {
-            btn = document.createElement("button");
-            btn.type = "button";
-            btn.id = filterButtonId;
-            btn.className = "btn btn-sm btn-outline-secondary";
-            btn.innerHTML = '<span><i class="bi bi-funnel"></i> Filter</span>';
-            btn.setAttribute("aria-expanded", "false");
-            controlsEl.appendChild(btn);
-        }
-
-        if (!btn._sbHandlerAdded) {
-            btn.addEventListener("click", function () {
-                const open = panelEl.classList.toggle("d-none") ? false : true;
-                btn.setAttribute("aria-expanded", open ? "true" : "false");
-                panelEl.classList.toggle("sb-open", open);
-            });
-            btn._sbHandlerAdded = true;
-        }
-
-        if (typeof window.$?.fn?.dataTable?.SearchBuilder !== "function") {
-            if (!panelEl.childElementCount) {
-                const ph = document.createElement("div");
-                ph.className = "p-3 text-muted small";
-                ph.textContent = "Advanced filter not available.";
-                panelEl.appendChild(ph);
-            }
-            panelEl.classList.add("d-none");
-            btn.setAttribute("aria-expanded", "false");
-            return null;
-        }
-
-        if (sbInstance) {
-            try {
-                window.$(panelSelector).empty();
-            } catch {
-                /* no-op */
-            }
-            try {
-                let containerEl = null;
-                if (typeof sbInstance.container === "function") {
-                    containerEl = sbInstance.container();
-                } else if (sbInstance.dom && sbInstance.dom.container) {
-                    containerEl = sbInstance.dom.container;
-                }
-                if (containerEl) {
-                    window.$(panelSelector).append(containerEl);
-                }
-            } catch {
-                /* no-op */
-            }
-            return sbInstance;
-        }
-
-        try {
-            sbInstance = new window.$.fn.dataTable.SearchBuilder(dtApi, {
-                depthLimit: 2,
-                columns: sbColumns,
-            });
-            let containerEl = null;
-            if (typeof sbInstance.container === "function") {
-                containerEl = sbInstance.container();
-            } else if (sbInstance.dom && sbInstance.dom.container) {
-                containerEl = sbInstance.dom.container;
-            }
-            if (containerEl) {
-                window.$(panelSelector).append(containerEl);
-            } else {
-                const ph = document.createElement("div");
-                ph.className = "p-3 text-muted small";
-                ph.textContent = "Advanced filter not available.";
-                window.$(panelSelector).append(ph);
-            }
-            window.$(panelSelector).addClass("d-none");
-        } catch (err) {
-            console.debug(err);
-            sbInstance = null;
-            const ph = document.createElement("div");
-            ph.className = "p-3 text-muted small";
-            ph.textContent = "Advanced filter not available.";
-            window.$(panelSelector).append(ph);
-        }
-
-        return sbInstance;
     }
 
     function setupNameFilter(dtApi) {
@@ -254,7 +131,6 @@ export default function initPeopleIndex(options = {}) {
             autoWidth: false,
             dom: "rtip",
             initComplete: function () {
-                setupSearchBuilder(this);
                 setupNameFilter(this);
                 if (typeof this?.api === "function") {
                     this.api().columns.adjust().draw(false);
@@ -278,9 +154,9 @@ export default function initPeopleIndex(options = {}) {
 
     try {
         peopleTable = $table.DataTable(dtOptions);
-        return { sb: sbInstance, table: peopleTable };
+        return { table: peopleTable };
     } catch (err) {
         console.debug(err);
-        return { sb: null, table: null };
+        return { table: null };
     }
 }
