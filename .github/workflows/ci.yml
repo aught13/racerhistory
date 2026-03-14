@@ -257,10 +257,8 @@ jobs:
       - name: Check Prettier formatting
         run: npm run format:js:check
 
-      - name: Run Jest tests with coverage (ESM)
+      - name: Run Jest tests with coverage
         run: npm run test:js -- --ci --coverage
-        env:
-          NODE_OPTIONS: --experimental-vm-modules
 
       - name: Upload JS coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v4.6.0
@@ -350,19 +348,37 @@ jobs:
 
       - name: Start CakePHP development server
         run: |
-          php bin/cake server -p 8765 -H localhost &
+          php bin/cake server -p 8765 -H localhost > /tmp/cake-server.log 2>&1 &
           echo $! > server.pid
-          # Wait for server to be ready
-          for i in {1..30}; do
-            if curl -f http://localhost:8765 2>/dev/null; then
-              echo "Server is ready!"
+          SERVER_PID=$(cat server.pid)
+          echo "Server started with PID $SERVER_PID"
+
+          # Wait for server to be ready (check for any HTTP response, even errors)
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w '' http://localhost:8765/ 2>/dev/null; then
+              echo "Server is responding!"
               break
             fi
-            echo "Waiting for server to start..."
+            # Check if the server process died
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "::error::Server process died unexpectedly"
+              cat /tmp/cake-server.log || true
+              exit 1
+            fi
+            echo "Waiting for server to start... ($i/30)"
             sleep 2
           done
+
+          # Final check: verify server is actually responding
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8765/ 2>/dev/null || echo "000")
+          echo "Server responded with HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" = "000" ]; then
+            echo "::error::Server failed to start after 60 seconds"
+            cat /tmp/cake-server.log || true
+            exit 1
+          fi
         env:
-          DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+          DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
       - name: Run Playwright E2E tests
         run: npm run test:e2e
@@ -376,6 +392,10 @@ jobs:
           if [ -f server.pid ]; then
             kill $(cat server.pid) || true
             rm server.pid
+          fi
+          if [ -f /tmp/cake-server.log ]; then
+            echo "=== Server log (last 50 lines) ==="
+            tail -50 /tmp/cake-server.log || true
           fi
 
       - name: Upload Playwright test results

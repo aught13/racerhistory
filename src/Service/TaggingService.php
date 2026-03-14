@@ -254,9 +254,7 @@ class TaggingService
                 $unique[(string)$tag['slug']] = $tag;
             } else {
                 $slug = (string)$tag;
-                if ($slug !== '') {
-                    $unique[$slug] = $slug;
-                }
+                $unique[$slug] = $slug;
             }
         }
 
