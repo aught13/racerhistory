@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-0.1.9--alpha-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.2.0--beta-blue.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -159,9 +159,11 @@ Visit `http://localhost:8765` (or your configured port) to see the application.
 
 ```
 racerhistory/
+├── bin/                    # CLI tools (cake, deploy, fix-permissions)
 ├── config/                 # Configuration files
 │   ├── Migrations/         # Database migrations
-│   └── app_local.php       # Local environment config
+│   ├── importmap.php       # ES module import mapping (Hotwire)
+│   └── app_local.php       # Local environment config (not tracked)
 ├── src/                    # Application source code
 │   ├── Controller/         # Request handlers
 │   │   ├── Admin/          # Admin-specific controllers
@@ -170,17 +172,18 @@ racerhistory/
 │   │   ├── Entity/         # Data entities
 │   │   └── Table/          # Database tables
 │   ├── Policy/             # Authorization policies
-│   │   ├── UserPolicy.php      # User resource permissions
-│   │   ├── ApplicationPolicy.php  # Base policy
-│   │   └── RequestPolicy.php   # Request-level authorization
+│   ├── Service/            # Business logic layer (31 services)
 │   └── View/               # View layer components
 ├── templates/              # View templates
-│   ├── layout/             # Layout templates
+│   ├── layout/             # Layout templates (default + admin)
 │   ├── element/            # Reusable view elements
-│   ├── Users/              # User-related views
-│   └── Admin/              # Admin interface views
-├── tests/                  # Unit and integration tests
+│   ├── Admin/              # Admin interface views
+│   ├── Blog/               # Public blog views
+│   └── Games/, People/...  # Public domain views
+├── tests/                  # PHPUnit tests (983 tests)
 └── webroot/                # Public web assets
+    ├── js/                 # JavaScript (ES modules + tests)
+    └── css/                # Stylesheets
 ```
 
 ## Documentation & Architecture
@@ -194,8 +197,9 @@ racerhistory/
 
 ### Testing & Quality
 
-- **PHP**: PHPUnit, PHPStan, PHPCS
-- **JavaScript**: ESLint, Prettier, Jest (coverage thresholds enforced in CI)
+- **PHP**: PHPUnit (983 tests), PHPStan (0 errors), PHPCS (clean)
+- **JavaScript**: Jest (789 tests, 91% statements, 84% branches), ESLint, Prettier
+- **Coverage Targets**: PHP 98%, JS 88%, branches 80% (enforced via Codecov)
 - VS Code tasks exist for common workflows (PHPUnit/PHPCS/PHPStan/Jest)
 
 ### Key Documentation Features
@@ -210,14 +214,20 @@ racerhistory/
 ### Run Test Suites
 
 ```bash
-# PHP tests (auto discovery)
+# PHP tests (983 tests, 2799 assertions)
 vendor/bin/phpunit
 
-# JavaScript tests with coverage
+# JavaScript tests with coverage (789 tests, 110 suites)
 npm run test:js
 
-# Optional PHP coverage config (CI-style)
+# PHP coverage report (CI-style)
 vendor/bin/phpunit --configuration phpunit.ci.xml
+
+# Static analysis
+vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G
+
+# Code style
+vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 ```
 
 ### Test Structure
@@ -263,12 +273,14 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 
 ### JavaScript
 
+- **Hotwire Turbo 8.x** - SPA-like navigation without full page reloads
+- **Hotwire Stimulus 3.x** - Modest JavaScript framework for progressive enhancement
 - **jQuery 3.7.1** - DOM manipulation and AJAX
 - **Bootstrap JS** - Modals, dropdowns, components
-- **Modules**: `admin.js` (confirm-delete + toast), `person-image.js` (image upload/preview), dynamic roster person search
+- **ES Modules** - `admin.mjs`, loader modules for page-specific initialization
 - **Sport-Aware Forms**: `games_sport_dynamic.js`, `sport-aware-game-form.js` - Dynamic form fields based on sport configuration
-- **TinyMCE** - Rich text fields for Team Seasons preview/recap
-- **Tests**: Jest + jsdom with comprehensive coverage including edge cases and error paths
+- **TinyMCE** - Rich text editor for blog posts and team season content
+- **Tests**: Jest + jsdom with 90%+ statement coverage
 
 ### Design Principles
 
@@ -294,14 +306,39 @@ vendor/bin/phpunit --configuration phpunit.ci.xml
 
 ## Deployment
 
-### Production Setup
+### Production Deployment
+
+Use the included deploy script to audit and set up a production environment:
+
+```bash
+# Audit current state (no changes made)
+bin/deploy.sh --check-only
+
+# Full deployment (install deps, run migrations, clear caches)
+bin/deploy.sh
+
+# Deploy without running tests
+bin/deploy.sh --skip-tests
+```
+
+The deploy script checks:
+- PHP version and required extensions
+- Configuration (debug mode, security salt, database host)
+- Directory permissions (tmp, logs, storage)
+- Dependency installation (`composer install --no-dev`)
+- Database migration status
+- Security (no debug files exposed, no credentials in webroot)
+- Frontend asset presence
+
+### Manual Setup
 
 1. Configure `config/app_local.php` for production database
-2. Set `'debug' => false` in configuration
+2. Set `'debug' => false` in configuration (or `DEBUG=false` in environment)
 3. Run `composer install --no-dev --optimize-autoloader`
-4. Configure web server with proper document root (`webroot/`)
-5. Set up SSL certificate for HTTPS
-6. Configure caching and session storage
+4. Run `bin/cake migrations migrate`
+5. Configure web server with proper document root (`webroot/`)
+6. Set up SSL certificate for HTTPS
+7. Run `bin/fix-permissions.sh` to set proper file ownership and permissions
 
 ### Environment Configuration
 

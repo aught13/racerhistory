@@ -1,4 +1,4 @@
-# RacerHistory Application Summary (v0.1.9-alpha)
+# RacerHistory Application Summary (v0.2.0-beta)
 
 RacerHistory is a CakePHP 5.2+ web application for managing historical sports data (sports, teams, seasons, team seasons, rosters, games, and sport-specific stats) plus a small blog engine. It includes an admin area for managing data and a public area for general viewing (including public blog pages and public image serving).
 

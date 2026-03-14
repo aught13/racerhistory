@@ -255,6 +255,5 @@ describe("people-index-init-loader.mjs (coverage)", () => {
                 callCount,
             );
         });
-
     });
 });

@@ -68,7 +68,7 @@ test("submitTempForm appends form with tokens and extra fields and logs submissi
     tokens.appendChild(hi);
     document.body.appendChild(tokens);
 
-    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const spy = jest.spyOn(console, "debug").mockImplementation(() => {});
     __internals.submitTempForm("/do-delete", tokens, [
         { name: "x", value: "y" },
     ]);

@@ -57,4 +57,11 @@ security-report.json
 # Local helper scripts
 /bin/fix-permissions.sh
 
+# Debug & status files (dev-only)
+debug_service.php
+docs-status.json
+phpcs-status.json
+psalm.xml
+tests/manual_sport_test.php
+
 .prettierrc.json

@@ -135,6 +135,9 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/users/logout', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'logout']);
         $builder->connect('/users/register', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'register']);
 
+        // Deployment audit (read-only browser check — token-gated in production)
+        $builder->connect('/install', ['controller' => 'Install', 'action' => 'index']);
+
         // Public image serve (unauthenticated)
         $builder->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
             ->setPass(['id'])
