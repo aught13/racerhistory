@@ -159,8 +159,6 @@ class ImageSelector {
                 url += "?" + params.toString();
             }
 
-            console.log("Loading images from:", url, "Config:", this.config);
-
             const response = await fetch(url, {
                 credentials: "same-origin",
             });

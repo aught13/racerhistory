@@ -40,7 +40,7 @@ afterEach(() => {
 describe("admin.js additional branch coverage", () => {
     test("renderAssociated with object items (non-string)", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
         window.showConfirmDelete({
             associated: [
@@ -60,7 +60,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("renderAssociated with array of strings", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
         window.showConfirmDelete({
             associated: ["Item 1", "Item 2"],
@@ -73,7 +73,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("renderAssociated with non-array non-string associated", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
         window.showConfirmDelete({
             associated: { custom: "data" },
@@ -86,7 +86,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("renderAssociated with invalid JSON string", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "error").mockImplementation(() => {});
         window.AdminToast = jest.fn();
         await import("../admin.js");
@@ -101,7 +101,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("renderAssociated with null associated", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
         window.showConfirmDelete({ associated: null });
         const items = document.querySelectorAll(
@@ -113,7 +113,7 @@ describe("admin.js additional branch coverage", () => {
     test("showConfirmDelete without Bootstrap uses style.display", async () => {
         setupModal();
         delete window.bootstrap;
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
         window.showConfirmDelete({});
         const modal = document.getElementById("confirm-delete-modal");
@@ -122,17 +122,17 @@ describe("admin.js additional branch coverage", () => {
 
     test("showConfirmDelete without modal element logs message", async () => {
         document.body.innerHTML = "";
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
         window.showConfirmDelete({});
-        expect(console.log).toHaveBeenCalledWith(
+        expect(console.debug).toHaveBeenCalledWith(
             expect.stringContaining("modal not present"),
         );
     });
 
     test("modal show.bs.modal event sets context from trigger", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         const modal = document.getElementById("confirm-delete-modal");
@@ -154,7 +154,7 @@ describe("admin.js additional branch coverage", () => {
         trigger.dataset.associated = '["X"]';
         document.body.appendChild(trigger);
 
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         trigger.click();
@@ -162,7 +162,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn click with source form submits source form", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         const submitSpy = jest.fn();
         await import("../admin.js");
 
@@ -191,7 +191,7 @@ describe("admin.js additional branch coverage", () => {
         const srcForm = document.getElementById("source-form");
         srcForm.remove();
 
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.showConfirmDelete({
@@ -208,7 +208,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn with non-JSON numeric id string", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "error").mockImplementation(() => {});
         await import("../admin.js");
 
@@ -234,7 +234,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn with bulkAction adds bulk_action field", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.showConfirmDelete({
@@ -263,7 +263,7 @@ describe("admin.js additional branch coverage", () => {
     test("toast creates and auto-removes notification", async () => {
         setupModal();
         jest.useFakeTimers();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.AdminToast("Test message", "success");
@@ -277,7 +277,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("toast with default type is info", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.AdminToast("Info message");
@@ -287,7 +287,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn click with empty ids array", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.showConfirmDelete({
@@ -311,7 +311,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn with no requestSubmit falls to .submit()", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.showConfirmDelete({
@@ -338,7 +338,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn with ids as array type", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.showConfirmDelete({
@@ -362,7 +362,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn with single non-array non-string id", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         window.showConfirmDelete({
@@ -386,7 +386,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("delete btn with non-numeric unparseable ids string", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "error").mockImplementation(() => {});
         await import("../admin.js");
 
@@ -411,7 +411,7 @@ describe("admin.js additional branch coverage", () => {
 
     test("show.bs.modal without relatedTarget is handled", async () => {
         setupModal();
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         await import("../admin.js");
 
         const modal = document.getElementById("confirm-delete-modal");
@@ -422,7 +422,7 @@ describe("admin.js additional branch coverage", () => {
     test("onDomReady when document loading adds listener", async () => {
         // This test ensures the DOMContentLoaded path is exercised
         document.body.innerHTML = "";
-        jest.spyOn(console, "log").mockImplementation(() => {});
+        jest.spyOn(console, "debug").mockImplementation(() => {});
         // Module runs the IIFE and onDomReady during import
         await import("../admin.js");
         expect(window.AdminToast).toBeDefined();

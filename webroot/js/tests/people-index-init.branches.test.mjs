@@ -8,7 +8,7 @@ import { jest } from "@jest/globals";
 
 let jq, DataTableFn, dtInstance;
 
-function setupMocks(opts = {}) {
+function setupMocks(_opts = {}) {
     dtInstance = {
         destroy: jest.fn(),
         draw: jest.fn(),

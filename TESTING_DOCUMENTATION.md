@@ -1,8 +1,14 @@
-# Testing Documentation
+# Testing Documentation (v0.2.0-beta)
 
 ## Overview
 
-This document describes the unit tests created for the public frontend controllers and Hotwire/Turbo JavaScript functionality.
+Comprehensive test coverage for the RacerHistory application spanning PHP backend and JavaScript frontend.
+
+**Current Statistics:**
+- **PHPUnit**: 983 tests, 2799 assertions (4 skipped)
+- **Jest**: 789 tests across 110 suites
+- **JS Coverage**: 91% statements, 84% branches, 89% functions
+- **Quality**: PHPStan 0 errors, PHPCS clean, ESLint clean, Prettier clean
 
 ## PHP Controller Tests
 
@@ -192,12 +198,10 @@ Tests run automatically via GitHub Actions on:
 
 Both PHP and JavaScript test suites must pass before code can be merged.
 
-## Next Steps
-
-1. Add integration tests for Turbo Frame lazy loading
-2. Add tests for image gallery JavaScript
-3. Add tests for DataTables initialization
-4. Increase coverage for edge cases
+Coverage targets enforced via `codecov.yml`:
+- PHP: 98%
+- JS: 88%
+- Branches: 80%
 5. Add performance benchmarks
 
 ## References

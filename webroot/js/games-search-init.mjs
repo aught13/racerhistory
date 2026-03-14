@@ -398,7 +398,10 @@ function setupGamesSearchBuilderUi(dt, table) {
             const willOpen = slot.classList.contains("d-none");
             slot.classList.toggle("d-none", !willOpen);
             slot.classList.toggle("sb-open", willOpen);
-            filterBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+            filterBtn.setAttribute(
+                "aria-expanded",
+                willOpen ? "true" : "false",
+            );
         });
         filterBtn.dataset.sbToggleBound = "true";
     }

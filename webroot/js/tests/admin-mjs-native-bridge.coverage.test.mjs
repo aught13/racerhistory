@@ -10,7 +10,7 @@ beforeEach(() => {
     jest.spyOn(console, "debug").mockImplementation(() => {});
     jest.spyOn(console, "warn").mockImplementation(() => {});
     jest.spyOn(console, "error").mockImplementation(() => {});
-    jest.spyOn(console, "log").mockImplementation(() => {});
+    jest.spyOn(console, "debug").mockImplementation(() => {});
 });
 
 afterEach(() => {
