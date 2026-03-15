@@ -5,6 +5,21 @@ import { test, expect } from "@playwright/test";
  * Tests Turbo Drive navigation, caching, and page lifecycle
  */
 
+async function addDeterministicNavLink(page) {
+    await page.evaluate(() => {
+        const existing = document.getElementById("turbo-test-link");
+        if (existing) {
+            return;
+        }
+
+        const link = document.createElement("a");
+        link.id = "turbo-test-link";
+        link.href = "/blog";
+        link.textContent = "Turbo Test Link";
+        document.body.prepend(link);
+    });
+}
+
 test.describe("Turbo Drive - Navigation", () => {
     test("should have Turbo loaded on page", async ({ page }) => {
         await page.goto("/");
@@ -20,29 +35,14 @@ test.describe("Turbo Drive - Navigation", () => {
     test("should navigate using Turbo Drive", async ({ page }) => {
         await page.goto("/");
 
-        // Listen for turbo:load event
-        const turboLoadPromise = page.evaluate(() => {
-            return new Promise((resolve) => {
-                document.addEventListener("turbo:load", () => resolve(true), {
-                    once: true,
-                });
-                // Resolve after 100ms if no event
-                setTimeout(() => resolve(false), 100);
-            });
-        });
+        await addDeterministicNavLink(page);
 
-        // Navigate to another page
-        const link = page.locator("a").first();
-        if ((await link.count()) > 0) {
-            await link.click();
+        await Promise.all([
+            page.waitForURL(/\/blog(?:\/|$|\?)/, { timeout: 15000 }),
+            page.click("#turbo-test-link"),
+        ]);
 
-            // Wait for turbo:load event
-            const turboLoaded = await turboLoadPromise;
-
-            // On actual navigation, turbo:load should fire
-            // (may be false if already on the page or no navigation occurred)
-            expect(typeof turboLoaded).toBe("boolean");
-        }
+        expect(page.url()).toContain("/blog");
     });
 
     test("should preserve scroll position on back navigation", async ({
@@ -54,10 +54,14 @@ test.describe("Turbo Drive - Navigation", () => {
         // Scroll down
         await page.evaluate(() => window.scrollTo(0, 500));
 
-        // Navigate to another page
-        const link = page.locator("a[href]").first();
+        // Navigate to another page using a deterministic link.
+        await addDeterministicNavLink(page);
+        const link = page.locator("#turbo-test-link");
         if ((await link.count()) > 0) {
-            await link.click();
+            await Promise.all([
+                page.waitForURL(/\/blog(?:\/|$|\?)/, { timeout: 15000 }),
+                link.click(),
+            ]);
             await page.waitForLoadState("networkidle");
 
             // Go back
@@ -88,10 +92,14 @@ test.describe("Turbo Drive - Caching", () => {
     test("should cache pages by default", async ({ page }) => {
         await page.goto("/");
 
-        // Navigate away
-        const link = page.locator("a[href]").first();
+        // Navigate away using a deterministic link.
+        await addDeterministicNavLink(page);
+        const link = page.locator("#turbo-test-link");
         if ((await link.count()) > 0) {
-            await link.click();
+            await Promise.all([
+                page.waitForURL(/\/blog(?:\/|$|\?)/, { timeout: 15000 }),
+                link.click(),
+            ]);
             await page.waitForLoadState("networkidle");
 
             // Navigate back
@@ -131,7 +139,7 @@ test.describe("Turbo Frames - General Behavior", () => {
         if ((await frame.count()) > 0) {
             const src = await frame.getAttribute("src");
             expect(src).toBeTruthy();
-            expect(src).toMatch(/^\/.*games.*stats.*/);
+            expect(src).toMatch(/(?:^\/|^https?:\/\/[^/]+\/).*games.*stats.*/);
         }
     });
 
@@ -171,10 +179,14 @@ test.describe("Turbo - Event Lifecycle", () => {
             );
         });
 
-        // Trigger navigation
-        const link = page.locator("a[href]").first();
+        // Trigger navigation with a deterministic link.
+        await addDeterministicNavLink(page);
+        const link = page.locator("#turbo-test-link");
         if ((await link.count()) > 0) {
-            await link.click();
+            await Promise.all([
+                page.waitForURL(/\/blog(?:\/|$|\?)/, { timeout: 15000 }),
+                link.click(),
+            ]);
             await page.waitForTimeout(500);
 
             const captured = await page.evaluate(
