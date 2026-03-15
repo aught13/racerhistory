@@ -24,8 +24,8 @@ class E2eSeedData extends AbstractSeed
 
         // 1. Place (required by sites and opponents)
         $this->execute("
-            INSERT INTO places (id, place_name, place_state)
-            VALUES (1, 'Test City', 'TX')
+            INSERT INTO places (id, place_name, place_city, place_state)
+            VALUES (1, 'Test City', 'Test City', 'TX')
             ON DUPLICATE KEY UPDATE place_name = place_name
         ");
 
@@ -38,8 +38,8 @@ class E2eSeedData extends AbstractSeed
 
         // 3. Team (references sport)
         $this->execute("
-            INSERT INTO teams (id, sport_id, team_name, abbr, gender)
-            VALUES (1, 1, 'Test Racers', 'TRH', 'M')
+            INSERT INTO teams (id, sport_id, team_name, team_nickname, team_scorebug, abbr, gender)
+            VALUES (1, 1, 'Test Racers', 'Racers', 'RACER', 'TRH', 'M')
             ON DUPLICATE KEY UPDATE team_name = team_name
         ");
 
