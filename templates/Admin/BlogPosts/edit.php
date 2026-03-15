@@ -82,6 +82,31 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
                         'class' => 'form-check-input',
                         'div' => ['class' => 'form-check form-switch mb-3'],
                     ]) ?>
+                    <?= $this->Form->control('is_pinned', [
+                        'type' => 'checkbox',
+                        'label' => ['text' => 'Pin this post', 'class' => 'form-check-label'],
+                        'class' => 'form-check-input',
+                        'div' => ['class' => 'form-check form-switch mb-3'],
+                    ]) ?>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <?= $this->Form->control('pinned_rank', [
+                                'type' => 'number',
+                                'label' => ['text' => 'Pin Rank', 'class' => 'form-label'],
+                                'class' => 'form-control',
+                                'placeholder' => 'Higher ranks first',
+                                'min' => 0,
+                            ]) ?>
+                        </div>
+                        <div class="col-6">
+                            <?= $this->Form->control('pinned_until', [
+                                'type' => 'datetime',
+                                'label' => ['text' => 'Pin Until', 'class' => 'form-label'],
+                                'class' => 'form-control',
+                                'empty' => true,
+                            ]) ?>
+                        </div>
+                    </div>
                     <div class="form-text mb-3">Published posts are visible on the public blog. Uncheck to keep the post a draft.</div>
                     <?php if (!empty($post->slug) && ($post->is_published ?? false)) :
                         $viewUrl = '/blog/' . rawurlencode((string)$post->slug);

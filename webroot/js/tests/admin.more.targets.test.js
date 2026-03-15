@@ -6,6 +6,7 @@ beforeAll(() => {
 });
 /** @jest-environment jsdom */
 
+import { jest } from "@jest/globals";
 describe("admin.js additional targeted branches", () => {
     beforeEach(() => {
         jest.resetModules();
@@ -32,7 +33,7 @@ describe("admin.js additional targeted branches", () => {
         }
     });
 
-    test("JSON numeric string ids parsed as number and added", () => {
+    test("JSON numeric string ids parsed as number and added", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -40,7 +41,7 @@ describe("admin.js additional targeted branches", () => {
             <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // JSON.parse('7') -> 7, should result in ids[] value '7'
         showConfirmDelete({ deleteUrl: "/num", ids: "7", idsName: "ids[]" });
         document.getElementById("confirm-delete-modal-delete-btn").click();
@@ -55,7 +56,7 @@ describe("admin.js additional targeted branches", () => {
         expect(inputs[0].value).toBe("7");
     });
 
-    test("source form without action uses context.deleteUrl and is submitted", () => {
+    test("source form without action uses context.deleteUrl and is submitted", async () => {
         document.body.innerHTML = `
           <div>
             <form id="srcNoAction"></form>
@@ -65,7 +66,7 @@ describe("admin.js additional targeted branches", () => {
             </div>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         showConfirmDelete({
             ids: "[1]",
             idsName: "ids[]",
@@ -85,7 +86,7 @@ describe("admin.js additional targeted branches", () => {
         expect(src.action).toContain("/useme");
     });
 
-    test("existing injected-delete inputs are removed before new ones are added", () => {
+    test("existing injected-delete inputs are removed before new ones are added", async () => {
         document.body.innerHTML = `
           <div>
             <form id="srcWithInjected" action="/a">
@@ -97,7 +98,7 @@ describe("admin.js additional targeted branches", () => {
             </div>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         showConfirmDelete({
             ids: "[9]",
             idsName: "ids[]",
@@ -124,7 +125,7 @@ describe("admin.js additional targeted branches", () => {
         expect(injected).not.toContain("x");
     });
 
-    test("non-numeric, non-json ids fallback results in no ids injected", () => {
+    test("non-numeric, non-json ids fallback results in no ids injected", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -132,7 +133,7 @@ describe("admin.js additional targeted branches", () => {
             <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // If this test ever overrides any global/prototype, use try/finally for restoration (none here).
         showConfirmDelete({
             deleteUrl: "/none",

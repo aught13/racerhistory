@@ -175,46 +175,10 @@ class GameService
      */
     public function getFormLists(?int $placeId = null): array
     {
-        // Opponents list
-        /** @var \App\Model\Table\OpponentsTable $opponentsTable */
-        $opponentsTable = $this->fetchTable('Opponents');
-        $opponents = $opponentsTable->find('list')
-            ->orderBy(['Opponents.opponent_name' => 'ASC'])
-            ->toArray();
-
-        // Sites list (filtered by place if provided)
-        /** @var \App\Model\Table\SitesTable $sitesTable */
-        $sitesTable = $this->fetchTable('Sites');
-        $sitesQuery = $sitesTable->find('list')->orderBy(['Sites.site_name' => 'ASC']);
-
-        if ($placeId) {
-            $sitesQuery->where(['Sites.place_id' => $placeId]);
-        }
-
-        $sites = $sitesQuery->toArray();
-
-        // Places list (formatted as "Name, State")
-        /** @var \App\Model\Table\PlacesTable $placesTable */
-        $placesTable = $this->fetchTable('Places');
-        $placesQuery = $placesTable->find()
-            ->orderBy(['Places.place_name' => 'ASC'])
-            ->all();
-
-        $places = [];
-        foreach ($placesQuery as $place) {
-            $label = $place->place_name;
-            if (!empty($place->place_state)) {
-                $label .= ', ' . $place->place_state;
-            }
-            $places[$place->id] = $label;
-        }
-
-        // Game types list
-        /** @var \App\Model\Table\GameTypesTable $gameTypesTable */
-        $gameTypesTable = $this->fetchTable('GameTypes');
-        $gameTypes = $gameTypesTable->find('list')
-            ->orderBy(['GameTypes.game_type_name' => 'ASC'])
-            ->toArray();
+        $opponents = (new OpponentService())->getOpponentsList();
+        $sites = (new SiteService())->getSitesList($placeId);
+        $places = (new PlaceService())->getPlacesList();
+        $gameTypes = (new GameTypeService())->getGameTypesList();
 
         return compact('opponents', 'sites', 'places', 'gameTypes');
     }
@@ -299,24 +263,7 @@ class GameService
      */
     public function getSitesByPlace(int $placeId): array
     {
-        $sites = [];
-        if ($placeId) {
-            /** @var \App\Model\Table\SitesTable $sitesTable */
-            $sitesTable = $this->fetchTable('Sites');
-            $sitesQuery = $sitesTable->find()
-                ->where(['Sites.place_id' => $placeId])
-                ->orderBy(['Sites.site_name' => 'ASC'])
-                ->all();
-
-            foreach ($sitesQuery as $site) {
-                $sites[] = [
-                    'id' => $site->id,
-                    'name' => $site->site_name,
-                ];
-            }
-        }
-
-        return $sites;
+        return (new SiteService())->getSitesByPlace($placeId);
     }
 
     /**
@@ -332,55 +279,47 @@ class GameService
     {
         // New place
         if (!empty($data['new_place']['place_name'])) {
-            /** @var \App\Model\Table\PlacesTable $places */
-            $places = $this->fetchTable('Places');
-            $place = $places->newEntity([
+            $place = (new PlaceService())->createPlace([
                 'place_name' => $data['new_place']['place_name'] ?? null,
                 'place_city' => $data['new_place']['place_city'] ?? null,
                 'place_state' => $data['new_place']['place_state'] ?? null,
             ]);
-            if ($places->save($place)) {
+            if ($place) {
                 $data['place_id'] = $place->get('id');
             }
         }
 
         // New site (requires place_id)
         if (!empty($data['new_site']['site_name'])) {
-            /** @var \App\Model\Table\SitesTable $sites */
-            $sites = $this->fetchTable('Sites');
-            $site = $sites->newEntity([
+            $site = (new SiteService())->createSite([
                 'site_name' => $data['new_site']['site_name'] ?? null,
                 'place_id' => $data['place_id'] ?? null,
             ]);
-            if ($sites->save($site)) {
+            if ($site) {
                 $data['site_id'] = $site->get('id');
             }
         }
 
         // New opponent
         if (!empty($data['new_opponent']['opponent_name'])) {
-            /** @var \App\Model\Table\OpponentsTable $opponents */
-            $opponents = $this->fetchTable('Opponents');
-            $opp = $opponents->newEntity([
+            $opp = (new OpponentService())->createOpponent([
                 'opponent_name' => $data['new_opponent']['opponent_name'] ?? null,
                 'place_id' => $data['place_id'] ?? null,
             ]);
-            if ($opponents->save($opp)) {
+            if ($opp) {
                 $data['opponent_id'] = $opp->get('id');
             }
         }
 
         // New game type
         if (!empty($data['new_game_type']['game_type_name'])) {
-            /** @var \App\Model\Table\GameTypesTable $gameTypes */
-            $gameTypes = $this->fetchTable('GameTypes');
-            $gt = $gameTypes->newEntity([
+            $gt = (new GameTypeService())->createGameType([
                 'game_type_name' => $data['new_game_type']['game_type_name'] ?? null,
                 'post' => $data['new_game_type']['post'] ?? 0,
                 'conf' => $data['new_game_type']['conf'] ?? 0,
-                'ind' => $data['new_game_type']['ind'] ?? null,
+                'abr' => $data['new_game_type']['abr'] ?? null,
             ]);
-            if ($gameTypes->save($gt)) {
+            if ($gt) {
                 $data['game_type_id'] = $gt->get('id');
             }
         }
@@ -413,6 +352,85 @@ class GameService
         }
 
         return $data;
+    }
+
+    /**
+     * Return a display result flag for a game: 'W', 'L', or 'T' when determinable.
+     * Prefers explicit score totals, falls back to stored flags (`w`,`l`).
+     *
+     * @param \App\Model\Entity\Game $game Game entity
+     * @return string|null
+     */
+    public function getResultFlag(\App\Model\Entity\Game $game): ?string
+    {
+        if ($game->pts_mur !== null && $game->pts_opp !== null) {
+            if ($game->pts_mur > $game->pts_opp) {
+                return 'W';
+            }
+            if ($game->pts_mur < $game->pts_opp) {
+                return 'L';
+            }
+
+            return 'T';
+        }
+
+        if (!empty($game->w) && (int)$game->w === 1 && (empty($game->l) || (int)$game->l === 0)) {
+            return 'W';
+        }
+        if (!empty($game->l) && (int)$game->l === 1 && (empty($game->w) || (int)$game->w === 0)) {
+            return 'L';
+        }
+        if (!empty($game->w) && (int)$game->w === 1 && !empty($game->l) && (int)$game->l === 1) {
+            return 'T';
+        }
+
+        return null;
+    }
+
+    /**
+     * Get a human-friendly place name for a game (falls back to place_name/place_city).
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return string|null
+     */
+    public function getPlaceName(\App\Model\Entity\Game $game): ?string
+    {
+        if (empty($game->place)) {
+            return null;
+        }
+
+        // Backwards-compatible virtual field place_city maps to place_name
+        return $game->place->place_city ?? $game->place->place_name ?? null;
+    }
+
+    /**
+     * Get the place state for a game.
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return string|null
+     */
+    public function getPlaceState(\App\Model\Entity\Game $game): ?string
+    {
+        if (empty($game->place)) {
+            return null;
+        }
+
+        return $game->place->place_state ?? null;
+    }
+
+    /**
+     * Get the site name for a game if available.
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return string|null
+     */
+    public function getSiteName(\App\Model\Entity\Game $game): ?string
+    {
+        if (empty($game->site)) {
+            return null;
+        }
+
+        return $game->site->site_name ?? null;
     }
 
     /**
@@ -565,22 +583,29 @@ class GameService
         $data = [];
         foreach ($games as $game) {
             /** @var \App\Model\Entity\Game $game */
-            $teamName = $game->team_season->team->team_name ?? '';
-            $seasonRange = isset($game->team_season->season)
-                ? $game->team_season->season->start . '-' . $game->team_season->season->end
-                : '';
+            $teamName = '';
+            $seasonRange = '';
+            if (!empty($game->team_season) && !empty($game->team_season->team)) {
+                $teamName = $game->team_season->team->team_name ?? '';
+            }
+            if (!empty($game->team_season) && !empty($game->team_season->season)) {
+                $seasonRange = $game->team_season->season->start . '-' . $game->team_season->season->end;
+            }
             $teamDisplay = $teamName . ($seasonRange ? ' (' . $seasonRange . ')' : '');
             if (!empty($game->mur_rk)) {
                 $teamDisplay .= '<div><span class="badge bg-secondary">#' . h($game->mur_rk) . '</span></div>';
             }
 
-            $oppName = $game->opponent->opponent_name ?? '-';
+            $oppName = '-';
+            if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
+                $oppName = $game->opponent->opponent_name;
+            }
             if (!empty($game->opp_rk)) {
                 $oppName .= ' (#' . $game->opp_rk . ')';
             }
 
             $placeDisplay = '-';
-            if (isset($game->place)) {
+            if (!empty($game->place)) {
                 $placeDisplay = ($game->place->place_name ?? '');
                 if (!empty($game->place->place_state)) {
                     $placeDisplay .= ', ' . $game->place->place_state;
@@ -605,18 +630,18 @@ class GameService
                 'team_season' => $teamDisplay,
                 'hrn' => $hrnMap[$game->hrn] ?? '-',
                 'opponent' => $oppName,
-                'game_type' => $game->game_type->game_type_name ?? '-',
+                'game_type' => !empty($game->game_type) ? ($game->game_type->game_type_name ?? '-') : '-',
                 'place' => $placeDisplay,
                 'score' => '<a href="/admin/games/view/' . $game->id . '" class="text-decoration-none">' .
                     h(($game->pts_mur ?? '') . ' - ' . ($game->pts_opp ?? '')) . '</a>',
-                'place_state' => $game->place->place_state ?? '',
+                'place_state' => !empty($game->place) ? ($game->place->place_state ?? '') : '',
                 'mur_pts' => $game->pts_mur ?? '',
                 'opp_pts' => $game->pts_opp ?? '',
                 'mur_rk' => $game->mur_rk ?? '',
                 'opp_rk' => $game->opp_rk ?? '',
                 'result' => $result,
-                'conf' => $game->game_type->conf ?? '',
-                'post' => $game->game_type->post ?? '',
+                'conf' => !empty($game->game_type) ? ($game->game_type->conf ?? '') : '',
+                'post' => !empty($game->game_type) ? ($game->game_type->post ?? '') : '',
             ];
         }
 
@@ -767,33 +792,14 @@ class GameService
     }
 
     /**
-     * Get team season list (formatted) and sports list for form helpers
+     * Get team season list (formatted) and sports list for form helpers.
      *
-     * @return array{teamSeasonList:array,sports:\Cake\Datasource\ResultSetInterface}
+     * @return array{teamSeasonList:array<int,string>,sports:array<int,string>}
      */
     public function getTeamSeasonAndSportsLists(): array
     {
-        /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
-        $teamSeasonsTable = $this->fetchTable('TeamSeasons');
-        $teamSeasons = $teamSeasonsTable->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
-            ->orderByDesc('Seasons.start')
-            ->all();
-        $teamSeasonList = [];
-        foreach ($teamSeasons as $ts) {
-            /** @var \App\Model\Entity\TeamSeason $ts */
-            $sportName = $ts->team->sport->sport_name ?? 'Unknown';
-            $label = sprintf(
-                '%s (%s) — %s-%s',
-                ($ts->team->team_name ?? 'Team'),
-                $sportName,
-                ($ts->season->start ?? ''),
-                ($ts->season->end ?? '')
-            );
-            $teamSeasonList[$ts->id] = $label;
-        }
-
-        $sports = $this->fetchTable('Sports')->find('list')->all();
+        $teamSeasonList = (new TeamSeasonService())->getTeamSeasonsDetailedList();
+        $sports = (new SportService())->getSportsList();
 
         return compact('teamSeasonList', 'sports');
     }
@@ -880,6 +886,48 @@ class GameService
     }
 
     /**
+     * Resolve a display label for a game id used by context tagging.
+     */
+    public function getGameTagDisplayLabel(int $gameId): string
+    {
+        if ($gameId <= 0) {
+            return 'game';
+        }
+
+        /** @var \App\Model\Table\GamesTable $games */
+        $games = $this->fetchTable('Games');
+        $game = $games->find()
+            ->contain(['Opponents'])
+            ->where(['Games.id' => $gameId])
+            ->first();
+
+        if (!$game) {
+            return 'game-' . $gameId;
+        }
+
+        $opponentName = '';
+        if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
+            $opponentName = (string)$game->opponent->opponent_name;
+        }
+
+        return $this->formatGameTagLabel($game->game_date ?? null, $opponentName, (int)($game->hrn ?? 0), $gameId);
+    }
+
+    /**
+     * Format a tag label from known game fields without reloading the entity.
+     *
+     * @param mixed $gameDate Date value as stored on the Game entity.
+     */
+    public function formatGameTagLabelFromRow(
+        mixed $gameDate,
+        string $opponentName,
+        int $hrn,
+        int $gameId,
+    ): string {
+        return $this->formatGameTagLabel($gameDate, $opponentName, $hrn, $gameId);
+    }
+
+    /**
      * Format a stable, human-readable label for game selects.
      */
     private function formatGameSelectLabel(\App\Model\Entity\Game $game): string
@@ -916,5 +964,64 @@ class GameService
         $label .= $score;
 
         return $label;
+    }
+
+    /**
+     * Format a recognizable label for a game tag.
+     *
+     * @param mixed $gameDate Date value as stored on the Game entity.
+     */
+    private function formatGameTagLabel(mixed $gameDate, string $opponentName, int $hrn, int $gameId): string
+    {
+        $date = '';
+        if (!empty($gameDate)) {
+            if ($gameDate instanceof \Cake\I18n\Date) {
+                $date = $gameDate->i18nFormat('yyyy-MM-dd');
+            } elseif ($gameDate instanceof \DateTimeInterface) {
+                $date = $gameDate->format('Y-m-d');
+            } else {
+                $date = (string)$gameDate;
+            }
+        }
+
+        $opp = trim($opponentName);
+        if ($opp === '') {
+            return $date !== '' ? $date . ' — Game #' . $gameId : 'Game #' . $gameId;
+        }
+
+        $separator = match ((int)$hrn) {
+            2 => ' @ ',
+            default => ' vs ',
+        };
+
+        if ($date === '') {
+            return 'Game' . $separator . $opp;
+        }
+
+        return $date . $separator . $opp;
+    }
+
+    /**
+     * Get games for a team season with optional ordering.
+     *
+     * @param int|null $teamSeasonId
+     * @param string $direction ASC or DESC
+     * @return array<int,\App\Model\Entity\Game>
+     */
+    public function getGamesByTeamSeason(?int $teamSeasonId = null, string $direction = 'DESC'): array
+    {
+        /** @var \App\Model\Table\GamesTable $gamesTable */
+        $gamesTable = $this->fetchTable('Games');
+
+        $direction = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
+        $query = $gamesTable->find()
+            ->contain(['Opponents', 'Places', 'Sites', 'GameTypes'])
+            ->orderBy(['Games.game_date' => $direction]);
+
+        if ($teamSeasonId !== null) {
+            $query->where(['Games.team_season_id' => $teamSeasonId]);
+        }
+
+        return $query->all()->toArray();
     }
 }

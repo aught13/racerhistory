@@ -83,7 +83,14 @@ CREATE TABLE IF NOT EXISTS games (
   pts_opp VARCHAR(3) NULL,
   mur_rk INTEGER NULL,
   opp_rk INTEGER NULL,
-  periods VARCHAR(2) NULL
+  periods VARCHAR(2) NULL,
+  ot VARCHAR(2) NULL,
+  attendance VARCHAR(7) NULL,
+  game_preview TEXT NULL,
+  game_recap TEXT NULL,
+  game_notes TEXT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Team season roster table
@@ -202,13 +209,14 @@ CREATE TABLE IF NOT EXISTS game_types (
   game_type_name VARCHAR(100) NOT NULL,
   post BOOLEAN NOT NULL DEFAULT 0,
   conf BOOLEAN NOT NULL DEFAULT 0,
-  ind VARCHAR(10) NULL
+  abr VARCHAR(6) NULL
 );
 
 -- Opponents table
 CREATE TABLE IF NOT EXISTS opponents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   opponent_name VARCHAR(255) NOT NULL,
+  opponent_short VARCHAR(50) NULL,
   place_id INTEGER NOT NULL,
   opponent_current VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

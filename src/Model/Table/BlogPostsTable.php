@@ -47,7 +47,10 @@ class BlogPostsTable extends Table
             ->scalar('status')->maxLength('status', 20)->notEmptyString('status')
             ->boolean('is_published')->notEmptyString('is_published')
             ->dateTime('published_at')->allowEmptyDateTime('published_at')
-            ->integer('hero_image_id')->allowEmptyString('hero_image_id');
+            ->integer('hero_image_id')->allowEmptyString('hero_image_id')
+            ->boolean('is_pinned')->allowEmptyString('is_pinned')
+            ->integer('pinned_rank')->allowEmptyString('pinned_rank')
+            ->dateTime('pinned_until')->allowEmptyDateTime('pinned_until');
 
         return $validator;
     }

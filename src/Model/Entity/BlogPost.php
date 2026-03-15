@@ -17,6 +17,9 @@ use Cake\ORM\Entity;
  * @property bool $is_published
  * @property \DateTimeInterface|null $published_at
  * @property int|null $hero_image_id
+ * @property bool|null $is_pinned
+ * @property int|null $pinned_rank
+ * @property \DateTimeInterface|null $pinned_until
  * @property \DateTimeInterface|null $created
  * @property \DateTimeInterface|null $modified
  * @property \Cake\Collection\CollectionInterface|array<\App\Model\Entity\BlogTag> $blog_tags
@@ -38,6 +41,9 @@ class BlogPost extends Entity
         'is_published' => true,
         'published_at' => true,
         'hero_image_id' => true,
+        'is_pinned' => true,
+        'pinned_rank' => true,
+        'pinned_until' => true,
         'created' => true,
         'modified' => true,
         'blog_tags' => true,

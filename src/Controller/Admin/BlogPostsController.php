@@ -114,7 +114,7 @@ class BlogPostsController extends AppController
 
         $games = (new GameService())->getRecentGamesForSelect(200);
 
-        $siteService = new \App\Service\PlaceService();
+        $siteService = new \App\Service\SiteService();
         $sites = $siteService->getSitesForSelect();
 
         $opponentService = new \App\Service\OpponentService();

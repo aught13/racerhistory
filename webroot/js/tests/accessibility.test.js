@@ -7,7 +7,7 @@ beforeAll(() => {
 /** @jest-environment jsdom */
 // Accessibility audit tests for roster management element using axe-core
 
-const axeCore = require("axe-core");
+import axeCore from "axe-core";
 
 describe("Roster Management Accessibility Audit", () => {
     beforeEach(() => {

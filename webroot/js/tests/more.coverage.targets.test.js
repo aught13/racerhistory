@@ -1,16 +1,18 @@
+import { jest } from "@jest/globals";
+
 describe("Additional coverage targets", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
         jest.resetModules();
     });
 
-    test("games_sport_dynamic renderEav creates cards for grouped fields", () => {
+    test("games_sport_dynamic renderEav creates cards for grouped fields", async () => {
         // prepare DOM elements used by module
         document.body.innerHTML =
             '<select id="team-season-select" data-sport-url="/test"></select><div id="sport-specific-section"></div>';
-        const gs = require("../../js/games_sport_dynamic");
+        const mod = await import("../games_sport_dynamic");
         const renderEav =
-            gs.renderEav || (gs.__internals && gs.__internals.renderEav);
+            mod.renderEav || (mod.__internals && mod.__internals.renderEav);
 
         const template = [
             {
@@ -44,32 +46,38 @@ describe("Additional coverage targets", () => {
     });
 
     test("sport-aware-game-form maps fetched values into legacy inputs", async () => {
-        // Prepare DOM for sport-aware form
+        // Prepare DOM for sport-aware form with legacy period inputs
         document.body.innerHTML = `
-      <select id="team-season-select"></select>
+      <select id="team-season-select" data-sport-url="/api/sport-meta"></select>
       <div id="sport-specific-section"></div>
+      <div id="sport-indicator"><div class="alert"></div></div>
+      <span id="current-sport"></span>
+      <span id="sport-loading"></span>
       <input type="hidden" id="game-id-hidden" value="" />
-      <form id="game-form"><input name="legacy_goals" /></form>
+      <form id="game-form"><input name="period_1_mur" /></form>
     `;
         // require sport-aware module and simulate fetch
-        const saf = require("../../js/sport-aware-game-form");
-        // stub fetch used by module's updateSportFields method
+        const saf = await import("../sport-aware-game-form");
+        const SportAwareGameForm = saf.default || saf;
+        // stub fetch: response uses period EAV keys that map to legacy inputs
         global.fetch = jest.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
-                sportFields: [{ name: "goals", legacyInput: "legacy_goals" }],
-                values: { goals: 3 },
+                success: true,
+                sportName: "Hockey",
+                eavTemplate: [],
+                values: { period_1_team: "3" },
             }),
         });
 
         // call update method if available
-        if (saf && saf.SportAwareGameForm) {
-            const inst = new saf.SportAwareGameForm({
+        if (saf && SportAwareGameForm) {
+            const inst = new SportAwareGameForm({
                 selectId: "team-season-select",
             });
             await inst.updateSportFields("1");
-            // legacy input should receive mapped value
-            const legacy = document.querySelector('input[name="legacy_goals"]');
+            // legacy input should receive mapped value via periodKeyMap
+            const legacy = document.querySelector('input[name="period_1_mur"]');
             expect(legacy).toBeTruthy();
             expect(legacy.value).toBe("3");
         } else {
@@ -78,11 +86,11 @@ describe("Additional coverage targets", () => {
         }
     });
 
-    test("admin.renderAssociated handles associated objects with label/name", () => {
+    test("renderAssociated handles associated objects with label/name", async () => {
         document.body.innerHTML =
             '<div id="confirm-delete-modal"><ul id="confirm-delete-modal-assoc"></ul></div>';
-        const admin = require("../../js/admin");
-        const internals = admin.__internals || {};
+        const { __internals } = await import("../admin");
+        const internals = __internals || {};
 
         const associated = [{ label: "One" }, { name: "Two" }, { foo: "Bar" }];
         expect(() =>

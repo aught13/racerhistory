@@ -10,6 +10,7 @@ class SiteServiceTest extends TestCase
 {
     protected array $fixtures = [
         'app.Sites',
+        'app.Places',
     ];
 
     private SiteService $service;

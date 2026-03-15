@@ -1,5 +1,9 @@
+import { jest } from "@jest/globals";
+
+let admin;
+
 describe("admin.js remaining branches", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.resetModules();
         document.body.innerHTML = `
             <div id="confirm-delete-modal">
@@ -11,7 +15,7 @@ describe("admin.js remaining branches", () => {
         `;
         // require after DOM setup so event handlers attach
 
-        this.admin = require("../admin");
+        admin = await import("../admin");
     });
 
     afterEach(() => {
@@ -19,8 +23,7 @@ describe("admin.js remaining branches", () => {
         document.body.innerHTML = "";
     });
 
-    test("injects extra fields into source form and calls requestSubmit when available", () => {
-        const admin = this.admin;
+    test("injects extra fields into source form and calls requestSubmit when available", async () => {
         const source = document.getElementById("sourceForm");
         // add existing injected-delete to be removed
         const old = document.createElement("input");
@@ -52,8 +55,7 @@ describe("admin.js remaining branches", () => {
         expect(injected.some((i) => i.name === "ids[]")).toBe(true);
     });
 
-    test("falls back to temp form when source.getAttribute throws (logs error)", () => {
-        const admin = this.admin;
+    test("falls back to temp form when source.getAttribute throws (logs error)", async () => {
         const spyErr = jest
             .spyOn(console, "error")
             .mockImplementation(() => {});
@@ -85,8 +87,7 @@ describe("admin.js remaining branches", () => {
         spyErr.mockRestore();
     });
 
-    test("handles errors preparing source form (querySelectorAll throws)", () => {
-        const admin = this.admin;
+    test("handles errors preparing source form (querySelectorAll throws)", async () => {
         const spyErr = jest
             .spyOn(console, "error")
             .mockImplementation(() => {});

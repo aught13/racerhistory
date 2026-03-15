@@ -1,4 +1,7 @@
-const CropSelector = require("../crop-selector.js");
+/** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
+let CropSelector;
 
 const createFakeContext = () => {
     const ctx = {
@@ -54,9 +57,18 @@ const setupCropSelector = () => {
 
     const image = document.createElement("img");
     image.id = "crop-image";
-    image.complete = true;
-    image.naturalWidth = 400;
-    image.naturalHeight = 300;
+    Object.defineProperty(image, "complete", {
+        value: true,
+        configurable: true,
+    });
+    Object.defineProperty(image, "naturalWidth", {
+        value: 400,
+        configurable: true,
+    });
+    Object.defineProperty(image, "naturalHeight", {
+        value: 300,
+        configurable: true,
+    });
     document.body.appendChild(image);
 
     const ctx = createFakeContext();
@@ -76,8 +88,11 @@ const setupCropSelector = () => {
 };
 
 describe("CropSelector interactions", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.clearAllMocks();
+        jest.resetModules();
+        const mod = await import("../crop-selector.js");
+        CropSelector = mod.default || mod;
     });
 
     test("constructor throws when DOM nodes are missing", () => {
@@ -146,12 +161,18 @@ describe("CropSelector interactions", () => {
     test("render exits early when image is not ready", () => {
         const { selector, ctx, image } = setupCropSelector();
         ctx.drawImage.mockClear();
-        image.complete = false;
+        Object.defineProperty(image, "complete", {
+            value: false,
+            configurable: true,
+        });
 
         selector.render();
 
         expect(ctx.drawImage).not.toHaveBeenCalled();
-        image.complete = true;
+        Object.defineProperty(image, "complete", {
+            value: true,
+            configurable: true,
+        });
     });
 
     test("geometry helpers clamp and shrink to ratio", () => {

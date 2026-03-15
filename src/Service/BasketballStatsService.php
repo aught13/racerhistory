@@ -228,6 +228,84 @@ class BasketballStatsService
     }
 
     /**
+     * Determine which season stats columns have data and should be displayed.
+     *
+     * @param \Cake\Collection\CollectionInterface|array|null $playerStats Player stat rows
+     * @param object|null $teamStats Team totals
+     * @param object|null $opponentStats Opponent totals
+     * @return array<string, string>
+     */
+    public function getSeasonStatColumns(
+        \Cake\Collection\CollectionInterface|array|null $playerStats,
+        ?object $teamStats,
+        ?object $opponentStats,
+    ): array {
+        $allColumns = [
+            'GP' => 'GP',
+            'GS' => 'GS',
+            'MIN' => 'MIN',
+            'FGM' => 'FGM',
+            'FGA' => 'FGA',
+            'TPM' => '3PM',
+            'TPA' => '3PA',
+            'FTM' => 'FTM',
+            'FTA' => 'FTA',
+            'ORB' => 'ORB',
+            'DRB' => 'DRB',
+            'RB' => 'RB',
+            'AST' => 'AST',
+            'STL' => 'STL',
+            'BS' => 'BS',
+            'TRN' => 'TRN',
+            'PF' => 'PF',
+            'PTS' => 'PTS',
+        ];
+
+        $visible = [];
+        foreach ($allColumns as $key => $label) {
+            if ($this->columnHasData($key, $playerStats, $teamStats, $opponentStats)) {
+                $visible[$key] = $label;
+            }
+        }
+
+        return $visible;
+    }
+
+    /**
+     * Determine whether a column has visible data.
+     *
+     * @param string $key Column key
+     * @param \Cake\Collection\CollectionInterface|array|null $playerStats Player stats
+     * @param object|null $teamStats Team totals
+     * @param object|null $opponentStats Opponent totals
+     * @return bool
+     */
+    protected function columnHasData(
+        string $key,
+        \Cake\Collection\CollectionInterface|array|null $playerStats,
+        ?object $teamStats,
+        ?object $opponentStats,
+    ): bool {
+        if ($playerStats) {
+            foreach ($playerStats as $stat) {
+                if (!empty($stat->$key)) {
+                    return true;
+                }
+            }
+        }
+
+        if ($teamStats && !empty($teamStats->$key)) {
+            return true;
+        }
+
+        if ($opponentStats && !empty($opponentStats->$key)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Initialize basketball stats array with zero values
      *
      * @param string $type Stat type ('player', 'team', 'opponent')
@@ -238,10 +316,25 @@ class BasketballStatsService
         // Standard player stat fields
         if ($type === 'player') {
             return [
-                'GP' => 0, 'GS' => 0, 'MIN' => 0, 'FGM' => 0, 'FGA' => 0,
-                'TPM' => 0, 'TPA' => 0, 'FTM' => 0, 'FTA' => 0,
-                'ORB' => 0, 'DRB' => 0, 'RB' => 0, 'AST' => 0, 'STL' => 0,
-                'BS' => 0, 'TRN' => 0, 'PF' => 0, 'TF' => 0, 'PTS' => 0,
+                'GP' => 0,
+                'GS' => 0,
+                'MIN' => 0,
+                'FGM' => 0,
+                'FGA' => 0,
+                'TPM' => 0,
+                'TPA' => 0,
+                'FTM' => 0,
+                'FTA' => 0,
+                'ORB' => 0,
+                'DRB' => 0,
+                'RB' => 0,
+                'AST' => 0,
+                'STL' => 0,
+                'BS' => 0,
+                'TRN' => 0,
+                'PF' => 0,
+                'TF' => 0,
+                'PTS' => 0,
             ];
         }
 
@@ -475,6 +568,630 @@ class BasketballStatsService
         $okOpponent = (bool)$opponentSeasonTable->save($opponentSeasonStat);
 
         return $okTeam && $okOpponent;
+    }
+
+    /**
+     * Search player season stats with filters.
+     *
+     * @param array $filters Optional filters: season_id, team_id, sort, direction, limit
+     * @return array<int, array{stat: object, person: object, teamSeason: object}>
+     */
+    public function searchPlayerSeasonStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $table */
+        $table = $this->fetchTable('StatBasketSeasonPerson');
+
+        $query = $table->find()
+            ->contain([
+                'TeamSeasonRosters' => [
+                    'Persons',
+                    'TeamSeasons' => ['Teams', 'Seasons'],
+                ],
+            ]);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['TeamSeasons.season_id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketSeasonPerson.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $roster = $stat->team_season_roster ?? null;
+            if (!$roster) {
+                continue;
+            }
+            $results[] = [
+                'stat' => $stat,
+                'person' => $roster->person ?? null,
+                'teamSeason' => $roster->team_season ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Search team season stats with filters.
+     *
+     * @param array $filters Optional filters: season_id, team_id, sort, direction, limit
+     * @return array<int, array{stat: object, teamSeason: object}>
+     */
+    public function searchTeamSeasonStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketSeasonTeamTable $table */
+        $table = $this->fetchTable('StatBasketSeasonTeam');
+
+        $query = $table->find()
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']]);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['TeamSeasons.season_id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketSeasonTeam.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $results[] = [
+                'stat' => $stat,
+                'teamSeason' => $stat->team_season ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Search team season opponent stats with filters.
+     *
+     * @param array $filters Optional filters: season_id, team_id, sort, direction, limit
+     * @return array<int, array{stat: object, teamSeason: object}>
+     */
+    public function searchTeamSeasonOpponentStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketSeasonOpponentTable $table */
+        $table = $this->fetchTable('StatBasketSeasonOpponent');
+
+        $query = $table->find()
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']]);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['TeamSeasons.season_id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketSeasonOpponent.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $results[] = [
+                'stat' => $stat,
+                'teamSeason' => $stat->team_season ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Search player game stats with filters.
+     *
+     * @param array $filters Optional filters: season_id, team_id, game_id, sort, direction, limit
+     * @return array<int, array{stat: object, person: object, game: object}>
+     */
+    public function searchPlayerGameStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketGamePersonTable $table */
+        $table = $this->fetchTable('StatBasketGamePerson');
+
+        $query = $table->find()
+            ->contain([
+                'TeamSeasonRosters' => [
+                    'Persons',
+                    'TeamSeasons' => ['Teams', 'Seasons'],
+                ],
+                'Games' => ['Opponents'],
+            ])
+            ->where(['StatBasketGamePerson.period' => 'Z']);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['TeamSeasons.season_id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
+        }
+        if (!empty($filters['game_id'])) {
+            $query->where(['StatBasketGamePerson.game_id' => (int)$filters['game_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketGamePerson.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $roster = $stat->team_season_roster ?? null;
+            $results[] = [
+                'stat' => $stat,
+                'person' => $roster->person ?? null,
+                'game' => $stat->game ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Search opponent player game stats with filters.
+     *
+     * @param array $filters Optional filters: season_id, team_id, game_id, sort, direction, limit
+     * @return array<int, array{stat: object, game: object}>
+     */
+    public function searchOpponentPlayerGameStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketGameOpponentTable $table */
+        $table = $this->fetchTable('StatBasketGameOpponent');
+
+        $query = $table->find()
+            ->contain(['Games' => ['Opponents', 'TeamSeason' => ['Teams', 'Seasons']]]);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['Seasons.id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['Teams.id' => (int)$filters['team_id']]);
+        }
+        if (!empty($filters['game_id'])) {
+            $query->where(['StatBasketGameOpponent.game_id' => (int)$filters['game_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketGameOpponent.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $results[] = [
+                'stat' => $stat,
+                'game' => $stat->game ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Search team game box score stats (final totals per game).
+     *
+     * Returns the team's final box score rows (period in Z/F/FINAL, opponent_id = 0)
+     * along with game and opponent info.
+     *
+     * @param array $filters Optional filters: season_id, team_id, game_id, sort, direction, limit
+     * @return array<int, array{stat: object, game: object}>
+     */
+    public function searchTeamGameStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketGameBoxTable $table */
+        $table = $this->fetchTable('StatBasketGameBox');
+
+        $query = $table->find()
+            ->contain(['Games' => ['Opponents', 'TeamSeason' => ['Teams', 'Seasons']]])
+            ->where([
+                'StatBasketGameBox.opponent_id' => 0,
+                'StatBasketGameBox.period IN' => ['Z', 'F', 'FINAL'],
+            ]);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['Seasons.id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['Teams.id' => (int)$filters['team_id']]);
+        }
+        if (!empty($filters['game_id'])) {
+            $query->where(['StatBasketGameBox.game_id' => (int)$filters['game_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketGameBox.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $results[] = [
+                'stat' => $stat,
+                'game' => $stat->game ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Build player career stats by aggregating all season records for a person.
+     *
+     * @param array $filters Optional filters: person_id (required for meaningful results), limit
+     * @return array<int, array{person: object, totals: array, seasons: int}>
+     */
+    public function searchPlayerCareerStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $table */
+        $table = $this->fetchTable('StatBasketSeasonPerson');
+
+        $query = $table->find()
+            ->contain([
+                'TeamSeasonRosters' => [
+                    'Persons',
+                    'TeamSeasons' => ['Teams', 'Seasons'],
+                ],
+            ])
+            ->orderBy(['Seasons.start' => 'ASC']);
+
+        if (!empty($filters['team_id'])) {
+            $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
+        }
+
+        $rows = $query->all();
+
+        // Group by person_id and aggregate
+        $byPerson = [];
+        foreach ($rows as $stat) {
+            $roster = $stat->team_season_roster ?? null;
+            if (!$roster || !$roster->person) {
+                continue;
+            }
+            $personId = (int)$roster->person->id;
+            if (!isset($byPerson[$personId])) {
+                $byPerson[$personId] = [
+                    'person' => $roster->person,
+                    'totals' => $this->initializeStats('player'),
+                    'seasons' => 0,
+                ];
+            }
+            $this->addSeasonStats($byPerson[$personId]['totals'], $stat);
+            $byPerson[$personId]['seasons']++;
+        }
+
+        // Sort by requested stat
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = array_keys($this->initializeStats('player'));
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+
+        usort($byPerson, function ($a, $b) use ($sort, $direction) {
+            $va = $a['totals'][$sort] ?? 0;
+            $vb = $b['totals'][$sort] ?? 0;
+
+            return $direction === 'DESC' ? $vb <=> $va : $va <=> $vb;
+        });
+
+        $limit = (int)($filters['limit'] ?? 50);
+
+        return $limit > 0 ? array_slice($byPerson, 0, min($limit, 5000)) : $byPerson;
+    }
+
+    /**
+     * Get filter options for basketball stats (seasons and teams).
+     *
+     * @return array{seasons: array, teams: array}
+     */
+    public function getFilterOptions(): array
+    {
+        $seasonsTable = $this->fetchTable('Seasons');
+        $seasons = $seasonsTable->find()
+            ->orderBy(['Seasons.start' => 'DESC'])
+            ->all()
+            ->combine('id', function ($s) {
+                return ($s->start ?? '') . '-' . ($s->end ?? '');
+            })
+            ->toArray();
+
+        $teamsTable = $this->fetchTable('Teams');
+        $teams = $teamsTable->find()
+            ->matching('Sports', function ($q) {
+                return $q->where(['Sports.sport_name' => 'Basketball']);
+            })
+            ->orderBy(['Teams.team_name' => 'ASC'])
+            ->all()
+            ->combine('id', 'team_name')
+            ->toArray();
+
+        return compact('seasons', 'teams');
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player season stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getPlayerSeasonStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->GP ?? 0),
+            (int)($stat->GS ?? 0),
+            (int)($stat->MIN ?? 0),
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Return ordered DataTables cell values for a team season stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getTeamSeasonStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->GP ?? 0),
+            (int)($stat->MIN ?? 0),
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player career totals array.
+     *
+     * @param array<string, int> $totals
+     * @return array<int, int>
+     */
+    public function getPlayerCareerStatCells(array $totals): array
+    {
+        return [
+            (int)($totals['GP'] ?? 0),
+            (int)($totals['GS'] ?? 0),
+            (int)($totals['MIN'] ?? 0),
+            (int)($totals['FGM'] ?? 0),
+            (int)($totals['FGA'] ?? 0),
+            (int)($totals['TPM'] ?? 0),
+            (int)($totals['TPA'] ?? 0),
+            (int)($totals['FTM'] ?? 0),
+            (int)($totals['FTA'] ?? 0),
+            (int)($totals['ORB'] ?? 0),
+            (int)($totals['DRB'] ?? 0),
+            (int)($totals['RB'] ?? 0),
+            (int)($totals['AST'] ?? 0),
+            (int)($totals['STL'] ?? 0),
+            (int)($totals['BS'] ?? 0),
+            (int)($totals['TRN'] ?? 0),
+            (int)($totals['PF'] ?? 0),
+            (int)($totals['PTS'] ?? 0),
+        ];
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player game stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getPlayerGameStatCells(object $stat): array
+    {
+        return $this->getPlayerSeasonStatCells($stat);
+    }
+
+    /**
+     * Return ordered DataTables cell values for a team game box score stat.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getTeamGameStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Return the opponent player name from an opponent game stat record.
+     *
+     * @param object $stat
+     * @return string Raw (unescaped) name or empty string if absent.
+     */
+    public function getOpponentPlayerName(object $stat): string
+    {
+        return (string)($stat->name ?? '');
+    }
+
+    /**
+     * Return ordered DataTables cell values for an opponent game stat record.
+     *
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getOpponentPlayerGameStatCells(object $stat): array
+    {
+        return [
+            (int)($stat->MIN ?? 0),
+            (int)($stat->FGM ?? 0),
+            (int)($stat->FGA ?? 0),
+            (int)($stat->TPM ?? 0),
+            (int)($stat->TPA ?? 0),
+            (int)($stat->FTM ?? 0),
+            (int)($stat->FTA ?? 0),
+            (int)($stat->ORB ?? 0),
+            (int)($stat->DRB ?? 0),
+            (int)($stat->RB ?? 0),
+            (int)($stat->AST ?? 0),
+            (int)($stat->STL ?? 0),
+            (int)($stat->BS ?? 0),
+            (int)($stat->TRN ?? 0),
+            (int)($stat->PF ?? 0),
+            (int)($stat->PTS ?? 0),
+        ];
+    }
+
+    /**
+     * Get player season stats for the legacy season view.
+     *
+     * Returns an array of StatBasketSeasonPerson entities each exposing
+     * a virtual `person` property for template compatibility.
+     *
+     * @param int $teamSeasonId
+     * @return array
+     */
+    public function getSeasonPlayerStatsList(int $teamSeasonId): array
+    {
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $table */
+        $table = $this->fetchTable('StatBasketSeasonPerson');
+
+        $stats = $table->find()
+            ->contain(['TeamSeasonRosters' => ['Persons']])
+            ->matching('TeamSeasonRosters.TeamSeasons', function ($q) use ($teamSeasonId) {
+                return $q->where(['TeamSeasons.id' => $teamSeasonId]);
+            })
+            ->orderByDesc('StatBasketSeasonPerson.PTS')
+            ->all()
+            ->toArray();
+
+        foreach ($stats as $stat) {
+            if ($stat->team_season_roster) {
+                $stat->set('person', $stat->team_season_roster->person);
+            }
+        }
+
+        return $stats;
     }
 
     /**

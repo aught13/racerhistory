@@ -1,9 +1,14 @@
-const SportAwareGameForm = require("../sport-aware-game-form");
+import { jest } from "@jest/globals";
 
+let SportAwareGameForm;
 describe("SportAwareGameForm branch coverage", () => {
     let container;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../sport-aware-game-form.js");
+        SportAwareGameForm = mod.default || mod;
+
         document.body.innerHTML = `
             <select id="team-season-select" data-sport-url="/sportmeta"></select>
             <span id="sport-indicator" style="display:none"><span id="current-sport"></span><span id="sport-loading" style="display:none"></span><div class="alert"></div></span>

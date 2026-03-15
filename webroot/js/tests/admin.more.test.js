@@ -1,9 +1,11 @@
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 // Additional coverage for admin.js: single id string, array ids, no ids, temp form fallback, show.bs.modal event
 
 describe("admin.js more branches", () => {
     let exports;
-    beforeEach(() => {
+    beforeEach(async () => {
         // Reset DOM
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
@@ -34,7 +36,7 @@ describe("admin.js more branches", () => {
             writable: true,
         });
         jest.resetModules();
-        exports = require("../admin.js");
+        exports = await import("../admin.js");
     });
     afterEach(() => {
         document.body.innerHTML = "";
@@ -42,7 +44,7 @@ describe("admin.js more branches", () => {
         jest.clearAllMocks();
     });
 
-    test("single numeric id string injects one input", () => {
+    test("single numeric id string injects one input", async () => {
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
         exports.showConfirmDelete({
@@ -58,7 +60,7 @@ describe("admin.js more branches", () => {
         expect(injected[0].value).toBe("15");
     });
 
-    test("ids as array injects multiple inputs", () => {
+    test("ids as array injects multiple inputs", async () => {
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
         exports.showConfirmDelete({
@@ -74,7 +76,7 @@ describe("admin.js more branches", () => {
         expect(ids).toEqual(["3", "4"]);
     });
 
-    test("no ids and no bulk produces zero injected inputs", () => {
+    test("no ids and no bulk produces zero injected inputs", async () => {
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
         exports.showConfirmDelete({
@@ -85,7 +87,7 @@ describe("admin.js more branches", () => {
         expect(form.querySelectorAll(".injected-delete").length).toBe(0);
     });
 
-    test("temp form fallback when no formId and no hidden form", () => {
+    test("temp form fallback when no formId and no hidden form", async () => {
         // Remove hidden form and sample form so fallback must build temp
         document.getElementById("confirm-delete-modal-hidden-form").remove();
         document.getElementById("delete-form-sample").remove();
@@ -105,7 +107,7 @@ describe("admin.js more branches", () => {
         expect(hidden).toBeGreaterThanOrEqual(1);
     });
 
-    test("show.bs.modal event populates context from relatedTarget dataset", () => {
+    test("show.bs.modal event populates context from relatedTarget dataset", async () => {
         const modal = document.getElementById("confirm-delete-modal");
         const trigger = document.createElement("button");
         trigger.setAttribute("data-bs-target", "#confirm-delete-modal");

@@ -5,12 +5,17 @@ beforeAll(() => {
     }
 });
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 // person-image.js error branch coverage tests
 
-const personImage = require("../person-image.js");
-
+let personImage;
 describe("person-image error branches", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../person-image.js");
+        personImage = mod.default || mod;
+
         document.body.innerHTML = "";
         jest.resetAllMocks();
         // Clear any global fetch mock

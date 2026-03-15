@@ -99,7 +99,7 @@ return [
      * enable timestamping regardless of debug value.
      */
     'Asset' => [
-        //'timestamp' => true,
+        'timestamp' => true,
         // 'cacheTime' => '+1 year'
     ],
 
@@ -186,7 +186,10 @@ return [
         'skipLog' => [],
         'log' => true,
         'trace' => true,
-        'ignoredDeprecationPaths' => [],
+        'ignoredDeprecationPaths' => [
+            'vendor/cakedc/users/src/*',
+            'vendor/cakephp/cakephp/src/Core/*',
+        ],
     ],
 
     /*
