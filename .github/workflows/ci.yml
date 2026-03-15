@@ -346,6 +346,11 @@ jobs:
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
+      - name: Seed E2E test data
+        run: bin/cake migrations seed --seed E2eSeedData
+        env:
+          DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+
       - name: Start CakePHP development server
         run: |
           php bin/cake.php server -p 8765 -H localhost > /tmp/cake-server.log 2>&1 &
