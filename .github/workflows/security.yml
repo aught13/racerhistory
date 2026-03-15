@@ -41,7 +41,7 @@ jobs:
           composer audit --no-dev || echo "Security vulnerabilities found - check the full report" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload security report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v4.4.3
         if: always()
         with:
           name: security-report
