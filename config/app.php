@@ -186,7 +186,10 @@ return [
         'skipLog' => [],
         'log' => true,
         'trace' => true,
-        'ignoredDeprecationPaths' => [],
+        'ignoredDeprecationPaths' => [
+            'vendor/cakedc/users/src/*',
+            'vendor/cakephp/cakephp/src/Core/*',
+        ],
     ],
 
     /*

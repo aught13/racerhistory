@@ -1,0 +1,247 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#2 \$factory of static method Cake\\Datasource\\FactoryLocator\:\:add\(\) expects Cake\\Datasource\\Locator\\LocatorInterface\<Cake\\Datasource\\RepositoryInterface\>, Cake\\ORM\\Locator\\TableLocator given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Application.php
+
+		-
+			message: '#^Cannot access property \$opponent_id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Controller/Admin/StatBasketGameBoxController.php
+
+		-
+			message: '#^Cannot access property \$period on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Controller/Admin/StatBasketGameBoxController.php
+
+		-
+			message: '#^Method App\\Controller\\PeopleController\:\:getBlogPostsByTag\(\) should return array\<int, App\\Model\\Entity\\BlogPost\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Controller/PeopleController.php
+
+		-
+			message: '#^Method App\\Controller\\PeopleController\:\:getRosterEntriesForPerson\(\) should return array\<int, App\\Model\\Entity\\TeamSeasonRosters\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Controller/PeopleController.php
+
+		-
+			message: '#^Parameter \#1 \$people of method App\\Controller\\PeopleController\:\:buildPeopleRows\(\) expects array\<int, App\\Model\\Entity\\Person\>, array\<int\|string, array\|Cake\\Datasource\\EntityInterface\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/PeopleController.php
+
+		-
+			message: '#^Cannot access property \$key on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Model/Table/GameEavTable.php
+
+		-
+			message: '#^Cannot access property \$value on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Model/Table/GameEavTable.php
+
+		-
+			message: '#^Cannot access property \$game on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Cannot access property \$game_id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Cannot access property \$opponent_id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Cannot access property \$period on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Cannot access property \$team_season_roster on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Parameter \#1 \$array of function array_values contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Parameter \#2 \$seasonStats of method App\\Service\\BasketballStatsService\:\:addSeasonStats\(\) expects App\\Model\\Entity\\StatBasketSeasonPerson, array\|Cake\\Datasource\\EntityInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Service/BasketballStatsService.php
+
+		-
+			message: '#^Method App\\Service\\BlogPostService\:\:getAllPosts\(\) should return array\<int, App\\Model\\Entity\\BlogPost\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/BlogPostService.php
+
+		-
+			message: '#^Method App\\Service\\BlogPostService\:\:getPublishedByTag\(\) should return array\<int, App\\Model\\Entity\\BlogPost\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/BlogPostService.php
+
+		-
+			message: '#^Method App\\Service\\BlogPostService\:\:getPublishedPosts\(\) should return array\<int, App\\Model\\Entity\\BlogPost\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/BlogPostService.php
+
+		-
+			message: '#^Method App\\Service\\BlogPostService\:\:getPublishedPostsPage\(\) should return array\{posts\: array\<int, App\\Model\\Entity\\BlogPost\>, total\: int\} but returns array\{posts\: array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>, total\: int\}\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/BlogPostService.php
+
+		-
+			message: '#^Cannot access property \$game_date on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 8
+			path: src/Service/GameSearchService.php
+
+		-
+			message: '#^Cannot access property \$game_date on array\|Cake\\Datasource\\EntityInterface\|false\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: src/Service/GameSearchService.php
+
+		-
+			message: '#^Cannot access property \$pts_mur on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/GameSearchService.php
+
+		-
+			message: '#^Cannot access property \$pts_opp on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/GameSearchService.php
+
+		-
+			message: '#^Method App\\Service\\GameSearchService\:\:getOpponentsList\(\) should return array\<int, string\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/GameSearchService.php
+
+		-
+			message: '#^Cannot access property \$key on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/GameService.php
+
+		-
+			message: '#^Cannot access property \$value on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/GameService.php
+
+		-
+			message: '#^Method App\\Service\\GameService\:\:getGamesByTeamSeason\(\) should return array\<int, App\\Model\\Entity\\Game\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/GameService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/GameTypeService.php
+
+		-
+			message: '#^Method App\\Service\\GameTypeService\:\:getAllGameTypes\(\) should return array\<int, App\\Model\\Entity\\GameType\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/GameTypeService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: src/Service/ImageBrowseService.php
+
+		-
+			message: '#^Cannot access property \$original_name on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/ImageBrowseService.php
+
+		-
+			message: '#^Method App\\Service\\ImageTagService\:\:getImagesByAllTags\(\) should return array\<int, App\\Model\\Entity\\Image\> but returns array\<int, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/ImageTagService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/OpponentService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 4
+			path: src/Service/PersonService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: src/Service/SiteService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: src/Service/SportService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: src/Service/TeamSeasonRosterService.php
+
+		-
+			message: '#^Method App\\Service\\TeamSeasonRosterService\:\:getRosterForTeamSeason\(\) should return array\<int, App\\Model\\Entity\\TeamSeasonRosters\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/TeamSeasonRosterService.php
+
+		-
+			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: src/Service/TeamSeasonService.php
+
+		-
+			message: '#^Method App\\Service\\TeamSeasonService\:\:getPublicSeasonsList\(\) should return array\<int, App\\Model\\Entity\\TeamSeason\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/TeamSeasonService.php
+
+		-
+			message: '#^Method App\\Service\\TeamSeasonService\:\:getTeamSeasonsForSport\(\) should return array\<int, App\\Model\\Entity\\TeamSeason\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/TeamSeasonService.php
