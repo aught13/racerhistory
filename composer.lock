@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4fd55808605594e49007d11aeb5ca945",
+    "content-hash": "abfdb0148130cfd947fa3f0c88155fcb",
     "packages": [
         {
             "name": "burzum/cakephp-service-layer",
