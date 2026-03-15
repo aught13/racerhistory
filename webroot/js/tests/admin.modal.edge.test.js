@@ -5,11 +5,13 @@ beforeAll(() => {
     }
 });
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 // admin.modal.edge.test.js - Tests for admin.js confirm-delete/modal with missing/malformed elements
 
 describe("admin.js confirm-delete modal edge cases", () => {
     let exports;
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.resetModules();
         document.body.innerHTML = "";
         if (typeof window !== "undefined") {
@@ -21,7 +23,7 @@ describe("admin.js confirm-delete modal edge cases", () => {
                 getOrCreateInstance: jest.fn(() => ({ show: jest.fn() })),
             },
         };
-        exports = require("../admin.js");
+        exports = await import("../admin.js");
     });
 
     afterEach(() => {
@@ -39,7 +41,7 @@ describe("admin.js confirm-delete modal edge cases", () => {
         }
     });
 
-    test("showConfirmDelete does nothing if modal missing", () => {
+    test("showConfirmDelete does nothing if modal missing", async () => {
         expect(() =>
             exports.showConfirmDelete({
                 deleteUrl: "/x",
@@ -50,7 +52,7 @@ describe("admin.js confirm-delete modal edge cases", () => {
         ).not.toThrow();
     });
 
-    test("showConfirmDelete does nothing if delete button missing", () => {
+    test("showConfirmDelete does nothing if delete button missing", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -67,7 +69,7 @@ describe("admin.js confirm-delete modal edge cases", () => {
         ).not.toThrow();
     });
 
-    test("showConfirmDelete handles missing associated list gracefully", () => {
+    test("showConfirmDelete handles missing associated list gracefully", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <form id="confirm-delete-modal-hidden-form"></form>
@@ -84,7 +86,7 @@ describe("admin.js confirm-delete modal edge cases", () => {
         ).not.toThrow();
     });
 
-    test("showConfirmDelete handles missing hidden form gracefully", () => {
+    test("showConfirmDelete handles missing hidden form gracefully", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>

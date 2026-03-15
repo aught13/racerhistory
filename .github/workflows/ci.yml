@@ -199,7 +199,7 @@ jobs:
         continue-on-error: false
 
       - name: Upload test results
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: test-results-${{ matrix.php-version }}
@@ -236,7 +236,7 @@ jobs:
           SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
 
   js-tests:
-    name: JavaScript Tests
+    name: JavaScript Tests (Jest + ESM)
     runs-on: ubuntu-24.04
 
     steps:
@@ -251,12 +251,177 @@ jobs:
       - name: Install NPM deps
         run: npm ci --no-audit --no-fund
 
-      - name: Run JS tests
-        run: npm run test:js -- --ci
+      - name: Run ESLint
+        run: npm run lint:js
+
+      - name: Check Prettier formatting
+        run: npm run format:js:check
+
+      - name: Run Jest tests with coverage
+        run: npm run test:js -- --ci --coverage
+
+      - name: Upload JS coverage to Codecov
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v4.6.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
+          files: coverage-js/clover.xml
+          flags: jstests
+          name: codecov-js
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
+
+      - name: Run CSS lint
+        run: npm run lint:css
 
       - name: Upload JS coverage artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: js-coverage
           path: coverage-js
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-24.04
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: racerhistory_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: Setup PHP for dev server
+        uses: ./.github/actions/setup-php-composer
+        with:
+          php-version: "8.3"
+          extensions: mbstring, intl, pdo_mysql
+          coverage: none
+          dependency-versions: "highest"
+
+      - name: Setup Node
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM deps
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Copy configuration file
+        run: cp config/app_local.example.php config/app_local.php
+
+      - name: Setup test database configuration
+        run: |
+          sed -i "s/'host' => 'localhost'/'host' => '127.0.0.1'/" config/app_local.php
+          sed -i "s/'username' => 'my_app'/'username' => 'test_user'/" config/app_local.php
+          sed -i "s/'password' => 'secret'/'password' => 'test_password'/" config/app_local.php
+          sed -i "s/'database' => 'my_app'/'database' => 'racerhistory_test'/" config/app_local.php
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -u root -proot && break
+            echo "Waiting for MySQL to be ready..."
+            sleep 2
+          done
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS racerhistory_test; GRANT ALL PRIVILEGES ON racerhistory_test.* TO 'test_user'@'%';"
+
+      - name: Run database migrations
+        run: bin/cake migrations migrate
+        env:
+          DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+
+      - name: Seed E2E test data
+        run: bin/cake migrations seed --seed E2eSeedData
+        env:
+          DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+
+      - name: Start CakePHP development server
+        run: |
+          php bin/cake.php server -p 8765 -H localhost > /tmp/cake-server.log 2>&1 &
+          echo $! > server.pid
+          SERVER_PID=$(cat server.pid)
+          echo "Server started with PID $SERVER_PID"
+
+          # Wait for server to be ready (check for any HTTP response, even errors)
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w '' http://localhost:8765/ 2>/dev/null; then
+              echo "Server is responding!"
+              break
+            fi
+            # Check if the server process died
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "::error::Server process died unexpectedly"
+              cat /tmp/cake-server.log || true
+              exit 1
+            fi
+            echo "Waiting for server to start... ($i/30)"
+            sleep 2
+          done
+
+          # Final check: verify server is actually responding
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8765/ 2>/dev/null || echo "000")
+          echo "Server responded with HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" = "000" ]; then
+            echo "::error::Server failed to start after 60 seconds"
+            cat /tmp/cake-server.log || true
+            exit 1
+          fi
+        env:
+          DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+
+      - name: Run Playwright E2E tests
+        run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:8765
+          CI: true
+
+      - name: Stop CakePHP server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+          if [ -f /tmp/cake-server.log ]; then
+            echo "=== Server log (last 50 lines) ==="
+            tail -50 /tmp/cake-server.log || true
+          fi
+
+      - name: Upload Playwright test results
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: playwright-results
+          path: test-results-e2e.xml
+          retention-days: 30
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload Playwright traces
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 30

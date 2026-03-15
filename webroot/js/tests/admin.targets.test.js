@@ -6,6 +6,7 @@ beforeAll(() => {
 });
 /** @jest-environment jsdom */
 
+import { jest } from "@jest/globals";
 describe("admin.js targeted branch tests", () => {
     beforeEach(() => {
         jest.resetModules();
@@ -34,7 +35,7 @@ describe("admin.js targeted branch tests", () => {
         }
     });
 
-    test("parses single numeric id string with whitespace using parseInt fallback", () => {
+    test("parses single numeric id string with whitespace using parseInt fallback", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -42,7 +43,7 @@ describe("admin.js targeted branch tests", () => {
             <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // provide ids as a padded numeric string
         showConfirmDelete({ deleteUrl: "/d", ids: "  42  ", idsName: "ids[]" });
         // trigger delete
@@ -58,7 +59,7 @@ describe("admin.js targeted branch tests", () => {
         expect(inputs[0].value).toBe("42");
     });
 
-    test("handles array ids correctly and includes bulkAction", () => {
+    test("handles array ids correctly and includes bulkAction", async () => {
         document.body.innerHTML = `
           <div id="confirm-delete-modal">
             <ul id="confirm-delete-modal-assoc"></ul>
@@ -66,7 +67,7 @@ describe("admin.js targeted branch tests", () => {
             <button id="confirm-delete-modal-delete-btn" type="button">Delete</button>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // provide ids as an array
         showConfirmDelete({
             deleteUrl: "/arr",
@@ -94,7 +95,7 @@ describe("admin.js targeted branch tests", () => {
         expect(names).toContain("bulk_action");
     });
 
-    test("prefers source form when context.formId references existing form with action", () => {
+    test("prefers source form when context.formId references existing form with action", async () => {
         document.body.innerHTML = `
           <div>
             <form id="sourceForm" action="/fromsource">
@@ -105,7 +106,7 @@ describe("admin.js targeted branch tests", () => {
             </div>
           </div>
         `;
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         // provide formId so source form path is used
         showConfirmDelete({
             ids: "[7]",
@@ -129,9 +130,9 @@ describe("admin.js targeted branch tests", () => {
         expect(src.action).toContain("/fromsource");
     });
 
-    test("AdminToast adds a node and it is removed after timeout", () => {
+    test("AdminToast adds a node and it is removed after timeout", async () => {
         document.body.innerHTML = "<div></div>";
-        const { AdminToast } = require("../admin.js");
+        const { AdminToast } = await import("../admin.js");
         AdminToast("hi", "success");
         expect(document.querySelectorAll(".alert").length).toBe(1);
         // advance timers to allow removal

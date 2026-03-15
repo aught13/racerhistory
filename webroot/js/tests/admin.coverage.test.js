@@ -1,4 +1,6 @@
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 // Additional admin.js tests to increase branch coverage to >80%
 
 describe("admin.js branch coverage improvement", () => {
@@ -75,9 +77,9 @@ describe("admin.js branch coverage improvement", () => {
     `;
     }
 
-    test("toast with different types (success, danger, error)", () => {
+    test("toast with different types (success, danger, error)", async () => {
         document.body.innerHTML = '<div id="root"></div>';
-        const { AdminToast } = require("../admin.js");
+        const { AdminToast } = await import("../admin.js");
 
         // Test success type
         AdminToast("Success message", "success");
@@ -97,9 +99,9 @@ describe("admin.js branch coverage improvement", () => {
         expect(alert).not.toBeNull();
     });
 
-    test("modal dismiss logic - modal hidden event cleanup", () => {
+    test("modal dismiss logic - modal hidden event cleanup", async () => {
         setupModalDom();
-        require("../admin.js"); // Load module without assigning to exports
+        await import("../admin.js"); // Load module without assigning to exports
         const modal = document.getElementById("confirm-delete-modal");
 
         // Simulate modal being hidden (Bootstrap event)
@@ -110,9 +112,9 @@ describe("admin.js branch coverage improvement", () => {
         expect(modal).toBeTruthy(); // Basic validation
     });
 
-    test("duplicate modal opens - subsequent calls override context", () => {
+    test("duplicate modal opens - subsequent calls override context", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
 
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
@@ -143,9 +145,9 @@ describe("admin.js branch coverage improvement", () => {
         expect(idValues).toEqual(["3", "4"]);
     });
 
-    test("associated list rendering with different data types", () => {
+    test("associated list rendering with different data types", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
 
         // Test with object array
         const associated = JSON.stringify([
@@ -163,9 +165,9 @@ describe("admin.js branch coverage improvement", () => {
         expect(list.children[2].textContent).toBe('{"neither":"Object C"}');
     });
 
-    test("deleteUrl fallback when form action not set", () => {
+    test("deleteUrl fallback when form action not set", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         const form = document.getElementById("delete-form-sample");
 
         // Ensure form has no action attribute to trigger fallback
@@ -191,10 +193,10 @@ describe("admin.js branch coverage improvement", () => {
         expect(form.action).toContain("/custom-delete-url");
     });
 
-    test("missing modal element returns early from showConfirmDelete", () => {
+    test("missing modal element returns early from showConfirmDelete", async () => {
         // No modal in DOM
         document.body.innerHTML = "<div>No modal</div>";
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
 
         // Should not throw when modal doesn't exist
         expect(() => {
@@ -202,9 +204,9 @@ describe("admin.js branch coverage improvement", () => {
         }).not.toThrow();
     });
 
-    test("show.bs.modal event with missing relatedTarget", () => {
+    test("show.bs.modal event with missing relatedTarget", async () => {
         setupModalDom();
-        require("../admin.js"); // Load module to register event listeners
+        await import("../admin.js"); // Load module to register event listeners
 
         const modal = document.getElementById("confirm-delete-modal");
         const showEvent = new Event("show.bs.modal");
@@ -216,9 +218,9 @@ describe("admin.js branch coverage improvement", () => {
         }).not.toThrow();
     });
 
-    test("form submission error handling", () => {
+    test("form submission error handling", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         const form = document.getElementById("delete-form-sample");
 
         // Mock requestSubmit to throw error
@@ -238,9 +240,9 @@ describe("admin.js branch coverage improvement", () => {
         }).not.toThrow();
     });
 
-    test("ids parsing with mixed data types", () => {
+    test("ids parsing with mixed data types", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
 
@@ -262,9 +264,9 @@ describe("admin.js branch coverage improvement", () => {
         expect(values).toEqual(["1", "valid", "0"]);
     });
 
-    test("click handler edge cases - no target match", () => {
+    test("click handler edge cases - no target match", async () => {
         setupModalDom();
-        require("../admin.js"); // Load to register event listeners
+        await import("../admin.js"); // Load to register event listeners
 
         const randomButton = document.createElement("button");
         randomButton.textContent = "Random";
@@ -276,9 +278,9 @@ describe("admin.js branch coverage improvement", () => {
         }).not.toThrow();
     });
 
-    test("single id string parsing instead of array", () => {
+    test("single id string parsing instead of array", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
 
@@ -299,9 +301,9 @@ describe("admin.js branch coverage improvement", () => {
         expect(injected[0].value).toBe("42");
     });
 
-    test("numeric single id as non-string", () => {
+    test("numeric single id as non-string", async () => {
         setupModalDom();
-        const { showConfirmDelete } = require("../admin.js");
+        const { showConfirmDelete } = await import("../admin.js");
         const form = document.getElementById("delete-form-sample");
         form.submit = jest.fn();
 

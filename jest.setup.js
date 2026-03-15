@@ -6,7 +6,7 @@ if (typeof HTMLFormElement !== 'undefined') {
                 // no-op for jsdom
             },
             configurable: true,
-            writable: true
+            writable: true,
         });
     }
     if (!HTMLFormElement.prototype.requestSubmit) {
@@ -15,7 +15,14 @@ if (typeof HTMLFormElement !== 'undefined') {
                 // no-op for jsdom; do not dispatch events or call submit
             },
             configurable: true,
-            writable: true
+            writable: true,
         });
     }
 }
+
+// Polyfill for module.exports to support UMD pattern in ESM context
+if (typeof global !== 'undefined' && typeof global.module === 'undefined') {
+    global.module = { exports: {} };
+}
+
+export {};

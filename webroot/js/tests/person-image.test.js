@@ -1,17 +1,24 @@
+/** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
+// Tests for person-image module
+
 beforeAll(() => {
     if (typeof HTMLFormElement !== "undefined") {
         HTMLFormElement.prototype.submit = function () {};
         HTMLFormElement.prototype.requestSubmit = function () {};
     }
 });
-/** @jest-environment jsdom */
-// ...existing code...
-const personImage = require("../person-image.js");
 
 describe("person-image module", () => {
-    beforeEach(() => {
+    let personImage;
+
+    beforeEach(async () => {
         // Ensure no global fetch leftover; individual tests set their own fetch mock when needed
         document.body.innerHTML = "";
+        jest.resetModules();
+        const module = await import("../person-image.js");
+        personImage = module;
     });
 
     test("setPreviewFromId sets image src and shows container", () => {

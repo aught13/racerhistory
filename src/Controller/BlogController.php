@@ -15,6 +15,27 @@ class BlogController extends AppController
     private BlogPostService $blogPostService;
 
     /**
+     * Detect whether this request originates from a Turbo Frame.
+     */
+    private function isTurboFrameRequest(): bool
+    {
+        return $this->request->getHeaderLine('Turbo-Frame') !== '';
+    }
+
+    /**
+     * For Turbo Frame requests, return a minimal frame-only response.
+     */
+    private function applyTurboFrameResponse(string $template): void
+    {
+        if (!$this->isTurboFrameRequest()) {
+            return;
+        }
+
+        $this->viewBuilder()->disableAutoLayout();
+        $this->viewBuilder()->setTemplate($template);
+    }
+
+    /**
      * Controller initialize: load components and services.
      */
     public function initialize(): void
@@ -41,8 +62,18 @@ class BlogController extends AppController
      */
     public function index(): void
     {
-        $posts = $this->blogPostService->getPublishedPosts();
-        $this->set(compact('posts'));
+        $page = (int)$this->request->getQuery('page', 1);
+        $limit = (int)$this->request->getQuery('limit', 10);
+
+        $offset = max(0, ($page - 1) * $limit);
+        $result = $this->blogPostService->getPublishedPostsPage($limit, $offset);
+
+        $posts = $result['posts'];
+        $total = $result['total'];
+
+        $this->set(compact('posts', 'page', 'limit', 'total'));
+
+        $this->applyTurboFrameResponse('index_frame');
     }
 
     /**
@@ -56,5 +87,7 @@ class BlogController extends AppController
         }
 
         $this->set(compact('post'));
+
+        $this->applyTurboFrameResponse('view_frame');
     }
 }

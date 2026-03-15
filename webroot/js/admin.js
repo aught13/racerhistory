@@ -68,7 +68,7 @@
          */
         context = opts || {};
         try {
-            console.log("confirm-delete setContext", context);
+            console.debug("confirm-delete setContext", context);
         } catch (e) {
             console.error("Error in setContext:", e);
             window.AdminToast &&
@@ -90,7 +90,7 @@
         } else if (modal) {
             modal.style.display = "block";
         } else {
-            console.log("showConfirmDelete called but modal not present");
+            console.debug("showConfirmDelete called but modal not present");
         }
     };
 
@@ -132,7 +132,7 @@
 
         document.body.appendChild(temp);
         try {
-            console.log("confirm-delete submitting temp form", {
+            console.debug("confirm-delete submitting temp form", {
                 action: temp.action,
                 inputs: temp.querySelectorAll("input").length,
             });
@@ -176,7 +176,7 @@
          * WARNING: Do not remove the delegated click handler for the delete button.
          * This logic is required for admin delete actions and is validated by tests.
          */
-        console.log("admin.js initialized, modalPresent=", !!findModal());
+        console.debug("admin.js initialized, modalPresent=", !!findModal());
 
         // Modal show event: when Bootstrap opens modal via data-bs-toggle, relatedTarget is available
         const modal = findModal();
@@ -215,7 +215,7 @@
                 '[data-bs-target="#' + MODAL_ID + '"][data-delete-url]',
             );
             if (t) {
-                console.log("confirm-delete trigger clicked", t);
+                console.debug("confirm-delete trigger clicked", t);
                 setContext({
                     deleteUrl: t.dataset.deleteUrl,
                     associated:
@@ -358,7 +358,7 @@
                     );
                     source = null;
                 }
-                console.log(
+                console.debug(
                     "confirm-delete final post action:",
                     postAction,
                     "source form id=",
@@ -393,10 +393,13 @@
                                 source.requestSubmit();
                             else source.submit();
                         } catch (err) {
-                            console.log("error submitting source form", err);
+                            console.error("error submitting source form", err);
                         }
                     } catch (err) {
-                        console.log("error preparing source form submit", err);
+                        console.error(
+                            "error preparing source form submit",
+                            err,
+                        );
                     }
                 } else {
                     submitTempForm(postAction, source, extra);

@@ -199,8 +199,8 @@ class ImagesController extends AppController
 
         $gameLabels = (new GameService())->getRecentGamesForSelect(200);
 
-        $placeService = new \App\Service\PlaceService();
-        $siteLabels = $placeService->getSitesForSelect();
+        $siteService = new \App\Service\SiteService();
+        $siteLabels = $siteService->getSitesForSelect();
 
         $opponentService = new \App\Service\OpponentService();
         $opponents = $opponentService->getOpponentsForSelect();
@@ -491,8 +491,8 @@ class ImagesController extends AppController
         // Games with team_season_id for filtering and formatted labels
         $games = (new GameService())->getRecentGamesForSelect(200);
 
-        $placeService = new \App\Service\PlaceService();
-        $sites = $placeService->getSitesForSelect();
+        $siteService = new \App\Service\SiteService();
+        $sites = $siteService->getSitesForSelect();
 
         $opponentService = new \App\Service\OpponentService();
         $opponents = $opponentService->getOpponentsForSelect();

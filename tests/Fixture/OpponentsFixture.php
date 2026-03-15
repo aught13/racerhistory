@@ -17,6 +17,7 @@ class OpponentsFixture extends TestFixture
             [
                 'id' => 1,
                 'opponent_name' => 'Belmont',
+                'opponent_short' => 'BEL',
                 'place_id' => 1,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',

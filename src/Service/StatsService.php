@@ -42,6 +42,33 @@ class StatsService
     ];
 
     /**
+     * Map of sport names to the season stats element used in the public site
+     *
+     * @var array<string, string>
+     */
+    protected array $seasonStatsElements = [
+        'basketball' => 'Seasons/basketball_season_stats',
+    ];
+
+    /**
+     * Map of sport names to the game stats element used in the public site
+     *
+     * @var array<string, string>
+     */
+    protected array $gameStatsElements = [
+        'basketball' => 'Games/basketball_game_stats',
+    ];
+
+    /**
+     * Map of sport names to the person game log element used in the public site
+     *
+     * @var array<string, string>
+     */
+    protected array $personGameLogElements = [
+        'basketball' => 'People/basketball_game_log',
+    ];
+
+    /**
      * Cached sport service instances
      *
      * @var array<string, object>
@@ -103,6 +130,88 @@ class StatsService
         }
 
         return $service->getSeasonStats($teamSeasonId);
+    }
+
+    /**
+     * Get the element path for the season stats section for a given team season
+     *
+     * @param int $teamSeasonId Team season ID
+     * @return string|null Element path or null if not configured
+     */
+    public function getSeasonStatsElement(int $teamSeasonId): ?string
+    {
+        $sportId = $this->getTeamSeasonSportId($teamSeasonId);
+        if (!$sportId) {
+            return null;
+        }
+
+        $sportName = $this->sportConfig->getSportName($sportId);
+
+        return $this->seasonStatsElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the element path for the game stats section for a given game
+     *
+     * @param int $gameId Game ID
+     * @return string|null Element path or null if not configured
+     */
+    public function getGameStatsElement(int $gameId): ?string
+    {
+        $sportId = $this->getGameSportId($gameId);
+        if (!$sportId) {
+            return null;
+        }
+
+        $sportName = $this->sportConfig->getSportName($sportId);
+
+        return $this->gameStatsElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the element path for a person's game log for a given sport
+     *
+     * @param int $sportId Sport ID
+     * @return string|null Element path or null if not configured
+     */
+    public function getPersonGameLogElement(int $sportId): ?string
+    {
+        $sportName = $this->sportConfig->getSportName($sportId);
+        if (!$sportName) {
+            return null;
+        }
+
+        return $this->personGameLogElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the visible column list for a season stats table
+     *
+     * @param int $teamSeasonId Team season ID
+     * @param array|null $seasonStats Season stats payload
+     * @return array<string, string> Column key/label pairs
+     */
+    public function getSeasonStatsColumns(int $teamSeasonId, ?array $seasonStats): array
+    {
+        if (empty($seasonStats)) {
+            return [];
+        }
+
+        $sportId = $this->getTeamSeasonSportId($teamSeasonId);
+        if (!$sportId) {
+            return [];
+        }
+
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getSeasonStatColumns')) {
+            return [];
+        }
+
+        return $service->getSeasonStatColumns(
+            $seasonStats['playerStats'] ?? null,
+            $seasonStats['teamStats'] ?? null,
+            $seasonStats['opponentStats'] ?? null,
+        );
     }
 
     /**
@@ -327,5 +436,298 @@ class StatsService
     public function getSupportedSports(): array
     {
         return array_keys($this->sportServiceMap);
+    }
+
+    /**
+     * Search player season stats across sports.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchPlayerSeasonStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchPlayerSeasonStats')) {
+            return [];
+        }
+
+        return $service->searchPlayerSeasonStats($filters);
+    }
+
+    /**
+     * Search team season stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchTeamSeasonStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchTeamSeasonStats')) {
+            return [];
+        }
+
+        return $service->searchTeamSeasonStats($filters);
+    }
+
+    /**
+     * Search team season opponent stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchTeamSeasonOpponentStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchTeamSeasonOpponentStats')) {
+            return [];
+        }
+
+        return $service->searchTeamSeasonOpponentStats($filters);
+    }
+
+    /**
+     * Search player game stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchPlayerGameStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchPlayerGameStats')) {
+            return [];
+        }
+
+        return $service->searchPlayerGameStats($filters);
+    }
+
+    /**
+     * Search opponent player game stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchOpponentPlayerGameStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchOpponentPlayerGameStats')) {
+            return [];
+        }
+
+        return $service->searchOpponentPlayerGameStats($filters);
+    }
+
+    /**
+     * Search team game box score stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchTeamGameStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchTeamGameStats')) {
+            return [];
+        }
+
+        return $service->searchTeamGameStats($filters);
+    }
+
+    /**
+     * Search player career stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchPlayerCareerStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchPlayerCareerStats')) {
+            return [];
+        }
+
+        return $service->searchPlayerCareerStats($filters);
+    }
+
+    /**
+     * Get filter options for a sport.
+     *
+     * @param int $sportId Sport ID
+     * @return array{seasons: array, teams: array}
+     */
+    public function getFilterOptions(int $sportId): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getFilterOptions')) {
+            return ['seasons' => [], 'teams' => []];
+        }
+
+        return $service->getFilterOptions();
+    }
+
+    /**
+     * Get sport ID by sport name.
+     *
+     * @param string $sportName Sport name (case-insensitive)
+     * @return int|null Sport ID or null if not found
+     */
+    public function getSportIdByName(string $sportName): ?int
+    {
+        /** @var \App\Model\Table\SportsTable $sportsTable */
+        $sportsTable = $this->fetchTable('Sports');
+
+        $sport = $sportsTable->find()
+            ->where(['LOWER(sport_name)' => strtolower($sportName)])
+            ->first();
+
+        return $sport ? (int)$sport->id : null;
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player season stat.
+     *
+     * @param int $sportId
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getPlayerSeasonStatCells(int $sportId, object $stat): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getPlayerSeasonStatCells')) {
+            return [];
+        }
+
+        return $service->getPlayerSeasonStatCells($stat);
+    }
+
+    /**
+     * Return ordered DataTables cell values for a team season stat.
+     *
+     * @param int $sportId
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getTeamSeasonStatCells(int $sportId, object $stat): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getTeamSeasonStatCells')) {
+            return [];
+        }
+
+        return $service->getTeamSeasonStatCells($stat);
+    }
+
+    /**
+     * Return ordered DataTables cell values for player career totals.
+     *
+     * @param int $sportId
+     * @param array<string, int> $totals
+     * @return array<int, int>
+     */
+    public function getPlayerCareerStatCells(int $sportId, array $totals): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getPlayerCareerStatCells')) {
+            return [];
+        }
+
+        return $service->getPlayerCareerStatCells($totals);
+    }
+
+    /**
+     * Return ordered DataTables cell values for a player game stat.
+     *
+     * @param int $sportId
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getPlayerGameStatCells(int $sportId, object $stat): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getPlayerGameStatCells')) {
+            return [];
+        }
+
+        return $service->getPlayerGameStatCells($stat);
+    }
+
+    /**
+     * Return ordered DataTables cell values for a team game box score stat.
+     *
+     * @param int $sportId
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getTeamGameStatCells(int $sportId, object $stat): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getTeamGameStatCells')) {
+            return [];
+        }
+
+        return $service->getTeamGameStatCells($stat);
+    }
+
+    /**
+     * Return the opponent player name from an opponent game stat record.
+     *
+     * @param int $sportId
+     * @param object $stat
+     * @return string Raw (unescaped) name or empty string.
+     */
+    public function getOpponentPlayerName(int $sportId, object $stat): string
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getOpponentPlayerName')) {
+            return '';
+        }
+
+        return $service->getOpponentPlayerName($stat);
+    }
+
+    /**
+     * Return ordered DataTables cell values for an opponent player game stat.
+     *
+     * @param int $sportId
+     * @param object $stat
+     * @return array<int, int>
+     */
+    public function getOpponentPlayerGameStatCells(int $sportId, object $stat): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getOpponentPlayerGameStatCells')) {
+            return [];
+        }
+
+        return $service->getOpponentPlayerGameStatCells($stat);
+    }
+
+    /**
+     * Get player season stats list for the legacy season view.
+     *
+     * @param int $teamSeasonId
+     * @return array
+     */
+    public function getSeasonPlayerStatsList(int $teamSeasonId): array
+    {
+        $sportId = $this->getTeamSeasonSportId($teamSeasonId);
+        if (!$sportId) {
+            return [];
+        }
+
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getSeasonPlayerStatsList')) {
+            return [];
+        }
+
+        return $service->getSeasonPlayerStatsList($teamSeasonId);
     }
 }

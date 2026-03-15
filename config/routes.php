@@ -135,22 +135,59 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/users/logout', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'logout']);
         $builder->connect('/users/register', ['plugin' => 'CakeDC/Users', 'controller' => 'Users', 'action' => 'register']);
 
+        // Deployment audit (read-only browser check — token-gated in production)
+        $builder->connect('/install', ['controller' => 'Install', 'action' => 'index']);
+
         // Public image serve (unauthenticated)
         $builder->connect('/images/serve/:id', ['controller' => 'Images', 'action' => 'serve'])
             ->setPass(['id'])
             ->setPatterns(['id' => '\\d+']);
-        /*
-         * Here, we are connecting '/' (base path) to a controller called 'Pages',
-         * its action called 'display', and we pass a param to select the view file
-         * to use (in this case, templates/Pages/home.php)...
-         */
-        $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
 
-        // Public blog
+        // Public server-rendered blog (Hotwire-enhanced)
+        $builder->connect('/', ['controller' => 'Blog', 'action' => 'index']);
         $builder->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
         $builder->connect('/blog/{slug}', ['controller' => 'Blog', 'action' => 'view'])
             ->setPass(['slug'])
             ->setPatterns(['slug' => '[a-zA-Z0-9_-]+']);
+
+        // Public frontend sections (Men's Basketball)
+        $builder->connect('/seasons', ['controller' => 'Seasons', 'action' => 'index']);
+        $builder->connect('/seasons/splits', ['controller' => 'Seasons', 'action' => 'splits']);
+        $builder->connect('/seasons/{id}', ['controller' => 'Seasons', 'action' => 'view'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
+
+        $builder->connect('/people', ['controller' => 'People', 'action' => 'index']);
+        $builder->connect('/people/{id}', ['controller' => 'People', 'action' => 'view'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
+
+        $builder->connect('/stats', ['controller' => 'Stats', 'action' => 'index']);
+        $builder->connect('/stats/player-season', ['controller' => 'Stats', 'action' => 'playerSeason']);
+        $builder->connect('/stats/team-season', ['controller' => 'Stats', 'action' => 'teamSeason']);
+        $builder->connect('/stats/team-season-opponent', ['controller' => 'Stats', 'action' => 'teamSeasonOpponent']);
+        $builder->connect('/stats/player-career', ['controller' => 'Stats', 'action' => 'playerCareer']);
+        $builder->connect('/stats/player-game', ['controller' => 'Stats', 'action' => 'playerGame']);
+        $builder->connect('/stats/team-game', ['controller' => 'Stats', 'action' => 'teamGame']);
+        $builder->connect('/stats/opponent-player-game', ['controller' => 'Stats', 'action' => 'opponentPlayerGame']);
+        $builder->connect('/stats/season/{teamSeasonId}', ['controller' => 'Stats', 'action' => 'season'])
+            ->setPass(['teamSeasonId'])
+            ->setPatterns(['teamSeasonId' => '\\d+']);
+
+        $builder->connect('/games', ['controller' => 'Games', 'action' => 'index']);
+        $builder->connect('/games/ranked', ['controller' => 'Games', 'action' => 'ranked']);
+        $builder->connect('/games/overtime', ['controller' => 'Games', 'action' => 'overtime']);
+        $builder->connect('/games/hundred-point', ['controller' => 'Games', 'action' => 'hundredPoint']);
+        $builder->connect('/games/openers', ['controller' => 'Games', 'action' => 'openers']);
+        $builder->connect('/games/streaks', ['controller' => 'Games', 'action' => 'streaks']);
+        $builder->connect('/games/margins', ['controller' => 'Games', 'action' => 'margins']);
+        $builder->connect('/games/series', ['controller' => 'Games', 'action' => 'series']);
+        $builder->connect('/games/stats/{id}', ['controller' => 'Games', 'action' => 'stats'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
+        $builder->connect('/games/{id}', ['controller' => 'Games', 'action' => 'view'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\\d+']);
 
         /*
          * ...and connect the rest of 'Pages' controller's URLs.

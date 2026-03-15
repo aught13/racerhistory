@@ -37,7 +37,7 @@
                     <div class="row g-2 mt-1">
                         <div class="col"><?= $this->Form->control('new_game_type.post', ['label' => 'Postseason', 'type' => 'checkbox', 'class' => 'form-check-input']) ?></div>
                         <div class="col"><?= $this->Form->control('new_game_type.conf', ['label' => 'Conference', 'type' => 'checkbox', 'class' => 'form-check-input']) ?></div>
-                        <div class="col"><?= $this->Form->control('new_game_type.ind', ['label' => 'Abbr (e.g., NCAA)', 'class' => 'form-control']) ?></div>
+                        <div class="col"><?= $this->Form->control('new_game_type.abr', ['label' => 'Abbr (e.g., NCAA)', 'class' => 'form-control', 'maxlength' => 6]) ?></div>
                     </div>
                 </fieldset>
             </div>

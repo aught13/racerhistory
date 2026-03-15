@@ -10,8 +10,8 @@ describe("admin parsing and fallback behaviors", () => {
         `;
     });
 
-    test("renderAssociated accepts JSON string and arrays", () => {
-        const { __internals } = require("../../js/admin.js");
+    test("renderAssociated accepts JSON string and arrays", async () => {
+        const { __internals } = await import("../admin.js");
         const modal = document.getElementById("confirm-delete-modal");
         __internals.renderAssociated(modal, '["A","B"]');
         expect(modal.querySelectorAll("li").length).toBe(2);
@@ -21,16 +21,16 @@ describe("admin parsing and fallback behaviors", () => {
         expect(modal.querySelectorAll("li").length).toBe(1);
     });
 
-    test("renderAssociated handles non-JSON string fallback", () => {
-        const { __internals } = require("../../js/admin.js");
+    test("renderAssociated handles non-JSON string fallback", async () => {
+        const { __internals } = await import("../admin.js");
         const modal = document.getElementById("confirm-delete-modal");
         // non-json string should render as single item
         __internals.renderAssociated(modal, "not-json");
         expect(modal.querySelectorAll("li").length).toBe(1);
     });
 
-    test("submitTempForm attaches extra hidden fields and submits (via requestSubmit)", () => {
-        const { __internals } = require("../../js/admin.js");
+    test("submitTempForm attaches extra hidden fields and submits (via requestSubmit)", async () => {
+        const { __internals } = await import("../admin.js");
         // create tokens source
         const tokens = document.createElement("form");
         const h = document.createElement("input");

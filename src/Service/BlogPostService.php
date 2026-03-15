@@ -64,14 +64,71 @@ class BlogPostService
      */
     public function getPublishedPosts(): array
     {
+        return $this->getPublishedPostsQuery()
+            ->all()
+            ->toArray();
+    }
+
+    /**
+     * Get published posts by a tag slug.
+     *
+     * @param string $tagSlug Tag slug
+     * @param int $limit Max number of posts
+     * @return array<int,\App\Model\Entity\BlogPost>
+     */
+    public function getPublishedByTag(string $tagSlug, int $limit = 20): array
+    {
         $table = $this->posts();
 
         return $table->find()
             ->contain(['BlogTags', 'HeroImages'])
+            ->matching('BlogTags', function ($q) use ($tagSlug) {
+                return $q->where(['BlogTags.slug' => $tagSlug]);
+            })
             ->where(['BlogPosts.is_published' => true])
             ->orderByDesc('BlogPosts.published_at')
+            ->limit($limit)
             ->all()
             ->toArray();
+    }
+
+    /**
+     * Get published posts with pagination metadata.
+     *
+     * @param int $limit Page size
+     * @param int $offset Result offset
+     * @return array{posts:array<int,\App\Model\Entity\BlogPost>,total:int}
+     */
+    public function getPublishedPostsPage(int $limit, int $offset = 0): array
+    {
+        $query = $this->getPublishedPostsQuery();
+        $total = (clone $query)->count();
+        $posts = $query->limit($limit)->offset($offset)->all()->toArray();
+
+        return ['posts' => $posts, 'total' => $total];
+    }
+
+    /**
+     * Build the published posts query with pinned ordering.
+     */
+    private function getPublishedPostsQuery(): \Cake\ORM\Query
+    {
+        $table = $this->posts();
+        $query = $table->find()
+            ->contain(['BlogTags', 'HeroImages'])
+            ->where(['BlogPosts.is_published' => true]);
+
+        $query->select($table);
+
+        $schema = $table->getSchema();
+        if ($schema->hasColumn('is_pinned')) {
+            return $query
+                ->orderByDesc('BlogPosts.is_pinned')
+                ->orderByDesc('BlogPosts.pinned_rank')
+                ->orderByDesc('BlogPosts.published_at');
+        }
+
+        return $query->orderByDesc('BlogPosts.published_at');
     }
 
     /**
@@ -188,6 +245,12 @@ class BlogPostService
 
         $isPublished = (bool)($normalized['is_published'] ?? false);
         $normalized['status'] = $isPublished ? 'published' : 'draft';
+
+        $isPinned = (bool)($normalized['is_pinned'] ?? false);
+        if (!$isPinned) {
+            $normalized['pinned_rank'] = null;
+            $normalized['pinned_until'] = null;
+        }
 
         $publishedAt = $normalized['published_at'] ?? null;
         $publishedAtInstance = null;

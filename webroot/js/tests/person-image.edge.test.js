@@ -5,12 +5,17 @@ beforeAll(() => {
     }
 });
 /** @jest-environment jsdom */
+
+import { jest } from "@jest/globals";
 // person-image.edge.test.js - Tests for person-image.js preview/upload with bad/missing data
 
-const personImage = require("../person-image.js");
-
+let personImage;
 describe("person-image.js edge cases", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../person-image.js");
+        personImage = mod.default || mod;
+
         document.body.innerHTML = "";
         jest.resetAllMocks();
         delete global.fetch;

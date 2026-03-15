@@ -281,7 +281,7 @@ class GameServiceTest extends TestCase
             ],
             'new_site' => ['site_name' => 'Field One'],
             'new_opponent' => ['opponent_name' => 'Mock Rival'],
-            'new_game_type' => ['game_type_name' => 'Exhibition', 'post' => 1, 'conf' => 0],
+            'new_game_type' => ['game_type_name' => 'Exhibition', 'post' => 1, 'conf' => 0, 'abr' => 'EXH'],
         ];
 
         $this->service->normalizeAssociatedInlineCreate($data);

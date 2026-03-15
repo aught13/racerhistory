@@ -254,9 +254,7 @@ class TaggingService
                 $unique[(string)$tag['slug']] = $tag;
             } else {
                 $slug = (string)$tag;
-                if ($slug !== '') {
-                    $unique[$slug] = $slug;
-                }
+                $unique[$slug] = $slug;
             }
         }
 
@@ -509,7 +507,7 @@ class TaggingService
                         $opponentName = (string)$row->opponent->opponent_name;
                     }
 
-                    return $this->formatGameTagLabel(
+                    return (new GameService())->formatGameTagLabelFromRow(
                         $row->game_date ?? null,
                         $opponentName,
                         (int)($row->hrn ?? 0),
@@ -585,66 +583,11 @@ class TaggingService
     }
 
     /**
-     * Format a recognizable label for a game tag.
-     *
-     * @param mixed $gameDate Date value as stored on the Game entity.
-     */
-    private function formatGameTagLabel(mixed $gameDate, string $opponentName, int $hrn, int $gameId): string
-    {
-        $date = '';
-        if (!empty($gameDate)) {
-            if ($gameDate instanceof \Cake\I18n\Date) {
-                $date = $gameDate->i18nFormat('yyyy-MM-dd');
-            } elseif ($gameDate instanceof \DateTimeInterface) {
-                $date = $gameDate->format('Y-m-d');
-            } else {
-                $date = (string)$gameDate;
-            }
-        }
-
-        $opp = trim($opponentName);
-        if ($opp === '') {
-            return $date !== '' ? $date . ' — Game #' . $gameId : 'Game #' . $gameId;
-        }
-
-        $separator = match ((int)$hrn) {
-            2 => ' @ ',
-            default => ' vs ',
-        };
-
-        if ($date === '') {
-            return 'Game' . $separator . $opp;
-        }
-
-        return $date . $separator . $opp;
-    }
-
-    /**
      * Resolve a display label for a game id used by context tagging.
      */
     private function getGameTagDisplayLabel(int $gameId): string
     {
-        if ($gameId <= 0) {
-            return 'game';
-        }
-
-        /** @var \App\Model\Table\GamesTable $games */
-        $games = TableRegistry::getTableLocator()->get('Games');
-        $game = $games->find()
-            ->contain(['Opponents'])
-            ->where(['Games.id' => $gameId])
-            ->first();
-
-        if (!$game) {
-            return 'game-' . $gameId;
-        }
-
-        $opponentName = '';
-        if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
-            $opponentName = (string)$game->opponent->opponent_name;
-        }
-
-        return $this->formatGameTagLabel($game->game_date ?? null, $opponentName, (int)($game->hrn ?? 0), $gameId);
+        return (new GameService())->getGameTagDisplayLabel($gameId);
     }
 
     /**

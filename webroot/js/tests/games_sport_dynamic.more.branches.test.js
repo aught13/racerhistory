@@ -1,3 +1,5 @@
+import { jest } from "@jest/globals";
+
 describe("games_sport_dynamic additional branches", () => {
     beforeEach(() => {
         document.body.innerHTML =
@@ -5,12 +7,12 @@ describe("games_sport_dynamic additional branches", () => {
         jest.resetModules();
     });
 
-    test("buildFieldControl creates number with min/max and falls back to text when type unsupported", () => {
+    test("buildFieldControl creates number with min/max and falls back to text when type unsupported", async () => {
         // require after DOM ready so module initializes
-        const gs = require("../../js/games_sport_dynamic");
-        const buildFieldControl =
-            gs.buildFieldControl ||
-            (gs.__internals && gs.__internals.buildFieldControl);
+        const module = await import("../games_sport_dynamic");
+        const { buildFieldControl, __internals } = module.default || module;
+        const buildFieldControlFn =
+            buildFieldControl || (__internals && __internals.buildFieldControl);
         const metaNumber = {
             field_name: "testnum",
             field_type: "number",
@@ -18,7 +20,7 @@ describe("games_sport_dynamic additional branches", () => {
             max: "10",
         };
 
-        const control = buildFieldControl(metaNumber, {});
+        const control = buildFieldControlFn(metaNumber, {});
         expect(control).toBeTruthy();
         const input =
             control.querySelector("input") || control.querySelector("textarea");
@@ -27,23 +29,24 @@ describe("games_sport_dynamic additional branches", () => {
         expect(input.getAttribute("max")).toBe("10");
 
         const metaOther = { field_name: "oth", field_type: "unsupported" };
-        const control2 = buildFieldControl(metaOther, {});
+        const control2 = buildFieldControlFn(metaOther, {});
         const input2 = control2.querySelector("input");
         expect(input2).toBeTruthy();
         expect(input2.getAttribute("type")).toBe("text");
     });
 
-    test("groupFields groups controls by group id", () => {
-        const gs = require("../../js/games_sport_dynamic");
-        const groupFields =
-            gs.groupFields || (gs.__internals && gs.__internals.groupFields);
+    test("groupFields groups controls by group id", async () => {
+        const module = await import("../games_sport_dynamic");
+        const { __internals, groupFields } = module.default || module;
+        const groupFieldsFn =
+            groupFields || (__internals && __internals.groupFields);
         const fields = [
             { field_group: "1" },
             { field_group: "1" },
             { field_group: "2" },
         ];
 
-        const groups = groupFields(fields);
+        const groups = groupFieldsFn(fields);
         expect(Object.keys(groups).length).toBe(2);
         expect(groups["1"].length).toBe(2);
         expect(groups["2"].length).toBe(1);

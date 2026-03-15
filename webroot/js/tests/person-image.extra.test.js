@@ -5,10 +5,15 @@ beforeAll(() => {
     }
 });
 /** @jest-environment jsdom */
-const personImage = require("../person-image.js");
 
+import { jest } from "@jest/globals";
+let personImage;
 describe("person-image extra coverage", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        jest.resetModules();
+        const mod = await import("../person-image.js");
+        personImage = mod.default || mod;
+
         document.body.innerHTML = "";
         jest.resetAllMocks();
     });
