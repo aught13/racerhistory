@@ -1,3 +1,5 @@
 deployment:
   tasks:
-    - /bin/echo "Test deployment"
+    - composer install --no-dev --optimize-autoloader --no-interaction
+    - php bin/cake.php migrations migrate --no-ansi
+    - php bin/cake.php cache clear_all
