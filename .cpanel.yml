@@ -1,7 +1,8 @@
+---
 deployment:
   tasks:
     - export DEPLOYPATH=/home/undfqhne/public_html/new.racerhistory.com
-    - /bin/cp -R * $DEPLOYPATH
+    - /bin/cp -R . $DEPLOYPATH
     - cd $DEPLOYPATH && /usr/local/bin/ea-php84 composer install --no-dev --optimize-autoloader --no-interaction
     - /usr/local/bin/ea-php84 /home/undfqhne/public_html/new.racerhistory.com/bin/cake.php migrations migrate --no-ansi
     - /usr/local/bin/ea-php84 /home/undfqhne/public_html/new.racerhistory.com/bin/cake.php cache clear_all
