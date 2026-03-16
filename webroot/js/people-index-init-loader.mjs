@@ -144,7 +144,7 @@ function cleanupPeoplePage() {
                 }
                 delete table._peopleNameFilterFn;
             }
-            window.$(table).DataTable().destroy(true);
+            window.$(table).DataTable().destroy(false);
         }
     } catch (err) {
         console.warn("Failed to clean up people DataTable", err);

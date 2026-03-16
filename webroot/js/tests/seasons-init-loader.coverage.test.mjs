@@ -464,3 +464,95 @@ describe("seasons-init-loader.mjs (coverage)", () => {
         });
     });
 });
+
+describe("seasons-init-loader cleanupSeasonsPage – back-button fix", () => {
+    beforeEach(() => {
+        jest.resetModules();
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+        delete globalThis.__SEASONS_INIT_LOADER_MOCK__;
+        delete globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__;
+        delete window.$;
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete globalThis.__SEASONS_INIT_LOADER_MOCK__;
+        delete globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__;
+        delete window.$;
+    });
+
+    test("cleanupSeasonsPage calls destroy(false) so table stays in DOM for Turbo cache", async () => {
+        document.body.innerHTML = `
+            <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+            <div id="searchbuilder-panel"></div>`;
+        const table = document.querySelector("#seasons-table");
+
+        const destroyFn = jest.fn();
+        const DataTableFn = jest.fn().mockReturnValue({ destroy: destroyFn });
+        DataTableFn.isDataTable = jest.fn().mockReturnValue(true);
+        DataTableFn.ext = { search: [] };
+
+        const jq = jest.fn(() => ({
+            length: 1,
+            get: () => table,
+            DataTable: DataTableFn,
+        }));
+        jq.fn = {
+            DataTable: DataTableFn,
+            dataTable: Object.assign(DataTableFn, {
+                isDataTable: DataTableFn.isDataTable,
+                ext: DataTableFn.ext,
+            }),
+        };
+        window.$ = jq;
+
+        globalThis.__SEASONS_INIT_LOADER_MOCK__ = jest.fn();
+        globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+            Promise.resolve();
+        const mod = await import("../seasons-init-loader.mjs");
+
+        mod.cleanupSeasonsPage();
+
+        // destroy should be called with false (keep table in DOM for Turbo cache snapshot)
+        expect(destroyFn).toHaveBeenCalledWith(false);
+        // The table element should still be in the DOM after cleanup
+        expect(document.querySelector("#seasons-table")).not.toBeNull();
+    });
+
+    test("cleanupSeasonsPage via turbo:before-cache leaves seasons table in DOM", async () => {
+        document.body.innerHTML = `
+            <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+            <div id="searchbuilder-panel"></div>`;
+
+        const destroyFn = jest.fn();
+        const DataTableFn = jest.fn().mockReturnValue({ destroy: destroyFn });
+        DataTableFn.isDataTable = jest.fn().mockReturnValue(true);
+        DataTableFn.ext = { search: [] };
+
+        const jq = jest.fn(() => ({
+            length: 1,
+            get: () => document.querySelector("#seasons-table"),
+            DataTable: DataTableFn,
+        }));
+        jq.fn = {
+            DataTable: DataTableFn,
+            dataTable: Object.assign(DataTableFn, {
+                isDataTable: DataTableFn.isDataTable,
+                ext: DataTableFn.ext,
+            }),
+        };
+        window.$ = jq;
+
+        globalThis.__SEASONS_INIT_LOADER_MOCK__ = jest.fn();
+        globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+            Promise.resolve();
+        await import("../seasons-init-loader.mjs");
+
+        // Simulate turbo:before-cache (what Turbo fires before creating page snapshot)
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        // Table must still be in DOM so the Turbo snapshot includes it for back navigation
+        expect(document.querySelector("#seasons-table")).not.toBeNull();
+    });
+});
