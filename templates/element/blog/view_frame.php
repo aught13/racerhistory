@@ -21,9 +21,9 @@ declare(strict_types=1);
             </p>
         </div>
 
-        <?php if (!empty($post->hero_image_id)): ?>
+        <?php if (!empty($post->hero_image)): ?>
         <div class="mb-4 text-center">
-            <img src="/images/serve/<?= h($post->hero_image_id) ?>?w=1200&fit=contain" class="img-fluid rounded" alt="<?= h($post->title) ?>" style="object-fit: contain; max-height: 500px;">
+            <img src="<?= h($this->ImageServe->urlForImage($post->hero_image, ['w' => 1200, 'fit' => 'contain'])) ?>" class="img-fluid rounded" alt="<?= h($post->title) ?>" style="object-fit: contain; max-height: 500px;">
         </div>
         <?php endif; ?>
 

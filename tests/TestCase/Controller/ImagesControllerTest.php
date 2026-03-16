@@ -45,10 +45,16 @@ class ImagesControllerTest extends TestCase
         parent::tearDown();
     }
 
-    public function testServeMissingRecordReturns404(): void
+    public function testServeMissingRecordReturnsPlaceholderPng(): void
     {
         $this->get('/images/serve/999999');
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertStringContainsString('public', $this->_response->getHeaderLine('Cache-Control'));
+
+        $body = (string)$this->_response->getBody();
+        $this->assertNotEmpty($body);
+        $this->assertSame("\x89PNG", substr($body, 0, 4));
     }
 
     public function testServeMissingFileReturnsPlaceholderPng(): void
@@ -94,6 +100,38 @@ class ImagesControllerTest extends TestCase
         $this->get('/images/serve/1?v=123');
         $this->assertResponseOk();
         $this->assertStringContainsString('immutable', $this->_response->getHeaderLine('Cache-Control'));
+
+        $this->safeUnlink($fullPath);
+    }
+
+    public function testServeWithoutVersionUsesPublicShortCache(): void
+    {
+        $png = $this->tinyPngBytes();
+        $fullPath = $this->writeFixtureImageFile(1, $png);
+
+        $this->get('/images/serve/1');
+        $this->assertResponseOk();
+        $cacheControl = $this->_response->getHeaderLine('Cache-Control');
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringNotContainsString('immutable', $cacheControl);
+
+        $this->safeUnlink($fullPath);
+    }
+
+    public function testServeReturns304WhenEtagMatches(): void
+    {
+        $png = $this->tinyPngBytes();
+        $fullPath = $this->writeFixtureImageFile(1, $png);
+
+        // First request to get the ETag
+        $this->get('/images/serve/1');
+        $etag = $this->_response->getHeaderLine('ETag');
+        $this->assertNotSame('', $etag);
+
+        // Conditional request with matching ETag
+        $this->configRequest(['headers' => ['If-None-Match' => $etag]]);
+        $this->get('/images/serve/1');
+        $this->assertResponseCode(304);
 
         $this->safeUnlink($fullPath);
     }
