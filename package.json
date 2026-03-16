@@ -87,7 +87,7 @@
       "<rootDir>/jest.setup.js"
     ],
     "moduleNameMapper": {
-      "canvas": "<rootDir>/webroot/js/tests/helpers/canvas-mock.js"
+      "canvas": "<rootDir>/__mocks__/canvas.js"
     }
   },
   "overrides": {
