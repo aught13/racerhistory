@@ -1,95 +1,98 @@
 {
-    "name": "racerhistory-admin-js",
-    "private": true,
-    "type": "module",
-    "devDependencies": {
-        "@babel/core": "^7.22.9",
-        "@babel/preset-env": "^7.22.9",
-        "@hotwired/stimulus": "^3.2.2",
-        "@playwright/test": "^1.58.2",
-        "axe-core": "^4.10.3",
-        "babel-jest": "^29.7.0",
-        "babel-plugin-transform-import-meta": "^2.3.3",
-        "canvas": "^2.11.2",
-        "cross-env": "^10.1.0",
-        "eslint": "^9.39.0",
-        "jest": "^29.7.0",
-        "jest-environment-jsdom": "^29.7.0",
-        "jsdom": "^24.0.0",
-        "prettier": "^3.5.1",
-        "stylelint": "^16.26.1",
-        "stylelint-config-standard": "^37.0.0"
+  "name": "racerhistory-admin-js",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@babel/core": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
+    "@hotwired/stimulus": "^3.2.2",
+    "@playwright/test": "^1.58.2",
+    "axe-core": "^4.10.3",
+    "babel-jest": "^29.7.0",
+    "babel-plugin-transform-import-meta": "^2.3.3",
+    "canvas": "^2.11.2",
+    "cross-env": "^10.1.0",
+    "eslint": "^9.39.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^24.0.0",
+    "prettier": "^3.5.1",
+    "stylelint": "^16.26.1",
+    "stylelint-config-standard": "^37.0.0"
+  },
+  "scripts": {
+    "test:js": "cross-env jest --env=jsdom --colors",
+    "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
+    "test:js:watch": "jest --env=jsdom --watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "playwright:install": "playwright install --with-deps chromium",
+    "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
+    "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
+    "lint:css": "npx stylelint 'webroot/css/**/*.css'",
+    "format:js": "npx prettier --write webroot/js",
+    "format:js:check": "npx prettier --check webroot/js"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ],
+    "sourceType": "unambiguous"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "injectGlobals": true,
+    "transform": {
+      "^.+\\.(js|mjs)$": "babel-jest"
     },
-    "scripts": {
-        "test:js": "cross-env jest --env=jsdom --colors",
-        "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
-        "test:js:watch": "jest --env=jsdom --watch",
-        "test:e2e": "playwright test",
-        "test:e2e:ui": "playwright test --ui",
-        "test:e2e:headed": "playwright test --headed",
-        "test:e2e:debug": "playwright test --debug",
-        "playwright:install": "playwright install --with-deps chromium",
-        "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
-        "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
-        "lint:css": "npx stylelint 'webroot/css/**/*.css'",
-        "format:js": "npx prettier --write webroot/js",
-        "format:js:check": "npx prettier --check webroot/js"
-    },
-    "babel": {
-        "presets": [
-            "@babel/preset-env"
-        ],
-        "sourceType": "unambiguous"
-    },
-    "jest": {
-        "testEnvironment": "jsdom",
-        "injectGlobals": true,
-        "transform": {
-            "^.+\\.(js|mjs)$": "babel-jest"
-        },
-        "moduleFileExtensions": [
-            "js",
-            "mjs",
-            "json"
-        ],
-        "testMatch": [
-            "**/webroot/js/tests/**/*.test.js",
-            "**/webroot/js/tests/**/*.test.mjs"
-        ],
-        "collectCoverage": true,
-        "collectCoverageFrom": [
-            "webroot/js/**/*.js",
-            "webroot/js/**/*.mjs",
-            "!webroot/js/tests/**",
-            "!webroot/js/tinymce/**",
-            "!vendor/**"
-        ],
-        "coverageDirectory": "coverage-js",
-        "coverageReporters": [
-            "clover",
-            "lcov",
-            "text-summary"
-        ],
-        "testPathIgnorePatterns": [
-            "<rootDir>/vendor/",
-            "<rootDir>/e2e/"
-        ],
-        "modulePathIgnorePatterns": [
-            "<rootDir>/vendor/"
-        ],
-        "coveragePathIgnorePatterns": [
-            "/vendor/",
-            "/webroot/js/tinymce/",
-            "/webroot/js/tests/",
-            "/e2e/"
-        ],
-        "setupFilesAfterEnv": [
-            "<rootDir>/jest.setup.js"
-        ]
-    },
-    "overrides": {
-        "@mapbox/node-pre-gyp": {
-            "tar": "7.5.7"
-        }
+    "moduleFileExtensions": [
+      "js",
+      "mjs",
+      "json"
+    ],
+    "testMatch": [
+      "**/webroot/js/tests/**/*.test.js",
+      "**/webroot/js/tests/**/*.test.mjs"
+    ],
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "webroot/js/**/*.js",
+      "webroot/js/**/*.mjs",
+      "!webroot/js/tests/**",
+      "!webroot/js/tinymce/**",
+      "!vendor/**"
+    ],
+    "coverageDirectory": "coverage-js",
+    "coverageReporters": [
+      "clover",
+      "lcov",
+      "text-summary"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/vendor/",
+      "<rootDir>/e2e/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/vendor/"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/vendor/",
+      "/webroot/js/tinymce/",
+      "/webroot/js/tests/",
+      "/e2e/"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "moduleNameMapper": {
+      "canvas": "<rootDir>/webroot/js/tests/helpers/canvas-mock.js"
     }
+  },
+  "overrides": {
+    "@mapbox/node-pre-gyp": {
+      "tar": "7.5.7"
+    }
+  }
 }
