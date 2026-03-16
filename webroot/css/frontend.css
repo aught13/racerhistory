@@ -36,6 +36,20 @@
     --rh-muted: #b2bccb;
     --rh-border: #28354d;
     --rh-link: var(--rh-gold);
+    /* Bootstrap variable overrides so cards/tables adopt dark colours */
+    --bs-body-bg: var(--rh-surface);
+    --bs-body-color: var(--rh-text);
+    --bs-card-bg: var(--rh-surface);
+    --bs-card-color: var(--rh-text);
+    --bs-card-cap-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--rh-text);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-striped-color: var(--rh-text);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+    --bs-table-hover-color: var(--rh-text);
+    --bs-table-border-color: var(--rh-border);
+    --bs-border-color: var(--rh-border);
   }
 }
 
@@ -48,6 +62,20 @@
   --rh-link: var(--rh-gold);
   --rh-main-bg: #444;
   --rh-content-bg: #555;
+  /* Bootstrap variable overrides so cards/tables adopt dark colours */
+  --bs-body-bg: var(--rh-surface);
+  --bs-body-color: var(--rh-text);
+  --bs-card-bg: var(--rh-surface);
+  --bs-card-color: var(--rh-text);
+  --bs-card-cap-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--rh-text);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-striped-color: var(--rh-text);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+  --bs-table-hover-color: var(--rh-text);
+  --bs-table-border-color: var(--rh-border);
+  --bs-border-color: var(--rh-border);
 }
 
 :root[data-theme="light"] {
@@ -2052,4 +2080,15 @@ select.dtsb-dropDown option[disabled] {
 
 .game-image-modal-close:hover {
   color: var(--rh-gold) !important;
+}
+
+/* Season games table: ensure link colour is always readable */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) [data-season-view] #season-games-table a {
+    color: var(--rh-link);
+  }
+}
+
+:root[data-theme="dark"] [data-season-view] #season-games-table a {
+  color: var(--rh-link);
 }

@@ -94,13 +94,6 @@ $this->start('css'); ?>
 <?php $this->end(); ?>
 
 <div class="container py-4 season-view" data-season-view>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            [data-season-view] #season-games-table a {
-                color: #001f3f;
-            }
-        }
-    </style>
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">

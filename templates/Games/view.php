@@ -152,7 +152,7 @@ $this->start('css'); ?>
                             <div class="game-meta-item">
                                 <span class="game-meta-label">Type</span>
                                 <span class="game-meta-value">
-                                    <span class="badge bg-info text-dark game-type-badge"><?= h($game->game_type->type_name) ?></span>
+                                    <span class="badge bg-info game-type-badge"><?= h($game->game_type->type_name) ?></span>
                                 </span>
                             </div>
                         <?php endif; ?>
