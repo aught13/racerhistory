@@ -27,7 +27,7 @@ declare(strict_types=1);
 #stats-searchbuilder-slot .dtsb-searchBuilder{padding:0.75rem;background:var(--rh-navy);border-radius:0.375rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:0.8125rem}
 #stats-searchbuilder-slot .dtsb-title{font-weight:600;font-size:0.8125rem;color:var(--rh-gold)}
 #stats-searchbuilder-slot .dtsb-group{border:1px solid rgba(255,255,255,0.15);border-radius:0.375rem;padding:0.5rem;background:rgba(255,255,255,0.07)}
-#stats-searchbuilder-slot .dtsb-criteria select,#stats-searchbuilder-slot .dtsb-criteria input{font-size:0.8125rem;background:#fff;color:#212529;border:1px solid var(--rh-border);border-radius:0.25rem;padding:0.2rem 0.4rem}
+#stats-searchbuilder-slot .dtsb-criteria select,#stats-searchbuilder-slot .dtsb-criteria input{font-size:0.8125rem;background:var(--rh-surface);color:var(--rh-text);border:1px solid var(--rh-border);border-radius:0.25rem;padding:0.2rem 0.4rem}
 #stats-searchbuilder-slot .dtsb-button,#stats-searchbuilder-slot button.dt-button{background:var(--rh-gold);color:var(--rh-navy);border:1px solid var(--rh-gold);border-radius:0.25rem;font-size:0.8125rem;font-weight:600;padding:0.25rem 0.625rem}
 #stats-searchbuilder-slot .dtsb-button:hover,#stats-searchbuilder-slot button.dt-button:hover{background:#fff;color:var(--rh-navy);border-color:#fff}
 #stats-searchbuilder-slot button.dtsb-delete,#stats-searchbuilder-slot button.dtsb-right{background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.2)}

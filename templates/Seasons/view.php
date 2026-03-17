@@ -257,16 +257,16 @@ $this->start('css'); ?>
                                                 <?php $typeLabel = $type?->abr ?: ($type?->label ?? ''); ?>
                                                 <?php if (!empty($typeLabel)) : ?>
                                                     <?php
-                                                    $badgeStyle = 'background-color:#6c757d;color:#ffffff;';
+                                                    $badgeClass = 'bg-secondary';
                                                     if (!empty($type->post)) {
                                                         if (!empty($type->conf)) {
-                                                            $badgeStyle = 'background-color:#FFD700;color:#001f3f;';
+                                                            $badgeClass = 'rh-badge-conf-post';
                                                         } else {
-                                                            $badgeStyle = 'background-color:#001f3f;color:#FFD700;';
+                                                            $badgeClass = 'rh-badge-post';
                                                         }
                                                     }
                                                     ?>
-                                                    <span class="badge" style="<?= $badgeStyle ?>">
+                                                    <span class="badge <?= h($badgeClass) ?>">
                                                         <?= h($typeLabel) ?>
                                                     </span>
                                                 <?php endif; ?>
