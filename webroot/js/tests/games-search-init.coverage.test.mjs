@@ -426,3 +426,48 @@ describe("games-search-init numeric column detection", () => {
         mod.initGamesDataTable(document.getElementById("games-results-table"));
     });
 });
+
+describe("games-search-init cleanupGamesPage – back-button fix", () => {
+    beforeEach(() => {
+        jest.resetModules();
+        document.body.innerHTML = "";
+        delete window.$;
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete window.$;
+    });
+
+    test("cleanupGamesPage calls destroy(false) so table stays in DOM for Turbo cache", async () => {
+        document.body.innerHTML = `<table id="games-results-table"><thead><tr><th>X</th></tr></thead></table>`;
+        const table = document.getElementById("games-results-table");
+
+        const destroyFn = jest.fn();
+        const DataTableFn = jest.fn().mockReturnValue({ destroy: destroyFn });
+        DataTableFn.isDataTable = jest.fn().mockReturnValue(true);
+        DataTableFn.ext = { search: [] };
+
+        const jq = jest.fn(() => ({
+            length: 1,
+            get: () => table,
+            DataTable: DataTableFn,
+        }));
+        jq.fn = {
+            DataTable: DataTableFn,
+            dataTable: Object.assign(DataTableFn, {
+                isDataTable: DataTableFn.isDataTable,
+                ext: DataTableFn.ext,
+            }),
+        };
+        window.$ = jq;
+
+        const mod = await import("../games-search-init.mjs");
+        mod.cleanupGamesPage();
+
+        // destroy should be called with false (keep table in DOM for Turbo cache snapshot)
+        expect(destroyFn).toHaveBeenCalledWith(false);
+        // The table element should still be in the DOM after cleanup
+        expect(document.getElementById("games-results-table")).not.toBeNull();
+    });
+});

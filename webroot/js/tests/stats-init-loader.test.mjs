@@ -258,3 +258,48 @@ describe("initCardHover", () => {
         expect(card.classList.contains("shadow-sm")).toBe(false);
     });
 });
+
+describe("stats-init-loader cleanupStatsPage – back-button fix", () => {
+    beforeEach(() => {
+        jest.resetModules();
+        document.body.innerHTML = "";
+        delete window.$;
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete window.$;
+    });
+
+    test("cleanupStatsPage calls destroy(false) so table stays in DOM for Turbo cache", async () => {
+        document.body.innerHTML = `<table id="stats-results-table"><thead><tr><th>X</th></tr></thead></table>`;
+        const table = document.getElementById("stats-results-table");
+
+        const destroyFn = jest.fn();
+        const DataTableFn = jest.fn().mockReturnValue({ destroy: destroyFn });
+        DataTableFn.isDataTable = jest.fn().mockReturnValue(true);
+        DataTableFn.ext = { search: [] };
+
+        const jq = jest.fn(() => ({
+            length: 1,
+            get: () => table,
+            DataTable: DataTableFn,
+        }));
+        jq.fn = {
+            DataTable: DataTableFn,
+            dataTable: Object.assign(DataTableFn, {
+                isDataTable: DataTableFn.isDataTable,
+                ext: DataTableFn.ext,
+            }),
+        };
+        window.$ = jq;
+
+        const mod = await import("../stats-init-loader.mjs");
+        mod.cleanupStatsPage();
+
+        // destroy should be called with false (keep table in DOM for Turbo cache snapshot)
+        expect(destroyFn).toHaveBeenCalledWith(false);
+        // The table element should still be in the DOM after cleanup
+        expect(document.getElementById("stats-results-table")).not.toBeNull();
+    });
+});
