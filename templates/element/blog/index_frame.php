@@ -28,12 +28,12 @@ if ($page === 1 && !empty($posts)) {
             <turbo-frame id="blog-post-<?= h($featured->slug) ?>" class="blog-featured-frame mb-5 pb-4 border-bottom">
                 <div class="blog-featured cursor-pointer" data-blog-post="<?= h($featured->slug) ?>" style="cursor: pointer;">
                     <div class="row align-items-start g-4">
-                        <?php if (!empty($featured->hero_image_id)): ?>
+                        <?php if (!empty($featured->hero_image)): ?>
                         <div class="col-lg-7">
-                            <img src="/images/serve/<?= h($featured->hero_image_id) ?>?w=1200&h=720&fit=cover" class="img-fluid rounded blog-hero-image" alt="<?= h($featured->title) ?>">
+                            <img src="<?= h($this->ImageServe->urlForImage($featured->hero_image, ['w' => 1200, 'h' => 720, 'fit' => 'cover'])) ?>" class="img-fluid rounded blog-hero-image" alt="<?= h($featured->title) ?>">
                         </div>
                         <?php endif; ?>
-                        <div class="col-lg-<?= !empty($featured->hero_image_id) ? '5' : '12' ?>">
+                        <div class="col-lg-<?= !empty($featured->hero_image) ? '5' : '12' ?>">
                             <h1 class="h2 mb-2 blog-hero-title"><?= h($featured->title) ?></h1>
                             <p class="text-muted small mb-3">
                                 <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
