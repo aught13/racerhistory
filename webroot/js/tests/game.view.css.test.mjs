@@ -21,4 +21,16 @@ describe("Game view CSS", () => {
     test("game photos grid uses CSS grid", () => {
         expect(css).toMatch(/\.game-photos-grid[\s\S]*grid-template-columns:/i);
     });
+
+    test("dark mode overrides Bootstrap card background variable", () => {
+        expect(css).toMatch(
+            /\[data-theme="dark"\][\s\S]*--bs-card-bg:\s*var\(--rh-surface\)/i,
+        );
+    });
+
+    test("dark mode overrides Bootstrap table colour variable", () => {
+        expect(css).toMatch(
+            /\[data-theme="dark"\][\s\S]*--bs-table-color:\s*var\(--rh-text\)/i,
+        );
+    });
 });
