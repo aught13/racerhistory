@@ -37,7 +37,7 @@ class ImagesController extends AppController
         $request->allowMethod(['get', 'head']);
         $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
         if (!$image) {
-            throw new RecordNotFoundException('Image not found');
+            return $this->placeholderTransparentPng();
         }
         $variant = (string)$request->getQuery('variant');
         [$path, $mime] = $this->resolvePath($image, $variant);
@@ -49,19 +49,27 @@ class ImagesController extends AppController
         $hasVersion = (string)$request->getQuery('v') !== '';
         $cacheControl = $hasVersion
             ? 'public, max-age=31536000, immutable'
-            : 'private, max-age=0, must-revalidate';
+            : 'public, max-age=3600, must-revalidate';
+
+        $etag = $this->buildEtag((string)($image->hash ?? ''), $variant, []);
 
         $transform = $this->extractTransformParams();
         if ($transform !== null) {
             return $this->serveTransformed($image, $path, $mime, $variant, $transform, $cacheControl);
         }
 
+        $ifNoneMatch = $request->getHeaderLine('If-None-Match');
+        if ($ifNoneMatch !== '' && $ifNoneMatch === $etag) {
+            return $this->getResponse()
+                ->withStatus(304)
+                ->withHeader('ETag', $etag)
+                ->withHeader('Cache-Control', $cacheControl);
+        }
+
         $body = file_get_contents($path) ?: '';
         if ($body === '') {
             return $this->placeholderTransparentPng();
         }
-
-        $etag = $this->buildEtag((string)($image->hash ?? ''), $variant, []);
 
         return $this->getResponse()
             ->withType($mime)
@@ -142,6 +150,14 @@ class ImagesController extends AppController
         $baseHash = (string)($image->hash ?? '');
         $etag = $this->buildEtag($baseHash, $variant, $transform);
 
+        $ifNoneMatch = $this->getRequest()->getHeaderLine('If-None-Match');
+        if ($ifNoneMatch !== '' && $ifNoneMatch === $etag) {
+            return $this->getResponse()
+                ->withStatus(304)
+                ->withHeader('ETag', $etag)
+                ->withHeader('Cache-Control', $cacheControl);
+        }
+
         [$outMime, $ext] = $this->outputFormat($transform['fm'] ?? null, $mime);
         $cacheDir = CACHE . 'image_derivatives' . DIRECTORY_SEPARATOR . (string)$image->id . DIRECTORY_SEPARATOR;
         if (!is_dir($cacheDir)) {
@@ -190,7 +206,7 @@ class ImagesController extends AppController
                 return $this->placeholderTransparentPng();
             }
 
-            file_put_contents($cached, $body);
+            $this->atomicWriteCache($cached, $body);
 
             return $this->getResponse()
                 ->withType($outMime)
@@ -291,6 +307,28 @@ class ImagesController extends AppController
         }
 
         return [$path, $mime];
+    }
+
+    /**
+     * Write data to a cache file atomically using a temp file + rename.
+     *
+     * Using a temp file prevents concurrent readers from seeing a partially-written
+     * file, which would result in serving a corrupted/truncated image.
+     */
+    private function atomicWriteCache(string $destination, string $data): void
+    {
+        $tmp = $destination . '.tmp.' . getmypid();
+        $written = file_put_contents($tmp, $data);
+        if ($written === false) {
+            \Cake\Log\Log::warning('image_cache: failed to write tmp file ' . $tmp);
+            return;
+        }
+        if (!rename($tmp, $destination)) {
+            \Cake\Log\Log::warning('image_cache: failed to rename ' . $tmp . ' to ' . $destination);
+            if (!unlink($tmp)) {
+                \Cake\Log\Log::warning('image_cache: failed to unlink tmp file ' . $tmp);
+            }
+        }
     }
 
     /**

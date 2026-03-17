@@ -395,7 +395,7 @@ function cleanupSeasonsPage() {
         }
         try {
             if (window.$.fn.dataTable.isDataTable(table)) {
-                window.$(table).DataTable().destroy(true);
+                window.$(table).DataTable().destroy(false);
             }
         } catch (err) {
             console.warn("Failed to clean up seasons DataTable", err);
