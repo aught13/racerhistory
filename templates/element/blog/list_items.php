@@ -9,8 +9,13 @@ declare(strict_types=1);
 <turbo-frame id="blog-post-<?= h($post->slug) ?>" class="blog-list-item-frame mb-3 pb-3 border-bottom">
     <div class="blog-list-item cursor-pointer d-flex gap-3" data-blog-post="<?= h($post->slug) ?>" style="cursor: pointer;">
         <?php if (!empty($post->hero_image_id)): ?>
+        <?php
+        $heroSrc = !empty($post->hero_image)
+            ? $this->ImageServe->urlForImage($post->hero_image, ['w' => 200, 'h' => 150, 'fit' => 'cover'])
+            : $this->ImageServe->url($post->hero_image_id, ['w' => 200, 'h' => 150, 'fit' => 'cover']);
+        ?>
         <div style="flex-shrink: 0; width: 120px; height: 90px;">
-            <img src="/images/serve/<?= h($post->hero_image_id) ?>?w=200&h=150&fit=cover" class="img-fluid rounded" alt="<?= h($post->title) ?>" style="object-fit: cover; width: 100%; height: 100%;">
+            <img src="<?= h($heroSrc) ?>" class="img-fluid rounded" alt="<?= h($post->title) ?>" style="object-fit: cover; width: 100%; height: 100%;">
         </div>
         <?php endif; ?>
         <div class="flex-grow-1">

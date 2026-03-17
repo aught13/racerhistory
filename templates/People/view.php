@@ -358,7 +358,7 @@ $this->end();
                                 <div class="col-6">
                                     <div class="card h-100">
                                         <img
-                                            src="/images/serve/<?= h($image->id) ?>?w=300&h=300&fit=cover"
+                                            src="<?= h($this->ImageServe->urlForImage($image, ['w' => 300, 'h' => 300, 'fit' => 'cover'])) ?>"
                                             class="card-img-top"
                                             alt="<?= h($image->filename) ?>"
                                             loading="lazy">
@@ -393,8 +393,12 @@ $this->end();
                                     'action' => 'popover',
                                     $post->slug,
                                 ]);
-                                $heroImageId = (string)$post->hero_image_id;
-                                $heroImageSrc = '/images/serve/' . $heroImageId . '?w=200&h=150&fit=cover';
+                                $heroImageSrc = '';
+                                if (!empty($post->hero_image)) {
+                                    $heroImageSrc = $this->ImageServe->urlForImage($post->hero_image, ['w' => 200, 'h' => 150, 'fit' => 'cover']);
+                                } elseif (!empty($post->hero_image_id)) {
+                                    $heroImageSrc = $this->ImageServe->url($post->hero_image_id, ['w' => 200, 'h' => 150, 'fit' => 'cover']);
+                                }
                                 ?>
                                 <a
                                     href="<?= h($viewUrl) ?>"
