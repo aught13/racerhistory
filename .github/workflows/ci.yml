@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [v-0.2.0.beta, v-1.0.dev]
   pull_request:
-    branches: [master, main]
+    branches: [v-0.2.0.beta, v-1.0.dev]
   workflow_dispatch:
 
 permissions:
@@ -92,31 +92,52 @@ jobs:
 
       - name: Fix migration compatibility
         run: |
-          echo "=== Checking AbstractMigration autoId property declaration ==="
-          PARENT_DECLARATION=$(grep -A 1 -B 1 "autoId" vendor/cakephp/migrations/src/AbstractMigration.php | grep "public" || echo "not found")
-          echo "Parent class has: $PARENT_DECLARATION"
-
-          echo "=== Updating migration autoId property (no hardcoded filenames) ==="
-
+          echo "=== Detecting installed migrations plugin version ==="
           shopt -s nullglob
           migration_files=(config/Migrations/[0-9]*.php)
-          echo "Found ${#migration_files[@]} migration file(s)."
+          seed_files=(config/Seeds/*.php)
+          echo "Found ${#migration_files[@]} migration file(s), ${#seed_files[@]} seed file(s)."
 
-          if echo "$PARENT_DECLARATION" | grep -q "bool.*autoId"; then
-            echo "Parent requires typed bool (public bool \$autoId = <bool>;)."
+          # Detect which base classes the installed plugin provides
+          if [ -f "vendor/cakephp/migrations/src/BaseMigration.php" ]; then
+            echo "Using 5.x classes (BaseMigration / BaseSeed)"
             for f in "${migration_files[@]}"; do
-              # Preserve existing true/false value and only normalize typing.
+              sed -i 's/use Migrations\\AbstractMigration;/use Migrations\\BaseMigration;/g' "$f"
+              sed -i 's/extends AbstractMigration/extends BaseMigration/g' "$f"
+            done
+            for f in "${seed_files[@]}"; do
+              sed -i 's/use Migrations\\AbstractSeed;/use Migrations\\BaseSeed;/g' "$f"
+              sed -i 's/extends AbstractSeed/extends BaseSeed/g' "$f"
+            done
+            PARENT_FILE="vendor/cakephp/migrations/src/BaseMigration.php"
+          else
+            echo "Using legacy classes (AbstractMigration / AbstractSeed)"
+            for f in "${migration_files[@]}"; do
+              sed -i 's/use Migrations\\BaseMigration;/use Migrations\\AbstractMigration;/g' "$f"
+              sed -i 's/extends BaseMigration/extends AbstractMigration/g' "$f"
+            done
+            for f in "${seed_files[@]}"; do
+              sed -i 's/use Migrations\\BaseSeed;/use Migrations\\AbstractSeed;/g' "$f"
+              sed -i 's/extends BaseSeed/extends AbstractSeed/g' "$f"
+            done
+            PARENT_FILE="vendor/cakephp/migrations/src/AbstractMigration.php"
+          fi
+
+          # Ensure autoId typing matches parent
+          echo "=== Fixing autoId property type ==="
+          if grep -q 'public bool \$autoId' "$PARENT_FILE" 2>/dev/null; then
+            echo "Parent requires typed bool."
+            for f in "${migration_files[@]}"; do
               perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public bool \$autoId = $1;/g' "$f"
             done
           else
-            echo "Parent requires untyped (public \$autoId = <bool>;)."
+            echo "Parent requires untyped."
             for f in "${migration_files[@]}"; do
-              # Preserve existing true/false value and only normalize typing.
               perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public \$autoId = $1;/g' "$f"
             done
           fi
 
-          echo "=== Sample post-fix autoId lines ==="
+          echo "=== Sample post-fix lines ==="
           grep -R --line-number -E 'public\s+(bool\s+)?\$autoId\s*=\s*(true|false)\s*;' config/Migrations/ || true
 
       - name: Run database migrations
@@ -139,8 +160,12 @@ jobs:
           grep -r "BaseMigration" config/Migrations/ || echo "No BaseMigration references found"
           echo "=== Migrations version ==="
           composer show cakephp/migrations
-          echo "=== Check AbstractMigration autoId property ==="
-          grep -A 3 -B 3 "autoId" vendor/cakephp/migrations/src/AbstractMigration.php || echo "autoId property not found"
+          echo "=== Check BaseMigration autoId property ==="
+          PARENT_FILE="vendor/cakephp/migrations/src/BaseMigration.php"
+          if [ ! -f "$PARENT_FILE" ]; then
+            PARENT_FILE="vendor/cakephp/migrations/src/AbstractMigration.php"
+          fi
+          grep -A 3 -B 3 "autoId" "$PARENT_FILE" || echo "autoId property not found"
           echo "=== PHPUnit version ==="
           vendor/bin/phpunit --version
           echo "=== PHP version ==="
@@ -340,13 +365,53 @@ jobs:
           done
           mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS racerhistory_test; GRANT ALL PRIVILEGES ON racerhistory_test.* TO 'test_user'@'%';"
 
+      - name: Fix migration compatibility (E2E)
+        run: |
+          shopt -s nullglob
+          # Detect which base class the installed migrations plugin provides
+          if [ -f "vendor/cakephp/migrations/src/BaseMigration.php" ]; then
+            # 5.x: ensure files use BaseMigration / BaseSeed
+            for f in config/Migrations/[0-9]*.php; do
+              sed -i 's/use Migrations\\AbstractMigration;/use Migrations\\BaseMigration;/g' "$f"
+              sed -i 's/extends AbstractMigration/extends BaseMigration/g' "$f"
+            done
+            for f in config/Seeds/*.php; do
+              sed -i 's/use Migrations\\AbstractSeed;/use Migrations\\BaseSeed;/g' "$f"
+              sed -i 's/extends AbstractSeed/extends BaseSeed/g' "$f"
+            done
+          else
+            # Older: ensure files use AbstractMigration / AbstractSeed
+            for f in config/Migrations/[0-9]*.php; do
+              sed -i 's/use Migrations\\BaseMigration;/use Migrations\\AbstractMigration;/g' "$f"
+              sed -i 's/extends BaseMigration/extends AbstractMigration/g' "$f"
+            done
+            for f in config/Seeds/*.php; do
+              sed -i 's/use Migrations\\BaseSeed;/use Migrations\\AbstractSeed;/g' "$f"
+              sed -i 's/extends BaseSeed/extends AbstractSeed/g' "$f"
+            done
+          fi
+          # Ensure autoId typing matches parent
+          PARENT_FILE="vendor/cakephp/migrations/src/BaseMigration.php"
+          if [ ! -f "$PARENT_FILE" ]; then
+            PARENT_FILE="vendor/cakephp/migrations/src/AbstractMigration.php"
+          fi
+          if grep -q 'public bool \$autoId' "$PARENT_FILE" 2>/dev/null; then
+            for f in config/Migrations/[0-9]*.php; do
+              perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public bool \$autoId = $1;/g' "$f"
+            done
+          else
+            for f in config/Migrations/[0-9]*.php; do
+              perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public \$autoId = $1;/g' "$f"
+            done
+          fi
+
       - name: Run database migrations
         run: bin/cake migrations migrate
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
       - name: Seed E2E test data
-        run: bin/cake migrations seed --seed E2eSeedData
+        run: bin/cake seeds run E2eSeedData
         env:
           DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 

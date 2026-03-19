@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Migrations\AbstractSeed;
+use Migrations\BaseSeed;
 
 /**
  * E2E seed data for Playwright tests.
@@ -11,7 +11,7 @@ use Migrations\AbstractSeed;
  * otherwise empty after migrations). All IDs are forced to 1 so that the
  * hard-coded URLs in the E2E specs work without modification.
  */
-class E2eSeedData extends AbstractSeed
+class E2eSeedData extends BaseSeed
 {
     /**
      * Check if a table has a specific column.

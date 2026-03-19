@@ -346,6 +346,7 @@ class DeployAuditService
         $assets = [
             'webroot/js/admin.js',
             'webroot/js/admin.mjs',
+            'webroot/js/admin-dashboard.js',
             'webroot/js/image-selector.js',
             'webroot/js/games_sport_dynamic.js',
             'webroot/js/sport-aware-game-form.js',

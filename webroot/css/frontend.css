@@ -36,6 +36,8 @@
     --rh-muted: #b2bccb;
     --rh-border: #28354d;
     --rh-link: var(--rh-gold);
+    --rh-main-bg: #0a0a0a;
+    --rh-content-bg: #0f1a2e;
     /* Bootstrap variable overrides so cards/tables adopt dark colours */
     --bs-body-bg: var(--rh-surface);
     --bs-body-color: var(--rh-text);
@@ -60,8 +62,8 @@
   --rh-muted: #b2bccb;
   --rh-border: #28354d;
   --rh-link: var(--rh-gold);
-  --rh-main-bg: #444;
-  --rh-content-bg: #555;
+  --rh-main-bg: #0a0a0a;
+  --rh-content-bg: #0f1a2e;
   /* Bootstrap variable overrides so cards/tables adopt dark colours */
   --bs-body-bg: var(--rh-surface);
   --bs-body-color: var(--rh-text);
@@ -1497,7 +1499,9 @@ button.season-roster-link:active {
 }
 
 .rh-footer {
-  background: #f8f9fa;
+  background: var(--rh-surface);
+  border-top: 1px solid var(--rh-border);
+  color: var(--rh-text);
 }
 
 .rh-footer-inner {
@@ -2091,4 +2095,720 @@ select.dtsb-dropDown option[disabled] {
 
 :root[data-theme="dark"] [data-season-view] #season-games-table a {
   color: var(--rh-link);
+}
+
+/* =====================================================================
+   DARK MODE — comprehensive component overrides
+   Each rule is duplicated for system-dark and explicit-dark selectors.
+   ===================================================================== */
+
+/* --- Bootstrap text utilities -------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .text-muted { color: var(--rh-muted) !important; }
+  :root:not([data-theme]) .text-dark  { color: var(--rh-text) !important; }
+  :root:not([data-theme]) .text-body  { color: var(--rh-text) !important; }
+}
+:root[data-theme="dark"] .text-muted { color: var(--rh-muted) !important; }
+:root[data-theme="dark"] .text-dark  { color: var(--rh-text) !important; }
+:root[data-theme="dark"] .text-body  { color: var(--rh-text) !important; }
+
+/* --- Bootstrap background utilities -------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .bg-light {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: var(--rh-text) !important;
+  }
+  :root:not([data-theme]) .bg-white {
+    background-color: var(--rh-surface) !important;
+    color: var(--rh-text) !important;
+  }
+}
+:root[data-theme="dark"] .bg-light {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: var(--rh-text) !important;
+}
+:root[data-theme="dark"] .bg-white {
+  background-color: var(--rh-surface) !important;
+  color: var(--rh-text) !important;
+}
+
+/* --- Cards --------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .card {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .card-header {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: var(--rh-border);
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .card-footer {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: var(--rh-border);
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .card {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .card-header {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--rh-border);
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .card-footer {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-color: var(--rh-border);
+  color: var(--rh-text);
+}
+
+/* --- Form controls ------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .form-control,
+  :root:not([data-theme]) .form-select {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .form-control::placeholder {
+    color: var(--rh-muted);
+  }
+  :root:not([data-theme]) .form-control:focus,
+  :root:not([data-theme]) .form-select:focus {
+    background-color: rgba(255, 255, 255, 0.09);
+    color: var(--rh-text);
+    border-color: var(--rh-gold);
+    box-shadow: 0 0 0 0.2rem rgba(236, 172, 0, 0.25);
+  }
+  :root:not([data-theme]) .input-group-text {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+}
+:root[data-theme="dark"] .form-control,
+:root[data-theme="dark"] .form-select {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .form-control::placeholder {
+  color: var(--rh-muted);
+}
+:root[data-theme="dark"] .form-control:focus,
+:root[data-theme="dark"] .form-select:focus {
+  background-color: rgba(255, 255, 255, 0.09);
+  color: var(--rh-text);
+  border-color: var(--rh-gold);
+  box-shadow: 0 0 0 0.2rem rgba(236, 172, 0, 0.25);
+}
+:root[data-theme="dark"] .input-group-text {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+
+/* --- List groups --------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .list-group-item {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .list-group-item-action:hover,
+  :root:not([data-theme]) .list-group-item-action:focus {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .list-group-item {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .list-group-item-action:hover,
+:root[data-theme="dark"] .list-group-item-action:focus {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--rh-text);
+}
+
+/* --- Badges -------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .badge.bg-light {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--rh-text) !important;
+    border-color: var(--rh-border) !important;
+  }
+  :root:not([data-theme]) .badge.bg-info {
+    background-color: rgba(13, 202, 240, 0.2) !important;
+    color: #7dd3fc !important;
+  }
+}
+:root[data-theme="dark"] .badge.bg-light {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--rh-text) !important;
+  border-color: var(--rh-border) !important;
+}
+:root[data-theme="dark"] .badge.bg-info {
+  background-color: rgba(13, 202, 240, 0.2) !important;
+  color: #7dd3fc !important;
+}
+
+/* --- Alerts -------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .alert-info {
+    background-color: rgba(13, 202, 240, 0.12);
+    color: #7dd3fc;
+    border-color: rgba(13, 202, 240, 0.25);
+  }
+  :root:not([data-theme]) .alert-success {
+    background-color: rgba(25, 135, 84, 0.15);
+    color: #75d5a0;
+    border-color: rgba(25, 135, 84, 0.3);
+  }
+  :root:not([data-theme]) .alert-warning {
+    background-color: rgba(255, 193, 7, 0.12);
+    color: #ffd96b;
+    border-color: rgba(255, 193, 7, 0.25);
+  }
+  :root:not([data-theme]) .alert-danger {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #f5a3ac;
+    border-color: rgba(220, 53, 69, 0.3);
+  }
+}
+:root[data-theme="dark"] .alert-info {
+  background-color: rgba(13, 202, 240, 0.12);
+  color: #7dd3fc;
+  border-color: rgba(13, 202, 240, 0.25);
+}
+:root[data-theme="dark"] .alert-success {
+  background-color: rgba(25, 135, 84, 0.15);
+  color: #75d5a0;
+  border-color: rgba(25, 135, 84, 0.3);
+}
+:root[data-theme="dark"] .alert-warning {
+  background-color: rgba(255, 193, 7, 0.12);
+  color: #ffd96b;
+  border-color: rgba(255, 193, 7, 0.25);
+}
+:root[data-theme="dark"] .alert-danger {
+  background-color: rgba(220, 53, 69, 0.15);
+  color: #f5a3ac;
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+/* --- Breadcrumbs --------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .breadcrumb {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .breadcrumb-item a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) .breadcrumb-item.active {
+    color: var(--rh-muted);
+  }
+  :root:not([data-theme]) .breadcrumb-item + .breadcrumb-item::before {
+    color: var(--rh-muted);
+  }
+}
+:root[data-theme="dark"] .breadcrumb {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .breadcrumb-item a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] .breadcrumb-item.active {
+  color: var(--rh-muted);
+}
+:root[data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--rh-muted);
+}
+
+/* --- Dropdowns ----------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .dropdown-menu {
+    background-color: var(--rh-surface);
+    border-color: var(--rh-border);
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .dropdown-item {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .dropdown-item:hover,
+  :root:not([data-theme]) .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .dropdown-menu {
+  background-color: var(--rh-surface);
+  border-color: var(--rh-border);
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .dropdown-item {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .dropdown-item:hover,
+:root[data-theme="dark"] .dropdown-item:focus {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--rh-text);
+}
+
+/* --- Pagination (DataTables + Bootstrap) --------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .page-link {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .page-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--rh-gold);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .page-item.active .page-link {
+    background-color: var(--rh-gold);
+    color: var(--rh-navy);
+    border-color: var(--rh-gold);
+  }
+  :root:not([data-theme]) .page-item.disabled .page-link {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--rh-muted);
+    border-color: var(--rh-border);
+  }
+}
+:root[data-theme="dark"] .page-link {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .page-link:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--rh-gold);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .page-item.active .page-link {
+  background-color: var(--rh-gold);
+  color: var(--rh-navy);
+  border-color: var(--rh-gold);
+}
+:root[data-theme="dark"] .page-item.disabled .page-link {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--rh-muted);
+  border-color: var(--rh-border);
+}
+
+/* --- Tables -------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .table {
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .table > :not(caption) > * > * {
+    background-color: transparent;
+    color: var(--rh-text);
+    border-bottom-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .table {
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .table > :not(caption) > * > * {
+  background-color: transparent;
+  color: var(--rh-text);
+  border-bottom-color: var(--rh-border);
+}
+:root[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--rh-text);
+}
+
+/* --- Buttons ------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .btn-outline-secondary {
+    color: var(--rh-muted);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .btn-outline-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--rh-text);
+    border-color: var(--rh-muted);
+  }
+}
+:root[data-theme="dark"] .btn-outline-secondary {
+  color: var(--rh-muted);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .btn-outline-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--rh-text);
+  border-color: var(--rh-muted);
+}
+
+/* --- Footer ad slot ------------------------------------------------ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .rh-footer-ad {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--rh-muted);
+  }
+}
+:root[data-theme="dark"] .rh-footer-ad {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--rh-muted);
+}
+
+/* --- Shadow softening for dark mode -------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.4) !important;
+  }
+  :root:not([data-theme]) .shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5) !important;
+  }
+}
+:root[data-theme="dark"] .shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.4) !important;
+}
+:root[data-theme="dark"] .shadow {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5) !important;
+}
+
+/* --- Border utility override --------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .border {
+    border-color: var(--rh-border) !important;
+  }
+}
+:root[data-theme="dark"] .border {
+  border-color: var(--rh-border) !important;
+}
+
+/* --- Scroll-to-top button ------------------------------------------ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .rh-scroll-top {
+    background: var(--rh-gold);
+    color: var(--rh-navy);
+  }
+}
+:root[data-theme="dark"] .rh-scroll-top {
+  background: var(--rh-gold);
+  color: var(--rh-navy);
+}
+
+/* --- DataTables length/info/processing ----------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_length select {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_length label,
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_processing {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_info {
+    color: var(--rh-muted);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_filter label {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_filter input {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: var(--rh-text) !important;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--rh-link) !important;
+    color: var(--rh-navy) !important;
+    border-color: var(--rh-link) !important;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--rh-text) !important;
+  }
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_length select {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_length label,
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_processing {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_info {
+  color: var(--rh-muted);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_filter label {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_filter input {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button {
+  color: var(--rh-text) !important;
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+  background: var(--rh-link) !important;
+  color: var(--rh-navy) !important;
+  border-color: var(--rh-link) !important;
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--rh-text) !important;
+}
+
+/* --- DataTables table body/cell dark mode overrides ---------------- */
+/* The DataTables bootstrap5 CDN CSS applies background-color and color
+   on `.table.dataTable` cells at specificity that overrides our generic
+   `.table` dark rules.  These rules restore proper contrast. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable {
+    background-color: transparent !important;
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable > :not(caption) > * > * {
+    background-color: transparent;
+    color: var(--rh-text);
+    border-bottom-color: var(--rh-border);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--rh-text);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(even) > * {
+    background-color: transparent;
+    color: var(--rh-text);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable.table-hover > tbody > tr:hover > * {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: var(--rh-text);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable > :not(caption) > * > * a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) .dataTables_scrollBody,
+  :root:not([data-theme]) .dataTables_scrollHead {
+    background-color: transparent;
+  }
+  :root:not([data-theme]) .dataTables_scrollHead .table.dataTable {
+    border-bottom-color: var(--rh-border) !important;
+  }
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable {
+  background-color: transparent !important;
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable > :not(caption) > * > * {
+  background-color: transparent;
+  color: var(--rh-text);
+  border-bottom-color: var(--rh-border);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--rh-text);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: transparent;
+  color: var(--rh-text);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable.table-hover > tbody > tr:hover > * {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: var(--rh-text);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable > :not(caption) > * > * a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] .dataTables_scrollBody,
+:root[data-theme="dark"] .dataTables_scrollHead {
+  background-color: transparent;
+}
+:root[data-theme="dark"] .dataTables_scrollHead .table.dataTable {
+  border-bottom-color: var(--rh-border) !important;
+}
+
+/* --- Seasons / People table cards dark readability ----------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .seasons-table-card tbody tr {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .seasons-table-card tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  :root:not([data-theme]) .seasons-table-card a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) .people-table-card tbody tr {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .people-table-card tbody tr:nth-child(even),
+  :root:not([data-theme]) .people-table-card tbody tr.even {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  :root:not([data-theme]) .people-table-card a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) .people-searchbar .form-control {
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .seasons-table-card tbody tr {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .seasons-table-card tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.05);
+}
+:root[data-theme="dark"] .seasons-table-card a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] .people-table-card tbody tr {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .people-table-card tbody tr:nth-child(even),
+:root[data-theme="dark"] .people-table-card tbody tr.even {
+  background: rgba(255, 255, 255, 0.05);
+}
+:root[data-theme="dark"] .people-table-card a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] .people-searchbar .form-control {
+  color: var(--rh-text);
+}
+
+/* --- Games / Stats index card grid dark mode ----------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .game-type-card,
+  :root:not([data-theme]) .stat-type-card {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .game-type-card:hover,
+  :root:not([data-theme]) .stat-type-card:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: var(--rh-link);
+  }
+  :root:not([data-theme]) .game-type-card .text-primary,
+  :root:not([data-theme]) .stat-type-card .text-primary {
+    color: var(--rh-link) !important;
+  }
+  :root:not([data-theme]) .game-type-card .card-title,
+  :root:not([data-theme]) .stat-type-card .card-title {
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .game-type-card,
+:root[data-theme="dark"] .stat-type-card {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .game-type-card:hover,
+:root[data-theme="dark"] .stat-type-card:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--rh-link);
+}
+:root[data-theme="dark"] .game-type-card .text-primary,
+:root[data-theme="dark"] .stat-type-card .text-primary {
+  color: var(--rh-link) !important;
+}
+:root[data-theme="dark"] .game-type-card .card-title,
+:root[data-theme="dark"] .stat-type-card .card-title {
+  color: var(--rh-text);
+}
+
+/* --- Game type badges (Seasons view) ------------------------------- */
+.rh-badge-post {
+  background-color: var(--rh-navy);
+  color: var(--rh-gold);
+}
+.rh-badge-conf-post {
+  background-color: var(--rh-gold);
+  color: var(--rh-navy);
+}
+
+/* --- Stats / Games DataTable sub-pages dark mode ------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) #stats-results-table a,
+  :root:not([data-theme]) #games-results-table a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) #games-record-display {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .btn-outline-primary {
+    color: var(--rh-link);
+    border-color: var(--rh-link);
+  }
+  :root:not([data-theme]) .btn-outline-primary:hover {
+    background-color: rgba(236, 172, 0, 0.15);
+    color: var(--rh-text);
+    border-color: var(--rh-link);
+  }
+  :root:not([data-theme]) .btn-primary {
+    background-color: var(--rh-link);
+    border-color: var(--rh-link);
+    color: var(--rh-navy);
+  }
+  :root:not([data-theme]) .btn-primary:hover {
+    background-color: #d49a00;
+    border-color: #d49a00;
+    color: var(--rh-navy);
+  }
+}
+:root[data-theme="dark"] #stats-results-table a,
+:root[data-theme="dark"] #games-results-table a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] #games-record-display {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .btn-outline-primary {
+  color: var(--rh-link);
+  border-color: var(--rh-link);
+}
+:root[data-theme="dark"] .btn-outline-primary:hover {
+  background-color: rgba(236, 172, 0, 0.15);
+  color: var(--rh-text);
+  border-color: var(--rh-link);
+}
+:root[data-theme="dark"] .btn-primary {
+  background-color: var(--rh-link);
+  border-color: var(--rh-link);
+  color: var(--rh-navy);
+}
+:root[data-theme="dark"] .btn-primary:hover {
+  background-color: #d49a00;
+  border-color: #d49a00;
+  color: var(--rh-navy);
 }

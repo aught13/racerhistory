@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * Expand game_time column to accommodate HH:MM:SS format
@@ -9,7 +9,7 @@ use Migrations\AbstractMigration;
  * The game_time column was VARCHAR(5) which only fits HH:MM format.
  * Expanding to VARCHAR(8) to properly store HH:MM:SS values like '16:30:00'.
  */
-class ExpandGameTimeColumn extends AbstractMigration
+class ExpandGameTimeColumn extends BaseMigration
 {
     /**
      * Change Method.

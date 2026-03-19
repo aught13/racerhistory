@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * AddCakeDcUsersFields migration
@@ -10,7 +10,7 @@ use Migrations\AbstractMigration;
  * Adds additional fields required by CakeDC/Users plugin to the existing users table.
  * Converts 'status' field to 'active' boolean and adds other optional fields.
  */
-class AddCakeDcUsersFields extends AbstractMigration
+class AddCakeDcUsersFields extends BaseMigration
 {
     /**
      * Disable automatic id field
