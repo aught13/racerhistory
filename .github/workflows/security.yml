@@ -2,9 +2,9 @@ name: Security
 
 on:
   push:
-    branches: [master, main]
+    branches: [v-0.2.0.beta, v-1.0.dev]
   pull_request:
-    branches: [master, main]
+    branches: [v-0.2.0.beta, v-1.0.dev]
   schedule:
     # Run security scan every Monday at 9:00 AM UTC
     - cron: "0 9 * * 1"
