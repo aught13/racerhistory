@@ -15,7 +15,7 @@
         "cakephp/plugin-installer": "^2.0",
         "intervention/image": "^3.6",
         "mobiledetect/mobiledetectlib": "^4.8.03",
-        "robmorgan/phinx": ">=0.16.10 <0.16.11",
+        "robmorgan/phinx": "^0.16.11",
         "tinymce/tinymce": "^8.0"
     },
     "require-dev": {
