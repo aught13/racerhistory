@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
-class CreateBlogTables extends AbstractMigration
+class CreateBlogTables extends BaseMigration
 {
     public bool $autoId = false;
 

@@ -321,6 +321,7 @@ class ImagesController extends AppController
         $written = file_put_contents($tmp, $data);
         if ($written === false) {
             \Cake\Log\Log::warning('image_cache: failed to write tmp file ' . $tmp);
+
             return;
         }
         if (!rename($tmp, $destination)) {
