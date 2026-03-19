@@ -173,3 +173,302 @@ test.describe("Dark Mode — theme toggle button", () => {
         }
     });
 });
+
+test.describe("Dark Mode — /games index card grid", () => {
+    test.beforeEach(async ({ page }) => {
+        await page
+            .context()
+            .addCookies([
+                { name: "theme", value: "dark", url: "http://localhost:8765" },
+            ]);
+    });
+
+    test("game-type-card should have dark surface background", async ({
+        page,
+    }) => {
+        await page.goto("/games");
+        await page.waitForLoadState("domcontentloaded");
+
+        const card = page.locator(".game-type-card").first();
+        if ((await card.count()) > 0) {
+            const bg = await card.evaluate(
+                (el) => getComputedStyle(el).backgroundColor,
+            );
+            const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+                const [, r, g, b] = match.map(Number);
+                expect(r).toBeLessThan(50);
+                expect(g).toBeLessThan(40);
+                expect(b).toBeLessThan(60);
+            }
+        }
+    });
+
+    test("game-type-card title should have light text", async ({ page }) => {
+        await page.goto("/games");
+        await page.waitForLoadState("domcontentloaded");
+
+        const title = page.locator(".game-type-card .card-title").first();
+        if ((await title.count()) > 0) {
+            const color = await title.evaluate(
+                (el) => getComputedStyle(el).color,
+            );
+            const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+                const [, r, g, b] = match.map(Number);
+                expect(Math.max(r, g, b)).toBeGreaterThan(180);
+            }
+        }
+    });
+
+    test("page title should contain RacerHistory not CakePHP", async ({
+        page,
+    }) => {
+        await page.goto("/games");
+        await page.waitForLoadState("domcontentloaded");
+
+        const title = await page.title();
+        expect(title).toContain("RacerHistory");
+        expect(title).not.toContain("CakePHP");
+    });
+});
+
+test.describe("Dark Mode — /stats index card grid", () => {
+    test.beforeEach(async ({ page }) => {
+        await page
+            .context()
+            .addCookies([
+                { name: "theme", value: "dark", url: "http://localhost:8765" },
+            ]);
+    });
+
+    test("stat-type-card should have dark surface background", async ({
+        page,
+    }) => {
+        await page.goto("/stats");
+        await page.waitForLoadState("domcontentloaded");
+
+        const card = page.locator(".stat-type-card").first();
+        if ((await card.count()) > 0) {
+            const bg = await card.evaluate(
+                (el) => getComputedStyle(el).backgroundColor,
+            );
+            const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+                const [, r, g, b] = match.map(Number);
+                expect(r).toBeLessThan(50);
+                expect(g).toBeLessThan(40);
+                expect(b).toBeLessThan(60);
+            }
+        }
+    });
+
+    test("stat-type-card title should have light text", async ({ page }) => {
+        await page.goto("/stats");
+        await page.waitForLoadState("domcontentloaded");
+
+        const title = page.locator(".stat-type-card .card-title").first();
+        if ((await title.count()) > 0) {
+            const color = await title.evaluate(
+                (el) => getComputedStyle(el).color,
+            );
+            const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+                const [, r, g, b] = match.map(Number);
+                expect(Math.max(r, g, b)).toBeGreaterThan(180);
+            }
+        }
+    });
+});
+
+test.describe("Dark Mode — /people index table", () => {
+    test.beforeEach(async ({ page }) => {
+        await page
+            .context()
+            .addCookies([
+                { name: "theme", value: "dark", url: "http://localhost:8765" },
+            ]);
+    });
+
+    test("people-table-card should have dark surface background", async ({
+        page,
+    }) => {
+        await page.goto("/people");
+        await page.waitForLoadState("domcontentloaded");
+
+        const card = page.locator(".people-table-card").first();
+        if ((await card.count()) > 0) {
+            const bg = await card.evaluate(
+                (el) => getComputedStyle(el).backgroundColor,
+            );
+            const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+                const [, r, g, b] = match.map(Number);
+                expect(r).toBeLessThan(50);
+                expect(g).toBeLessThan(40);
+                expect(b).toBeLessThan(60);
+            }
+        }
+    });
+
+    test("people search input should have light text in dark mode", async ({
+        page,
+    }) => {
+        await page.goto("/people");
+        await page.waitForLoadState("domcontentloaded");
+
+        const input = page.locator("#people-name-search").first();
+        if ((await input.count()) > 0) {
+            const color = await input.evaluate(
+                (el) => getComputedStyle(el).color,
+            );
+            const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+                const [, r, g, b] = match.map(Number);
+                expect(Math.max(r, g, b)).toBeGreaterThan(180);
+            }
+        }
+    });
+});
+
+test.describe("Dark Mode — page titles", () => {
+    test.beforeEach(async ({ page }) => {
+        await page
+            .context()
+            .addCookies([
+                { name: "theme", value: "dark", url: "http://localhost:8765" },
+            ]);
+    });
+
+    test("home page title should contain RacerHistory", async ({ page }) => {
+        await page.goto("/");
+        await page.waitForLoadState("domcontentloaded");
+        const title = await page.title();
+        expect(title).toContain("RacerHistory");
+        expect(title).not.toContain("CakePHP");
+    });
+
+    test("seasons page title should contain RacerHistory", async ({ page }) => {
+        await page.goto("/seasons");
+        await page.waitForLoadState("domcontentloaded");
+        const title = await page.title();
+        expect(title).toContain("RacerHistory");
+        expect(title).not.toContain("CakePHP");
+    });
+});
+
+test.describe("Dark Mode — /stats DataTable sub-pages", () => {
+    test.beforeEach(async ({ page }) => {
+        await page
+            .context()
+            .addCookies([
+                { name: "theme", value: "dark", url: "http://localhost:8765" },
+            ]);
+    });
+
+    const statsPages = [
+        { path: "/stats/player-season", label: "Player Season" },
+        { path: "/stats/team-season", label: "Team Season" },
+    ];
+
+    for (const { path, label } of statsPages) {
+        test(`${label} page card should have dark background`, async ({
+            page,
+        }) => {
+            await page.goto(path);
+            await page.waitForLoadState("domcontentloaded");
+
+            const card = page.locator(".card").first();
+            if ((await card.count()) > 0) {
+                const bg = await card.evaluate(
+                    (el) => getComputedStyle(el).backgroundColor,
+                );
+                const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                if (match) {
+                    const [, r, g, b] = match.map(Number);
+                    expect(r).toBeLessThan(80);
+                    expect(g).toBeLessThan(80);
+                    expect(b).toBeLessThan(80);
+                }
+            }
+        });
+
+        test(`${label} page heading should have light text`, async ({
+            page,
+        }) => {
+            await page.goto(path);
+            await page.waitForLoadState("domcontentloaded");
+
+            const heading = page.locator("h1").first();
+            if ((await heading.count()) > 0) {
+                const color = await heading.evaluate(
+                    (el) => getComputedStyle(el).color,
+                );
+                const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                if (match) {
+                    const [, r, g, b] = match.map(Number);
+                    expect(Math.max(r, g, b)).toBeGreaterThan(180);
+                }
+            }
+        });
+    }
+});
+
+test.describe("Dark Mode — /games DataTable sub-pages", () => {
+    test.beforeEach(async ({ page }) => {
+        await page
+            .context()
+            .addCookies([
+                { name: "theme", value: "dark", url: "http://localhost:8765" },
+            ]);
+    });
+
+    const gamesPages = [
+        { path: "/games/ranked", label: "Ranked" },
+        { path: "/games/overtime", label: "Overtime" },
+    ];
+
+    for (const { path, label } of gamesPages) {
+        test(`${label} page card should have dark background`, async ({
+            page,
+        }) => {
+            await page.goto(path);
+            await page.waitForLoadState("domcontentloaded");
+
+            const card = page.locator(".card").first();
+            if ((await card.count()) > 0) {
+                const bg = await card.evaluate(
+                    (el) => getComputedStyle(el).backgroundColor,
+                );
+                const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                if (match) {
+                    const [, r, g, b] = match.map(Number);
+                    expect(r).toBeLessThan(80);
+                    expect(g).toBeLessThan(80);
+                    expect(b).toBeLessThan(80);
+                }
+            }
+        });
+
+        test(`${label} page should have dark btn-outline-primary buttons`, async ({
+            page,
+        }) => {
+            await page.goto(path);
+            await page.waitForLoadState("domcontentloaded");
+
+            const btn = page.locator(".btn-outline-primary").first();
+            if ((await btn.count()) > 0) {
+                const color = await btn.evaluate(
+                    (el) => getComputedStyle(el).color,
+                );
+                const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                if (match) {
+                    const [, r, g] = match.map(Number);
+                    // Gold colour: high R, moderate G
+                    expect(r).toBeGreaterThan(180);
+                    expect(g).toBeGreaterThan(100);
+                }
+            }
+        });
+    }
+});

@@ -2517,6 +2517,29 @@ select.dtsb-dropDown option[disabled] {
   :root:not([data-theme]) .dataTables_wrapper .dataTables_processing {
     color: var(--rh-text);
   }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_info {
+    color: var(--rh-muted);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_filter label {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_filter input {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: var(--rh-text) !important;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--rh-link) !important;
+    color: var(--rh-navy) !important;
+    border-color: var(--rh-link) !important;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--rh-text) !important;
+  }
 }
 :root[data-theme="dark"] .dataTables_wrapper .dataTables_length select {
   background-color: var(--rh-surface);
@@ -2526,6 +2549,108 @@ select.dtsb-dropDown option[disabled] {
 :root[data-theme="dark"] .dataTables_wrapper .dataTables_length label,
 :root[data-theme="dark"] .dataTables_wrapper .dataTables_processing {
   color: var(--rh-text);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_info {
+  color: var(--rh-muted);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_filter label {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_filter input {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button {
+  color: var(--rh-text) !important;
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+  background: var(--rh-link) !important;
+  color: var(--rh-navy) !important;
+  border-color: var(--rh-link) !important;
+}
+:root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--rh-text) !important;
+}
+
+/* --- DataTables table body/cell dark mode overrides ---------------- */
+/* The DataTables bootstrap5 CDN CSS applies background-color and color
+   on `.table.dataTable` cells at specificity that overrides our generic
+   `.table` dark rules.  These rules restore proper contrast. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable {
+    background-color: transparent !important;
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable > :not(caption) > * > * {
+    background-color: transparent;
+    color: var(--rh-text);
+    border-bottom-color: var(--rh-border);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--rh-text);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(even) > * {
+    background-color: transparent;
+    color: var(--rh-text);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable.table-hover > tbody > tr:hover > * {
+    background-color: rgba(255, 255, 255, 0.07);
+    color: var(--rh-text);
+    box-shadow: none;
+  }
+  :root:not([data-theme]) .dataTables_wrapper .table.dataTable > :not(caption) > * > * a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) .dataTables_scrollBody,
+  :root:not([data-theme]) .dataTables_scrollHead {
+    background-color: transparent;
+  }
+  :root:not([data-theme]) .dataTables_scrollHead .table.dataTable {
+    border-bottom-color: var(--rh-border) !important;
+  }
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable {
+  background-color: transparent !important;
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable > :not(caption) > * > * {
+  background-color: transparent;
+  color: var(--rh-text);
+  border-bottom-color: var(--rh-border);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--rh-text);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: transparent;
+  color: var(--rh-text);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable.table-hover > tbody > tr:hover > * {
+  background-color: rgba(255, 255, 255, 0.07);
+  color: var(--rh-text);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .dataTables_wrapper .table.dataTable > :not(caption) > * > * a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] .dataTables_scrollBody,
+:root[data-theme="dark"] .dataTables_scrollHead {
+  background-color: transparent;
+}
+:root[data-theme="dark"] .dataTables_scrollHead .table.dataTable {
+  border-bottom-color: var(--rh-border) !important;
 }
 
 /* --- Seasons / People table cards dark readability ----------------- */
@@ -2541,10 +2666,18 @@ select.dtsb-dropDown option[disabled] {
     color: var(--rh-link);
   }
   :root:not([data-theme]) .people-table-card tbody tr {
+    background: rgba(255, 255, 255, 0.02);
     color: var(--rh-text);
+  }
+  :root:not([data-theme]) .people-table-card tbody tr:nth-child(even),
+  :root:not([data-theme]) .people-table-card tbody tr.even {
+    background: rgba(255, 255, 255, 0.05);
   }
   :root:not([data-theme]) .people-table-card a {
     color: var(--rh-link);
+  }
+  :root:not([data-theme]) .people-searchbar .form-control {
+    color: var(--rh-text);
   }
 }
 :root[data-theme="dark"] .seasons-table-card tbody tr {
@@ -2558,10 +2691,60 @@ select.dtsb-dropDown option[disabled] {
   color: var(--rh-link);
 }
 :root[data-theme="dark"] .people-table-card tbody tr {
+  background: rgba(255, 255, 255, 0.02);
   color: var(--rh-text);
+}
+:root[data-theme="dark"] .people-table-card tbody tr:nth-child(even),
+:root[data-theme="dark"] .people-table-card tbody tr.even {
+  background: rgba(255, 255, 255, 0.05);
 }
 :root[data-theme="dark"] .people-table-card a {
   color: var(--rh-link);
+}
+:root[data-theme="dark"] .people-searchbar .form-control {
+  color: var(--rh-text);
+}
+
+/* --- Games / Stats index card grid dark mode ----------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .game-type-card,
+  :root:not([data-theme]) .stat-type-card {
+    background-color: var(--rh-surface);
+    color: var(--rh-text);
+    border-color: var(--rh-border);
+  }
+  :root:not([data-theme]) .game-type-card:hover,
+  :root:not([data-theme]) .stat-type-card:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: var(--rh-link);
+  }
+  :root:not([data-theme]) .game-type-card .text-primary,
+  :root:not([data-theme]) .stat-type-card .text-primary {
+    color: var(--rh-link) !important;
+  }
+  :root:not([data-theme]) .game-type-card .card-title,
+  :root:not([data-theme]) .stat-type-card .card-title {
+    color: var(--rh-text);
+  }
+}
+:root[data-theme="dark"] .game-type-card,
+:root[data-theme="dark"] .stat-type-card {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+  border-color: var(--rh-border);
+}
+:root[data-theme="dark"] .game-type-card:hover,
+:root[data-theme="dark"] .stat-type-card:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--rh-link);
+}
+:root[data-theme="dark"] .game-type-card .text-primary,
+:root[data-theme="dark"] .stat-type-card .text-primary {
+  color: var(--rh-link) !important;
+}
+:root[data-theme="dark"] .game-type-card .card-title,
+:root[data-theme="dark"] .stat-type-card .card-title {
+  color: var(--rh-text);
 }
 
 /* --- Game type badges (Seasons view) ------------------------------- */
@@ -2571,5 +2754,61 @@ select.dtsb-dropDown option[disabled] {
 }
 .rh-badge-conf-post {
   background-color: var(--rh-gold);
+  color: var(--rh-navy);
+}
+
+/* --- Stats / Games DataTable sub-pages dark mode ------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) #stats-results-table a,
+  :root:not([data-theme]) #games-results-table a {
+    color: var(--rh-link);
+  }
+  :root:not([data-theme]) #games-record-display {
+    color: var(--rh-text);
+  }
+  :root:not([data-theme]) .btn-outline-primary {
+    color: var(--rh-link);
+    border-color: var(--rh-link);
+  }
+  :root:not([data-theme]) .btn-outline-primary:hover {
+    background-color: rgba(236, 172, 0, 0.15);
+    color: var(--rh-text);
+    border-color: var(--rh-link);
+  }
+  :root:not([data-theme]) .btn-primary {
+    background-color: var(--rh-link);
+    border-color: var(--rh-link);
+    color: var(--rh-navy);
+  }
+  :root:not([data-theme]) .btn-primary:hover {
+    background-color: #d49a00;
+    border-color: #d49a00;
+    color: var(--rh-navy);
+  }
+}
+:root[data-theme="dark"] #stats-results-table a,
+:root[data-theme="dark"] #games-results-table a {
+  color: var(--rh-link);
+}
+:root[data-theme="dark"] #games-record-display {
+  color: var(--rh-text);
+}
+:root[data-theme="dark"] .btn-outline-primary {
+  color: var(--rh-link);
+  border-color: var(--rh-link);
+}
+:root[data-theme="dark"] .btn-outline-primary:hover {
+  background-color: rgba(236, 172, 0, 0.15);
+  color: var(--rh-text);
+  border-color: var(--rh-link);
+}
+:root[data-theme="dark"] .btn-primary {
+  background-color: var(--rh-link);
+  border-color: var(--rh-link);
+  color: var(--rh-navy);
+}
+:root[data-theme="dark"] .btn-primary:hover {
+  background-color: #d49a00;
+  border-color: #d49a00;
   color: var(--rh-navy);
 }
