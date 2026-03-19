@@ -64,4 +64,4 @@
 
 - Implement reversible `up()` and `down()`.
 - TimestampBehavior tables must use `created`/`modified` as `datetime`.
-- Match the exact `$autoId` property type expected by `Migrations\AbstractMigration` in this install.
+- Match the exact `$autoId` property type expected by `Migrations\BaseMigration` in this install.
