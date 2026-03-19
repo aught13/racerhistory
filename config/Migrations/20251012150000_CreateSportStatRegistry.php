@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * CreateSportStatRegistry migration
@@ -15,7 +15,7 @@ use Migrations\AbstractMigration;
  * Creates sport_stat_registry table to track sport-specific stat tables
  * and their configurations, enhancing the sport configuration system
  */
-class CreateSportStatRegistry extends AbstractMigration
+class CreateSportStatRegistry extends BaseMigration
 {
     /**
      * @var bool Disable automatic primary key generation

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * CreateSportConfigs migration
@@ -15,7 +15,7 @@ use Migrations\AbstractMigration;
  * Creates sport-specific configuration to support flexible period naming
  * and sport-specific features while preserving existing games table structure
  */
-class CreateSportConfigs extends AbstractMigration
+class CreateSportConfigs extends BaseMigration
 {
     public bool $autoId = false;
 

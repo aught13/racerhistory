@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * RenameGameTypeIndToAbr migration
  *
  * Renames game_types.ind to game_types.abr and expands length to 6 characters.
  */
-class RenameGameTypeIndToAbr extends AbstractMigration
+class RenameGameTypeIndToAbr extends BaseMigration
 {
     /**
      * @var bool Disable automatic primary key generation

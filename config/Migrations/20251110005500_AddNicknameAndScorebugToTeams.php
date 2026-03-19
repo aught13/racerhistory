@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
-class AddNicknameAndScorebugToTeams extends AbstractMigration
+class AddNicknameAndScorebugToTeams extends BaseMigration
 {
     // No need to override $autoId for this migration; we only alter an existing table.
 
