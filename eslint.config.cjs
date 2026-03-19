@@ -196,6 +196,7 @@ module.exports = [
                 HTMLElement: "readonly",
                 Promise: "readonly",
                 URL: "readonly",
+                getComputedStyle: "readonly",
             },
         },
     },

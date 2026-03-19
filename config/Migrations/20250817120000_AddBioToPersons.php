@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * AddBioToPersons migration
  */
-class AddBioToPersons extends AbstractMigration
+class AddBioToPersons extends BaseMigration
 {
     public function up(): void
     {

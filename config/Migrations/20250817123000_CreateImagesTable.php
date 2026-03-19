@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * CreateImagesTable migration
  */
-class CreateImagesTable extends AbstractMigration
+class CreateImagesTable extends BaseMigration
 {
     /**
      * Disable automatic id field; we add it manually for portability.

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * CreateUsersTable migration
@@ -11,7 +11,7 @@ use Migrations\AbstractMigration;
  * Uses adapter-aware datetime defaults for SQLite vs MySQL and includes
  * unique constraints on username & email.
  */
-class CreateUsersTable extends AbstractMigration
+class CreateUsersTable extends BaseMigration
 {
     /**
      * Disable automatic id field; we add primary key manually.

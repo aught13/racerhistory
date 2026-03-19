@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * CreateImageUsagesTable migration
  */
-class CreateImageUsagesTable extends AbstractMigration
+class CreateImageUsagesTable extends BaseMigration
 {
     /**
      * Disable automatic id field; we define it manually.

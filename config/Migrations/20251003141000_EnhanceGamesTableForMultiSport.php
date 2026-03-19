@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
+use Migrations\BaseMigration;
 
 /**
  * EnhanceGamesTableForMultiSport migration
@@ -15,7 +15,7 @@ use Migrations\AbstractMigration;
  * Adds minimal enhancements to games table for multi-sport support
  * while preserving all existing data and structure
  */
-class EnhanceGamesTableForMultiSport extends AbstractMigration
+class EnhanceGamesTableForMultiSport extends BaseMigration
 {
     public bool $autoId = false;
 

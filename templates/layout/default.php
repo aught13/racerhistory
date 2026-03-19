@@ -26,7 +26,6 @@
  * @var \App\View\AppView $this
  */
 
-$cakeDescription = 'CakePHP: the rapid development php framework';
 ?>
 <!DOCTYPE html>
 <html>
@@ -40,8 +39,7 @@ $cakeDescription = 'CakePHP: the rapid development php framework';
     <link rel="manifest" href="<?= $this->Url->build('/manifest.webmanifest') ?>">
     <link rel="apple-touch-icon" href="<?= $this->Url->build('/img/logo.png') ?>">
     <title>
-        <?= $cakeDescription ?>:
-        <?= $this->fetch('title') ?>
+        <?= $this->fetch('title') ?> | RacerHistory
     </title>
     <?= $this->Html->meta('icon') ?>
 
