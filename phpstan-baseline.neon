@@ -1,12 +1,7 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Parameter \#2 \$factory of static method Cake\\Datasource\\FactoryLocator\:\:add\(\) expects Cake\\Datasource\\Locator\\LocatorInterface\<Cake\\Datasource\\RepositoryInterface\>, Cake\\ORM\\Locator\\TableLocator given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Application.php
 
-		-
 			message: '#^Cannot access property \$opponent_id on array\|Cake\\Datasource\\EntityInterface\.$#'
 			identifier: property.nonObject
 			count: 1

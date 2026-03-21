@@ -54,7 +54,10 @@ class Sport extends Entity
      */
     public function getSupportedPeriods(): array
     {
-        foreach ($this->sport_configs ?? [] as $config) {
+        foreach ((array)($this->sport_configs ?? []) as $config) {
+            if (!$config instanceof \App\Model\Entity\SportConfig) {
+                continue;
+            }
             if ($config->config_key === 'supports_periods') {
                 $decoded = json_decode($config->config_value, true);
                 if (is_array($decoded)) {
@@ -75,7 +78,10 @@ class Sport extends Entity
      */
     public function getDefaultPeriods(): int
     {
-        foreach ($this->sport_configs ?? [] as $config) {
+        foreach ((array)($this->sport_configs ?? []) as $config) {
+            if (!$config instanceof \App\Model\Entity\SportConfig) {
+                continue;
+            }
             if ($config->config_key === 'default_periods') {
                 return (int)$config->config_value;
             }
@@ -93,7 +99,10 @@ class Sport extends Entity
      */
     public function getPeriodName(int $periodCount): string
     {
-        foreach ($this->sport_configs ?? [] as $config) {
+        foreach ((array)($this->sport_configs ?? []) as $config) {
+            if (!$config instanceof \App\Model\Entity\SportConfig) {
+                continue;
+            }
             if ($config->config_key === "period_name_{$periodCount}") {
                 return $config->config_value;
             }
@@ -115,7 +124,10 @@ class Sport extends Entity
      */
     public function getOfficials(): array
     {
-        foreach ($this->sport_configs ?? [] as $config) {
+        foreach ((array)($this->sport_configs ?? []) as $config) {
+            if (!$config instanceof \App\Model\Entity\SportConfig) {
+                continue;
+            }
             if ($config->config_key === 'officials') {
                 $decoded = json_decode($config->config_value, true);
                 if (is_array($decoded)) {
@@ -136,7 +148,10 @@ class Sport extends Entity
      */
     public function getScoringType(): string
     {
-        foreach ($this->sport_configs ?? [] as $config) {
+        foreach ((array)($this->sport_configs ?? []) as $config) {
+            if (!$config instanceof \App\Model\Entity\SportConfig) {
+                continue;
+            }
             if ($config->config_key === 'scoring_type') {
                 return $config->config_value;
             }
@@ -159,16 +174,16 @@ class Sport extends Entity
             return [];
         }
 
-        $registry = $this->sport_stat_registry;
+        $registry = (array)$this->sport_stat_registry;
 
         if ($context !== null) {
-            $registry = array_filter($registry, function ($item) use ($context) {
+            $registry = array_filter($registry, function (\App\Model\Entity\SportStatRegistry $item) use ($context) {
                 return $item->context === $context;
             });
         }
 
         if ($entityType !== null) {
-            $registry = array_filter($registry, function ($item) use ($entityType) {
+            $registry = array_filter($registry, function (\App\Model\Entity\SportStatRegistry $item) use ($entityType) {
                 return $item->entity_type === $entityType;
             });
         }
@@ -189,7 +204,10 @@ class Sport extends Entity
             return null;
         }
 
-        foreach ($this->sport_stat_registry as $registry) {
+        foreach ((array)$this->sport_stat_registry as $registry) {
+            if (!($registry instanceof \App\Model\Entity\SportStatRegistry)) {
+                continue;
+            }
             if ($registry->context === $context && $registry->entity_type === $entityType) {
                 return $registry;
             }

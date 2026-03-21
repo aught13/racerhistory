@@ -65,7 +65,9 @@ class Application extends BaseApplication implements
 
         if (PHP_SAPI !== 'cli') {
             // The bake plugin requires fallback table classes to work properly
-            FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
+            $tableLocator = (new TableLocator())->allowFallbackClass(false);
+            /** @var \Cake\Datasource\Locator\LocatorInterface<\Cake\Datasource\RepositoryInterface> $tableLocator */
+            FactoryLocator::add('Table', $tableLocator);
         }
 
         // Image variants configuration (central place)
