@@ -52,6 +52,7 @@ class GamesControllerTest extends TestCase
 
         $searchTypes = $this->viewVariable('searchTypes');
         $this->assertIsArray($searchTypes);
+        $this->assertArrayHasKey('all', $searchTypes);
         $this->assertArrayHasKey('ranked', $searchTypes);
         $this->assertArrayHasKey('overtime', $searchTypes);
         $this->assertArrayHasKey('series', $searchTypes);
@@ -124,6 +125,23 @@ class GamesControllerTest extends TestCase
             'headers' => ['Accept' => 'application/json'],
         ]);
         $this->get('/games/ranked?format=json');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+        $body = (string)$this->_response->getBody();
+        $data = json_decode($body, true);
+        $this->assertArrayHasKey('data', $data);
+    }
+
+    public function testAllPage(): void
+    {
+        $this->get('/games/all');
+        $this->assertResponseOk();
+        $this->assertResponseContains('All Games');
+    }
+
+    public function testAllJson(): void
+    {
+        $this->get('/games/all?format=json');
         $this->assertResponseOk();
         $this->assertContentType('application/json');
         $body = (string)$this->_response->getBody();

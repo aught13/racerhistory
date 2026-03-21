@@ -20,6 +20,8 @@ declare(strict_types=1);
 #stats-table-wrap.is-dragging,#games-table-wrap.is-dragging{cursor:grabbing;user-select:none}
 #stats-results-table,#games-results-table,.dataTables_scrollHeadInner table{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:0.775rem}
 #stats-results-table th,#stats-results-table td,#games-results-table th,#games-results-table td,.dataTables_scrollHeadInner th{white-space:nowrap;padding:0.25rem 0.5rem;font-size:0.775rem}
+#stats-results-table thead th,#games-results-table thead th,.dataTables_scrollHeadInner th{font-weight:700;font-style:normal;text-transform:none;letter-spacing:normal}
+.dataTables_scrollHead th,.dataTables_scrollBody td{white-space:nowrap}
 .dataTables_wrapper .dataTables_info{padding:0.5rem 1rem;font-size:0.75rem}
 .dataTables_wrapper .dataTables_filter{padding:0.5rem 1rem;font-size:0.8125rem}
 /* SearchBuilder — positioned above the table card */
