@@ -181,6 +181,9 @@ class TeamSeasonsController extends AppController
         // Convert seasons to list format
         $seasonsList = [];
         foreach ($seasons as $season) {
+            if (!($season instanceof \App\Model\Entity\Season)) {
+                continue;
+            }
             $seasonsList[$season->id] = $season->start . '-' . $season->end;
         }
 
@@ -235,6 +238,9 @@ class TeamSeasonsController extends AppController
         // Convert seasons to list format
         $seasonsList = [];
         foreach ($seasons as $season) {
+            if (!($season instanceof \App\Model\Entity\Season)) {
+                continue;
+            }
             $seasonsList[$season->id] = $season->start . '-' . $season->end;
         }
 

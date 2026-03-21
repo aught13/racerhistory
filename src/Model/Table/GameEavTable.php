@@ -433,6 +433,9 @@ class GameEavTable extends Table
         if (!empty($statTablesFromDb)) {
             $result = [];
             foreach ($statTablesFromDb as $registry) {
+                if (!($registry instanceof \App\Model\Entity\SportStatRegistry)) {
+                    continue;
+                }
                 $key = "{$registry->context}.{$registry->entity_type}";
                 $result[$key] = [
                     'table_name' => $registry->table_name,
