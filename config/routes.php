@@ -175,6 +175,7 @@ return function (RouteBuilder $routes): void {
             ->setPatterns(['teamSeasonId' => '\\d+']);
 
         $builder->connect('/games', ['controller' => 'Games', 'action' => 'index']);
+        $builder->connect('/games/all', ['controller' => 'Games', 'action' => 'all']);
         $builder->connect('/games/ranked', ['controller' => 'Games', 'action' => 'ranked']);
         $builder->connect('/games/overtime', ['controller' => 'Games', 'action' => 'overtime']);
         $builder->connect('/games/hundred-point', ['controller' => 'Games', 'action' => 'hundredPoint']);
