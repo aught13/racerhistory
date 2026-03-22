@@ -109,6 +109,9 @@ class SportConfigsTable extends Table
 
         $result = [];
         foreach ($configs as $config) {
+            if (!($config instanceof \App\Model\Entity\SportConfig)) {
+                continue;
+            }
             $value = $config->config_value;
             // Try to decode JSON values
             $decoded = json_decode($value, true);
@@ -171,6 +174,9 @@ class SportConfigsTable extends Table
         ];
 
         foreach ($configs as $config) {
+            if (!($config instanceof \App\Model\Entity\SportConfig)) {
+                continue;
+            }
             $key = $config->config_key;
             $value = $config->config_value;
             $decoded = json_decode($value, true);

@@ -37,6 +37,7 @@ class GamesController extends AppController
      * @var array<string, string>
      */
     protected array $searchTypes = [
+        'all' => 'All Games',
         'ranked' => 'Ranked',
         'overtime' => 'Overtime',
         'hundred-point' => '100 Point',
@@ -121,6 +122,24 @@ class GamesController extends AppController
 
         $this->set('currentSearch', 'ranked');
         $this->set('rankedFilter', $filter);
+
+        return null;
+    }
+
+    /**
+     * All games.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function all(): ?Response
+    {
+        if ($this->isJsonRequest()) {
+            $games = $this->gameSearchService->allGames();
+
+            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y'));
+        }
+
+        $this->set('currentSearch', 'all');
 
         return null;
     }
@@ -426,23 +445,24 @@ class GamesController extends AppController
     }
 
     /**
-     * Format a game date as MM/DD/YYYY with a hidden ISO prefix for DataTables sorting.
+     * Format a game date with a hidden ISO prefix for DataTables sorting.
      *
      * @param mixed $date
+     * @param string $displayFormat PHP date format string (default: 'm/d/Y')
      * @return string
      */
-    protected function formatDate(mixed $date): string
+    protected function formatDate(mixed $date, string $displayFormat = 'm/d/Y'): string
     {
         if ($date === null) {
             return '-';
         }
         if ($date instanceof \Cake\I18n\Date || $date instanceof \DateTimeInterface) {
             $iso = $date->format('Y-m-d');
-            $display = $date->format('m/d/Y');
+            $display = $date->format($displayFormat);
         } else {
             $iso = (string)$date;
             $ts = strtotime($iso);
-            $display = $ts ? date('m/d/Y', $ts) : $iso;
+            $display = $ts ? date($displayFormat, $ts) : $iso;
         }
 
         return '<span class="d-none">' . h($iso) . '</span>' . h($display);
@@ -497,9 +517,10 @@ class GamesController extends AppController
      * Format overtime game rows for DataTables.
      *
      * @param array $games
+     * @param string $dateFormat PHP date format for display (default: 'm/d/Y')
      * @return array
      */
-    protected function formatOvertimeRows(array $games): array
+    protected function formatOvertimeRows(array $games, string $dateFormat = 'm/d/Y'): array
     {
         $rows = [];
         foreach ($games as $g) {
@@ -509,7 +530,7 @@ class GamesController extends AppController
             $isConf = (bool)($g->game_type->conf ?? false);
             $seasonLabel = ($g->team_season->season->start ?? '') . '-'
                 . ($g->team_season->season->end ?? '');
-            $dateDisplay = $this->formatDate($g->game_date);
+            $dateDisplay = $this->formatDate($g->game_date, $dateFormat);
             $gameTypeDisplay = $g->post
                 ? h((string)($g->game_type->abr ?? 'Post'))
                 : 'Regular';

@@ -46,7 +46,7 @@ class TeamSeasonService
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
-        if ($season) {
+        if ($season instanceof \App\Model\Entity\Season) {
             $start = $season->start ?? null;
             $end = $season->end ?? null;
             if ($start && $end && $start != $end) {
@@ -88,7 +88,7 @@ class TeamSeasonService
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
-        if ($season) {
+        if ($season instanceof \App\Model\Entity\Season) {
             $start = $season->start ?? null;
             $end = $season->end ?? null;
             if ($start && $end && $start != $end) {

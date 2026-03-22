@@ -100,6 +100,19 @@ class GameSearchService
     }
 
     /**
+     * All games (no additional filters beyond base query).
+     *
+     * @return array
+     */
+    public function allGames(): array
+    {
+        return $this->baseQuery()
+            ->orderByDesc('Games.game_date')
+            ->all()
+            ->toArray();
+    }
+
+    /**
      * Overtime games.
      *
      * @return array
