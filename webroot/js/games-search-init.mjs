@@ -211,6 +211,54 @@ function updateRecordDisplay(dt) {
 }
 
 /**
+ * Synchronize Scroller's split header/body column widths.
+ *
+ * DataTables Scroller renders header and body in separate &lt;table&gt;
+ * elements.  The header &lt;th&gt; cells carry extra right-padding for sort
+ * arrows that body &lt;td&gt; cells lack, so `table-layout:auto` produces
+ * different column widths in each table.  `columns.adjust()` alone
+ * cannot fix this.
+ *
+ * This function forces `border-box` sizing on header cells and sets
+ * each header cell width to match the body cell's rendered width, then
+ * syncs the header table / wrapper widths with the body table.
+ *
+ * @param {HTMLTableElement} table  The original table element.
+ */
+function syncScrollerColumns(table) {
+    var wrapper = table.closest(".dataTables_scroll");
+    if (!wrapper) {
+        return;
+    }
+    var bodyRow = wrapper.querySelector(
+        ".dataTables_scrollBody tbody tr:first-child",
+    );
+    var headerRow = wrapper.querySelector(".dataTables_scrollHead thead tr");
+    if (!bodyRow || !headerRow) {
+        return;
+    }
+    var bodyTable = wrapper.querySelector(".dataTables_scrollBody table");
+    var headInner = wrapper.querySelector(".dataTables_scrollHeadInner");
+    var headTable = headInner && headInner.querySelector("table");
+    if (!bodyTable || !headTable) {
+        return;
+    }
+    var bodyCells = bodyRow.children;
+    var headerCells = headerRow.children;
+    var count = Math.min(bodyCells.length, headerCells.length);
+    for (var i = 0; i < count; i++) {
+        var w = bodyCells[i].getBoundingClientRect().width;
+        headerCells[i].style.boxSizing = "border-box";
+        headerCells[i].style.width = w + "px";
+        headerCells[i].style.minWidth = w + "px";
+        headerCells[i].style.maxWidth = w + "px";
+    }
+    var bodyTableWidth = bodyTable.getBoundingClientRect().width + "px";
+    headInner.style.width = bodyTableWidth;
+    headTable.style.width = bodyTableWidth;
+}
+
+/**
  * Initialize DataTables on a games results table with AJAX data source.
  *
  * @param {HTMLTableElement} table
@@ -330,6 +378,7 @@ function initGamesDataTable(table) {
                 setupGamesSearchBuilderUi(dt, freshTable);
                 dt.on("draw.dt", function () {
                     dt.columns.adjust();
+                    syncScrollerColumns(freshTable);
                     updateRecordDisplay(dt);
                 });
                 initDragScroll(freshTable.closest(".table-responsive"));

@@ -181,7 +181,7 @@ function initStatsDataTable(table) {
     const dtOptions = {
         ajax: { url: ajaxUrl, dataSrc: "data" },
         deferRender: true,
-        searching: false,
+        searching: true,
         ordering: true,
         info: true,
         autoWidth: true,
@@ -278,7 +278,7 @@ function setupStatsSearchBuilderUi(dt, table) {
         filterBtn.dataset.sbToggleBound = "true";
     }
 
-    new window.$.fn.dataTable.SearchBuilder(dt, {});
+    new window.$.fn.dataTable.SearchBuilder(dt, { depthLimit: 2 });
     dt.searchBuilder.container().appendTo(window.$(slot));
     dt.searchBuilder.rebuild();
 }

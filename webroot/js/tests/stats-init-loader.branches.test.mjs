@@ -361,3 +361,181 @@ describe("stats-init-loader initStatsPage", () => {
         expect(() => mod.initStatsPage()).not.toThrow();
     });
 });
+
+describe("stats-init-loader SearchBuilder integration", () => {
+    test("DataTable is initialized with searching: true so SearchBuilder filters work", async () => {
+        preloadScripts();
+        document.body.innerHTML = `
+      <div class="card">
+        <table id="stats-results-table" data-ajax-url="/api/stats">
+          <thead><tr><th>Player</th><th>GP</th><th>PTS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        let capturedOpts;
+        DataTableFn.mockImplementation((opts) => {
+            capturedOpts = opts;
+            return {
+                ajax: { url: jest.fn() },
+                searchBuilder: {
+                    rebuild: jest.fn(),
+                    container: jest
+                        .fn()
+                        .mockReturnValue({ appendTo: jest.fn() }),
+                },
+                columns: { adjust: jest.fn() },
+                on: jest.fn(),
+                settings: jest
+                    .fn()
+                    .mockReturnValue([
+                        { nScrollHead: null, nScrollBody: null },
+                    ]),
+            };
+        });
+        const mod = await import("../stats-init-loader.mjs");
+        mod.initStatsDataTable(document.getElementById("stats-results-table"));
+        await flush();
+
+        expect(capturedOpts).toBeDefined();
+        expect(capturedOpts.searching).toBe(true);
+    });
+
+    test("SearchBuilder is constructed with depthLimit: 2", async () => {
+        preloadScripts();
+        document.body.innerHTML = `
+      <div class="card">
+        <table id="stats-results-table" data-ajax-url="/api/stats">
+          <thead><tr><th>Player</th><th>PTS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        const mod = await import("../stats-init-loader.mjs");
+        mod.initStatsDataTable(document.getElementById("stats-results-table"));
+        await flush();
+
+        expect(DataTableFn.SearchBuilder).toHaveBeenCalledWith(
+            expect.anything(),
+            { depthLimit: 2 },
+        );
+    });
+
+    test("dom option excludes default search box (no f)", async () => {
+        preloadScripts();
+        document.body.innerHTML = `
+      <div class="card">
+        <table id="stats-results-table" data-ajax-url="/api/stats">
+          <thead><tr><th>Player</th><th>PTS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        let capturedOpts;
+        DataTableFn.mockImplementation((opts) => {
+            capturedOpts = opts;
+            return {
+                ajax: { url: jest.fn() },
+                searchBuilder: {
+                    rebuild: jest.fn(),
+                    container: jest
+                        .fn()
+                        .mockReturnValue({ appendTo: jest.fn() }),
+                },
+                columns: { adjust: jest.fn() },
+                on: jest.fn(),
+                settings: jest
+                    .fn()
+                    .mockReturnValue([
+                        { nScrollHead: null, nScrollBody: null },
+                    ]),
+            };
+        });
+        const mod = await import("../stats-init-loader.mjs");
+        mod.initStatsDataTable(document.getElementById("stats-results-table"));
+        await flush();
+
+        // dom should not include "f" (filter/search input box)
+        expect(capturedOpts.dom).toBeDefined();
+        expect(capturedOpts.dom).not.toContain("f");
+    });
+
+    test("filter button toggles SearchBuilder panel visibility", async () => {
+        preloadScripts();
+        document.body.innerHTML = `
+      <div class="card">
+        <table id="stats-results-table" data-ajax-url="/api/stats">
+          <thead><tr><th>Player</th><th>PTS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+        setupJQueryMock();
+        const mod = await import("../stats-init-loader.mjs");
+        mod.initStatsDataTable(document.getElementById("stats-results-table"));
+        await flush();
+
+        const filterBtn = document.getElementById("stats-filter-btn");
+        const slot = document.getElementById("stats-searchbuilder-slot");
+        expect(filterBtn).not.toBeNull();
+        expect(slot).not.toBeNull();
+
+        // Initially hidden
+        expect(slot.classList.contains("d-none")).toBe(true);
+        expect(filterBtn.getAttribute("aria-expanded")).toBe("false");
+
+        // Click to open
+        filterBtn.click();
+        expect(slot.classList.contains("d-none")).toBe(false);
+        expect(slot.classList.contains("sb-open")).toBe(true);
+        expect(filterBtn.getAttribute("aria-expanded")).toBe("true");
+
+        // Click to close
+        filterBtn.click();
+        expect(slot.classList.contains("d-none")).toBe(true);
+        expect(slot.classList.contains("sb-open")).toBe(false);
+        expect(filterBtn.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    test("SearchBuilder container is appended to slot", async () => {
+        preloadScripts();
+        document.body.innerHTML = `
+      <div class="card">
+        <table id="stats-results-table" data-ajax-url="/api/stats">
+          <thead><tr><th>Player</th><th>PTS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        const appendToMock = jest.fn();
+        const containerMock = jest
+            .fn()
+            .mockReturnValue({ appendTo: appendToMock });
+        const dtInstance = {
+            ajax: { url: jest.fn() },
+            searchBuilder: {
+                rebuild: jest.fn(),
+                container: containerMock,
+            },
+            columns: { adjust: jest.fn() },
+            on: jest.fn(),
+            settings: jest
+                .fn()
+                .mockReturnValue([{ nScrollHead: null, nScrollBody: null }]),
+        };
+        DataTableFn.mockReturnValue(dtInstance);
+
+        const mod = await import("../stats-init-loader.mjs");
+        mod.initStatsDataTable(document.getElementById("stats-results-table"));
+        await flush();
+
+        // SearchBuilder container should have been appended to the slot
+        expect(containerMock).toHaveBeenCalled();
+        expect(appendToMock).toHaveBeenCalled();
+        expect(dtInstance.searchBuilder.rebuild).toHaveBeenCalled();
+    });
+});

@@ -18,6 +18,7 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime $modified
  * @property array $mapped_fields Virtual property for decoded field mapping
+ * @property string|null $primary_key
  *
  * @property \App\Model\Entity\Sport $sport
  */
