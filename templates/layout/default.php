@@ -220,7 +220,7 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         <?php if ($isStatsSection) : ?>
         <div class="rh-stats-subnav-wrap">
             <?= $this->element('Stats/sub_nav', [
-                'statTypes' => $this->getConfig('statTypes') ?? [
+                'statTypes' => $this->get('statTypes') ?? [
                     'player-season' => 'Player Season',
                     'team-season' => 'Team Season',
                     'team-season-opponent' => 'Team Season Opponent',
@@ -237,14 +237,8 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         <?php if ($isGamesSection) : ?>
         <div class="rh-games-subnav-wrap">
             <?= $this->element('Games/sub_nav', [
-                'searchTypes' => $this->getConfig('searchTypes') ?? [
-                    'ranked' => 'Ranked',
-                    'overtime' => 'Overtime',
-                    'hundred-point' => '100 Point',
-                    'openers' => 'Openers',
-                    'streaks' => 'Streaks',
-                    'margins' => 'Margins',
-                    'series' => 'Series History',
+                'searchTypes' => $this->get('searchTypes') ?? [
+                'series' => 'Series History',
                 ],
                 'currentSearch' => $this->get('currentSearch', ''),
             ]) ?>

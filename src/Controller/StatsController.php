@@ -40,11 +40,11 @@ class StatsController extends AppController
      */
     protected array $statTypes = [
         'player-season' => 'Player Season',
+        'player-career' => 'Player Career',
         'team-season' => 'Team Season',
         'team-season-opponent' => 'Team Season Opponent',
-        'player-career' => 'Player Career',
-        'player-game' => 'Player Game',
         'team-game' => 'Team Game',
+        'player-game' => 'Player Game',
         'opponent-player-game' => 'Opponent Player Game',
     ];
 

@@ -677,6 +677,81 @@ class GameSearchService
     }
 
     /**
+     * Search opponents for the series DataTable list.
+     *
+     * Keeps the same criteria used by the existing series search:
+     * opponent name and short abbreviation.
+     *
+     * @param string $query
+     * @param int $start
+     * @param int $length
+     * @return array{rows: array<int, array<string,mixed>>, total: int, filtered: int}
+     */
+    public function searchSeriesOpponents(string $query, int $start = 0, int $length = 50): array
+    {
+        $gamesTable = $this->fetchTable('Games');
+
+        $baseQuery = $gamesTable->find();
+        $baseQuery
+            ->select([
+                'opponent_id' => 'Opponents.id',
+                'opponent_name' => 'Opponents.opponent_name',
+                'opponent_short' => 'Opponents.opponent_short',
+                'games_count' => $baseQuery->func()->count('Games.id'),
+            ])
+            ->innerJoinWith('Opponents')
+            ->innerJoinWith('TeamSeason.Teams', function (SelectQuery $q) {
+                return $q->where([
+                    'Teams.sport_id' => 1,
+                    'Teams.gender' => 'M',
+                ]);
+            })
+            ->groupBy([
+                'Opponents.id',
+                'Opponents.opponent_name',
+                'Opponents.opponent_short',
+            ]);
+
+        $query = trim($query);
+        if ($query !== '') {
+            $baseQuery->where([
+                'OR' => [
+                    'Opponents.opponent_name LIKE' => "%{$query}%",
+                    'Opponents.opponent_short LIKE' => "%{$query}%",
+                ],
+            ]);
+        }
+
+        $countQuery = clone $baseQuery;
+        $filtered = count($countQuery->all()->toList());
+
+        $totalQuery = $gamesTable->find()
+            ->select(['opponent_id' => 'Games.opponent_id'])
+            ->distinct(['Games.opponent_id'])
+            ->innerJoinWith('TeamSeason.Teams', function (SelectQuery $q) {
+                return $q->where([
+                    'Teams.sport_id' => 1,
+                    'Teams.gender' => 'M',
+                ]);
+            });
+        $total = count($totalQuery->all()->toList());
+
+        $rows = $baseQuery
+            ->orderByAsc('Opponents.opponent_name')
+            ->offset($start)
+            ->limit($length)
+            ->enableHydration(false)
+            ->all()
+            ->toArray();
+
+        return [
+            'rows' => $rows,
+            'total' => $total,
+            'filtered' => $query === '' ? $total : $filtered,
+        ];
+    }
+
+    /**
      * Determine W/L result from a game entity.
      *
      * @param object $game
