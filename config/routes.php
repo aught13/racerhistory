@@ -183,6 +183,7 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/games/streaks', ['controller' => 'Games', 'action' => 'streaks']);
         $builder->connect('/games/margins', ['controller' => 'Games', 'action' => 'margins']);
         $builder->connect('/games/series', ['controller' => 'Games', 'action' => 'series']);
+        $builder->connect('/games/series-opponents', ['controller' => 'Games', 'action' => 'seriesOpponents']);
         $builder->connect('/games/stats/{id}', ['controller' => 'Games', 'action' => 'stats'])
             ->setPass(['id'])
             ->setPatterns(['id' => '\\d+']);

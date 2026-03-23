@@ -12,6 +12,7 @@ declare(strict_types=1);
  */
 $currentSearch = $currentSearch ?? '';
 $actionMap = [
+    'all' => 'all',
     'ranked' => 'ranked',
     'overtime' => 'overtime',
     'hundred-point' => 'hundredPoint',
@@ -37,7 +38,7 @@ $currentLabel = $currentSearch && isset($searchTypes[$currentSearch]) ? $searchT
                     <a class="nav-link games-nav-link<?= $currentSearch === '' ? ' active' : '' ?>"
                     href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>"
                     <?= $currentSearch === '' ? 'aria-current="page"' : '' ?>>
-                        All
+                        Home
                     </a>
                 </li>
                 <?php foreach ($searchTypes as $slug => $label) :
