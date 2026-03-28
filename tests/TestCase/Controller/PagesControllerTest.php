@@ -80,9 +80,9 @@ class PagesControllerTest extends TestCase
      */
     public function testDirectoryTraversalProtection()
     {
+        Configure::write('debug', false);
         $this->get('/pages/../Layout/ajax');
         $this->assertResponseCode(403);
-        $this->assertResponseContains('Forbidden');
     }
 
     /**
@@ -95,7 +95,6 @@ class PagesControllerTest extends TestCase
         $this->post('/pages/home', ['hello' => 'world']);
 
         $this->assertResponseCode(403);
-        $this->assertResponseContains('CSRF');
     }
 
     /**

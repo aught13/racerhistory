@@ -47,8 +47,9 @@
 
 - Always create unit and integration tests for any controller that renders a page load. Include at minimum:
 	- **PHPUnit** tests covering server-side controller behavior and template output.
-	- **Jest** tests covering the page's frontend behavior and DOM interactions.
+	- **Jest + ESM** tests covering the page's frontend behavior and DOM interactions.
 	- **CSS** tests (node-level) that assert required selectors and theme adjustments are present.
+    - **ECE tests** that cover the full stack of a page load, including frontend and backend behavior, and assert the expected output in the rendered page.
 - All frontend page loads must fully utilize the project's Hotwire/Turbo frontend configuration and lifecycle (initialize on `turbo:load` as well as `DOMContentLoaded`).
 - Jest tests should use ES module imports for the code under test (prefer `import` and `export`), and tests/helpers should be converted to ESM when adding new modules.
 - Test and quality commands must be run in a blocking terminal and their exit codes observed. When automating or invoking from scripts, ensure the following tools are always executed and awaited in this order where practical:
