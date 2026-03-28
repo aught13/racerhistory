@@ -358,4 +358,15 @@ class PersonsControllerTest extends TestCase
         // Career fallback should render only for supported sports (basketball -> 1 total)
         $this->assertSame(1, substr_count($body, 'No career statistics have been recorded yet.'));
     }
+
+    /**
+     * Test admin persons pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

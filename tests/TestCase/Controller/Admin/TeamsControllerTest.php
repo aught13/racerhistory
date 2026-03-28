@@ -349,4 +349,48 @@ class TeamsControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
     }
+
+    /**
+     * Test index includes admin-content turbo-frame.
+     */
+    public function testIndexContainsTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
+
+    /**
+     * Test view page includes admin-content turbo-frame.
+     */
+    public function testViewContainsTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams/view/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
+
+    /**
+     * Test add page includes admin-content turbo-frame.
+     */
+    public function testAddContainsTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams/add');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
+
+    /**
+     * Test edit page includes admin-content turbo-frame.
+     */
+    public function testEditContainsTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

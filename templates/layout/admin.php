@@ -28,6 +28,8 @@
 <head>
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="turbo-refresh-method" content="morph">
+    <meta name="turbo-refresh-scroll" content="reset">
     <meta name="csrfToken" content="<?= $this->request->getAttribute('csrfToken') ?>">
     <title><?= $this->fetch('title') ?></title>
     <?= $this->Html->meta('icon') ?>
@@ -37,6 +39,11 @@
     <?= $this->Html->css(['cake']) ?>
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
+
+    <!-- Import maps + Hotwire Turbo for SPA-like admin navigation -->
+    <?= $this->Html->importmap(require CONFIG . 'importmap.php') ?>
+    <?= $this->Html->script('admin-turbo.mjs', ['type' => 'module']) ?>
+
     <?= $this->fetch('script') ?>
     <!-- jQuery for admin pages (used by DataTables and other plugins) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
@@ -49,8 +56,10 @@
     <?= $this->element('Admin/nav') ?>
     <main class="main">
         <div class="container">
-            <?= $this->Flash->render() ?>
-            <?= $this->fetch('content') ?>
+            <turbo-frame id="admin-content" data-turbo-action="advance">
+                <?= $this->Flash->render() ?>
+                <?= $this->fetch('content') ?>
+            </turbo-frame>
         </div>
     </main>
     <footer class="footer bg-light py-3 mt-4">

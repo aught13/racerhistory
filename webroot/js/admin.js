@@ -169,6 +169,39 @@
         }
     }
 
+    /**
+     * Attaches the show.bs.modal listener to the current modal element.
+     * Must be called after every Turbo frame load since the modal lives
+     * inside the admin-content frame and gets replaced.
+     */
+    function attachModalListener() {
+        const modal = findModal();
+        if (!modal) return;
+        // Avoid attaching duplicates by checking a marker attribute
+        if (modal.dataset.adminModalBound) return;
+        modal.dataset.adminModalBound = "1";
+        modal.addEventListener("show.bs.modal", function (ev) {
+            try {
+                const trigger = ev && ev.relatedTarget;
+                if (trigger) {
+                    setContext({
+                        deleteUrl: trigger.dataset.deleteUrl,
+                        associated: trigger.dataset.associated,
+                        ids: trigger.dataset.ids,
+                        idsName: trigger.dataset.idsName,
+                        formId: trigger.dataset.formId,
+                        bulkAction: trigger.dataset.bulkAction,
+                    });
+                }
+            } catch (e) {
+                console.error("Error in show.bs.modal handler:", e);
+                window.AdminToast &&
+                    window.AdminToast("Error opening modal", "danger");
+            }
+        });
+        console.debug("admin.js modal listener attached");
+    }
+
     onDomReady(function () {
         /**
          * Main event handler wiring for confirm delete modal.
@@ -178,29 +211,8 @@
          */
         console.debug("admin.js initialized, modalPresent=", !!findModal());
 
-        // Modal show event: when Bootstrap opens modal via data-bs-toggle, relatedTarget is available
-        const modal = findModal();
-        if (modal) {
-            modal.addEventListener("show.bs.modal", function (ev) {
-                try {
-                    const trigger = ev && ev.relatedTarget;
-                    if (trigger) {
-                        setContext({
-                            deleteUrl: trigger.dataset.deleteUrl,
-                            associated: trigger.dataset.associated,
-                            ids: trigger.dataset.ids,
-                            idsName: trigger.dataset.idsName,
-                            formId: trigger.dataset.formId,
-                            bulkAction: trigger.dataset.bulkAction,
-                        });
-                    }
-                } catch (e) {
-                    console.error("Error in show.bs.modal handler:", e);
-                    window.AdminToast &&
-                        window.AdminToast("Error opening modal", "danger");
-                }
-            });
-        }
+        // Attach modal listener on initial load
+        attachModalListener();
 
         // Delegated click handler: picks up triggers created dynamically (e.g., bulk temporary trigger)
         document.addEventListener("click", function (event) {
@@ -426,6 +438,13 @@
     }
     window.AdminToast = toast;
 
+    // Turbo lifecycle: re-attach modal listeners after content frame swaps.
+    // The delegated click handler on `document` persists across navigations,
+    // but the show.bs.modal listener on the modal element must be re-attached
+    // because the modal DOM is inside the admin-content turbo-frame.
+    document.addEventListener("turbo:load", attachModalListener);
+    document.addEventListener("turbo:frame-load", attachModalListener);
+
     // For Jest testing (Node/CommonJS) - export functions when `module.exports` is available.
     // Use `typeof module !== 'undefined'` check so this remains safe in browser globals.
     /* eslint-disable no-undef */
@@ -450,6 +469,7 @@
                     renderAssociated,
                     setContext,
                     submitTempForm,
+                    attachModalListener,
                     // expose helper for unit testing
                     buildExtraFields: function (ctx) {
                         // replicate the same logic as used above

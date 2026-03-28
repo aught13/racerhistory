@@ -243,4 +243,15 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('bi-chevron-right', 'Next button icon should be present');
         $this->assertResponseContains('btn-outline-secondary', 'Navigation buttons should have correct styling');
     }
+
+    /**
+     * Test admin seasons pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/seasons');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

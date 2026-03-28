@@ -57,6 +57,7 @@ module.exports = [
             "webroot/js/*-loader.js",
             "webroot/js/*-loader.mjs",
             "webroot/js/*-init.mjs",
+            "webroot/js/admin-turbo.mjs",
         ],
         languageOptions: {
             ecmaVersion: 2022,
@@ -74,6 +75,7 @@ module.exports = [
                 self: "readonly",
                 setTimeout: "readonly",
                 Promise: "readonly",
+                bootstrap: "readonly",
             },
         },
     },
