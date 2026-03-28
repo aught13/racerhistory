@@ -147,6 +147,8 @@ class GamesControllerTest extends TestCase
         $body = (string)$this->_response->getBody();
         $data = json_decode($body, true);
         $this->assertArrayHasKey('data', $data);
+        $this->assertNotEmpty($data['data']);
+        $this->assertSame('Conf', (string)$data['data'][0][9]);
     }
 
     public function testOvertimePage(): void
@@ -337,6 +339,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Series History');
         $this->assertResponseContains('Select an opponent');
+        $this->assertResponseContains('series-opponents-search');
+        $this->assertResponseContains('series-opponents-table');
     }
 
     public function testSeriesWithOpponent(): void
@@ -351,6 +355,41 @@ class GamesControllerTest extends TestCase
         $this->get('/games/series?opponent_id=1&format=json');
         $this->assertResponseOk();
         $this->assertContentType('application/json');
+    }
+
+    public function testSeriesOpponentsJson(): void
+    {
+        $this->get('/games/series-opponents?format=json&draw=1&start=0&length=25');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $payload = json_decode($body, true);
+
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertArrayHasKey('recordsTotal', $payload);
+        $this->assertArrayHasKey('recordsFiltered', $payload);
+        $this->assertArrayHasKey('draw', $payload);
+        $this->assertSame(1, (int)$payload['draw']);
+        $this->assertNotEmpty($payload['data']);
+        $this->assertStringContainsString('Belmont', (string)$payload['data'][0][0]);
+    }
+
+    public function testSeriesOpponentsJsonWithSearch(): void
+    {
+        $this->get('/games/series-opponents?format=json&draw=2&start=0&length=25&search[value]=BEL');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $payload = json_decode($body, true);
+
+        $this->assertIsArray($payload);
+        $this->assertArrayHasKey('data', $payload);
+        $this->assertSame(2, (int)$payload['draw']);
+        $this->assertGreaterThan(0, (int)$payload['recordsFiltered']);
+        $this->assertStringContainsString('Belmont', (string)$payload['data'][0][0]);
     }
 
     public function testSubNavOnAllPages(): void

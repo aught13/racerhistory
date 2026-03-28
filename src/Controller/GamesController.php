@@ -136,7 +136,7 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->allGames();
 
-            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y'));
+            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y', true));
         }
 
         $this->set('currentSearch', 'all');
@@ -319,6 +319,53 @@ class GamesController extends AppController
 
         return $this->response->withType('application/json')
             ->withStringBody(json_encode(['success' => true, 'opponents' => $opponents]));
+    }
+
+    /**
+     * Return opponents list for the series DataTable.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function seriesOpponents(): Response
+    {
+        $this->request->allowMethod(['get']);
+
+        $draw = (int)$this->request->getQuery('draw', 0);
+        $start = max(0, (int)$this->request->getQuery('start', 0));
+        $length = (int)$this->request->getQuery('length', 50);
+        if ($length < 1 || $length > 250) {
+            $length = 50;
+        }
+
+        $search = '';
+        $searchQuery = $this->request->getQuery('search');
+        if (is_array($searchQuery)) {
+            $search = trim((string)($searchQuery['value'] ?? ''));
+        }
+
+        $result = $this->gameSearchService->searchSeriesOpponents($search, $start, $length);
+
+        $rows = array_map(function (array $row): array {
+            $opponentId = (int)($row['opponent_id'] ?? 0);
+            $selectLink = $this->link(
+                'View Series',
+                ['controller' => 'Games', 'action' => 'series', '?' => ['opponent_id' => $opponentId]],
+                ['escape' => true]
+            );
+
+            return [
+                h((string)($row['opponent_name'] ?? 'Unknown')),
+                h((string)($row['opponent_short'] ?? '-')),
+                (int)($row['games_count'] ?? 0),
+                $selectLink,
+            ];
+        }, $result['rows']);
+
+        return $this->jsonResponse($rows, [
+            'draw' => $draw,
+            'recordsTotal' => $result['total'],
+            'recordsFiltered' => $result['filtered'],
+        ]);
     }
 
     // ─── Helper methods ───────────────────────────────────────────────
@@ -520,8 +567,11 @@ class GamesController extends AppController
      * @param string $dateFormat PHP date format for display (default: 'm/d/Y')
      * @return array
      */
-    protected function formatOvertimeRows(array $games, string $dateFormat = 'm/d/Y'): array
-    {
+    protected function formatOvertimeRows(
+        array $games,
+        string $dateFormat = 'm/d/Y',
+        bool $showConferenceTypeAbr = false,
+    ): array {
         $rows = [];
         foreach ($games as $g) {
             $result = $this->gameService->getResultFlag($g);
@@ -531,8 +581,8 @@ class GamesController extends AppController
             $seasonLabel = ($g->team_season->season->start ?? '') . '-'
                 . ($g->team_season->season->end ?? '');
             $dateDisplay = $this->formatDate($g->game_date, $dateFormat);
-            $gameTypeDisplay = $g->post
-                ? h((string)($g->game_type->abr ?? 'Post'))
+            $gameTypeDisplay = $g->post || ($showConferenceTypeAbr && $isConf)
+                ? h((string)($g->game_type->abr ?? ($isConf ? 'Conf' : 'Post')))
                 : 'Regular';
             $rows[] = [
                 $this->link(
