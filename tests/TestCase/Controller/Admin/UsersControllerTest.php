@@ -250,4 +250,15 @@ class UsersControllerTest extends TestCase
         $this->assertNotEmpty($created);
         $this->assertSame('false', $created->value); // logic creates disabled entry when missing
     }
+
+    /**
+     * Test admin users pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->loginAsAdmin();
+        $this->get('/admin/users');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

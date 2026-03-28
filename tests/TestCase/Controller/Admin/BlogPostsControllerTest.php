@@ -90,4 +90,15 @@ class BlogPostsControllerTest extends TestCase
         $this->post('/admin/blog-posts/delete/1');
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'BlogPosts', 'action' => 'index']);
     }
+
+    /**
+     * Test admin blog posts pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/blog-posts');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

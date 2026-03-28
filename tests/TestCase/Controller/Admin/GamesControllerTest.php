@@ -294,4 +294,15 @@ class GamesControllerTest extends TestCase
         ]);
         $this->assertResponseSuccess(); // Re-renders form with errors
     }
+
+    /**
+     * Test admin games pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }
