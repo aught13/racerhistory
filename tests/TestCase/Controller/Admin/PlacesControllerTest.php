@@ -87,4 +87,88 @@ class PlacesControllerTest extends TestCase
         $this->get('/admin/places');
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
+
+    public function testAjaxSearchReturnsResults(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-search?q=Murray');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertNotEmpty($data['results']);
+        $this->assertEquals('Murray', $data['results'][0]['place_name']);
+        $this->assertArrayHasKey('id', $data['results'][0]);
+        $this->assertArrayHasKey('place_city', $data['results'][0]);
+        $this->assertArrayHasKey('place_state', $data['results'][0]);
+    }
+
+    public function testAjaxSearchEmptyQuery(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-search?q=');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['results']);
+    }
+
+    public function testAjaxSearchNoMatch(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-search?q=Nonexistent99');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['results']);
+    }
+
+    public function testAjaxSearchRejectsPostMethod(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/places/ajax-search', ['q' => 'Murray']);
+        $this->assertResponseCode(405);
+    }
+
+    public function testAjaxAddSuccess(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/places/ajax-add', [
+            'place_name' => 'Nashville',
+            'place_city' => 'Nashville',
+            'place_state' => 'TN',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals('Nashville, TN', $data['newOption']['text']);
+        $this->assertNotEmpty($data['newOption']['value']);
+    }
+
+    public function testAjaxAddValidationError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // Missing required place_name
+        $this->post('/admin/places/ajax-add', [
+            'place_city' => 'Nashville',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($data['success']);
+        $this->assertNotEmpty($data['errors']);
+    }
+
+    public function testAjaxAddInvalidMethod(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-add');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($data['success']);
+    }
 }

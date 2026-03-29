@@ -58,6 +58,7 @@ module.exports = [
             "webroot/js/*-loader.mjs",
             "webroot/js/*-init.mjs",
             "webroot/js/admin-turbo.mjs",
+            "webroot/js/game-form-lookups.js",
         ],
         languageOptions: {
             ecmaVersion: 2022,
@@ -74,7 +75,9 @@ module.exports = [
                 caches: "readonly",
                 self: "readonly",
                 setTimeout: "readonly",
+                clearTimeout: "readonly",
                 Promise: "readonly",
+                AbortController: "readonly",
                 bootstrap: "readonly",
             },
         },
