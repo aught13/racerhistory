@@ -256,6 +256,9 @@ class GameUpsertService
 
         $legacyMappedEav = $this->gameEavUi->mapLegacyKeys($eav);
 
+        // Build display labels for AJAX lookup pre-selection
+        $lookupDisplays = $this->buildLookupDisplays($game);
+
         return [
             'game' => $game,
             'eav' => $eav,
@@ -264,6 +267,38 @@ class GameUpsertService
             'sportConfigs' => $sportConfigs,
             'eavTemplate' => $eavTemplate,
             'legacyMappedEav' => $legacyMappedEav,
+            'lookupDisplays' => $lookupDisplays,
         ];
+    }
+
+    /**
+     * Build display labels for pre-selected lookup entities.
+     *
+     * @param \Cake\Datasource\EntityInterface $game Game entity
+     * @return array<string,string|null>
+     */
+    private function buildLookupDisplays(EntityInterface $game): array
+    {
+        $displays = [
+            'opponent' => null,
+            'place' => null,
+            'site' => null,
+            'gameType' => null,
+        ];
+
+        if ($game->get('opponent_id')) {
+            $displays['opponent'] = (new OpponentService())->getDisplayLabel((int)$game->get('opponent_id'));
+        }
+        if ($game->get('place_id')) {
+            $displays['place'] = (new PlaceService())->getDisplayLabel((int)$game->get('place_id'));
+        }
+        if ($game->get('site_id')) {
+            $displays['site'] = (new SiteService())->getDisplayLabel((int)$game->get('site_id'));
+        }
+        if ($game->get('game_type_id')) {
+            $displays['gameType'] = (new GameTypeService())->getDisplayLabel((int)$game->get('game_type_id'));
+        }
+
+        return $displays;
     }
 }

@@ -22,6 +22,7 @@
     <?= $this->Form->create($game) ?>
     <?= $this->element('Admin/Games/form', compact('game', 'teamSeasonList', 'gameTypes', 'opponents', 'places', 'sites')) ?>
     <?= $this->Form->end() ?>
+    <?= $this->element('Admin/Games/form_popups', compact('places')) ?>
 </div>
 
 

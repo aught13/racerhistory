@@ -1,9 +1,35 @@
 <?php
 // Shared form element for Games add/edit
-// Expects: $game, $teamSeasonList, $gameTypes, $opponents, $places, $sites, optional $eav
+// Expects: $game, $teamSeasonList, $gameTypes, $opponents, $places, $sites, optional $eav, $lookupDisplays
 $eav = $eav ?? [];
+$lookupDisplays = $lookupDisplays ?? ['opponent' => null, 'place' => null, 'site' => null, 'gameType' => null];
+
+// Unlock lookup fields so FormProtection allows JS to change their values
+$this->Form->unlockField('game_type_id');
+$this->Form->unlockField('opponent_id');
+$this->Form->unlockField('place_id');
+$this->Form->unlockField('site_id');
+
+// Build AJAX endpoint URLs
+$opponentSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'ajaxSearch']);
+$placeSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']);
+$siteSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'ajaxSearch']);
+$gameTypeSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'ajaxSearch']);
+
+$opponentAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'ajaxAdd']);
+$placeAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']);
+$siteAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'ajaxAdd']);
+$gameTypeAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'ajaxAdd']);
 ?>
-<div class="card">
+<div class="card" id="game-form-card"
+     data-opponent-search-url="<?= h($opponentSearchUrl) ?>"
+     data-place-search-url="<?= h($placeSearchUrl) ?>"
+     data-site-search-url="<?= h($siteSearchUrl) ?>"
+     data-game-type-search-url="<?= h($gameTypeSearchUrl) ?>"
+     data-opponent-display="<?= h($lookupDisplays['opponent'] ?? '') ?>"
+     data-place-display="<?= h($lookupDisplays['place'] ?? '') ?>"
+     data-site-display="<?= h($lookupDisplays['site'] ?? '') ?>"
+     data-game-type-display="<?= h($lookupDisplays['gameType'] ?? '') ?>">
     <div class="card-header"><h3 class="card-title mb-0">Game Details</h3></div>
     <div class="card-body">
         <?= $this->Form->control('team_season_id', [
@@ -45,84 +71,85 @@ $eav = $eav ?? [];
             </div>
         </div>
 
+        <!-- Game Type: AJAX search + popup -->
         <div class="row g-3 mt-1">
-            <div class="col-md-6">
-                <?= $this->Form->control('game_type_id', [
-                    'label' => 'Game Type',
-                    'type' => 'select',
-                    'options' => $gameTypes,
-                    'empty' => 'Choose...',
-                    'class' => 'form-select',
-                    'default' => 1, // Default to ID 1 (Regular Season Game)
-                ]) ?>
-            </div>
-            <div class="col-md-6">
-                <fieldset class="border rounded p-2">
-                    <legend class="float-none w-auto fs-6">New Game Type</legend>
-                    <?= $this->Form->control('new_game_type.game_type_name', ['label' => 'Name', 'class' => 'form-control']) ?>
-                    <div class="row g-2 mt-1">
-                        <div class="col"><?= $this->Form->control('new_game_type.post', ['label' => 'Postseason', 'type' => 'checkbox', 'class' => 'form-check-input']) ?></div>
-                        <div class="col"><?= $this->Form->control('new_game_type.conf', ['label' => 'Conference', 'type' => 'checkbox', 'class' => 'form-check-input']) ?></div>
-                        <div class="col"><?= $this->Form->control('new_game_type.abr', ['label' => 'Abbr (e.g., NCAA)', 'class' => 'form-control', 'maxlength' => 6]) ?></div>
-                    </div>
-                </fieldset>
-                <!-- Hidden field for game_id (for JS/AJAX) -->
-                <?php if (isset($game) && isset($game->id)) : ?>
-                    <input type="hidden" id="game-id-hidden" value="<?= h($game->id) ?>">
-                <?php endif; ?>
+            <div class="col-md-12">
+                <label class="form-label">Game Type</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="game-type-search"
+                           placeholder="Search game types..." autocomplete="off">
+                    <?= $this->Form->hidden('game_type_id', ['id' => 'game-type-id', 'value' => $game->game_type_id ?? 1]) ?>
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#add-game-type-modal"
+                            title="Add New Game Type">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </div>
+                <div id="game-type-selected" class="mt-1"></div>
+                <div id="game-type-results" class="position-relative"></div>
             </div>
         </div>
 
+        <!-- Hidden field for game_id (for JS/AJAX) -->
+        <?php if (isset($game) && isset($game->id)) : ?>
+            <input type="hidden" id="game-id-hidden" value="<?= h($game->id) ?>">
+        <?php endif; ?>
+
+        <!-- Opponent: AJAX search + popup -->
         <div class="row g-3 mt-1">
-            <div class="col-md-6"><?= $this->Form->control('opponent_id', ['label' => 'Opponent', 'type' => 'select', 'options' => $opponents, 'empty' => 'Choose...', 'class' => 'form-select']) ?></div>
-            <div class="col-md-6">
-                <fieldset class="border rounded p-2">
-                    <legend class="float-none w-auto fs-6">New Opponent</legend>
-                    <?= $this->Form->control('new_opponent.opponent_name', ['label' => 'Name', 'class' => 'form-control']) ?>
-                </fieldset>
+            <div class="col-md-12">
+                <label class="form-label">Opponent</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="opponent-search"
+                           placeholder="Search opponents..." autocomplete="off">
+                    <?= $this->Form->hidden('opponent_id', ['id' => 'opponent-id', 'value' => $game->opponent_id ?? '']) ?>
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#add-opponent-modal"
+                            title="Add New Opponent">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </div>
+                <div id="opponent-selected" class="mt-1"></div>
+                <div id="opponent-results" class="position-relative"></div>
             </div>
         </div>
 
+        <!-- Place: AJAX search + popup -->
         <div class="row g-3 mt-1">
-            <div class="col-md-6">
-                <?= $this->Form->control('place_id', [
-                    'label' => 'Place (City, State)',
-                    'type' => 'select',
-                    'options' => $places,
-                    'empty' => 'Choose...',
-                    'class' => 'form-select',
-                    'id' => 'place-select',
-                ]) ?>
-            </div>
-            <div class="col-md-6">
-                <fieldset class="border rounded p-2">
-                    <legend class="float-none w-auto fs-6">New Place</legend>
-                    <div class="row g-2">
-                        <div class="col-md-6"><?= $this->Form->control('new_place.place_name', ['label' => 'Name', 'placeholder' => 'City, ST', 'class' => 'form-control']) ?></div>
-                        <div class="col-md-3"><?= $this->Form->control('new_place.place_city', ['label' => 'City', 'class' => 'form-control']) ?></div>
-                        <div class="col-md-3"><?= $this->Form->control('new_place.place_state', ['label' => 'State', 'class' => 'form-control']) ?></div>
-                    </div>
-                </fieldset>
+            <div class="col-md-12">
+                <label class="form-label">Place (City, State)</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="place-search"
+                           placeholder="Search places..." autocomplete="off">
+                    <?= $this->Form->hidden('place_id', ['id' => 'place-id', 'value' => $game->place_id ?? '']) ?>
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#add-place-modal"
+                            title="Add New Place">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </div>
+                <div id="place-selected" class="mt-1"></div>
+                <div id="place-results" class="position-relative"></div>
             </div>
         </div>
 
+        <!-- Site: AJAX search + popup (requires place) -->
         <div class="row g-3 mt-1">
-            <div class="col-md-6">
-                <?= $this->Form->control('site_id', [
-                    'label' => 'Site (Arena/Stadium)',
-                    'type' => 'select',
-                    'options' => $sites,
-                    'empty' => 'Choose a Place first...',
-                    'class' => 'form-select',
-                    'id' => 'site-select',
-                ]) ?>
-            </div>
-            <div class="col-md-6">
-                <fieldset class="border rounded p-2">
-                    <legend class="float-none w-auto fs-6">New Site</legend>
-                    <?= $this->Form->control('new_site.site_name', ['label' => 'Name', 'class' => 'form-control']) ?>
-                    <small class="text-muted">Uses selected Place</small>
-                </fieldset>
+            <div class="col-md-12">
+                <label class="form-label">Site (Arena/Stadium)</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="site-search"
+                           placeholder="Search sites..." autocomplete="off">
+                    <?= $this->Form->hidden('site_id', ['id' => 'site-id', 'value' => $game->site_id ?? '']) ?>
+                    <button type="button" class="btn btn-outline-secondary" id="add-site-btn"
+                            data-bs-toggle="modal" data-bs-target="#add-site-modal"
+                            title="Add New Site">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </div>
+                <div id="site-selected" class="mt-1"></div>
+                <div id="site-results" class="position-relative"></div>
+                <small class="text-muted">Site search is filtered by the selected Place</small>
             </div>
         </div>
 
@@ -248,42 +275,7 @@ $eav = $eav ?? [];
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const placeSelect = document.getElementById('place-select');
-    const siteSelect = document.getElementById('site-select');
     const gameTimeInput = document.getElementById('game-time-input');
-    const ajaxUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'ajaxSitesByPlace']) ?>';
-
-    // Store the initial site_id if editing
-    const initialSiteId = <?= json_encode($game->site_id ?? null) ?>;
-    const initialPlaceId = <?= json_encode($game->place_id ?? null) ?>;
-
-    function loadSites(placeId, selectSiteId = null) {
-        if (!placeId) {
-            siteSelect.innerHTML = '<option value="">Choose a Place first...</option>';
-            siteSelect.disabled = true;
-            return;
-        }
-
-        fetch(ajaxUrl + '?place_id=' + placeId)
-            .then(response => response.json())
-            .then(data => {
-                siteSelect.innerHTML = '<option value="">Choose...</option>';
-                data.sites.forEach(site => {
-                    const option = document.createElement('option');
-                    option.value = site.id;
-                    option.textContent = site.name;
-                    if (selectSiteId && site.id == selectSiteId) {
-                        option.selected = true;
-                    }
-                    siteSelect.appendChild(option);
-                });
-                siteSelect.disabled = false;
-            })
-            .catch(error => {
-                console.error('Error loading sites:', error);
-                siteSelect.innerHTML = '<option value="">Error loading sites</option>';
-            });
-    }
 
     // Handle 12-hour time format input
     if (gameTimeInput) {
@@ -312,15 +304,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Load sites when place changes
-    placeSelect.addEventListener('change', function() {
-        loadSites(this.value);
-    });
-
-    // Load sites on page load if editing and place is selected
-    if (initialPlaceId) {
-        loadSites(initialPlaceId, initialSiteId);
-    }
 });
+</script>
+<script type="module">
+import { initGameFormLookups } from '/js/game-form-lookups.js';
+// Re-initialize on turbo:load for Hotwire compatibility
+initGameFormLookups();
 </script>

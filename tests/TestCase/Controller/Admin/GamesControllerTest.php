@@ -305,4 +305,142 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="admin-content"');
     }
+
+    /**
+     * Test add form contains AJAX lookup search inputs instead of static selects.
+     */
+    public function testAddFormContainsLookupSearchInputs(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="game-type-search"');
+        $this->assertResponseContains('id="opponent-search"');
+        $this->assertResponseContains('id="place-search"');
+        $this->assertResponseContains('id="site-search"');
+    }
+
+    /**
+     * Test add form contains hidden inputs for lookup IDs.
+     */
+    public function testAddFormContainsLookupHiddenInputs(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="game-type-id"');
+        $this->assertResponseContains('id="opponent-id"');
+        $this->assertResponseContains('id="place-id"');
+        $this->assertResponseContains('id="site-id"');
+    }
+
+    /**
+     * Test add form contains popup modals for creating new entities.
+     */
+    public function testAddFormContainsPopupModals(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="add-game-type-modal"');
+        $this->assertResponseContains('id="add-opponent-modal"');
+        $this->assertResponseContains('id="add-place-modal"');
+        $this->assertResponseContains('id="add-site-modal"');
+    }
+
+    /**
+     * Test add form contains nested place creation inside opponent popup.
+     */
+    public function testAddFormContainsNestedPlaceInOpponentPopup(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="opponent-place-search"');
+        $this->assertResponseContains('id="opponent-add-place-btn"');
+        $this->assertResponseContains('id="add-opponent-place-modal"');
+    }
+
+    /**
+     * Test edit form also contains lookup search inputs.
+     */
+    public function testEditFormContainsLookupSearchInputs(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="game-type-search"');
+        $this->assertResponseContains('id="opponent-search"');
+        $this->assertResponseContains('id="place-search"');
+        $this->assertResponseContains('id="site-search"');
+    }
+
+    /**
+     * Test edit form contains popup modals.
+     */
+    public function testEditFormContainsPopupModals(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="add-game-type-modal"');
+        $this->assertResponseContains('id="add-opponent-modal"');
+        $this->assertResponseContains('id="add-place-modal"');
+        $this->assertResponseContains('id="add-site-modal"');
+        $this->assertResponseContains('id="add-opponent-place-modal"');
+    }
+
+    /**
+     * Test ajaxSitesByPlace returns sites for a given place.
+     */
+    public function testAjaxSitesByPlace(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/ajax-sites-by-place?place_id=1');
+        $this->assertResponseOk();
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertArrayHasKey('sites', $json);
+        $this->assertIsArray($json['sites']);
+    }
+
+    /**
+     * Test ajaxSitesByPlace with invalid place returns empty.
+     */
+    public function testAjaxSitesByPlaceNoMatch(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/ajax-sites-by-place?place_id=999');
+        $this->assertResponseOk();
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertArrayHasKey('sites', $json);
+        $this->assertEmpty($json['sites']);
+    }
+
+    /**
+     * Test add form data attributes contain search URLs.
+     */
+    public function testAddFormDataAttributesContainSearchUrls(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-opponent-search-url=');
+        $this->assertResponseContains('data-place-search-url=');
+        $this->assertResponseContains('data-site-search-url=');
+        $this->assertResponseContains('data-game-type-search-url=');
+    }
+
+    /**
+     * Test hidden FormProtection token forms are present.
+     */
+    public function testAddFormContainsHiddenTokenForms(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="hidden-opponent-form"');
+        $this->assertResponseContains('id="hidden-place-form"');
+        $this->assertResponseContains('id="hidden-site-form"');
+        $this->assertResponseContains('id="hidden-game-type-form"');
+    }
 }
