@@ -455,9 +455,6 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Test edit form shows mode toggle buttons for past game.
-     */
-    /**
      * Test edit form always shows Details/Results mode toggle.
      */
     public function testEditFormAlwaysShowsModeToggle(): void
