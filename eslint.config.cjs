@@ -163,6 +163,7 @@ module.exports = [
                 MutationObserver: "readonly",
                 navigator: "readonly",
                 Node: "readonly",
+                DOMException: "readonly",
             },
         },
         rules: {
