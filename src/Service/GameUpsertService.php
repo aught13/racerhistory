@@ -104,27 +104,47 @@ class GameUpsertService
         if ($this->gamesTable->save($game)) {
             $this->gameService->saveGameEavFromRequest((int)$game->get('id'), $data);
 
-            $redirect = $newOpponentId
-                ? [
+            // Date-aware redirect after add
+            $gameDate = $game->get('game_date');
+            $isFutureGame = $gameDate && $gameDate->isFuture();
+
+            if ($newOpponentId) {
+                $redirect = [
                     'prefix' => 'Admin',
                     'controller' => 'Opponents',
                     'action' => 'edit',
                     $newOpponentId,
-                ]
-                : [
-                    'prefix' => 'Admin',
-                    'controller' => 'TeamSeasons',
-                    'action' => 'view',
-                    $teamSeasonId,
                 ];
+            } elseif ($isFutureGame) {
+                // Future game: redirect back to add form for same team season
+                $redirect = [
+                    'prefix' => 'Admin',
+                    'controller' => 'Games',
+                    'action' => 'add',
+                    '?' => ['team_season_id' => $teamSeasonId],
+                ];
+            } else {
+                // Past game: redirect to add results
+                $redirect = [
+                    'prefix' => 'Admin',
+                    'controller' => 'Games',
+                    'action' => 'addResults',
+                    (int)$game->get('id'),
+                ];
+            }
+
+            $flashMessage = $isFutureGame
+                ? 'The game has been saved. Add another game below.'
+                : 'The game has been saved. Add results below.';
 
             return [
                 'success' => true,
                 'flashErrors' => [],
-                'flashSuccess' => 'The game has been saved.',
+                'flashSuccess' => $flashMessage,
                 'redirect' => $redirect,
                 'placeId' => null,
                 'viewData' => [],
+                'gameId' => (int)$game->get('id'),
             ];
         }
 
@@ -207,6 +227,7 @@ class GameUpsertService
                 'redirect' => $redirect,
                 'placeId' => null,
                 'viewData' => [],
+                'gameId' => (int)$game->get('id'),
             ];
         }
 
@@ -219,6 +240,7 @@ class GameUpsertService
             'redirect' => null,
             'placeId' => $game->place_id,
             'viewData' => $viewData,
+            'gameId' => $gameId,
         ];
     }
 

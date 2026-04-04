@@ -76,11 +76,38 @@ class GamesControllerTest extends TestCase
         ];
 
         $this->post('/admin/games/add?team_season_id=1', $data);
-        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
+        // Past game date now redirects to add-results
+        $this->assertRedirectContains('/admin/games/add-results/');
 
         $eav = $this->getTableLocator()->get('GameEav');
         $count = $eav->find()->where(['key' => 'period_2_team'])->count();
         $this->assertGreaterThan(0, $count);
+    }
+
+    /**
+     * Test that adding a game with a future date redirects to add another.
+     */
+    public function testAddPostFutureGameRedirectsToAddAnother(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $futureDate = date('Y-m-d', strtotime('+30 days'));
+        $data = [
+            'team_season_id' => 2,
+            'game_date' => $futureDate,
+            'game_time' => '18:00',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+            'periods' => 2,
+        ];
+
+        $this->post('/admin/games/add?team_season_id=2', $data);
+        $this->assertRedirectContains('/admin/games/add?team_season_id=2');
     }
 
     public function testEditPost(): void
@@ -100,6 +127,29 @@ class GamesControllerTest extends TestCase
             'period_1_opponent' => '31',
         ]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
+    }
+
+    public function testEditPostSaveAndBoxScoreRedirects(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/games/edit/1', [
+            'team_season_id' => 1,
+            'game_date' => '2024-01-15',
+            'hrn' => 1,
+            'periods' => 2,
+            'period_1_team' => '36',
+            'period_1_opponent' => '31',
+            'save_action' => 'box_score',
+        ]);
+        $this->assertRedirect([
+            'prefix' => 'Admin',
+            'controller' => 'StatBasketGameBox',
+            'action' => 'gameBox',
+            '1',
+        ]);
     }
 
     public function testEditFormShowsLegacyPeriodScores(): void
@@ -362,12 +412,12 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Test edit form also contains lookup search inputs.
+     * Test edit form in details mode contains lookup search inputs.
      */
     public function testEditFormContainsLookupSearchInputs(): void
     {
         $this->mockIdentity();
-        $this->get('/admin/games/edit/1');
+        $this->get('/admin/games/edit/1?mode=details');
         $this->assertResponseOk();
         $this->assertResponseContains('id="game-type-search"');
         $this->assertResponseContains('id="opponent-search"');
@@ -376,18 +426,83 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Test edit form contains popup modals.
+     * Test edit form in details mode contains popup modals.
      */
     public function testEditFormContainsPopupModals(): void
     {
         $this->mockIdentity();
-        $this->get('/admin/games/edit/1');
+        $this->get('/admin/games/edit/1?mode=details');
         $this->assertResponseOk();
         $this->assertResponseContains('id="add-game-type-modal"');
         $this->assertResponseContains('id="add-opponent-modal"');
         $this->assertResponseContains('id="add-place-modal"');
         $this->assertResponseContains('id="add-site-modal"');
         $this->assertResponseContains('id="add-opponent-place-modal"');
+    }
+
+    /**
+     * Test edit form for past game defaults to results mode.
+     */
+    public function testEditPastGameDefaultsToResultsMode(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/edit/1');
+        $this->assertResponseOk();
+        // Results mode shows score fields, not lookup search inputs
+        $this->assertResponseContains('id="game-results-card"');
+        $this->assertResponseContains('Overtime Periods');
+        $this->assertResponseContains('Team Points');
+    }
+
+    /**
+     * Test edit form shows mode toggle buttons for past game.
+     */
+    /**
+     * Test edit form always shows Details/Results mode toggle.
+     */
+    public function testEditFormAlwaysShowsModeToggle(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Game Details');
+        $this->assertResponseContains('Game Results');
+        $this->assertResponseContains('mode=details');
+        $this->assertResponseContains('mode=results');
+    }
+
+    /**
+     * Test addResults page renders correctly.
+     */
+    public function testAddResultsGet(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/games/add-results/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Add Results');
+        $this->assertResponseContains('id="game-results-card"');
+        $this->assertResponseContains('Team Points');
+        $this->assertResponseContains('Opponent Points');
+    }
+
+    /**
+     * Test addResults POST saves results and redirects.
+     */
+    public function testAddResultsPost(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/games/add-results/1', [
+            'pts_mur' => '80',
+            'pts_opp' => '70',
+            'period_1_team' => '40',
+            'period_1_opponent' => '35',
+            'period_2_team' => '40',
+            'period_2_opponent' => '35',
+        ]);
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
     }
 
     /**

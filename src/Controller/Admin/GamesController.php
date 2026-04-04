@@ -218,6 +218,60 @@ class GamesController extends AppController
     }
 
     /**
+     * Add results to an existing game (scores, EAV fields).
+     *
+     * @param string $id Game ID
+     */
+    public function addResults(string $id): ?Response
+    {
+        $viewData = $this->gameUpsert->getEditViewData((int)$id);
+        $game = $viewData['game'];
+
+        // Determine if the sport has box-score stats
+        $sportHasStats = false;
+        $sportId = $viewData['sportId'] ?? 0;
+        if ($sportId) {
+            $statTables = $this->SportConfig->getAllStatTables($sportId);
+            $sportHasStats = !empty($statTables);
+        }
+        $viewData['sportHasStats'] = $sportHasStats;
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $result = $this->gameUpsert->processEdit((int)$id, $this->request->getData());
+
+            foreach (($result['flashErrors'] ?? []) as $error) {
+                $this->Flash->error(__((string)$error));
+            }
+            if (!empty($result['flashSuccess'])) {
+                $this->Flash->success(__((string)$result['flashSuccess']));
+            }
+            if (!empty($result['redirect'])) {
+                // After results save with stats sport, offer box score
+                if ($sportHasStats) {
+                    $this->Flash->success(__('Would you like to enter box scores? {0}', sprintf(
+                        '<a href="%s" class="alert-link">Enter Box Scores</a>',
+                        \Cake\Routing\Router::url([
+                            'prefix' => 'Admin',
+                            'controller' => 'StatBasketGameBox',
+                            'action' => 'gameBox',
+                            $game->id,
+                        ]),
+                    )), ['escape' => false]);
+                }
+
+                return $this->redirect($result['redirect']);
+            }
+
+            $viewData = array_merge($viewData, $result['viewData'] ?? []);
+            $viewData['sportHasStats'] = $sportHasStats;
+        }
+
+        $this->set($viewData);
+
+        return null;
+    }
+
+    /**
      * Edit a game.
      *
      * @param string $id Game ID
@@ -234,20 +288,47 @@ class GamesController extends AppController
                 $this->Flash->success(__((string)$result['flashSuccess']));
             }
             if (!empty($result['redirect'])) {
+                if ($this->request->getData('save_action') === 'box_score') {
+                    return $this->redirect([
+                        'prefix' => 'Admin',
+                        'controller' => 'StatBasketGameBox',
+                        'action' => 'gameBox',
+                        $id,
+                    ]);
+                }
+
                 return $this->redirect($result['redirect']);
             }
 
             $this->setFormLists($result['placeId'] ?? null);
-            $this->set($result['viewData'] ?? []);
+            $viewData = $result['viewData'] ?? [];
+            $viewData['sportHasStats'] = $this->determineSportHasStats($viewData['sportId'] ?? 0);
+            $this->set($viewData);
 
             return null;
         }
 
         $viewData = $this->gameUpsert->getEditViewData((int)$id);
+        $viewData['sportHasStats'] = $this->determineSportHasStats($viewData['sportId'] ?? 0);
         $this->setFormLists($viewData['game']->place_id ?? null);
         $this->set($viewData);
 
         return null;
+    }
+
+    /**
+     * Determine if a sport has stat tables configured.
+     *
+     * @param int $sportId Sport ID
+     * @return bool
+     */
+    private function determineSportHasStats(int $sportId): bool
+    {
+        if (!$sportId) {
+            return false;
+        }
+
+        return !empty($this->SportConfig->getAllStatTables($sportId));
     }
 
     /**

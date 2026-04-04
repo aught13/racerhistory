@@ -12,7 +12,7 @@ $this->assign('title', 'Game Box Scores');
                 <a href="<?= $this->Url->build(['action' => 'index']) ?>">Games</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['action' => 'edit', $game->id]) ?>">Edit Game</a>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'edit', $game->id, '?' => ['mode' => 'results']]) ?>">Edit Game</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">Game Box Scores</li>
         </ol>
@@ -150,7 +150,7 @@ $this->assign('title', 'Game Box Scores');
                 <?php endif; ?>
             </div>
             <div class="d-flex gap-2">
-                <a href="<?= $this->Url->build(['action' => 'edit', $game->id]) ?>" class="btn btn-secondary">
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'edit', $game->id, '?' => ['mode' => 'results']]) ?>" class="btn btn-secondary">
                     Cancel
                 </a>
                 <button type="submit" class="btn btn-primary">
