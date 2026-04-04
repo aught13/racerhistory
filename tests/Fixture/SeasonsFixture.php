@@ -27,6 +27,13 @@ class SeasonsFixture extends TestFixture
                 'created_at' => '2025-08-01 00:00:00',
                 'updated_at' => '2025-08-01 00:00:00',
             ],
+            [
+                'id' => 3,
+                'start' => 2025,
+                'end' => 2026,
+                'created_at' => '2025-08-01 00:00:00',
+                'updated_at' => '2025-08-01 00:00:00',
+            ],
         ];
 
         parent::init();
