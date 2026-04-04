@@ -345,4 +345,126 @@ class GameServiceTest extends TestCase
 
         $this->assertGreaterThanOrEqual(1, $query->count());
     }
+
+    /**
+     * Test that reducing overtime removes stale OT EAV keys.
+     */
+    public function testSaveGameEavRemovesStaleOvertimeKeys(): void
+    {
+        $gameId = 1;
+        $gamesTable = TableRegistry::getTableLocator()->get('Games');
+        $gameEavTable = TableRegistry::getTableLocator()->get('GameEav');
+
+        // Set game to 2 OT and insert OT EAV records
+        $game = $gamesTable->get($gameId);
+        $game->set('ot', '2');
+        $gamesTable->save($game);
+
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_1_team', 'value' => '10',
+        ]));
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_1_opponent', 'value' => '8',
+        ]));
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_2_team', 'value' => '5',
+        ]));
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_2_opponent', 'value' => '7',
+        ]));
+
+        // Verify OT keys exist
+        $otKeys = $gameEavTable->find()
+            ->where(['game_id' => $gameId])
+            ->whereInList('key', ['overtime_2_team', 'overtime_2_opponent'])
+            ->count();
+        $this->assertSame(2, $otKeys, 'OT2 keys should exist before reduction');
+
+        // Now reduce to 0 OT and save EAV
+        $game->set('ot', '0');
+        $gamesTable->save($game);
+
+        $this->service->saveGameEavFromRequest($gameId, [
+            'period_1_team' => '35',
+            'period_1_opponent' => '30',
+            'period_2_team' => '40',
+            'period_2_opponent' => '38',
+        ]);
+
+        // All overtime keys should be removed
+        $remainingOt = $gameEavTable->find()
+            ->where(['game_id' => $gameId])
+            ->where(['key LIKE' => 'overtime_%'])
+            ->count();
+        $this->assertSame(0, $remainingOt, 'All OT EAV keys should be removed after reducing to 0 OT');
+
+        // Period keys should still exist
+        $periodKeys = $gameEavTable->find()
+            ->where(['game_id' => $gameId])
+            ->where(['key LIKE' => 'period_%'])
+            ->count();
+        $this->assertGreaterThanOrEqual(2, $periodKeys, 'Period keys should remain');
+
+        // Official keys should still exist
+        $officialKeys = $gameEavTable->find()
+            ->where(['game_id' => $gameId])
+            ->where(['key LIKE' => 'official_%'])
+            ->count();
+        $this->assertGreaterThanOrEqual(1, $officialKeys, 'Official keys should remain');
+    }
+
+    /**
+     * Test that reducing overtime from 2 to 1 removes only OT2 keys.
+     */
+    public function testSaveGameEavRemovesOnlyExcessOvertimeKeys(): void
+    {
+        $gameId = 1;
+        $gamesTable = TableRegistry::getTableLocator()->get('Games');
+        $gameEavTable = TableRegistry::getTableLocator()->get('GameEav');
+
+        // Set game to 2 OT and insert OT EAV records
+        $game = $gamesTable->get($gameId);
+        $game->set('ot', '2');
+        $gamesTable->save($game);
+
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_1_team', 'value' => '10',
+        ]));
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_1_opponent', 'value' => '8',
+        ]));
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_2_team', 'value' => '5',
+        ]));
+        $gameEavTable->saveOrFail($gameEavTable->newEntity([
+            'game_id' => $gameId, 'key' => 'overtime_2_opponent', 'value' => '7',
+        ]));
+
+        // Reduce to 1 OT and save with OT1 data
+        $game->set('ot', '1');
+        $gamesTable->save($game);
+
+        $this->service->saveGameEavFromRequest($gameId, [
+            'period_1_team' => '35',
+            'period_1_opponent' => '30',
+            'period_2_team' => '40',
+            'period_2_opponent' => '38',
+            'overtime_1_team' => '10',
+            'overtime_1_opponent' => '8',
+        ]);
+
+        // OT1 keys should remain
+        $ot1 = $gameEavTable->find()
+            ->where(['game_id' => $gameId])
+            ->whereInList('key', ['overtime_1_team', 'overtime_1_opponent'])
+            ->count();
+        $this->assertSame(2, $ot1, 'OT1 keys should still exist');
+
+        // OT2 keys should be removed
+        $ot2 = $gameEavTable->find()
+            ->where(['game_id' => $gameId])
+            ->whereInList('key', ['overtime_2_team', 'overtime_2_opponent'])
+            ->count();
+        $this->assertSame(0, $ot2, 'OT2 keys should be removed');
+    }
 }

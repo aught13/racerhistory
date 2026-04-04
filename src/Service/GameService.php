@@ -463,6 +463,18 @@ class GameService
             $overtime = (string)($game->get('ot') ?: '0');
             $eavTemplate = $gameEavTable->getEavTemplateForSport($sportId, $periods, $overtime);
 
+            // Remove stale period/overtime EAV keys no longer in the template
+            $validKeys = array_keys($eavTemplate);
+            $existingValues = $this->loadGameEavValues($gameId);
+            foreach (array_keys($existingValues) as $existingKey) {
+                if (
+                    !in_array($existingKey, $validKeys, true)
+                    && (str_starts_with($existingKey, 'period_') || str_starts_with($existingKey, 'overtime_'))
+                ) {
+                    $gameEavTable->deleteAttribute($gameId, $existingKey);
+                }
+            }
+
             // Save all EAV fields from the template
             foreach ($eavTemplate as $key => $fieldConfig) {
                 $value = $data[$key] ?? null;
