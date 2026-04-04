@@ -125,6 +125,12 @@ $this->assign('title', 'Game Box Scores');
         </div>
     </div>
 
+    <?php
+    // Calculate default team minutes: 200 regulation + 50 per OT
+    $numOT = (int)($game->ot ?? 0);
+    $defaultMinutes = 200 + (50 * $numOT);
+    ?>
+
     <div class="card mt-4">
         <div class="card-body border-bottom">
             <div class="row g-3">
@@ -138,6 +144,37 @@ $this->assign('title', 'Game Box Scores');
                             <strong>Update Season Totals</strong>
                             <div class="text-muted small">Automatically update cumulative season statistics from these box scores</div>
                         </label>
+                    </div>
+
+                    <!-- Season totals options (shown when Update Season Totals is checked) -->
+                    <div id="season-totals-options" class="mt-3 ps-4" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-body py-2 px-3">
+                                <div class="mb-2">
+                                    <i class="bi bi-plus-circle text-success"></i>
+                                    <strong class="small">+1 GP</strong>
+                                    <span class="text-muted small ms-1">will be added to season totals</span>
+                                </div>
+                                <div>
+                                    <label for="team-minutes-input" class="form-label small mb-1">
+                                        <i class="bi bi-clock"></i> Team Minutes
+                                    </label>
+                                    <?= $this->Form->control('team_minutes', [
+                                        'id' => 'team-minutes-input',
+                                        'type' => 'number',
+                                        'value' => $defaultMinutes,
+                                        'label' => false,
+                                        'class' => 'form-control form-control-sm',
+                                        'min' => 0,
+                                        'step' => 1,
+                                        'style' => 'max-width: 120px;',
+                                    ]) ?>
+                                    <div class="text-muted small mt-1">
+                                        Default: 200 + 50 per OT<?= $numOT > 0 ? " ({$numOT} OT = {$defaultMinutes})" : '' ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -181,3 +218,28 @@ $this->assign('title', 'Game Box Scores');
 
     <?= $this->Form->end() ?>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var checkbox = document.getElementById('add-to-totals-check');
+    var optionsPanel = document.getElementById('season-totals-options');
+    if (checkbox && optionsPanel) {
+        function togglePanel() {
+            optionsPanel.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        checkbox.addEventListener('change', togglePanel);
+        togglePanel();
+    }
+});
+document.addEventListener('turbo:load', function() {
+    var checkbox = document.getElementById('add-to-totals-check');
+    var optionsPanel = document.getElementById('season-totals-options');
+    if (checkbox && optionsPanel) {
+        function togglePanel() {
+            optionsPanel.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        checkbox.addEventListener('change', togglePanel);
+        togglePanel();
+    }
+});
+</script>

@@ -90,12 +90,22 @@ class StatBasketGameBoxController extends AppController
             $originalTeamBox = $teamBox ? clone $teamBox : null;
             $originalOpponentBox = $opponentBox ? clone $opponentBox : null;
 
+            // Determine if season totals should be updated
+            $addToTotals = $this->request->getData('add_to_totals');
+            $teamMinutes = $addToTotals ? (int)($this->request->getData('team_minutes') ?? 0) : 0;
+
             // Save team final stats (period Z, opponent_id 0)
             if (!empty($data['team'])) {
                 $teamData = $data['team'];
                 $teamData['game_id'] = $gameId;
                 $teamData['opponent_id'] = 0;
                 $teamData['period'] = 'Z';
+
+                // Set GP and MIN when updating season totals
+                if ($addToTotals) {
+                    $teamData['GP'] = '1';
+                    $teamData['MIN'] = (string)$teamMinutes;
+                }
 
                 if ($teamBox) {
                     $teamBox = $boxTable->patchEntity($teamBox, $teamData);
@@ -117,6 +127,12 @@ class StatBasketGameBoxController extends AppController
                 $oppData['opponent_id'] = $opponentId;
                 $oppData['period'] = 'Z';
 
+                // Set GP and MIN when updating season totals
+                if ($addToTotals) {
+                    $oppData['GP'] = '1';
+                    $oppData['MIN'] = (string)$teamMinutes;
+                }
+
                 if ($opponentBox) {
                     $opponentBox = $boxTable->patchEntity($opponentBox, $oppData);
                 } else {
@@ -131,7 +147,6 @@ class StatBasketGameBoxController extends AppController
             }
 
             // Update season totals if checkbox is selected (final period only)
-            $addToTotals = $this->request->getData('add_to_totals');
             if ($addToTotals && $teamBox && $opponentBox) {
                 $this->basketballStatsService->applyGameBoxToSeasonTotals(
                     $game,

@@ -281,4 +281,152 @@ class StatBasketGameBoxControllerTest extends TestCase
         $this->assertFlashMessage('Period box scores have been saved.');
         $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
     }
+
+    /**
+     * Test gameBox GET renders team minutes field and season totals options
+     */
+    public function testGameBoxGetShowsTeamMinutesField(): void
+    {
+        $this->get('/admin/stat-basket-game-box/game-box/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="season-totals-options"');
+        $this->assertResponseContains('id="team-minutes-input"');
+        $this->assertResponseContains('+1 GP');
+        $this->assertResponseContains('Team Minutes');
+        $this->assertResponseContains('id="add-to-totals-check"');
+    }
+
+    /**
+     * Test the default minutes calculation for a game with no OT (200 minutes)
+     */
+    public function testGameBoxDefaultMinutesNoOT(): void
+    {
+        $this->get('/admin/stat-basket-game-box/game-box/1');
+        $this->assertResponseOk();
+        // Game 1 has no OT, so default should be 200
+        $this->assertResponseContains('value="200"');
+    }
+
+    /**
+     * Test the default minutes calculation for a game with OT
+     */
+    public function testGameBoxDefaultMinutesWithOT(): void
+    {
+        // Game 2 has ot=1, so default should be 250 (200 + 50*1)
+        $this->get('/admin/stat-basket-game-box/game-box/2');
+        $this->assertResponseOk();
+        $this->assertResponseContains('value="250"');
+        $this->assertResponseContains('1 OT = 250');
+    }
+
+    /**
+     * Test the default minutes calculation for a game with 2 OT periods
+     */
+    public function testGameBoxDefaultMinutesWithDoubleOT(): void
+    {
+        // Game 4 has ot=2, so default should be 300 (200 + 50*2)
+        $this->get('/admin/stat-basket-game-box/game-box/4');
+        $this->assertResponseOk();
+        $this->assertResponseContains('value="300"');
+        $this->assertResponseContains('2 OT = 300');
+    }
+
+    /**
+     * Test that POST with add_to_totals sets GP and MIN on team box
+     */
+    public function testGameBoxPostWithSeasonTotalsSetsGpAndMin(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'team' => ['PTS' => '80', 'FGM' => '30'],
+            'opponent' => ['PTS' => '72', 'FGA' => '60'],
+            'add_to_totals' => '1',
+            'team_minutes' => '250',
+        ];
+
+        $this->post('/admin/stat-basket-game-box/game-box/1', $data);
+        $this->assertResponseSuccess();
+
+        // Verify GP and MIN were saved on both team and opponent box scores
+        $boxTable = $this->getTableLocator()->get('StatBasketGameBox');
+
+        $teamBox = $boxTable->find()
+            ->where(['game_id' => 1, 'opponent_id' => 0, 'period' => 'Z'])
+            ->first();
+        $this->assertNotNull($teamBox);
+        $this->assertEquals('1', $teamBox->GP);
+        $this->assertEquals('250', $teamBox->MIN);
+
+        $opponentBox = $boxTable->find()
+            ->where(['game_id' => 1, 'opponent_id !=' => 0, 'period' => 'Z'])
+            ->first();
+        $this->assertNotNull($opponentBox);
+        $this->assertEquals('1', $opponentBox->GP);
+        $this->assertEquals('250', $opponentBox->MIN);
+    }
+
+    /**
+     * Test that POST without add_to_totals does NOT set GP and MIN
+     */
+    public function testGameBoxPostWithoutSeasonTotalsDoesNotSetGpMin(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'team' => ['PTS' => '80'],
+            'opponent' => ['PTS' => '72'],
+            'team_minutes' => '200',
+        ];
+
+        $this->post('/admin/stat-basket-game-box/game-box/1', $data);
+        $this->assertResponseSuccess();
+
+        // GP and MIN should not be set when add_to_totals is unchecked
+        $boxTable = $this->getTableLocator()->get('StatBasketGameBox');
+
+        $teamBox = $boxTable->find()
+            ->where(['game_id' => 1, 'opponent_id' => 0, 'period' => 'Z'])
+            ->first();
+        $this->assertNotNull($teamBox);
+        $this->assertNull($teamBox->GP);
+        $this->assertNull($teamBox->MIN);
+    }
+
+    /**
+     * Test that season totals GP and MIN are updated when saving with add_to_totals
+     */
+    public function testSeasonTotalsUpdatedWithGpAndMin(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        // Record original season totals
+        $teamSeasonTable = $this->getTableLocator()->get('StatBasketSeasonTeam');
+        $originalTeamSeason = $teamSeasonTable->find()
+            ->where(['team_season_id' => 1])
+            ->first();
+        $originalGP = (int)($originalTeamSeason->GP ?? 0);
+        $originalMIN = (int)($originalTeamSeason->MIN ?? 0);
+
+        $data = [
+            'team' => ['PTS' => '80'],
+            'opponent' => ['PTS' => '72'],
+            'add_to_totals' => '1',
+            'team_minutes' => '200',
+        ];
+
+        $this->post('/admin/stat-basket-game-box/game-box/1', $data);
+        $this->assertResponseSuccess();
+
+        // Verify season totals were updated
+        $updatedTeamSeason = $teamSeasonTable->find()
+            ->where(['team_season_id' => 1])
+            ->first();
+        $this->assertNotNull($updatedTeamSeason);
+        $this->assertEquals($originalGP + 1, (int)$updatedTeamSeason->GP);
+        $this->assertEquals($originalMIN + 200, (int)$updatedTeamSeason->MIN);
+    }
 }
