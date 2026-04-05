@@ -164,6 +164,7 @@ module.exports = [
                 navigator: "readonly",
                 Node: "readonly",
                 DOMException: "readonly",
+                CustomEvent: "readonly",
             },
         },
         rules: {

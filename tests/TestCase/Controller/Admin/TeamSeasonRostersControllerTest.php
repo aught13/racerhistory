@@ -35,27 +35,91 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertRedirectContains('/users/login');
     }
 
-    public function testAddPostValid(): void
+    public function testAddGetShowsMultiRowForm(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="roster-rows"');
+        $this->assertResponseContains('id="add-row-btn"');
+        $this->assertResponseContains('Add Another');
+        $this->assertResponseContains('Save All');
+        $this->assertResponseContains('roster-row');
+        $this->assertResponseContains('turbo-frame id="roster-add-frame"');
+        $this->assertResponseContains('data-person-search-url');
+        $this->assertResponseContains('roster-person-search');
+    }
+
+    public function testAddGetShowsTeamSeasonSelect(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/add');
+        $this->assertResponseOk();
+        $this->assertResponseContains('team_season_id');
+    }
+
+    public function testBulkAddSingleRow(): void
     {
         $this->mockIdentity();
         $data = [
             'team_season_id' => 1,
-            'person_id' => 1,
-            'roster_number' => '22',
+            'rows' => [
+                ['person_id' => 2, 'roster_number' => '22', 'roster_position' => 'G'],
+            ],
         ];
-        $this->post('/admin/team-season-rosters/add', $data);
+        $this->post('/admin/team-season-rosters/bulk-add', $data);
         $this->assertRedirectContains('/admin/team-seasons/view/1');
-        $this->assertFlashMessage('The team season roster has been saved.');
+        $this->assertFlashMessage('Saved 1 roster entry/entries.');
     }
 
-    public function testAddPostInvalid(): void
+    public function testBulkAddMultipleRows(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['person_id' => 1, 'roster_number' => '10', 'roster_position' => 'F'],
+                ['person_id' => 2, 'roster_number' => '22', 'roster_position' => 'G'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-add', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+        $this->assertFlashMessage('Saved 2 roster entry/entries.');
+    }
+
+    public function testBulkAddSkipsEmptyRows(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['person_id' => 2, 'roster_number' => '22'],
+                ['person_id' => '', 'roster_number' => ''],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-add', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+        $this->assertFlashMessage('Saved 1 roster entry/entries.');
+    }
+
+    public function testBulkAddNoRowsRedirects(): void
     {
         $this->mockIdentity();
         $this->enableRetainFlashMessages();
-        $data = [ 'team_season_id' => '', 'person_id' => '' ];
-        $this->post('/admin/team-season-rosters/add', $data);
-        $this->assertResponseOk();
-        $this->assertFlashMessage('The team season roster could not be saved. Please, try again.');
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-add', $data);
+        $this->assertRedirectContains('/admin/team-season-rosters/add');
+        $this->assertFlashMessage('No roster entries to save.');
+    }
+
+    public function testBulkAddRequiresPost(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-add');
+        $this->assertResponseCode(405);
     }
 
     public function testEditGet(): void
