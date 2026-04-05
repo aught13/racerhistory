@@ -23,6 +23,21 @@ use Cake\Http\Response;
 class TeamSeasonRostersController extends AppController
 {
     /**
+     * @inheritDoc
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        if ($this->components()->has('FormProtection')) {
+            $current = (array)$this->FormProtection->getConfig('unlockedActions');
+            $this->FormProtection->setConfig(
+                'unlockedActions',
+                array_merge($current, ['bulkAdd'])
+            );
+        }
+    }
+
+    /**
      * View a single team season roster.
      *
      * @param string $id TeamSeasonRoster ID
@@ -41,45 +56,86 @@ class TeamSeasonRostersController extends AppController
     }
 
     /**
-     * Add new team season roster form and processing.
+     * Add new team season roster form (multi-row).
+     *
+     * Displays a form with one or more roster entry rows. Users can add rows
+     * dynamically and submit all at once via the bulkAdd action.
      *
      * @return \Cake\Http\Response|null
      */
     public function add(): ?Response
     {
-        /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
-        $teamSeasonRoster = $this->TeamSeasonRosters->newEmptyEntity();
-
-        // Pre-populate team_season_id if provided in query string
-        if ($this->request->getQuery('team_season_id')) {
-            $teamSeasonRoster = $teamSeasonRoster->set(
-                'team_season_id',
-                (int)$this->request->getQuery('team_season_id')
-            );
-        }
-
-        if ($this->request->is('post')) {
-            $data = $this->request->getData();
-            $teamSeasonRoster = $this->TeamSeasonRosters->patchEntity($teamSeasonRoster, $data);
-
-            if ($this->TeamSeasonRosters->save($teamSeasonRoster)) {
-                $this->Flash->success(__('The team season roster has been saved.'));
-
-                $tsId = (int)$teamSeasonRoster->get('team_season_id');
-
-                return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $tsId]);
-            }
-            $this->Flash->error(__('The team season roster could not be saved. Please, try again.'));
-        }
+        $teamSeasonId = $this->request->getQuery('team_season_id')
+            ? (int)$this->request->getQuery('team_season_id')
+            : null;
 
         $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
-
-        $persons = (new PersonService())->getPersonsList(200);
         $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
 
-        $this->set(compact('teamSeasonRoster', 'teamSeasonsList', 'persons', 'sports'));
+        $this->set(compact('teamSeasonId', 'teamSeasonsList', 'sports'));
 
         return null;
+    }
+
+    /**
+     * Bulk add multiple roster entries at once.
+     *
+     * Accepts an array of roster row data and saves each as a new entity.
+     * Redirects back to team season view on success.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function bulkAdd(): ?Response
+    {
+        $this->request->allowMethod(['post']);
+
+        $rows = (array)$this->request->getData('rows');
+        $teamSeasonId = (int)$this->request->getData('team_season_id');
+
+        if (empty($rows) || !$teamSeasonId) {
+            $this->Flash->error(__('No roster entries to save.'));
+
+            return $this->redirect(['action' => 'add', '?' => ['team_season_id' => $teamSeasonId ?: null]]);
+        }
+
+        $saved = 0;
+        $errors = [];
+        foreach ($rows as $i => $rowData) {
+            // Skip completely empty rows (no person selected)
+            $personId = (int)($rowData['person_id'] ?? 0);
+            if (!$personId) {
+                continue;
+            }
+
+            $entityData = [
+                'team_season_id' => $teamSeasonId,
+                'person_id' => $personId,
+                'roster_number' => $rowData['roster_number'] ?? null,
+                'roster_position' => $rowData['roster_position'] ?? null,
+                'roster_height' => $rowData['roster_height'] ?? null,
+                'roster_weight' => $rowData['roster_weight'] ?? null,
+            ];
+
+            $entity = $this->TeamSeasonRosters->newEntity($entityData);
+            if ($this->TeamSeasonRosters->save($entity)) {
+                $saved++;
+            } else {
+                $errors[] = __('Row {0}: could not save.', $i + 1);
+            }
+        }
+
+        if ($saved > 0) {
+            $this->Flash->success(__('Saved {0} roster entry/entries.', $saved));
+        }
+        if (!empty($errors)) {
+            $this->Flash->error(implode(' ', $errors));
+        }
+
+        if ($saved > 0) {
+            return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonId]);
+        }
+
+        return $this->redirect(['action' => 'add', '?' => ['team_season_id' => $teamSeasonId]]);
     }
 
     /**
