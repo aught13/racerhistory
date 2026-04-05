@@ -17,9 +17,12 @@ use Cake\ORM\Entity;
  * @property string|null $bio
  * @property mixed $birth
  * @property mixed $death
+ * @property int|null $birth_place_id
+ * @property string|null $person_previous
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $label
+ * @property \App\Model\Entity\Place|null $birth_place
  * @property \App\Model\Entity\TeamSeasonRosters[] $team_season_rosters
  */
 class Person extends Entity

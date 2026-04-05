@@ -20,6 +20,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         'app.Persons',
         'app.Sports',
         'app.Users',
+        'app.Places',
     ];
 
     public function setUp(): void
@@ -182,5 +183,70 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseOk();
         $res = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($res['success']);
+    }
+
+    public function testAddFormContainsRosterYearField(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/add?team_season_id=1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('roster_year', $body);
+    }
+
+    public function testAddFormContainsHiddenPersonForm(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/add?team_season_id=1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('hidden-person-form', $body);
+        $this->assertStringContainsString('/admin/persons/ajax-add', $body);
+    }
+
+    public function testEditFormContainsRosterYearField(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('roster_year', $body);
+        $this->assertStringContainsString('Year', $body);
+    }
+
+    public function testEditFormContainsHiddenPersonForm(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('hidden-person-form', $body);
+    }
+
+    public function testViewShowsRosterYear(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/view/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('Year', $body);
+        $this->assertStringContainsString('2024', $body);
+    }
+
+    public function testBulkAddWithRosterYear(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['person_id' => 2, 'roster_number' => '33', 'roster_position' => 'C', 'roster_year' => 'Jr.'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-add', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $roster = $table->find()->where(['person_id' => 2, 'roster_number' => '33'])->firstOrFail();
+        $this->assertSame('Jr.', $roster->roster_year);
     }
 }

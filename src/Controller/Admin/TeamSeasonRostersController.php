@@ -110,6 +110,7 @@ class TeamSeasonRostersController extends AppController
             $entityData = [
                 'team_season_id' => $teamSeasonId,
                 'person_id' => $personId,
+                'roster_year' => $rowData['roster_year'] ?? null,
                 'roster_number' => $rowData['roster_number'] ?? null,
                 'roster_position' => $rowData['roster_position'] ?? null,
                 'roster_height' => $rowData['roster_height'] ?? null,
