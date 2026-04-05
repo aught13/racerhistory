@@ -140,10 +140,12 @@ echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFiel
 
 $previewQsJson = json_encode($this->ImageServe->query(['w' => 200, 'h' => 200, 'fit' => 'cover'])) ?: '""';
 echo $this->Html->scriptBlock(<<<JS
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
+    function initEditor() {
     const previewQs = {$previewQsJson};
     var el = document.getElementById('bio-editor');
     if (!el || typeof tinymce === 'undefined') { return; }
+    if (tinymce.get('bio-editor')) { return; }
     tinymce.init({
         license_key: 'gpl',
         selector: '#bio-editor',
@@ -214,12 +216,25 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show initial preview if image ID is set
         updateImagePreview();
     }
-});
+    } // end initEditor
+
+    // Remove TinyMCE before Turbo caches the page to avoid stale editor state
+    document.addEventListener('turbo:before-cache', function () {
+        if (typeof tinymce !== 'undefined') { tinymce.remove('#bio-editor'); }
+    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initEditor);
+    } else {
+        initEditor();
+    }
+    document.addEventListener('turbo:load', initEditor);
+}());
 JS, ['block' => true]);
 
 $placeSearchUrl = json_encode($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']));
 echo $this->Html->scriptBlock(<<<JS
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
+    function initPlaceSearch() {
     var searchInput = document.getElementById('birth-place-search');
     var resultsDiv = document.getElementById('birth-place-results');
     var selectedDiv = document.getElementById('birth-place-selected');
@@ -266,7 +281,15 @@ document.addEventListener('DOMContentLoaded', function () {
             setSelected(data.place.id, label);
         }
     };
-});
+    } // end initPlaceSearch
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPlaceSearch);
+    } else {
+        initPlaceSearch();
+    }
+    document.addEventListener('turbo:load', initPlaceSearch);
+}());
 JS, ['block' => true]);
 ?>
 
