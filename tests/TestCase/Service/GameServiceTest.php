@@ -275,7 +275,7 @@ class GameServiceTest extends TestCase
     {
         $data = [
             'new_place' => [
-                'place_name' => 'Test Arena',
+                'place_country' => 'USA',
                 'place_city' => 'Hometown',
                 'place_state' => 'CA',
             ],
@@ -293,7 +293,7 @@ class GameServiceTest extends TestCase
 
         $places = TableRegistry::getTableLocator()->get('Places');
         $place = $places->get($data['place_id']);
-        $this->assertSame('Test Arena', $place->place_name);
+        $this->assertSame('Hometown', $place->place_city);
     }
 
     public function testLoadGameEavValuesReturnsFixtureMetadata(): void

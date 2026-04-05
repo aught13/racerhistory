@@ -44,7 +44,13 @@ class PlacesController extends AppController
 
                 return $this->redirect(['action' => 'index']);
             }
-            $this->Flash->error('The place could not be saved.');
+            // Surface duplicate error clearly
+            $errors = $place->getErrors();
+            if (isset($errors['place_country']['_isUnique']) || isset($errors['place_city']['_isUnique'])) {
+                $this->Flash->error('A place with that country, city, and state already exists.');
+            } else {
+                $this->Flash->error('The place could not be saved.');
+            }
         }
         $this->set(compact('place'));
 
@@ -113,7 +119,7 @@ class PlacesController extends AppController
             foreach ($places as $place) {
                 $results[] = [
                     'id' => $place->id,
-                    'place_name' => $place->place_name,
+                    'place_country' => $place->place_country,
                     'place_city' => $place->place_city,
                     'place_state' => $place->place_state,
                 ];
@@ -133,12 +139,45 @@ class PlacesController extends AppController
     public function ajaxAdd(): Response
     {
         $places = $this->fetchTable('Places');
-        $place = $places->newEmptyEntity();
 
         if ($this->request->is('post')) {
-            $place = $places->patchEntity($place, $this->request->getData());
+            $data = $this->request->getData();
+
+            // Check for existing duplicate first
+            $conditions = [
+                'place_country' => $data['place_country'] ?? '',
+                'place_city' => $data['place_city'] ?? '',
+                'place_state' => $data['place_state'] ?? '',
+            ];
+            $existing = $places->find()->where($conditions)->first();
+            if ($existing) {
+                $label = $existing->place_city;
+                if (!empty($existing->place_state)) {
+                    $label .= ', ' . $existing->place_state;
+                }
+
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'message' => 'Place already exists — selected automatically.',
+                        'newOption' => [
+                            'value' => $existing->id,
+                            'text' => $label,
+                        ],
+                        'place' => [
+                            'id' => $existing->id,
+                            'place_country' => $existing->place_country,
+                            'place_city' => $existing->place_city,
+                            'place_state' => $existing->place_state,
+                        ],
+                    ]));
+            }
+
+            $place = $places->newEmptyEntity();
+            $place = $places->patchEntity($place, $data);
             if ($places->save($place)) {
-                $label = $place->place_name;
+                $label = $place->place_city;
                 if (!empty($place->place_state)) {
                     $label .= ', ' . $place->place_state;
                 }
@@ -151,6 +190,12 @@ class PlacesController extends AppController
                         'newOption' => [
                             'value' => $place->id,
                             'text' => $label,
+                        ],
+                        'place' => [
+                            'id' => $place->id,
+                            'place_country' => $place->place_country,
+                            'place_city' => $place->place_city,
+                            'place_state' => $place->place_state,
                         ],
                     ]));
             }

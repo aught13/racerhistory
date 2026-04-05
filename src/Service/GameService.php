@@ -278,9 +278,9 @@ class GameService
     public function normalizeAssociatedInlineCreate(array &$data): void
     {
         // New place
-        if (!empty($data['new_place']['place_name'])) {
+        if (!empty($data['new_place']['place_country'])) {
             $place = (new PlaceService())->createPlace([
-                'place_name' => $data['new_place']['place_name'] ?? null,
+                'place_country' => $data['new_place']['place_country'] ?? null,
                 'place_city' => $data['new_place']['place_city'] ?? null,
                 'place_state' => $data['new_place']['place_state'] ?? null,
             ]);
@@ -388,7 +388,7 @@ class GameService
     }
 
     /**
-     * Get a human-friendly place name for a game (falls back to place_name/place_city).
+     * Get a human-friendly place name for a game.
      *
      * @param \App\Model\Entity\Game $game
      * @return string|null
@@ -399,8 +399,7 @@ class GameService
             return null;
         }
 
-        // Backwards-compatible virtual field place_city maps to place_name
-        return $game->place->place_city ?? $game->place->place_name ?? null;
+        return $game->place->place_city ?? null;
     }
 
     /**
@@ -579,7 +578,8 @@ class GameService
                     'Teams.team_name LIKE' => '%' . $searchValue . '%',
                     'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
                     'GameTypes.game_type_name LIKE' => '%' . $searchValue . '%',
-                    'Places.place_name LIKE' => '%' . $searchValue . '%',
+                    'Places.place_country LIKE' => '%' . $searchValue . '%',
+                    'Places.place_city LIKE' => '%' . $searchValue . '%',
                     'Places.place_state LIKE' => '%' . $searchValue . '%',
                 ],
             ]);
@@ -618,7 +618,7 @@ class GameService
 
             $placeDisplay = '-';
             if (!empty($game->place)) {
-                $placeDisplay = ($game->place->place_name ?? '');
+                $placeDisplay = ($game->place->place_city ?? '');
                 if (!empty($game->place->place_state)) {
                     $placeDisplay .= ', ' . $game->place->place_state;
                 }
@@ -699,7 +699,7 @@ class GameService
                 '3', 'hrn' => 'Games.hrn',
                 '4', 'opponent' => 'Opponents.opponent_name',
                 '5', 'game_type' => 'GameTypes.game_type_name',
-                '6', 'place' => 'Places.place_name',
+                '6', 'place' => 'Places.place_city',
                 '8', 'place_state' => 'Places.place_state',
                 '9', 'mur_pts' => 'Games.pts_mur',
                 '10', 'opp_pts' => 'Games.pts_opp',

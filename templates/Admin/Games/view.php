@@ -141,7 +141,7 @@
                 <div class="row">
                     <div class="col-lg-9 h4">
                         <?php
-                        $placeName = $game->site->place->place_name ?? '';
+                        $placeName = $game->site->place->place_city ?? '';
                         $placeState = $game->site->place->place_state ?? '';
                         $siteName = $game->site->site_name ?? '';
                         $locationText = trim($placeName . ($placeState ? ', ' . $placeState : ''));

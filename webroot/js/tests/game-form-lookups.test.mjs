@@ -833,7 +833,7 @@ describe("game-form-lookups", () => {
                         results: [
                             {
                                 id: 1,
-                                place_name: "Murray, KY",
+                                place_city: "Murray",
                                 place_state: "KY",
                             },
                         ],

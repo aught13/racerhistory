@@ -10,7 +10,7 @@
         <?php foreach ($opponents as $o): ?>
             <tr>
                 <td><?= h($o->opponent_name) ?></td>
-                <td><?= h($o->place->place_name ?? '-') ?></td>
+                <td><?= h($o->place->place_city ?? '-') ?></td>
                 <td class="text-end"><a href="<?= $this->Url->build(['action' => 'edit', $o->id]) ?>" class="btn btn-sm btn-primary">Edit</a></td>
             </tr>
         <?php endforeach; ?>

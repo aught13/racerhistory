@@ -132,10 +132,12 @@ CREATE TABLE IF NOT EXISTS seasons (
 -- Places table
 CREATE TABLE IF NOT EXISTS places (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  place_name VARCHAR(255) NOT NULL,
-  place_state VARCHAR(50) NOT NULL,
+  place_country VARCHAR(162) NOT NULL,
+  place_city VARCHAR(162) NOT NULL,
+  place_state VARCHAR(162) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(place_country, place_city, place_state)
 );
 
 -- Sites table

@@ -29,7 +29,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
         'url' => ['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd'],
         'id' => 'hidden-place-form',
     ]) ?>
-    <?= $this->Form->control('place_name', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_country', ['type' => 'text']) ?>
     <?= $this->Form->control('place_city', ['type' => 'text']) ?>
     <?= $this->Form->control('place_state', ['type' => 'text']) ?>
     <?= $this->Form->end() ?>
@@ -105,9 +105,9 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'hiddenFormId' => 'hidden-place-form',
     'successCallback' => 'handleOpponentPlaceAdded',
     'fields' => [
-        ['name' => 'place_name', 'type' => 'text', 'label' => 'Name (e.g., Lexington, KY)', 'required' => true],
-        ['name' => 'place_city', 'type' => 'text', 'label' => 'City'],
-        ['name' => 'place_state', 'type' => 'text', 'label' => 'State'],
+        ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
+        ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
+        ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
     ],
 ]) ?>
 
@@ -118,9 +118,9 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'hiddenFormId' => 'hidden-place-form',
     'successCallback' => 'handlePlaceAdded',
     'fields' => [
-        ['name' => 'place_name', 'type' => 'text', 'label' => 'Name (e.g., Murray, KY)', 'required' => true],
-        ['name' => 'place_city', 'type' => 'text', 'label' => 'City'],
-        ['name' => 'place_state', 'type' => 'text', 'label' => 'State'],
+        ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
+        ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
+        ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
     ],
 ]) ?>
 

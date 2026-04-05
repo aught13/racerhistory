@@ -58,12 +58,10 @@ class E2eSeedData extends BaseSeed
         // 1. Place (required by sites and opponents)
         $place = [
             'id' => 1,
-            'place_name' => 'Test City',
+            'place_country' => 'USA',
+            'place_city' => 'Test City',
             'place_state' => 'TX',
         ];
-        if ($this->hasColumn('places', 'place_city')) {
-            $place['place_city'] = 'Test City';
-        }
         $this->upsert('places', $place);
 
         // 2. Sport

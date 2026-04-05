@@ -60,7 +60,7 @@ class SeasonViewService
         foreach ($games as $g) {
             try {
                 $g->set('result_flag', $this->gameService->getResultFlag($g));
-                $g->set('place_name', $this->gameService->getPlaceName($g));
+                $g->set('place_city', $this->gameService->getPlaceName($g));
                 $g->set('place_state', $this->gameService->getPlaceState($g));
                 $g->set('site_name', $this->gameService->getSiteName($g));
                 // opponent prefix: hrn values -> 1: 'Vs', 3: 'vs', else '@'

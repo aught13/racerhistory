@@ -426,7 +426,7 @@ class GamesController extends AppController
         foreach ($games as $g) {
             try {
                 $g->set('result_flag', $this->gameService->getResultFlag($g));
-                $g->set('place_name', $this->gameService->getPlaceName($g));
+                $g->set('place_city', $this->gameService->getPlaceName($g));
                 $g->set('place_state', $this->gameService->getPlaceState($g));
                 $g->set('site_name', $this->gameService->getSiteName($g));
                 $prefix = '@';
@@ -813,7 +813,7 @@ class GamesController extends AppController
     {
         try {
             $game->set('result_flag', $this->gameService->getResultFlag($game));
-            $game->set('place_name', $this->gameService->getPlaceName($game));
+            $game->set('place_city', $this->gameService->getPlaceName($game));
             $game->set('place_state', $this->gameService->getPlaceState($game));
             $game->set('site_name', $this->gameService->getSiteName($game));
             $prefix = '@';

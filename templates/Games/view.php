@@ -143,7 +143,7 @@ $this->start('css'); ?>
                         </div>
                         <div class="game-meta-item">
                             <span class="game-meta-label">Location</span>
-                            <span class="game-meta-value"><?= h(trim((string)($game->place_name ?? ''))) ?><?= !empty($game->place_state) ? ', ' . h($game->place_state) : '' ?></span>
+                            <span class="game-meta-value"><?= h(trim((string)($game->place_city ?? ''))) ?><?= !empty($game->place_state) ? ', ' . h($game->place_state) : '' ?></span>
                             <?php if (!empty($game->site_name)) : ?>
                                 <span class="game-meta-subtext"><?= h($game->site_name) ?></span>
                             <?php endif; ?>

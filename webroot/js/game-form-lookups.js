@@ -264,9 +264,9 @@ export function initGameFormLookups() {
         resultsTableId: "place-results",
         selectedDisplayId: "place-selected",
         searchUrl: placeSearchUrl,
-        columns: ["place_name", "place_state"],
-        columnLabels: ["Name", "State"],
-        displayField: "place_name",
+        columns: ["place_city", "place_state"],
+        columnLabels: ["Locality", "Subdivision"],
+        displayField: "place_city",
         initialDisplay: formContainer.dataset.placeDisplay || null,
         onSelect: function (id) {
             // When place changes, clear site selection and update site search context
@@ -301,7 +301,7 @@ export function initGameFormLookups() {
         resultsTableId: "site-results",
         selectedDisplayId: "site-selected",
         searchUrl: siteSearchUrl,
-        columns: ["site_name", "capacity", "place_name"],
+        columns: ["site_name", "capacity", "place_city"],
         columnLabels: ["Site", "Capacity", "Place"],
         displayField: "site_name",
         initialDisplay: formContainer.dataset.siteDisplay || null,
@@ -335,9 +335,9 @@ export function initGameFormLookups() {
         resultsTableId: "opponent-place-results",
         selectedDisplayId: "opponent-place-selected",
         searchUrl: placeSearchUrl,
-        columns: ["place_name", "place_state"],
-        columnLabels: ["Name", "State"],
-        displayField: "place_name",
+        columns: ["place_city", "place_state"],
+        columnLabels: ["Locality", "Subdivision"],
+        displayField: "place_city",
     });
 
     // Callback when a new place is created from within the opponent popup

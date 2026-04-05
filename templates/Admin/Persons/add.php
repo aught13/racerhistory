@@ -35,7 +35,10 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Birth Place</label>
-                            <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off">
+                            <div class="input-group">
+                                <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button>
+                            </div>
                             <?= $this->Form->control('birth_place_id', ['type' => 'hidden', 'id' => 'birth-place-id-field']); ?>
                             <div id="birth-place-results" class="mt-1"></div>
                             <div id="birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div>
@@ -94,6 +97,31 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden form for FormProtection tokens (place ajaxAdd endpoint) -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-birth-place-form',
+    ]) ?>
+    <?= $this->Form->control('place_country', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_city', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_state', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
+
+<?= $this->element('Admin/popup_form', [
+    'popupId' => 'add-birth-place-modal',
+    'title' => 'Add New Place',
+    'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
+    'hiddenFormId' => 'hidden-birth-place-form',
+    'successCallback' => 'handleBirthPlaceAdded',
+    'fields' => [
+        ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
+        ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
+        ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
+    ],
+]) ?>
 
 <?php
 echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
@@ -219,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (!data.success || !data.results || !data.results.length) { resultsDiv.innerHTML = '<div class="text-muted small">No results</div>'; return; }
                     var html = '<div class="list-group list-group-flush" style="max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
                     data.results.forEach(function(r) {
-                        var label = r.place_name + (r.place_state ? ', ' + r.place_state : '');
+                        var label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
                         html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
                     });
                     html += '</div>';
@@ -230,6 +258,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 300);
     });
     document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) { resultsDiv.innerHTML = ''; } });
+
+    // Callback for popup_form after a new place is added
+    window.handleBirthPlaceAdded = function(data) {
+        if (data && data.place && data.place.id) {
+            var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
+            setSelected(data.place.id, label);
+        }
+    };
 });
 JS, ['block' => true]);
 ?>

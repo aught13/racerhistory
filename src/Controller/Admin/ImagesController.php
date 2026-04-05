@@ -337,7 +337,7 @@ class ImagesController extends AppController
             'site_select' => [
                 'prefix' => 'site-',
                 'table' => 'Places',
-                'label' => fn($r) => $r->place_name ?? 'site',
+                'label' => fn($r) => $r->place_city ?? 'site',
             ],
             'opponent_select' => [
                 'prefix' => 'opponent-',

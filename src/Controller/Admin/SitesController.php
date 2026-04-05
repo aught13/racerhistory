@@ -112,13 +112,13 @@ class SitesController extends AppController
                 if ($placeId && (int)$site->place_id !== (int)$placeId) {
                     continue;
                 }
-                $placeName = $site->place->place_name ?? '';
+                $placeName = $site->place->place_city ?? '';
                 $placeState = $site->place->place_state ?? '';
                 $results[] = [
                     'id' => $site->id,
                     'site_name' => $site->site_name,
                     'capacity' => $site->capacity,
-                    'place_name' => $placeName,
+                    'place_city' => $placeName,
                     'place_state' => $placeState,
                 ];
             }

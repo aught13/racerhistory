@@ -272,7 +272,7 @@ $this->start('css'); ?>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?= h($game->place_name ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
+                                                <?= h($game->place_city ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
                                                 <?php if (!empty($game->site_name)) : ?>
                                                     <div class="text-muted small"><?= h($game->site_name) ?></div>
                                                 <?php endif; ?>
@@ -412,7 +412,7 @@ $this->start('css'); ?>
                                         <?php
                                         $birthPlaceLabel = '';
                                         if (!empty($person->birth_place)) {
-                                            $birthPlaceLabel = $person->birth_place->place_name;
+                                            $birthPlaceLabel = $person->birth_place->place_city;
                                             if (!empty($person->birth_place->place_state)) {
                                                 $birthPlaceLabel .= ', ' . $person->birth_place->place_state;
                                             }
