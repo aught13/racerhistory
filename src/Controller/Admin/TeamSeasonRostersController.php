@@ -32,7 +32,7 @@ class TeamSeasonRostersController extends AppController
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
             $this->FormProtection->setConfig(
                 'unlockedActions',
-                array_merge($current, ['bulkAdd'])
+                array_merge($current, ['bulkAdd', 'bulkEdit'])
             );
         }
     }
@@ -137,6 +137,143 @@ class TeamSeasonRostersController extends AppController
         }
 
         return $this->redirect(['action' => 'add', '?' => ['team_season_id' => $teamSeasonId]]);
+    }
+
+    /**
+     * Bulk edit form – loads existing roster entries for a team season.
+     *
+     * GET shows the multi-row form pre-populated with current roster data.
+     * POST (via bulkUpdate) saves changes and deletions.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function bulkEdit(): ?Response
+    {
+        $teamSeasonId = $this->request->getQuery('team_season_id')
+            ? (int)$this->request->getQuery('team_season_id')
+            : null;
+
+        if ($this->request->is(['post', 'put', 'patch'])) {
+            return $this->_processBulkUpdate($teamSeasonId);
+        }
+
+        $existingRosters = [];
+        if ($teamSeasonId) {
+            $existingRosters = $this->TeamSeasonRosters->find()
+                ->where(['team_season_id' => $teamSeasonId])
+                ->contain(['Persons'])
+                ->orderByAsc('roster_number')
+                ->all()
+                ->toArray();
+        }
+
+        $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
+        $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
+
+        $this->set(compact('teamSeasonId', 'teamSeasonsList', 'sports', 'existingRosters'));
+
+        return null;
+    }
+
+    /**
+     * Process the bulk edit POST: update existing rows, create new rows, delete removed rows.
+     *
+     * @param int|null $teamSeasonId Team season ID
+     * @return \Cake\Http\Response
+     */
+    private function _processBulkUpdate(?int $teamSeasonId): Response
+    {
+        $rows = (array)$this->request->getData('rows');
+        $teamSeasonId = (int)$this->request->getData('team_season_id');
+
+        if (!$teamSeasonId) {
+            $this->Flash->error(__('Invalid team season.'));
+
+            return $this->redirect(['action' => 'bulkEdit']);
+        }
+
+        // Gather IDs that are still present in the form submission
+        $submittedIds = [];
+        foreach ($rows as $rowData) {
+            $existingId = (int)($rowData['id'] ?? 0);
+            if ($existingId) {
+                $submittedIds[] = $existingId;
+            }
+        }
+
+        // Delete records that were in the roster but removed from the form
+        $allExistingIds = $this->TeamSeasonRosters->find()
+            ->where(['team_season_id' => $teamSeasonId])
+            ->all()
+            ->extract('id')
+            ->toArray();
+
+        $toDelete = array_diff($allExistingIds, $submittedIds);
+        $deletedCount = 0;
+        if (!empty($toDelete)) {
+            $deletedCount = $this->TeamSeasonRosters->deleteAll([
+                'id IN' => array_values($toDelete),
+                'team_season_id' => $teamSeasonId,
+            ]);
+        }
+
+        // Save/update remaining rows
+        $saved = 0;
+        $errors = [];
+        foreach ($rows as $i => $rowData) {
+            $personId = (int)($rowData['person_id'] ?? 0);
+            if (!$personId) {
+                continue;
+            }
+
+            $existingId = (int)($rowData['id'] ?? 0);
+            $entityData = [
+                'team_season_id' => $teamSeasonId,
+                'person_id' => $personId,
+                'roster_year' => $rowData['roster_year'] ?? null,
+                'roster_number' => $rowData['roster_number'] ?? null,
+                'roster_position' => $rowData['roster_position'] ?? null,
+                'roster_height' => $rowData['roster_height'] ?? null,
+                'roster_weight' => $rowData['roster_weight'] ?? null,
+            ];
+
+            if ($existingId) {
+                // Update existing record
+                $entity = $this->TeamSeasonRosters->find()
+                    ->where(['id' => $existingId, 'team_season_id' => $teamSeasonId])
+                    ->first();
+                if (!$entity) {
+                    $errors[] = __('Row {0}: record not found.', $i + 1);
+                    continue;
+                }
+                $entity = $this->TeamSeasonRosters->patchEntity($entity, $entityData);
+            } else {
+                // Create new record
+                $entity = $this->TeamSeasonRosters->newEntity($entityData);
+            }
+
+            if ($this->TeamSeasonRosters->save($entity)) {
+                $saved++;
+            } else {
+                $errors[] = __('Row {0}: could not save.', $i + 1);
+            }
+        }
+
+        $messages = [];
+        if ($saved > 0) {
+            $messages[] = __('Saved {0} roster entry/entries.', $saved);
+        }
+        if ($deletedCount > 0) {
+            $messages[] = __('Removed {0} roster entry/entries.', $deletedCount);
+        }
+        if (!empty($messages)) {
+            $this->Flash->success(implode(' ', $messages));
+        }
+        if (!empty($errors)) {
+            $this->Flash->error(implode(' ', $errors));
+        }
+
+        return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonId]);
     }
 
     /**

@@ -14,10 +14,18 @@
 <div class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Team Roster</h3>
-        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-            class="btn btn-success btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Roster Entry
-        </a>
+        <div class="d-flex gap-2">
+            <?php if (!$teamSeasonRosters->isEmpty()) : ?>
+            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'bulkEdit', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil-square"></i> Edit All
+            </a>
+            <?php endif; ?>
+            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle"></i> Add Roster Entry
+            </a>
+        </div>
     </div>
     <div class="card-body">
         <?php if (!$teamSeasonRosters->isEmpty()) : ?>

@@ -249,4 +249,206 @@ class TeamSeasonRostersControllerTest extends TestCase
         $roster = $table->find()->where(['person_id' => 2, 'roster_number' => '33'])->firstOrFail();
         $this->assertSame('Jr.', $roster->roster_year);
     }
+
+    // ── Bulk Edit (GET) ──────────────────────────────────────────────
+
+    public function testBulkEditGetRequiresAuth(): void
+    {
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertRedirectContains('/users/login');
+    }
+
+    public function testBulkEditGetLoadsExistingRoster(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Edit Team Season Roster');
+        $this->assertResponseContains('roster-row');
+        $this->assertResponseContains('id="roster-rows"');
+        $this->assertResponseContains('id="add-row-btn"');
+        $this->assertResponseContains('Save All');
+    }
+
+    public function testBulkEditGetPrePopulatesExistingEntries(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertResponseOk();
+        // Fixture record has person_id=1, number=12, position=G
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('rows[0][id]', $body);
+        $this->assertStringContainsString('value="12"', $body);
+        $this->assertStringContainsString('value="G"', $body);
+    }
+
+    public function testBulkEditGetShowsEditAllButton(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-seasons/view/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Edit All');
+        $this->assertResponseContains('bulk-edit');
+    }
+
+    public function testBulkEditGetNoTeamSeason(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-edit');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Edit Team Season Roster');
+    }
+
+    public function testBulkEditGetContainsTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('turbo-frame id="roster-edit-frame"');
+    }
+
+    // ── Bulk Edit (POST – update) ────────────────────────────────────
+
+    public function testBulkEditPostUpdatesExistingRecord(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['id' => 1, 'person_id' => 1, 'roster_number' => '99', 'roster_position' => 'C', 'roster_year' => 'Sr.'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $roster = $table->get(1);
+        $this->assertSame('99', $roster->roster_number);
+        $this->assertSame('C', $roster->roster_position);
+        $this->assertSame('Sr.', $roster->roster_year);
+    }
+
+    public function testBulkEditPostAddsNewRow(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['id' => 1, 'person_id' => 1, 'roster_number' => '12', 'roster_position' => 'G'],
+                ['person_id' => 2, 'roster_number' => '22', 'roster_position' => 'F'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $count = $table->find()->where(['team_season_id' => 1])->count();
+        $this->assertSame(2, $count);
+    }
+
+    public function testBulkEditPostDeletesRemovedRecord(): void
+    {
+        $this->mockIdentity();
+        // Create a second roster entry
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $extra = $table->newEntity(['team_season_id' => 1, 'person_id' => 2]);
+        $table->save($extra);
+
+        // POST only the first entry, omitting the second => second should be deleted
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['id' => 1, 'person_id' => 1, 'roster_number' => '12', 'roster_position' => 'G'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+
+        $remaining = $table->find()->where(['team_season_id' => 1])->count();
+        $this->assertSame(1, $remaining);
+        $this->assertTrue($table->exists(['id' => 1]));
+        $this->assertFalse($table->exists(['id' => $extra->id]));
+    }
+
+    public function testBulkEditPostDeletesAllAndAddsNew(): void
+    {
+        $this->mockIdentity();
+        // Submit with no existing IDs — should delete fixture record, add new
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['person_id' => 2, 'roster_number' => '55', 'roster_position' => 'PG'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $this->assertFalse($table->exists(['id' => 1]));
+        $newRoster = $table->find()->where(['person_id' => 2, 'roster_number' => '55'])->firstOrFail();
+        $this->assertSame('PG', $newRoster->roster_position);
+    }
+
+    public function testBulkEditPostShowsDeletedCountInFlash(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+        // Create a second entry
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $extra = $table->newEntity(['team_season_id' => 1, 'person_id' => 2]);
+        $table->save($extra);
+
+        // Submit with only one row — one is deleted
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['id' => 1, 'person_id' => 1, 'roster_number' => '12', 'roster_position' => 'G'],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+        $this->assertFlashMessage('Saved 1 roster entry/entries. Removed 1 roster entry/entries.');
+    }
+
+    public function testBulkEditPostInvalidTeamSeason(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+        $data = [
+            'team_season_id' => 0,
+            'rows' => [],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirect();
+        $this->assertFlashMessage('Invalid team season.');
+    }
+
+    public function testBulkEditPostSkipsEmptyRows(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'team_season_id' => 1,
+            'rows' => [
+                ['id' => 1, 'person_id' => 1, 'roster_number' => '12', 'roster_position' => 'G'],
+                ['person_id' => '', 'roster_number' => ''],
+            ],
+        ];
+        $this->post('/admin/team-season-rosters/bulk-edit?team_season_id=1', $data);
+        $this->assertRedirectContains('/admin/team-seasons/view/1');
+
+        $table = $this->getTableLocator()->get('TeamSeasonRosters');
+        $count = $table->find()->where(['team_season_id' => 1])->count();
+        $this->assertSame(1, $count);
+    }
+
+    public function testBulkEditFormContainsPersonSearchAndPopup(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('data-person-search-url', $body);
+        $this->assertStringContainsString('hidden-person-form', $body);
+        $this->assertStringContainsString('roster-multi-add.mjs', $body);
+    }
 }
