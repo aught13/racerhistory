@@ -9,29 +9,12 @@ use Cake\ORM\Entity;
  * Place Entity
  *
  * @property int $id
- * @property string $place_name
- * @property string $place_state
+ * @property string $place_country ISO 3166 alpha-3 country code
+ * @property string $place_city Locality (city, town, or village)
+ * @property string $place_state Administrative subdivision (state, province, or region)
  * @property \DateTimeInterface|string|null $created_at
  * @property \DateTimeInterface|string|null $updated_at
- * @property string|null $place_city Virtual field for backwards compatibility
  */
 class Place extends Entity
 {
-    /**
-     * List of virtual/computed properties.
-     *
-     * @var array<string>
-     */
-    protected array $_virtual = ['place_city'];
-
-    /**
-     * Virtual field: place_city provides backwards compatibility.
-     * The actual city data is stored in place_name, so this returns place_name.
-     *
-     * @return string|null
-     */
-    protected function _getPlaceCity(): ?string
-    {
-        return $this->place_name;
-    }
 }

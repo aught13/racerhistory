@@ -111,9 +111,34 @@ echo $this->element('Admin/popup_form', [
     'targetSelectId' => 'person-id-select',
     'fields' => $personFields,
     'hiddenFormId' => 'hidden-person-form',
-    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
+    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-edit-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
+
+<!-- Hidden form for FormProtection tokens (place ajaxAdd endpoint) -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-roster-edit-place-form',
+    ]) ?>
+    <?= $this->Form->control('place_country', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_city', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_state', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
+
+<?= $this->element('Admin/popup_form', [
+    'popupId' => 'add-roster-edit-birth-place-modal',
+    'title' => 'Add New Place',
+    'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
+    'hiddenFormId' => 'hidden-roster-edit-place-form',
+    'successCallback' => 'handleRosterEditBirthPlaceAdded',
+    'fields' => [
+        ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
+        ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
+        ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
+    ],
+]) ?>
 
 <?php $this->append('script'); ?>
 <script>
@@ -183,6 +208,14 @@ document.addEventListener('DOMContentLoaded', function(){
             bpSearch.value = '';
         }
 
+        // Callback for popup_form after a new place is added
+        window.handleRosterEditBirthPlaceAdded = function(data) {
+            if (data && data.place && data.place.id) {
+                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
+                setBpSelected(data.place.id, label);
+            }
+        };
+
         bpSearch.addEventListener('input', function() {
             clearTimeout(bpDebounce);
             const q = this.value.trim();
@@ -197,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function(){
                         }
                         let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
                         data.results.forEach(function(r) {
-                            const label = r.place_name + (r.place_state ? ', ' + r.place_state : '');
+                            const label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
                             html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
                         });
                         html += '</div>';

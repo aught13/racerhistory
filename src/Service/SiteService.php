@@ -42,7 +42,7 @@ class SiteService
         }
 
         $parts = array_filter([
-            $site->place->place_name ?? null,
+            $site->place->place_city ?? null,
             $site->place->place_state ?? null,
             $site->site_name ?? null,
         ]);
@@ -74,8 +74,8 @@ class SiteService
             ->where([
                 'OR' => [
                     ['Sites.site_name LIKE' => "%{$query}%"],
-                    ['Places.place_name LIKE' => "%{$query}%"],
-                    ['Places.place_state LIKE' => "%{$query}%"],
+                    ['Places.place_city LIKE' => "%{$query}%"],
+                    ['Places.place_city LIKE' => "%{$query}%"],
                 ],
             ])
             ->orderBy(['Sites.site_name' => 'ASC'])

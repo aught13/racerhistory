@@ -70,13 +70,13 @@
                                 </td>
                                 <td>
                                     <?= h($game->opponent->opponent_name ?? 'TBD') ?>
-                                    <?php if (isset($game->opponent->place->place_name)) : ?>
-                                        <br><small class="text-muted"><?= h($game->opponent->place->place_name) ?></small>
+                                    <?php if (isset($game->opponent->place->place_city)) : ?>
+                                        <br><small class="text-muted"><?= h($game->opponent->place->place_city) ?></small>
                                     <?php endif; ?>
                                 </td>
                                 <td><?= h($game->game_type->game_type_name ?? '-') ?></td>
                                 <td>
-                                    <?= h($game->place->place_name ?? '-') ?>
+                                    <?= h($game->place->place_city ?? '-') ?>
                                     <?php if (isset($game->site->site_name)) : ?>
                                         <br><small class="text-muted"><?= h($game->site->site_name) ?></small>
                                     <?php endif; ?>

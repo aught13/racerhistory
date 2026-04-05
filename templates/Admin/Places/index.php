@@ -5,11 +5,11 @@
         <a href="<?= $this->Url->build(['action' => 'add']) ?>" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add</a>
     </div>
     <table class="table table-striped">
-        <thead><tr><th>Name</th><th>City</th><th>State</th><th></th></tr></thead>
+        <thead><tr><th>Country</th><th>Locality</th><th>Subdivision</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($places as $p): ?>
             <tr>
-                <td><?= h($p->place_name) ?></td>
+                <td><?= h($p->place_country) ?></td>
                 <td><?= h($p->place_city) ?></td>
                 <td><?= h($p->place_state) ?></td>
                 <td class="text-end"><a href="<?= $this->Url->build(['action' => 'edit', $p->id]) ?>" class="btn btn-sm btn-primary">Edit</a></td>

@@ -31,7 +31,7 @@ class PlacesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/places/add', ['place_name' => 'Nashville, TN', 'place_city' => 'Nashville', 'place_state' => 'TN']);
+        $this->post('/admin/places/add', ['place_country' => 'USA', 'place_city' => 'Nashville', 'place_state' => 'TN']);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']);
     }
 
@@ -48,7 +48,7 @@ class PlacesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/places/edit/1', ['place_name' => 'Updated Place', 'place_city' => 'Updated', 'place_state' => 'TN']);
+        $this->post('/admin/places/edit/1', ['place_country' => 'USA', 'place_city' => 'Updated', 'place_state' => 'TN']);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']);
     }
 
@@ -96,7 +96,7 @@ class PlacesControllerTest extends TestCase
         $data = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($data['success']);
         $this->assertNotEmpty($data['results']);
-        $this->assertEquals('Murray', $data['results'][0]['place_name']);
+        $this->assertEquals('Murray', $data['results'][0]['place_city']);
         $this->assertArrayHasKey('id', $data['results'][0]);
         $this->assertArrayHasKey('place_city', $data['results'][0]);
         $this->assertArrayHasKey('place_state', $data['results'][0]);
@@ -137,7 +137,7 @@ class PlacesControllerTest extends TestCase
         $this->enableCsrfToken();
         $this->enableSecurityToken();
         $this->post('/admin/places/ajax-add', [
-            'place_name' => 'Nashville',
+            'place_country' => 'USA',
             'place_city' => 'Nashville',
             'place_state' => 'TN',
         ]);
@@ -153,7 +153,7 @@ class PlacesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        // Missing required place_name
+        // Missing required place_country
         $this->post('/admin/places/ajax-add', [
             'place_city' => 'Nashville',
         ]);
@@ -170,5 +170,35 @@ class PlacesControllerTest extends TestCase
         $this->assertResponseOk();
         $data = json_decode((string)$this->_response->getBody(), true);
         $this->assertFalse($data['success']);
+    }
+
+    public function testAjaxAddDuplicateReturnsExisting(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // The fixture already has place_country=USA, place_city=Murray, place_state=KY
+        $this->post('/admin/places/ajax-add', [
+            'place_country' => 'USA',
+            'place_city' => 'Murray',
+            'place_state' => 'KY',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals(1, $data['newOption']['value']);
+        $this->assertStringContainsString('already exists', $data['message']);
+    }
+
+    public function testAddPostDuplicateShowsError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+        // Duplicate of fixture place
+        $this->post('/admin/places/add', ['place_country' => 'USA', 'place_city' => 'Murray', 'place_state' => 'KY']);
+        $this->assertNoRedirect();
+        $this->assertFlashMessage('A place with that country, city, and state already exists.');
     }
 }

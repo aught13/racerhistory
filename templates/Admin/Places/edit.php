@@ -2,10 +2,10 @@
 <div class="container py-4">
     <h1 class="mb-3">Edit Place</h1>
     <?= $this->Form->create($place) ?>
-    <?= $this->Form->control('place_name', ['class' => 'form-control']) ?>
     <div class="row g-3">
-        <div class="col-md-6"><?= $this->Form->control('place_city', ['class' => 'form-control']) ?></div>
-        <div class="col-md-6"><?= $this->Form->control('place_state', ['class' => 'form-control']) ?></div>
+        <div class="col-md-4"><?= $this->Form->control('place_country', ['class' => 'form-control', 'label' => 'Country (ISO 3166 alpha-3)', 'maxlength' => 3, 'required' => true]) ?></div>
+        <div class="col-md-4"><?= $this->Form->control('place_city', ['class' => 'form-control', 'label' => 'Locality (city, town, or village)', 'required' => true]) ?></div>
+        <div class="col-md-4"><?= $this->Form->control('place_state', ['class' => 'form-control', 'label' => 'Subdivision (state, province, or region)']) ?></div>
     </div>
     <div class="mt-3 d-flex gap-2">
         <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">Cancel</a>

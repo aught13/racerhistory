@@ -99,7 +99,7 @@ class SitesControllerTest extends TestCase
         $this->assertEquals('CFSB Center', $data['results'][0]['site_name']);
         $this->assertArrayHasKey('id', $data['results'][0]);
         $this->assertArrayHasKey('capacity', $data['results'][0]);
-        $this->assertArrayHasKey('place_name', $data['results'][0]);
+        $this->assertArrayHasKey('place_city', $data['results'][0]);
         $this->assertArrayHasKey('place_state', $data['results'][0]);
     }
 
@@ -223,6 +223,6 @@ class SitesControllerTest extends TestCase
         $this->assertArrayHasKey('id', $first);
         $this->assertArrayHasKey('site_name', $first);
         $this->assertArrayHasKey('capacity', $first);
-        $this->assertArrayHasKey('place_name', $first);
+        $this->assertArrayHasKey('place_city', $first);
     }
 }
