@@ -38,6 +38,7 @@
                     <tr>
                         <th><input type="checkbox" id="select-all-rosters"></th>
                         <th>Person</th>
+                        <th>Year</th>
                         <th>Number</th>
                         <th>Position</th>
                         <th>Height</th>
@@ -59,6 +60,7 @@
                                 </a>
                             </div>
                         </td>
+                        <td><?= h($roster->roster_year) ?></td>
                         <td><?= h($roster->roster_number) ?></td>
                         <td><?= h($roster->roster_position) ?></td>
                         <td><?= h($roster->roster_height) ?></td>
@@ -101,11 +103,11 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#rosters-table').DataTable({
             pagingType: 'simple_numbers',
             order: [
-                [2, 'asc']
+                [3, 'asc']
             ],
             columnDefs: [{
                 orderable: false,
-                targets: [0, 6]
+                targets: [0, 7]
             }],
             language: {
                 search: 'Search roster:'

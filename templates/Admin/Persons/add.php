@@ -12,6 +12,7 @@
                         'class' => 'needs-validation',
                         'novalidate' => true,
                     ]) ?>
+                    <?php $this->Form->unlockField('birth_place_id'); ?>
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -31,6 +32,16 @@
                         </div>
                         <div class="col-md-6">
                             <?= $this->Form->control('death', ['type' => 'date', 'class' => 'form-control', 'label' => ['text' => 'Death Date', 'class' => 'form-label']]); ?>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Birth Place</label>
+                            <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off">
+                            <?= $this->Form->control('birth_place_id', ['type' => 'hidden', 'id' => 'birth-place-id-field']); ?>
+                            <div id="birth-place-results" class="mt-1"></div>
+                            <div id="birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div>
+                        </div>
+                        <div class="col-md-6">
+                            <?= $this->Form->control('person_previous', ['class' => 'form-control', 'label' => ['text' => 'Previous School', 'class' => 'form-label'], 'maxlength' => 162]); ?>
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Person Image</label>
@@ -175,6 +186,50 @@ document.addEventListener('DOMContentLoaded', function () {
         // Show initial preview if image ID is set
         updateImagePreview();
     }
+});
+JS, ['block' => true]);
+
+$placeSearchUrl = json_encode($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']));
+echo $this->Html->scriptBlock(<<<JS
+document.addEventListener('DOMContentLoaded', function () {
+    var searchInput = document.getElementById('birth-place-search');
+    var resultsDiv = document.getElementById('birth-place-results');
+    var selectedDiv = document.getElementById('birth-place-selected');
+    var hiddenInput = document.getElementById('birth-place-id-field');
+    if (!searchInput || !hiddenInput) return;
+    var placeSearchUrl = {$placeSearchUrl};
+    var debounce = null;
+    function setSelected(id, text) {
+        hiddenInput.value = id;
+        if (selectedDiv) {
+            selectedDiv.innerHTML = '<span class="badge bg-primary me-1">' + text + ' <button type="button" class="btn-close btn-close-white ms-1 clear-birth-place" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
+            selectedDiv.querySelector('.clear-birth-place').addEventListener('click', function() { hiddenInput.value = ''; selectedDiv.innerHTML = '<span class="text-muted fst-italic">None selected</span>'; });
+        }
+        if (resultsDiv) resultsDiv.innerHTML = '';
+        searchInput.value = '';
+    }
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounce);
+        var q = this.value.trim();
+        if (q.length < 2) { if (resultsDiv) resultsDiv.innerHTML = ''; return; }
+        debounce = setTimeout(function() {
+            fetch(placeSearchUrl + '?q=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success || !data.results || !data.results.length) { resultsDiv.innerHTML = '<div class="text-muted small">No results</div>'; return; }
+                    var html = '<div class="list-group list-group-flush" style="max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
+                    data.results.forEach(function(r) {
+                        var label = r.place_name + (r.place_state ? ', ' + r.place_state : '');
+                        html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
+                    });
+                    html += '</div>';
+                    resultsDiv.innerHTML = html;
+                    resultsDiv.querySelectorAll('button').forEach(function(btn) { btn.addEventListener('click', function() { setSelected(btn.dataset.id, btn.dataset.text); }); });
+                })
+                .catch(function() { resultsDiv.innerHTML = '<div class="text-danger small">Error</div>'; });
+        }, 300);
+    });
+    document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) { resultsDiv.innerHTML = ''; } });
 });
 JS, ['block' => true]);
 ?>

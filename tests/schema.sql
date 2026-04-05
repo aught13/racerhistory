@@ -156,6 +156,8 @@ CREATE TABLE IF NOT EXISTS persons (
   display VARCHAR(200) NOT NULL,
   birth DATE NULL,
   death DATE NULL,
+  birth_place_id INTEGER NULL,
+  person_previous VARCHAR(162) NULL,
   person_image INTEGER NULL,
   bio TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
