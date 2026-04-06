@@ -31,6 +31,7 @@ class StatBasketGamePersonControllerTest extends TestCase
         'app.Persons',
         'app.TeamSeasonRosters',
         'app.StatBasketGamePerson',
+        'app.StatBasketSeasonPerson',
         'app.Sports',
         'app.GameTypes',
         'app.Sites',
@@ -84,7 +85,7 @@ class StatBasketGamePersonControllerTest extends TestCase
     }
 
     /**
-     * Test add method GET request
+     * Test add method GET request - renders multi-row form
      *
      * @return void
      * @uses \App\Controller\Admin\StatBasketGamePersonController::add()
@@ -95,85 +96,139 @@ class StatBasketGamePersonControllerTest extends TestCase
 
         $this->assertResponseOk();
         $this->assertResponseContains('Add Player Stats');
-        $this->viewVariable('stat');
         $this->viewVariable('game');
         $this->viewVariable('teamSeasonRoster');
-
-        $stat = $this->viewVariable('stat');
-        $this->assertEquals(1, $stat->game_id);
-        $this->assertEquals('Z', $stat->period);
-        $this->assertEquals(1, $stat->GP);
+        $this->assertResponseContains('id="stat-rows"');
+        $this->assertResponseContains('id="add-row-btn"');
+        $this->assertResponseContains('Add Another');
+        $this->assertResponseContains('Save All');
+        $this->assertResponseContains('stat-row');
+        $this->assertResponseContains('turbo-frame id="stat-person-add-frame"');
+        $this->assertResponseContains('add-to-totals-checkbox');
     }
 
     /**
-     * Test add method POST request with valid data
+     * Test bulk add with a single row
      *
      * @return void
-     * @uses \App\Controller\Admin\StatBasketGamePersonController::add()
+     * @uses \App\Controller\Admin\StatBasketGamePersonController::bulkAdd()
      */
-    public function testAddPostValid(): void
+    public function testBulkAddSingleRow(): void
     {
         $data = [
-            'team_season_roster_id' => 1,
-            'game_id' => 1,
-            'period' => 'Z',
-            'GP' => 1,
-            'GS' => 1,
-            'MIN' => '30',
-            'FGM' => '8',
-            'FGA' => '15',
-            'TPM' => '2',
-            'TPA' => '5',
-            'FTM' => '6',
-            'FTA' => '8',
-            'ORB' => '2',
-            'DRB' => '5',
-            'RB' => '7',
-            'AST' => '4',
-            'STL' => '2',
-            'BS' => '1',
-            'BD' => '0',
-            'TRN' => '2',
-            'PF' => '3',
-            'TF' => '0',
-            'FD' => '5',
-            'PTS' => '24',
+            'rows' => [
+                [
+                    'team_season_roster_id' => 1,
+                    'period' => 'Z',
+                    'GP' => 1,
+                    'GS' => 1,
+                    'MIN' => '30',
+                    'FGM' => '8',
+                    'FGA' => '15',
+                    'PTS' => '24',
+                ],
+            ],
         ];
 
-        $this->post('/admin/stat-basket-game-person/add/1', $data);
+        $this->post('/admin/stat-basket-game-person/bulk-add/1', $data);
 
         $this->assertResponseSuccess();
         $this->assertRedirect(['action' => 'view', 1]);
-        $this->assertFlashMessage('The player stat has been saved.');
+        $this->assertFlashMessage('Saved 1 player stat(s).');
 
-        // Verify the record was created
         $stats = $this->getTableLocator()->get('StatBasketGamePerson');
-        $query = $stats->find()->where(['game_id' => 1, 'team_season_roster_id' => 1, 'PTS' => '24']);
+        $query = $stats->find()->where(['game_id' => 1, 'PTS' => '24']);
         $this->assertGreaterThanOrEqual(1, $query->count());
     }
 
     /**
-     * Test add method POST request with invalid data (missing PTS)
+     * Test bulk add with multiple rows
      *
      * @return void
-     * @uses \App\Controller\Admin\StatBasketGamePersonController::add()
+     * @uses \App\Controller\Admin\StatBasketGamePersonController::bulkAdd()
      */
-    public function testAddPostInvalid(): void
+    public function testBulkAddMultipleRows(): void
     {
         $data = [
-            'team_season_roster_id' => 1,
-            'game_id' => 1,
-            'period' => 'Z',
-            'GP' => 1,
-            // Missing PTS which is required
+            'rows' => [
+                ['team_season_roster_id' => 1, 'PTS' => '10', 'MIN' => '20'],
+                ['team_season_roster_id' => 1, 'PTS' => '15', 'MIN' => '25'],
+            ],
         ];
 
-        $this->post('/admin/stat-basket-game-person/add/1', $data);
+        $this->post('/admin/stat-basket-game-person/bulk-add/1', $data);
 
-        $this->assertResponseOk();
-        // Since PTS is required but missing, validation should fail
-        $this->assertFlashElement('flash/error');
-        $this->assertResponseContains('Add Player Stats');
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 2 player stat(s).');
+    }
+
+    /**
+     * Test bulk add skips rows without a roster player selected
+     *
+     * @return void
+     */
+    public function testBulkAddSkipsEmptyRows(): void
+    {
+        $data = [
+            'rows' => [
+                ['team_season_roster_id' => 1, 'PTS' => '10'],
+                ['team_season_roster_id' => '', 'PTS' => ''],
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-person/bulk-add/1', $data);
+
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 1 player stat(s).');
+    }
+
+    /**
+     * Test bulk add with no rows redirects back
+     *
+     * @return void
+     */
+    public function testBulkAddNoRowsRedirects(): void
+    {
+        $data = ['rows' => []];
+
+        $this->post('/admin/stat-basket-game-person/bulk-add/1', $data);
+
+        $this->assertRedirect('/admin/stat-basket-game-person/add/1');
+        $this->assertFlashMessage('No player stats to save.');
+    }
+
+    /**
+     * Test bulk add requires POST method
+     *
+     * @return void
+     */
+    public function testBulkAddRequiresPost(): void
+    {
+        $this->get('/admin/stat-basket-game-person/bulk-add/1');
+        $this->assertResponseCode(405);
+    }
+
+    /**
+     * Test bulk add with add_to_totals checkbox checked
+     *
+     * @return void
+     */
+    public function testBulkAddWithAddToTotals(): void
+    {
+        $data = [
+            'add_to_totals' => '1',
+            'rows' => [
+                ['team_season_roster_id' => 1, 'PTS' => '20', 'period' => 'Z'],
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-person/bulk-add/1', $data);
+
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 1 player stat(s).');
     }
 
     /**

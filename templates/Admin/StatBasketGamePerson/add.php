@@ -1,4 +1,17 @@
-<?php $this->assign('title', isset($stat->id) ? 'Edit Player Stats' : 'Add Player Stats'); ?>
+<?php
+/**
+ * Multi-row player stat add form.
+ *
+ * Allows adding multiple player stat entries at once for a game.
+ * Users can click "+" to add rows and "Save All" to commit them
+ * in a single POST via bulkAdd.
+ *
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Game $game
+ * @var array $teamSeasonRoster
+ */
+$this->assign('title', 'Add Player Stats');
+?>
 <div class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -13,13 +26,11 @@
             <li class="breadcrumb-item">
                 <a href="<?= $this->Url->build(['action' => 'view', $game->id]) ?>">Player Stats</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                <?= isset($stat->id) ? 'Edit' : 'Add' ?>
-            </li>
+            <li class="breadcrumb-item active" aria-current="page">Add</li>
         </ol>
     </nav>
 
-    <h1 class="mb-3"><?= isset($stat->id) ? 'Edit' : 'Add' ?> Player Stats</h1>
+    <h1 class="mb-3">Add Player Stats</h1>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -33,212 +44,174 @@
         </div>
     </div>
 
-    <?= $this->Form->create($stat) ?>
-    <?= $this->Form->hidden('game_id') ?>
-    <div class="card">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <?= $this->Form->control('team_season_roster_id', [
-                        'options' => $teamSeasonRoster,
-                        'label' => 'Player',
-                        'class' => 'form-select',
-                        'required' => true,
-                    ]) ?>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <?= $this->Form->control('period', [
-                        'label' => 'Period (use Z for final)',
-                        'class' => 'form-control',
-                        'placeholder' => 'Z',
-                    ]) ?>
-                </div>
-            </div>
+    <turbo-frame id="stat-person-add-frame">
+    <?= $this->Form->create(null, [
+        'id' => 'bulk-stat-person-form',
+        'url' => ['action' => 'bulkAdd', $game->id],
+    ]) ?>
 
-            <h5 class="mt-3 mb-3">Basic Stats</h5>
-            <div class="row">
-                <?= $this->Form->hidden('GP', ['value' => 1]) ?>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('GS', [
-                        'label' => 'Started?',
-                        'type' => 'checkbox',
-                        'class' => 'form-check-input',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('MIN', [
-                        'label' => 'MIN',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
+    <div id="stat-rows" data-stat-type="person">
+        <!-- Initial row rendered server-side -->
+        <div class="card mb-3 stat-row" data-row-index="0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="stat-row-label">Player #1</span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn" title="Remove row" disabled>
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
-
-            <h5 class="mt-3 mb-3">Shooting</h5>
-            <div class="row">
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('FGM', [
-                        'label' => 'FGM',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
+            <div class="card-body">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Player *</label>
+                        <select name="rows[0][team_season_roster_id]" class="form-select stat-player-select" required>
+                            <option value="">-- Select Player --</option>
+                            <?php foreach ($teamSeasonRoster as $id => $label): ?>
+                            <option value="<?= (int)$id ?>"><?= h($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Period</label>
+                        <input type="text" name="rows[0][period]" class="form-control" placeholder="Z" value="Z">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">GS</label>
+                        <div class="form-check mt-1">
+                            <input type="checkbox" name="rows[0][GS]" value="1" class="form-check-input">
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">MIN</label>
+                        <input type="text" name="rows[0][MIN]" class="form-control">
+                    </div>
                 </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('FGA', [
-                        'label' => 'FGA',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-1">
+                        <label class="form-label">FGM</label>
+                        <input type="text" name="rows[0][FGM]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">FGA</label>
+                        <input type="text" name="rows[0][FGA]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">3PM</label>
+                        <input type="text" name="rows[0][TPM]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">3PA</label>
+                        <input type="text" name="rows[0][TPA]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">FTM</label>
+                        <input type="text" name="rows[0][FTM]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">FTA</label>
+                        <input type="text" name="rows[0][FTA]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">ORB</label>
+                        <input type="text" name="rows[0][ORB]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">DRB</label>
+                        <input type="text" name="rows[0][DRB]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">RB</label>
+                        <input type="text" name="rows[0][RB]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">AST</label>
+                        <input type="text" name="rows[0][AST]" class="form-control">
+                    </div>
                 </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('TPM', [
-                        'label' => '3PM',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-1">
+                        <label class="form-label">STL</label>
+                        <input type="text" name="rows[0][STL]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">BS</label>
+                        <input type="text" name="rows[0][BS]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">BD</label>
+                        <input type="text" name="rows[0][BD]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">TRN</label>
+                        <input type="text" name="rows[0][TRN]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">PF</label>
+                        <input type="text" name="rows[0][PF]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">TF</label>
+                        <input type="text" name="rows[0][TF]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">FD</label>
+                        <input type="text" name="rows[0][FD]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">PTS *</label>
+                        <input type="text" name="rows[0][PTS]" class="form-control" required>
+                    </div>
                 </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('TPA', [
-                        'label' => '3PA',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('FTM', [
-                        'label' => 'FTM',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('FTA', [
-                        'label' => 'FTA',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-            </div>
-
-            <h5 class="mt-3 mb-3">Rebounds & Assists</h5>
-            <div class="row">
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('ORB', [
-                        'label' => 'ORB',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('DRB', [
-                        'label' => 'DRB',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('RB', [
-                        'label' => 'RB (Total)',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('AST', [
-                        'label' => 'AST',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-            </div>
-
-            <h5 class="mt-3 mb-3">Defense & Other</h5>
-            <div class="row">
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('STL', [
-                        'label' => 'STL',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('BS', [
-                        'label' => 'BS (Blocks)',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('BD', [
-                        'label' => 'BD (Blocked)',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('TRN', [
-                        'label' => 'TRN',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('PF', [
-                        'label' => 'PF',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('TF', [
-                        'label' => 'TF',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('FD', [
-                        'label' => 'FD (Fouls Drawn)',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                    ]) ?>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <?= $this->Form->control('PTS', [
-                        'label' => 'PTS *',
-                        'class' => 'form-control',
-                        'type' => 'text',
-                        'required' => true,
-                    ]) ?>
-                </div>
+                <input type="hidden" name="rows[0][GP]" value="1">
             </div>
         </div>
     </div>
 
-    <div class="card mt-3">
+    <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+        <button type="button" id="add-row-btn" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-plus-circle"></i> Add Another
+        </button>
+    </div>
+
+    <div class="card mb-3">
         <div class="card-body">
             <h5 class="mb-3">Season Totals</h5>
             <div class="form-check">
-                <?= $this->Form->control('add_to_totals', [
-                    'type' => 'checkbox',
-                    'label' => 'Add to Season Totals',
-                    'class' => 'form-check-input',
-                    'templates' => [
-                        'inputContainer' => '{{content}}',
-                        'checkboxWrapper' => '<div class="form-check">{{label}}</div>',
-                    ],
-                ]) ?>
+                <input type="checkbox" name="add_to_totals" value="1" class="form-check-input" id="add-to-totals-checkbox">
+                <label class="form-check-label" for="add-to-totals-checkbox">Add to Season Totals</label>
+                <br>
                 <small class="form-text text-muted">
-                    Check this box to automatically add these stats to the player's season totals.
+                    Check this box to automatically add these stats to each player's season totals.
                     Only applies when period is 'Z' (final stats).
                 </small>
             </div>
         </div>
     </div>
 
-    <div class="mt-3">
-        <?= $this->Form->button(__('Save'), ['class' => 'btn btn-primary']) ?>
+    <div class="d-flex gap-2">
+        <?= $this->Form->button(__('Save All'), [
+            'class' => 'btn btn-primary',
+            'id' => 'save-all-btn',
+        ]) ?>
         <a href="<?= $this->Url->build(['action' => 'view', $game->id]) ?>" class="btn btn-secondary">Cancel</a>
     </div>
+
     <?= $this->Form->end() ?>
+    </turbo-frame>
 </div>
+
+<?php $this->append('script'); ?>
+<script type="module">
+import { initStatMultiAdd } from '/js/modules/stat-multi-add.mjs';
+
+function boot() {
+    initStatMultiAdd();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+} else {
+    boot();
+}
+document.addEventListener('turbo:load', boot);
+</script>
+<?php $this->end(); ?>
