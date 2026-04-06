@@ -43,7 +43,7 @@ $this->assign('title', 'Add Opponent Player');
         </div>
     </div>
 
-    <turbo-frame id="stat-opponent-add-frame">
+    <turbo-frame id="stat-opponent-add-frame" target="_top">
     <?= $this->Form->create(null, [
         'id' => 'bulk-stat-opponent-form',
         'url' => ['action' => 'bulkAdd', $game->id],
@@ -60,21 +60,21 @@ $this->assign('title', 'Add Opponent Player');
             </div>
             <div class="card-body">
                 <div class="row g-2 mb-2">
-                    <div class="col-md-3">
-                        <label class="form-label">Name *</label>
-                        <input type="text" name="rows[0][name]" class="form-control stat-opp-name" placeholder="e.g., John Smith" required>
+                    <div class="col-md-2">
+                        <label class="form-label">Period</label>
+                        <input type="text" name="rows[0][period]" class="form-control" placeholder="Z" value="Z">
                     </div>
                     <div class="col-md-1">
                         <label class="form-label">Jersey</label>
                         <input type="text" name="rows[0][jersey]" class="form-control" placeholder="23">
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" name="rows[0][name]" class="form-control stat-opp-name" placeholder="e.g., John Smith" required>
+                    </div>
                     <div class="col-md-1">
                         <label class="form-label">Pos</label>
                         <input type="text" name="rows[0][position]" class="form-control" placeholder="G">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Period</label>
-                        <input type="text" name="rows[0][period]" class="form-control" placeholder="Z" value="Z">
                     </div>
                     <div class="col-md-1">
                         <label class="form-label">GS</label>
@@ -125,11 +125,27 @@ $this->assign('title', 'Add Opponent Player');
                         <input type="text" name="rows[0][RB]" class="form-control">
                     </div>
                     <div class="col-md-1">
-                        <label class="form-label">AST</label>
-                        <input type="text" name="rows[0][AST]" class="form-control">
+                        <label class="form-label">PF</label>
+                        <input type="text" name="rows[0][PF]" class="form-control">
                     </div>
                 </div>
                 <div class="row g-2 mb-2">
+                    <div class="col-md-1">
+                        <label class="form-label">FD</label>
+                        <input type="text" name="rows[0][FD]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">PTS *</label>
+                        <input type="text" name="rows[0][PTS]" class="form-control" required>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">AST</label>
+                        <input type="text" name="rows[0][AST]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">TRN</label>
+                        <input type="text" name="rows[0][TRN]" class="form-control">
+                    </div>
                     <div class="col-md-1">
                         <label class="form-label">STL</label>
                         <input type="text" name="rows[0][STL]" class="form-control">
@@ -143,24 +159,8 @@ $this->assign('title', 'Add Opponent Player');
                         <input type="text" name="rows[0][BD]" class="form-control">
                     </div>
                     <div class="col-md-1">
-                        <label class="form-label">TRN</label>
-                        <input type="text" name="rows[0][TRN]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">PF</label>
-                        <input type="text" name="rows[0][PF]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
                         <label class="form-label">TF</label>
                         <input type="text" name="rows[0][TF]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">FD</label>
-                        <input type="text" name="rows[0][FD]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">PTS *</label>
-                        <input type="text" name="rows[0][PTS]" class="form-control" required>
                     </div>
                 </div>
                 <input type="hidden" name="rows[0][GP]" value="1">

@@ -104,15 +104,11 @@
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <?= $this->Form->postLink(
-                                    '<i class="bi bi-trash"></i>',
-                                    ['action' => 'delete', $stat->id],
-                                    [
-                                        'confirm' => __('Are you sure you want to delete this stat entry?'),
-                                        'class' => 'btn btn-sm btn-outline-danger',
-                                        'escape' => false,
-                                    ]
-                                ) ?>
+                                <a href="<?= $this->Url->build(['action' => 'deleteConfirm', $stat->id]) ?>"
+                                   class="btn btn-sm btn-outline-danger"
+                                   title="Delete stat">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

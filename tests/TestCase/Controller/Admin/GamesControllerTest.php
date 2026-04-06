@@ -555,4 +555,34 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('id="hidden-site-form"');
         $this->assertResponseContains('id="hidden-game-type-form"');
     }
+
+    /**
+     * Test that Game add/edit forms are NOT wrapped in a nested turbo-frame.
+     *
+     * A nested frame without target="_top" causes "Content missing" after redirect
+     * because Turbo tries to find the frame ID on the target page.
+     */
+    public function testAddAndEditFormsHaveNoNestedTurboFrame(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/games/add?team_season_id=1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        // Only the layout admin-content frame should be present — no inner form frame.
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Game add form must not be wrapped in a nested turbo-frame'
+        );
+
+        $this->get('/admin/games/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Game edit form must not be wrapped in a nested turbo-frame'
+        );
+    }
 }

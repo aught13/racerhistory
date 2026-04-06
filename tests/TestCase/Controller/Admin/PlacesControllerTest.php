@@ -201,4 +201,33 @@ class PlacesControllerTest extends TestCase
         $this->assertNoRedirect();
         $this->assertFlashMessage('A place with that country, city, and state already exists.');
     }
+
+    /**
+     * Test that Place add/edit forms are NOT wrapped in a nested turbo-frame.
+     *
+     * A nested frame without target="_top" causes "Content missing" after redirect
+     * because Turbo tries to find the frame ID on the target page.
+     */
+    public function testAddAndEditFormsHaveNoNestedTurboFrame(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/places/add');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Place add form must not be wrapped in a nested turbo-frame'
+        );
+
+        $this->get('/admin/places/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Place edit form must not be wrapped in a nested turbo-frame'
+        );
+    }
 }
