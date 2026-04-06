@@ -56,7 +56,7 @@ class StatBasketGameOpponentControllerTest extends TestCase
     }
 
     /**
-     * Test add method GET - displays form to add opponent stat
+     * Test add method GET - displays multi-row form to add opponent stats
      *
      * @return void
      */
@@ -65,49 +65,46 @@ class StatBasketGameOpponentControllerTest extends TestCase
         $this->get('/admin/stat-basket-game-opponent/add/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Add Opponent Player');
+        $this->assertResponseContains('id="stat-rows"');
+        $this->assertResponseContains('id="add-row-btn"');
+        $this->assertResponseContains('Add Another');
+        $this->assertResponseContains('Save All');
+        $this->assertResponseContains('stat-row');
+        $this->assertResponseContains('turbo-frame id="stat-opponent-add-frame"');
     }
 
     /**
-     * Test add method POST - successfully creates opponent stat
+     * Test bulk add with a single row
      *
      * @return void
      */
-    public function testAddPost(): void
+    public function testBulkAddSingleRow(): void
     {
         $this->enableCsrfToken();
         $this->enableSecurityToken();
 
         $data = [
-            'game_id' => 1,
-            'period' => 'Z',
-            'GP' => 1,
-            'GS' => 1,
-            'name' => 'Jane Smith',
-            'jersey' => '24',
-            'MIN' => '35',
-            'PTS' => '25',
-            'FGM' => '10',
-            'FGA' => '18',
-            'TPM' => '3',
-            'TPA' => '7',
-            'FTM' => '2',
-            'FTA' => '3',
-            'ORB' => '2',
-            'DRB' => '5',
-            'RB' => '7',
-            'AST' => '4',
-            'STL' => '2',
-            'BS' => '1',
-            'TRN' => '3',
-            'PF' => '2',
+            'rows' => [
+                [
+                    'name' => 'Jane Smith',
+                    'jersey' => '24',
+                    'position' => 'G',
+                    'period' => 'Z',
+                    'GP' => 1,
+                    'GS' => 1,
+                    'MIN' => '35',
+                    'PTS' => '25',
+                    'FGM' => '10',
+                    'FGA' => '18',
+                ],
+            ],
         ];
 
-        $this->post('/admin/stat-basket-game-opponent/add/1', $data);
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
         $this->assertResponseSuccess();
         $this->assertRedirect(['action' => 'view', 1]);
-        $this->assertFlashMessage('The opponent player stat has been saved.');
+        $this->assertFlashMessage('Saved 1 opponent stat(s).');
 
-        // Verify the stat was created
         $stats = $this->getTableLocator()->get('StatBasketGameOpponent');
         $stat = $stats->find()->where(['name' => 'Jane Smith'])->first();
         $this->assertNotNull($stat);
@@ -115,28 +112,78 @@ class StatBasketGameOpponentControllerTest extends TestCase
     }
 
     /**
-     * Test add method POST with validation errors
+     * Test bulk add with multiple rows
      *
      * @return void
      */
-    public function testAddPostValidationErrors(): void
+    public function testBulkAddMultipleRows(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'rows' => [
+                ['name' => 'Player A', 'jersey' => '10', 'PTS' => '12'],
+                ['name' => 'Player B', 'jersey' => '20', 'PTS' => '18'],
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 2 opponent stat(s).');
+    }
+
+    /**
+     * Test bulk add skips rows without a name
+     *
+     * @return void
+     */
+    public function testBulkAddSkipsEmptyRows(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'rows' => [
+                ['name' => 'Player A', 'PTS' => '12'],
+                ['name' => '', 'PTS' => ''],
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 1 opponent stat(s).');
+    }
+
+    /**
+     * Test bulk add with no rows redirects back
+     *
+     * @return void
+     */
+    public function testBulkAddNoRowsRedirects(): void
     {
         $this->enableCsrfToken();
         $this->enableSecurityToken();
         $this->enableRetainFlashMessages();
 
-        $data = [
-            'game_id' => 1,
-            'period' => 'Z',
-            'GP' => 1,
-            'name' => '', // Required field missing
-            'PTS' => '', // Required field missing
-        ];
+        $data = ['rows' => []];
 
-        $this->post('/admin/stat-basket-game-opponent/add/1', $data);
-        $this->assertResponseOk();
-        $this->assertResponseContains('Add Opponent Player');
-        $this->assertFlashMessage('The opponent player stat could not be saved. Please, try again.');
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        $this->assertRedirect('/admin/stat-basket-game-opponent/add/1');
+        $this->assertFlashMessage('No opponent stats to save.');
+    }
+
+    /**
+     * Test bulk add requires POST method
+     *
+     * @return void
+     */
+    public function testBulkAddRequiresPost(): void
+    {
+        $this->get('/admin/stat-basket-game-opponent/bulk-add/1');
+        $this->assertResponseCode(405);
     }
 
     /**
