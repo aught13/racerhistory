@@ -70,7 +70,7 @@ class StatBasketGameOpponentControllerTest extends TestCase
         $this->assertResponseContains('Add Another');
         $this->assertResponseContains('Save All');
         $this->assertResponseContains('stat-row');
-        $this->assertResponseContains('turbo-frame id="stat-opponent-add-frame"');
+        $this->assertResponseContains('turbo-frame id="stat-opponent-add-frame" target="_top"');
     }
 
     /**
@@ -102,7 +102,7 @@ class StatBasketGameOpponentControllerTest extends TestCase
 
         $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
         $this->assertResponseSuccess();
-        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
         $this->assertFlashMessage('Saved 1 opponent stat(s).');
 
         $stats = $this->getTableLocator()->get('StatBasketGameOpponent');
@@ -130,7 +130,7 @@ class StatBasketGameOpponentControllerTest extends TestCase
 
         $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
         $this->assertResponseSuccess();
-        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
         $this->assertFlashMessage('Saved 2 opponent stat(s).');
     }
 
@@ -153,7 +153,7 @@ class StatBasketGameOpponentControllerTest extends TestCase
 
         $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
         $this->assertResponseSuccess();
-        $this->assertRedirect(['action' => 'view', 1]);
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
         $this->assertFlashMessage('Saved 1 opponent stat(s).');
     }
 
@@ -184,6 +184,171 @@ class StatBasketGameOpponentControllerTest extends TestCase
     {
         $this->get('/admin/stat-basket-game-opponent/bulk-add/1');
         $this->assertResponseCode(405);
+    }
+
+    /**
+     * Test bulk add skips duplicate names within the same batch
+     *
+     * @return void
+     */
+    public function testBulkAddSkipsDuplicateNameInBatch(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $data = [
+            'rows' => [
+                ['name' => 'Player A', 'PTS' => '12'],
+                ['name' => 'Player A', 'PTS' => '20'], // duplicate in same batch
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 1 opponent stat(s).');
+        $this->assertFlashMessage('Skipped 1 opponent player(s) that already have stats for this game.');
+    }
+
+    /**
+     * Test bulk add skips duplicate names case-insensitively within batch
+     *
+     * @return void
+     */
+    public function testBulkAddSkipsCaseInsensitiveDuplicateInBatch(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $data = [
+            'rows' => [
+                ['name' => 'Player A', 'PTS' => '12'],
+                ['name' => 'player a', 'PTS' => '20'], // same name different case
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 1 opponent stat(s).');
+        $this->assertFlashMessage('Skipped 1 opponent player(s) that already have stats for this game.');
+    }
+
+    /**
+     * Test bulk add skips a name that already exists in the database for this game
+     *
+     * The fixture has 'John Doe' for game_id=1.
+     *
+     * @return void
+     */
+    public function testBulkAddSkipsAlreadyExistingName(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $data = [
+            'rows' => [
+                ['name' => 'John Doe', 'PTS' => '99'], // already exists in fixture
+                ['name' => 'New Player', 'PTS' => '15'], // new, should be saved
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        $this->assertResponseSuccess();
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
+        $this->assertFlashMessage('Saved 1 opponent stat(s).');
+        $this->assertFlashMessage('Skipped 1 opponent player(s) that already have stats for this game.');
+
+        // Ensure the PTS=99 row was NOT saved
+        $stats = $this->getTableLocator()->get('StatBasketGameOpponent');
+        $this->assertEquals(0, $stats->find()->where(['game_id' => 1, 'PTS' => '99'])->count());
+    }
+
+    /**
+     * Test bulk add skips existing name case-insensitively from database
+     *
+     * @return void
+     */
+    public function testBulkAddSkipsExistingNameCaseInsensitive(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $data = [
+            'rows' => [
+                ['name' => 'john doe', 'PTS' => '5'], // same as fixture 'John Doe' but lowercase
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        // All rows skipped (saved=0) → redirects to game view
+        $this->assertRedirect(['controller' => 'Games', 'action' => 'view', 1]);
+        $this->assertFlashMessage('Skipped 1 opponent player(s) that already have stats for this game.');
+    }
+
+    /**
+     * Test bulk add with save failure falls back to add page with errored rows
+     *
+     * name is provided but PTS (required) is missing, triggering a validation failure.
+     *
+     * @return void
+     */
+    public function testBulkAddFailureFallsBackToAddPage(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $data = [
+            'rows' => [
+                ['name' => 'Bad Player', 'jersey' => '99'], // missing required PTS
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        // Should render the add template (not redirect)
+        $this->assertResponseOk();
+        $this->assertResponseContains('Add Opponent Player');
+        $this->assertFlashMessage('Row 1: could not save.');
+
+        // Verify failedRows is passed to the view
+        $failedRows = $this->viewVariable('failedRows');
+        $this->assertNotEmpty($failedRows);
+        $this->assertEquals('Bad Player', $failedRows[0]['name']);
+    }
+
+    /**
+     * Test bulk add with partial success and partial failure redirects to game view
+     *
+     * @return void
+     */
+    public function testBulkAddPartialSuccessRedirectsToGameView(): void
+    {
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $data = [
+            'rows' => [
+                ['name' => 'Good Player', 'PTS' => '10'], // will succeed
+                ['name' => 'Bad Player', 'jersey' => '99'], // missing PTS, will fail
+            ],
+        ];
+
+        $this->post('/admin/stat-basket-game-opponent/bulk-add/1', $data);
+        // Partial success: has errors, so fall back to add page
+        $this->assertResponseOk();
+        $this->assertResponseContains('Add Opponent Player');
+        $this->assertFlashMessage('Saved 1 opponent stat(s).');
+        $this->assertFlashMessage('Row 2: could not save.');
+
+        $failedRows = $this->viewVariable('failedRows');
+        $this->assertCount(1, $failedRows);
+        $this->assertEquals('Bad Player', $failedRows[0]['name']);
     }
 
     /**

@@ -46,7 +46,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('Add Another');
         $this->assertResponseContains('Save All');
         $this->assertResponseContains('roster-row');
-        $this->assertResponseContains('turbo-frame id="roster-add-frame"');
+        $this->assertResponseContains('turbo-frame id="roster-add-frame" target="_top"');
         $this->assertResponseContains('data-person-search-url');
         $this->assertResponseContains('roster-person-search');
     }
@@ -304,7 +304,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
         $this->assertResponseOk();
-        $this->assertResponseContains('turbo-frame id="roster-edit-frame"');
+        $this->assertResponseContains('turbo-frame id="roster-edit-frame" target="_top"');
     }
 
     // ── Bulk Edit (POST – update) ────────────────────────────────────
@@ -450,5 +450,24 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('data-person-search-url', $body);
         $this->assertStringContainsString('hidden-person-form', $body);
         $this->assertStringContainsString('roster-multi-add.mjs', $body);
+    }
+
+    /**
+     * Test that TeamSeasonRosters add/bulk-edit forms have turbo-frame with target="_top".
+     *
+     * Without target="_top", a redirect after save would look for the frame ID on
+     * the target page (TeamSeasons/view), find nothing, and show "Content missing".
+     */
+    public function testAddAndBulkEditFramesHaveTargetTop(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/team-season-rosters/add?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('turbo-frame id="roster-add-frame" target="_top"');
+
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('turbo-frame id="roster-edit-frame" target="_top"');
     }
 }

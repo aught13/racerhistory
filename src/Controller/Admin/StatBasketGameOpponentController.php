@@ -88,12 +88,37 @@ class StatBasketGameOpponentController extends AppController
         }
 
         $saved = 0;
+        $skipped = 0;
         $errors = [];
+        $failedRows = [];
+
+        // Collect opponent names that already exist for this game (case-insensitive)
+        /** @var list<string> $existingNames */
+        $existingNames = $this->StatBasketGameOpponent
+            ->find()
+            ->where(['game_id' => $gameId])
+            ->select(['name'])
+            ->all()
+            ->map(fn($row) => strtolower(trim((string)$row->name)))
+            ->toList();
+
+        $existingNameSet = array_flip($existingNames);
+        $seenInBatch = [];
+
         foreach ($rows as $i => $rowData) {
             $name = trim((string)($rowData['name'] ?? ''));
             if ($name === '') {
                 continue;
             }
+
+            $nameKey = strtolower($name);
+
+            // Skip if this opponent player already has stats for this game
+            if (isset($existingNameSet[$nameKey]) || isset($seenInBatch[$nameKey])) {
+                $skipped++;
+                continue;
+            }
+            $seenInBatch[$nameKey] = true;
 
             $entityData = [
                 'game_id' => $gameId,
@@ -129,21 +154,35 @@ class StatBasketGameOpponentController extends AppController
                 $saved++;
             } else {
                 $errors[] = __('Row {0}: could not save.', $i + 1);
+                $failedRows[] = $rowData;
             }
         }
 
         if ($saved > 0) {
             $this->Flash->success(__('Saved {0} opponent stat(s).', $saved));
         }
+        if ($skipped > 0) {
+            $msg = __('Skipped {0} opponent player(s) that already have stats for this game.', $skipped);
+            $this->Flash->warning($msg);
+        }
         if (!empty($errors)) {
             $this->Flash->error(implode(' ', $errors));
         }
 
-        if ($saved > 0) {
-            return $this->redirect(['action' => 'view', $gameId]);
+        // On success (at least one saved, no errors) redirect to game view
+        if ($saved > 0 && empty($errors)) {
+            return $this->redirect(['controller' => 'Games', 'action' => 'view', $gameId]);
         }
 
-        return $this->redirect(['action' => 'add', $gameId]);
+        // On failure: fall back to the add page with errored rows
+        if (!empty($failedRows)) {
+            $game = $this->fetchTable('Games')->get($gameId, contain: ['TeamSeason', 'Opponents']);
+            $this->set(compact('game', 'failedRows'));
+
+            return $this->render('add');
+        }
+
+        return $this->redirect(['controller' => 'Games', 'action' => 'view', $gameId]);
     }
 
     /**

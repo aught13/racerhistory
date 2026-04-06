@@ -44,7 +44,18 @@ $this->assign('title', 'Add Player Stats');
         </div>
     </div>
 
-    <turbo-frame id="stat-person-add-frame">
+    <turbo-frame id="stat-person-add-frame" target="_top">
+    <?php if ($alreadyAddedCount > 0): ?>
+    <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        <?= __n(
+            '{0} player already has stats recorded for this game and is not shown in the dropdown.',
+            '{0} players already have stats recorded for this game and are not shown in the dropdown.',
+            $alreadyAddedCount,
+            $alreadyAddedCount
+        ) ?>
+    </div>
+    <?php endif; ?>
     <?= $this->Form->create(null, [
         'id' => 'bulk-stat-person-form',
         'url' => ['action' => 'bulkAdd', $game->id],
@@ -123,11 +134,27 @@ $this->assign('title', 'Add Player Stats');
                         <input type="text" name="rows[0][RB]" class="form-control">
                     </div>
                     <div class="col-md-1">
-                        <label class="form-label">AST</label>
-                        <input type="text" name="rows[0][AST]" class="form-control">
+                        <label class="form-label">PF</label>
+                        <input type="text" name="rows[0][PF]" class="form-control">
                     </div>
                 </div>
                 <div class="row g-2 mb-2">
+                    <div class="col-md-1">
+                        <label class="form-label">FD</label>
+                        <input type="text" name="rows[0][FD]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">PTS *</label>
+                        <input type="text" name="rows[0][PTS]" class="form-control" required>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">AST</label>
+                        <input type="text" name="rows[0][AST]" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">TRN</label>
+                        <input type="text" name="rows[0][TRN]" class="form-control">
+                    </div>
                     <div class="col-md-1">
                         <label class="form-label">STL</label>
                         <input type="text" name="rows[0][STL]" class="form-control">
@@ -141,24 +168,8 @@ $this->assign('title', 'Add Player Stats');
                         <input type="text" name="rows[0][BD]" class="form-control">
                     </div>
                     <div class="col-md-1">
-                        <label class="form-label">TRN</label>
-                        <input type="text" name="rows[0][TRN]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">PF</label>
-                        <input type="text" name="rows[0][PF]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
                         <label class="form-label">TF</label>
                         <input type="text" name="rows[0][TF]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">FD</label>
-                        <input type="text" name="rows[0][FD]" class="form-control">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label">PTS *</label>
-                        <input type="text" name="rows[0][PTS]" class="form-control" required>
                     </div>
                 </div>
                 <input type="hidden" name="rows[0][GP]" value="1">

@@ -38,7 +38,7 @@ $this->assign('title', 'Edit Team Season Roster');
         </div>
     </div>
 
-    <turbo-frame id="roster-edit-frame">
+    <turbo-frame id="roster-edit-frame" target="_top">
     <div class="row">
         <div class="col-lg-10 offset-lg-1">
             <?= $this->Form->create(null, [

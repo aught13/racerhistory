@@ -471,4 +471,33 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="admin-content"');
     }
+
+    /**
+     * Test that Person add/edit forms are NOT wrapped in a nested turbo-frame.
+     *
+     * A nested frame without target="_top" causes "Content missing" after redirect
+     * because Turbo tries to find the frame ID on the target page.
+     */
+    public function testAddAndEditFormsHaveNoNestedTurboFrame(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/persons/add');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Person add form must not be wrapped in a nested turbo-frame'
+        );
+
+        $this->get('/admin/persons/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Person edit form must not be wrapped in a nested turbo-frame'
+        );
+    }
 }
