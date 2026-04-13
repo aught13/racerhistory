@@ -3,12 +3,12 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a>
+                <a href="<?= $this->Url->build(['controller' => 'teamSeasons', 'action' => 'view', $game->team_season_id]) ?>">
+                    Team Season
+                </a>
             </li>
             <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]) ?>">
-                    Game Details
-                </a>
+                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]) ?>">Game Details</a>
             </li>
             <li class="breadcrumb-item">
                 <a href="<?= $this->Url->build(['action' => 'view', $game->id]) ?>">Player Stats</a>
