@@ -29,7 +29,7 @@ export default defineConfig({
     // Shared settings for all the projects below.
     use: {
         // Base URL to use in actions like `await page.goto('/')`.
-        baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8765',
+        baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8765',
 
         // Collect trace when retrying the failed test.
         trace: 'on-first-retry',
@@ -73,8 +73,8 @@ export default defineConfig({
     webServer: process.env.CI
         ? undefined
         : {
-              command: 'php bin/cake server',
-              url: 'http://localhost:8765',
+              command: 'php bin/cake.php server -H 127.0.0.1',
+              url: 'http://127.0.0.1:8765',
               reuseExistingServer: !process.env.CI,
               timeout: 120 * 1000,
           },
