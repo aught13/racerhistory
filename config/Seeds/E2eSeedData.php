@@ -59,7 +59,6 @@ class E2eSeedData extends BaseSeed
         $place = [
             'id' => 1,
             'place_country' => 'USA',
-            'place_city' => 'Test City',
             'place_state' => 'TX',
         ];
         $this->upsert('places', $place);
