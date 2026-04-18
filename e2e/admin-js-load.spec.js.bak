@@ -85,7 +85,7 @@ function collectFailedRequests(page) {
 test.describe("Admin JS Loading", () => {
     test.beforeEach(async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
-        // test.skip(!loggedIn, "Could not log in — server may not be running");
+        test.skip(!loggedIn, "Could not log in — server may not be running");
     });
 
     /* ── resource loading ─────────────────────────────────────── */

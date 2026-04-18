@@ -31,7 +31,9 @@ async function loginAsAdmin(page) {
     await page.click('button[type="submit"]');
 
     // Wait for redirect after login
-    await page.waitForURL(/(?!.*login)/, { timeout: 5000 });
+    await page.waitForURL((url) => !url.pathname.includes("login"), {
+      timeout: 5000,
+    });
     return true;
   } catch {
     return false;
