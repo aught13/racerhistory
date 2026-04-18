@@ -690,4 +690,20 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/configs/1');
         $this->assertResponseContains('Referee 1');
     }
+
+    /**
+     * Test admin pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/sports');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+
+        $this->mockIdentity();
+        $this->get('/admin/sports/view/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

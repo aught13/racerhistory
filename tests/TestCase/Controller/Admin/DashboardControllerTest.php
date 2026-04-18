@@ -124,4 +124,66 @@ class DashboardControllerTest extends TestCase
         // Cache should be cleared
         $this->assertNull(Cache::read('dashboard_test_key', 'default'));
     }
+
+    /**
+     * Test admin layout includes Turbo meta tags.
+     */
+    public function testLayoutContainsTurboMeta(): void
+    {
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('turbo-refresh-method');
+        $this->assertResponseContains('turbo-refresh-scroll');
+    }
+
+    /**
+     * Test admin layout includes importmap for Hotwire Turbo.
+     */
+    public function testLayoutContainsImportmap(): void
+    {
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('@hotwired/turbo');
+    }
+
+    /**
+     * Test admin layout includes admin-turbo.mjs module.
+     */
+    public function testLayoutContainsAdminTurboScript(): void
+    {
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('admin-turbo.mjs');
+    }
+
+    /**
+     * Test admin layout wraps content in turbo-frame.
+     */
+    public function testLayoutContainsTurboFrame(): void
+    {
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+        $this->assertResponseContains('</turbo-frame>');
+    }
+
+    /**
+     * Test admin nav links target the admin-content turbo-frame.
+     */
+    public function testNavLinksTargetTurboFrame(): void
+    {
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-turbo-frame="admin-content"');
+    }
+
+    /**
+     * Test admin nav has data-turbo-permanent attribute for persistence.
+     */
+    public function testNavHasTurboPermanent(): void
+    {
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-turbo-permanent');
+    }
 }

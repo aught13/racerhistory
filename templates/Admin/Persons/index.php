@@ -89,38 +89,53 @@
 <script>
 (function() {
     'use strict';
-    document.addEventListener('DOMContentLoaded', function() {
-        if (window.jQuery && $('#persons-table').length) {
-            $('#persons-table').DataTable({
-                pagingType: 'simple_numbers',
-                order: [
-                    [3, 'asc']
-                ],
-                language: {
-                    search: 'Search persons:'
-                },
-                drawCallback: function(settings) {
-                    const api = this.api();
-                    const pagination = $(this).closest('.dataTables_wrapper').find(
-                        '.dataTables_paginate');
-                    if (api.page.info().pages <= 1) {
-                        pagination.hide();
-                    } else {
-                        pagination.show();
-                    }
-                }
-            });
+
+    function initPersons() {
+        if (!window.jQuery || !$('#persons-table').length) return;
+        if (typeof $.fn.DataTable !== 'function') return;
+        if ($.fn.DataTable.isDataTable('#persons-table')) return;
+
+        // Clean up any orphan DataTables wrapper left by Turbo's cache preview.
+        // The wrapper HTML may exist in the DOM but plugin state is absent when
+        // Turbo restores a cached snapshot (isDataTable returns false above).
+        var $orphanWrapper = $('#persons-table').closest('.dataTables_wrapper');
+        if ($orphanWrapper.length) {
+            var $table = $('#persons-table').detach();
+            $orphanWrapper.replaceWith($table);
         }
+
+        $('#persons-table').DataTable({
+            pagingType: 'simple_numbers',
+            order: [
+                [3, 'asc']
+            ],
+            language: {
+                search: 'Search persons:'
+            },
+            drawCallback: function(settings) {
+                const api = this.api();
+                const pagination = $(this).closest('.dataTables_wrapper').find(
+                    '.dataTables_paginate');
+                if (api.page.info().pages <= 1) {
+                    pagination.hide();
+                } else {
+                    pagination.show();
+                }
+            }
+        });
+
         const selectAll = document.getElementById('select-all-persons');
         const checkboxes = document.querySelectorAll('.person-checkbox');
         const actionSelect = document.getElementById('bulk-action-select-persons');
         const btn = document.getElementById('bulk-action-btn-persons');
 
+        if (!selectAll) return;
+
         function update() {
             const checked = document.querySelectorAll('.person-checkbox:checked').length;
             btn.disabled = checked === 0 || !actionSelect.value;
         }
-        selectAll && selectAll.addEventListener('change', function() {
+        selectAll.addEventListener('change', function() {
             checkboxes.forEach(cb => {
                 cb.checked = selectAll.checked;
             });
@@ -144,6 +159,34 @@
                 });
             }
         });
-    });
+    }
+
+    // Register global listeners only once — this script re-runs on every Turbo
+    // frame swap into /admin/persons, so the flag prevents listener accumulation.
+    if (!document.__personsInit) {
+        document.__personsInit = true;
+
+        // Destroy DataTable BEFORE the frame renders new content. At this point
+        // the persons table is still in the DOM, so destroy() works cleanly and
+        // the subsequent Turbo cache snapshot will have no DataTable wrapper.
+        const frame = document.getElementById('admin-content');
+        if (frame) {
+            frame.addEventListener('turbo:before-frame-render', function() {
+                if (window.jQuery && typeof $.fn.DataTable === 'function' &&
+                    $.fn.DataTable.isDataTable('#persons-table')) {
+                    $('#persons-table').DataTable().destroy();
+                }
+            });
+        }
+
+        document.addEventListener('turbo:load', initPersons);
+    }
+
+    // Run immediately for direct page loads and Turbo frame swaps
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPersons);
+    } else {
+        initPersons();
+    }
 })();
 </script>

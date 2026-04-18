@@ -3,11 +3,25 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\OpponentService;
 use App\Service\PlaceService;
 use Cake\Http\Response;
 
 class OpponentsController extends AppController
 {
+    /**
+     * Initialize controller.
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+
+        if ($this->components()->has('FormProtection')) {
+            $current = (array)$this->FormProtection->getConfig('unlockedActions');
+            $this->FormProtection->setConfig('unlockedActions', array_merge($current, ['ajaxSearch', 'ajaxAdd']));
+        }
+    }
+
     /**
      * List opponents.
      */
@@ -91,5 +105,85 @@ class OpponentsController extends AppController
         }
 
         return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * AJAX search opponents.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxSearch(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $q = trim((string)$this->request->getQuery('q'));
+        $service = new OpponentService();
+
+        if ($q === '') {
+            $results = [];
+        } else {
+            $opponents = $service->searchOpponents($q, 30);
+            $results = [];
+            foreach ($opponents as $opp) {
+                $results[] = [
+                    'id' => $opp->id,
+                    'opponent_name' => $opp->opponent_name,
+                    'opponent_short' => $opp->opponent_short,
+                    'opponent_abbr' => $opp->opponent_abbr,
+                    'opponent_mascot' => $opp->opponent_mascot,
+                ];
+            }
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode(['success' => true, 'results' => $results]));
+    }
+
+    /**
+     * AJAX add opponent from popup form.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxAdd(): Response
+    {
+        $opponents = $this->fetchTable('Opponents');
+        $opponent = $opponents->newEmptyEntity();
+
+        if ($this->request->is('post')) {
+            $opponent = $opponents->patchEntity($opponent, $this->request->getData());
+            if ($opponents->save($opponent)) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'message' => 'The opponent has been saved.',
+                        'newOption' => [
+                            'value' => $opponent->id,
+                            'text' => $opponent->opponent_name,
+                        ],
+                    ]));
+            }
+
+            $errors = [];
+            foreach ($opponent->getErrors() as $field => $fieldErrors) {
+                foreach ($fieldErrors as $error) {
+                    $errors[] = ucfirst($field) . ': ' . $error;
+                }
+            }
+
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'errors' => $errors ?: ['Unable to save opponent.'],
+                ]));
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => false,
+                'errors' => ['Invalid request method.'],
+            ]));
     }
 }

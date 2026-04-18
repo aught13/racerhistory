@@ -28,6 +28,15 @@ class TeamSeasonsFixture extends TestFixture
                 // Migration uses updated_at column name
                 'updated_at' => '2025-08-01 00:00:00',
             ],
+            [
+                'id' => 2,
+                'team_id' => 1,
+                'season_id' => 3,
+                'semester' => 1,
+                'team_season_image' => null,
+                'created_at' => '2025-08-01 00:00:00',
+                'updated_at' => '2025-08-01 00:00:00',
+            ],
         ];
 
         parent::init();

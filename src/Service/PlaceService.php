@@ -51,7 +51,16 @@ class PlaceService
             return 'Place #' . $placeId;
         }
 
-        return $place->place_name ?? 'Place #' . $placeId;
+        $label = (string)($place->place_city ?? '');
+        if ($label === '') {
+            return 'Place #' . $placeId;
+        }
+        $state = (string)($place->place_state ?? '');
+        if ($state !== '') {
+            $label .= ', ' . $state;
+        }
+
+        return $label;
     }
 
     /**
@@ -72,11 +81,12 @@ class PlaceService
         return $places->find()
             ->where([
                 'OR' => [
-                    ['Places.place_name LIKE' => "%{$query}%"],
+                    ['Places.place_country LIKE' => "%{$query}%"],
+                    ['Places.place_city LIKE' => "%{$query}%"],
                     ['Places.place_state LIKE' => "%{$query}%"],
                 ],
             ])
-            ->orderBy(['Places.place_name' => 'ASC'])
+            ->orderBy(['Places.place_city' => 'ASC'])
             ->limit($limit)
             ->all()
             ->toArray();
@@ -93,14 +103,14 @@ class PlaceService
         $places = TableRegistry::getTableLocator()->get('Places');
 
         return $places->find()
-            ->orderBy(['Places.place_name' => 'ASC'])
+            ->orderBy(['Places.place_city' => 'ASC'])
             ->limit($limit)
             ->all()
             ->toArray();
     }
 
     /**
-     * Create a new place.
+     * Create a new place, or return existing if an identical one exists.
      *
      * @param array<string, mixed> $data Place data
      * @return \App\Model\Entity\Place|false
@@ -108,6 +118,18 @@ class PlaceService
     public function createPlace(array $data): \App\Model\Entity\Place|false
     {
         $places = TableRegistry::getTableLocator()->get('Places');
+
+        // Check for an existing duplicate before creating
+        $conditions = [
+            'place_country' => $data['place_country'] ?? '',
+            'place_city' => $data['place_city'] ?? '',
+            'place_state' => $data['place_state'] ?? '',
+        ];
+        $existing = $places->find()->where($conditions)->first();
+        if ($existing) {
+            return $existing;
+        }
+
         $place = $places->newEntity($data);
 
         return $places->save($place);
@@ -156,7 +178,7 @@ class PlaceService
         foreach ($places as $place) {
             $results[] = [
                 'id' => $place->id,
-                'label' => $place->place_name,
+                'label' => $place->place_city,
             ];
         }
 
@@ -176,14 +198,14 @@ class PlaceService
         $places = TableRegistry::getTableLocator()->get('Places');
 
         $rows = $places->find()
-            ->orderBy(['Places.place_name' => 'ASC'])
+            ->orderBy(['Places.place_city' => 'ASC'])
             ->limit($limit)
             ->all();
 
         $list = [];
         foreach ($rows as $place) {
             /** @var \App\Model\Entity\Place $place */
-            $label = (string)($place->place_name ?? '');
+            $label = (string)($place->place_city ?? '');
             $state = (string)($place->place_state ?? '');
             if ($state !== '') {
                 $label .= ', ' . $state;

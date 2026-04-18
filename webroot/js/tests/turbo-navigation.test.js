@@ -4,7 +4,6 @@
  */
 
 import { jest } from "@jest/globals";
-/* global CustomEvent */
 
 describe("Turbo Navigation", () => {
     beforeEach(() => {

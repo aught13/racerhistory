@@ -24,6 +24,11 @@ class TeamSeasonsControllerTest extends TestCase
         'app.StatBasketSeasonTeam',
         'app.StatBasketSeasonOpponent',
         'app.StatBasketSeasonPerson',
+        'app.Games',
+        'app.GameTypes',
+        'app.Opponents',
+        'app.Sites',
+        'app.Places',
     ];
 
     public function testIndex(): void
@@ -357,5 +362,28 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('bi-chevron-left', 'Previous button icon should be present');
         $this->assertResponseContains('bi-chevron-right', 'Next button icon should be present');
         $this->assertResponseContains('2025-2026', 'Should show next season year range');
+    }
+
+    /**
+     * Test that games are sorted by game_date ascending (chronological)
+     */
+    public function testViewGamesSortedByDateAscending(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-seasons/view/1');
+        $this->assertResponseOk();
+
+        $teamSeasonGames = $this->viewVariable('teamSeasonGames');
+        $this->assertNotNull($teamSeasonGames);
+
+        $dates = [];
+        foreach ($teamSeasonGames as $game) {
+            $dates[] = $game->game_date->format('Y-m-d');
+        }
+
+        // Verify dates are in ascending order
+        $sorted = $dates;
+        sort($sorted);
+        $this->assertSame($sorted, $dates, 'Games should be sorted by date ascending');
     }
 }

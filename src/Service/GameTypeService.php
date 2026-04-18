@@ -57,6 +57,36 @@ class GameTypeService
     }
 
     /**
+     * Search game types by name or abbreviation.
+     *
+     * @param string $query Search query
+     * @param int $limit Result limit
+     * @return array Array of GameType entities
+     */
+    public function searchGameTypes(string $query, int $limit = 20): array
+    {
+        $gameTypes = TableRegistry::getTableLocator()->get('GameTypes');
+
+        if (trim($query) === '') {
+            return [];
+        }
+
+        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
+
+        return $gameTypes->find()
+            ->where([
+                'OR' => [
+                    'GameTypes.game_type_name LIKE' => $like,
+                    'GameTypes.abr LIKE' => $like,
+                ],
+            ])
+            ->orderBy(['GameTypes.game_type_name' => 'ASC'])
+            ->limit($limit)
+            ->all()
+            ->toArray();
+    }
+
+    /**
      * Create a new game type.
      *
      * @param array<string,mixed> $data Game type data

@@ -31,7 +31,7 @@ class PlacesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/places/add', ['place_name' => 'Nashville, TN', 'place_city' => 'Nashville', 'place_state' => 'TN']);
+        $this->post('/admin/places/add', ['place_country' => 'USA', 'place_city' => 'Nashville', 'place_state' => 'TN']);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']);
     }
 
@@ -48,7 +48,7 @@ class PlacesControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
-        $this->post('/admin/places/edit/1', ['place_name' => 'Updated Place', 'place_city' => 'Updated', 'place_state' => 'TN']);
+        $this->post('/admin/places/edit/1', ['place_country' => 'USA', 'place_city' => 'Updated', 'place_state' => 'TN']);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']);
     }
 
@@ -86,5 +86,148 @@ class PlacesControllerTest extends TestCase
         $this->session([]);
         $this->get('/admin/places');
         $this->assertTrue($this->_response->getStatusCode() >= 200);
+    }
+
+    public function testAjaxSearchReturnsResults(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-search?q=Murray');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertNotEmpty($data['results']);
+        $this->assertEquals('Murray', $data['results'][0]['place_city']);
+        $this->assertArrayHasKey('id', $data['results'][0]);
+        $this->assertArrayHasKey('place_city', $data['results'][0]);
+        $this->assertArrayHasKey('place_state', $data['results'][0]);
+    }
+
+    public function testAjaxSearchEmptyQuery(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-search?q=');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['results']);
+    }
+
+    public function testAjaxSearchNoMatch(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-search?q=Nonexistent99');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['results']);
+    }
+
+    public function testAjaxSearchRejectsPostMethod(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/places/ajax-search', ['q' => 'Murray']);
+        $this->assertResponseCode(405);
+    }
+
+    public function testAjaxAddSuccess(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/places/ajax-add', [
+            'place_country' => 'USA',
+            'place_city' => 'Nashville',
+            'place_state' => 'TN',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals('Nashville, TN', $data['newOption']['text']);
+        $this->assertNotEmpty($data['newOption']['value']);
+    }
+
+    public function testAjaxAddValidationError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // Missing required place_country
+        $this->post('/admin/places/ajax-add', [
+            'place_city' => 'Nashville',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($data['success']);
+        $this->assertNotEmpty($data['errors']);
+    }
+
+    public function testAjaxAddInvalidMethod(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/ajax-add');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($data['success']);
+    }
+
+    public function testAjaxAddDuplicateReturnsExisting(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // The fixture already has place_country=USA, place_city=Murray, place_state=KY
+        $this->post('/admin/places/ajax-add', [
+            'place_country' => 'USA',
+            'place_city' => 'Murray',
+            'place_state' => 'KY',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals(1, $data['newOption']['value']);
+        $this->assertStringContainsString('already exists', $data['message']);
+    }
+
+    public function testAddPostDuplicateShowsError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+        // Duplicate of fixture place
+        $this->post('/admin/places/add', ['place_country' => 'USA', 'place_city' => 'Murray', 'place_state' => 'KY']);
+        $this->assertNoRedirect();
+        $this->assertFlashMessage('A place with that country, city, and state already exists.');
+    }
+
+    /**
+     * Test that Place add/edit forms are NOT wrapped in a nested turbo-frame.
+     *
+     * A nested frame without target="_top" causes "Content missing" after redirect
+     * because Turbo tries to find the frame ID on the target page.
+     */
+    public function testAddAndEditFormsHaveNoNestedTurboFrame(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/places/add');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Place add form must not be wrapped in a nested turbo-frame'
+        );
+
+        $this->get('/admin/places/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Place edit form must not be wrapped in a nested turbo-frame'
+        );
     }
 }

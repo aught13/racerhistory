@@ -59,7 +59,7 @@
                 <fieldset class="border rounded p-2">
                     <legend class="float-none w-auto fs-6">New Place</legend>
                     <div class="row g-2">
-                        <div class="col-md-6"><?= $this->Form->control('new_place.place_name', ['label' => 'Name', 'placeholder' => 'City, ST', 'class' => 'form-control']) ?></div>
+                        <div class="col-md-6"><?= $this->Form->control('new_place.place_country', ['label' => 'Country (ISO 3166 alpha-3)', 'placeholder' => 'USA', 'class' => 'form-control']) ?></div>
                         <div class="col-md-3"><?= $this->Form->control('new_place.place_city', ['label' => 'City', 'class' => 'form-control']) ?></div>
                         <div class="col-md-3"><?= $this->Form->control('new_place.place_state', ['label' => 'State', 'class' => 'form-control']) ?></div>
                     </div>

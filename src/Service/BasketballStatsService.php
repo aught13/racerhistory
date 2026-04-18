@@ -480,6 +480,38 @@ class BasketballStatsService
     }
 
     /**
+     * Remove a player's game stat from their season totals.
+     *
+     * Subtracts the game stat values from the season totals record for the
+     * given player. Only applies when period is 'Z' (final game stats).
+     *
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat The game stat to remove.
+     * @return bool True on success, false if no season stat exists or not applicable.
+     */
+    public function removeGamePersonStatFromSeasonTotals(\App\Model\Entity\StatBasketGamePerson $gameStat): bool
+    {
+        if (!$gameStat->team_season_roster_id || (string)$gameStat->period !== 'Z') {
+            return false;
+        }
+
+        /** @var \App\Model\Table\StatBasketSeasonPersonTable $seasonTable */
+        $seasonTable = $this->fetchTable('StatBasketSeasonPerson');
+
+        /** @var \App\Model\Entity\StatBasketSeasonPerson|null $seasonStat */
+        $seasonStat = $seasonTable->find()
+            ->where(['team_season_roster_id' => $gameStat->team_season_roster_id])
+            ->first();
+
+        if (!$seasonStat) {
+            return false;
+        }
+
+        $this->subtractSeasonPersonStatValues($seasonStat, $gameStat);
+
+        return (bool)$seasonTable->save($seasonStat);
+    }
+
+    /**
      * Apply basketball team/opponent final box score (period Z) into season totals.
      *
      * @param \App\Model\Entity\Game $game

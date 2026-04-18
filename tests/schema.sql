@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS teams (
   team_name VARCHAR(100) NOT NULL,
   team_description TEXT NULL,
   abbr VARCHAR(10) NULL,
+  team_nickname VARCHAR(30) NOT NULL DEFAULT '',
+  team_scorebug VARCHAR(6) NOT NULL DEFAULT '',
   gender VARCHAR(10) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -130,10 +132,12 @@ CREATE TABLE IF NOT EXISTS seasons (
 -- Places table
 CREATE TABLE IF NOT EXISTS places (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  place_name VARCHAR(255) NOT NULL,
-  place_state VARCHAR(50) NOT NULL,
+  place_country VARCHAR(162) NOT NULL,
+  place_city VARCHAR(162) NOT NULL,
+  place_state VARCHAR(162) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(place_country, place_city, place_state)
 );
 
 -- Sites table
@@ -154,6 +158,8 @@ CREATE TABLE IF NOT EXISTS persons (
   display VARCHAR(200) NOT NULL,
   birth DATE NULL,
   death DATE NULL,
+  birth_place_id INTEGER NULL,
+  person_previous VARCHAR(162) NULL,
   person_image INTEGER NULL,
   bio TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -306,6 +312,8 @@ CREATE TABLE IF NOT EXISTS stat_basket_game_box (
   game_id INTEGER NULL,
   opponent_id INTEGER NULL,
   period VARCHAR(10) NULL,
+  GP VARCHAR(11) NULL,
+  MIN VARCHAR(11) NULL,
   FGM VARCHAR(11) NULL,
   FGA VARCHAR(11) NULL,
   TPM VARCHAR(11) NULL,

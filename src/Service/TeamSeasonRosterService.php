@@ -207,7 +207,7 @@ class TeamSeasonRosterService
         $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
 
         return $rosters->find()
-            ->contain(['Persons'])
+            ->contain(['Persons' => ['BirthPlace']])
             ->where(['TeamSeasonRosters.team_season_id' => $teamSeasonId])
             ->orderByAsc('TeamSeasonRosters.roster_number')
             ->all()

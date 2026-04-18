@@ -79,7 +79,7 @@ class TeamSeasonsController extends AppController
         $teamSeasonGames = $this->fetchTable('Games')->find()
             ->where(['team_season_id' => $id])
             ->contain(['GameTypes', 'Opponents', 'Sites' => ['Places'], 'Places'])
-            ->orderByDesc('game_date')
+            ->orderByAsc('game_date')
             ->all();
 
         // Find previous and next team seasons of the same sport, ordered by season end year

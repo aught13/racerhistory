@@ -165,4 +165,28 @@ class SeasonsControllerTest extends TestCase
         $this->assertNotNull($cell);
         $this->assertSame('-', trim((string)$cell->textContent));
     }
+
+    /**
+     * Test that games are sorted by game_date ascending in view
+     */
+    public function testViewGamesSortedByDateAscending(): void
+    {
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+
+        $games = $this->viewVariable('games');
+        $this->assertIsArray($games);
+
+        $dates = [];
+        foreach ($games as $game) {
+            if ($game->game_date) {
+                $dates[] = $game->game_date->format('Y-m-d');
+            }
+        }
+
+        // Verify dates are in ascending order
+        $sorted = $dates;
+        sort($sorted);
+        $this->assertSame($sorted, $dates, 'Games should be sorted by date ascending');
+    }
 }

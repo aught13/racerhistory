@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\GameTypeService;
 use Cake\Http\Response;
 
 class GameTypesController extends AppController
@@ -16,8 +17,8 @@ class GameTypesController extends AppController
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            $current[] = 'delete';
-            $this->FormProtection->setConfig('unlockedActions', $current);
+            $unlocked = array_merge($current, ['delete', 'ajaxSearch', 'ajaxAdd']);
+            $this->FormProtection->setConfig('unlockedActions', $unlocked);
         }
     }
 
@@ -93,5 +94,85 @@ class GameTypesController extends AppController
         }
 
         return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * AJAX search game types.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxSearch(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $q = trim((string)$this->request->getQuery('q'));
+        $service = new GameTypeService();
+
+        if ($q === '') {
+            $results = [];
+        } else {
+            $gameTypes = $service->searchGameTypes($q, 30);
+            $results = [];
+            foreach ($gameTypes as $gt) {
+                $results[] = [
+                    'id' => $gt->id,
+                    'game_type_name' => $gt->game_type_name,
+                    'abr' => $gt->abr,
+                    'post' => $gt->post,
+                    'conf' => $gt->conf,
+                ];
+            }
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode(['success' => true, 'results' => $results]));
+    }
+
+    /**
+     * AJAX add game type from popup form.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function ajaxAdd(): Response
+    {
+        $table = $this->fetchTable('GameTypes');
+        $gameType = $table->newEmptyEntity();
+
+        if ($this->request->is('post')) {
+            $gameType = $table->patchEntity($gameType, $this->request->getData());
+            if ($table->save($gameType)) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([
+                        'success' => true,
+                        'message' => 'The game type has been saved.',
+                        'newOption' => [
+                            'value' => $gameType->id,
+                            'text' => $gameType->game_type_name,
+                        ],
+                    ]));
+            }
+
+            $errors = [];
+            foreach ($gameType->getErrors() as $field => $fieldErrors) {
+                foreach ($fieldErrors as $error) {
+                    $errors[] = ucfirst($field) . ': ' . $error;
+                }
+            }
+
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'errors' => $errors ?: ['Unable to save game type.'],
+                ]));
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => false,
+                'errors' => ['Invalid request method.'],
+            ]));
     }
 }

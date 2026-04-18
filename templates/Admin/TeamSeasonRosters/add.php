@@ -1,9 +1,14 @@
 <?php
 /**
+ * Multi-row roster add form.
+ *
+ * Allows adding multiple roster entries at once. Users can click "+" to add
+ * rows and "Save All" to commit them in a single POST via bulkAdd.
+ *
  * @var \App\View\AppView $this
- * @var \App\Model\Entity\TeamSeasonRoster $teamSeasonRoster
+ * @var int|null $teamSeasonId Pre-selected team season ID
  * @var \Cake\Collection\CollectionInterface|string[] $teamSeasonsList
- * @var \Cake\Collection\CollectionInterface|string[] $persons
+ * @var \Cake\Collection\CollectionInterface|string[] $sports
  */
 $this->assign('title', 'Add Team Season Roster');
 ?>
@@ -11,7 +16,6 @@ $this->assign('title', 'Add Team Season Roster');
     <div class="row mb-3">
         <div class="col">
             <?php
-            $teamSeasonId = $this->request->getQuery('team_season_id');
             if ($teamSeasonId) {
                 $backUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonId]);
             } else {
@@ -33,124 +37,255 @@ $this->assign('title', 'Add Team Season Roster');
         </div>
     </div>
 
+    <turbo-frame id="roster-add-frame" target="_top">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
+        <div class="col-lg-10 offset-lg-1">
+            <?= $this->Form->create(null, [
+                'id' => 'bulk-roster-form',
+                'url' => ['action' => 'bulkAdd'],
+            ]) ?>
+
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Team Season</span>
+                </div>
                 <div class="card-body">
-                    <?= $this->Form->create($teamSeasonRoster, ['id' => 'main-roster-form']) ?>
-                    <fieldset>
-                        <?php
-                        echo $this->Form->control('team_season_id', [
-                            'options' => $teamSeasonsList,
-                            'class' => 'form-select',
-                            'label' => 'Team Season'
-                        ]);
-                        // Placeholder select, options will be populated dynamically via AJAX search
-                        echo $this->Form->control('person_id', [
-                            'empty' => '(Start typing to search people...)',
-                            'options' => [],
-                            'class' => 'form-select',
-                            'label' => 'Person',
-                            'id' => 'person-id-select',
-                            'data-dynamic-person' => '1'
-                        ]);
-                        echo '<small class="text-muted">Type at least 2 characters to search by display / first / last name.</small>';
-                        ?>
-                        <div class="text-end">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
-                                data-bs-target="#add-person-modal">
-                                <i class="bi bi-plus-circle"></i> Add New Person
-                            </button>
-                        </div>
-                        <?php
-                        echo $this->Form->control('roster_number', ['class' => 'form-control', 'label' => 'Number']);
-                        echo $this->Form->control('roster_position', ['class' => 'form-control', 'label' => 'Position']);
-                        echo $this->Form->control('roster_height', ['class' => 'form-control', 'label' => 'Height']);
-                        echo $this->Form->control('roster_weight', ['class' => 'form-control', 'label' => 'Weight']);
-                        ?>
-                    </fieldset>
-                    <div class="mt-3">
-                        <?= $this->Form->button(__('Save Roster Entry'), ['class' => 'btn btn-primary']) ?>
-                        <a href="<?= $backUrl ?>" class="btn btn-secondary">Cancel</a>
-                    </div>
-                    <?= $this->Form->end() ?>
+                    <?= $this->Form->control('team_season_id', [
+                        'options' => $teamSeasonsList,
+                        'class' => 'form-select',
+                        'label' => false,
+                        'default' => $teamSeasonId,
+                    ]) ?>
                 </div>
             </div>
+
+            <div id="roster-rows" data-person-search-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>">
+                <!-- Initial row rendered server-side -->
+                <div class="card mb-2 roster-row" data-row-index="0">
+                    <div class="card-body">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3" style="position:relative">
+                                <label class="form-label">Person</label>
+                                <input type="text" class="form-control roster-person-search" placeholder="Search persons..." autocomplete="off">
+                                <input type="hidden" name="rows[0][person_id]" class="roster-person-id" required>
+                                <div class="roster-person-selected small mt-1"><span class="text-muted fst-italic">None selected</span></div>
+                                <div class="roster-person-results"></div>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label">Year</label>
+                                <input type="text" name="rows[0][roster_year]" class="form-control" maxlength="10" placeholder="Sr.">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Number</label>
+                                <input type="text" name="rows[0][roster_number]" class="form-control" maxlength="3">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Position</label>
+                                <input type="text" name="rows[0][roster_position]" class="form-control" maxlength="30">
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label">Height</label>
+                                <input type="text" name="rows[0][roster_height]" class="form-control" maxlength="5" placeholder="6-1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Weight</label>
+                                <input type="text" name="rows[0][roster_weight]" class="form-control" maxlength="5">
+                            </div>
+                            <div class="col-md-1 text-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn" title="Remove row" disabled>
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+                <button type="button" id="add-row-btn" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-plus-circle"></i> Add Another
+                </button>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                        data-bs-target="#add-person-modal">
+                        <i class="bi bi-person-plus"></i> New Person
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <?= $this->Form->button(__('Save All'), [
+                    'class' => 'btn btn-primary',
+                    'id' => 'save-all-btn',
+                ]) ?>
+                <a href="<?= $backUrl ?>" class="btn btn-secondary">Cancel</a>
+            </div>
+
+            <?= $this->Form->end() ?>
         </div>
     </div>
+    </turbo-frame>
 </div>
 
 <?php
 $personFields = [
-    ['name' => 'first_name', 'label' => 'First Name', 'required' => true, 'type' => 'text'],
-    ['name' => 'last_name', 'label' => 'Last Name', 'required' => true, 'type' => 'text'],
-    ['name' => 'birthdate', 'label' => 'Birthdate', 'type' => 'date'],
-    ['name' => 'hometown', 'label' => 'Hometown', 'type' => 'text'],
-    ['name' => 'homestate', 'label' => 'Homestate', 'type' => 'text'],
-    ['name' => 'homecountry', 'label' => 'Home Country', 'type' => 'text'],
-    ['name' => 'sport_id', 'label' => 'Primary Sport', 'type' => 'select', 'options' => $sports, 'required' => true],
+    ['name' => 'first', 'label' => 'First Name', 'type' => 'text'],
+    ['name' => 'last', 'label' => 'Last Name', 'type' => 'text'],
+    ['name' => 'full', 'label' => 'Full Name', 'type' => 'text'],
+    ['name' => 'display', 'label' => 'Display Name', 'required' => true, 'type' => 'text'],
+    ['name' => 'birth', 'label' => 'Birth Date', 'type' => 'date'],
+    ['name' => 'death', 'label' => 'Death Date', 'type' => 'date'],
+    ['name' => 'person_previous', 'label' => 'Previous School', 'type' => 'text'],
+    ['name' => 'birth_place_id', 'label' => 'Birth Place', 'type' => 'hidden'],
 ];
+?>
 
+<!-- Hidden form for FormProtection tokens (person ajaxAdd endpoint) -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-person-form',
+    ]) ?>
+    <?= $this->Form->control('first', ['type' => 'text']) ?>
+    <?= $this->Form->control('last', ['type' => 'text']) ?>
+    <?= $this->Form->control('full', ['type' => 'text']) ?>
+    <?= $this->Form->control('display', ['type' => 'text']) ?>
+    <?= $this->Form->control('birth', ['type' => 'text']) ?>
+    <?= $this->Form->control('death', ['type' => 'text']) ?>
+    <?= $this->Form->control('person_previous', ['type' => 'text']) ?>
+    <?= $this->Form->control('birth_place_id', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
+
+<?php
 echo $this->element('Admin/popup_form', [
     'popupId' => 'add-person-modal',
     'title' => 'Add New Person',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxAdd']),
-    'targetSelectId' => 'person-id-select',
+    'targetSelectId' => '',
+    'successCallback' => 'onRosterPersonAdded',
     'fields' => $personFields,
-    'hiddenFormId' => 'main-roster-form',
+    'hiddenFormId' => 'hidden-person-form',
+    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
 
-<?php $this->append('script'); ?>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const select = document.getElementById('person-id-select');
-    if(!select) return;
-    // Convert select into an input+select hybrid for search: add a text input above it.
-    const wrapper = document.createElement('div');
-    wrapper.className = 'dynamic-person-wrapper';
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.className = 'form-control mb-1';
-    searchInput.placeholder = 'Search persons...';
-    select.parentNode.insertBefore(wrapper, select);
-    wrapper.appendChild(searchInput);
-    wrapper.appendChild(select);
+<!-- Hidden form for FormProtection tokens (place ajaxAdd endpoint) -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-roster-place-form',
+    ]) ?>
+    <?= $this->Form->control('place_country', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_city', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_state', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
 
-    let debounceTimer = null;
-    let lastQuery = '';
-    function performSearch(q){
-        if (q.length < 2){ return; }
-        fetch('<?= $this->Url->build(['prefix' => 'Admin','controller' => 'Persons','action' => 'ajaxSearch']) ?>?q=' + encodeURIComponent(q), {credentials:'same-origin'})
-            .then(r=>r.json())
-            .then(data => {
-                if(!data.success) return;
-                const current = select.value;
-                // Clear existing except maybe keep current if not in result set
-                const keepCurrent = current && !data.results.some(r => String(r.value) === String(current));
-                const preserved = keepCurrent ? Array.from(select.options).find(o => o.value === current) : null;
-                select.innerHTML = '';
-                const emptyOpt = document.createElement('option');
-                emptyOpt.value = '';
-                emptyOpt.textContent = '(Select a person)';
-                select.appendChild(emptyOpt);
-                if (preserved){ select.appendChild(preserved); }
-                data.results.forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.value; opt.textContent = r.text; select.appendChild(opt);
-                });
-                // Reselect previous value if still present
-                if (current){ select.value = current; }
-            })
-            .catch(err => { console.error('Person search failed', err); });
+<?= $this->element('Admin/popup_form', [
+    'popupId' => 'add-roster-birth-place-modal',
+    'title' => 'Add New Place',
+    'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
+    'hiddenFormId' => 'hidden-roster-place-form',
+    'successCallback' => 'handleRosterBirthPlaceAdded',
+    'fields' => [
+        ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
+        ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
+        ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
+    ],
+]) ?>
+
+<?php $this->append('script'); ?>
+<script type="module">
+import { initRosterMultiAdd } from '/js/modules/roster-multi-add.mjs';
+
+// Bridge: popup_form calls window.onRosterPersonAdded on success.
+// We dispatch a custom event so the module picks it up.
+window.onRosterPersonAdded = function(data) {
+    if (data && data.newOption) {
+        document.dispatchEvent(new CustomEvent('popupFormSuccess', {
+            detail: { id: data.newOption.value, label: data.newOption.text }
+        }));
     }
-    searchInput.addEventListener('input', function(){
-        const q = this.value.trim();
-        if (q === lastQuery) return;
-        lastQuery = q;
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => performSearch(q), 300);
-    });
-});
+};
+
+function boot() {
+    initRosterMultiAdd();
+
+    // Birth place AJAX lookup in person popup
+    (function initBirthPlaceLookup() {
+        const searchInput = document.getElementById('add-person-modal-birth-place-search');
+        const resultsDiv = document.getElementById('add-person-modal-birth-place-results');
+        const selectedDiv = document.getElementById('add-person-modal-birth-place-selected');
+        const hiddenInput = document.getElementById('add-person-modal-birth_place_id');
+        if (!searchInput || !hiddenInput) return;
+
+        const searchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']) ?>';
+        let debounce = null;
+
+        function setSelected(id, text) {
+            hiddenInput.value = id;
+            if (selectedDiv) {
+                selectedDiv.innerHTML = '<span class="badge bg-primary me-1">' + text +
+                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
+                selectedDiv.querySelector('.btn-close').addEventListener('click', function() {
+                    hiddenInput.value = '';
+                    selectedDiv.innerHTML = '<span class="text-muted fst-italic">None selected</span>';
+                });
+            }
+            if (resultsDiv) resultsDiv.innerHTML = '';
+            searchInput.value = '';
+        }
+
+        // Expose setSelected for the popup_form callback
+        window.handleRosterBirthPlaceAdded = function(data) {
+            if (data && data.place && data.place.id) {
+                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
+                setSelected(data.place.id, label);
+            }
+        };
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounce);
+            const q = this.value.trim();
+            if (q.length < 2) { if (resultsDiv) resultsDiv.innerHTML = ''; return; }
+            debounce = setTimeout(function() {
+                fetch(searchUrl + '?q=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.success || !data.results || !data.results.length) {
+                            resultsDiv.innerHTML = '<div class="text-muted small">No results</div>';
+                            return;
+                        }
+                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
+                        data.results.forEach(function(r) {
+                            const label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
+                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
+                        });
+                        html += '</div>';
+                        resultsDiv.innerHTML = html;
+                        resultsDiv.querySelectorAll('button').forEach(function(btn) {
+                            btn.addEventListener('click', function() { setSelected(btn.dataset.id, btn.dataset.text); });
+                        });
+                    })
+                    .catch(function() { resultsDiv.innerHTML = '<div class="text-danger small">Error</div>'; });
+            }, 300);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.innerHTML = '';
+            }
+        });
+    })();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+} else {
+    boot();
+}
+document.addEventListener('turbo:load', boot);
 </script>
+<?php // end script block ?>
 <?php $this->end(); ?>
