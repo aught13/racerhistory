@@ -101,4 +101,35 @@ class BlogPostsControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="admin-content"');
     }
+
+    /**
+     * Test edit page contains the unset hero button.
+     */
+    public function testEditPageContainsUnsetHeroButton(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/blog-posts/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-action="unset-hero"');
+        $this->assertResponseContains('unset-hero-btn');
+    }
+
+    /**
+     * Test that saving with empty hero_image_id clears the hero image.
+     */
+    public function testEditPostClearsHeroImage(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $data = [
+            'title' => 'No Hero',
+            'body'  => 'Body text',
+            'hero_image_id' => '',
+        ];
+        $this->post('/admin/blog-posts/edit/1', $data);
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'BlogPosts', 'action' => 'edit', 1]);
+        $this->assertFlashMessage('The blog post has been saved.');
+    }
 }

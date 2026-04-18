@@ -18,9 +18,8 @@ test-results.xml
 .phpunit.result.cache
 tests.sqlite
 *.sqlite
-/test-results/*
-/playwright-report/*
-/test-results/.last-run.json
+/test-results/
+/playwright-report/
 
 # Dependencies
 /vendor/
@@ -68,4 +67,3 @@ psalm.xml
 tests/manual_sport_test.php
 
 .prettierrc.json
-test-results/.last-run.json
