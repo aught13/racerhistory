@@ -25,7 +25,9 @@ async function loginAsAdmin(page) {
         await page.fill('input[name="username"]', "admin");
         await page.fill('input[name="password"]', "admin");
         await page.click('button[type="submit"]');
-        await page.waitForURL(/(?!.*login)/, { timeout: 5000 });
+        await page.waitForURL((url) => !url.pathname.includes("login"), {
+            timeout: 5000,
+        });
         return true;
     } catch {
         return false;
