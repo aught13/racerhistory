@@ -132,4 +132,101 @@ class GameTypesControllerTest extends TestCase
         $this->get('/admin/game-types');
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
+
+    public function testAjaxSearchReturnsResults(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/game-types/ajax-search?q=Conference');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertNotEmpty($data['results']);
+        $this->assertEquals('Conference', $data['results'][0]['game_type_name']);
+        $this->assertArrayHasKey('id', $data['results'][0]);
+        $this->assertArrayHasKey('abr', $data['results'][0]);
+        $this->assertArrayHasKey('post', $data['results'][0]);
+        $this->assertArrayHasKey('conf', $data['results'][0]);
+    }
+
+    public function testAjaxSearchByAbr(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/game-types/ajax-search?q=NCAA');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertNotEmpty($data['results']);
+    }
+
+    public function testAjaxSearchEmptyQuery(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/game-types/ajax-search?q=');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['results']);
+    }
+
+    public function testAjaxSearchNoMatch(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/game-types/ajax-search?q=Nonexistent99');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['results']);
+    }
+
+    public function testAjaxSearchRejectsPostMethod(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/game-types/ajax-search', ['q' => 'Conference']);
+        $this->assertResponseCode(405);
+    }
+
+    public function testAjaxAddSuccess(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/game-types/ajax-add', [
+            'game_type_name' => 'Exhibition',
+            'post' => 0,
+            'conf' => 0,
+            'abr' => 'EXH',
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertEquals('Exhibition', $data['newOption']['text']);
+        $this->assertNotEmpty($data['newOption']['value']);
+    }
+
+    public function testAjaxAddValidationError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        // Missing required game_type_name
+        $this->post('/admin/game-types/ajax-add', [
+            'post' => 0,
+            'conf' => 0,
+        ]);
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($data['success']);
+        $this->assertNotEmpty($data['errors']);
+    }
+
+    public function testAjaxAddInvalidMethod(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/game-types/ajax-add');
+        $this->assertResponseOk();
+        $data = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($data['success']);
+    }
 }

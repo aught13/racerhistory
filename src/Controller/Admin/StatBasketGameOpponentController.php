@@ -15,6 +15,24 @@ use Cake\Http\Response;
 class StatBasketGameOpponentController extends AppController
 {
     /**
+     * Initialization hook method.
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+
+        if ($this->components()->has('FormProtection')) {
+            $current = (array)$this->FormProtection->getConfig('unlockedActions');
+            $this->FormProtection->setConfig(
+                'unlockedActions',
+                array_merge($current, ['bulkAdd'])
+            );
+        }
+    }
+
+    /**
      * View method - display opponent stats for a specific game
      *
      * @param int $gameId Game ID
@@ -34,36 +52,137 @@ class StatBasketGameOpponentController extends AppController
     }
 
     /**
-     * Add method - create new opponent player stat entry
+     * Add method - displays multi-row form for adding opponent stats.
+     *
+     * GET renders the bulk add form with one empty row.
      *
      * @param int $gameId Game ID
-     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
+     * @return \Cake\Http\Response|null|void Renders view.
      */
     public function add(int $gameId)
     {
-        $stat = $this->StatBasketGameOpponent->newEmptyEntity();
-        assert($stat instanceof \App\Model\Entity\StatBasketGameOpponent);
-        $stat->game_id = $gameId;
-        $stat->period = 'Z'; // Default to final stats
-        $stat->GP = '1'; // Default games played to 1
-
-        if ($this->request->is('post')) {
-            $data = $this->request->getData();
-            // Ensure game_id is preserved
-            $data['game_id'] = $gameId;
-            $stat = $this->StatBasketGameOpponent->patchEntity($stat, $data);
-            if ($this->StatBasketGameOpponent->save($stat)) {
-                $this->Flash->success(__('The opponent player stat has been saved.'));
-
-                return $this->redirect(['action' => 'view', $gameId]);
-            }
-            $this->Flash->error(__('The opponent player stat could not be saved. Please, try again.'));
-        }
-
         $game = $this->fetchTable('Games')->get($gameId, contain: ['TeamSeason', 'Opponents']);
         assert($game instanceof \App\Model\Entity\Game);
 
-        $this->set(compact('stat', 'game'));
+        $this->set(compact('game'));
+    }
+
+    /**
+     * Bulk add multiple opponent player stat entries at once.
+     *
+     * Accepts an array of stat row data and saves each as a new entity.
+     *
+     * @param int $gameId Game ID
+     * @return \Cake\Http\Response|null
+     */
+    public function bulkAdd(int $gameId): ?Response
+    {
+        $this->request->allowMethod(['post']);
+
+        $rows = (array)$this->request->getData('rows');
+
+        if (empty($rows)) {
+            $this->Flash->error(__('No opponent stats to save.'));
+
+            return $this->redirect(['action' => 'add', $gameId]);
+        }
+
+        $saved = 0;
+        $skipped = 0;
+        $errors = [];
+        $failedRows = [];
+
+        // Collect opponent names that already exist for this game (case-insensitive)
+        /** @var list<string> $existingNames */
+        $existingNames = $this->StatBasketGameOpponent
+            ->find()
+            ->where(['game_id' => $gameId])
+            ->select(['name'])
+            ->all()
+            ->map(fn($row) => strtolower(trim((string)$row->name)))
+            ->toList();
+
+        $existingNameSet = array_flip($existingNames);
+        $seenInBatch = [];
+
+        foreach ($rows as $i => $rowData) {
+            $name = trim((string)($rowData['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $nameKey = strtolower($name);
+
+            // Skip if this opponent player already has stats for this game
+            if (isset($existingNameSet[$nameKey]) || isset($seenInBatch[$nameKey])) {
+                $skipped++;
+                continue;
+            }
+            $seenInBatch[$nameKey] = true;
+
+            $entityData = [
+                'game_id' => $gameId,
+                'name' => $name,
+                'jersey' => $rowData['jersey'] ?? null,
+                'position' => $rowData['position'] ?? null,
+                'period' => $rowData['period'] ?? 'Z',
+                'GP' => $rowData['GP'] ?? '1',
+                'GS' => $rowData['GS'] ?? null,
+                'MIN' => $rowData['MIN'] ?? null,
+                'FGM' => $rowData['FGM'] ?? null,
+                'FGA' => $rowData['FGA'] ?? null,
+                'TPM' => $rowData['TPM'] ?? null,
+                'TPA' => $rowData['TPA'] ?? null,
+                'FTM' => $rowData['FTM'] ?? null,
+                'FTA' => $rowData['FTA'] ?? null,
+                'ORB' => $rowData['ORB'] ?? null,
+                'DRB' => $rowData['DRB'] ?? null,
+                'RB' => $rowData['RB'] ?? null,
+                'AST' => $rowData['AST'] ?? null,
+                'STL' => $rowData['STL'] ?? null,
+                'BS' => $rowData['BS'] ?? null,
+                'BD' => $rowData['BD'] ?? null,
+                'TRN' => $rowData['TRN'] ?? null,
+                'PF' => $rowData['PF'] ?? null,
+                'TF' => $rowData['TF'] ?? null,
+                'FD' => $rowData['FD'] ?? null,
+                'PTS' => $rowData['PTS'] ?? null,
+            ];
+
+            $entity = $this->StatBasketGameOpponent->newEntity($entityData);
+            if ($this->StatBasketGameOpponent->save($entity)) {
+                $saved++;
+            } else {
+                $errors[] = __('Row {0}: could not save.', $i + 1);
+                $failedRows[] = $rowData;
+            }
+        }
+
+        if ($saved > 0) {
+            $this->Flash->success(__('Saved {0} opponent stat(s).', $saved));
+        }
+        if ($skipped > 0) {
+            $msg = __('Skipped {0} opponent player(s) that already have stats for this game.', $skipped);
+            $this->Flash->warning($msg);
+        }
+        if (!empty($errors)) {
+            $this->Flash->error(implode(' ', $errors));
+        }
+
+        // On success (at least one saved, no errors) redirect to game view
+        if ($saved > 0 && empty($errors)) {
+            return $this->redirect(['controller' => 'Games', 'action' => 'view', $gameId]);
+        }
+
+        // On failure: fall back to the add page with errored rows
+        if (!empty($failedRows)) {
+            $game = $this->fetchTable('Games')->get($gameId, contain: ['TeamSeason', 'Opponents']);
+            $this->set(compact('game', 'failedRows'));
+
+            return $this->render('add');
+        }
+
+        return $this->redirect(['controller' => 'Games', 'action' => 'view', $gameId]);
     }
 
     /**

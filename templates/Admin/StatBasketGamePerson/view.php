@@ -3,12 +3,12 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a>
+                <a href="<?= $this->Url->build(['controller' => 'teamSeasons', 'action' => 'view', $game->team_season_id]) ?>">
+                    Team Season
+                </a>
             </li>
             <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]) ?>">
-                    Game Details
-                </a>
+                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $game->id]) ?>">Game Details</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">Player Stats</li>
         </ol>
@@ -104,15 +104,11 @@
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <?= $this->Form->postLink(
-                                    '<i class="bi bi-trash"></i>',
-                                    ['action' => 'delete', $stat->id],
-                                    [
-                                        'confirm' => __('Are you sure you want to delete this stat entry?'),
-                                        'class' => 'btn btn-sm btn-outline-danger',
-                                        'escape' => false,
-                                    ]
-                                ) ?>
+                                <a href="<?= $this->Url->build(['action' => 'deleteConfirm', $stat->id]) ?>"
+                                   class="btn btn-sm btn-outline-danger"
+                                   title="Delete stat">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

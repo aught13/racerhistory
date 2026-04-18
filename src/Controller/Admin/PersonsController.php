@@ -181,7 +181,7 @@ class PersonsController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $person = $this->Persons->get($id);
+        $person = $this->Persons->get($id, contain: ['BirthPlace']);
         if ($this->request->is(['patch','post','put'])) {
             $data = $this->request->getData();
 

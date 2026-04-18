@@ -46,6 +46,9 @@ $this->assign('title', 'View Team Season Roster');
                                 <?= h($teamSeasonRoster->person->display) ?>
                             </a></dd>
 
+                        <dt class="col-sm-3">Year</dt>
+                        <dd class="col-sm-9"><?= h($teamSeasonRoster->roster_year) ?></dd>
+
                         <dt class="col-sm-3">Number</dt>
                         <dd class="col-sm-9"><?= h($teamSeasonRoster->roster_number) ?></dd>
 

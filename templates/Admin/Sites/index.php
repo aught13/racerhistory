@@ -10,7 +10,7 @@
         <?php foreach ($sites as $s): ?>
             <tr>
                 <td><?= h($s->site_name) ?></td>
-                <td><?= h($s->place->place_name ?? '-') ?></td>
+                <td><?= h($s->place->place_city ?? '-') ?></td>
                 <td class="text-end"><a href="<?= $this->Url->build(['action' => 'edit', $s->id]) ?>" class="btn btn-sm btn-primary">Edit</a></td>
             </tr>
         <?php endforeach; ?>

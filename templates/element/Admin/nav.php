@@ -32,10 +32,11 @@
  */
 // templates/element/Admin/nav.php
 ?>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4" data-turbo-permanent>
     <div class="container-fluid">
         <a class="navbar-brand"
-            href="<?= $this->Url->build(['controller' => 'Dashboard', 'action' => 'index', 'prefix' => 'Admin']) ?>">Admin</a>
+            href="<?= $this->Url->build(['controller' => 'Dashboard', 'action' => 'index', 'prefix' => 'Admin']) ?>"
+            data-turbo-frame="admin-content">Admin</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar"
             aria-controls="adminNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -44,57 +45,68 @@
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Users</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Sports</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Teams</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Seasons</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Team Seasons</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Games</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Game Types</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Persons</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Blog', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Blog', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Blog</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'index']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
                         Images</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'bulkUploadForm']) ?>">
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'bulkUploadForm']) ?>"
+                        data-turbo-frame="admin-content">
                         <i class="bi bi-upload"></i> Upload Images</a>
                 </li>
                 <!-- Add more admin links here -->
@@ -105,12 +117,14 @@
                     <span class="navbar-text me-2">Logged in as:
                         <?= h($this->getRequest()->getAttribute('identity')->get('username')) ?></span>
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'logout']) ?>">Logout</a>
+                        href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'logout']) ?>"
+                        data-turbo-frame="_top">Logout</a>
                 </li>
                 <?php else : ?>
                 <li class="nav-item">
                     <a class="nav-link"
-                        href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'login']) ?>">Login</a>
+                        href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'login']) ?>"
+                        data-turbo-frame="_top">Login</a>
                 </li>
                 <?php endif; ?>
             </ul>

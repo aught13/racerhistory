@@ -99,7 +99,7 @@ class GamesController extends AppController
             ],
             'place' => [
                 'id' => $game->place_id !== null ? (int)$game->place_id : null,
-                'name' => $game->place->place_name ?? null,
+                'name' => $game->place->place_city ?? null,
                 'state' => $game->place->place_state ?? null,
             ],
             'site' => [

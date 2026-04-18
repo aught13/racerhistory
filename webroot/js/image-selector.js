@@ -411,13 +411,29 @@ class ImageSelector {
     }
 }
 
-// Auto-initialize image selectors when DOM is ready
-document.addEventListener("DOMContentLoaded", function () {
-    // Initialize all image selector modals found on the page
+// Auto-initialize image selectors when DOM is ready or after Turbo Drive navigation
+function initImageSelectors() {
     const modals = document.querySelectorAll('[id$="-image-selector"]');
     modals.forEach((modal) => {
-        new ImageSelector(modal.id);
+        // Don't double-init the same modal instance
+        if (!modal._imageSelectorInstance) {
+            modal._imageSelectorInstance = new ImageSelector(modal.id);
+        }
     });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initImageSelectors);
+} else {
+    initImageSelectors();
+}
+// Re-init after every Turbo Drive navigation (modal elements are replaced)
+document.addEventListener("turbo:load", function () {
+    // Clear stale instance markers so fresh modals get new instances
+    document
+        .querySelectorAll('[id$="-image-selector"]')
+        .forEach((modal) => delete modal._imageSelectorInstance);
+    initImageSelectors();
 });
 
 // Export for testing

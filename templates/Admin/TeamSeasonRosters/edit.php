@@ -54,6 +54,7 @@ $this->assign('title', 'Edit Team Season Roster');
                             </button>
                         </div>
                         <?php
+                        echo $this->Form->control('roster_year', ['class' => 'form-control', 'label' => 'Year']);
                         echo $this->Form->control('roster_number', ['class' => 'form-control', 'label' => 'Number']);
                         echo $this->Form->control('roster_position', ['class' => 'form-control', 'label' => 'Position']);
                         echo $this->Form->control('roster_height', ['class' => 'form-control', 'label' => 'Height']);
@@ -74,24 +75,70 @@ $this->assign('title', 'Edit Team Season Roster');
 
 <?php
 $personFields = [
-    ['name' => 'first_name', 'label' => 'First Name', 'required' => true, 'type' => 'text'],
-    ['name' => 'last_name', 'label' => 'Last Name', 'required' => true, 'type' => 'text'],
-    ['name' => 'birthdate', 'label' => 'Birthdate', 'type' => 'date'],
-    ['name' => 'hometown', 'label' => 'Hometown', 'type' => 'text'],
-    ['name' => 'homestate', 'label' => 'Homestate', 'type' => 'text'],
-    ['name' => 'homecountry', 'label' => 'Home Country', 'type' => 'text'],
-    ['name' => 'sport_id', 'label' => 'Primary Sport', 'type' => 'select', 'options' => $sports, 'required' => true],
+    ['name' => 'first', 'label' => 'First Name', 'type' => 'text'],
+    ['name' => 'last', 'label' => 'Last Name', 'type' => 'text'],
+    ['name' => 'full', 'label' => 'Full Name', 'type' => 'text'],
+    ['name' => 'display', 'label' => 'Display Name', 'required' => true, 'type' => 'text'],
+    ['name' => 'birth', 'label' => 'Birth Date', 'type' => 'date'],
+    ['name' => 'death', 'label' => 'Death Date', 'type' => 'date'],
+    ['name' => 'person_previous', 'label' => 'Previous School', 'type' => 'text'],
+    ['name' => 'birth_place_id', 'label' => 'Birth Place', 'type' => 'hidden'],
 ];
+?>
 
+<!-- Hidden form for FormProtection tokens (person ajaxAdd endpoint) -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-person-form',
+    ]) ?>
+    <?= $this->Form->control('first', ['type' => 'text']) ?>
+    <?= $this->Form->control('last', ['type' => 'text']) ?>
+    <?= $this->Form->control('full', ['type' => 'text']) ?>
+    <?= $this->Form->control('display', ['type' => 'text']) ?>
+    <?= $this->Form->control('birth', ['type' => 'text']) ?>
+    <?= $this->Form->control('death', ['type' => 'text']) ?>
+    <?= $this->Form->control('person_previous', ['type' => 'text']) ?>
+    <?= $this->Form->control('birth_place_id', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
+
+<?php
 echo $this->element('Admin/popup_form', [
     'popupId' => 'add-person-modal',
     'title' => 'Add New Person',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxAdd']),
     'targetSelectId' => 'person-id-select',
     'fields' => $personFields,
-    'hiddenFormId' => 'main-roster-form',
+    'hiddenFormId' => 'hidden-person-form',
+    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-edit-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
+
+<!-- Hidden form for FormProtection tokens (place ajaxAdd endpoint) -->
+<div style="display: none;">
+    <?= $this->Form->create(null, [
+        'url' => ['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-roster-edit-place-form',
+    ]) ?>
+    <?= $this->Form->control('place_country', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_city', ['type' => 'text']) ?>
+    <?= $this->Form->control('place_state', ['type' => 'text']) ?>
+    <?= $this->Form->end() ?>
+</div>
+
+<?= $this->element('Admin/popup_form', [
+    'popupId' => 'add-roster-edit-birth-place-modal',
+    'title' => 'Add New Place',
+    'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
+    'hiddenFormId' => 'hidden-roster-edit-place-form',
+    'successCallback' => 'handleRosterEditBirthPlaceAdded',
+    'fields' => [
+        ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
+        ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
+        ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
+    ],
+]) ?>
 
 <?php $this->append('script'); ?>
 <script>
@@ -135,6 +182,73 @@ document.addEventListener('DOMContentLoaded', function(){
     searchInput.addEventListener('input', function(){
         const q = this.value.trim(); if (q===lastQuery) return; lastQuery=q; clearTimeout(debounceTimer); debounceTimer=setTimeout(()=>performSearch(q),300);
     });
+
+    // Birth place AJAX lookup in person popup
+    (function initBirthPlaceLookup() {
+        const bpSearch = document.getElementById('add-person-modal-birth-place-search');
+        const bpResults = document.getElementById('add-person-modal-birth-place-results');
+        const bpSelected = document.getElementById('add-person-modal-birth-place-selected');
+        const bpHidden = document.getElementById('add-person-modal-birth_place_id');
+        if (!bpSearch || !bpHidden) return;
+
+        const placeSearchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']) ?>';
+        let bpDebounce = null;
+
+        function setBpSelected(id, text) {
+            bpHidden.value = id;
+            if (bpSelected) {
+                bpSelected.innerHTML = '<span class="badge bg-primary me-1">' + text +
+                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
+                bpSelected.querySelector('.btn-close').addEventListener('click', function() {
+                    bpHidden.value = '';
+                    bpSelected.innerHTML = '<span class="text-muted fst-italic">None selected</span>';
+                });
+            }
+            if (bpResults) bpResults.innerHTML = '';
+            bpSearch.value = '';
+        }
+
+        // Callback for popup_form after a new place is added
+        window.handleRosterEditBirthPlaceAdded = function(data) {
+            if (data && data.place && data.place.id) {
+                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
+                setBpSelected(data.place.id, label);
+            }
+        };
+
+        bpSearch.addEventListener('input', function() {
+            clearTimeout(bpDebounce);
+            const q = this.value.trim();
+            if (q.length < 2) { if (bpResults) bpResults.innerHTML = ''; return; }
+            bpDebounce = setTimeout(function() {
+                fetch(placeSearchUrl + '?q=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (!data.success || !data.results || !data.results.length) {
+                            bpResults.innerHTML = '<div class="text-muted small">No results</div>';
+                            return;
+                        }
+                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
+                        data.results.forEach(function(r) {
+                            const label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
+                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
+                        });
+                        html += '</div>';
+                        bpResults.innerHTML = html;
+                        bpResults.querySelectorAll('button').forEach(function(btn) {
+                            btn.addEventListener('click', function() { setBpSelected(btn.dataset.id, btn.dataset.text); });
+                        });
+                    })
+                    .catch(function() { bpResults.innerHTML = '<div class="text-danger small">Error</div>'; });
+            }, 300);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!bpSearch.contains(e.target) && !bpResults.contains(e.target)) {
+                bpResults.innerHTML = '';
+            }
+        });
+    })();
 });
 </script>
 <?php $this->end(); ?>

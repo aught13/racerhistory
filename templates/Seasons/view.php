@@ -272,7 +272,7 @@ $this->start('css'); ?>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?= h($game->place_name ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
+                                                <?= h($game->place_city ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
                                                 <?php if (!empty($game->site_name)) : ?>
                                                     <div class="text-muted small"><?= h($game->site_name) ?></div>
                                                 <?php endif; ?>
@@ -409,8 +409,18 @@ $this->start('css'); ?>
                                         </div>
                                     </div>
                                     <div class="season-roster-details">
-                                        <span class="season-roster-subtext" data-person-place><i class="fa-solid fa-location-dot"></i> —</span>
-                                        <span class="season-roster-subtext" data-person-previous><i class="fa-solid fa-school-flag"></i> —</span>
+                                        <?php
+                                        $birthPlaceLabel = '';
+                                        if (!empty($person->birth_place)) {
+                                            $birthPlaceLabel = $person->birth_place->place_city;
+                                            if (!empty($person->birth_place->place_state)) {
+                                                $birthPlaceLabel .= ', ' . $person->birth_place->place_state;
+                                            }
+                                        }
+                                        $previousSchool = $person->person_previous ?? '';
+                                        ?>
+                                        <span class="season-roster-subtext" data-person-place><i class="fa-solid fa-location-dot"></i> <?= $birthPlaceLabel ? h($birthPlaceLabel) : '—' ?></span>
+                                        <span class="season-roster-subtext" data-person-previous><i class="fa-solid fa-school-flag"></i> <?= $previousSchool ? h($previousSchool) : '—' ?></span>
                                     </div>
                                     <?php if ($profileUrl) : ?>
                                         <a class="season-roster-link" href="<?= h($profileUrl) ?>" style="padding: 0.45rem 0.9rem; border-radius: 6px; font-weight: 600; font-size: 0.75rem; text-decoration: none; line-height: 1.2;">

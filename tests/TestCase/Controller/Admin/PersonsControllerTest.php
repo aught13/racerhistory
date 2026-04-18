@@ -24,6 +24,7 @@ class PersonsControllerTest extends TestCase
         'app.Opponents',
         'app.StatBasketGamePerson',
         'app.StatBasketSeasonPerson',
+        'app.Places',
     ];
 
     public function setUp(): void
@@ -357,5 +358,146 @@ class PersonsControllerTest extends TestCase
         $this->assertSame(2, substr_count($body, 'No stats available for this roster yet.'));
         // Career fallback should render only for supported sports (basketball -> 1 total)
         $this->assertSame(1, substr_count($body, 'No career statistics have been recorded yet.'));
+    }
+
+    public function testAddFormContainsBirthPlaceAndPreviousFields(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/add');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('birth-place-search', $body);
+        $this->assertStringContainsString('birth-place-id-field', $body);
+        $this->assertStringContainsString('Previous School', $body);
+        $this->assertStringContainsString('person_previous', $body);
+    }
+
+    public function testEditFormContainsBirthPlaceAndPreviousFields(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('birth-place-search', $body);
+        $this->assertStringContainsString('birth-place-id-field', $body);
+        $this->assertStringContainsString('Previous School', $body);
+        $this->assertStringContainsString('person_previous', $body);
+    }
+
+    public function testEditShowsExistingBirthPlace(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        // Person 1 has birth_place_id=1 (Murray, KY)
+        $this->assertStringContainsString('Murray', $body);
+    }
+
+    public function testEditShowsExistingPreviousSchool(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        // Person 1 has person_previous='Central High'
+        $this->assertStringContainsString('Central High', $body);
+    }
+
+    public function testAddPostWithNewFields(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'first' => 'Test',
+            'last' => 'Player',
+            'display' => 'Test Player',
+            'birth_place_id' => 1,
+            'person_previous' => 'Springfield High',
+        ];
+        $this->post('/admin/persons/add', $data);
+        $this->assertRedirect('/admin/persons');
+
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->find()->where(['first' => 'Test', 'last' => 'Player'])->firstOrFail();
+        $this->assertSame(1, $person->birth_place_id);
+        $this->assertSame('Springfield High', $person->person_previous);
+    }
+
+    public function testEditPostWithNewFields(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'display' => 'John Doe Updated',
+            'birth_place_id' => 1,
+            'person_previous' => 'Updated High',
+        ];
+        $this->post('/admin/persons/edit/1', $data);
+        $this->assertRedirect('/admin/persons');
+
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->get(1);
+        $this->assertSame(1, $person->birth_place_id);
+        $this->assertSame('Updated High', $person->person_previous);
+    }
+
+    public function testAjaxAddWithNewFields(): void
+    {
+        $this->mockIdentity();
+        $data = [
+            'first' => 'Ajax',
+            'last' => 'Person',
+            'display' => 'Ajax Person',
+            'birth_place_id' => 1,
+            'person_previous' => 'Ajax High',
+        ];
+        $this->post('/admin/persons/ajaxAdd', $data);
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($body['success']);
+
+        $persons = $this->getTableLocator()->get('Persons');
+        $person = $persons->find()->where(['first' => 'Ajax', 'last' => 'Person'])->firstOrFail();
+        $this->assertSame(1, $person->birth_place_id);
+        $this->assertSame('Ajax High', $person->person_previous);
+    }
+
+    /**
+     * Test admin persons pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
+
+    /**
+     * Test that Person add/edit forms are NOT wrapped in a nested turbo-frame.
+     *
+     * A nested frame without target="_top" causes "Content missing" after redirect
+     * because Turbo tries to find the frame ID on the target page.
+     */
+    public function testAddAndEditFormsHaveNoNestedTurboFrame(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/persons/add');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Person add form must not be wrapped in a nested turbo-frame'
+        );
+
+        $this->get('/admin/persons/edit/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertSame(
+            1,
+            substr_count($body, '<turbo-frame id="'),
+            'Person edit form must not be wrapped in a nested turbo-frame'
+        );
     }
 }

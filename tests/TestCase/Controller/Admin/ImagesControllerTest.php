@@ -574,4 +574,15 @@ class ImagesControllerTest extends TestCase
 
         return $method;
     }
+
+    /**
+     * Test admin images pages include turbo-frame for SPA navigation.
+     */
+    public function testAdminPagesContainTurboFrame(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images');
+        $this->assertResponseOk();
+        $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
 }

@@ -134,7 +134,7 @@ class PlaceServiceTest extends TestCase
     {
         $service = new PlaceService();
         $data = [
-            'place_name' => 'New Place',
+            'place_country' => 'USA',
             'place_city' => 'New City',
             'place_state' => 'CA',
         ];
@@ -142,8 +142,25 @@ class PlaceServiceTest extends TestCase
 
         $this->assertNotFalse($place);
         if ($place) {
-            $this->assertEquals('New Place', $place->place_name);
+            $this->assertEquals('USA', $place->place_country);
         }
+    }
+
+    /**
+     * Test createPlace returns existing on duplicate.
+     */
+    public function testCreatePlaceDuplicateReturnsExisting(): void
+    {
+        $service = new PlaceService();
+        // Fixture already has USA / Murray / KY as id=1
+        $place = $service->createPlace([
+            'place_country' => 'USA',
+            'place_city' => 'Murray',
+            'place_state' => 'KY',
+        ]);
+
+        $this->assertNotFalse($place);
+        $this->assertSame(1, $place->id);
     }
 
     /**
@@ -153,16 +170,16 @@ class PlaceServiceTest extends TestCase
     {
         $service = new PlaceService();
         $place = $service->createPlace([
-            'place_name' => 'Original',
+            'place_country' => 'USA',
             'place_city' => 'City',
             'place_state' => 'CA',
         ]);
 
         if ($place) {
-            $updated = $service->updatePlace($place->id, ['place_name' => 'Updated']);
+            $updated = $service->updatePlace($place->id, ['place_country' => 'CAN']);
             $this->assertNotFalse($updated);
             if ($updated) {
-                $this->assertEquals('Updated', $updated->place_name);
+                $this->assertEquals('CAN', $updated->place_country);
             }
         }
     }
@@ -174,7 +191,7 @@ class PlaceServiceTest extends TestCase
     {
         $service = new PlaceService();
         $place = $service->createPlace([
-            'place_name' => 'To Delete',
+            'place_country' => 'USA',
             'place_city' => 'City',
             'place_state' => 'CA',
         ]);
@@ -297,8 +314,8 @@ class PlaceServiceTest extends TestCase
     {
         $service = new PlaceService();
         $place = $service->createPlace([
-            'place_name' => 'Test Place',
-            'place_city' => 'City',
+            'place_country' => 'USA',
+            'place_city' => 'Test City',
             'place_state' => 'CA',
         ]);
 
@@ -340,8 +357,8 @@ class PlaceServiceTest extends TestCase
     {
         $service = new PlaceService();
         $place = $service->createPlace([
-            'place_name' => 'Test Place',
-            'place_city' => 'City',
+            'place_country' => 'USA',
+            'place_city' => 'Delete City',
             'place_state' => 'CA',
         ]);
 

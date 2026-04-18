@@ -11,6 +11,7 @@ $fields = $fields ?? [];
 $successCallback = $successCallback ?? 'handlePopupSuccess';
 $targetSelectId = $targetSelectId ?? '';
 $hiddenFormId = $hiddenFormId ?? '';
+$extraHtml = $extraHtml ?? '';
 ?>
 <div class="modal fade"
      id="<?= h($popupId) ?>"
@@ -42,6 +43,12 @@ $hiddenFormId = $hiddenFormId ?? '';
                         $req = !empty($f['required']);
                         ?>
 
+                    <?php if ($type === 'hidden') : ?>
+                        <input type="hidden"
+                               id="<?= h($popupId . '-' . $name) ?>"
+                               name="<?= h($name) ?>"
+                               value="" />
+                    <?php else : ?>
                     <div class="mb-3">
                         <label class="form-label" for="<?= h($popupId . '-' . $name) ?>">
                             <?= h($label) ?>
@@ -79,8 +86,13 @@ $hiddenFormId = $hiddenFormId ?? '';
 
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
 
                     <?php endforeach; ?>
+
+                    <?php if ($extraHtml) : ?>
+                        <?= $extraHtml ?>
+                    <?php endif; ?>
 
                 </form>
             </div>

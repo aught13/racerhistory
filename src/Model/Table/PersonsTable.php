@@ -29,6 +29,12 @@ class PersonsTable extends Table
             'foreignKey' => 'person_id',
         ]);
 
+        $this->belongsTo('BirthPlace', [
+            'className' => 'Places',
+            'foreignKey' => 'birth_place_id',
+            'joinType' => 'LEFT',
+        ]);
+
         $this->setEntityClass('App\Model\Entity\Person');
 
         // Add a callback to automatically set the full name
@@ -60,7 +66,12 @@ class PersonsTable extends Table
             ->maxLength('full', 162)
             ->maxLength('display', 162)
             ->maxLength('person_image', 162)
-            ->allowEmptyString('bio');
+            ->allowEmptyString('bio')
+            ->integer('birth_place_id')
+            ->allowEmptyString('birth_place_id')
+            ->scalar('person_previous')
+            ->maxLength('person_previous', 162)
+            ->allowEmptyString('person_previous');
 
         return $validator;
     }
