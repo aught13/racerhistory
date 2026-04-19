@@ -55,7 +55,8 @@ function createImageUploadHandler(uploadUrl) {
                 } catch (err) {
                     console.error(
                         "TinyMCE upload invalid JSON response:",
-                        xhr.responseText
+                        xhr.responseText,
+                        err
                     );
                     return reject("Invalid JSON response");
                 }
