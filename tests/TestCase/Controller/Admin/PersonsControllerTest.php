@@ -45,6 +45,73 @@ class PersonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/persons');
         $this->assertResponseOk();
+        // Server-side DT: table shell present, no PHP-rendered rows
+        $this->assertResponseContains('persons-table');
+        $this->assertResponseContains('data-datatables-url');
+        // Total count label rendered
+        $this->assertResponseContains('total');
+    }
+
+    public function testDatatablesReturnsJson(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/datatables?draw=1&start=0&length=25');
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertArrayHasKey('draw', $body);
+        $this->assertArrayHasKey('recordsTotal', $body);
+        $this->assertArrayHasKey('recordsFiltered', $body);
+        $this->assertArrayHasKey('data', $body);
+        $this->assertIsArray($body['data']);
+        $this->assertSame(1, $body['draw']);
+    }
+
+    public function testDatatablesSearchFilters(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/datatables?draw=2&start=0&length=25&search[value]=John');
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(2, $body['draw']);
+        // Filtered count should be <= total
+        $this->assertLessThanOrEqual($body['recordsTotal'], $body['recordsFiltered']);
+        // Returned rows should match the search term
+        foreach ($body['data'] as $row) {
+            $nameText = strtolower($row['first'] . ' ' . $row['last'] . ' ' . $row['display']);
+            $this->assertStringContainsString('john', $nameText);
+        }
+    }
+
+    public function testDatatablesRespectsLengthCap(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/datatables?draw=3&start=0&length=9999');
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        // Should cap at 500
+        $this->assertLessThanOrEqual(500, count($body['data']));
+    }
+
+    public function testDatatablesRequiresAuth(): void
+    {
+        $this->get('/admin/persons/datatables');
+        $this->assertRedirectContains('/users/login');
+    }
+
+    public function testDatatablesOrdering(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/persons/datatables?draw=4&start=0&length=50&order[0][column]=3&order[0][dir]=desc');
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(4, $body['draw']);
+        if (count($body['data']) > 1) {
+            // Last names should be in descending order
+            $lasts = array_column($body['data'], 'last');
+            $sorted = $lasts;
+            arsort($sorted);
+            $this->assertSame(array_values($sorted), array_values($lasts));
+        }
     }
 
     public function testView(): void

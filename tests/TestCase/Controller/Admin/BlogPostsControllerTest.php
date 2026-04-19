@@ -125,7 +125,7 @@ class BlogPostsControllerTest extends TestCase
 
         $data = [
             'title' => 'No Hero',
-            'body'  => 'Body text',
+            'body' => 'Body text',
             'hero_image_id' => '',
         ];
         $this->post('/admin/blog-posts/edit/1', $data);
