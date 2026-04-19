@@ -94,7 +94,7 @@ class ImageServeHelper extends Helper
      *
      * Supports responsive srcset for multiple sizes on different breakpoints.
      *
-     * @param int|string|object $image Image ID or Image entity
+     * @param object|string|int $image Image ID or Image entity
      * @param array<string, mixed> $params URL parameters (w, h, fit, etc.)
      * @param array<string, mixed> $attrs HTML attributes for the <img> element
      * @return string HTML picture element
@@ -153,7 +153,7 @@ class ImageServeHelper extends Helper
      *
      * Creates WebP and fallback sources at different widths for responsive images.
      *
-     * @param int|string|object $image Image ID or Image entity
+     * @param object|string|int $image Image ID or Image entity
      * @param array<int, int> $widths Array of widths to generate (e.g., [400, 800, 1200])
      * @param array<string, mixed> $params Additional URL parameters
      * @param array<string, mixed> $attrs HTML attributes for the <img> element

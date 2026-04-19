@@ -36,15 +36,107 @@ class PersonsController extends AppController
     }
 
     /**
-     * Index: list persons.
+     * Index: list persons (shell only — data loaded via datatables action).
      *
      * @return void
      */
     public function index(): void
     {
-        /** @var \Cake\ORM\ResultSet<\App\Model\Entity\Person> $persons */
-        $persons = $this->Persons->find()->all();
-        $this->set(compact('persons'));
+        $total = $this->Persons->find()->count();
+        $this->set('personCount', $total);
+    }
+
+    /**
+     * DataTables server-side JSON endpoint for the persons index.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function datatables(): Response
+    {
+        $this->request->allowMethod(['get']);
+
+        $draw = (int)$this->request->getQuery('draw');
+        $start = max(0, (int)$this->request->getQuery('start'));
+        $length = (int)$this->request->getQuery('length');
+        if ($length < 1) {
+            $length = 50;
+        }
+        $length = min($length, 500);
+
+        $searchValue = trim((string)($this->request->getQuery('search')['value'] ?? ''));
+
+        $total = $this->Persons->find()->count();
+
+        $query = $this->Persons->find()
+            ->select(['id', 'first', 'last', 'full', 'display', 'birth']);
+
+        // Apply DataTables ordering
+        $order = $this->request->getQuery('order');
+        $direction = 'asc';
+        if (is_array($order) && !empty($order)) {
+            $firstOrder = reset($order);
+            if (is_array($firstOrder)) {
+                $dir = strtolower((string)($firstOrder['dir'] ?? 'asc'));
+                if (in_array($dir, ['asc', 'desc'], true)) {
+                    $direction = $dir;
+                }
+            }
+        }
+        if ($direction === 'desc') {
+            $query->orderByDesc('Persons.last')->orderByDesc('Persons.first');
+        } else {
+            $query->orderByAsc('Persons.last')->orderByAsc('Persons.first');
+        }
+
+        if ($searchValue !== '') {
+            $query->where([
+                'OR' => [
+                    'Persons.first LIKE' => '%' . $searchValue . '%',
+                    'Persons.last LIKE' => '%' . $searchValue . '%',
+                    'Persons.full LIKE' => '%' . $searchValue . '%',
+                    'Persons.display LIKE' => '%' . $searchValue . '%',
+                ],
+            ]);
+        }
+
+        $filtered = $query->count();
+        /** @var array<\App\Model\Entity\Person> $persons */
+        $persons = $query->limit($length)->offset($start)->all()->toArray();
+
+        $data = [];
+        foreach ($persons as $person) {
+            $displayName = h($person->display ?? trim($person->first . ' ' . $person->last));
+            $viewUrl = $this->getRequest()->getAttribute('base') . '/admin/persons/view/' . $person->id;
+            $editUrl = $this->getRequest()->getAttribute('base') . '/admin/persons/edit/' . $person->id;
+            $deleteUrl = $this->getRequest()->getAttribute('base') . '/admin/persons/delete/' . $person->id;
+
+            $actions = '<a href="' . $viewUrl . '" class="btn btn-sm btn-info">View</a> ' .
+                '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a> ' .
+                '<button type="button" class="btn btn-sm btn-danger" ' .
+                    'data-bs-toggle="modal" data-bs-target="#confirm-delete-modal" ' .
+                    'data-delete-url="' . $deleteUrl . '" ' .
+                    'data-edit-url="' . $editUrl . '" ' .
+                    'data-item-type="person">Delete</button>';
+
+            $data[] = [
+                'id' => $person->id,
+                'display' => $displayName,
+                'first' => h($person->first ?? ''),
+                'last' => h($person->last ?? ''),
+                'birth' => h($person->birth ?? ''),
+                'actions' => $actions,
+                'DT_RowId' => 'person-row-' . $person->id,
+            ];
+        }
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody((string)json_encode([
+                'draw' => $draw,
+                'recordsTotal' => $total,
+                'recordsFiltered' => $filtered,
+                'data' => $data,
+            ]));
     }
 
     /**

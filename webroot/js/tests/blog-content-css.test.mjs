@@ -156,9 +156,9 @@ describe("blog-content.css", () => {
     // Responsive Breakpoints
     describe("responsive design", () => {
         test("has mobile breakpoint styles", () => {
-            // At least one media query for small screens
+            // At least one media query for small screens (supports decimal values like 767.98px)
             const mobileMQ = cssContent.match(
-                /@media\s*\([^)]*max-width\s*:\s*\d+(px|em|rem)[^)]*\)/g
+                /@media\s*\([^)]*max-width\s*:\s*\d+\.?\d*(px|em|rem)[^)]*\)/g
             );
             expect(mobileMQ).toBeTruthy();
             expect(mobileMQ.length).toBeGreaterThan(0);
