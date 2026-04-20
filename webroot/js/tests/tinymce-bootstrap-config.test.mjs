@@ -4,7 +4,14 @@
  * @jest-environment jsdom
  */
 
-import { jest, describe, test, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+    jest,
+    describe,
+    test,
+    expect,
+    beforeEach,
+    afterEach,
+} from "@jest/globals";
 
 describe("tinymce-bootstrap-config module", () => {
     let originalTinymce;
@@ -87,7 +94,7 @@ describe("tinymce-bootstrap-config module", () => {
 
         // Check for image position styles
         const imageStyles = config.style_formats.find(
-            (f) => f.title === "Image Position"
+            (f) => f.title === "Image Position",
         );
         expect(imageStyles).toBeDefined();
         expect(imageStyles.items.length).toBeGreaterThan(0);
@@ -118,7 +125,9 @@ describe("tinymce-bootstrap-config module", () => {
 
         const mod = await import("../modules/tinymce-bootstrap-config.mjs");
 
-        await expect(mod.initTinyMCE()).rejects.toThrow("TinyMCE is not loaded");
+        await expect(mod.initTinyMCE()).rejects.toThrow(
+            "TinyMCE is not loaded",
+        );
     });
 
     test("initTinyMCE calls tinymce.init with config", async () => {
@@ -173,11 +182,11 @@ describe("tinymce-bootstrap-config module", () => {
 
         expect(insertedHtml).toContain("<picture");
         expect(insertedHtml).toContain("<source");
-        expect(insertedHtml).toContain("type=\"image/webp\"");
+        expect(insertedHtml).toContain('type="image/webp"');
         expect(insertedHtml).toContain("fm=webp");
         expect(insertedHtml).toContain("w=600");
         expect(insertedHtml).toContain("/images/serve/42");
-        expect(insertedHtml).toContain("alt=\"Test Image\"");
+        expect(insertedHtml).toContain('alt="Test Image"');
         expect(insertedHtml).toContain("img-center");
     });
 
@@ -191,20 +200,22 @@ describe("tinymce-bootstrap-config module", () => {
         // Test left position
         mod.insertResponsiveImage(mockEditor, 1, { position: "left" });
         expect(mockEditor.insertContent.mock.calls[0][0]).toContain(
-            "img-float-left"
+            "img-float-left",
         );
 
         // Test right position
         mockEditor.insertContent.mockClear();
         mod.insertResponsiveImage(mockEditor, 1, { position: "right" });
         expect(mockEditor.insertContent.mock.calls[0][0]).toContain(
-            "img-float-right"
+            "img-float-right",
         );
 
         // Test center position
         mockEditor.insertContent.mockClear();
         mod.insertResponsiveImage(mockEditor, 1, { position: "center" });
-        expect(mockEditor.insertContent.mock.calls[0][0]).toContain("img-center");
+        expect(mockEditor.insertContent.mock.calls[0][0]).toContain(
+            "img-center",
+        );
 
         // Test inline (default) position
         mockEditor.insertContent.mockClear();
