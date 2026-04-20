@@ -43,7 +43,9 @@ describe("blog-content.css", () => {
     // Code Blocks
     describe("code block selectors", () => {
         test("has inline code styling", () => {
-            expect(cssContent).toMatch(/\.blog-content\s+(code|:not\(pre\)\s*>\s*code)/);
+            expect(cssContent).toMatch(
+                /\.blog-content\s+(code|:not\(pre\)\s*>\s*code)/,
+            );
         });
 
         test("has pre/code block styling", () => {
@@ -131,22 +133,26 @@ describe("blog-content.css", () => {
     describe("media embed selectors", () => {
         test("has iframe/embed wrapper or styling", () => {
             // Should handle embeds responsively
-            expect(cssContent).toMatch(/(\.blog-content\s+iframe|embed-responsive|aspect-ratio)/);
+            expect(cssContent).toMatch(
+                /(\.blog-content\s+iframe|embed-responsive|aspect-ratio)/,
+            );
         });
     });
 
     // Dark Mode
     describe("dark mode support", () => {
         test("has dark mode media query", () => {
-            expect(cssContent).toMatch(/@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)/);
+            expect(cssContent).toMatch(
+                /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)/,
+            );
         });
 
         test("OR has data-bs-theme dark selector", () => {
             const hasDarkMediaQuery = cssContent.match(
-                /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)/
+                /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)/,
             );
             const hasBsThemeDark = cssContent.match(
-                /\[data-bs-theme\s*=\s*["']?dark["']?\]/
+                /\[data-bs-theme\s*=\s*["']?dark["']?\]/,
             );
 
             expect(hasDarkMediaQuery || hasBsThemeDark).toBeTruthy();
@@ -158,7 +164,7 @@ describe("blog-content.css", () => {
         test("has mobile breakpoint styles", () => {
             // At least one media query for small screens (supports decimal values like 767.98px)
             const mobileMQ = cssContent.match(
-                /@media\s*\([^)]*max-width\s*:\s*\d+\.?\d*(px|em|rem)[^)]*\)/g
+                /@media\s*\([^)]*max-width\s*:\s*\d+\.?\d*(px|em|rem)[^)]*\)/g,
             );
             expect(mobileMQ).toBeTruthy();
             expect(mobileMQ.length).toBeGreaterThan(0);
@@ -187,7 +193,9 @@ describe("blog-content.css", () => {
     // Float Clearing
     describe("float clearing", () => {
         test("has clearfix or clear:both mechanism", () => {
-            const hasClearfix = cssContent.match(/::after\s*\{[^}]*clear\s*:\s*both/);
+            const hasClearfix = cssContent.match(
+                /::after\s*\{[^}]*clear\s*:\s*both/,
+            );
             const hasClearBoth = cssContent.match(/clear\s*:\s*both/);
 
             expect(hasClearfix || hasClearBoth).toBeTruthy();

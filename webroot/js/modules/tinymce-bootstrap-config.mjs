@@ -56,7 +56,7 @@ function createImageUploadHandler(uploadUrl) {
                     console.error(
                         "TinyMCE upload invalid JSON response:",
                         xhr.responseText,
-                        err
+                        err,
                     );
                     return reject("Invalid JSON response");
                 }
@@ -64,7 +64,7 @@ function createImageUploadHandler(uploadUrl) {
                 if (!json.success || !json.image || !json.image.url) {
                     console.error(
                         "TinyMCE upload server response (error path):",
-                        json
+                        json,
                     );
                     return reject(json.error || "Upload failed");
                 }
@@ -259,17 +259,29 @@ function getFormats() {
         imgfloatleft: {
             selector: "img,figure",
             classes: "img-float-left",
-            styles: { float: "left", marginRight: "1.5rem", marginBottom: "1rem" },
+            styles: {
+                float: "left",
+                marginRight: "1.5rem",
+                marginBottom: "1rem",
+            },
         },
         imgfloatright: {
             selector: "img,figure",
             classes: "img-float-right",
-            styles: { float: "right", marginLeft: "1.5rem", marginBottom: "1rem" },
+            styles: {
+                float: "right",
+                marginLeft: "1.5rem",
+                marginBottom: "1rem",
+            },
         },
         imgcenter: {
             selector: "img,figure",
             classes: "img-center",
-            styles: { display: "block", marginLeft: "auto", marginRight: "auto" },
+            styles: {
+                display: "block",
+                marginLeft: "auto",
+                marginRight: "auto",
+            },
         },
     };
 }
@@ -314,15 +326,31 @@ function getStyleFormats() {
             items: [
                 { title: "Lead Paragraph", selector: "p", classes: "lead" },
                 { title: "Small Text", inline: "small" },
-                { title: "Muted Text", selector: "p,span", classes: "text-muted" },
+                {
+                    title: "Muted Text",
+                    selector: "p,span",
+                    classes: "text-muted",
+                },
             ],
         },
         {
             title: "Image Position",
             items: [
-                { title: "Float Left", selector: "img,figure", classes: "img-float-left" },
-                { title: "Float Right", selector: "img,figure", classes: "img-float-right" },
-                { title: "Center", selector: "img,figure", classes: "img-center" },
+                {
+                    title: "Float Left",
+                    selector: "img,figure",
+                    classes: "img-float-left",
+                },
+                {
+                    title: "Float Right",
+                    selector: "img,figure",
+                    classes: "img-float-right",
+                },
+                {
+                    title: "Center",
+                    selector: "img,figure",
+                    classes: "img-center",
+                },
             ],
         },
     ];
@@ -563,7 +591,7 @@ export function insertResponsiveImage(editor, imageId, options = {}) {
         .join(" ");
 
     const html = `
-        <picture class="${position === 'inline' ? '' : positionClass}">
+        <picture class="${position === "inline" ? "" : positionClass}">
             <source srcset="${webpUrl}" type="image/webp">
             <img src="${fallbackUrl}" alt="${alt}" class="${allClasses}" loading="lazy">
         </picture>
