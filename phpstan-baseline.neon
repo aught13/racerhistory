@@ -1,19 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-
-			message: '#^Cannot access property \$opponent_id on array\|Cake\\Datasource\\EntityInterface\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: src/Controller/Admin/StatBasketGameBoxController.php
-
-		-
-			message: '#^Cannot access property \$period on array\|Cake\\Datasource\\EntityInterface\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: src/Controller/Admin/StatBasketGameBoxController.php
-
-		-
 			message: '#^Method App\\Controller\\PeopleController\:\:getBlogPostsByTag\(\) should return array\<int, App\\Model\\Entity\\BlogPost\> but returns array\<int\|string, array\|Cake\\Datasource\\EntityInterface\>\.$#'
 			identifier: return.type
 			count: 1

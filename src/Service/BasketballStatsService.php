@@ -9,8 +9,22 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 /**
  * BasketballStatsService
  *
- * Service for loading and managing basketball-specific statistics.
- * This centralizes basketball stats loading logic for use across multiple controllers.
+ * Core basketball domain service shared by public views, search/reporting
+ * flows, and higher-level basketball services.
+ *
+ * Human-readable role:
+ * This service owns reusable basketball-specific stat loading and stat-total
+ * mutation logic. It provides the read-oriented queries used to render game,
+ * season, and player basketball pages, along with the lower-level season-total
+ * update operations that other services can compose.
+ *
+ * Agent-friendly guidance:
+ * - Use this service for shared basketball domain logic and public/read-heavy
+ *   stat retrieval.
+ * - Do not add admin controller orchestration here; that belongs in
+ *   BasketballStatsAdminService.
+ * - Protected helper methods in this class may still support subclasses that
+ *   orchestrate basketball-specific workflows.
  */
 class BasketballStatsService
 {
