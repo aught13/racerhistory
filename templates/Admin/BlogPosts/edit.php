@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
-/** @var \App\Model\Entity\BlogPost $post */
+/**
+ * Admin Blog Post Edit/Add Template
+ *
+ * Provides a comprehensive blog post editor with:
+ * - TinyMCE WYSIWYG editor with Bootstrap styling
+ * - Hero image selection with cropping
+ * - Inline image insertion with WebP support
+ * - Tag management for categorization
+ *
+ * @var \App\Model\Entity\BlogPost $post
+ * @var \App\View\AppView $this
+ */
 
 $this->assign('title', isset($post->id) ? 'Edit Blog Post' : 'Add Blog Post');
 $previewQsJson = json_encode($this->ImageServe->query(['w' => 300, 'h' => 300, 'fit' => 'cover'])) ?: '""';
@@ -10,6 +21,10 @@ $heroFieldId = 'hero-image-field';
 $inlineFieldId = 'inline-image-field';
 $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : null;
 ?>
+<?php $this->start('css'); ?>
+<?= $this->Html->css('blog-content') ?>
+<?php $this->end(); ?>
+
 <div class="container py-4">
     <?= $this->Form->create($post, [
         'url' => isset($post->id) ? ['action' => 'edit', $post->id] : ['action' => 'add'],
@@ -45,6 +60,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
                                 'rows' => 3,
                                 'label' => ['text' => 'Excerpt', 'class' => 'form-label'],
                                 'class' => 'form-control',
+                                'placeholder' => 'Brief summary for listings (auto-generated from body if blank)',
                             ]) ?>
                         </div>
                         <div class="col-12">
@@ -139,7 +155,10 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
                         'class' => 'form-control',
                         'placeholder' => 'Select image',
                     ]) ?>
-                    <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#<?= h($heroModalId) ?>">Select/Upload Image</button>
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-secondary flex-grow-1" data-bs-toggle="modal" data-bs-target="#<?= h($heroModalId) ?>">Select/Upload Image</button>
+                        <button type="button" id="unset-hero-btn" class="btn btn-outline-danger" title="Remove hero image" style="display: none;" data-action="unset-hero">&times; Remove</button>
+                    </div>
                     <div id="hero-image-preview" class="mt-2" style="display: none;">
                         <img src="" alt="Hero preview" class="img-fluid rounded border" style="max-height: 200px;">
                     </div>
@@ -209,10 +228,28 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
 
 <?= $this->Html->scriptBlock(<<<JS
 (function() {
-    document.addEventListener('DOMContentLoaded', function () {
-        const previewQs = {$previewVar};
-        const heroField = document.getElementById('{$heroFieldId}');
+    const previewQs = {$previewVar};
+    const heroFieldId = '{$heroFieldId}';
+    const inlineFieldId = '{$inlineFieldId}';
+    const existingHeroId = {$existingHeroId};
+
+    // Destroy existing TinyMCE instances before reinitializing
+    function destroyTinyMCE() {
+        if (typeof tinymce !== 'undefined' && tinymce.get('body-editor')) {
+            tinymce.get('body-editor').remove();
+        }
+    }
+
+    function initBlogEditor() {
+        // First destroy any existing instance
+        destroyTinyMCE();
+
+        const heroField = document.getElementById(heroFieldId);
         const heroPreview = document.getElementById('hero-image-preview');
+
+        const unsetHeroBtn = document.getElementById('unset-hero-btn');
+
+        // Hero image preview handling
         function updateHeroPreview() {
             if (!heroField || !heroPreview) return;
             const val = (heroField.value || '').trim();
@@ -220,28 +257,99 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                 const img = heroPreview.querySelector('img');
                 img.src = '/images/serve/' + val + previewQs + '&_ts=' + Date.now();
                 heroPreview.style.display = 'block';
+                if (unsetHeroBtn) unsetHeroBtn.style.display = 'inline-block';
             } else {
                 heroPreview.style.display = 'none';
+                if (unsetHeroBtn) unsetHeroBtn.style.display = 'none';
             }
         }
         heroField?.addEventListener('change', updateHeroPreview);
-        if ({$existingHeroId} > 0 && heroField) { heroField.value = {$existingHeroId}; }
+        if (existingHeroId > 0 && heroField) {
+            heroField.value = existingHeroId;
+        }
         updateHeroPreview();
 
-        // TinyMCE init (match person edit)
+        // Unset hero image
+        unsetHeroBtn?.addEventListener('click', function () {
+            if (heroField) heroField.value = '';
+            updateHeroPreview();
+        });
+
+        // Check if textarea exists before initializing
+        const textArea = document.getElementById('body-editor');
+        if (!textArea) return;
+
+        // Initialize TinyMCE with Bootstrap configuration
         if (typeof tinymce !== 'undefined') {
             tinymce.init({
                 license_key: 'gpl',
                 selector: '#body-editor',
-                menubar: false,
-                plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars',
-                toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview | save',
+                menubar: true,
+                menu: {
+                    file: { title: 'File', items: 'preview | print' },
+                    edit: { title: 'Edit', items: 'undo redo | cut copy paste | selectall | searchreplace' },
+                    view: { title: 'View', items: 'visualblocks visualchars | fullscreen' },
+                    insert: { title: 'Insert', items: 'image media table link | hr | charmap' },
+                    format: { title: 'Format', items: 'bold italic underline strikethrough | formats blockformats fontformats fontsizes align | forecolor backcolor | removeformat' },
+                    table: { title: 'Table', items: 'inserttable | cell row column | tableprops deletetable' },
+                    help: { title: 'Help', items: 'help' }
+                },
+                min_height: 500,
+                resize: true,
+                statusbar: true,
+                branding: false,
+
+                // Plugins for comprehensive editing
+                plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars table link autolink searchreplace fullscreen wordcount help',
+
+                // Main toolbar - WordPress-like arrangement
+                toolbar: [
+                    'undo redo | blocks styles | bold italic underline strikethrough | forecolor backcolor',
+                    'alignleft aligncenter alignright alignjustify | bullist numlist | outdent indent | blockquote',
+                    'link image media table | removeformat visualblocks | code fullscreen preview | help'
+                ].join(' | '),
+
+                // Quick selection toolbar
                 quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
+                quickbars_insert_toolbar: 'quickimage quicktable hr',
+
+                // Block formats
+                block_formats: 'Paragraph=p; Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6; Blockquote=blockquote; Preformatted=pre',
+
+                // Style formats for dropdown
+                style_formats: [
+                    {
+                        title: 'Text Styles',
+                        items: [
+                            { title: 'Lead Paragraph', selector: 'p', classes: 'lead' },
+                            { title: 'Small Text', inline: 'small' },
+                            { title: 'Muted Text', selector: 'p,span', classes: 'text-muted' }
+                        ]
+                    },
+                    {
+                        title: 'Image Position',
+                        items: [
+                            { title: 'Float Left', selector: 'img,figure,picture', classes: 'img-float-left', styles: { float: 'left', margin: '0.5rem 1.5rem 1rem 0' } },
+                            { title: 'Float Right', selector: 'img,figure,picture', classes: 'img-float-right', styles: { float: 'right', margin: '0.5rem 0 1rem 1.5rem' } },
+                            { title: 'Center', selector: 'img,figure,picture', classes: 'img-center', styles: { display: 'block', margin: '1rem auto' } }
+                        ]
+                    }
+                ],
+
+                // Content styling - Bootstrap compatible
+                content_css: '/css/blog-content.css',
+                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 1.125rem; line-height: 1.8; padding: 1rem; max-width: 100%; } img { max-width: 100%; height: auto; border-radius: 6px; }',
+
+                // Image handling
                 image_title: true,
                 automatic_uploads: true,
                 images_upload_url: '/admin/images/upload',
                 images_upload_credentials: true,
+                images_reuse_filename: true,
                 convert_urls: false,
+                relative_urls: false,
+
+                // Custom upload handler with WebP support
                 images_upload_handler: function (blobInfo, progress) {
                     return new Promise(function (resolve, reject) {
                         var xhr = new XMLHttpRequest();
@@ -262,7 +370,10 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                                 console.error('TinyMCE upload server response (error path):', json);
                                 return reject(json.error || 'Upload failed');
                             }
-                            resolve(json.image.url);
+                            // Return WebP URL
+                            var url = json.image.url;
+                            var webpUrl = url.includes('?') ? url + '&fm=webp' : url + '?fm=webp';
+                            resolve(webpUrl);
                         };
                         xhr.onerror = function () { reject('Image upload failed'); };
                         var formData = new FormData();
@@ -271,19 +382,46 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                         if (csrf) { xhr.setRequestHeader('X-CSRF-Token', csrf.getAttribute('content')); }
                         xhr.send(formData);
                     });
-                }
+                },
+
+                // Table configuration - Bootstrap styles
+                table_default_styles: { width: '100%' },
+                table_class_list: [
+                    { title: 'Default', value: '' },
+                    { title: 'Striped', value: 'table table-striped' },
+                    { title: 'Bordered', value: 'table table-bordered' },
+                    { title: 'Hover', value: 'table table-hover' },
+                    { title: 'Responsive', value: 'table-responsive' }
+                ],
+                table_responsive_width: true,
+
+                // Link configuration
+                link_assume_external_targets: true,
+                link_default_target: '_blank',
+
+                // Valid elements
+                extended_valid_elements: 'img[class|src|srcset|sizes|alt|title|width|height|loading|style|data-*],picture[class|style],source[srcset|sizes|type|media],figure[class|style],figcaption[class|style],iframe[src|width|height|frameborder|allowfullscreen|class|style|title],video[src|controls|autoplay|loop|muted|poster|class|style|width|height]'
             });
         }
 
-        // Inline image insertion when selector sets value
-        const inlineField = document.getElementById('{$inlineFieldId}');
+        // Inline image insertion with picture/WebP support
+        const inlineField = document.getElementById(inlineFieldId);
         function insertInlineImage() {
             const val = inlineField?.value?.trim();
             if (!val || isNaN(parseInt(val, 10))) { return false; }
-            const url = '/images/serve/' + val + '?w=800&fit=contain&_ts=' + Date.now();
+
+            const imageId = parseInt(val, 10);
+            const webpUrl = '/images/serve/' + imageId + '?fm=webp&w=800';
+            const fallbackUrl = '/images/serve/' + imageId + '?w=800';
+
             const editor = window.tinymce?.activeEditor;
             if (editor) {
-                editor.insertContent('<p><img src="' + url + '" alt="" /></p>');
+                // Insert picture element with WebP source and fallback
+                const html = '<picture>' +
+                    '<source srcset="' + webpUrl + '" type="image/webp">' +
+                    '<img src="' + fallbackUrl + '" alt="" class="img-fluid" loading="lazy">' +
+                    '</picture><p></p>';
+                editor.insertContent(html);
                 return true;
             }
             return false;
@@ -293,8 +431,19 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                 inlineField.value = '';
             }
         });
+    }
 
-    });
+    // Clean up TinyMCE before Turbo replaces content
+    document.addEventListener('turbo:before-render', destroyTinyMCE);
+    document.addEventListener('turbo:before-cache', destroyTinyMCE);
+
+    // Initialize on DOMContentLoaded and turbo:load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBlogEditor);
+    } else {
+        initBlogEditor();
+    }
+    document.addEventListener('turbo:load', initBlogEditor);
 })();
 JS, ['block' => true]);
 ?>

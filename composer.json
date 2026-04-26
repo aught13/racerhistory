@@ -62,6 +62,16 @@
         "post-create-project-cmd": "App\\Console\\Installer::postInstall",
         "hooks:install": "git config core.hooksPath .githooks",
         "phpstan:check": "php -d memory_limit=1G vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress --memory-limit=1G",
+        "full-check": [
+        "npm run test:js",
+        "@test",
+        "@phpstan:check",
+        "@cs-check"
+        ],
+        "fix": [
+        "npm run fix:js",
+        "@cs-fix"
+        ],
         "check": [
             "@test",
             "@cs-check"

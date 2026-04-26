@@ -79,6 +79,8 @@ module.exports = [
                 Promise: "readonly",
                 AbortController: "readonly",
                 bootstrap: "readonly",
+                XMLHttpRequest: "readonly",
+                FormData: "readonly",
             },
         },
     },
