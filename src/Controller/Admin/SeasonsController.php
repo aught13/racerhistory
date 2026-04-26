@@ -9,15 +9,43 @@ use Cake\Http\Response;
 /**
  * Admin Seasons Controller
  *
- * Handles administrative seasons management operations.
- * Provides functionality for seasons administration and CRUD operations.
+ * Provides CRUD operations for managing seasons in the admin interface. The index action lists all seasons, while the add and edit actions allow for creating and updating seasons, respectively. The delete action handles season deletion, with a check to prevent deletion if there are associated team seasons. The controller also includes a bulkDelete action for deleting multiple seasons at once, and an ajaxAdd action for adding new seasons from a popup form, returning JSON responses for seamless integration with the frontend.
  *
- * Seasons represent time periods during which teams compete. They define the academic
- * or calendar year structure for organizing sports activities. Each season has:
- * - Start and end year designations
- * - Multiple team seasons associated with it
+ * Actions:
+ * - index: Lists all seasons with their associated team seasons for record count display in delete confirmations.
+ * - view: Displays details of a single season, including previous and next seasons based on end year.
+ * - add: Handles the creation of a new season, including form display and processing.
+ * - edit: Handles the editing of an existing season, including form display and processing.
+ * - delete: Handles the deletion of a season, ensuring that there are no associated team seasons before allowing deletion. Uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ * - bulkDelete: Handles the deletion of multiple seasons at once, with similar checks and protections as the single delete action.
+ * - bulk: A dispatcher for bulk actions, currently supporting bulk deletion of seasons.
+ * - ajaxAdd: Provides an endpoint for adding a new season from a popup form, returning success or error messages in JSON format for seamless integration with the frontend. This allows administrators to quickly add new seasons without needing to navigate away from their current context. The form data is validated and any errors are returned in a structured format to help guide the user in correcting any issues with their input.
  *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage seasons. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete and bulkDelete actions use POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ *
+ * Dependencies:
+ * - TeamSeasonService: Used to check for associated team seasons before allowing deletion of a season.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
+ *
+ * Note: The ajaxAdd action is designed for use with popup forms and returns JSON responses indicating success or failure, along with any validation errors. This allows for seamless integration with the frontend without requiring full page reloads.
+ *
+ * @property \App\Service\TeamSeasonService $teamSeasonService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  * @property \App\Model\Table\SeasonsTable $Seasons
+ * @property \App\Model\Table\TeamSeasonsTable $TeamSeasons
+ * @property \App\Service\SeasonService $seasonService
+ * @property \App\Service\TeamSeasonService $teamSeasonService
+ * @property \App\Service\GameService $gameService
+ * @property \App\Service\GameTypeService $gameTypeService
+ * @property \App\Service\OpponentService $opponentService
+ * @property \App\Service\PlaceService $placeService
+ * @property \App\Service\SiteService $siteService
+ * @property \App\Service\SeasonService $seasonService
  */
 class SeasonsController extends AppController
 {

@@ -23,6 +23,22 @@ use Cake\Routing\Router;
  *   - playerGame: individual player game stats
  *   - opponentPlayerGame: opponent player game stats
  *   - season: legacy single-season player stats view
+ * All search actions support JSON responses for DataTables integration, as well as standard HTML views.
+ * The season action is a legacy view that shows player stats for a specific team season and is not designed for DataTables.
+ *
+ * Security:
+ * - All actions skip authorization to allow public access to stats information.
+ * - The season action checks for the existence of the team season and redirects with an error message
+ * if it does not exist, preventing access to invalid team season IDs.
+ *
+ * Dependencies:
+ * - StatsService: Provides methods for retrieving and formatting various types of sports statistics, including player
+ * season stats, team season stats, player career stats, and game stats. The service abstracts the data retrieval logic
+ * and allows the controller to focus on request handling and response formatting.
+ *
+ * Components:
+ * - AuthorizationComponent: Used to skip authorization checks for all actions in this controller, as the
+ * stats information is intended to be publicly accessible.
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */

@@ -6,6 +6,26 @@ namespace App\Controller\Admin;
 use App\Service\GameTypeService;
 use Cake\Http\Response;
 
+/**
+ * Admin Game Types Controller
+ *
+ * Provides CRUD operations for managing game types in the admin interface. The index action lists all game types, while the add and edit actions allow for creating and updating game types, respectively. The delete action handles game type deletion, with a check to prevent deletion if there are associated games. The controller also includes AJAX actions for searching game types and adding new game types from a popup form, returning JSON responses for seamless integration with the frontend.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage game types. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete action uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ *
+ * Dependencies:
+ * - GameTypeService: Provides methods for searching game types, abstracting away the details of these operations from the controller.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
+ *
+ * @property \App\Service\GameTypeService $gameTypeService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\GameTypesTable $GameTypes
+ */
 class GameTypesController extends AppController
 {
     /**

@@ -9,9 +9,32 @@ use Cake\Http\Response;
 /**
  * StatBasketGamePerson Controller (Admin)
  *
- * Manages basketball player game statistics.
+ * Manages basketball player game statistics. Provides actions to view stats for a specific game, add new stats in bulk, edit existing stats, and delete stats with optional deduction from season totals. The controller interacts with the StatBasketGamePerson model and uses the BasketballStatsService for handling season totals updates when adding or deleting stats. Proper validation, error handling, and user feedback are implemented throughout the controller to ensure a smooth user experience when managing basketball game statistics in the admin interface.
+ * The view action displays all player stats for a specific game, ordered by games started, minutes played, and points scored. The add action provides a form for adding multiple player stats at once, while the bulkAdd action processes the submitted data and saves the new stats to the database. The edit action allows for updating an existing stat entry, and the delete action handles the removal of a stat entry with an option to deduct the values from season totals if applicable. All actions are protected by appropriate HTTP method checks and provide feedback through flash messages to inform the user of the success or failure of their actions.
+ *
+ * Actions:
+ * - view: Displays player stats for a specific game, ordered by games started, minutes played, and points scored.
+ * - add: Renders a form for adding multiple player stats for a specific game, excluding players who already have stats for that game.
+ * - bulkAdd: Processes the submitted data from the add form and saves new player stats to the database, with an option to add the stats to season totals.
+ * - edit: Allows for editing an existing player stat entry, with an option to update season totals if applicable.
+ * - deleteConfirm: Renders a confirmation page before deleting a player stat entry, providing details about the stat and the associated game.
+ * - delete: Handles the deletion of a player stat entry, with an option to deduct the values from season totals if applicable.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage basketball game statistics. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The bulkAdd and delete actions use POST HTTP methods to prevent unintended modifications via GET requests. Proper validation should be implemented for all input data to prevent invalid or malicious data from being saved to the database, and appropriate error handling should be in place to provide feedback to the user in case of issues with their input or with the database operations. Flash messages are used to inform the user of the success or failure of their actions, enhancing the user experience when managing basketball game statistics in the admin interface.
+ *
+ * Dependencies:
+ * - BasketballStatsService: Provides methods for updating season totals when adding or deleting player stats, abstracting away the details of these operations from the controller and allowing for cleaner code and easier maintenance.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after add, edit, and delete operations, providing feedback to the user about the outcome of their actions. This enhances the user experience by clearly communicating the results of their interactions with the basketball game statistics management features in the admin interface.
  *
  * @property \App\Model\Table\StatBasketGamePersonTable $StatBasketGamePerson
+ * @property \App\Service\SportConfigService $SportConfig
+ * @property \App\Service\BasketballStatsService $basketballStatsService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class StatBasketGamePersonController extends AppController
 {

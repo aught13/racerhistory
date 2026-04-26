@@ -11,6 +11,27 @@ use Cake\Http\Response;
  *
  * Handles user authentication, registration, and account management.
  * This controller manages public user actions like login, logout, and registration.
+ * It uses the UserManagerComponent for handling user-related operations and the Authentication and Authorization components for managing access control.
+ * All actions that are meant to be publicly accessible (login, logout, register, resetPassword) skip authorization checks to allow unauthenticated users to access them.
+ * The controller also includes a fallback __call method to redirect any undefined actions to the home page
+ * to prevent access to unintended endpoints and improve user experience.
+ *
+ * Security:
+ * - The login and register actions check for the presence of a redirect parameter to prevent open redirect
+ * vulnerabilities, ensuring that redirects only occur to internal paths.
+ * - The register action checks a site option to determine if registration is enabled before allowing new user
+ * creation, providing a mechanism to disable registration if needed.
+ * - The resetPassword action is handled by the UserManagerComponent, which should implement appropriate security measures for password resets, such as token-based verification and rate limiting.
+ *
+ * Dependencies:
+ * - UserManagerComponent: Provides methods for handling user login, logout, registration, and password
+ * reset operations, abstracting away the details of these processes from the controller and allowing for cleaner code and easier maintenance.
+ *
+ * Components:
+ * - AuthenticationComponent: Used to manage user authentication, including identifying the currently logged-in user and
+ * handling login and logout processes. It is configured to allow unauthenticated access to the login, logout, register, and resetPassword actions.
+ * - AuthorizationComponent: Used to manage access control, but is configured to skip authorization checks for
+ * public actions to allow unauthenticated users to access them. This ensures that users can log in, register, and reset their passwords without needing prior authorization.
  *
  * @property \App\Controller\Component\UserManagerComponent $UserManager
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization

@@ -10,6 +10,30 @@ use Intervention\Image\ImageManager;
 /**
  * Public Images Controller
  *
+ * This controller serves original and variant images from the filesystem with optional on-the-fly transformations.
+ *
+ * It supports query parameters for resizing, fitting, format conversion, and quality adjustment.
+ * The serve() action is designed to be publicly accessible without authentication, suitable for direct image URLs.
+ *
+ * Actions:
+ * - serve($id): Serve the original or variant image with optional transformations.
+ * - manipulate($id): Debugging action to log the image entity (not for public use).
+ *
+ * Security:
+ * - The serve() action skips authorization checks to allow public access.
+ * - The controller includes safeguards against path traversal and serves a placeholder image when the requested file is not found or invalid.
+ * - Caching headers and ETag support are implemented for efficient client-side caching of images.
+ *
+ * Dependencies:
+ * - Intervention Image: For on-the-fly image transformations.
+ *
+ * Components:
+ * - AuthorizationComponent: Used to skip authorization checks for the serve action, as images are intended
+ * to be publicly accessible. The manipulate action is for debugging and should not be exposed in production.
+ * - RequestHandlerComponent: Can be used to automatically detect AJAX requests and set response types, although in this implementation we manually check for JSON requests in each action.
+ *
+ * Note: Ensure that the 'img/storage' directory is properly secured and not directly accessible to prevent unauthorized file access.
+ *
  * @property \App\Model\Table\ImagesTable $Images
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */

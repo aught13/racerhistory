@@ -11,9 +11,38 @@ use Cake\Http\Response;
  *
  * Manages basketball game box scores and period statistics.
  * Updates season totals for team and opponent when box scores are saved (final period only).
+ * Provides actions for editing/creating final period box scores and period-by-period box scores for basketball games. The gameBox action handles the final period box scores, while the gameBoxPeriods action manages the period-by-period stats. When saving final period box scores, there is an option to update season totals, which will adjust the cumulative stats for the team and opponent based on the new box score data. The controller also retrieves stat field labels from the SportConfigService to display user-friendly labels in the views. The controller ensures that box scores are only managed for basketball games and provides appropriate feedback to the user through flash messages. Proper validation and error handling are implemented to ensure a smooth user experience when managing game box scores in the admin interface.
  *
+ * Actions:
+ * - gameBox: Handles editing and creating final period box scores for a basketball game. It checks if the game is a basketball game, loads existing box scores for the team and opponent, and allows the user to save new box scores. There is an option to update season totals when saving final period box scores, which will adjust the cumulative stats for the team and opponent accordingly. The action also retrieves stat field labels from the SportConfigService to display in the view.
+ * - gameBoxPeriods: Handles editing period-by-period box scores for a basketball game. It loads existing period stats for the game and allows the user to save updates for each period, including overtime periods. The action retrieves stat field labels from the SportConfigService to display in the view and provides feedback to the user through flash messages based on the success or failure of saving the period stats. Both actions ensure that they are only managing box scores for basketball games and provide appropriate feedback to the user through flash messages. Proper validation and error handling are implemented to ensure a smooth user experience when managing game box scores in the admin interface.
+ *
+ * Security:
+ * - Both actions should be protected by authentication and authorization checks to ensure that only authorized users can manage game box scores. This is typically handled by middleware or components that are not shown in this code
+ * snippet.
+ * - Proper validation and error handling should be implemented to prevent invalid data from being saved and to provide clear feedback to the user in case of errors.
+ * - The gameBox action checks if the game is a basketball game before allowing access to box score management, providing an additional layer of validation to ensure that box scores are only managed for appropriate games.
+ *
+ * Dependencies:
+ * - StatBasketGameBoxTable: The model for managing basketball game box score records in the database.
+ * - SportConfigService: Used to retrieve stat field labels for displaying user-friendly labels in the views.
+ * - BasketballStatsService: A service that contains logic for applying game box scores to season totals, abstracting away the details of how season totals are calculated and updated based on game box score changes. This allows the controller to focus on handling requests and formatting responses, while delegating the business logic of updating season totals to the service.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after saving box scores, providing feedback to the user about the outcome of their actions.
+ *
+ * Note: The gameBox action includes an option to update season totals when saving final period box scores. This should be used with caution, as it will adjust the cumulative stats for the team and opponent based on the new box score data. Proper validation and confirmation should be implemented in the UI to ensure that administrators understand the implications of updating season totals when saving box scores. Additionally, both actions ensure that they are only managing box scores for basketball games and provide appropriate feedback to the user through flash messages. Proper validation and error handling are implemented to ensure a smooth user experience when managing game box scores in the admin interface.
+ *
+ * @property \App\Model\Table\GamesTable $Games
+ * @property \App\Model\Table\TeamSeasonTable $TeamSeason
+ * @property \App\Model\Table\TeamsTable $Teams
+ * @property \App\Model\Table\SportsTable $Sports
+ * @property \App\Model\Table\OpponentsTable $Opponents
  * @property \App\Model\Table\StatBasketGameBoxTable $StatBasketGameBox
  * @property \App\Service\SportConfigService $SportConfig
+ * @property \App\Service\BasketballStatsService $basketballStatsService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class StatBasketGameBoxController extends AppController
 {

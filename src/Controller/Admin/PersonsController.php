@@ -9,14 +9,40 @@ use Cake\Http\Response;
 /**
  * Admin Persons Controller
  *
- * Provides CRUD, bulk, and AJAX operations for managing persons (people records).
- * Mirrors patterns used in SeasonsController and SportsController for consistency.
+ * Provides CRUD operations for managing persons in the admin interface. The index action lists all persons, while the add and edit actions allow for creating and updating persons, respectively. The delete action handles person deletion, with a bulk delete option for multiple records. The controller also includes AJAX endpoints for adding new persons from a popup form and searching persons for dynamic select inputs, returning JSON responses for seamless integration with the frontend.
  *
- * Persons represent individual people (athletes, coaches, etc.) with name parts and
- * optional birth/death dates and an image reference.
+ * Actions:
+ * - index: Lists all persons with a count of total records. The actual data is loaded via the datatables action for server-side processing.
+ * - datatables: Provides a JSON endpoint for DataTables server-side processing, including pagination, searching, and ordering.
+ * - view: Displays detailed information about a specific person, including their roster entries organized by sport and career stats calculated using the StatsService. Throws RecordNotFoundException if the person does not exist.
+ * - add: Handles the creation of a new person, including form display and processing. Validates input data and provides feedback via flash messages.
+ * - edit: Handles the editing of an existing person, including form display and processing. Validates input data and provides feedback via flash messages. Throws RecordNotFoundException if the person does not exist.
+ * - delete: Handles the deletion of a person, ensuring that the request method is POST or DELETE to prevent accidental deletions via GET requests. Throws RecordNotFoundException if the person does not exist.
+ * - bulkDelete: Handles the deletion of multiple persons based on an array of IDs, ensuring that the request method is POST to prevent accidental deletions via GET requests. Validates the input IDs and provides feedback on the number of records deleted.
+ * - bulk: A dispatcher for bulk actions, currently supporting bulk deletion of persons. Validates the requested action and redirects accordingly.
+ * - ajaxAdd: Provides an endpoint for adding a new person from a popup form, returning success or error messages in JSON format for seamless integration with the frontend. This allows administrators to quickly add new persons without needing to navigate away from their current context. The form data is validated and any errors are returned in a structured format to help guide the user in correcting any issues with their input.
+ * - ajaxSearch: Provides an endpoint for searching persons based on a query string, returning results in JSON format for use in autocomplete fields or similar UI components. The search looks for matches in the display, first, last, and full name fields, and returns a limited set of results ordered by display name.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage persons. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete and bulk delete actions use POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ *
+ * Dependencies:
+ * - StatsService: Used to retrieve sport-specific statistics for a person when viewing their details.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
+ *
+ * Note: The view action organizes a person's roster entries by sport and calculates career stats using the StatsService, demonstrating how the controller can handle more complex data retrieval and processing while still keeping the core logic focused on request handling and response formatting. The AJAX endpoints provide a way to interact with the person data without full page reloads, enhancing the user experience in the admin interface.
  *
  * @property \App\Model\Table\PersonsTable $Persons
+ * @property \App\Service\StatsService $Stats
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\PersonsTable $Persons
+ * @property \App\Service\StatsService $Stats
  */
+
 class PersonsController extends AppController
 {
     /**

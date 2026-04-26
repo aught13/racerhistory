@@ -8,9 +8,32 @@ use Cake\Http\Response;
 /**
  * StatBasketGameOpponent Controller (Admin)
  *
- * Manages basketball opponent player game statistics.
+ * Manages basketball opponent player game statistics. Provides actions to view, add, edit, and delete opponent stats for a specific game. The view action displays all opponent stats for a given game, while the add action allows for bulk adding multiple opponent stat entries at once. The edit action allows for updating an existing opponent stat entry, and the delete action removes an opponent stat entry. The bulkAdd action processes multiple stat entries submitted from the add form, saving valid entries and providing feedback on any skipped or errored entries. Proper validation and error handling are implemented to ensure data integrity and provide a user-friendly experience in managing opponent stats for basketball games in the admin interface.
+ *
+ * Actions:
+ * - view: Displays all opponent stats for a specific game.
+ * - add: Renders a form for bulk adding opponent stats for a specific game.
+ * - bulkAdd: Processes the submitted bulk add form data, saving valid entries and providing feedback on the results.
+ * - edit: Allows editing of an existing opponent stat entry.
+ * - delete: Deletes a specific opponent stat entry.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage opponent stats. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete action uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ * - The bulkAdd action validates the input data to prevent invalid or malicious data from being saved to the database, and provides feedback on any issues encountered during the save process.
+ *
+ * Dependencies:
+ * - SportConfigService: Used to retrieve sport-specific configurations, which may influence how stats are processed or displayed.
+ * - BasketballStatsService: Provides methods for calculating basketball-specific statistics, which may be used in the view or processing of opponent stats.
+ *
+ * Components:
+ * - FlashComponent: Used to set success, warning, and error messages after processing actions, providing feedback to the user on the results of their actions, such as how many stats were saved, skipped, or if any errors occurred during the bulk add process.
  *
  * @property \App\Model\Table\StatBasketGameOpponentTable $StatBasketGameOpponent
+ * @property \App\Service\SportConfigService $SportConfig
+ * @property \App\Service\BasketballStatsService $basketballStatsService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class StatBasketGameOpponentController extends AppController
 {

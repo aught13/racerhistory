@@ -6,13 +6,39 @@ namespace App\Controller\Admin;
 use Cake\Http\Response;
 
 /**
- * Admin SportStats Controller
+ * Admin Sport Stats Controller
  *
- * Handles administrative sport statistics registry management operations.
- * Provides functionality for configuring sport-specific statistic tables and field mappings.
+ * Provides CRUD operations for managing sport stat table configurations in the admin interface. The index action lists all stat table configurations with optional filtering by sport, while the add and edit actions allow for creating and updating stat table configurations, respectively. The delete action handles stat table configuration deletion, with a check to prevent deletion if there are associated games. The controller also includes proper validation and error handling to ensure that only valid configurations are saved, and that any issues with configuration management are clearly communicated to the user through flash messages.
+ * The beforeFilter method is used to disable form protection for the add and edit actions due to the dynamic nature of the form fields, which may not be compatible with the standard form protection mechanism. This allows for a smoother user experience when managing sport stat table configurations, while still maintaining security for other actions that involve form submissions.
+ * Overall, this controller provides comprehensive management of sport stat table configurations in the admin interface, with a focus on security, user experience, and maintainability. Proper validation, error handling, and feedback mechanisms are implemented throughout the controller to ensure a robust and user-friendly experience for administrators managing sport stat table configurations in the application.
+ *
+ * Actions:
+ * - index: Lists all sport stat table configurations with optional filtering by sport.
+ * - view: Displays details of a specific sport stat table configuration.
+ * - add: Handles the creation of a new sport stat table configuration, including form display and processing.
+ * - edit: Handles the editing of an existing sport stat table configuration, including form display and processing.
+ * - delete: Handles the deletion of a sport stat table configuration, ensuring that the request method is POST or DELETE to prevent accidental deletions via GET requests. The delete action also checks for associated games before allowing deletion to prevent orphaned records and maintain data integrity.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage sport stat table configurations. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete action uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests, and includes a check for associated games to prevent deletion of configurations that are still in use.
+ * - The add and edit actions should validate input data to prevent invalid or malicious data from being saved to the database, and proper error handling should be implemented to provide feedback to the user through flash messages.
+ *
+ * Dependencies:
+ * - SportConfigService: Used to clear configuration cache after adding, editing, or deleting sport stat table configurations, ensuring that changes are reflected in the application immediately.
+ * - SportStatRegistryTable: The model for managing sport stat table configurations in the database, providing methods for retrieving, saving, and deleting records.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after create, update, and delete
+ * operations, providing feedback to the administrator about the outcome of their actions.
+ * - AuthorizationComponent: Used to protect all actions in this controller, ensuring that only authorized users can manage sport stat table configurations. This is typically configured to require authentication and specific permissions for accessing the sport stat management interface and performing actions like adding, editing, and deleting configurations.
+ *
+ * Note: The add and edit actions include processing for dynamic field mappings, allowing administrators to define custom field labels for the stat tables. The field mappings are stored as JSON in the database, and the controller handles encoding and decoding this data as needed. Proper validation should be implemented to ensure that the field mappings are valid and do not contain any malicious data. Additionally, the delete action includes a check for associated games before allowing deletion of a sport stat table configuration, which helps maintain data integrity by preventing orphaned records. Administrators should be cautious when deleting configurations, as it may impact existing game records that rely on those configurations.
  *
  * @property \App\Model\Table\SportStatRegistryTable $SportStatRegistry
  * @property \App\Service\SportConfigService $SportConfig
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class SportStatsController extends AppController
 {

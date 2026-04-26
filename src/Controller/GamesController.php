@@ -20,6 +20,51 @@ use Cake\Routing\Router;
  * Displays games, box scores, predefined game searches,
  * specialty lists (streaks, margins), and series history.
  *
+ * Inherits from AppController which provides common functionality and layout for the site.
+ * The controller uses several services to fetch and format data for the views, and it provides JSON endpoints for DataTables integration on the frontend.
+ *
+ * Actions:
+ * - index(): Games landing page with search type cards.
+ * - ranked(): Ranked games (team or opponent ranked).
+ * - all(): All games.
+ * - overtime(): Overtime games.
+ * - hundredPoint(): 100 point games.
+ * - openers(): Season openers.
+ * - streaks(): Winning/losing streaks.
+ * - margins(): Largest margin wins/losses.
+ * - series(): Series history against a specific opponent.
+ * - searchOpponents(): AJAX endpoint for opponent search autocomplete.
+ * - seriesOpponents(): AJAX endpoint for opponents list in series DataTable.
+ * - view($id): View a single game with box score if available.
+ *
+ * Security:
+ * - All actions skip authorization checks to allow public access to game information.
+ * - Input parameters are validated and sanitized to prevent injection attacks.
+ * - JSON endpoints ensure that only expected parameters are processed and that output is properly escaped.
+ * - The controller is designed to be resilient against missing or malformed data, with appropriate error handling and fallbacks.
+ *
+ * Dependencies:
+ * - GameService: Provides methods for retrieving game data and computing display fields like result flags and
+ * place names.
+ * - GameViewService: Assembles comprehensive view data for the game detail page, including
+ * game information, stats, and related content.
+ * - StatsService: Provides methods for retrieving and formatting game stats for display in the box score
+ * frame.
+ * - ImageTagService: Fetches images associated with specific game tags for display on the game
+ * detail page.
+ * - BlogPostService: Fetches blog posts associated with specific game tags for display on the
+ * game detail page.
+ * - GameSearchService: Provides methods for performing predefined game searches and formatting results for DataTables.
+ *
+ * Components:
+ * - AuthorizationComponent: Used to skip authorization checks for all actions in this controller, as the
+ * game information is intended to be publicly accessible. This also allows for future access control if needed (e.g. for admin-only stats exports).
+ * - RequestHandlerComponent: Can be used to automatically detect AJAX requests and set response types, although in this implementation we manually check for JSON requests in each action.
+ * - The controller also includes helper methods for formatting data for display and for building JSON responses in a consistent format for DataTables.
+ *
+ * This controller is public and does not require authentication, but it uses the Authorization component
+ * to allow for future access control if needed (e.g. for admin-only stats exports).
+ *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class GamesController extends AppController

@@ -7,8 +7,30 @@ namespace App\Controller\Admin;
  * StatBasketGameTeam Controller (Admin)
  *
  * Manages basketball team-level game statistics (dead ball rebounds, team violations, etc.).
+ * The view action displays the stats for a specific game, while the edit action allows updating those stats. Both actions retrieve the relevant team and opponent stats based on the game ID and whether the stats are for the team or the opponent. The edit action handles form submissions to update the stats, ensuring that both team and opponent stats are saved together for consistency. Proper flash messages are set to inform the user of success or failure during the save process, and after a successful edit, the user is redirected back to the view page for the same game.
+ *
+ * Actions:
+ * - view: Displays the team and opponent stats for a specific game, along with the game details.
+ * - edit: Allows editing of the team and opponent stats for a specific game. Handles form submissions to update the stats and provides feedback through flash messages.
+ *
+ * Security:
+ * - Both actions should be protected by authentication and authorization checks to ensure that only authorized users can view and edit game stats. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The edit action should validate the input data to prevent invalid or malicious data from being saved to the database. Proper error handling and feedback mechanisms should be implemented to inform the user of any issues during the save process.
+ *
+ * Dependencies:
+ * - SportConfigService: Used to retrieve sport-specific configurations that may affect how stats are displayed or edited.
+ * - BasketballStatsService: Provides methods for calculating and managing basketball-specific statistics, abstracting away the details of these operations from the controller.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after attempting to save stats in the edit action, providing feedback to the user about the outcome of their actions.
+ *
+ * Note: The view and edit actions rely on the game ID to retrieve the relevant stats, and they also fetch the game details to provide context for the stats being displayed or edited. The edit action ensures that both team and opponent stats are handled together to maintain consistency in the data, and it provides appropriate feedback to the user based on the success or failure of the save operation. Proper validation and error handling should be implemented in the edit action to ensure data integrity and a good user experience.
  *
  * @property \App\Model\Table\StatBasketGameTeamTable $StatBasketGameTeam
+ * @property \App\Service\SportConfigService $SportConfig
+ * @property \App\Service\BasketballStatsService $basketballStatsService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class StatBasketGameTeamController extends AppController
 {

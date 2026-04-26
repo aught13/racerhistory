@@ -7,6 +7,33 @@ use App\Service\BlogPostService;
 use App\Service\GameService;
 use Cake\Http\Response;
 
+/**
+ * Admin Blog Posts Controller
+ *
+ * Provides CRUD operations for managing blog posts in the admin interface. The index action lists all posts, while the add and edit actions allow for creating and updating posts, respectively. The delete action handles post deletion. The controller uses BlogPostService to abstract the business logic of managing blog posts, keeping the controller focused on request handling and response formatting. The setFormData method prepares shared data for the add and edit forms, including related entities for tagging and selection fields.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage blog posts. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete action should use POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ *
+ * Dependencies:
+ * - BlogPostService: Provides methods for creating, updating, retrieving, and deleting blog posts, abstracting away the details of these operations from the controller.
+ * - GameService: Used to retrieve recent games for selection in the blog post form.
+ * - Other services (TeamService, TeamSeasonService, SiteService, OpponentService, SportService) are used to retrieve related data for form selections and tagging.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
+ *
+ * @property \App\Service\BlogPostService $blogPostService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\BlogPostsTable $BlogPosts
+ * @property \App\Service\TeamService $teamService
+ * @property \App\Service\TeamSeasonService $teamSeasonService
+ * @property \App\Service\SiteService $siteService
+ * @property \App\Service\OpponentService $opponentService
+ * @property \App\Service\SportService $sportService
+ */
 class BlogPostsController extends AppController
 {
     private BlogPostService $blogPostService;

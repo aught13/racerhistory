@@ -7,6 +7,36 @@ use App\Service\OpponentService;
 use App\Service\PlaceService;
 use Cake\Http\Response;
 
+/**
+ * Admin Opponents Controller
+ *
+ * Provides CRUD operations for managing opponents in the admin interface. The index action lists all opponents, while the add and edit actions allow for creating and updating opponents, respectively. The delete action handles opponent deletion. The controller also includes AJAX actions for searching opponents and adding new opponents from a popup form, returning JSON responses for seamless integration with the frontend.
+ *
+ * Actions:
+ * - index: Lists all opponents with their associated places.
+ * - add: Handles the creation of a new opponent, including form display and processing.
+ * - edit: Handles the editing of an existing opponent, including form display and processing.
+ * - delete: Handles the deletion of an opponent, ensuring that the request method is POST or DELETE to prevent accidental deletions via GET requests.
+ * - ajaxSearch: Provides an endpoint for searching opponents based on a query string, returning results in JSON format for use in autocomplete fields or similar UI components.
+ * - ajaxAdd: Provides an endpoint for adding a new opponent from a popup form, returning success or error messages in JSON format for seamless integration with the frontend. This allows administrators to quickly add new opponents without needing to navigate away from their current context. The form data is validated and any errors are returned in a structured format to help guide the user in correcting any issues with their input.
+ *
+ * Security:
+ * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage opponents. This is typically handled by middleware or components that are not shown in this code snippet.
+ * - The delete action uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ *
+ * Dependencies:
+ * - OpponentService: Provides methods for searching opponents, abstracting away the details of these operations from the controller.
+ * - PlaceService: Used to retrieve a list of places for selection in the opponent form.
+ *
+ * Components:
+ * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
+ *
+ * @property \App\Service\OpponentService $opponentService
+ * @property \App\Service\PlaceService $placeService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\OpponentsTable $Opponents
+ */
 class OpponentsController extends AppController
 {
     /**

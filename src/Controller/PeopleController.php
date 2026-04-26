@@ -15,6 +15,53 @@ use Cake\Routing\Router;
  * Public People Controller
  *
  * Displays persons (players/coaches/staff) with related images and blog posts.
+ * Supports listing all people with server-side pagination and searching for DataTables.
+ * Provides a detailed view for each person, showing their team seasons, related images,
+ * blog posts, and career stats.
+ * Game log view for supported sports showing per-game stats for a specific team season.
+ * This controller is read-only and does not require authentication or authorization for
+ * any actions.
+ * The controller relies on the PersonService for fetching person data, the ImageProcessor
+ * for retrieving related images, and the StatsService for calculating career stats and game logs.
+ *
+ * Actions:
+ * - index: List all people with server-side support for DataTables (pagination, searching,
+ *  and ordering). Returns JSON for DataTables requests or renders a view for regular requests.
+ * - view: Display detailed information about a single person, including related images,
+ * blog posts, team seasons, and career stats.
+ * - gameLog: Render a game log for a person and team season, showing per-game stats for supported
+ * sports.
+ *
+ * Data Flow:
+ * - The index action handles both regular and DataTables requests. For DataTables, it processes
+ * query parameters for pagination, searching, and ordering, and returns a JSON response formatted
+ * for DataTables consumption. For regular requests, it renders a view with the total count of people.
+ * - The view action retrieves a person by ID, fetches related images and blog posts via
+ * tagging, gets roster entries for the person, organizes them by sport, calculates career
+ * stats using the StatsService, and sets all this data for the view.
+ * - The gameLog action retrieves a person and a specific roster entry for a team season,
+ * checks if the sport supports stats, and if so, retrieves game log data to render in a view.
+ *
+ * Security:
+ * - The controller skips authorization for all actions, making it publicly accessible.
+ * - Input parameters are validated and sanitized, and appropriate exceptions are thrown for not
+ * found resources.
+ *
+ * Dependencies:
+ * - PersonService: Handles business logic and data retrieval for person entities.
+ * - ImageProcessor: Manages image processing and retrieval for person-related images.
+ * - StatsService: Calculates career stats and game logs for persons.
+ *
+ * Components:
+ * - AuthorizationComponent: Used to skip authorization checks for all actions, as the person
+ * information is intended to be publicly accessible.
+ * - RequestHandlerComponent: Can be used to automatically detect AJAX requests and set response types,
+ * although in this implementation we manually check for JSON requests in each action.
+ *
+ * Design Considerations:
+ * - The controller is designed to be read-only and focused on displaying data. It does not
+ * handle any data modification operations. It relies on services for business logic and data retrieval,
+ * keeping the controller thin and focused on request handling and response formatting.
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */

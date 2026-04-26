@@ -20,10 +20,60 @@ use Psr\Http\Message\UploadedFileInterface;
 /**
  * Admin Images Controller
  *
- * Handles image upload, storage, and serving for the admin interface.
+ * Provides CRUD operations for managing images in the admin interface, including uploading, editing metadata, tagging, and deletion. The controller handles both single and bulk uploads, with support for associating images with various entities through tags. The serve action allows for serving images by ID and variant, with cache-busting headers to ensure the latest version is delivered. The manipulate action provides a UI for applying transformations to existing images, primarily for debugging purposes. All actions that modify data require authentication, while the serve action is publicly accessible.
+ *
+ * Actions:
+ * - upload: Handles single image uploads, including file storage and tag application.
+ * - serve: Serves an image file by ID and optional variant, with cache-busting headers.
+ * - index: Displays a list of images with usage counts for management purposes.
+ * - browse: AJAX endpoint for browsing images with optional tag filtering, returning JSON for frontend integration.
+ * - uploadForm: Displays a form for uploading a single image with manipulation preview.
+ * - bulkUploadForm: Displays a form for uploading multiple images with per-file tags and context.
+ * - bulkUpload: Handles the processing of multiple image uploads in one request, applying tags and returning a JSON response with results.
+ * - edit: Allows editing of image metadata such as original name and status.
+ * - tags: Provides an interface for managing tags associated with an image, including applying new tags based on related entities.
+ * - delete: Handles the deletion of an image and all its references in the database.
+ * - manipulate: Provides a UI for applying transformations (crop, rotate, adjust) to an existing image, primarily for debugging and should not be exposed in production environments.
+ *
+ * Security:
+ * - The upload, edit, tags, delete, bulkDelete, and manipulate actions require authentication to prevent unauthorized modifications to images.
+ * - The serve action is publicly accessible but serves files from a protected storage location to prevent direct access to the filesystem.
+ * - The manipulate action should be used with caution and ideally should not be exposed in production environments due to potential security risks associated with image processing libraries.
+ *
+ * Dependencies:
+ * - ImageStorageService: Handles the storage and retrieval of image files, including generating variants and managing file paths.
+ * - TaggingService: Manages the parsing and application of tags to images based on request data.
+ * - ImageBrowseService: Provides functionality for browsing images with optional filtering by tag.
+ * - ImageEditService: Handles the application of manipulations (crop, rotate, adjust) to existing images.
+ * - ImageDeleteService: Manages the deletion of images and their associated references in the database.
+ * - ImageTagUiService: Formats image tags for display in the UI and preselects options based on current tags.
+ * - GameService, PersonService, TeamSeasonRosterService: Used to retrieve related entities for tagging and selection in forms.
+ * - Intervention Image: For on-the-fly image transformations in the manipulate action.
+ *
+ * Components:
+ * - AuthorizationComponent: Used to skip authorization checks for the serve action, as images are intended to be publicly accessible. The manipulate action is for debugging and should not be exposed in production. All other actions require authentication to ensure that only authorized users can modify images.
+ * - RequestHandlerComponent: Can be used to automatically detect AJAX requests and set response types, although in this implementation we manually check for JSON requests in each action to ensure that they are only accessible via appropriate request types.
+ *
+ * Note: Ensure that the 'img/storage' directory is properly secured and not directly accessible to prevent unauthorized file access. Additionally, the manipulate action should be used with caution and ideally should not be exposed in production environments due to potential security risks associated with image processing libraries.
  *
  * @property \App\Model\Table\ImagesTable $Images
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Service\ImageStorageService $imageStorageService
+ * @property \App\Service\TaggingService $taggingService
+ * @property \App\Service\ImageBrowseService $imageBrowseService
+ * @property \App\Service\ImageEditService $imageEditService
+ * @property \App\Service\ImageDeleteService $imageDeleteService
+ * @property \App\Service\ImageTagUiService $imageTagUiService
+ * @property \App\Service\GameService $gameService
+ * @property \App\Service\PersonService $personService
+ * @property \App\Service\TeamSeasonRosterService $teamSeasonRosterService
+ * @property \App\Service\SiteService $siteService
+ * @property \App\Service\OpponentService $opponentService
+ * @property \App\Service\TeamService $teamService
+ * @property \App\Service\SportService $sportService
  */
+
 class ImagesController extends AppController
 {
     /**
