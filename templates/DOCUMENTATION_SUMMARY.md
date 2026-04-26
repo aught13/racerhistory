@@ -95,9 +95,10 @@ Templates are organized in a hierarchical structure:
 ├── Layouts (default.php, admin.php) - Page structure
 ├── Controllers (Users/, Admin/) - Action-specific views
 ├── Elements (flash/, Admin/) - Reusable components (confirm_delete, popup_form)
-## Supplemental Documentation
-
-Refer to `templates/POPUP_FORM_COMPONENT.md` for popup form usage and FormProtection integration (single authoritative file). The previous duplicated root-level documentation has been consolidated.
 ├── Email (html/, text/) - Email formatting
 └── Error (error400.php, error500.php) - Error pages
 ```
+
+## Supplemental Documentation
+
+Refer to `templates/POPUP_FORM_COMPONENT.md` for popup form usage and FormProtection integration.

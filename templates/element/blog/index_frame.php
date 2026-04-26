@@ -30,19 +30,30 @@ if ($page === 1 && !empty($posts)) {
                     <div class="row align-items-start g-4">
                         <?php if (!empty($featured->hero_image)): ?>
                         <div class="col-lg-7">
-                            <img src="<?= h($this->ImageServe->urlForImage($featured->hero_image, ['w' => 1200, 'h' => 720, 'fit' => 'cover'])) ?>" class="img-fluid rounded blog-hero-image" alt="<?= h($featured->title) ?>">
+                            <?= $this->ImageServe->responsivePicture(
+                                $featured->hero_image,
+                                [600, 900, 1200],
+                                ['fit' => 'cover', 'h' => 720],
+                                [
+                                    'alt' => h($featured->title),
+                                    'class' => 'img-fluid rounded blog-hero-image',
+                                    'sizes' => '(max-width: 991px) 100vw, 58vw',
+                                ]
+                            ) ?>
                         </div>
                         <?php endif; ?>
                         <div class="col-lg-<?= !empty($featured->hero_image) ? '5' : '12' ?>">
                             <h1 class="h2 mb-2 blog-hero-title"><?= h($featured->title) ?></h1>
                             <p class="text-muted small mb-3">
                                 <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
-                                    <?= h($featured->published_at->format('F j, Y')) ?>
+                                    <time datetime="<?= h($featured->published_at->format('Y-m-d')) ?>">
+                                        <?= h($featured->published_at->format('F j, Y')) ?>
+                                    </time>
                                 <?php else: ?>
                                     <?= h($featured->published_at ?? '') ?>
                                 <?php endif; ?>
                             </p>
-                            <p class="lead mb-0 blog-hero-excerpt"><?= h($featured->excerpt ?: mb_substr((string)$featured->body, 0, 220) . '...') ?></p>
+                            <p class="lead mb-0 blog-hero-excerpt"><?= h($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 220) . '...') ?></p>
                         </div>
                     </div>
                 </div>
