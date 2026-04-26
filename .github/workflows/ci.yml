@@ -7,13 +7,83 @@ on:
     branches: [v-0.2.0.beta, v-1.0.dev]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   checks: write # allow Codecov to create checks/statuses
   pull-requests: write
 
 jobs:
+  preflight:
+    name: Preflight Planner
+    runs-on: ubuntu-24.04
+    outputs:
+      run_php: ${{ steps.plan.outputs.run_php }}
+      run_js: ${{ steps.plan.outputs.run_js }}
+      run_e2e: ${{ steps.plan.outputs.run_e2e }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Plan jobs from changed files
+        id: plan
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+          PUSH_BEFORE_SHA: ${{ github.event.before || '' }}
+          PUSH_AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          run_php=true
+          run_js=true
+          run_e2e=true
+          changed_files=""
+
+          if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA" && -n "$PR_HEAD_SHA" ]]; then
+            changed_files="$(git diff --name-only "$PR_BASE_SHA" "$PR_HEAD_SHA" || true)"
+          elif [[ "$EVENT_NAME" == "push" && -n "$PUSH_BEFORE_SHA" && "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            changed_files="$(git diff --name-only "$PUSH_BEFORE_SHA" "$PUSH_AFTER_SHA" || true)"
+          fi
+
+          if [[ -n "$changed_files" ]]; then
+            run_php=false
+            run_js=false
+            run_e2e=false
+
+            if grep -Eq '^(src/|config/|templates/|tests/|plugins/|bin/|composer\.json|composer\.lock|phpunit\.xml|phpunit\.xml\.dist|phpunit\.ci\.xml|phpcs\.xml|phpstan\.neon|phpstan-baseline\.neon)' <<< "$changed_files"; then
+              run_php=true
+            fi
+
+            if grep -Eq '^(webroot/js/|__mocks__/|package\.json|package-lock\.json|jest\.setup\.js|eslint\.config\.cjs|stylelint\.config\.cjs)' <<< "$changed_files"; then
+              run_js=true
+            fi
+
+            if grep -Eq '^(e2e/|src/|config/|templates/|tests/|webroot/js/|playwright\.config\.js|package\.json|package-lock\.json|composer\.json|composer\.lock|phpunit\.xml|phpunit\.xml\.dist|phpunit\.ci\.xml)' <<< "$changed_files"; then
+              run_e2e=true
+            fi
+          fi
+
+          echo "run_php=$run_php" >> "$GITHUB_OUTPUT"
+          echo "run_js=$run_js" >> "$GITHUB_OUTPUT"
+          echo "run_e2e=$run_e2e" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Preflight Plan"
+            echo "- run_php: $run_php"
+            echo "- run_js: $run_js"
+            echo "- run_e2e: $run_e2e"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   testsuite:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_php == 'true' }}
     runs-on: ubuntu-24.04
 
     services:
@@ -232,6 +302,8 @@ jobs:
 
   coding-standard:
     name: Coding Standard & Static Analysis
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_php == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -262,6 +334,8 @@ jobs:
 
   js-tests:
     name: JavaScript Tests (Jest + ESM)
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_js == 'true' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -308,8 +382,16 @@ jobs:
           path: coverage-js
 
   e2e-tests:
-    name: E2E Tests (Playwright)
+    name: E2E Tests (Playwright shard ${{ matrix.shard_index }}/${{ matrix.shard_total }})
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_e2e == 'true' }}
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [1, 2, 3]
+        shard_total: [3]
 
     services:
       mysql:
@@ -450,7 +532,7 @@ jobs:
           DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
       - name: Run Playwright E2E tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard_index }}/${{ matrix.shard_total }}
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8765
           CI: true
@@ -471,7 +553,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: playwright-results
+          name: playwright-results-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
           path: test-results-e2e.xml
           retention-days: 30
 
@@ -479,7 +561,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
           path: playwright-report/
           retention-days: 30
 
@@ -487,6 +569,6 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
           path: test-results/
           retention-days: 30
