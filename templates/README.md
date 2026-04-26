@@ -10,8 +10,7 @@ templates/
 ├── Admin/                   # Admin interface templates
 │   ├── Dashboard/          # Admin dashboard views
 │   ├── Users/              # Admin user management views
-│   ├── nav.php             # Admin navigation element
-│   └── users.php           # Legacy admin users template
+│   └── ...                 # Additional admin modules (Sports, Teams, Games, etc.)
 ├── element/                # Reusable template elements
 │   ├── Admin/              # Admin-specific elements
 │   └── flash/              # Flash message templates
@@ -24,10 +23,13 @@ templates/
 │   ├── ajax.php            # AJAX layout
 │   ├── default.php         # Main application layout
 │   ├── error.php           # Error layout
+│   ├── install.php         # Installer layout
 │   └── email/              # Email layouts
 ├── Pages/                  # Static page templates
 ├── Blog/                   # Public blog templates
-└── Users/                  # User authentication templates
+├── Users/                  # User authentication templates
+├── Games/, People/, Seasons/, Stats/  # Public feature templates
+└── plugin/                 # Plugin template overrides
 ```
 
 ## Layout Templates

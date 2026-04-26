@@ -193,7 +193,7 @@ Per project requirements in `codecov.yml`:
 Tests run automatically via GitHub Actions on:
 
 - Pull request creation
-- Commits to main branch
+- Commits to `v-0.2.0.beta` and `v-1.0.dev`
 - Manual workflow dispatch
 
 Both PHP and JavaScript test suites must pass before code can be merged.
@@ -202,7 +202,6 @@ Coverage targets enforced via `codecov.yml`:
 - PHP: 98%
 - JS: 88%
 - Branches: 80%
-5. Add performance benchmarks
 
 ## References
 
