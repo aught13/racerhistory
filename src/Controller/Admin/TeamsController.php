@@ -3,26 +3,45 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use Cake\Datasource\Exception\RecordNotFoundException;
+use App\Service\TeamAdminService;
 use Cake\Http\Response;
 
 /**
- * Admin Teams Controller
+ * Teams Admin Controller
  *
- * Handles administrative teams management operations.
- * Provides functionality for teams administration and CRUD operations.
+ * Human-focused summary:
+ * Handles HTTP orchestration for team administration while delegating all
+ * domain and persistence work to TeamAdminService. This keeps controller
+ * actions concise, predictable, and aligned with service-layer architecture.
  *
- * Teams represent individual competitive units within a sport. Each team
- * belongs to a specific sport and has classification information including:
- * - Team name and optional description
- * - Sport association (required)
- * - Abbreviation for compact display
- * - Gender classification (Male, Female, or Co-ed)
+ * Agent-focused maintenance notes:
+ * - Keep request/response concerns in this class only.
+ * - Add or modify team workflows in TeamAdminService first.
+ * - Preserve flash message text where tests assert exact strings.
  *
  * @property \App\Model\Table\TeamsTable $Teams
+ * @property \App\Service\TeamAdminService $teamAdminService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class TeamsController extends AppController
 {
+    /**
+     * Service that owns the admin team orchestration slice.
+     *
+     * @var \App\Service\TeamAdminService
+     */
+    protected TeamAdminService $teamAdminService;
+
+    /**
+     * Initialize controller dependencies.
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->teamAdminService = new TeamAdminService();
+    }
+
     /**
      * List all teams for administration.
      *
@@ -30,10 +49,7 @@ class TeamsController extends AppController
      */
     public function index(): void
     {
-        $teams = $this->Teams->find()
-            ->contain(['Sports']) // already needed for listing
-            ->all();
-        $this->set(compact('teams'));
+        $this->set($this->teamAdminService->getIndexData());
     }
 
     /**
@@ -44,10 +60,7 @@ class TeamsController extends AppController
      */
     public function view(string $id): void
     {
-    // Use named arguments for get() to avoid deprecation warnings
-        $team = $this->Teams->get($id, contain: ['Sports']);
-
-        $this->set(compact('team'));
+        $this->set($this->teamAdminService->getViewData($id));
     }
 
     /**
@@ -57,17 +70,16 @@ class TeamsController extends AppController
      */
     public function add(): ?Response
     {
-        $team = $this->Teams->newEmptyEntity();
-
-        // Pre-populate sport_id if provided in query string
-        if ($this->request->getQuery('sport_id')) {
-            $team->sport_id = (int)$this->request->getQuery('sport_id');
-        }
+        $sportId = $this->request->getQuery('sport_id')
+            ? (int)$this->request->getQuery('sport_id')
+            : null;
+        $viewData = $this->teamAdminService->getAddFormData($sportId);
 
         if ($this->request->is('post')) {
-            $team = $this->Teams->patchEntity($team, $this->request->getData());
+            $result = $this->teamAdminService->saveNewTeam((array)$this->request->getData(), $sportId);
+            $viewData['team'] = $result['team'];
 
-            if ($this->Teams->save($team)) {
+            if ($result['success']) {
                 $this->Flash->success(__('The team has been saved.'));
 
                 return $this->redirect(['action' => 'index']);
@@ -75,8 +87,7 @@ class TeamsController extends AppController
             $this->Flash->error(__('The team could not be saved. Please, try again.'));
         }
 
-        $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
-        $this->set(compact('team', 'sports'));
+        $this->set($viewData);
 
         return null;
     }
@@ -89,12 +100,13 @@ class TeamsController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $team = $this->Teams->get($id, contain: ['Sports']);
+        $viewData = $this->teamAdminService->getEditFormData($id);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $team = $this->Teams->patchEntity($team, $this->request->getData());
+            $result = $this->teamAdminService->saveExistingTeam($id, (array)$this->request->getData());
+            $viewData['team'] = $result['team'];
 
-            if ($this->Teams->save($team)) {
+            if ($result['success']) {
                 $this->Flash->success(__('The team has been saved.'));
 
                 return $this->redirect(['action' => 'index']);
@@ -102,8 +114,7 @@ class TeamsController extends AppController
             $this->Flash->error(__('The team could not be saved. Please, try again.'));
         }
 
-        $sports = $this->fetchTable('Sports')->find('list', limit: 200)->all();
-        $this->set(compact('team', 'sports'));
+        $this->set($viewData);
 
         return null;
     }
@@ -117,9 +128,8 @@ class TeamsController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
-        $team = $this->Teams->get($id);
 
-        if ($this->Teams->delete($team)) {
+        if ($this->teamAdminService->deleteTeam($id)) {
             $this->Flash->success(__('The team has been deleted.'));
         } else {
             $this->Flash->error(__('The team could not be deleted. Please, try again.'));
@@ -136,11 +146,7 @@ class TeamsController extends AppController
     public function bulkDelete(): Response
     {
         $this->request->allowMethod(['post']);
-        $teamIds = (array)$this->request->getData('team_ids');
-        // Remove empty/null/invalid values that can be introduced by placeholder hidden inputs
-        $teamIds = array_values(array_filter($teamIds, function ($v) {
-            return $v !== '' && $v !== null && ctype_digit((string)$v);
-        }));
+        $teamIds = $this->teamAdminService->sanitizeIdentifierList((array)$this->request->getData('team_ids'));
 
         if (empty($teamIds)) {
             $this->Flash->error('No teams selected for deletion.');
@@ -148,19 +154,7 @@ class TeamsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $deletedCount = 0;
-        foreach ($teamIds as $id) {
-            try {
-                $team = $this->Teams->get($id);
-
-                if ($this->Teams->delete($team)) {
-                    $deletedCount++;
-                }
-            } catch (RecordNotFoundException $e) {
-                // Skip invalid id silently; could log if needed
-                continue;
-            }
-        }
+        $deletedCount = $this->teamAdminService->bulkDeleteTeams($teamIds);
 
         if ($deletedCount > 0) {
             $this->Flash->success(__('Deleted {0} team(s).', $deletedCount));
@@ -195,33 +189,8 @@ class TeamsController extends AppController
      */
     public function ajaxAdd(): Response
     {
-        $team = $this->Teams->newEmptyEntity();
-
         if ($this->request->is('post')) {
-            $team = $this->Teams->patchEntity($team, $this->request->getData());
-
-            if ($this->Teams->save($team)) {
-                $response = [
-                    'success' => true,
-                    'message' => 'Team has been added successfully.',
-                    'newOption' => [
-                        'value' => $team->id,
-                        'text' => $team->team_name,
-                    ],
-                ];
-            } else {
-                $errors = [];
-                foreach ($team->getErrors() as $field => $fieldErrors) {
-                    foreach ($fieldErrors as $error) {
-                        $errors[] = ucfirst($field) . ': ' . $error;
-                    }
-                }
-
-                $response = [
-                    'success' => false,
-                    'errors' => $errors ?: ['Unable to save team. Please try again.'],
-                ];
-            }
+            $response = $this->teamAdminService->createTeamFromPopup((array)$this->request->getData());
         } else {
             $response = [
                 'success' => false,
