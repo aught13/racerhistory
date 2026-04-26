@@ -3,25 +3,21 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\GameTypeService;
+use App\Service\GameTypeAdminService;
 use Cake\Http\Response;
 
 /**
- * Admin Game Types Controller
+ * GameTypes Admin Controller
  *
- * Provides CRUD operations for managing game types in the admin interface. The index action lists all game types, while the add and edit actions allow for creating and updating game types, respectively. The delete action handles game type deletion, with a check to prevent deletion if there are associated games. The controller also includes AJAX actions for searching game types and adding new game types from a popup form, returning JSON responses for seamless integration with the frontend.
+ * Handles admin game-type endpoints and delegates all business and persistence
+ * orchestration to GameTypeAdminService.
  *
- * Security:
- * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage game types. This is typically handled by middleware or components that are not shown in this code snippet.
- * - The delete action uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ * Notes:
+ * - Keep HTTP concerns (allowMethod, flash, redirects) in this controller.
+ * - Keep delete guard semantics unchanged to avoid behavioral regressions.
+ * - Preserve popup/autocomplete JSON key names.
  *
- * Dependencies:
- * - GameTypeService: Provides methods for searching game types, abstracting away the details of these operations from the controller.
- *
- * Components:
- * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
- *
- * @property \App\Service\GameTypeService $gameTypeService
+ * @property \App\Service\GameTypeAdminService $gameTypeAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
  * @property \App\Model\Table\GameTypesTable $GameTypes
@@ -29,11 +25,19 @@ use Cake\Http\Response;
 class GameTypesController extends AppController
 {
     /**
+     * Service that owns game-type admin orchestration.
+     *
+     * @var \App\Service\GameTypeAdminService
+     */
+    protected GameTypeAdminService $gameTypeAdminService;
+
+    /**
      * Initialize controller and adjust FormProtection unlocked actions.
      */
     public function initialize(): void
     {
         parent::initialize();
+        $this->gameTypeAdminService = new GameTypeAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
@@ -47,8 +51,7 @@ class GameTypesController extends AppController
      */
     public function index(): void
     {
-        $gameTypes = $this->fetchTable('GameTypes')->find()->all();
-        $this->set(compact('gameTypes'));
+        $this->set($this->gameTypeAdminService->getIndexData());
     }
 
     /**
@@ -56,18 +59,20 @@ class GameTypesController extends AppController
      */
     public function add(): ?Response
     {
-        $table = $this->fetchTable('GameTypes');
-        $gameType = $table->newEmptyEntity();
+        $viewData = $this->gameTypeAdminService->getAddFormData();
+
         if ($this->request->is('post')) {
-            $gameType = $table->patchEntity($gameType, $this->request->getData());
-            if ($table->save($gameType)) {
+            $result = $this->gameTypeAdminService->saveNewGameType((array)$this->request->getData());
+            $viewData['gameType'] = $result['gameType'];
+
+            if ($result['success']) {
                 $this->Flash->success('The game type has been saved.');
 
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error('The game type could not be saved.');
         }
-        $this->set(compact('gameType'));
+        $this->set($viewData);
 
         return null;
     }
@@ -77,18 +82,20 @@ class GameTypesController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $table = $this->fetchTable('GameTypes');
-        $gameType = $table->get($id);
+        $viewData = $this->gameTypeAdminService->getEditFormData($id);
+
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $gameType = $table->patchEntity($gameType, $this->request->getData());
-            if ($table->save($gameType)) {
+            $result = $this->gameTypeAdminService->saveExistingGameType($id, (array)$this->request->getData());
+            $viewData['gameType'] = $result['gameType'];
+
+            if ($result['success']) {
                 $this->Flash->success('The game type has been saved.');
 
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error('The game type could not be saved.');
         }
-        $this->set(compact('gameType'));
+        $this->set($viewData);
 
         return null;
     }
@@ -99,15 +106,15 @@ class GameTypesController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
-        $table = $this->fetchTable('GameTypes');
-        $entity = $table->get($id);
-        if ($table->Games->exists(['game_type_id' => $entity->id])) {
+        $result = $this->gameTypeAdminService->deleteGameType($id);
+
+        if ($result['blocked']) {
             $this->Flash->error('This game type cannot be deleted because games are associated with it.');
 
             return $this->redirect(['action' => 'index']);
         }
 
-        if ($table->delete($entity)) {
+        if ($result['deleted']) {
             $this->Flash->success('The game type has been deleted.');
         } else {
             $this->Flash->error('The game type could not be deleted.');
@@ -124,28 +131,11 @@ class GameTypesController extends AppController
     public function ajaxSearch(): Response
     {
         $this->request->allowMethod(['get']);
-        $q = trim((string)$this->request->getQuery('q'));
-        $service = new GameTypeService();
-
-        if ($q === '') {
-            $results = [];
-        } else {
-            $gameTypes = $service->searchGameTypes($q, 30);
-            $results = [];
-            foreach ($gameTypes as $gt) {
-                $results[] = [
-                    'id' => $gt->id,
-                    'game_type_name' => $gt->game_type_name,
-                    'abr' => $gt->abr,
-                    'post' => $gt->post,
-                    'conf' => $gt->conf,
-                ];
-            }
-        }
+        $payload = $this->gameTypeAdminService->buildSearchResponse((string)$this->request->getQuery('q'), 30);
 
         return $this->response
             ->withType('application/json')
-            ->withStringBody(json_encode(['success' => true, 'results' => $results]));
+            ->withStringBody(json_encode($payload));
     }
 
     /**
@@ -155,37 +145,12 @@ class GameTypesController extends AppController
      */
     public function ajaxAdd(): Response
     {
-        $table = $this->fetchTable('GameTypes');
-        $gameType = $table->newEmptyEntity();
-
         if ($this->request->is('post')) {
-            $gameType = $table->patchEntity($gameType, $this->request->getData());
-            if ($table->save($gameType)) {
-                return $this->response
-                    ->withType('application/json')
-                    ->withStringBody(json_encode([
-                        'success' => true,
-                        'message' => 'The game type has been saved.',
-                        'newOption' => [
-                            'value' => $gameType->id,
-                            'text' => $gameType->game_type_name,
-                        ],
-                    ]));
-            }
-
-            $errors = [];
-            foreach ($gameType->getErrors() as $field => $fieldErrors) {
-                foreach ($fieldErrors as $error) {
-                    $errors[] = ucfirst($field) . ': ' . $error;
-                }
-            }
+            $response = $this->gameTypeAdminService->createGameTypeFromPopup((array)$this->request->getData());
 
             return $this->response
                 ->withType('application/json')
-                ->withStringBody(json_encode([
-                    'success' => false,
-                    'errors' => $errors ?: ['Unable to save game type.'],
-                ]));
+                ->withStringBody(json_encode($response));
         }
 
         return $this->response
