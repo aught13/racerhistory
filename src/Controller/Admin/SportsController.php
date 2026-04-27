@@ -4,49 +4,41 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\SportConfigAdminService;
+use App\Service\SportsAdminService;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 
 /**
  * Admin Sports Controller
  *
- * Provides CRUD operations for managing sports in the admin interface, as well as managing sport-specific configurations. The index action lists all sports, while the add and edit actions allow for creating and updating sports, respectively. The delete action handles sport deletion, with a check to prevent deletion if there are associated teams. The controller also includes bulkDelete and bulk actions for handling multiple deletions at once, and an ajaxAdd action for adding new sports from a popup form, returning JSON responses for seamless integration with the frontend.
- *
- * The configs, editConfigs, addConfig, deleteConfig, and resetConfigs actions provide a way to manage key-value pair configurations specific to each sport, which can be used to store various settings or attributes related to the sport in a flexible manner. These actions allow administrators to view, edit, add, delete, and reset configurations for each sport, with appropriate validation and error handling to ensure a smooth user experience.
+ * Thin HTTP orchestrator for managing Sport records and their key-value
+ * configurations. CRUD and popup-add logic is owned by SportsAdminService;
+ * config-management actions delegate to SportConfigAdminService. This
+ * controller only extracts request data, calls the appropriate service method,
+ * then sets flash messages and redirects.
  *
  * Actions:
- * - index: Lists all sports with their associated teams for record count display in delete confirmations.
- * - view: Displays details of a single sport, including its configurations.
- * - add: Handles the creation of a new sport, including form display and processing.
- * - edit: Handles the editing of an existing sport, including form display and processing.
- * - delete: Handles the deletion of a sport, ensuring that there are no associated teams before allowing deletion. Uses POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
- * - bulkDelete: Handles the deletion of multiple sports at once, with similar checks and protections as the single delete action.
- * - bulk: A dispatcher for bulk actions, currently supporting bulk deletion of sports.
- * - ajaxAdd: Provides an endpoint for adding a new sport from a popup form, returning success or error messages in JSON format for seamless integration with the frontend. This allows administrators to quickly add new sports without needing to navigate away from their current context. The form data is validated and any errors are returned in a structured format to help guide the user in correcting any issues with their input.
- * - configs: Displays the configurations for a specific sport.
- * - editConfigs: Handles the editing of sport configurations, including form display and processing.
- * - addConfig: Handles the addition of a new configuration for a sport, including validation and error handling.
- * - deleteConfig: Handles the deletion of a specific configuration for a sport.
- * - resetConfigs: Handles resetting all configurations for a sport back to their default values.
+ * - index: Lists all sports (with Teams for count display in confirmations).
+ * - view: Displays a single sport with Teams and formatted configs.
+ * - add: Add form and POST handler.
+ * - edit: Edit form and POST handler.
+ * - delete: POST/DELETE handler for a single sport.
+ * - bulkDelete: POST handler for multiple sport deletions.
+ * - bulk: Dispatcher that routes bulk_action to bulkDelete.
+ * - ajaxAdd: JSON endpoint for popup-form sport creation.
+ * - configs: Displays the key-value configs for a sport.
+ * - editConfigs: Edit form and POST handler for bulk config save.
+ * - addConfig: POST-only handler for adding a single config key.
+ * - deleteConfig: DELETE handler for a single config key.
+ * - resetConfigs: POST-only handler to reset all configs to defaults.
  *
- * Security:
- * - All actions should be protected by authentication and authorization checks to ensure that only authorized users can manage sports. This is typically handled by middleware or components that are not shown in this code snippet.
- * - The delete and bulkDelete actions use POST or DELETE HTTP methods to prevent accidental deletions via GET requests.
+ * Notes:
+ * - CRUD and popup-add ORM must stay in SportsAdminService, not here.
+ * - Config ORM must stay in SportConfigAdminService, not here.
+ * - Flash strings and JSON response shapes are asserted in tests — keep stable.
+ * - beforeFilter disables FormProtection for editConfigs due to dynamic rows.
  *
- * Dependencies:
- * - SportConfigAdminService: Provides methods for managing sport-specific configurations, including retrieving formatted configs for display, saving bulk configs, setting individual configs, deleting configs, and resetting configs to defaults.
- *
- * Components:
- * - FlashComponent: Used to set success and error messages after create, update, and delete operations.
- *
- * Note: The ajaxAdd action is designed for use with popup forms and returns JSON responses indicating success or failure, along with any validation errors. This allows for seamless integration with the frontend without requiring full page reloads. The configuration management actions (configs, editConfigs, addConfig, deleteConfig, resetConfigs) provide a way to manage key-value pair configurations specific to each sport, which can be used to store various settings or attributes related to the sport in a flexible manner.
- * The view action includes the sport's configurations, demonstrating how the controller can handle more complex data retrieval and processing while still keeping the core logic focused on request handling and response formatting. Proper error handling, feedback mechanisms, logging, and security measures should be implemented throughout the controller to ensure a secure and user-friendly experience for managing sports and their configurations in the admin interface.
- * The delete and bulkDelete actions should be used with caution, as they will permanently remove sport records from the database. Proper confirmation and safeguards should be implemented in the UI to prevent accidental deletions. Additionally, the add and edit actions should validate input data to prevent invalid or malicious data from being saved to the database, and the AJAX endpoint should validate input parameters to prevent potential issues with invalid input or unauthorized access to data. Proper error handling, feedback mechanisms, logging, and security measures should be implemented throughout the controller to ensure a secure and user-friendly experience for managing sports in the admin interface.
- * The configuration management actions should also include proper validation and error handling to ensure that only valid configurations are saved, and that any issues with configuration management are clearly communicated to the user through flash messages or JSON responses, as appropriate. This will help maintain the integrity of the sport configurations and provide a better user experience for administrators managing sports in the admin interface.
- * The beforeFilter method is used to disable form protection for the editConfigs action due to the dynamic nature of the form fields, which may not be compatible with the standard form protection mechanism. This allows for a smoother user experience when managing sport configurations, while still maintaining security for other actions that involve form submissions.
- * Overall, this controller provides comprehensive management of sports and their configurations in the admin interface, with a focus on security, user experience, and maintainability. Proper validation, error handling, and feedback mechanisms are implemented throughout the controller to ensure a robust and user-friendly experience for administrators managing sports in the application.
- *
- * @property \App\Model\Table\SportsTable $Sports
+ * @property \App\Service\SportsAdminService $sportsAdminService
  * @property \App\Service\SportConfigAdminService $sportConfigAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
@@ -55,10 +47,13 @@ use Cake\Http\Response;
 class SportsController extends AppController
 {
     /**
-     * @var \App\Model\Table\SportsTable
+     * @var \App\Service\SportsAdminService Admin service for sports CRUD and popup-add
      */
-    protected \App\Model\Table\SportsTable $Sports;
+    private SportsAdminService $sportsAdminService;
 
+    /**
+     * @var \App\Service\SportConfigAdminService Admin service for sport config management
+     */
     private SportConfigAdminService $sportConfigAdminService;
 
     /**
@@ -70,7 +65,7 @@ class SportsController extends AppController
     {
         parent::initialize();
 
-        $this->Sports = $this->fetchTable('Sports');
+        $this->sportsAdminService = new SportsAdminService();
         $this->sportConfigAdminService = new SportConfigAdminService();
     }
 
@@ -99,9 +94,7 @@ class SportsController extends AppController
      */
     public function index()
     {
-        // Include Teams so templates can surface associated record counts in delete confirmations
-        $sports = $this->Sports->find()->contain(['Teams'])->all();
-
+        $sports = $this->sportsAdminService->getIndexData();
         $this->set(compact('sports'));
     }
 
@@ -113,10 +106,8 @@ class SportsController extends AppController
      */
     public function view(string $id)
     {
-        $sport = $this->Sports->get($id, contain: ['Teams']);
-
+        $sport = $this->sportsAdminService->getViewEntity($id);
         $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
-
         $this->set(compact('sport', 'configs'));
     }
 
@@ -127,17 +118,18 @@ class SportsController extends AppController
      */
     public function add()
     {
-        $sport = $this->Sports->newEmptyEntity();
-
         if ($this->request->is('post')) {
-            $sport = $this->Sports->patchEntity($sport, $this->request->getData());
+            $result = $this->sportsAdminService->add($this->request->getData());
 
-            if ($this->Sports->save($sport)) {
+            if ($result['success']) {
                 $this->Flash->success(__('The sport has been saved.'));
 
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error(__('The sport could not be saved. Please, try again.'));
+            $sport = $result['sport'];
+        } else {
+            $sport = $this->sportsAdminService->newEntity();
         }
 
         $this->set(compact('sport'));
@@ -153,18 +145,18 @@ class SportsController extends AppController
      */
     public function edit(string $id)
     {
-        // Contain Teams so we can show associated record counts in the confirmation modal
-        $sport = $this->Sports->get($id, contain: ['Teams']);
-
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $sport = $this->Sports->patchEntity($sport, $this->request->getData());
+            $result = $this->sportsAdminService->edit($id, $this->request->getData());
 
-            if ($this->Sports->save($sport)) {
+            if ($result['success']) {
                 $this->Flash->success(__('The sport has been saved.'));
 
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error(__('The sport could not be saved. Please, try again.'));
+            $sport = $result['sport'];
+        } else {
+            $sport = $this->sportsAdminService->getEditEntity($id);
         }
 
         $this->set(compact('sport'));
@@ -181,9 +173,8 @@ class SportsController extends AppController
     public function delete(string $id)
     {
         $this->request->allowMethod(['post', 'delete']);
-        $sport = $this->Sports->get($id);
 
-        if ($this->Sports->delete($sport)) {
+        if ($this->sportsAdminService->delete($id)) {
             $this->Flash->success(__('The sport has been deleted.'));
         } else {
             $this->Flash->error(__('The sport could not be deleted. Please, try again.'));
@@ -211,18 +202,7 @@ class SportsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $deletedCount = 0;
-        foreach ($sportIds as $id) {
-            try {
-                $sport = $this->Sports->get($id);
-
-                if ($this->Sports->delete($sport)) {
-                    $deletedCount++;
-                }
-            } catch (RecordNotFoundException $e) {
-                continue;
-            }
-        }
+        $deletedCount = $this->sportsAdminService->bulkDelete($sportIds);
 
         if ($deletedCount > 0) {
             $this->Flash->success(__('Deleted {0} sport(s).', $deletedCount));
@@ -257,43 +237,20 @@ class SportsController extends AppController
      */
     public function ajaxAdd(): Response
     {
-        $sport = $this->Sports->newEmptyEntity();
-
         if ($this->request->is('post')) {
-            $sport = $this->Sports->patchEntity($sport, $this->request->getData());
+            $result = $this->sportsAdminService->createSportFromPopup($this->request->getData());
 
-            if ($this->Sports->save($sport)) {
-                $response = [
-                    'success' => true,
-                    'message' => 'Sport has been added successfully.',
-                    'newOption' => [
-                        'value' => $sport->id,
-                        'text' => $sport->sport_name,
-                    ],
-                ];
-            } else {
-                $errors = [];
-                foreach ($sport->getErrors() as $field => $fieldErrors) {
-                    foreach ($fieldErrors as $error) {
-                        $errors[] = ucfirst($field) . ': ' . $error;
-                    }
-                }
-
-                $response = [
-                    'success' => false,
-                    'errors' => $errors ?: ['Unable to save sport. Please try again.'],
-                ];
-            }
-        } else {
-            $response = [
-                'success' => false,
-                'errors' => ['Invalid request method.'],
-            ];
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode($result));
         }
 
         return $this->response
             ->withType('application/json')
-            ->withStringBody(json_encode($response));
+            ->withStringBody(json_encode([
+                'success' => false,
+                'errors' => ['Invalid request method.'],
+            ]));
     }
 
     /**
@@ -305,7 +262,7 @@ class SportsController extends AppController
     public function configs(string $id): ?Response
     {
         try {
-            $sport = $this->Sports->get($id);
+            $sport = $this->sportsAdminService->getViewEntity($id);
             $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
 
             $this->set(compact('sport', 'configs'));
@@ -327,7 +284,7 @@ class SportsController extends AppController
     public function editConfigs(string $id): ?Response
     {
         try {
-            $sport = $this->Sports->get($id);
+            $sport = $this->sportsAdminService->getViewEntity($id);
 
             if ($this->request->is(['patch', 'post', 'put'])) {
                 $configData = $this->request->getData('configs', []);
@@ -366,7 +323,7 @@ class SportsController extends AppController
 
         try {
             // Verify sport exists (throws RecordNotFoundException if not)
-            $this->Sports->get($id);
+            $this->sportsAdminService->getViewEntity($id);
 
             $key = $this->request->getData('config_key');
             $value = $this->request->getData('config_value');
@@ -410,7 +367,7 @@ class SportsController extends AppController
 
         try {
             // Verify sport exists (throws RecordNotFoundException if not)
-            $this->Sports->get($id);
+            $this->sportsAdminService->getViewEntity($id);
 
             if ($this->sportConfigAdminService->deleteConfig((int)$id, $configKey)) {
                 $this->Flash->success(__('Configuration deleted successfully.'));
@@ -436,7 +393,7 @@ class SportsController extends AppController
 
         try {
             // Verify sport exists (throws RecordNotFoundException if not)
-            $this->Sports->get($id);
+            $this->sportsAdminService->getViewEntity($id);
 
             $success = $this->sportConfigAdminService->resetToDefaults((int)$id);
 

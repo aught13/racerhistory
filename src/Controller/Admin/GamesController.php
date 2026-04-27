@@ -405,8 +405,7 @@ class GamesController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
-        $game = $this->Games->get($id);
-        if ($this->Games->delete($game)) {
+        if ($this->Game->deleteGame((int)$id)) {
             $this->Flash->success(__('The game has been deleted.'));
         } else {
             $this->Flash->error(__('The game could not be deleted. Please, try again.'));
