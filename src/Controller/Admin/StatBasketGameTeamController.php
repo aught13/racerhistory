@@ -55,7 +55,8 @@ class StatBasketGameTeamController extends AppController
         $opponentStats = $viewData['opponentStats'];
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->basketballStatsAdminService->saveAdminGameTeamStats($gameId, (array)$this->request->getData());
+            $data = (array)$this->request->getData();
+            $result = $this->basketballStatsAdminService->saveAdminGameTeamStats($gameId, $data);
             $teamStats = $result['teamStats'];
             $opponentStats = $result['opponentStats'];
             foreach ($result['errors'] as $message) {

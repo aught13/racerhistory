@@ -108,7 +108,8 @@ class StatBasketGameOpponentController extends AppController
 
         // On failure: fall back to the add page with errored rows
         if (!empty($failedRows)) {
-            $this->set($this->basketballStatsAdminService->getAdminGameOpponentAddData($gameId) + compact('failedRows'));
+            $addData = $this->basketballStatsAdminService->getAdminGameOpponentAddData($gameId);
+            $this->set($addData + compact('failedRows'));
 
             return $this->render('add');
         }
@@ -128,7 +129,8 @@ class StatBasketGameOpponentController extends AppController
         $stat = $viewData['stat'];
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->basketballStatsAdminService->updateAdminGameOpponentStat($id, (array)$this->request->getData());
+            $data = (array)$this->request->getData();
+            $result = $this->basketballStatsAdminService->updateAdminGameOpponentStat($id, $data);
             $stat = $result['stat'];
             if ($result['success']) {
                 $this->Flash->success(__('The opponent player stat has been saved.'));

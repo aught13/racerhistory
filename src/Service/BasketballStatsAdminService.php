@@ -149,7 +149,10 @@ class BasketballStatsAdminService extends BasketballStatsService
         /** @var \App\Model\Table\StatBasketGameTeamTable $table */
         $table = $this->fetchTable('StatBasketGameTeam');
         /** @var \App\Model\Entity\StatBasketGameTeam|null $stat */
-        $stat = $table->find()->where(['StatBasketGameTeam.game_id' => $gameId, 'StatBasketGameTeam.opp' => $opp])->first();
+        $stat = $table->find()->where([
+            'StatBasketGameTeam.game_id' => $gameId,
+            'StatBasketGameTeam.opp' => $opp,
+        ])->first();
 
         if ($stat) {
             return $stat;
@@ -605,8 +608,14 @@ class BasketballStatsAdminService extends BasketballStatsService
         $table = $this->fetchTable('StatBasketGameTeam');
 
         return [
-            'teamStats' => $table->find()->where(['StatBasketGameTeam.game_id' => $gameId, 'StatBasketGameTeam.opp' => 0])->first(),
-            'opponentStats' => $table->find()->where(['StatBasketGameTeam.game_id' => $gameId, 'StatBasketGameTeam.opp' => 1])->first(),
+            'teamStats' => $table->find()->where([
+                'StatBasketGameTeam.game_id' => $gameId,
+                'StatBasketGameTeam.opp' => 0,
+            ])->first(),
+            'opponentStats' => $table->find()->where([
+                'StatBasketGameTeam.game_id' => $gameId,
+                'StatBasketGameTeam.opp' => 1,
+            ])->first(),
             'game' => $this->getAdminGame($gameId),
         ];
     }
@@ -644,7 +653,8 @@ class BasketballStatsAdminService extends BasketballStatsService
             $teamStats = $table->patchEntity($teamStats, $data['team'] + ['game_id' => $gameId, 'opp' => 0]);
         }
         if (isset($data['opponent'])) {
-            $opponentStats = $table->patchEntity($opponentStats, $data['opponent'] + ['game_id' => $gameId, 'opp' => 1]);
+            $opponentData = $data['opponent'] + ['game_id' => $gameId, 'opp' => 1];
+            $opponentStats = $table->patchEntity($opponentStats, $opponentData);
         }
 
         $errors = [];
@@ -880,7 +890,9 @@ class BasketballStatsAdminService extends BasketballStatsService
         $boxTable = $this->fetchTable('StatBasketGameBox');
         $opponentId = (int)($game->opponent_id ?? 0);
         $teamBox = $boxTable->find()->where(['game_id' => $gameId, 'opponent_id' => 0, 'period' => 'Z'])->first();
-        $opponentBox = $boxTable->find()->where(['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => 'Z'])->first();
+        $opponentBox = $boxTable->find()
+            ->where(['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => 'Z'])
+            ->first();
         $hasPeriodStats = $boxTable->find()->where(['game_id' => $gameId, 'period !=' => 'Z'])->count() > 0;
         $sportId = (int)$game->team_season->team->sport->id;
 
@@ -908,7 +920,9 @@ class BasketballStatsAdminService extends BasketballStatsService
         $boxTable = $this->fetchTable('StatBasketGameBox');
         $opponentId = (int)($game->opponent_id ?? 0);
         $teamBox = $boxTable->find()->where(['game_id' => $gameId, 'opponent_id' => 0, 'period' => 'Z'])->first();
-        $opponentBox = $boxTable->find()->where(['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => 'Z'])->first();
+        $opponentBox = $boxTable->find()
+            ->where(['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => 'Z'])
+            ->first();
         $originalTeamBox = $teamBox ? clone $teamBox : null;
         $originalOpponentBox = $opponentBox ? clone $opponentBox : null;
         $addToTotals = !empty($data['add_to_totals']);
@@ -932,7 +946,9 @@ class BasketballStatsAdminService extends BasketballStatsService
                 $oppData['GP'] = '1';
                 $oppData['MIN'] = (string)$teamMinutes;
             }
-            $opponentBox = $opponentBox ? $boxTable->patchEntity($opponentBox, $oppData) : $boxTable->newEntity($oppData);
+            $opponentBox = $opponentBox
+                ? $boxTable->patchEntity($opponentBox, $oppData)
+                : $boxTable->newEntity($oppData);
             if (!$boxTable->save($opponentBox)) {
                 return ['success' => false, 'game' => $game, 'redirectToPeriods' => false];
             }
@@ -962,7 +978,10 @@ class BasketballStatsAdminService extends BasketballStatsService
         $boxTable = $this->fetchTable('StatBasketGameBox');
         $existingStats = [];
 
-        foreach ($boxTable->find()->where(['game_id' => $gameId, 'period !=' => 'Z'])->orderBy(['period' => 'ASC'])->all() as $stat) {
+        $statQuery = $boxTable->find()
+            ->where(['game_id' => $gameId, 'period !=' => 'Z'])
+            ->orderBy(['period' => 'ASC']);
+        foreach ($statQuery->all() as $stat) {
             $key = ((int)$stat->get('opponent_id') === 0 ? 'team' : 'opponent') . '_' . (string)$stat->get('period');
             $existingStats[$key] = $stat;
         }
@@ -998,9 +1017,10 @@ class BasketballStatsAdminService extends BasketballStatsService
         for ($period = 1; $period <= $numPeriods; $period++) {
             $teamKey = 'team_' . $period;
             if (!empty($data[$teamKey])) {
+                $entityData = $data[$teamKey] + ['game_id' => $gameId, 'opponent_id' => 0, 'period' => (string)$period];
                 $entity = isset($existingStats[$teamKey])
-                    ? $boxTable->patchEntity($existingStats[$teamKey], $data[$teamKey] + ['game_id' => $gameId, 'opponent_id' => 0, 'period' => (string)$period])
-                    : $boxTable->newEntity($data[$teamKey] + ['game_id' => $gameId, 'opponent_id' => 0, 'period' => (string)$period]);
+                    ? $boxTable->patchEntity($existingStats[$teamKey], $entityData)
+                    : $boxTable->newEntity($entityData);
                 if (!$boxTable->save($entity)) {
                     $errors[] = "Team Period $period";
                 }
@@ -1008,9 +1028,14 @@ class BasketballStatsAdminService extends BasketballStatsService
 
             $opponentKey = 'opponent_' . $period;
             if (!empty($data[$opponentKey])) {
+                $entityData = $data[$opponentKey] + [
+                    'game_id' => $gameId,
+                    'opponent_id' => $opponentId,
+                    'period' => (string)$period,
+                ];
                 $entity = isset($existingStats[$opponentKey])
-                    ? $boxTable->patchEntity($existingStats[$opponentKey], $data[$opponentKey] + ['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => (string)$period])
-                    : $boxTable->newEntity($data[$opponentKey] + ['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => (string)$period]);
+                    ? $boxTable->patchEntity($existingStats[$opponentKey], $entityData)
+                    : $boxTable->newEntity($entityData);
                 if (!$boxTable->save($entity)) {
                     $errors[] = "Opponent Period $period";
                 }
@@ -1021,9 +1046,10 @@ class BasketballStatsAdminService extends BasketballStatsService
             $otPeriod = 'OT' . ($overtime > 1 ? $overtime : '');
             $teamKey = 'team_' . $otPeriod;
             if (!empty($data[$teamKey])) {
+                $entityData = $data[$teamKey] + ['game_id' => $gameId, 'opponent_id' => 0, 'period' => $otPeriod];
                 $entity = isset($existingStats[$teamKey])
-                    ? $boxTable->patchEntity($existingStats[$teamKey], $data[$teamKey] + ['game_id' => $gameId, 'opponent_id' => 0, 'period' => $otPeriod])
-                    : $boxTable->newEntity($data[$teamKey] + ['game_id' => $gameId, 'opponent_id' => 0, 'period' => $otPeriod]);
+                    ? $boxTable->patchEntity($existingStats[$teamKey], $entityData)
+                    : $boxTable->newEntity($entityData);
                 if (!$boxTable->save($entity)) {
                     $errors[] = "Team $otPeriod";
                 }
@@ -1031,9 +1057,14 @@ class BasketballStatsAdminService extends BasketballStatsService
 
             $opponentKey = 'opponent_' . $otPeriod;
             if (!empty($data[$opponentKey])) {
+                $entityData = $data[$opponentKey] + [
+                    'game_id' => $gameId,
+                    'opponent_id' => $opponentId,
+                    'period' => $otPeriod,
+                ];
                 $entity = isset($existingStats[$opponentKey])
-                    ? $boxTable->patchEntity($existingStats[$opponentKey], $data[$opponentKey] + ['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => $otPeriod])
-                    : $boxTable->newEntity($data[$opponentKey] + ['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => $otPeriod]);
+                    ? $boxTable->patchEntity($existingStats[$opponentKey], $entityData)
+                    : $boxTable->newEntity($entityData);
                 if (!$boxTable->save($entity)) {
                     $errors[] = "Opponent $otPeriod";
                 }

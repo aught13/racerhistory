@@ -44,7 +44,8 @@ class StatBasketSeasonPersonController extends AppController
         $stat = $viewData['stat'];
 
         if ($this->request->is('post')) {
-            $result = $this->basketballStatsAdminService->createAdminSeasonPersonStat($teamSeasonId, (array)$this->request->getData());
+            $data = (array)$this->request->getData();
+            $result = $this->basketballStatsAdminService->createAdminSeasonPersonStat($teamSeasonId, $data);
             $stat = $result['stat'];
             if ($result['success']) {
                 $this->Flash->success(__('The player season stats have been saved.'));
@@ -75,7 +76,8 @@ class StatBasketSeasonPersonController extends AppController
         }
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->basketballStatsAdminService->updateAdminSeasonPersonStat($id, (array)$this->request->getData());
+            $data = (array)$this->request->getData();
+            $result = $this->basketballStatsAdminService->updateAdminSeasonPersonStat($id, $data);
             $stat = $result['stat'];
             if ($result['success']) {
                 $this->Flash->success(__('The player season stats have been saved.'));

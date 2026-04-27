@@ -6,7 +6,6 @@ namespace App\Test\TestCase\Controller\Admin;
 use App\Controller\Admin\ImagesController;
 use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\Core\Configure;
-use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -555,13 +554,8 @@ class ImagesControllerTest extends TestCase
     private function createImagesControllerForPrivateMethods(): ImagesController
     {
         $request = new ServerRequest(['url' => '/admin/images']);
-        $response = new Response();
-        $controller = $this->getMockBuilder(ImagesController::class)
-            ->onlyMethods(['initialize'])
-            ->setConstructorArgs([$request, $response])
-            ->getMock();
 
-        return $controller;
+        return new ImagesController($request);
     }
 
     private function getPrivateMethod(ImagesController $controller, string $name): \ReflectionMethod

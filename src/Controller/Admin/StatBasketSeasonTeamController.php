@@ -43,7 +43,8 @@ class StatBasketSeasonTeamController extends AppController
         $stat = $viewData['stat'];
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->basketballStatsAdminService->saveAdminSeasonTeamStat($teamSeasonId, (array)$this->request->getData());
+            $data = (array)$this->request->getData();
+            $result = $this->basketballStatsAdminService->saveAdminSeasonTeamStat($teamSeasonId, $data);
             $stat = $result['stat'];
             if ($result['success']) {
                 $this->Flash->success(__('The team season stats have been saved.'));

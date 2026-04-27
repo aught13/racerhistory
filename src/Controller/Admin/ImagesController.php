@@ -3,79 +3,41 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\GameService;
 use App\Service\ImageBrowseService;
-use App\Service\ImageDeleteService;
-use App\Service\ImageEditService;
+use App\Service\ImagesAdminService;
 use App\Service\ImageStorageService;
-use App\Service\ImageTagUiService;
 use App\Service\PersonService;
 use App\Service\TaggingService;
 use App\Service\TeamSeasonRosterService;
 use Cake\Http\Response;
-use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * Admin Images Controller
  *
- * Provides CRUD operations for managing images in the admin interface, including uploading, editing metadata, tagging, and deletion. The controller handles both single and bulk uploads, with support for associating images with various entities through tags. The serve action allows for serving images by ID and variant, with cache-busting headers to ensure the latest version is delivered. The manipulate action provides a UI for applying transformations to existing images, primarily for debugging purposes. All actions that modify data require authentication, while the serve action is publicly accessible.
+ * Thin HTTP orchestrator for the admin image-management surface.
  *
- * Actions:
- * - upload: Handles single image uploads, including file storage and tag application.
- * - serve: Serves an image file by ID and optional variant, with cache-busting headers.
- * - index: Displays a list of images with usage counts for management purposes.
- * - browse: AJAX endpoint for browsing images with optional tag filtering, returning JSON for frontend integration.
- * - uploadForm: Displays a form for uploading a single image with manipulation preview.
- * - bulkUploadForm: Displays a form for uploading multiple images with per-file tags and context.
- * - bulkUpload: Handles the processing of multiple image uploads in one request, applying tags and returning a JSON response with results.
- * - edit: Allows editing of image metadata such as original name and status.
- * - tags: Provides an interface for managing tags associated with an image, including applying new tags based on related entities.
- * - delete: Handles the deletion of an image and all its references in the database.
- * - manipulate: Provides a UI for applying transformations (crop, rotate, adjust) to an existing image, primarily for debugging and should not be exposed in production environments.
+ * This controller keeps request/response concerns (method checks, auth
+ * checks, flash messages, redirects, JSON/HTML response building) and delegates
+ * admin data orchestration to ImagesAdminService plus specialized image
+ * services.
  *
- * Security:
- * - The upload, edit, tags, delete, bulkDelete, and manipulate actions require authentication to prevent unauthorized modifications to images.
- * - The serve action is publicly accessible but serves files from a protected storage location to prevent direct access to the filesystem.
- * - The manipulate action should be used with caution and ideally should not be exposed in production environments due to potential security risks associated with image processing libraries.
- *
- * Dependencies:
- * - ImageStorageService: Handles the storage and retrieval of image files, including generating variants and managing file paths.
- * - TaggingService: Manages the parsing and application of tags to images based on request data.
- * - ImageBrowseService: Provides functionality for browsing images with optional filtering by tag.
- * - ImageEditService: Handles the application of manipulations (crop, rotate, adjust) to existing images.
- * - ImageDeleteService: Manages the deletion of images and their associated references in the database.
- * - ImageTagUiService: Formats image tags for display in the UI and preselects options based on current tags.
- * - GameService, PersonService, TeamSeasonRosterService: Used to retrieve related entities for tagging and selection in forms.
- * - Intervention Image: For on-the-fly image transformations in the manipulate action.
- *
- * Components:
- * - AuthorizationComponent: Used to skip authorization checks for the serve action, as images are intended to be publicly accessible. The manipulate action is for debugging and should not be exposed in production. All other actions require authentication to ensure that only authorized users can modify images.
- * - RequestHandlerComponent: Can be used to automatically detect AJAX requests and set response types, although in this implementation we manually check for JSON requests in each action to ensure that they are only accessible via appropriate request types.
- *
- * Note: Ensure that the 'img/storage' directory is properly secured and not directly accessible to prevent unauthorized file access. Additionally, the manipulate action should be used with caution and ideally should not be exposed in production environments due to potential security risks associated with image processing libraries.
+ * The serve action remains publicly accessible (also exposed via the public
+ * images controller route), while mutating actions remain admin-auth guarded.
  *
  * @property \App\Model\Table\ImagesTable $Images
+ * @property \App\Service\ImagesAdminService $imagesAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
- * @property \App\Service\ImageStorageService $imageStorageService
- * @property \App\Service\TaggingService $taggingService
- * @property \App\Service\ImageBrowseService $imageBrowseService
- * @property \App\Service\ImageEditService $imageEditService
- * @property \App\Service\ImageDeleteService $imageDeleteService
- * @property \App\Service\ImageTagUiService $imageTagUiService
- * @property \App\Service\GameService $gameService
- * @property \App\Service\PersonService $personService
- * @property \App\Service\TeamSeasonRosterService $teamSeasonRosterService
- * @property \App\Service\SiteService $siteService
- * @property \App\Service\OpponentService $opponentService
- * @property \App\Service\TeamService $teamService
- * @property \App\Service\SportService $sportService
  */
-
 class ImagesController extends AppController
 {
+    /**
+     * @var \App\Service\ImagesAdminService
+     */
+    private ImagesAdminService $imagesAdminService;
+
     /**
      * Controller initialization: unlock actions from FormProtection when the UI
      * uses custom (non-FormHelper) fields.
@@ -83,6 +45,7 @@ class ImagesController extends AppController
     public function initialize(): void
     {
         parent::initialize();
+        $this->imagesAdminService = new ImagesAdminService();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
             foreach (['upload', 'bulkUpload', 'bulkUploadForm', 'manipulate', 'tags', 'cropThumb'] as $action) {
@@ -199,7 +162,7 @@ class ImagesController extends AppController
     public function index(): void
     {
         $this->getRequest()->allowMethod(['get']);
-        $images = $this->fetchTable('Images')->find()->orderByDesc('id')->limit(100)->all();
+        $images = $this->imagesAdminService->getIndexImages();
         $this->set(compact('images'));
         // Let Cake render the template normally (no explicit return of Response which caused blank output)
     }
@@ -243,32 +206,7 @@ class ImagesController extends AppController
     {
         $this->getRequest()->allowMethod(['get']);
 
-        // Load entity data using service layer
-        $teamSeasonService = new \App\Service\TeamSeasonService();
-        $teamSeasonLabels = $teamSeasonService->getTeamSeasonsForSelect();
-
-        $gameLabels = (new GameService())->getRecentGamesForSelect(200);
-
-        $siteService = new \App\Service\SiteService();
-        $siteLabels = $siteService->getSitesForSelect();
-
-        $opponentService = new \App\Service\OpponentService();
-        $opponents = $opponentService->getOpponentsForSelect();
-
-        $teamService = new \App\Service\TeamService();
-        $teams = $teamService->getTeamsForSelect();
-
-        $sportService = new \App\Service\SportService();
-        $sports = $sportService->getSportsForSelect();
-
-        $this->set(compact(
-            'teamSeasonLabels',
-            'gameLabels',
-            'siteLabels',
-            'opponents',
-            'teams',
-            'sports',
-        ));
+        $this->set($this->imagesAdminService->getBulkUploadFormData());
 
         $this->viewBuilder()->setTemplate('bulk_upload');
     }
@@ -357,165 +295,26 @@ class ImagesController extends AppController
     }
 
     /**
-     * Build entity-based tags from form data (mirrors TaggingService::applyFromData logic).
-     *
-     * @param array<string,mixed> $data
-     * @return array<int,array<string,string>>
-     */
-    private function buildCommonEntityTags(array $data): array
-    {
-        $tagsToApply = [];
-
-        $map = [
-            'person_select' => [
-                'prefix' => 'person-',
-                'service' => 'person',
-            ],
-            'roster_select' => [
-                'prefix' => 'team_season_roster-',
-                'service' => 'roster',
-            ],
-            'teamseason_select' => [
-                'prefix' => 'teamseason-',
-                'service' => 'teamseason',
-            ],
-            'game_select' => [
-                'prefix' => 'game-',
-                'table' => 'Games',
-                'label' => fn($r) => $r->opponent_name ?? 'game',
-            ],
-            'site_select' => [
-                'prefix' => 'site-',
-                'table' => 'Places',
-                'label' => fn($r) => $r->place_city ?? 'site',
-            ],
-            'opponent_select' => [
-                'prefix' => 'opponent-',
-                'table' => 'Opponents',
-                'label' => fn($r) => $r->opponent_name ?? 'opponent',
-            ],
-            'team_select' => [
-                'prefix' => 'team-',
-                'table' => 'Teams',
-                'label' => fn($r) => $r->team_name ?? 'team',
-            ],
-            'sport_select' => [
-                'prefix' => 'sport-',
-                'table' => 'Sports',
-                'label' => fn($r) => $r->sport_name ?? 'sport',
-            ],
-        ];
-
-        $personService = new \App\Service\PersonService();
-        $teamSeasonService = new \App\Service\TeamSeasonService();
-        $rosterService = new \App\Service\TeamSeasonRosterService();
-
-        // Check if roster is being set (takes priority over teamseason)
-        $hasRoster = !empty($data['roster_select']) && (int)$data['roster_select'] > 0;
-
-        foreach ($map as $field => $meta) {
-            // Skip teamseason_select if roster is being set
-            if ($hasRoster && $field === 'teamseason_select') {
-                continue;
-            }
-
-            // Skip other entity tags if roster is being set (only person allowed with roster)
-            $skipFields = ['game_select', 'site_select', 'opponent_select', 'team_select', 'sport_select'];
-            if ($hasRoster && in_array($field, $skipFields)) {
-                continue;
-            }
-
-            if (empty($data[$field])) {
-                continue;
-            }
-
-            $values = is_array($data[$field]) ? $data[$field] : [$data[$field]];
-            foreach ($values as $value) {
-                $id = (int)$value;
-                if ($id <= 0) {
-                    continue;
-                }
-
-                $slug = $meta['prefix'] . $id;
-
-                // Use service layer for entities with dedicated services
-                $display = '';
-                if (isset($meta['service'])) {
-                    if ($meta['service'] === 'person') {
-                        $display = $personService->getDisplayLabel($id);
-                    } elseif ($meta['service'] === 'teamseason') {
-                        $display = $teamSeasonService->getSportDisplayLabel($id);
-                    } elseif ($meta['service'] === 'roster') {
-                        $rosterData = $rosterService->getRosterDisplayData($id);
-                        $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
-                    }
-                } else {
-                    // Fallback to direct table lookup
-                    $table = TableRegistry::getTableLocator()->get($meta['table']);
-                    $row = $table->find()->select()->where(['id' => $id])->first();
-                    $display = $row ? (string)$meta['label']($row) : '';
-                }
-
-                if ($display) {
-                    $tagsToApply[] = [
-                        'slug' => $slug,
-                        'name' => $display,
-                    ];
-                }
-            }
-        }
-
-        // Add common freeform tags
-        if (!empty($data['common_tags'])) {
-            $commonTags = $data['common_tags'];
-            if (is_string($commonTags)) {
-                $tags = array_values(array_filter(
-                    array_map('trim', explode(',', $commonTags)),
-                    fn($t) => $t !== ''
-                ));
-                foreach ($tags as $tag) {
-                    $tagsToApply[] = $tag;
-                }
-            }
-        }
-
-        return $tagsToApply;
-    }
-
-    /**
      * Edit image metadata (status or original_name only for now).
      */
     public function edit(int $id): ?Response
     {
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id, contain: ['ImageTags']);
+        $pageData = $this->imagesAdminService->getEditPageData($id);
 
         // Handle basic image updates (original_name, status) only
         $request = $this->getRequest();
         if ($request->is(['post', 'put', 'patch'])) {
-            $data = (array)$request->getData();
-            $patchData = [];
-            if (array_key_exists('original_name', $data)) {
-                $patchData['original_name'] = (string)$data['original_name'];
-            }
-            if (array_key_exists('status', $data)) {
-                $patchData['status'] = (string)$data['status'];
-            }
-            if ($patchData) {
-                $image = $images->patchEntity($image, $patchData);
-                if ($images->save($image)) {
-                    $this->Flash->success('Image updated');
-                } else {
-                    $this->Flash->error('Failed to update image');
-                }
+            $result = $this->imagesAdminService->updateMetadata($id, (array)$request->getData());
+            if ($result['success']) {
+                $this->Flash->success('Image updated');
+            } else {
+                $this->Flash->error('Failed to update image');
             }
 
             return $this->redirect(['action' => 'edit', $id]);
         }
 
-        // Minimal data for edit template
-        $currentTags = $image->image_tags ?? [];
-        $this->set(compact('image', 'currentTags'));
+        $this->set($pageData);
 
         return null;
     }
@@ -528,56 +327,14 @@ class ImagesController extends AppController
         $request = $this->getRequest();
         $request->allowMethod(['get', 'post']);
 
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id, contain: ['ImageTags']);
-
-        // Service-based select lists (persons and rosters loaded via AJAX)
-        $teamService = new \App\Service\TeamService();
-        $teams = $teamService->getTeamsForSelect();
-
-        $teamSeasonService = new \App\Service\TeamSeasonService();
-        $teamSeasons = $teamSeasonService->getTeamSeasonsForSelect();
-
-        // Games with team_season_id for filtering and formatted labels
-        $games = (new GameService())->getRecentGamesForSelect(200);
-
-        $siteService = new \App\Service\SiteService();
-        $sites = $siteService->getSitesForSelect();
-
-        $opponentService = new \App\Service\OpponentService();
-        $opponents = $opponentService->getOpponentsForSelect();
-
-        $sportService = new \App\Service\SportService();
-        $sports = $sportService->getSportsForSelect();
-
         if ($request->is(['post'])) {
-            $data = $request->getData();
-            $tagging = TaggingService::forImages();
-            $tagging->applyFromData($id, $data);
+            $this->imagesAdminService->applyTags($id, (array)$request->getData());
             $this->Flash->success('Tags updated');
 
             return $this->redirect(['action' => 'tags', $id]);
         }
 
-        // Tags for display and preselects
-        $image = $images->get($id, contain: ['ImageTags']);
-        $currentTags = $image->image_tags ?? [];
-
-        $ui = (new ImageTagUiService())->formatTagsForUi($currentTags);
-        $currentTags = $ui['currentTags'];
-        $tagString = $ui['tagString'];
-
-        $this->set(compact(
-            'image',
-            'currentTags',
-            'teams',
-            'teamSeasons',
-            'games',
-            'sites',
-            'opponents',
-            'sports',
-            'tagString'
-        ));
+        $this->set($this->imagesAdminService->getTagsPageData($id));
 
         $this->viewBuilder()->setTemplate('tags');
 
@@ -591,7 +348,7 @@ class ImagesController extends AppController
     {
         $this->getRequest()->allowMethod(['post', 'delete']);
 
-        $result = (new ImageDeleteService())->deleteImageById($id);
+        $result = $this->imagesAdminService->deleteImage($id);
 
         if (!empty($result['deleted'])) {
             $this->Flash->success('Image deleted');
@@ -615,7 +372,7 @@ class ImagesController extends AppController
             $ids = [];
         }
 
-        $result = (new ImageDeleteService())->bulkDeleteImages($ids);
+        $result = $this->imagesAdminService->bulkDelete($ids);
         $deleted = (int)($result['deleted'] ?? 0);
 
         $this->Flash->success("Deleted {$deleted} image(s)");
@@ -633,8 +390,7 @@ class ImagesController extends AppController
      */
     public function manipulate(int $id): Response
     {
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id);
+        $image = $this->imagesAdminService->getImageById($id);
         /** @var \App\Model\Entity\Image $image */
 
         $request = $this->getRequest();
@@ -669,9 +425,8 @@ class ImagesController extends AppController
             // Check for custom thumbnail crop
             $thumbCrop = $request->getData('thumb_crop');
             try {
-                $result = (new ImageEditService())->manipulateImage(
-                    $images,
-                    $image,
+                $result = $this->imagesAdminService->manipulateImage(
+                    $id,
                     $manipulations,
                     $mode,
                     is_array($thumbCrop) ? $thumbCrop : null,
@@ -717,8 +472,7 @@ class ImagesController extends AppController
      */
     public function cropThumb(int $id): Response
     {
-        $images = $this->fetchTable('Images');
-        $image = $images->get($id);
+        $image = $this->imagesAdminService->getImageById($id);
         /** @var \App\Model\Entity\Image $image */
 
         $request = $this->getRequest();
@@ -755,7 +509,7 @@ class ImagesController extends AppController
             }
 
             try {
-                (new ImageEditService())->cropThumbVariant($images, $image, [
+                $this->imagesAdminService->cropThumb($id, [
                     'x' => $cropX,
                     'y' => $cropY,
                     'width' => $cropWidth,
@@ -868,6 +622,19 @@ class ImagesController extends AppController
         $legacy = $this->getRequest()->getSession()->read('Auth');
 
         return is_array($legacy) && !empty($legacy['id']);
+    }
+
+    /**
+     * Backward-compatible helper used by legacy private-method tests.
+     *
+     * @param array<string,mixed> $data
+     * @return array<int,array<string,string>|string>
+     */
+    public function buildCommonEntityTags(array $data): array
+    {
+        $service = $this->imagesAdminService ?? new ImagesAdminService();
+
+        return $service->buildCommonEntityTags($data);
     }
 
     /**

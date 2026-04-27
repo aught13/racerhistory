@@ -3,20 +3,45 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\GameService;
-use App\Service\OpponentService;
-use App\Service\PersonService;
-use App\Service\SiteService;
-use App\Service\TeamSeasonRosterService;
+use App\Service\TagLookupsAdminService;
 use Cake\Http\Response;
 
 /**
- * TagLookupsController
+ * Admin Tag Lookups Controller
  *
- * Lightweight JSON endpoints for tag UI autocomplete.
+ * Thin JSON endpoint controller for admin autocomplete/tag widgets.
+ *
+ * All lookup querying and payload shaping live in TagLookupsAdminService.
+ * This controller only validates request method/inputs and returns JSON.
+ *
+ * Endpoints:
+ * - persons: person autocomplete search by `q`
+ * - games: game autocomplete search by `q` with optional `teamseason_id`
+ * - opponents: opponent autocomplete search by `q`
+ * - sites: site autocomplete search by `q`
+ * - rosters: roster lookup by `person_id`
+ *
+ * @property \App\Service\TagLookupsAdminService $tagLookupsAdminService
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class TagLookupsController extends AppController
 {
+    /**
+     * @var \App\Service\TagLookupsAdminService
+     */
+    private TagLookupsAdminService $tagLookupsAdminService;
+
+    /**
+     * Initialize controller services.
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->tagLookupsAdminService = new TagLookupsAdminService();
+    }
+
     /**
      * Search persons for autocomplete.
      * Query param: q
@@ -25,23 +50,9 @@ class TagLookupsController extends AppController
     {
         $this->request->allowMethod(['get']);
 
-        $q = trim((string)$this->request->getQuery('q'));
-        if ($q == '') {
-            return $this->json(['success' => true, 'persons' => []]);
-        }
+        $q = (string)$this->request->getQuery('q');
 
-        $service = new PersonService();
-        $persons = $service->searchPersons($q, 25);
-
-        $out = [];
-        foreach ($persons as $p) {
-            $out[] = [
-                'id' => (int)$p['id'],
-                'label' => (string)$p['label'],
-            ];
-        }
-
-        return $this->json(['success' => true, 'persons' => $out]);
+        return $this->json($this->tagLookupsAdminService->persons($q));
     }
 
     /**
@@ -52,26 +63,10 @@ class TagLookupsController extends AppController
     {
         $this->request->allowMethod(['get']);
 
-        $q = trim((string)$this->request->getQuery('q'));
+        $q = (string)$this->request->getQuery('q');
         $teamSeasonId = (int)$this->request->getQuery('teamseason_id');
 
-        if ($q === '' && $teamSeasonId <= 0) {
-            return $this->json(['success' => true, 'games' => []]);
-        }
-
-        $service = new GameService();
-        $rows = $service->searchGamesForSelect($q, $teamSeasonId > 0 ? $teamSeasonId : null, 25);
-
-        $out = [];
-        foreach ($rows as $row) {
-            $out[] = [
-                'id' => (int)$row['id'],
-                'team_season_id' => (int)($row['team_season_id'] ?? 0),
-                'label' => (string)$row['label'],
-            ];
-        }
-
-        return $this->json(['success' => true, 'games' => $out]);
+        return $this->json($this->tagLookupsAdminService->games($q, $teamSeasonId > 0 ? $teamSeasonId : null));
     }
 
     /**
@@ -82,23 +77,9 @@ class TagLookupsController extends AppController
     {
         $this->request->allowMethod(['get']);
 
-        $q = trim((string)$this->request->getQuery('q'));
-        if ($q === '') {
-            return $this->json(['success' => true, 'opponents' => []]);
-        }
+        $q = (string)$this->request->getQuery('q');
 
-        $service = new OpponentService();
-        $rows = $service->searchOpponents($q, 25);
-
-        $out = [];
-        foreach ($rows as $row) {
-            $out[] = [
-                'id' => (int)$row->id,
-                'label' => (string)($row->opponent_name ?? 'Opponent #' . $row->id),
-            ];
-        }
-
-        return $this->json(['success' => true, 'opponents' => $out]);
+        return $this->json($this->tagLookupsAdminService->opponents($q));
     }
 
     /**
@@ -109,23 +90,9 @@ class TagLookupsController extends AppController
     {
         $this->request->allowMethod(['get']);
 
-        $q = trim((string)$this->request->getQuery('q'));
-        if ($q === '') {
-            return $this->json(['success' => true, 'sites' => []]);
-        }
+        $q = (string)$this->request->getQuery('q');
 
-        $service = new SiteService();
-        $rows = $service->searchSites($q, 25);
-
-        $out = [];
-        foreach ($rows as $row) {
-            $out[] = [
-                'id' => (int)$row->id,
-                'label' => $service->getDisplayLabel((int)$row->id),
-            ];
-        }
-
-        return $this->json(['success' => true, 'sites' => $out]);
+        return $this->json($this->tagLookupsAdminService->sites($q));
     }
 
     /**
@@ -137,22 +104,8 @@ class TagLookupsController extends AppController
         $this->request->allowMethod(['get']);
 
         $personId = (int)$this->request->getQuery('person_id');
-        if ($personId <= 0) {
-            return $this->json(['success' => true, 'rosters' => []]);
-        }
 
-        $service = new TeamSeasonRosterService();
-        $rows = $service->getRostersForPersonLookup($personId, 200);
-
-        $out = [];
-        foreach ($rows as $row) {
-            $out[] = [
-                'id' => (int)$row['id'],
-                'label' => (string)$row['label'],
-            ];
-        }
-
-        return $this->json(['success' => true, 'rosters' => $out]);
+        return $this->json($this->tagLookupsAdminService->rosters($personId));
     }
 
     /**

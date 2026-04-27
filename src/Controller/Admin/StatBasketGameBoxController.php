@@ -90,7 +90,8 @@ class StatBasketGameBoxController extends AppController
         $viewData = $this->basketballStatsAdminService->getAdminGameBoxPeriodsData($gameId);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->basketballStatsAdminService->saveAdminGameBoxPeriods($gameId, (array)$this->request->getData());
+            $data = (array)$this->request->getData();
+            $result = $this->basketballStatsAdminService->saveAdminGameBoxPeriods($gameId, $data);
 
             if ($result['success']) {
                 $this->Flash->success(__('Period box scores have been saved.'));
