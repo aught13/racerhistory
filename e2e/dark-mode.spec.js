@@ -6,16 +6,19 @@ import { test, expect } from "@playwright/test";
  * and that key components are readable in dark mode.
  */
 
+async function setDarkThemeCookie(page, baseURL) {
+    await page.context().addCookies([
+        {
+            name: "theme",
+            value: "dark",
+            url: baseURL ?? "http://127.0.0.1:8765",
+        },
+    ]);
+}
+
 test.describe("Dark Mode — explicit theme toggle", () => {
-    test.beforeEach(async ({ page }) => {
-        // Set dark theme cookie before navigating
-        await page.context().addCookies([
-            {
-                name: "theme",
-                value: "dark",
-                url: "http://localhost:8765",
-            },
-        ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     test("should apply dark theme variables to :root", async ({ page }) => {
@@ -175,12 +178,8 @@ test.describe("Dark Mode — theme toggle button", () => {
 });
 
 test.describe("Dark Mode — /games index card grid", () => {
-    test.beforeEach(async ({ page }) => {
-        await page
-            .context()
-            .addCookies([
-                { name: "theme", value: "dark", url: "http://localhost:8765" },
-            ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     test("game-type-card should have dark surface background", async ({
@@ -234,12 +233,8 @@ test.describe("Dark Mode — /games index card grid", () => {
 });
 
 test.describe("Dark Mode — /stats index card grid", () => {
-    test.beforeEach(async ({ page }) => {
-        await page
-            .context()
-            .addCookies([
-                { name: "theme", value: "dark", url: "http://localhost:8765" },
-            ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     test("stat-type-card should have dark surface background", async ({
@@ -282,12 +277,8 @@ test.describe("Dark Mode — /stats index card grid", () => {
 });
 
 test.describe("Dark Mode — /people index table", () => {
-    test.beforeEach(async ({ page }) => {
-        await page
-            .context()
-            .addCookies([
-                { name: "theme", value: "dark", url: "http://localhost:8765" },
-            ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     test("people-table-card should have dark surface background", async ({
@@ -332,12 +323,8 @@ test.describe("Dark Mode — /people index table", () => {
 });
 
 test.describe("Dark Mode — page titles", () => {
-    test.beforeEach(async ({ page }) => {
-        await page
-            .context()
-            .addCookies([
-                { name: "theme", value: "dark", url: "http://localhost:8765" },
-            ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     test("home page title should contain RacerHistory", async ({ page }) => {
@@ -358,12 +345,8 @@ test.describe("Dark Mode — page titles", () => {
 });
 
 test.describe("Dark Mode — /stats DataTable sub-pages", () => {
-    test.beforeEach(async ({ page }) => {
-        await page
-            .context()
-            .addCookies([
-                { name: "theme", value: "dark", url: "http://localhost:8765" },
-            ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     const statsPages = [
@@ -415,12 +398,8 @@ test.describe("Dark Mode — /stats DataTable sub-pages", () => {
 });
 
 test.describe("Dark Mode — /games DataTable sub-pages", () => {
-    test.beforeEach(async ({ page }) => {
-        await page
-            .context()
-            .addCookies([
-                { name: "theme", value: "dark", url: "http://localhost:8765" },
-            ]);
+    test.beforeEach(async ({ page, baseURL }) => {
+        await setDarkThemeCookie(page, baseURL);
     });
 
     const gamesPages = [

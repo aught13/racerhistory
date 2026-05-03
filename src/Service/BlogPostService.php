@@ -34,7 +34,7 @@ class BlogPostService
     {
         $table = $this->posts();
         /** @var \App\Model\Entity\BlogPost|null $post */
-        $post = $table->find()->contain(['BlogTags', 'HeroImages'])->where(['BlogPosts.id' => $id])->first();
+        $post = $table->find()->contain(['BlogTags'])->where(['BlogPosts.id' => $id])->first();
 
         return $post;
     }
@@ -47,7 +47,7 @@ class BlogPostService
         $table = $this->posts();
         /** @var \App\Model\Entity\BlogPost|null $post */
         $post = $table->find()
-            ->contain(['BlogTags', 'HeroImages'])
+            ->contain(['BlogTags'])
             ->where([
                 'BlogPosts.slug' => $slug,
                 'BlogPosts.is_published' => true,
@@ -81,7 +81,7 @@ class BlogPostService
         $table = $this->posts();
 
         return $table->find()
-            ->contain(['BlogTags', 'HeroImages'])
+            ->contain(['BlogTags'])
             ->matching('BlogTags', function ($q) use ($tagSlug) {
                 return $q->where(['BlogTags.slug' => $tagSlug]);
             })
@@ -115,7 +115,7 @@ class BlogPostService
     {
         $table = $this->posts();
         $query = $table->find()
-            ->contain(['BlogTags', 'HeroImages'])
+            ->contain(['BlogTags'])
             ->where(['BlogPosts.is_published' => true]);
 
         $query->select($table);

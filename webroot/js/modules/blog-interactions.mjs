@@ -42,6 +42,13 @@ export function setupBlogPostCollapse(root = document) {
 
             // Clear the view frame content
             viewFrame.innerHTML = "";
+
+            // Notify the page so the featured post hero can be restored if needed
+            document.dispatchEvent(
+                new CustomEvent("blog:post-collapsed", {
+                    detail: { frameId: parentFrame ? parentFrame.id : null },
+                }),
+            );
         });
     });
 }

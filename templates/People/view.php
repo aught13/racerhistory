@@ -394,9 +394,7 @@ $this->end();
                                     $post->slug,
                                 ]);
                                 $heroImageSrc = '';
-                                if (!empty($post->hero_image)) {
-                                    $heroImageSrc = $this->ImageServe->urlForImage($post->hero_image, ['w' => 200, 'h' => 150, 'fit' => 'cover']);
-                                } elseif (!empty($post->hero_image_id)) {
+                                if (!empty($post->hero_image_id)) {
                                     $heroImageSrc = $this->ImageServe->url($post->hero_image_id, ['w' => 200, 'h' => 150, 'fit' => 'cover']);
                                 }
                                 ?>

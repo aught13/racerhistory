@@ -90,3 +90,31 @@ test("markBlogPostExpanded toggles container and hides featured/list", () => {
     expect(featured.style.display).toBe("none");
     expect(listItem.style.display).toBe("none");
 });
+
+test("setupBlogPostCollapse emits blog:post-collapsed with the frame id", () => {
+    const container = document.createElement("div");
+    container.id = "blog-post-test-slug";
+
+    const viewFrame = document.createElement("turbo-frame");
+    viewFrame.setAttribute("data-view-frame", "1");
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "blog-collapse";
+    viewFrame.appendChild(closeBtn);
+    container.appendChild(viewFrame);
+    document.body.appendChild(container);
+
+    let eventDetail = null;
+    document.addEventListener(
+        "blog:post-collapsed",
+        (event) => {
+            eventDetail = event.detail;
+        },
+        { once: true },
+    );
+
+    const { setupBlogPostCollapse } = mod;
+    setupBlogPostCollapse(document);
+    closeBtn.click();
+
+    expect(eventDetail).toEqual({ frameId: "blog-post-test-slug" });
+});

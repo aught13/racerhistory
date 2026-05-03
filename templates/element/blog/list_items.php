@@ -18,28 +18,15 @@ declare(strict_types=1);
     <article class="blog-list-item cursor-pointer d-flex gap-3" data-blog-post="<?= h($post->slug) ?>" style="cursor: pointer;">
         <?php if (!empty($post->hero_image_id)): ?>
         <figure style="flex-shrink: 0; width: 120px; height: 90px; margin: 0;">
-            <?php
-            $heroImage = !empty($post->hero_image) ? $post->hero_image : null;
-            if ($heroImage): ?>
-                <?= $this->ImageServe->picture(
-                    $heroImage,
-                    ['w' => 200, 'h' => 150, 'fit' => 'cover'],
-                    [
-                        'alt' => h($post->title),
-                        'class' => 'img-fluid rounded',
-                        'style' => 'object-fit: cover; width: 100%; height: 100%;',
-                    ]
-                ) ?>
-            <?php else: ?>
-                <picture>
-                    <source srcset="<?= h($this->ImageServe->url($post->hero_image_id, ['w' => 200, 'h' => 150, 'fit' => 'cover', 'fm' => 'webp'])) ?>" type="image/webp">
-                    <img src="<?= h($this->ImageServe->url($post->hero_image_id, ['w' => 200, 'h' => 150, 'fit' => 'cover'])) ?>"
-                         class="img-fluid rounded"
-                         alt="<?= h($post->title) ?>"
-                         style="object-fit: cover; width: 100%; height: 100%;"
-                         loading="lazy">
-                </picture>
-            <?php endif; ?>
+            <?= $this->ImageServe->picture(
+                $post->hero_image_id,
+                ['w' => 200, 'h' => 150, 'fit' => 'cover'],
+                [
+                    'alt' => h($post->title),
+                    'class' => 'img-fluid rounded',
+                    'style' => 'object-fit: cover; width: 100%; height: 100%;',
+                ]
+            ) ?>
         </figure>
         <?php endif; ?>
         <div class="flex-grow-1">

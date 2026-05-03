@@ -24,11 +24,6 @@ class BlogPostsTable extends Table
         $this->setTable('blog_posts');
         $this->setPrimaryKey('id');
         $this->addBehavior('Timestamp');
-
-        $this->belongsTo('HeroImages', [
-            'className' => 'Images',
-            'foreignKey' => 'hero_image_id',
-        ]);
         $this->belongsToMany('BlogTags', [
             'joinTable' => 'blog_posts_blog_tags',
         ]);
@@ -61,7 +56,6 @@ class BlogPostsTable extends Table
     public function buildRules(RulesChecker $rules): RulesChecker
     {
         $rules->add($rules->isUnique(['slug'], 'Slug must be unique'));
-        $rules->add($rules->existsIn(['hero_image_id'], 'HeroImages'), ['allowNullableNulls' => true]);
 
         return $rules;
     }

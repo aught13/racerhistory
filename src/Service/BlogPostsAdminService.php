@@ -70,12 +70,12 @@ class BlogPostsAdminService
     }
 
     /**
-     * Load a blog post for edit, including tags and hero image associations.
+     * Load a blog post for edit, including tags.
      */
     public function getEditEntity(int $id): BlogPost
     {
         /** @var \App\Model\Entity\BlogPost $post */
-        $post = $this->blogPostsTable->get($id, contain: ['BlogTags', 'HeroImages']);
+        $post = $this->blogPostsTable->get($id, contain: ['BlogTags']);
 
         return $post;
     }

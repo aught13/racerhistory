@@ -31,10 +31,10 @@ declare(strict_types=1);
             </p>
         </header>
 
-        <?php if (!empty($post->hero_image)): ?>
+        <?php if (!empty($post->hero_image_id)): ?>
         <figure class="mb-4 text-center">
             <?= $this->ImageServe->picture(
-                $post->hero_image,
+                $post->hero_image_id,
                 ['w' => 1200, 'fit' => 'contain'],
                 [
                     'alt' => h($post->title),

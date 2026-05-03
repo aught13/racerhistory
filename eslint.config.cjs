@@ -81,6 +81,7 @@ module.exports = [
                 bootstrap: "readonly",
                 XMLHttpRequest: "readonly",
                 FormData: "readonly",
+                CustomEvent: "readonly",
             },
         },
     },

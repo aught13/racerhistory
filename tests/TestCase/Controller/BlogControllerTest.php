@@ -14,6 +14,7 @@ class BlogControllerTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.Images',
     ];
 
     public function testIndex(): void
@@ -21,6 +22,9 @@ class BlogControllerTest extends TestCase
         $this->get('/blog');
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="blog">');
+        $this->assertResponseContains('blog-featured-as-list');
+        $this->assertResponseContains('/images/serve/1?w=200&amp;h=150&amp;fit=cover');
+        $this->assertResponseContains('fm=webp');
     }
 
     public function testView(): void
@@ -29,6 +33,8 @@ class BlogControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('First Post');
         $this->assertResponseContains('<turbo-frame id="blog-post-view-first-post"');
+        $this->assertResponseContains('/images/serve/1?w=1200&amp;fit=contain');
+        $this->assertResponseContains('type="image/webp"');
     }
 
     public function testViewNotFound(): void

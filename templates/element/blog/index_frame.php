@@ -26,41 +26,66 @@ if ($page === 1 && !empty($posts)) {
             <!-- Featured Hero Post (only on page 1) -->
             <?php if ($page === 1 && $featured): ?>
             <turbo-frame id="blog-post-<?= h($featured->slug) ?>" class="blog-featured-frame mb-5 pb-4 border-bottom">
+                <!-- Main featured view: title → hero image → blurb (shown by default) -->
                 <div class="blog-featured cursor-pointer" data-blog-post="<?= h($featured->slug) ?>" style="cursor: pointer;">
-                    <div class="row align-items-start g-4">
-                        <?php if (!empty($featured->hero_image)): ?>
-                        <div class="col-lg-7">
-                            <?= $this->ImageServe->responsivePicture(
-                                $featured->hero_image,
-                                [600, 900, 1200],
-                                ['fit' => 'cover', 'h' => 720],
-                                [
-                                    'alt' => h($featured->title),
-                                    'class' => 'img-fluid rounded blog-hero-image',
-                                    'sizes' => '(max-width: 991px) 100vw, 58vw',
-                                ]
-                            ) ?>
-                        </div>
+                    <h1 class="h2 mb-2 blog-hero-title"><?= h($featured->title) ?></h1>
+                    <p class="text-muted small mb-3">
+                        <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
+                            <time datetime="<?= h($featured->published_at->format('Y-m-d')) ?>">
+                                <?= h($featured->published_at->format('F j, Y')) ?>
+                            </time>
+                        <?php else: ?>
+                            <?= h($featured->published_at ?? '') ?>
                         <?php endif; ?>
-                        <div class="col-lg-<?= !empty($featured->hero_image) ? '5' : '12' ?>">
-                            <h1 class="h2 mb-2 blog-hero-title"><?= h($featured->title) ?></h1>
-                            <p class="text-muted small mb-3">
-                                <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
-                                    <time datetime="<?= h($featured->published_at->format('Y-m-d')) ?>">
-                                        <?= h($featured->published_at->format('F j, Y')) ?>
-                                    </time>
-                                <?php else: ?>
-                                    <?= h($featured->published_at ?? '') ?>
-                                <?php endif; ?>
-                            </p>
-                            <p class="lead mb-0 blog-hero-excerpt"><?= h($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 220) . '...') ?></p>
-                        </div>
+                    </p>
+                    <?php if (!empty($featured->hero_image_id)): ?>
+                    <div class="blog-featured-hero mb-3">
+                        <?= $this->ImageServe->responsivePicture(
+                            $featured->hero_image_id,
+                            [600, 900, 1200],
+                            ['fit' => 'cover', 'h' => 720],
+                            [
+                                'alt' => h($featured->title),
+                                'class' => 'img-fluid rounded blog-hero-image',
+                                'sizes' => '(max-width: 991px) 100vw, 100%',
+                            ]
+                        ) ?>
+                    </div>
+                    <?php endif; ?>
+                    <p class="lead mb-0 blog-hero-excerpt"><?= h($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 220) . '...') ?></p>
+                </div>
+                <!-- Thumb view: shown when another post is expanded (initially hidden) -->
+                <div class="blog-featured-as-list cursor-pointer d-none d-flex gap-3 align-items-start" data-blog-post="<?= h($featured->slug) ?>" style="cursor: pointer;">
+                    <?php if (!empty($featured->hero_image_id)): ?>
+                    <figure style="flex-shrink: 0; width: 120px; height: 90px; margin: 0;">
+                        <?= $this->ImageServe->picture(
+                            $featured->hero_image_id,
+                            ['w' => 200, 'h' => 150, 'fit' => 'cover'],
+                            [
+                                'alt' => h($featured->title),
+                                'class' => 'img-fluid rounded',
+                                'style' => 'object-fit: cover; width: 100%; height: 100%;',
+                            ]
+                        ) ?>
+                    </figure>
+                    <?php endif; ?>
+                    <div class="flex-grow-1">
+                        <h2 class="h6 mb-1"><?= h($featured->title) ?></h2>
+                        <p class="text-muted small mb-2">
+                            <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
+                                <time datetime="<?= h($featured->published_at->format('Y-m-d')) ?>">
+                                    <?= h($featured->published_at->format('M j, Y')) ?>
+                                </time>
+                            <?php else: ?>
+                                <?= h($featured->published_at ?? '') ?>
+                            <?php endif; ?>
+                        </p>
+                        <p class="small mb-0 blog-list-excerpt"><?= h($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 120) . '...') ?></p>
                     </div>
                 </div>
                 <turbo-frame id="blog-post-view-<?= h($featured->slug) ?>" data-view-frame></turbo-frame>
             </turbo-frame>
 
-            <!-- Recent Posts List Header -->
             <?php endif; ?>
 
             <!-- Paginated Posts List -->
@@ -101,6 +126,9 @@ if ($page === 1 && !empty($posts)) {
     .blog-featured:hover {
         opacity: 0.9;
     }
+    .blog-featured-as-list:hover {
+        background-color: var(--rh-surface);
+    }
     .cursor-pointer {
         cursor: pointer;
     }
@@ -127,10 +155,23 @@ if ($page === 1 && !empty($posts)) {
         const blogFrame = document.querySelector('turbo-frame#blog');
         if (!blogFrame) return;
 
-        // Handle featured post click
+        // Handle featured post click (main hero view)
         const featured = blogFrame.querySelector('.blog-featured');
-        if (featured) {
+        if (featured && featured.dataset.blogClickBound !== 'true') {
+            featured.dataset.blogClickBound = 'true';
             featured.addEventListener('click', function() {
+                const slug = this.dataset.blogPost;
+                if (slug) {
+                    loadBlogPost(slug);
+                }
+            });
+        }
+
+        // Handle featured post click (thumb/list view shown when another post is expanded)
+        const featuredAsList = blogFrame.querySelector('.blog-featured-as-list');
+        if (featuredAsList && featuredAsList.dataset.blogClickBound !== 'true') {
+            featuredAsList.dataset.blogClickBound = 'true';
+            featuredAsList.addEventListener('click', function() {
                 const slug = this.dataset.blogPost;
                 if (slug) {
                     loadBlogPost(slug);
@@ -141,6 +182,10 @@ if ($page === 1 && !empty($posts)) {
         // Handle list items click
         const listItems = blogFrame.querySelectorAll('.blog-list-item');
         listItems.forEach(item => {
+            if (item.dataset.blogClickBound === 'true') {
+                return;
+            }
+            item.dataset.blogClickBound = 'true';
             item.addEventListener('click', function() {
                 const slug = this.dataset.blogPost;
                 if (slug) {
@@ -155,6 +200,13 @@ if ($page === 1 && !empty($posts)) {
         const loadMoreTrigger = document.getElementById('load-more-trigger');
 
         if (!loadMoreBtn || !loadMoreTrigger) return;
+
+        if (loadMoreBtn.dataset.infiniteScrollBound === 'true') {
+            fillViewportIfNeeded();
+
+            return;
+        }
+        loadMoreBtn.dataset.infiniteScrollBound = 'true';
 
         // Setup intersection observer for infinite scroll
         const observer = new IntersectionObserver((entries) => {
@@ -247,12 +299,41 @@ if ($page === 1 && !empty($posts)) {
         frame.classList.toggle('blog-post-expanded', expanded);
         const featured = frame.querySelector('.blog-featured');
         if (featured) featured.style.display = expanded ? 'none' : '';
+        // Always hide the thumb view on explicit state changes; collapseFeaturedToThumb manages showing it
+        const featuredAsList = frame.querySelector('.blog-featured-as-list');
+        if (featuredAsList) featuredAsList.classList.add('d-none');
         const listItem = frame.querySelector('.blog-list-item');
         if (listItem) listItem.style.display = expanded ? 'none' : '';
         if (!expanded) {
             const viewFrame = frame.querySelector('turbo-frame[data-view-frame]');
             if (viewFrame) viewFrame.innerHTML = '';
         }
+    }
+
+    /**
+     * Collapse the featured (first) post to a thumbnail+info row.
+     * Called when any other post is being expanded.
+     */
+    function collapseFeaturedToThumb() {
+        const featuredFrame = document.querySelector('turbo-frame.blog-featured-frame');
+        if (!featuredFrame) return;
+        const featured = featuredFrame.querySelector('.blog-featured');
+        const featuredAsList = featuredFrame.querySelector('.blog-featured-as-list');
+        if (featured) featured.style.display = 'none';
+        if (featuredAsList) featuredAsList.classList.remove('d-none');
+    }
+
+    /**
+     * Restore the featured (first) post to its full hero view.
+     * Called when all other posts collapse.
+     */
+    function restoreFeaturedPost() {
+        const featuredFrame = document.querySelector('turbo-frame.blog-featured-frame');
+        if (!featuredFrame || featuredFrame.dataset.expanded === 'true') return;
+        const featured = featuredFrame.querySelector('.blog-featured');
+        const featuredAsList = featuredFrame.querySelector('.blog-featured-as-list');
+        if (featured) featured.style.display = '';
+        if (featuredAsList) featuredAsList.classList.add('d-none');
     }
 
     function collapseOtherPosts(activeContainerId) {
@@ -262,6 +343,11 @@ if ($page === 1 && !empty($posts)) {
                 setExpandedState(frame, false);
             }
         });
+        // When any non-featured post becomes active, shrink the featured post to a thumb
+        const featuredFrame = document.querySelector('turbo-frame.blog-featured-frame');
+        if (featuredFrame && featuredFrame.id !== activeContainerId) {
+            collapseFeaturedToThumb();
+        }
     }
 
     function loadBlogPost(slug) {
@@ -272,6 +358,7 @@ if ($page === 1 && !empty($posts)) {
 
         if (existingFrame && existingFrame.dataset.expanded === 'true') {
             setExpandedState(existingFrame, false);
+            restoreFeaturedPost();
             return;
         }
 
@@ -290,6 +377,15 @@ if ($page === 1 && !empty($posts)) {
     }
 
     window.loadBlogPost = loadBlogPost;
+
+    // Restore the featured post hero when a collapse button closes any other post
+    document.addEventListener('blog:post-collapsed', function(e) {
+        const collapsedId = e.detail && e.detail.frameId;
+        const featuredFrame = document.querySelector('turbo-frame.blog-featured-frame');
+        if (featuredFrame && collapsedId !== featuredFrame.id) {
+            restoreFeaturedPost();
+        }
+    });
 
     // Re-setup interactions when Turbo loads new content
     document.addEventListener('turbo:load', function() {

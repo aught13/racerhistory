@@ -528,7 +528,7 @@ class PeopleController extends AppController
     {
         $table = $this->fetchTable('BlogPosts');
         $posts = $table->find()
-            ->contain(['BlogTags', 'HeroImages'])
+            ->contain(['BlogTags'])
             ->matching('BlogTags', function ($q) use ($tagSlug) {
                 return $q->where(['BlogTags.slug' => $tagSlug]);
             })

@@ -43,7 +43,7 @@ class BlogPostsFixture extends TestFixture
                 'pinned_rank' => null,
                 'pinned_until' => null,
                 'published_at' => '2025-01-01 12:00:00',
-                'hero_image_id' => null,
+                'hero_image_id' => 1,
                 'created' => '2025-01-01 12:00:00',
                 'modified' => '2025-01-01 12:00:00',
             ],

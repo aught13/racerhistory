@@ -23,7 +23,6 @@ use Cake\ORM\Entity;
  * @property \DateTimeInterface|null $created
  * @property \DateTimeInterface|null $modified
  * @property \Cake\Collection\CollectionInterface|array<\App\Model\Entity\BlogTag> $blog_tags
- * @property \App\Model\Entity\Image|null $hero_image
  */
 class BlogPost extends Entity
 {
@@ -47,6 +46,5 @@ class BlogPost extends Entity
         'created' => true,
         'modified' => true,
         'blog_tags' => true,
-        'hero_image' => true,
     ];
 }
