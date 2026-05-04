@@ -11,10 +11,12 @@ $this->assign('title', 'View Team Season Roster');
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a
-                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">Team
+                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                            'action' => 'index']) ?>">Team
                             Seasons</a></li>
                     <li class="breadcrumb-item"><a
-                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonRoster->team_season_id]) ?>">Team
+                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                            'action' => 'view', $teamSeasonRoster->team_season_id]) ?>">Team
                             Season View</a></li>
                     <li class="breadcrumb-item active" aria-current="page">View Roster</li>
                 </ol>
@@ -35,14 +37,18 @@ $this->assign('title', 'View Team Season Roster');
                     <dl class="row">
                         <dt class="col-sm-3">Team Season</dt>
                         <dd class="col-sm-9"><a
-                                href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonRoster->team_season_id]) ?>">
+                                href="<?= $this->Url->build(['prefix' => 'Admin',
+                                'controller' => 'TeamSeasons', 'action' => 'view',
+                                $teamSeasonRoster->team_season_id]) ?>">
                                 <?= h($teamSeasonRoster->team_season->team->team_name) ?>
-                                (<?= h($teamSeasonRoster->team_season->season->start . '-' . $teamSeasonRoster->team_season->season->end) ?>)
+                                (<?= h($teamSeasonRoster->team_season->season->start . '-' .
+                                $teamSeasonRoster->team_season->season->end) ?>)
                             </a></dd>
 
                         <dt class="col-sm-3">Person</dt>
                         <dd class="col-sm-9"><a
-                                href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'view', $teamSeasonRoster->person_id]) ?>">
+                                href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons',
+                                'action' => 'view', $teamSeasonRoster->person_id]) ?>">
                                 <?= h($teamSeasonRoster->person->display) ?>
                             </a></dd>
 
@@ -70,9 +76,12 @@ $this->assign('title', 'View Team Season Roster');
                     <h3 class="card-title mb-0">Actions</h3>
                 </div>
                 <div class="card-body">
-                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'edit', $teamSeasonRoster->id]) ?>"
+                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters',
+                    'action' => 'edit', $teamSeasonRoster->id]) ?>"
                         class="btn btn-primary d-block mb-2">Edit Roster Entry</a>
-                    <?= $this->Form->postLink(__('Delete Roster Entry'), ['action' => 'delete', $teamSeasonRoster->id], ['confirm' => __('Are you sure you want to delete this roster entry?'), 'class' => 'btn btn-danger d-block']) ?>
+                    <?= $this->Form->postLink(__('Delete Roster Entry'), ['action' => 'delete',
+                    $teamSeasonRoster->id], ['confirm' => __('Are you sure you want to delete this roster entry?'),
+                     'class' => 'btn btn-danger d-block']) ?>
                 </div>
             </div>
         </div>

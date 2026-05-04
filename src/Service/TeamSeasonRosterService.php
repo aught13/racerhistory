@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\TeamSeasonRosters;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -36,7 +37,7 @@ class TeamSeasonRosterService
      * @param int $rosterId
      * @return \App\Model\Entity\TeamSeasonRosters|null
      */
-    public function getRosterById(int $rosterId): ?\App\Model\Entity\TeamSeasonRosters
+    public function getRosterById(int $rosterId): ?TeamSeasonRosters
     {
         $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
 
@@ -220,7 +221,7 @@ class TeamSeasonRosterService
      * @param array $data Roster data (person_id, team_season_id, jersey_number, etc.)
      * @return \App\Model\Entity\TeamSeasonRosters|false
      */
-    public function createRoster(array $data): \App\Model\Entity\TeamSeasonRosters|false
+    public function createRoster(array $data): TeamSeasonRosters|false
     {
         $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
         $roster = $rosters->newEntity($data);
@@ -235,7 +236,7 @@ class TeamSeasonRosterService
      * @param array $data Updated roster data
      * @return \App\Model\Entity\TeamSeasonRosters|false
      */
-    public function updateRoster(int $rosterId, array $data): \App\Model\Entity\TeamSeasonRosters|false
+    public function updateRoster(int $rosterId, array $data): TeamSeasonRosters|false
     {
         $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
         $roster = $rosters->get($rosterId);

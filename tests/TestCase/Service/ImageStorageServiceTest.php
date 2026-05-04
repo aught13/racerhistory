@@ -18,6 +18,9 @@ class ImageStorageServiceTest extends TestCase
     private string $storageRoot;
     private string $legacyRoot;
 
+    /**
+     * Sets up the test case.
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +31,9 @@ class ImageStorageServiceTest extends TestCase
         $this->service = new ImageStorageService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     protected function tearDown(): void
     {
         $this->clearDir($this->storageRoot);
@@ -36,6 +42,9 @@ class ImageStorageServiceTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests resolve image path uses variant mime.
+     */
     public function testResolveImagePathUsesVariantMime(): void
     {
         $images = $this->getTableLocator()->get('Images');
@@ -63,6 +72,9 @@ class ImageStorageServiceTest extends TestCase
         $this->assertSame('image/webp', $mime);
     }
 
+    /**
+     * Tests resolve image path falls back to legacy path.
+     */
     public function testResolveImagePathFallsBackToLegacyPath(): void
     {
         $images = $this->getTableLocator()->get('Images');
@@ -83,6 +95,11 @@ class ImageStorageServiceTest extends TestCase
         $this->assertSame($image->mime, $mime);
     }
 
+    /**
+     * Runs the clear dir routine.
+     *
+     * @param string $dir
+     */
     private function clearDir(string $dir): void
     {
         if ($dir === '' || !is_dir($dir)) {

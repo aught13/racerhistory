@@ -79,6 +79,8 @@ class OpponentsController extends AppController
 
     /**
      * Edit an opponent.
+     *
+     * @param string $id
      */
     public function edit(string $id): ?Response
     {
@@ -103,6 +105,8 @@ class OpponentsController extends AppController
 
     /**
      * Delete an opponent.
+     *
+     * @param string $id
      */
     public function delete(string $id): Response
     {

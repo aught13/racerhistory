@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Game;
+use App\Model\Entity\StatBasketGameTeam;
+use App\Model\Entity\TeamSeason;
+
 /**
  * BasketballStatsAdminService
  *
@@ -30,7 +34,7 @@ class BasketballStatsAdminService extends BasketballStatsService
      * @param int $gameId Game ID
      * @return \App\Model\Entity\Game
      */
-    protected function getAdminGame(int $gameId): \App\Model\Entity\Game
+    protected function getAdminGame(int $gameId): Game
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
@@ -47,7 +51,7 @@ class BasketballStatsAdminService extends BasketballStatsService
      * @param int $gameId Game ID
      * @return \App\Model\Entity\Game
      */
-    protected function getAdminBasketballGame(int $gameId): \App\Model\Entity\Game
+    protected function getAdminBasketballGame(int $gameId): Game
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
@@ -67,7 +71,7 @@ class BasketballStatsAdminService extends BasketballStatsService
      * @param int $teamSeasonId Team season ID
      * @return \App\Model\Entity\TeamSeason
      */
-    protected function getTeamSeasonForAdmin(int $teamSeasonId): \App\Model\Entity\TeamSeason
+    protected function getTeamSeasonForAdmin(int $teamSeasonId): TeamSeason
     {
         /** @var \App\Model\Table\TeamSeasonsTable $table */
         $table = $this->fetchTable('TeamSeasons');
@@ -141,10 +145,10 @@ class BasketballStatsAdminService extends BasketballStatsService
      * Get or create a game team stat record.
      *
      * @param int $gameId Game ID
-     * @param int $opp Opponent flag
+     * @param bool $opp Opponent flag
      * @return \App\Model\Entity\StatBasketGameTeam
      */
-    protected function getOrCreateGameTeamStat(int $gameId, int $opp): \App\Model\Entity\StatBasketGameTeam
+    protected function getOrCreateGameTeamStat(int $gameId, bool $opp): StatBasketGameTeam
     {
         /** @var \App\Model\Table\StatBasketGameTeamTable $table */
         $table = $this->fetchTable('StatBasketGameTeam');
@@ -629,8 +633,8 @@ class BasketballStatsAdminService extends BasketballStatsService
     public function getAdminGameTeamEditData(int $gameId): array
     {
         return [
-            'teamStats' => $this->getOrCreateGameTeamStat($gameId, 0),
-            'opponentStats' => $this->getOrCreateGameTeamStat($gameId, 1),
+            'teamStats' => $this->getOrCreateGameTeamStat($gameId, false),
+            'opponentStats' => $this->getOrCreateGameTeamStat($gameId, true),
             'game' => $this->getAdminGame($gameId),
         ];
     }
@@ -646,19 +650,25 @@ class BasketballStatsAdminService extends BasketballStatsService
     {
         /** @var \App\Model\Table\StatBasketGameTeamTable $table */
         $table = $this->fetchTable('StatBasketGameTeam');
-        $teamStats = $this->getOrCreateGameTeamStat($gameId, 0);
-        $opponentStats = $this->getOrCreateGameTeamStat($gameId, 1);
+        $teamStats = $this->getOrCreateGameTeamStat($gameId, false);
+        $opponentStats = $this->getOrCreateGameTeamStat($gameId, true);
 
         if (isset($data['team'])) {
-            $teamStats = $table->patchEntity($teamStats, $data['team'] + ['game_id' => $gameId, 'opp' => 0]);
+            $teamStats = $table->patchEntity($teamStats, $data['team'] + ['game_id' => $gameId, 'opp' => false]);
         }
         if (isset($data['opponent'])) {
-            $opponentData = $data['opponent'] + ['game_id' => $gameId, 'opp' => 1];
+            $opponentData = $data['opponent'] + ['game_id' => $gameId, 'opp' => true];
             $opponentStats = $table->patchEntity($opponentStats, $opponentData);
         }
 
         $errors = [];
         $success = true;
+        // Ensure explicit flags are set on the entities so blank input cannot
+        // overwrite them during mass assignment.
+        $teamStats->set('game_id', $gameId);
+        $teamStats->set('opp', false);
+        $opponentStats->set('game_id', $gameId);
+        $opponentStats->set('opp', true);
 
         if (!$table->save($teamStats)) {
             $success = false;

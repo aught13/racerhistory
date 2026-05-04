@@ -7,6 +7,25 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\TeamSeasonRostersTable&\Cake\ORM\Association\BelongsTo $TeamSeasonRosters
+ * @property \App\Model\Table\GamesTable&\Cake\ORM\Association\BelongsTo $Games
+ * @method \App\Model\Entity\StatBasketGamePerson newEmptyEntity()
+ * @method \App\Model\Entity\StatBasketGamePerson newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\StatBasketGamePerson findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGamePerson>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGamePerson> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGamePerson>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketGamePerson[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGamePerson> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class StatBasketGamePersonTable extends Table
 {
     /**

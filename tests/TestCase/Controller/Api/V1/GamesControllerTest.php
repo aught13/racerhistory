@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller\Api\V1;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Api\V1\GamesController
+ */
 class GamesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -29,6 +32,9 @@ class GamesControllerTest extends TestCase
         'app.StatBasketGameBox',
     ];
 
+    /**
+     * Tests index recent.
+     */
     public function testIndexRecent(): void
     {
         $this->get('/api/v1/games?limit=2');
@@ -45,6 +51,9 @@ class GamesControllerTest extends TestCase
         $this->assertArrayHasKey('label', $first);
     }
 
+    /**
+     * Tests index search by team season and opponent.
+     */
     public function testIndexSearchByTeamSeasonAndOpponent(): void
     {
         $this->get('/api/v1/games?team_season_id=1&q=Belmont&limit=10');
@@ -60,6 +69,9 @@ class GamesControllerTest extends TestCase
         $this->assertStringContainsString('Belmont', $labels[0]);
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/api/v1/games/1');
@@ -77,6 +89,9 @@ class GamesControllerTest extends TestCase
         $this->assertIsArray($payload['data']['basketball_stats']);
     }
 
+    /**
+     * Tests view not found.
+     */
     public function testViewNotFound(): void
     {
         $this->get('/api/v1/games/999');

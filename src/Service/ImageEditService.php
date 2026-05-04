@@ -7,6 +7,7 @@ use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
 use Cake\Core\Configure;
 use Cake\I18n\DateTime;
+use RuntimeException;
 
 class ImageEditService
 {
@@ -15,8 +16,8 @@ class ImageEditService
     private ImageStorageService $storage;
 
     /**
-     * @param \App\Service\ImageProcessor|null $processor Optional processor override (useful for testing).
-     * @param \App\Service\ImageStorageService|null $storage Optional storage override (useful for testing).
+     * @param \App\Service\ImageProcessor|null      $processor Optional processor override (useful for testing).
+     * @param \App\Service\ImageStorageService|null $storage   Optional storage override (useful for testing).
      */
     public function __construct(?ImageProcessor $processor = null, ?ImageStorageService $storage = null)
     {
@@ -28,10 +29,10 @@ class ImageEditService
      * Apply manipulations to an existing image.
      *
      * @param \App\Model\Table\ImagesTable $images
-     * @param \App\Model\Entity\Image $image
-     * @param array<string,mixed> $manipulations
-     * @param string $mode 'apply' or 'copy'
-     * @param array<string,mixed>|null $thumbCrop Optional thumb crop payload from request.
+     * @param \App\Model\Entity\Image      $image
+     * @param array<string,mixed>          $manipulations
+     * @param string                       $mode          'apply' or 'copy'
+     * @param array<string,mixed>|null     $thumbCrop     Optional thumb crop payload from request.
      * @return array<string,mixed>
      */
     public function manipulateImage(
@@ -43,12 +44,12 @@ class ImageEditService
     ): array {
         [$originalPath] = $this->storage->resolveImagePath($image, '');
         if (!is_file($originalPath)) {
-            throw new \RuntimeException('Original image file not found');
+            throw new RuntimeException('Original image file not found');
         }
 
         $fileContent = file_get_contents($originalPath);
         if ($fileContent === false) {
-            throw new \RuntimeException('Unable to read original image file');
+            throw new RuntimeException('Unable to read original image file');
         }
 
         $variantConfig = (array)Configure::read('Images.variants', [
@@ -92,7 +93,7 @@ class ImageEditService
 
         $originalData = (string)($processed['original']['data'] ?? '');
         if ($originalData === '') {
-            throw new \RuntimeException('Processed image data was empty');
+            throw new RuntimeException('Processed image data was empty');
         }
 
         if ($mode === 'copy') {
@@ -106,7 +107,7 @@ class ImageEditService
             $new = $this->storage->persistNewImage($images, $processed, $hash, $mime, $ext, $copyName);
             if (!$new) {
                 $detail = $this->storage->getLastError() ?: 'Unable to save image copy';
-                throw new \RuntimeException($detail);
+                throw new RuntimeException($detail);
             }
 
             return [
@@ -117,7 +118,7 @@ class ImageEditService
         }
 
         if (file_put_contents($originalPath, $originalData) === false) {
-            throw new \RuntimeException('Failed to write image file');
+            throw new RuntimeException('Failed to write image file');
         }
 
         $existingVariants = $image->variants;
@@ -140,7 +141,7 @@ class ImageEditService
             $variantPath = $dir . DS . $targetFile;
 
             if (file_put_contents($variantPath, (string)($meta['data'] ?? '')) === false) {
-                throw new \RuntimeException("Failed to write variant {$name}");
+                throw new RuntimeException("Failed to write variant {$name}");
             }
 
             $newVariantsMeta[$name] = [
@@ -173,20 +174,20 @@ class ImageEditService
      * Regenerate the thumb variant using a crop area.
      *
      * @param \App\Model\Table\ImagesTable $images
-     * @param \App\Model\Entity\Image $image
-     * @param array<string,int> $crop
+     * @param \App\Model\Entity\Image      $image
+     * @param array<string,int>            $crop
      * @return array<string,mixed>
      */
     public function cropThumbVariant(ImagesTable $images, Image $image, array $crop): array
     {
         [$originalPath] = $this->storage->resolveImagePath($image, '');
         if (!is_file($originalPath)) {
-            throw new \RuntimeException('Original image file not found');
+            throw new RuntimeException('Original image file not found');
         }
 
         $fileContent = file_get_contents($originalPath);
         if ($fileContent === false) {
-            throw new \RuntimeException('Unable to read original image file');
+            throw new RuntimeException('Unable to read original image file');
         }
 
         $variantConfig = [
@@ -210,7 +211,7 @@ class ImageEditService
         );
 
         if (!isset($processed['variants']['thumb'])) {
-            throw new \RuntimeException('Thumb variant not generated');
+            throw new RuntimeException('Thumb variant not generated');
         }
 
         $existingVariants = $image->variants;
@@ -230,7 +231,7 @@ class ImageEditService
 
         $bytesWritten = file_put_contents($variantPath, (string)($meta['data'] ?? ''));
         if ($bytesWritten === false) {
-            throw new \RuntimeException('Failed to write thumb variant file');
+            throw new RuntimeException('Failed to write thumb variant file');
         }
 
         $existingVariants['thumb'] = [

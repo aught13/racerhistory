@@ -28,7 +28,7 @@ class StatBasketGameTeamFixture extends TestFixture
             [
                 'id' => 1,
                 'game_id' => 1,
-                'opp' => 0,
+                'opp' => false,
                 'ORB' => '8',
                 'DRB' => '25',
                 'RB' => '33',
@@ -41,7 +41,7 @@ class StatBasketGameTeamFixture extends TestFixture
             [
                 'id' => 2,
                 'game_id' => 1,
-                'opp' => 1,
+                'opp' => true,
                 'ORB' => '6',
                 'DRB' => '28',
                 'RB' => '34',

@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\UsersController
+ */
 class UsersControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -19,11 +22,17 @@ class UsersControllerTest extends TestCase
      */
     protected array $fixtures = ['app.Users', 'app.SiteOptions'];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
     }
 
+    /**
+     * Tests register disabled.
+     */
     public function testRegisterDisabled(): void
     {
         // CakeDC/Users registration is disabled for the public site.
@@ -31,11 +40,17 @@ class UsersControllerTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Runs the login as admin routine.
+     */
     private function loginAsAdmin(): void
     {
         $this->mockIdentity();
     }
 
+    /**
+     * Tests login get.
+     */
     public function testLoginGet(): void
     {
         $this->get('/users/login');
@@ -43,6 +58,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Login');
     }
 
+    /**
+     * Tests login post invalid.
+     */
     public function testLoginPostInvalid(): void
     {
         $this->enableCsrfToken();
@@ -55,6 +73,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Username or password is incorrect');
     }
 
+    /**
+     * Tests login post valid redirects to redirect param.
+     */
     public function testLoginPostValidRedirectsToRedirectParam(): void
     {
         $this->enableCsrfToken();
@@ -66,6 +87,9 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect('/admin');
     }
 
+    /**
+     * Tests login redirects to admin when redirect param present.
+     */
     public function testLoginRedirectsToAdminWhenRedirectParamPresent(): void
     {
         $this->get('/users/login?redirect=/admin');
@@ -74,12 +98,18 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('value="/admin"');
     }
 
+    /**
+     * Tests register get.
+     */
     public function testRegisterGet(): void
     {
         $this->get('/users/register');
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests logout.
+     */
     public function testLogout(): void
     {
         $this->loginAsAdmin();
@@ -87,6 +117,9 @@ class UsersControllerTest extends TestCase
         $this->assertStringContainsString('/login', $this->_response->getHeaderLine('Location'));
     }
 
+    /**
+     * Tests unknown action redirects home.
+     */
     public function testUnknownActionRedirectsHome(): void
     {
         $this->get('/users/doesntExist');
@@ -94,6 +127,9 @@ class UsersControllerTest extends TestCase
         $this->assertStringContainsString('/users/login', $location);
     }
 
+    /**
+     * Tests reset password get.
+     */
     public function testResetPasswordGet(): void
     {
         $this->get('/users/resetPassword');
@@ -101,6 +137,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Enter your email address');
     }
 
+    /**
+     * Tests reset password post valid.
+     */
     public function testResetPasswordPostValid(): void
     {
         $this->enableCsrfToken();
@@ -114,6 +153,9 @@ class UsersControllerTest extends TestCase
         $this->assertFlashMessage('If your email exists, a reset link will be sent.');
     }
 
+    /**
+     * Tests reset password post invalid.
+     */
     public function testResetPasswordPostInvalid(): void
     {
         $this->enableCsrfToken();

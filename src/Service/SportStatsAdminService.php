@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Sport;
+use App\Model\Entity\SportStatRegistry;
+use App\Model\Table\SportsTable;
+use App\Model\Table\SportStatRegistryTable;
+use Cake\Datasource\ResultSetInterface;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\TableRegistry;
 
@@ -39,12 +44,12 @@ class SportStatsAdminService
     /**
      * @var \App\Model\Table\SportStatRegistryTable
      */
-    private \App\Model\Table\SportStatRegistryTable $sportStatRegistryTable;
+    private SportStatRegistryTable $sportStatRegistryTable;
 
     /**
      * @var \App\Model\Table\SportsTable
      */
-    private \App\Model\Table\SportsTable $sportsTable;
+    private SportsTable $sportsTable;
 
     /**
      * @var \App\Service\SportConfigService
@@ -57,8 +62,8 @@ class SportStatsAdminService
      * @param \App\Service\SportConfigService|null $sportConfigService
      */
     public function __construct(
-        ?\App\Model\Table\SportStatRegistryTable $sportStatRegistryTable = null,
-        ?\App\Model\Table\SportsTable $sportsTable = null,
+        ?SportStatRegistryTable $sportStatRegistryTable = null,
+        ?SportsTable $sportsTable = null,
         ?SportConfigService $sportConfigService = null,
     ) {
         /** @var \App\Model\Table\SportStatRegistryTable $table */
@@ -105,7 +110,7 @@ class SportStatsAdminService
      * @param int|null $sportId
      * @return \App\Model\Entity\Sport|null
      */
-    public function getFilterSport(?int $sportId): ?\App\Model\Entity\Sport
+    public function getFilterSport(?int $sportId): ?Sport
     {
         if ($sportId === null) {
             return null;
@@ -122,7 +127,7 @@ class SportStatsAdminService
      *
      * @return \Cake\Datasource\ResultSetInterface<array<string,mixed>>
      */
-    public function getSportsList(): \Cake\Datasource\ResultSetInterface
+    public function getSportsList(): ResultSetInterface
     {
         return $this->sportsTable->find('list')->orderBy(['sport_name' => 'ASC'])->all();
     }
@@ -160,7 +165,7 @@ class SportStatsAdminService
      * @param int|null $sportId
      * @return \App\Model\Entity\SportStatRegistry
      */
-    public function newEntity(?int $sportId = null): \App\Model\Entity\SportStatRegistry
+    public function newEntity(?int $sportId = null): SportStatRegistry
     {
         /** @var \App\Model\Entity\SportStatRegistry $entity */
         $entity = $this->sportStatRegistryTable->newEmptyEntity();
@@ -178,7 +183,7 @@ class SportStatsAdminService
      * @return \App\Model\Entity\SportStatRegistry
      * @throws \Cake\Datasource\Exception\RecordNotFoundException
      */
-    public function getViewEntity(int $id): \App\Model\Entity\SportStatRegistry
+    public function getViewEntity(int $id): SportStatRegistry
     {
         /** @var \App\Model\Entity\SportStatRegistry $entity */
         $entity = $this->sportStatRegistryTable->get($id, ['contain' => ['Sports']]);

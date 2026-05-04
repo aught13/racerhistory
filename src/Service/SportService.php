@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Sport;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -18,7 +19,7 @@ class SportService
      * @param int $sportId Sport ID
      * @return \App\Model\Entity\Sport|null
      */
-    public function getSportById(int $sportId): ?\App\Model\Entity\Sport
+    public function getSportById(int $sportId): ?Sport
     {
         $sports = TableRegistry::getTableLocator()->get('Sports');
 
@@ -62,7 +63,7 @@ class SportService
      * @param array<string, mixed> $data Sport data
      * @return \App\Model\Entity\Sport|false
      */
-    public function createSport(array $data): \App\Model\Entity\Sport|false
+    public function createSport(array $data): Sport|false
     {
         $sports = TableRegistry::getTableLocator()->get('Sports');
         $sport = $sports->newEntity($data);
@@ -77,7 +78,7 @@ class SportService
      * @param array<string, mixed> $data Sport data
      * @return \App\Model\Entity\Sport|false
      */
-    public function updateSport(int $sportId, array $data): \App\Model\Entity\Sport|false
+    public function updateSport(int $sportId, array $data): Sport|false
     {
         $sports = TableRegistry::getTableLocator()->get('Sports');
         $sport = $sports->get($sportId);

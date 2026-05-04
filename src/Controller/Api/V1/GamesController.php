@@ -6,7 +6,13 @@ namespace App\Controller\Api\V1;
 use App\Service\BasketballStatsService;
 use App\Service\GameService;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\I18n\Date;
+use DateTimeInterface;
 
+/**
+ * @property \App\Model\Table\GamesTable $Games
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ */
 class GamesController extends AppController
 {
     private GameService $gameService;
@@ -52,6 +58,8 @@ class GamesController extends AppController
 
     /**
      * Get a single game with related data.
+     *
+     * @param int $id
      */
     public function view(int $id): void
     {
@@ -67,11 +75,11 @@ class GamesController extends AppController
 
         $gameDate = $game->game_date;
         $gameDateString = null;
-        if ($gameDate instanceof \Cake\I18n\Date) {
+        if ($gameDate instanceof Date) {
             $gameDateString = $gameDate->i18nFormat('yyyy-MM-dd');
-        } elseif ($gameDate instanceof \DateTimeInterface) {
+        } elseif ($gameDate instanceof DateTimeInterface) {
             $gameDateString = $gameDate->format('Y-m-d');
-        } elseif ($gameDate !== null && $gameDate !== '') {
+        } elseif ($gameDate !== null) {
             $gameDateString = (string)$gameDate;
         }
 

@@ -12,6 +12,7 @@
  * @var \App\View\AppView $this
  * @var string $message
  * @var string $url
+ * @var object $error
  */
 use Cake\Core\Configure;
 use Cake\Error\Debugger;
@@ -33,7 +34,7 @@ if (Configure::read('debug')) {
     <div class="error-debug" role="alert" aria-live="assertive">
         <h2><?= __d('cake', 'An Internal Error Has Occurred.') ?></h2>
         <p><strong><?= __d('cake', 'Error') ?>:</strong> <?= h($message) ?></p>
-        <?php if (isset($error) && $error instanceof \Throwable) : ?>
+        <?php if (isset($error) && $error instanceof Throwable) : ?>
             <?php $file = $error->getFile();
             $line = $error->getLine(); ?>
             <p><strong>Location:</strong> <?= $this->Html->link(sprintf('%s, line %s', Debugger::trimPath($file), $line), Debugger::editorUrl($file, $line)); ?></p>

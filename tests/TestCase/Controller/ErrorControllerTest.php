@@ -11,6 +11,8 @@ use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\ErrorController Test Case
+ *
+ * @link \App\Controller\ErrorController
  */
 class ErrorControllerTest extends TestCase
 {

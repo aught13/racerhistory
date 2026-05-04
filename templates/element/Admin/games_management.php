@@ -6,7 +6,8 @@
  * Similar to roster_management element.
  *
  * @var \App\Model\Entity\TeamSeason $teamSeason
- * @var \Cake\Collection\CollectionInterface|\App\Model\Entity\Game[] $teamSeasonGames
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Game> $teamSeasonGames
+ * @var \App\View\AppView $this
  */
 ?>
 <div class="card mt-4">
@@ -59,7 +60,7 @@
                                            class="game-checkbox" aria-label="Select game">
                                 </td>
                                 <td>
-                                    <?php if ($game->game_date instanceof \DateTimeInterface) : ?>
+                                    <?php if ($game->game_date instanceof DateTimeInterface) : ?>
                                         <?= h($game->game_date->format('M j, Y')) ?>
                                     <?php else : ?>
                                         <?= h($game->game_date) ?>
@@ -83,7 +84,7 @@
                                 </td>
                                 <td>
                                     <?php if ($game->pts_mur || $game->pts_opp) : ?>
-                                        <span class="<?= ($game->pts_mur > $game->pts_opp) ? 'text-success fw-bold' : (($game->pts_mur < $game->pts_opp) ? 'text-danger' : '') ?>">
+                                        <span class="<?= $game->pts_mur > $game->pts_opp ? 'text-success fw-bold' : ($game->pts_mur < $game->pts_opp ? 'text-danger' : '') ?>">
                                             <?= h(($game->pts_mur ?? '') . ' - ' . ($game->pts_opp ?? '')) ?>
                                         </span>
                                     <?php else : ?>
@@ -112,7 +113,7 @@
             <?= $this->Form->create(null, [
                 'url' => ['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk'],
                 'id' => 'delete-form-games-bulk',
-                'style' => 'display:none'
+                'style' => 'display:none',
             ]) ?>
             <?php
             $this->Form->unlockField('game_ids');

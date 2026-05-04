@@ -10,6 +10,9 @@
  * - $variant: Optional image variant to use (e.g., 'thumb', 'medium')
  * - $class: Optional CSS classes
  * - $style: Optional inline styles
+ *
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Person $person
  */
 
 $size = $size ?? 'medium';
@@ -44,12 +47,12 @@ if (!empty($person->person_image) && is_numeric($person->person_image)) {
     echo '<img src="' . h($imageUrl) . '" alt="' . h($person->display ?? $person->first . ' ' . $person->last) . '" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
 } else {
     // Show placeholder if no image - perfect circle to match photo avatars
-    echo $this->Html->div('placeholder-image ' . $cssClass,
+    echo $this->Html->div(
+        'placeholder-image ' . $cssClass,
         $this->Html->tag('span', h(substr($person->display ?? $person->first ?? '?', 0, 1)), [
             'class' => 'd-flex align-items-center justify-content-center h-100 bg-secondary text-white fw-bold',
-            'style' => 'font-size: ' . ($width * 0.4) . 'px;'
+            'style' => 'font-size: ' . ($width * 0.4) . 'px;',
         ]),
-        ['style' => $cssStyle . ' background-color: #6c757d; border-radius: 50%; overflow: hidden;']
+        ['style' => $cssStyle . ' background-color: #6c757d; border-radius: 50%; overflow: hidden;'],
     );
 }
-?>

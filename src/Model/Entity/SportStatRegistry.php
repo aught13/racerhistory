@@ -49,6 +49,7 @@ class SportStatRegistry extends Entity
      * Get decoded field mapping
      *
      * @return array
+     * @see \App\Model\Entity\SportStatRegistry::$mapped_fields
      */
     protected function _getMappedFields(): array
     {
@@ -69,6 +70,7 @@ class SportStatRegistry extends Entity
      *
      * @param array $mapping Field mapping array
      * @return void
+     * @see \App\Model\Entity\SportStatRegistry::$mapped_fields
      */
     protected function _setMappedFields(array $mapping): void
     {

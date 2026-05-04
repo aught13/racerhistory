@@ -1,4 +1,9 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $teamSeasonList
+ * @var \App\Model\Entity\Game $game
+ */
 // Game details form element – scheduling/logistics only (no scores, officials, or EAV).
 // Expects: $game, $teamSeasonList, $gameTypes, $opponents, $places, $sites, optional $lookupDisplays
 $lookupDisplays = $lookupDisplays ?? ['opponent' => null, 'place' => null, 'site' => null, 'gameType' => null];

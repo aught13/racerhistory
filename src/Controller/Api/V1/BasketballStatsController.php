@@ -20,6 +20,8 @@ class BasketballStatsController extends AppController
 
     /**
      * Get basketball stats for a game.
+     *
+     * @param int $gameId
      */
     public function game(int $gameId): void
     {
@@ -69,6 +71,8 @@ class BasketballStatsController extends AppController
 
     /**
      * Get basketball season totals for a team season.
+     *
+     * @param int $teamSeasonId
      */
     public function season(int $teamSeasonId): void
     {

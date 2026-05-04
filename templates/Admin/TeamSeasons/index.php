@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\TeamSeason> $teamSeasons
+ */
+?>
 <?php $this->assign('title', 'Manage Team Seasons'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -78,7 +84,7 @@
                             </td>
                             <td><?= h($teamSeason->league_finish ?: '-') ?></td>
                             <td>
-                                <?php if ($teamSeason->created_at instanceof \DateTimeInterface) : ?>
+                                <?php if ($teamSeason->created_at instanceof DateTimeInterface) : ?>
                                     <?= h($teamSeason->created_at->format('M j, Y')) ?>
                                 <?php else : ?>
                                     <?= h($teamSeason->created_at) ?>
@@ -100,7 +106,7 @@
                                         'prefix' => 'Admin',
                                         'controller' => 'TeamSeasons',
                                         'action' => 'delete',
-                                        $teamSeason->id
+                                        $teamSeason->id,
                                     ]) ?>"
                                     data-item-type="team season"
                                     data-item-name="<?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>"

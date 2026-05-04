@@ -5,6 +5,7 @@ namespace App\Service;
 
 use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
+use Cake\Datasource\ResultSetInterface;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -60,7 +61,7 @@ class ImagesAdminService
      *
      * @return \Cake\Datasource\ResultSetInterface
      */
-    public function getIndexImages(): \Cake\Datasource\ResultSetInterface
+    public function getIndexImages(): ResultSetInterface
     {
         return $this->imagesTable->find()->orderByDesc('id')->limit(100)->all();
     }
@@ -196,7 +197,7 @@ class ImagesAdminService
         if (!empty($data['common_tags']) && is_string($data['common_tags'])) {
             $commonTags = array_values(array_filter(
                 array_map('trim', explode(',', $data['common_tags'])),
-                fn($tag) => $tag !== ''
+                fn($tag) => $tag !== '',
             ));
             foreach ($commonTags as $tag) {
                 $tagsToApply[] = $tag;
@@ -209,6 +210,7 @@ class ImagesAdminService
     /**
      * Load image edit page data.
      *
+     * @param int $id
      * @return array{image:\App\Model\Entity\Image,currentTags:array<int,mixed>}
      */
     public function getEditPageData(int $id): array
@@ -251,6 +253,7 @@ class ImagesAdminService
     /**
      * Build all view data required by the tags UI.
      *
+     * @param int $id
      * @return array<string,mixed>
      */
     public function getTagsPageData(int $id): array
@@ -297,6 +300,7 @@ class ImagesAdminService
     /**
      * Delete a single image and attached references.
      *
+     * @param int $id
      * @return array<string,mixed>
      */
     public function deleteImage(int $id): array
@@ -317,6 +321,8 @@ class ImagesAdminService
 
     /**
      * Load an image entity for manipulation flows.
+     *
+     * @param int $id
      */
     public function getImageById(int $id): Image
     {
@@ -368,6 +374,9 @@ class ImagesAdminService
 
     /**
      * Load image with tag associations.
+     *
+     * @param int $id
+     * @return \App\Model\Entity\Image
      */
     private function getImageWithTags(int $id): Image
     {

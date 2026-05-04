@@ -7,6 +7,24 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\TeamSeasonsTable&\Cake\ORM\Association\BelongsTo $TeamSeasons
+ * @method \App\Model\Entity\StatBasketSeasonOpponent newEmptyEntity()
+ * @method \App\Model\Entity\StatBasketSeasonOpponent newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\StatBasketSeasonOpponent findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonOpponent>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonOpponent> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonOpponent>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonOpponent[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonOpponent> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class StatBasketSeasonOpponentTable extends Table
 {
     /**

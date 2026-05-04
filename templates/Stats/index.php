@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Cake\Utility\Inflector;
+
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $statTypes
@@ -18,7 +20,7 @@ $this->assign('title', 'Statistics');
     <div class="row g-3" id="stats-type-cards">
         <?php foreach ($statTypes as $slug => $label) : ?>
             <div class="col-md-4 col-lg-4">
-                <a href="<?= $this->Url->build(['controller' => 'Stats', 'action' => \Cake\Utility\Inflector::variable(str_replace('-', '_', $slug))]) ?>"
+                <a href="<?= $this->Url->build(['controller' => 'Stats', 'action' => Inflector::variable(str_replace('-', '_', $slug))]) ?>"
                    class="card h-100 text-decoration-none stat-type-card">
                     <div class="card-body text-center">
                         <h5 class="card-title"><?= h($label) ?></h5>
@@ -29,5 +31,8 @@ $this->assign('title', 'Statistics');
         <?php endforeach; ?>
     </div>
 </div>
-<?php $statsInitVer = @filemtime(WWW_ROOT . 'js' . DS . 'stats-init-loader.mjs') ?: 0; ?>
+<?php
+$statsInitPath = WWW_ROOT . 'js' . DS . 'stats-init-loader.mjs';
+$statsInitVer = file_exists($statsInitPath) ? (filemtime($statsInitPath) ?: 0) : 0;
+?>
 <script type="module" src="/js/stats-init-loader.mjs?v=<?= $statsInitVer ?>"></script>

@@ -79,7 +79,7 @@ $rosterNumber = $stat->team_season_roster->roster_number ?? '';
         'id' => 'delete-stat-form',
     ]) ?>
 
-    <?php if ((string)($stat->period ?? '') === 'Z'): ?>
+    <?php if ((string)($stat->period ?? '') === 'Z') : ?>
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="mb-2">Season Totals</h5>

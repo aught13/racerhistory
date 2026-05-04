@@ -117,6 +117,9 @@ class PlaceServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get places list.
+     */
     public function testGetPlacesList(): void
     {
         $service = new PlaceService();

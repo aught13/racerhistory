@@ -1,4 +1,9 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $currentTags
+ * @var \App\Model\Entity\Image $image
+ */
 $this->assign('title', 'Edit Image');
 ?>
 <div class="container py-4">
@@ -11,23 +16,19 @@ $this->assign('title', 'Edit Image');
         <figcaption class="mt-2 small text-muted">Original (public)</figcaption>
       </figure>
       <?php $variants = is_string($image->variants) ? json_decode($image->variants, true) : (array)$image->variants; ?>
-      <?php if ($variants): ?>
+      <?php if ($variants) : ?>
         <div class="row g-2 mt-3">
-          <?php foreach ($variants as $name => $meta): ?>
-            <?php
-              $meta = (array)$meta;
-              $vw = isset($meta['width']) && is_numeric($meta['width']) ? (int)$meta['width'] : null;
-              $vh = isset($meta['height']) && is_numeric($meta['height']) ? (int)$meta['height'] : null;
-              $vmime = isset($meta['mime']) ? (string)$meta['mime'] : '';
-
+            <?php foreach ($variants as $name => $meta) : ?>
+                <?php
+                $meta = (array)$meta;
                 // Always use the stored variant so custom crops (e.g., thumb) are shown.
                 $thumbUrl = $this->ImageServe->urlForImage($image, ['variant' => (string)$name]);
-            ?>
+                ?>
             <div class="col-4 text-center">
               <img src="<?= h($thumbUrl) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
               <div class="small mt-1"><?= h($name) ?></div>
             </div>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
         </div>
       <?php endif; ?>
 
@@ -55,24 +56,24 @@ $this->assign('title', 'Edit Image');
       <!-- Quick Actions -->
       <div class="mt-3 d-grid gap-2">
         <?= $this->Html->link(
-          'Crop Thumbnail',
-          ['action' => 'cropThumb', $image->id],
-          ['class' => 'btn btn-warning btn-sm']
+            'Crop Thumbnail',
+            ['action' => 'cropThumb', $image->id],
+            ['class' => 'btn btn-warning btn-sm'],
         ) ?>
         <?= $this->Html->link(
-          'Manipulate Image',
-          ['action' => 'manipulate', $image->id],
-          ['class' => 'btn btn-warning btn-sm']
+            'Manipulate Image',
+            ['action' => 'manipulate', $image->id],
+            ['class' => 'btn btn-warning btn-sm'],
         ) ?>
         <?= $this->Html->link(
-          'View Tags',
-          ['action' => 'tags', $image->id],
-          ['class' => 'btn btn-info btn-sm']
+            'View Tags',
+            ['action' => 'tags', $image->id],
+            ['class' => 'btn btn-info btn-sm'],
         ) ?>
         <?= $this->Form->postButton(
-          'Delete Image',
-          ['action' => 'delete', $image->id],
-          ['class' => 'btn btn-danger btn-sm', 'confirm' => 'Are you sure?']
+            'Delete Image',
+            ['action' => 'delete', $image->id],
+            ['class' => 'btn btn-danger btn-sm', 'confirm' => 'Are you sure?'],
         ) ?>
       </div>
     </div>
@@ -94,13 +95,13 @@ $this->assign('title', 'Edit Image');
         </div>
         <div class="card-body">
           <p class="mb-3 small text-muted">Tags are listed here for reference. Use the <strong>View Tags</strong> action to manage tags.</p>
-          <?php if (!empty($currentTags)): ?>
+          <?php if (!empty($currentTags)) : ?>
             <div class="d-flex flex-wrap gap-2 mb-3">
-              <?php foreach ($currentTags as $tag): ?>
+                <?php foreach ($currentTags as $tag) : ?>
                 <span class="badge bg-secondary"><?= h($tag->name) ?></span>
-              <?php endforeach; ?>
+                <?php endforeach; ?>
             </div>
-          <?php else: ?>
+          <?php else : ?>
             <div class="small text-muted">No tags assigned.</div>
           <?php endif; ?>
           <div class="mt-2">

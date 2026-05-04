@@ -67,7 +67,7 @@ class ImageTagUiService
 
         $tagString = implode(', ', array_map(
             static fn($t) => (string)($t->name ?? $t['name'] ?? ''),
-            $freeformTags
+            $freeformTags,
         ));
 
         return [

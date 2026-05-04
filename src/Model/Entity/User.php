@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Entity;
 
+use ArrayAccess;
 use Authentication\IdentityInterface as AuthenticationIdentity;
 use Cake\ORM\Entity;
 
@@ -31,8 +32,11 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime|null $activation_date
  * @property \Cake\I18n\DateTime|null $tos_date
  * @property \Cake\I18n\DateTime|null $last_login
- * @property \Cake\I18n\DateTime|null $created
- * @property \Cake\I18n\DateTime|null $modified
+ * @property \Cake\I18n\DateTime $created
+ * @property \Cake\I18n\DateTime $modified
+ * @property string|null $secret
+ * @property bool|null $secret_verified
+ * @property string|null $additional_data
  */
 class User extends Entity implements AuthenticationIdentity
 {
@@ -76,7 +80,7 @@ class User extends Entity implements AuthenticationIdentity
      *
      * @return \ArrayAccess<string, mixed>|array<string, mixed>
      */
-    public function getOriginalData(): array|\ArrayAccess
+    public function getOriginalData(): array|ArrayAccess
     {
         return $this;
     }

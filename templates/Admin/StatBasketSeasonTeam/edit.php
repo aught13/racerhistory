@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $stat
+ * @var \App\Model\Entity\TeamSeason $teamSeason
+ */
+?>
 <?php $this->assign('title', 'Edit Team Season Stats'); ?>
 <div class="container-fluid py-4">
     <nav aria-label="breadcrumb">

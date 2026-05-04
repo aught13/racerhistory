@@ -8,6 +8,8 @@ use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\PeopleController Test Case
+ *
+ * @link \App\Controller\PeopleController
  */
 class PeopleControllerTest extends TestCase
 {
@@ -34,6 +36,9 @@ class PeopleControllerTest extends TestCase
         'app.Sites',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->get('/people');
@@ -44,6 +49,9 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('Years Active');
     }
 
+    /**
+     * Tests index displays people.
+     */
     public function testIndexDisplaysPeople(): void
     {
         $this->get('/people');
@@ -62,6 +70,9 @@ class PeopleControllerTest extends TestCase
         $this->assertGreaterThan(0, $peopleCount);
     }
 
+    /**
+     * Tests index json returns people rows.
+     */
     public function testIndexJsonReturnsPeopleRows(): void
     {
         $this->get('/people?format=json&draw=1&start=0&length=50');
@@ -90,6 +101,9 @@ class PeopleControllerTest extends TestCase
         $this->assertStringContainsString('/seasons/1', $years[0]);
     }
 
+    /**
+     * Tests index json honors descending name order.
+     */
     public function testIndexJsonHonorsDescendingNameOrder(): void
     {
         $this->get('/people?format=json&draw=2&start=0&length=50&order[0][column]=0&order[0][dir]=desc');
@@ -108,6 +122,9 @@ class PeopleControllerTest extends TestCase
         $this->assertStringContainsString('John Doe', $secondNameHtml);
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/people/1');
@@ -117,6 +134,9 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('Stories');
     }
 
+    /**
+     * Tests view with invalid id.
+     */
     public function testViewWithInvalidId(): void
     {
         $this->get('/people/9999');
@@ -124,6 +144,9 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests view sets variables.
+     */
     public function testViewSetsVariables(): void
     {
         $this->get('/people/1');
@@ -154,6 +177,9 @@ class PeopleControllerTest extends TestCase
         $this->assertIsArray($gameLogGroups);
     }
 
+    /**
+     * Tests game log renders frame.
+     */
     public function testGameLogRendersFrame(): void
     {
         $this->get('/people/game-log/1/1');
@@ -162,6 +188,9 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('person-game-log-frame-1-1');
     }
 
+    /**
+     * Tests game log for missing roster returns404.
+     */
     public function testGameLogForMissingRosterReturns404(): void
     {
         $this->get('/people/game-log/1/9999');
@@ -169,6 +198,9 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests authorization skipped.
+     */
     public function testAuthorizationSkipped(): void
     {
         // Public pages should not require authentication

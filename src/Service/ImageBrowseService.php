@@ -11,6 +11,8 @@ class ImageBrowseService
     /**
      * Build the payload for the admin image browse modal.
      *
+     * @param string|null $tag
+     * @param int|null $limit
      * @return array{success: bool, images: array<int, array{id: int, url: string, thumbnail_url: string, original_name: string, tags: array<int, string>}>}
      */
     public function browse(?string $tag = null, ?int $limit = null): array

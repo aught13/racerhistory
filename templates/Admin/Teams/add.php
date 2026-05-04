@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $sports
+ * @var \App\Model\Entity\Team $team
+ */
+?>
 <?php $this->assign('title', 'Add Team'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -39,7 +46,7 @@
                                     'class' => 'form-select h-100',
                                     'label' => false,
                                     'required' => true,
-                                    'id' => 'sport-id'
+                                    'id' => 'sport-id',
                                 ]) ?>
                             </div>
                             <button type="button" class="btn btn-success h-100 border-0" data-bs-toggle="modal"
@@ -57,7 +64,7 @@
                             'label' => ['class' => 'form-label', 'text' => 'Team Name *'],
                             'placeholder' => 'Enter team name (e.g., Women\'s Basketball)',
                             'maxlength' => 162,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Short display name of the team (maximum 162 characters).</div>
                     </div>
@@ -69,7 +76,7 @@
                             'label' => ['class' => 'form-label', 'text' => 'Long Name'],
                             'placeholder' => 'Enter full team name (e.g., Murray St Racers Women\'s Basketball)',
                             'rows' => 3,
-                            'maxlength' => 240
+                            'maxlength' => 240,
                         ]) ?>
                         <div class="form-text">Full official name including institution and sport (maximum 240
                             characters).</div>
@@ -82,7 +89,7 @@
                             'label' => ['class' => 'form-label', 'text' => 'Abbreviation *'],
                             'placeholder' => 'Enter team abbreviation (e.g., WBB)',
                             'maxlength' => 5,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Short abbreviation for compact display (maximum 5 characters, e.g., "WBB"
                             for Women's Basketball).</div>
@@ -95,7 +102,7 @@
                             'label' => ['class' => 'form-label', 'text' => 'Team Nickname/Mascot *'],
                             'placeholder' => 'Enter team nickname (e.g., Racers)',
                             'maxlength' => 30,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Team mascot or nickname (maximum 30 characters).</div>
                     </div>
@@ -107,7 +114,7 @@
                             'label' => ['class' => 'form-label', 'text' => 'Scorebug Name *'],
                             'placeholder' => 'Enter scorebug name (e.g., MURRAY)',
                             'maxlength' => 6,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Shortened name for score display (maximum 6 characters).</div>
                     </div>
@@ -118,12 +125,12 @@
                             'options' => [
                                 'M' => 'Male',
                                 'F' => 'Female',
-                                'C' => 'Co-ed'
+                                'C' => 'Co-ed',
                             ],
                             'empty' => 'Select Gender Classification',
                             'class' => 'form-control',
                             'label' => ['class' => 'form-label', 'text' => 'Gender Classification *'],
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Specify whether this is a Male, Female, or Co-ed team for proper
                             competition classification.</div>
@@ -131,7 +138,7 @@
 
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Save Team'), [
-                            'class' => 'btn btn-success'
+                            'class' => 'btn btn-success',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>"
                             class="btn btn-secondary">Cancel</a>
@@ -172,7 +179,7 @@
 <div style="display: none;">
     <?= $this->Form->create(null, [
         'url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd'],
-        'id' => 'hidden-sport-form'
+        'id' => 'hidden-sport-form',
     ]) ?>
     <?= $this->Form->control('sport_name', ['type' => 'text']) ?>
     <?= $this->Form->end() ?>
@@ -194,10 +201,10 @@ echo $this->element('Admin/popup_form', [
             'placeholder' => 'Enter sport name (e.g., Basketball)',
             'required' => true,
             'attributes' => [
-                'maxlength' => 162
-            ]
-        ]
-    ]
+                'maxlength' => 162,
+            ],
+        ],
+    ],
 ]);
 ?>
 

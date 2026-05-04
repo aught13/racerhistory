@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $sites
+ */
+?>
 <?php $this->assign('title', 'Sites'); ?>
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -7,7 +13,7 @@
     <table class="table table-striped">
         <thead><tr><th>Name</th><th>Place</th><th></th></tr></thead>
         <tbody>
-        <?php foreach ($sites as $s): ?>
+        <?php foreach ($sites as $s) : ?>
             <tr>
                 <td><?= h($s->site_name) ?></td>
                 <td><?= h($s->place->place_city ?? '-') ?></td>

@@ -8,11 +8,15 @@ use App\Service\GameSearchService;
 use App\Service\GameService;
 use App\Service\GameViewService;
 use App\Service\ImageTagService;
+use App\Service\OpponentService;
 use App\Service\StatsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
+use Cake\I18n\Date;
 use Cake\Routing\Router;
+use DateTimeInterface;
+use Throwable;
 
 /**
  * Public Games Controller
@@ -66,6 +70,7 @@ use Cake\Routing\Router;
  * to allow for future access control if needed (e.g. for admin-only stats exports).
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \App\Model\Table\GamesTable $Games
  */
 class GamesController extends AppController
 {
@@ -109,6 +114,8 @@ class GamesController extends AppController
 
     /**
      * Skip authorization for public actions.
+     *
+     * @param \Cake\Event\EventInterface $event
      */
     public function beforeFilter(EventInterface $event): void
     {
@@ -118,6 +125,8 @@ class GamesController extends AppController
 
     /**
      * Push search types to every view for sub-nav.
+     *
+     * @param \Cake\Event\EventInterface $event
      */
     public function beforeRender(EventInterface $event): void
     {
@@ -161,7 +170,7 @@ class GamesController extends AppController
 
             return $this->jsonResponse(
                 $this->formatRankedRows($games),
-                ['record' => "$wins-$losses"]
+                ['record' => "$wins-$losses"],
             );
         }
 
@@ -349,7 +358,7 @@ class GamesController extends AppController
                 ->withStringBody(json_encode(['success' => true, 'opponents' => []]));
         }
 
-        $opponentService = new \App\Service\OpponentService();
+        $opponentService = new OpponentService();
         $results = $opponentService->searchOpponents($q, 25);
 
         $opponents = [];
@@ -395,7 +404,7 @@ class GamesController extends AppController
             $selectLink = $this->link(
                 'View Series',
                 ['controller' => 'Games', 'action' => 'series', '?' => ['opponent_id' => $opponentId]],
-                ['escape' => true]
+                ['escape' => true],
             );
 
             return [
@@ -430,7 +439,7 @@ class GamesController extends AppController
      * Return a DataTables-compatible JSON response.
      *
      * @param array $rows
-     * @param array $meta Optional metadata to include in response
+     * @param array $meta
      * @return \Cake\Http\Response
      */
     protected function jsonResponse(array $rows, array $meta = []): Response
@@ -449,7 +458,8 @@ class GamesController extends AppController
      * Build a safe HTML link.
      *
      * @param string $text
-     * @param array $url CakePHP URL array
+     * @param array $url
+     * @param array $options
      * @return string
      */
     protected function link(string $text, array $url, array $options = []): string
@@ -486,7 +496,7 @@ class GamesController extends AppController
                 if (!$g->has('margin')) {
                     $g->set('margin', abs($ptsMur - $ptsOpp));
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
             }
         }
     }
@@ -540,7 +550,7 @@ class GamesController extends AppController
      * Format a game date with a hidden ISO prefix for DataTables sorting.
      *
      * @param mixed $date
-     * @param string $displayFormat PHP date format string (default: 'm/d/Y')
+     * @param string $displayFormat
      * @return string
      */
     protected function formatDate(mixed $date, string $displayFormat = 'm/d/Y'): string
@@ -548,7 +558,7 @@ class GamesController extends AppController
         if ($date === null) {
             return '-';
         }
-        if ($date instanceof \Cake\I18n\Date || $date instanceof \DateTimeInterface) {
+        if ($date instanceof Date || $date instanceof DateTimeInterface) {
             $iso = $date->format('Y-m-d');
             $display = $date->format($displayFormat);
         } else {
@@ -580,14 +590,14 @@ class GamesController extends AppController
                 $this->link(
                     $dateDisplay,
                     ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false]
+                    ['escape' => false],
                 ),
                 (int)($g->mur_rk ?? 0) ?: '-',
                 h($g->team_season->team->team_name ?? 'Murray State'),
                 $this->link(
                     $g->opponent->opponent_name ?? '?',
                     ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]]
+                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
                 ),
                 (int)($g->opp_rk ?? 0) ?: '-',
                 $this->hrnLabel((int)($g->hrn ?? 0)),
@@ -597,7 +607,7 @@ class GamesController extends AppController
                 $ptsOpp,
                 $this->link(
                     $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0]
+                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
                 ),
             ];
         }
@@ -609,7 +619,8 @@ class GamesController extends AppController
      * Format overtime game rows for DataTables.
      *
      * @param array $games
-     * @param string $dateFormat PHP date format for display (default: 'm/d/Y')
+     * @param string $dateFormat
+     * @param bool $showConferenceTypeAbr
      * @return array
      */
     protected function formatOvertimeRows(
@@ -633,12 +644,12 @@ class GamesController extends AppController
                 $this->link(
                     $dateDisplay,
                     ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false]
+                    ['escape' => false],
                 ),
                 $this->link(
                     $g->opponent->opponent_abbr ?? '?',
                     ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]]
+                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
                 ),
                 h($result ?? '-'),
                 abs($ptsMur - $ptsOpp),
@@ -650,7 +661,7 @@ class GamesController extends AppController
                 $gameTypeDisplay,
                 $this->link(
                     $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0]
+                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
                 ),
             ];
         }
@@ -686,12 +697,12 @@ class GamesController extends AppController
                 $this->link(
                     $dateDisplay,
                     ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false]
+                    ['escape' => false],
                 ),
                 $this->link(
                     $opponentDisplay,
                     ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]]
+                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
                 ),
                 h($result ?? '-'),
                 abs($ptsMur - $ptsOpp),
@@ -703,7 +714,7 @@ class GamesController extends AppController
                 $gameTypeDisplay,
                 $this->link(
                     $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0]
+                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
                 ),
             ];
         }
@@ -739,12 +750,12 @@ class GamesController extends AppController
                 $this->link(
                     $dateDisplay,
                     ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false]
+                    ['escape' => false],
                 ),
                 $this->link(
                     $opponentDisplay,
                     ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]]
+                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
                 ),
                 h($result ?? '-'),
                 abs($ptsMur - $ptsOpp),
@@ -756,7 +767,7 @@ class GamesController extends AppController
                 $gameTypeDisplay,
                 $this->link(
                     $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0]
+                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
                 ),
             ];
         }
@@ -798,7 +809,7 @@ class GamesController extends AppController
     /**
      * View a single game with box score if available.
      *
-     * @param int $id Game ID
+     * @param int $id
      */
     public function view(int $id): void
     {
@@ -810,7 +821,7 @@ class GamesController extends AppController
     /**
      * Render stats frame for Turbo requests.
      *
-     * @param int $id Game ID
+     * @param int $id
      * @return void
      */
     public function stats(int $id): void
@@ -825,14 +836,16 @@ class GamesController extends AppController
     }
 
     /**
-     * @param int $id Game ID
+     * Runs the build game view data routine.
+     *
+     * @param int $id
      * @return array<string,mixed>
      */
     private function buildGameViewData(int $id): array
     {
         try {
             $viewData = $this->gameViewService->getViewData($id);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw new NotFoundException('Game not found');
         }
 
@@ -851,7 +864,9 @@ class GamesController extends AppController
     }
 
     /**
-     * @param \App\Model\Entity\Game $game Game entity
+     * Runs the enrich game display routine.
+     *
+     * @param object $game
      * @return void
      */
     private function enrichGameDisplay(object $game): void
@@ -868,7 +883,7 @@ class GamesController extends AppController
                 $prefix = 'vs';
             }
             $game->set('opponent_prefix', $prefix);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // ignore enrichment errors
         }
     }

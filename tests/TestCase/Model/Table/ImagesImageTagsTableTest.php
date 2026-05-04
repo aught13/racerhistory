@@ -16,6 +16,9 @@ class ImagesImageTagsTableTest extends TestCase
 
     protected ImagesImageTagsTable $ImagesImageTags;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -27,6 +30,9 @@ class ImagesImageTagsTableTest extends TestCase
         $this->ImagesImageTags = $this->getTableLocator()->get('ImagesImageTags', $config);
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->ImagesImageTags);
@@ -34,6 +40,9 @@ class ImagesImageTagsTableTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests validation default accepts valid ids.
+     */
     public function testValidationDefaultAcceptsValidIds(): void
     {
         $entity = $this->ImagesImageTags->newEntity([
@@ -44,6 +53,9 @@ class ImagesImageTagsTableTest extends TestCase
         $this->assertEmpty($entity->getErrors());
     }
 
+    /**
+     * Tests validation default rejects missing fields.
+     */
     public function testValidationDefaultRejectsMissingFields(): void
     {
         $entity = $this->ImagesImageTags->newEntity([
@@ -56,6 +68,9 @@ class ImagesImageTagsTableTest extends TestCase
         $this->assertArrayHasKey('image_tag_id', $errors);
     }
 
+    /**
+     * Tests validation default rejects non integers.
+     */
     public function testValidationDefaultRejectsNonIntegers(): void
     {
         $entity = $this->ImagesImageTags->newEntity([
@@ -68,6 +83,9 @@ class ImagesImageTagsTableTest extends TestCase
         $this->assertArrayHasKey('image_tag_id', $errors);
     }
 
+    /**
+     * Tests associations configured.
+     */
     public function testAssociationsConfigured(): void
     {
         $imagesAssoc = $this->ImagesImageTags->getAssociation('Images');

@@ -1,3 +1,11 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $careerStatsBySport
+ * @var mixed $rostersBySport
+ * @var \App\Model\Entity\Person $person
+ */
+?>
 <?php $this->assign('title', 'View Person'); ?>
 <div class="container-fluid py-3 py-md-4">
     <!-- Navigation Bar -->
@@ -136,8 +144,8 @@
                                         preg_replace(
                                             '#<(script|style)[^>]*>.*?</\\1>#is',
                                             '',
-                                            $bio
-                                        )
+                                            $bio,
+                                        ),
                                     );
                                 echo $bioClean;
                                 ?>
@@ -232,11 +240,11 @@
                                                 // Render sport-specific person stats via elements
                                                 $sportName = strtolower((string)($sportData['sport']->sport_name ?? ''));
                                                 $elementName = 'Admin/' . $sportName . '_person_stats';
-                                                if (!empty($gameStats) || !empty($seasonStats)) {
-                                                    echo $this->element($elementName, compact('gameStats', 'seasonStats'));
-                                                } else {
-                                                    echo $this->element('Admin/person_stats_empty');
-                                                }
+                                            if (!empty($gameStats) || !empty($seasonStats)) {
+                                                echo $this->element($elementName, compact('gameStats', 'seasonStats'));
+                                            } else {
+                                                echo $this->element('Admin/person_stats_empty');
+                                            }
                                             ?>
                                         </div>
                                     </div>
@@ -255,7 +263,7 @@
                     <h3 class="mb-0 h5"><i class="bi bi-award"></i> Career Statistics</h3>
                 </div>
                 <div class="card-body">
-                    <?php foreach ($careerStatsBySport as $sportId => $careerData) : ?>
+                    <?php foreach ($careerStatsBySport as $careerData) : ?>
                         <h4 class="mb-3 text-success"><i class="bi bi-star"></i> <?= h($careerData['sport']->sport_name) ?> Career Totals</h4>
                         <?php
                             // Career totals rendered by sport-specific element when available
@@ -265,16 +273,16 @@
                         ?>
                             <?php
                                 $seasons = $careerData['seasons'];
-                                if (!empty($seasons)) {
-                                    echo $this->element($careerElement, [
-                                        'seasons' => $seasons,
-                                        'totals' => $totals,
-                                        'minYear' => $careerData['minYear'] ?? null,
-                                        'maxYear' => $careerData['maxYear'] ?? null,
-                                    ]);
-                                } else {
-                                    echo $this->element('Admin/person_career_empty');
-                                }
+                            if (!empty($seasons)) {
+                                echo $this->element($careerElement, [
+                                    'seasons' => $seasons,
+                                    'totals' => $totals,
+                                    'minYear' => $careerData['minYear'] ?? null,
+                                    'maxYear' => $careerData['maxYear'] ?? null,
+                                ]);
+                            } else {
+                                echo $this->element('Admin/person_career_empty');
+                            }
                             ?>
                     <?php endforeach; ?>
                 </div>

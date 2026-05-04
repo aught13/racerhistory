@@ -1,4 +1,11 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $seasonsList
+ * @var mixed $sports
+ * @var mixed $teams
+ * @var \App\Model\Entity\TeamSeason $teamSeason
+ */
 
 $this->assign('title', 'Add Team Season'); ?>
 <div class="container py-4">
@@ -8,7 +15,8 @@ $this->assign('title', 'Add Team Season'); ?>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
                         <a
-                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">Team Seasons</a>
+                            href="<?= $this->Url->build(['prefix' => 'Admin',
+                            'controller' => 'TeamSeasons', 'action' => 'index']) ?>">Team Seasons</a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">Add Team Season</li>
                 </ol>
@@ -146,7 +154,8 @@ $this->assign('title', 'Add Team Season'); ?>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="league-tournament-finish" class="form-label">League Tournament Finish</label>
+                                <label for="league-tournament-finish"
+                                class="form-label">League Tournament Finish</label>
                                 <?= $this->Form->control('league_torunament_finish', [
                                     'type' => 'text',
                                     'class' => 'form-control',
@@ -200,7 +209,8 @@ $this->assign('title', 'Add Team Season'); ?>
                                 ]) ?>
                             </div>
                             <div class="col-md-4">
-                                <button type="button" class="btn btn-secondary w-100" id="select-team-season-image">Select / Upload</button>
+                                <button type="button" class="btn btn-secondary w-100"
+                                id="select-team-season-image">Select / Upload</button>
                             </div>
                         </div>
                         <div id="team-season-image-preview" class="mt-2" style="display:none;">
@@ -246,7 +256,8 @@ $this->assign('title', 'Add Team Season'); ?>
                             'type' => 'submit',
                             'class' => 'btn btn-success',
                         ]) ?>
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>"
+                        <a href="<?= $this->Url->build(['prefix' => 'Admin',
+                        'controller' => 'TeamSeasons', 'action' => 'index']) ?>"
                             class="btn btn-secondary">Cancel</a>
                     </div>
 
@@ -375,12 +386,15 @@ document.addEventListener('DOMContentLoaded', function(){
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', '/admin/images/upload');
                         xhr.withCredentials = true;
-                        xhr.upload.onprogress = function (e) { if (e.lengthComputable) { progress(e.loaded / e.total * 100); } };
+                        xhr.upload.onprogress = function (e)
+                        { if (e.lengthComputable) { progress(e.loaded / e.total * 100); } };
                         xhr.onload = function () {
-                                if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
+                                if (xhr.status < 200 || xhr.status >= 300)
+                                    { return reject('HTTP Error: ' + xhr.status); }
                                 var raw = xhr.responseText; var json;
                                 try { json = JSON.parse(raw); } catch(err){ return reject('Invalid JSON'); }
-                                if (!json.success || !json.image || !json.image.url) { return reject(json.error || 'Upload failed'); }
+                                if (!json.success || !json.image || !json.image.url)
+                                    { return reject(json.error || 'Upload failed'); }
                                 resolve(json.image.url);
                         };
                         xhr.onerror = function(){ reject('Image upload failed'); };
@@ -410,7 +424,9 @@ document.addEventListener('DOMContentLoaded', function(){
                 const file = input.files[0];
                 const formData = new FormData(); formData.append('upload', file);
                 btn.disabled = true; btn.textContent = 'Uploading...';
-                fetch('/admin/images/upload', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').getAttribute('content') } })
+                fetch('/admin/images/upload', { method: 'POST', body: formData, credentials: 'same-origin',
+                headers:
+                { 'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').getAttribute('content') } })
                 .then(r => r.json())
                 .then(data => {
                     if (!data.success || !data.image) {

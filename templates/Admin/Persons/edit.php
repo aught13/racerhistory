@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Person $person
+ */
+?>
 <?php $this->assign('title', 'Edit Person'); ?>
 <div class="container py-4">
     <div class="row">

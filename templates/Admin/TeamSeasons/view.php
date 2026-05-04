@@ -1,3 +1,16 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var object $nextTeamSeason
+ * @var mixed $opponentStats
+ * @var mixed $playerStats
+ * @var object $previousTeamSeason
+ * @var mixed $teamSeasonGames
+ * @var mixed $teamSeasonRosters
+ * @var mixed $teamStats
+ * @var \App\Model\Entity\TeamSeason $teamSeason
+ */
+?>
 <?php $this->assign('title', 'Team Season Details'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -11,7 +24,7 @@
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">
                         <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
-                        <?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>
+                            <?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>
                         <?php else : ?>
                         Team Season #<?= $teamSeason->id ?>
                         <?php endif; ?>
@@ -45,7 +58,7 @@
                     </div>
                     <h1 class="mb-0">
                         <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
-                        <?= h($teamSeason->team->team_name) ?>
+                            <?= h($teamSeason->team->team_name) ?>
                         <small
                             class="text-muted"><?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?></small>
                         <?php else : ?>
@@ -58,7 +71,7 @@
                             'prefix' => 'Admin',
                             'controller' => 'TeamSeasons',
                             'action' => 'edit',
-                            $teamSeason->id
+                            $teamSeason->id,
                         ]) ?>" class="btn btn-primary">
                         <i class="bi bi-pencil"></i> Edit Team Season
                     </a>
@@ -110,19 +123,19 @@
                             <dl class="row">
                                 <dt class="col-sm-4">Created:</dt>
                                 <dd class="col-sm-8">
-                                    <?php if ($teamSeason->created_at instanceof \DateTimeInterface) : ?>
-                                    <?= h($teamSeason->created_at->format('M j, Y g:i A')) ?>
+                                    <?php if ($teamSeason->created_at instanceof DateTimeInterface) : ?>
+                                        <?= h($teamSeason->created_at->format('M j, Y g:i A')) ?>
                                     <?php else : ?>
-                                    <?= h($teamSeason->created_at) ?>
+                                        <?= h($teamSeason->created_at) ?>
                                     <?php endif; ?>
                                 </dd>
 
                                 <dt class="col-sm-4">Updated:</dt>
                                 <dd class="col-sm-8">
-                                    <?php if ($teamSeason->updated_at instanceof \DateTimeInterface) : ?>
-                                    <?= h($teamSeason->updated_at->format('M j, Y g:i A')) ?>
+                                    <?php if ($teamSeason->updated_at instanceof DateTimeInterface) : ?>
+                                        <?= h($teamSeason->updated_at->format('M j, Y g:i A')) ?>
                                     <?php else : ?>
-                                    <?= h($teamSeason->updated_at) ?>
+                                        <?= h($teamSeason->updated_at) ?>
                                     <?php endif; ?>
                                 </dd>
                             </dl>
@@ -303,7 +316,7 @@
 
     <?= $this->element('Admin/games_management', ['teamSeason' => $teamSeason, 'teamSeasonGames' => $teamSeasonGames]) ?>
 
-    <?php if ((int)$teamSeason->team->sport_id === 1): // Basketball ?>
+    <?php if ((int)$teamSeason->team->sport_id === 1) : // Basketball ?>
         <?= $this->element('Admin/basketball_season_stats', [
             'teamSeason' => $teamSeason,
             'playerStats' => $playerStats,

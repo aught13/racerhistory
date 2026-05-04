@@ -4,6 +4,7 @@ declare(strict_types=1);
 /**
  * @var array<int,array{game:object,stats:array<int,object>}> $gameLogRows
  * @var \App\Model\Entity\TeamSeason|null $teamSeason
+ * @var \App\View\AppView $this
  */
 
 $teamName = $teamSeason?->team?->team_name ?? 'Team';

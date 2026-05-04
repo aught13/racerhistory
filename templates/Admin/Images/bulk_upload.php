@@ -1,6 +1,13 @@
 <?php
 /**
  * @var \App\View\AppView $this
+ * @var mixed $currentTags
+ * @var mixed $gameLabels
+ * @var mixed $opponents
+ * @var mixed $siteLabels
+ * @var mixed $sports
+ * @var mixed $teamSeasonLabels
+ * @var mixed $teams
  */
 ?>
 

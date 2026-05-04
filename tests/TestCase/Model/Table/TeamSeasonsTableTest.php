@@ -16,18 +16,27 @@ class TeamSeasonsTableTest extends TestCase
 
     private TeamSeasonsTable $TeamSeasons;
 
+    /**
+     * Sets up the test case.
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->TeamSeasons = $this->getTableLocator()->get('TeamSeasons');
     }
 
+    /**
+     * Tears down the test case.
+     */
     protected function tearDown(): void
     {
         unset($this->TeamSeasons);
         parent::tearDown();
     }
 
+    /**
+     * Tests validation requires required fields.
+     */
     public function testValidationRequiresRequiredFields(): void
     {
         $entity = $this->TeamSeasons->newEmptyEntity();
@@ -39,6 +48,9 @@ class TeamSeasonsTableTest extends TestCase
         $this->assertArrayHasKey('team_id', $entity->getErrors());
     }
 
+    /**
+     * Tests validation allows optional fields.
+     */
     public function testValidationAllowsOptionalFields(): void
     {
         $data = [
@@ -61,6 +73,9 @@ class TeamSeasonsTableTest extends TestCase
         $this->assertNotEmpty($saved->id);
     }
 
+    /**
+     * Tests associations contain team and season.
+     */
     public function testAssociationsContainTeamAndSeason(): void
     {
         $teamSeason = $this->TeamSeasons->get(1, contain: ['Teams', 'Seasons']);
@@ -71,6 +86,9 @@ class TeamSeasonsTableTest extends TestCase
         $this->assertSame(1, $teamSeason->season->get('id'));
     }
 
+    /**
+     * Tests timestamp behavior populates timestamps.
+     */
     public function testTimestampBehaviorPopulatesTimestamps(): void
     {
         $entity = $this->TeamSeasons->newEntity([

@@ -16,18 +16,27 @@ class BlogPostServiceTest extends TestCase
 
     private BlogPostService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new BlogPostService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
         parent::tearDown();
     }
 
+    /**
+     * Tests create published sets slug and published at.
+     */
     public function testCreatePublishedSetsSlugAndPublishedAt(): void
     {
         $data = [
@@ -45,6 +54,9 @@ class BlogPostServiceTest extends TestCase
         $this->assertTrue((bool)$post->is_published);
     }
 
+    /**
+     * Tests update post changes title.
+     */
     public function testUpdatePostChangesTitle(): void
     {
         $updated = $this->service->updatePost(1, [

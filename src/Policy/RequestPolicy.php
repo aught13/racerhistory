@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace App\Policy;
 
+use ArrayAccess;
 use Authorization\IdentityInterface;
 use Cake\Http\ServerRequest;
+use Throwable;
 
 /**
  * Request Policy
@@ -93,7 +95,7 @@ class RequestPolicy
             return $data[$field] ?? null;
         }
 
-        if ($data instanceof \ArrayAccess && isset($data[$field])) {
+        if ($data instanceof ArrayAccess && isset($data[$field])) {
             return $data[$field];
         }
 
@@ -101,7 +103,7 @@ class RequestPolicy
             if (method_exists($data, 'get')) {
                 try {
                     return $data->get($field);
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // Fall through
                 }
             }

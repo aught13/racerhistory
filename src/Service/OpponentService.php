@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Opponent;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -18,7 +19,7 @@ class OpponentService
      * @param int $opponentId Opponent ID
      * @return \App\Model\Entity\Opponent|null
      */
-    public function getOpponentById(int $opponentId): ?\App\Model\Entity\Opponent
+    public function getOpponentById(int $opponentId): ?Opponent
     {
         $opponents = TableRegistry::getTableLocator()->get('Opponents');
 
@@ -92,7 +93,7 @@ class OpponentService
      * @param array<string, mixed> $data Opponent data
      * @return \App\Model\Entity\Opponent|false
      */
-    public function createOpponent(array $data): \App\Model\Entity\Opponent|false
+    public function createOpponent(array $data): Opponent|false
     {
         $opponents = TableRegistry::getTableLocator()->get('Opponents');
         $opponent = $opponents->newEntity($data);
@@ -107,7 +108,7 @@ class OpponentService
      * @param array<string, mixed> $data Opponent data
      * @return \App\Model\Entity\Opponent|false
      */
-    public function updateOpponent(int $opponentId, array $data): \App\Model\Entity\Opponent|false
+    public function updateOpponent(int $opponentId, array $data): Opponent|false
     {
         $opponents = TableRegistry::getTableLocator()->get('Opponents');
         $opponent = $opponents->get($opponentId);

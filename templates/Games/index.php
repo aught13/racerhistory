@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+
+use Cake\Utility\Inflector;
+
 /**
  * Games landing page with search type cards.
  *
@@ -39,7 +42,7 @@ $descriptions = [
     <div class="row g-3" id="games-type-cards">
         <?php foreach ($searchTypes as $slug => $label) : ?>
             <div class="col-md-4 col-lg-3">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => \Cake\Utility\Inflector::variable(str_replace('-', '_', $slug))]) ?>"
+                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => Inflector::variable(str_replace('-', '_', $slug))]) ?>"
                    class="card h-100 text-decoration-none game-type-card">
                     <div class="card-body text-center">
                         <i class="bi <?= $icons[$slug] ?? 'bi-list' ?> fs-2 mb-2 d-block text-primary"></i>

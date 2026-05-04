@@ -4,9 +4,14 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Exception;
 
+/**
+ * @link \App\Controller\Admin\SitesController
+ */
 class SitesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -18,6 +23,9 @@ class SitesControllerTest extends TestCase
         'app.Sites',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -26,6 +34,9 @@ class SitesControllerTest extends TestCase
         $this->assertResponseContains('Sites');
     }
 
+    /**
+     * Tests add post.
+     */
     public function testAddPost(): void
     {
         $this->mockIdentity();
@@ -35,6 +46,9 @@ class SitesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'index']);
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -43,6 +57,9 @@ class SitesControllerTest extends TestCase
         $this->assertResponseContains('Add Site');
     }
 
+    /**
+     * Tests edit.
+     */
     public function testEdit(): void
     {
         $this->mockIdentity();
@@ -52,6 +69,9 @@ class SitesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'index']);
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -60,6 +80,9 @@ class SitesControllerTest extends TestCase
         $this->assertResponseContains('Edit Site');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();
@@ -68,6 +91,9 @@ class SitesControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests delete non existent.
+     */
     public function testDeleteNonExistent(): void
     {
         $this->mockIdentity();
@@ -76,11 +102,14 @@ class SitesControllerTest extends TestCase
         try {
             $this->delete('/admin/sites/delete/999');
             $this->assertResponseError();
-        } catch (\Exception $e) {
-            $this->assertInstanceOf(\Cake\Datasource\Exception\RecordNotFoundException::class, $e);
+        } catch (Exception $e) {
+            $this->assertInstanceOf(RecordNotFoundException::class, $e);
         }
     }
 
+    /**
+     * Tests unauthenticated access.
+     */
     public function testUnauthenticatedAccess(): void
     {
         $this->session([]);
@@ -88,6 +117,9 @@ class SitesControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests ajax search returns results.
+     */
     public function testAjaxSearchReturnsResults(): void
     {
         $this->mockIdentity();
@@ -103,6 +135,9 @@ class SitesControllerTest extends TestCase
         $this->assertArrayHasKey('place_state', $data['results'][0]);
     }
 
+    /**
+     * Tests ajax search with place id filter.
+     */
     public function testAjaxSearchWithPlaceIdFilter(): void
     {
         $this->mockIdentity();
@@ -113,6 +148,9 @@ class SitesControllerTest extends TestCase
         $this->assertNotEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search with place id filter no match.
+     */
     public function testAjaxSearchWithPlaceIdFilterNoMatch(): void
     {
         $this->mockIdentity();
@@ -123,6 +161,9 @@ class SitesControllerTest extends TestCase
         $this->assertEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search empty query.
+     */
     public function testAjaxSearchEmptyQuery(): void
     {
         $this->mockIdentity();
@@ -133,6 +174,9 @@ class SitesControllerTest extends TestCase
         $this->assertEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search rejects post method.
+     */
     public function testAjaxSearchRejectsPostMethod(): void
     {
         $this->mockIdentity();
@@ -142,6 +186,9 @@ class SitesControllerTest extends TestCase
         $this->assertResponseCode(405);
     }
 
+    /**
+     * Tests ajax add success.
+     */
     public function testAjaxAddSuccess(): void
     {
         $this->mockIdentity();
@@ -159,6 +206,9 @@ class SitesControllerTest extends TestCase
         $this->assertNotEmpty($data['newOption']['text']);
     }
 
+    /**
+     * Tests ajax add invalid method.
+     */
     public function testAjaxAddInvalidMethod(): void
     {
         $this->mockIdentity();

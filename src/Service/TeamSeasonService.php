@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Season;
+use App\Model\Entity\TeamSeason;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -18,7 +20,7 @@ class TeamSeasonService
      * @param int $teamSeasonId
      * @return \App\Model\Entity\TeamSeason|null
      */
-    public function getTeamSeasonById(int $teamSeasonId): ?\App\Model\Entity\TeamSeason
+    public function getTeamSeasonById(int $teamSeasonId): ?TeamSeason
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
 
@@ -46,7 +48,7 @@ class TeamSeasonService
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
-        if ($season instanceof \App\Model\Entity\Season) {
+        if ($season instanceof Season) {
             $start = $season->start ?? null;
             $end = $season->end ?? null;
             if ($start && $end && $start != $end) {
@@ -88,7 +90,7 @@ class TeamSeasonService
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
-        if ($season instanceof \App\Model\Entity\Season) {
+        if ($season instanceof Season) {
             $start = $season->start ?? null;
             $end = $season->end ?? null;
             if ($start && $end && $start != $end) {
@@ -130,7 +132,7 @@ class TeamSeasonService
      * @param array $data TeamSeason data (team_id, season_id, etc.)
      * @return \App\Model\Entity\TeamSeason|false
      */
-    public function createTeamSeason(array $data): \App\Model\Entity\TeamSeason|false
+    public function createTeamSeason(array $data): TeamSeason|false
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
         $teamSeason = $teamSeasons->newEntity($data);
@@ -145,7 +147,7 @@ class TeamSeasonService
      * @param array $data Updated team season data
      * @return \App\Model\Entity\TeamSeason|false
      */
-    public function updateTeamSeason(int $teamSeasonId, array $data): \App\Model\Entity\TeamSeason|false
+    public function updateTeamSeason(int $teamSeasonId, array $data): TeamSeason|false
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
         $teamSeason = $teamSeasons->get($teamSeasonId);
@@ -274,7 +276,7 @@ class TeamSeasonService
                 ($ts->team->team_name ?? 'Team'),
                 $sportName,
                 ($ts->season->start ?? ''),
-                ($ts->season->end ?? '')
+                ($ts->season->end ?? ''),
             );
         }
 
@@ -485,7 +487,7 @@ class TeamSeasonService
         if (count($confByType) > 1) {
             $confSplits['By Type'] = array_merge(
                 [$groupLabels['Conference'] => $formatRecord($conf)],
-                array_map($formatRecord, $confByType)
+                array_map($formatRecord, $confByType),
             );
         }
 
@@ -497,7 +499,7 @@ class TeamSeasonService
         if (count($confTournByType) > 1) {
             $confTournSplits['By Type'] = array_merge(
                 [$groupLabels['Conference Tournament'] => $formatRecord($confTourn)],
-                array_map($formatRecord, $confTournByType)
+                array_map($formatRecord, $confTournByType),
             );
         }
 
@@ -509,7 +511,7 @@ class TeamSeasonService
         if (count($postseasonByType) > 1) {
             $postseasonSplits['By Type'] = array_merge(
                 [$groupLabels['Postseason'] => $formatRecord($postseason)],
-                array_map($formatRecord, $postseasonByType)
+                array_map($formatRecord, $postseasonByType),
             );
         }
 

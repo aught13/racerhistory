@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: tests/game-view-init.coverage.test.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: tests/game-view-init.coverage.test.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { jest } from "@jest/globals";
+
+/**
+ * Comprehensive branch coverage tests for modules/game-view-init.mjs
+ */
+
+function setupJQueryMock() {
+    const dtInstance = {
+        destroy: jest.fn(),
+        columns: { adjust: jest.fn() },
+    };
+    const DataTableFn = jest.fn().mockReturnValue(dtInstance);
+    DataTableFn.isDataTable = jest.fn().mockReturnValue(false);
+
+    const jq = jest.fn((selector) => {
+        const el =
+            typeof selector === "string"
+                ? document.querySelector(selector)
+                : selector;
+        return {
+            0: el,
+            length: el ? 1 : 0,
+            get: jest.fn().mockReturnValue(el),
+            DataTable: DataTableFn,
+        };
+    });
+    jq.fn = { DataTable: DataTableFn, dataTable: DataTableFn };
+    window.$ = jq;
+    return { dtInstance, DataTableFn };
+}
+
+beforeEach(() => {
+    jest.resetModules();
+    document.body.innerHTML = "";
+    delete window.$;
+    delete window.Turbo;
+    jest.spyOn(console, "debug").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+});
+
+describe("game-view-init.mjs", () => {
+    test("initGameView initializes tables with custom selectors", async () => {
+        document.body.innerHTML = `
+            &lt;table id="game-team-stats-table">
+                &lt;thead>&lt;tr>&lt;th>Player&lt;/th>&lt;th>PTS&lt;/th>&lt;th>RB&lt;/th>&lt;/tr>&lt;/thead>
+                &lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;td>10&lt;/td>&lt;td>5&lt;/td>&lt;/tr>&lt;/tbody>
+            &lt;/table>
+            &lt;table id="game-opponent-stats-table">
+                &lt;thead>&lt;tr>&lt;th>Player&lt;/th>&lt;th>PTS&lt;/th>&lt;/tr>&lt;/thead>
+                &lt;tbody>&lt;tr>&lt;td>B&lt;/td>&lt;td>8&lt;/td>&lt;/tr>&lt;/tbody>
+            &lt;/table>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        const result = mod.default();
+        expect(result.tables).toHaveLength(2);
+    });
+
+    test("initGameView returns empty tables when no tables found", async () => {
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        const result = mod.default();
+        expect(result.tables).toHaveLength(0);
+    });
+
+    test("initGameView handles non-player tables", async () => {
+        document.body.innerHTML = `
+            &lt;table id="game-custom-table">
+                &lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>
+                &lt;tbody>&lt;tr>&lt;td>X&lt;/td>&lt;/tr>&lt;/tbody>
+            &lt;/table>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        const result = mod.default({
+            tableSelectors: ["#game-custom-table"],
+        });
+        expect(result.tables).toHaveLength(1);
+    });
+
+    test("initGameView schedules init when table has no headers", async () => {
+        jest.useFakeTimers();
+        document.body.innerHTML = `
+            &lt;table id="game-team-stats-table">&lt;tbody>&lt;tr>&lt;td>X&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        const result = mod.default();
+        expect(result.tables).toHaveLength(1);
+        expect(result.tables[0]).toBeNull();
+        jest.useRealTimers();
+    });
+
+    test("initGameView returns null when no jQuery", async () => {
+        document.body.innerHTML = `
+            &lt;table id="game-team-stats-table">
+                &lt;thead>&lt;tr>&lt;th>P&lt;/th>&lt;/tr>&lt;/thead>
+                &lt;tbody>&lt;tr>&lt;td>X&lt;/td>&lt;/tr>&lt;/tbody>
+            &lt;/table>
+        `;
+        // No jQuery
+        const mod = await import("../modules/game-view-init.mjs");
+        const result = mod.default();
+        expect(result.tables).toHaveLength(1);
+        expect(result.tables[0]).toBeNull();
+    });
+
+    test("initGameView destroys existing DataTable before reinit", async () => {
+        document.body.innerHTML = `
+            &lt;table id="game-team-stats-table">
+                &lt;thead>&lt;tr>&lt;th>P&lt;/th>&lt;/tr>&lt;/thead>
+                &lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>
+            &lt;/table>
+        `;
+        const { DataTableFn, dtInstance } = setupJQueryMock();
+        DataTableFn.isDataTable.mockReturnValue(true);
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default();
+        expect(dtInstance.destroy).toHaveBeenCalled();
+    });
+
+    test("setupBlogClicks handles clicks on blog list items", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-blog>
+                &lt;div class="blog-list-item" data-blog-post="my-post">
+                    &lt;span class="title">Post&lt;/span>
+                &lt;/div>
+            &lt;/div>
+        `;
+        setupJQueryMock();
+
+        // Mock location
+        const originalLocation = window.location;
+        delete window.location;
+        window.location = { href: "" };
+
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const item = document.querySelector(".blog-list-item");
+        item.querySelector(".title").dispatchEvent(
+            new MouseEvent("click", { bubbles: true }),
+        );
+        expect(window.location.href).toBe("/blog/my-post");
+
+        window.location = originalLocation;
+    });
+
+    test("setupBlogClicks handles Turbo.visit when available", async () => {
+        document.body.innerHTML = `
+            &lt;turbo-frame id="blog-frame">
+                &lt;div data-game-blog>
+                    &lt;div class="blog-list-item" data-blog-post="post-1">
+                        &lt;span>Click me&lt;/span>
+                    &lt;/div>
+                &lt;/div>
+                &lt;turbo-frame data-view-frame id="view">View&lt;/turbo-frame>
+            &lt;/turbo-frame>
+        `;
+        setupJQueryMock();
+        window.Turbo = { visit: jest.fn() };
+
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const item = document.querySelector(".blog-list-item span");
+        item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(window.Turbo.visit).toHaveBeenCalledWith("/blog/post-1", {
+            frame: "view",
+        });
+    });
+
+    test("setupBlogClicks ignores clicks without slug", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-blog>
+                &lt;div class="blog-list-item">&lt;span>No slug&lt;/span>&lt;/div>
+            &lt;/div>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const span = document.querySelector("span");
+        expect(() =>
+            span.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+        ).not.toThrow();
+    });
+
+    test("setupBlogClicks does not re-bind", async () => {
+        document.body.innerHTML = `&lt;div data-game-blog>&lt;/div>`;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+        mod.default({ root: document }); // second call should skip
+    });
+
+    test("setupImageGallery opens and closes modal", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-image-gallery>
+                &lt;img class="game-photo-thumb-img" data-image-id="42" data-image-filename="test.jpg" />
+            &lt;/div>
+            &lt;div data-game-image-modal>
+                &lt;button data-modal-close>X&lt;/button>
+                &lt;source data-modal-image-webp />
+                &lt;img data-modal-image-fallback />
+            &lt;/div>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const thumb = document.querySelector(".game-photo-thumb-img");
+        thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        const modal = document.querySelector("[data-game-image-modal]");
+        expect(modal.getAttribute("data-modal-open")).toBe("true");
+
+        const modalImg = document.querySelector("[data-modal-image-fallback]");
+        expect(modalImg.src).toContain("/images/serve/42");
+
+        // Close via button
+        const closeBtn = document.querySelector("[data-modal-close]");
+        closeBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(modal.hasAttribute("data-modal-open")).toBe(false);
+    });
+
+    test("setupImageGallery closes on Escape key", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-image-gallery>
+                &lt;img class="game-photo-thumb-img" data-image-id="1" />
+            &lt;/div>
+            &lt;div data-game-image-modal>
+                &lt;img data-modal-image-fallback />
+            &lt;/div>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const thumb = document.querySelector(".game-photo-thumb-img");
+        thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        const modal = document.querySelector("[data-game-image-modal]");
+        expect(modal.getAttribute("data-modal-open")).toBe("true");
+
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+        expect(modal.hasAttribute("data-modal-open")).toBe(false);
+    });
+
+    test("setupImageGallery closes on backdrop click", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-image-gallery>
+                &lt;img class="game-photo-thumb-img" data-image-id="5" />
+            &lt;/div>
+            &lt;div data-game-image-modal>
+                &lt;img data-modal-image-fallback />
+            &lt;/div>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const thumb = document.querySelector(".game-photo-thumb-img");
+        thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        const modal = document.querySelector("[data-game-image-modal]");
+        modal.dispatchEvent(new MouseEvent("click", { target: modal }));
+    });
+
+    test("setupImageGallery ignores click on non-thumb", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-image-gallery>
+                &lt;span>Not a thumb&lt;/span>
+            &lt;/div>
+            &lt;div data-game-image-modal>
+                &lt;img data-modal-image-fallback />
+            &lt;/div>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const span = document.querySelector("span");
+        span.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    test("setupImageGallery skips when no gallery or modal", async () => {
+        document.body.innerHTML = `&lt;div>No gallery&lt;/div>`;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        expect(() => mod.default({ root: document })).not.toThrow();
+    });
+
+    test("setupImageGallery ignores click without imageId", async () => {
+        document.body.innerHTML = `
+            &lt;div data-game-image-gallery>
+                &lt;img class="game-photo-thumb-img" />
+            &lt;/div>
+            &lt;div data-game-image-modal>
+                &lt;img data-modal-image-fallback />
+            &lt;/div>
+        `;
+        setupJQueryMock();
+        const mod = await import("../modules/game-view-init.mjs");
+        mod.default({ root: document });
+
+        const thumb = document.querySelector(".game-photo-thumb-img");
+        thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-game-form-lookups.html">game-form-lookups</a></li><li><a href="module-modules_tinymce-bootstrap-config.html">modules/tinymce-bootstrap-config</a></li></ul><h3>Classes</h3><ul><li><a href="CropSelector.html">CropSelector</a></li><li><a href="global.html#ImageSelector">ImageSelector</a></li><li><a href="SportAwareGameForm.html">SportAwareGameForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CDN_URLS">CDN_URLS</a></li><li><a href="global.html#DATATABLES_CORE_SRC">DATATABLES_CORE_SRC</a></li><li><a href="global.html#DEBOUNCE_MS">DEBOUNCE_MS</a></li><li><a href="global.html#NUMERIC_COLUMNS">NUMERIC_COLUMNS</a></li><li><a href="global.html#SCROLLER_THRESHOLD">SCROLLER_THRESHOLD</a></li><li><a href="global.html#_initialised">_initialised</a></li><li><a href="global.html#addRow">addRow</a></li><li><a href="global.html#autoSelectNewPerson">autoSelectNewPerson</a></li><li><a href="global.html#buildDom">buildDom</a></li><li><a href="global.html#buildEditDom">buildEditDom</a></li><li><a href="global.html#buildOpponentDom">buildOpponentDom</a></li><li><a href="global.html#buildPersonDom">buildPersonDom</a></li><li><a href="global.html#buildResults">buildResults</a></li><li><a href="global.html#calculateRecord">calculateRecord</a></li><li><a href="global.html#ensureDataTablesLoaded">ensureDataTablesLoaded</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#fixScrollXHeaderAlignment">fixScrollXHeaderAlignment</a></li><li><a href="global.html#flush">flush</a></li><li><a href="global.html#initCardHover">initCardHover</a></li><li><a href="global.html#initDragScroll">initDragScroll</a></li><li><a href="global.html#initGamesDataTable">initGamesDataTable</a></li><li><a href="global.html#initGamesPage">initGamesPage</a></li><li><a href="global.html#initPersonSearch">initPersonSearch</a></li><li><a href="global.html#initRosterMultiAdd">initRosterMultiAdd</a></li><li><a href="global.html#initStatMultiAdd">initStatMultiAdd</a></li><li><a href="global.html#initStatsDataTable">initStatsDataTable</a></li><li><a href="global.html#initStatsPage">initStatsPage</a></li><li><a href="global.html#initializingTables">initializingTables</a></li><li><a href="global.html#isDataTablesAvailable">isDataTablesAvailable</a></li><li><a href="global.html#jq">jq</a></li><li><a href="global.html#reindexRows">reindexRows</a></li><li><a href="global.html#reinitBootstrap">reinitBootstrap</a></li><li><a href="global.html#setupBlogPostCollapse">setupBlogPostCollapse</a></li><li><a href="global.html#setupDT">setupDT</a></li><li><a href="global.html#setupJQueryMock">setupJQueryMock</a></li><li><a href="global.html#syncScrollerColumns">syncScrollerColumns</a></li><li><a href="global.html#updateRecordDisplay">updateRecordDisplay</a></li><li><a href="global.html#updateRemoveButtons">updateRemoveButtons</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun May 03 2026 13:42:29 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

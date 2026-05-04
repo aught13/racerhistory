@@ -14,12 +14,18 @@ class SeasonServiceTest extends TestCase
 
     private SeasonService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new SeasonService();
     }
 
+    /**
+     * Tests get season by id.
+     */
     public function testGetSeasonById(): void
     {
         $season = $this->service->getSeasonById(1);
@@ -27,12 +33,18 @@ class SeasonServiceTest extends TestCase
         $this->assertSame(1, $season->id);
     }
 
+    /**
+     * Tests get season by id returns null for invalid id.
+     */
     public function testGetSeasonByIdReturnsNullForInvalidId(): void
     {
         $season = $this->service->getSeasonById(99999);
         $this->assertNull($season);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -40,12 +52,18 @@ class SeasonServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Season #99999', $label);
     }
 
+    /**
+     * Tests get display label formats start end.
+     */
     public function testGetDisplayLabelFormatsStartEnd(): void
     {
         $data = ['start' => 2023, 'end' => 2024];
@@ -56,6 +74,9 @@ class SeasonServiceTest extends TestCase
         $this->assertSame('2023-2024', $label);
     }
 
+    /**
+     * Tests get display label formats start only.
+     */
     public function testGetDisplayLabelFormatsStartOnly(): void
     {
         $data = ['start' => 2025, 'end' => 2025];
@@ -66,6 +87,9 @@ class SeasonServiceTest extends TestCase
         $this->assertSame('2025', $label);
     }
 
+    /**
+     * Tests get all seasons.
+     */
     public function testGetAllSeasons(): void
     {
         $seasons = $this->service->getAllSeasons();
@@ -73,12 +97,18 @@ class SeasonServiceTest extends TestCase
         $this->assertGreaterThan(0, count($seasons));
     }
 
+    /**
+     * Tests get all seasons respects limit.
+     */
     public function testGetAllSeasonsRespectsLimit(): void
     {
         $seasons = $this->service->getAllSeasons(2);
         $this->assertLessThanOrEqual(2, count($seasons));
     }
 
+    /**
+     * Tests create season.
+     */
     public function testCreateSeason(): void
     {
         $data = ['start' => 2030, 'end' => 2031];
@@ -88,6 +118,9 @@ class SeasonServiceTest extends TestCase
         $this->assertSame(2031, $season->end);
     }
 
+    /**
+     * Tests update season.
+     */
     public function testUpdateSeason(): void
     {
         $season = $this->service->updateSeason(1, ['start' => 2099]);
@@ -95,6 +128,9 @@ class SeasonServiceTest extends TestCase
         $this->assertSame(2099, $season->start);
     }
 
+    /**
+     * Tests delete season.
+     */
     public function testDeleteSeason(): void
     {
         $data = ['start' => 2040, 'end' => 2041];
@@ -108,6 +144,9 @@ class SeasonServiceTest extends TestCase
         $this->assertNull($deleted);
     }
 
+    /**
+     * Tests get seasons for select.
+     */
     public function testGetSeasonsForSelect(): void
     {
         $results = $this->service->getSeasonsForSelect();

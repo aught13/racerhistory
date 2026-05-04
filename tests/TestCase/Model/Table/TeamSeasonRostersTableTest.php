@@ -18,18 +18,27 @@ class TeamSeasonRostersTableTest extends TestCase
 
     protected $TeamSeasonRosters;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->TeamSeasonRosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->TeamSeasonRosters);
         parent::tearDown();
     }
 
+    /**
+     * Tests validation success.
+     */
     public function testValidationSuccess(): void
     {
         $entity = $this->TeamSeasonRosters->newEntity([
@@ -42,6 +51,9 @@ class TeamSeasonRostersTableTest extends TestCase
         $this->assertNotFalse($this->TeamSeasonRosters->save($entity));
     }
 
+    /**
+     * Tests validation missing required.
+     */
     public function testValidationMissingRequired(): void
     {
         $entity = $this->TeamSeasonRosters->newEntity([

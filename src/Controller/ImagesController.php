@@ -5,7 +5,9 @@ namespace App\Controller;
 
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
+use Cake\Log\Log;
 use Intervention\Image\ImageManager;
+use Throwable;
 
 /**
  * Public Images Controller
@@ -54,6 +56,8 @@ class ImagesController extends AppController
     /**
      * Public serve endpoint (no auth) for original or variant.
      * /images/serve/123?variant=thumb
+     *
+     * @param int $id
      */
     public function serve(int $id): Response
     {
@@ -157,11 +161,12 @@ class ImagesController extends AppController
     /**
      * Serve a transformed derivative with disk caching (tmp/cache).
      *
-     * @param \App\Model\Entity\Image $image
-     * @param string $path Absolute file path
-     * @param string $mime Original mime
-     * @param string $variant Variant name (optional)
-     * @param array<string,mixed> $transform Transform params
+     * @param object $image
+     * @param string $path
+     * @param string $mime
+     * @param string $variant
+     * @param array $transform
+     * @param string $cacheControl
      */
     private function serveTransformed(
         object $image,
@@ -237,7 +242,7 @@ class ImagesController extends AppController
                 ->withHeader('ETag', $etag)
                 ->withHeader('Cache-Control', $cacheControl)
                 ->withStringBody($body);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Degrade gracefully to original bytes if transform fails.
             $body = file_get_contents($path) ?: '';
             if ($body === '') {
@@ -253,6 +258,10 @@ class ImagesController extends AppController
     }
 
     /**
+     * Runs the output format routine.
+     *
+     * @param string|null $fm
+     * @param string $fallbackMime
      * @return array{0:string,1:string} [mime, extension]
      */
     private function outputFormat(?string $fm, string $fallbackMime): array
@@ -268,7 +277,7 @@ class ImagesController extends AppController
     /**
      * Return a best-effort file extension for a mime type.
      *
-     * @param string $mime Mime type
+     * @param string $mime
      * @return string File extension without dot
      */
     private function mimeToExt(string $mime): string
@@ -281,7 +290,11 @@ class ImagesController extends AppController
     }
 
     /**
-     * @param array<string,mixed> $transform
+     * Runs the build etag routine.
+     *
+     * @param string $hash
+     * @param string $variant
+     * @param array $transform
      */
     private function buildEtag(string $hash, string $variant, array $transform): string
     {
@@ -293,8 +306,8 @@ class ImagesController extends AppController
     /**
      * Resolve filesystem path and mime type for an image or image id.
      *
-     * @param mixed $image Image entity or numeric id
-     * @param string $variant Optional variant name
+     * @param mixed $image
+     * @param string $variant
      * @return array{0:string,1:string} [$path, $mime]
      */
     private function resolvePath(mixed $image, string $variant): array
@@ -335,23 +348,25 @@ class ImagesController extends AppController
 
     /**
      * Write data to a cache file atomically using a temp file + rename.
-     *
      * Using a temp file prevents concurrent readers from seeing a partially-written
      * file, which would result in serving a corrupted/truncated image.
+     *
+     * @param string $destination
+     * @param string $data
      */
     private function atomicWriteCache(string $destination, string $data): void
     {
         $tmp = $destination . '.tmp.' . getmypid();
         $written = file_put_contents($tmp, $data);
         if ($written === false) {
-            \Cake\Log\Log::warning('image_cache: failed to write tmp file ' . $tmp);
+            Log::warning('image_cache: failed to write tmp file ' . $tmp);
 
             return;
         }
         if (!rename($tmp, $destination)) {
-            \Cake\Log\Log::warning('image_cache: failed to rename ' . $tmp . ' to ' . $destination);
+            Log::warning('image_cache: failed to rename ' . $tmp . ' to ' . $destination);
             if (!unlink($tmp)) {
-                \Cake\Log\Log::warning('image_cache: failed to unlink tmp file ' . $tmp);
+                Log::warning('image_cache: failed to unlink tmp file ' . $tmp);
             }
         }
     }
@@ -373,6 +388,8 @@ class ImagesController extends AppController
 
     /**
      * Debugging manipulate action to log the image entity.
+     *
+     * @param int $id
      */
     public function manipulate(int $id): void
     {

@@ -1,4 +1,8 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\User $user
+ */
 
 // templates/Admin/Users/add.php
 ?>
@@ -30,7 +34,7 @@
                     'type' => 'password',
                     'id' => 'admin-add-password',
                     'class' => 'form-control',
-                    'label' => false
+                    'label' => false,
                 ]) ?>
                 <button type="button" class="btn btn-outline-secondary" id="toggle-admin-add-password" tabindex="-1">
                     <span class="bi bi-eye"></span>
@@ -53,17 +57,17 @@
                     'type' => 'select',
                     'options' => [
                         'user' => 'User',
-                        'admin' => 'Admin'
+                        'admin' => 'Admin',
                     ],
                     'default' => 'user',
-                    'class' => 'form-select'
+                    'class' => 'form-select',
                 ]) ?>
             </div>
             <div class="col-md-6">
                 <?= $this->Form->control('active', [
                     'type' => 'checkbox',
                     'label' => 'Active',
-                    'checked' => true
+                    'checked' => true,
                 ]) ?>
             </div>
         </div>

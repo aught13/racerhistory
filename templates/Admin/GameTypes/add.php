@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\GameType $gameType
+ */
+?>
 <?php $this->assign('title', 'Add Game Type'); ?>
 <div class="container py-4">
     <h1 class="mb-3">Add Game Type</h1>

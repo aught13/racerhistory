@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\SeasonsController
+ */
 class SeasonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -18,6 +21,9 @@ class SeasonsControllerTest extends TestCase
         'app.Users',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -26,12 +32,18 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="confirm-delete-modal"');
     }
 
+    /**
+     * Tests index unauthenticated.
+     */
     public function testIndexUnauthenticated(): void
     {
         $this->get('/admin/seasons');
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->mockIdentity();
@@ -39,6 +51,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests view invalid.
+     */
     public function testViewInvalid(): void
     {
         $this->mockIdentity();
@@ -46,6 +61,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseError();
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -55,6 +73,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('hidden-season-form');
     }
 
+    /**
+     * Tests add post valid.
+     */
     public function testAddPostValid(): void
     {
         $this->mockIdentity();
@@ -71,6 +92,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertFlashMessage('The season has been saved.');
     }
 
+    /**
+     * Tests add post invalid.
+     */
     public function testAddPostInvalid(): void
     {
         $this->mockIdentity();
@@ -86,6 +110,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('The season could not be saved.');
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -93,6 +120,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests edit post valid.
+     */
     public function testEditPostValid(): void
     {
         $this->mockIdentity();
@@ -105,6 +135,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertFlashMessage('The season has been saved.');
     }
 
+    /**
+     * Tests delete post.
+     */
     public function testDeletePost(): void
     {
         $this->mockIdentity();
@@ -116,6 +149,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertFlashMessage('The season has been deleted.');
     }
 
+    /**
+     * Tests bulk delete.
+     */
     public function testBulkDelete(): void
     {
         $this->mockIdentity();
@@ -126,6 +162,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']);
     }
 
+    /**
+     * Tests bulk delete empty selection.
+     */
     public function testBulkDeleteEmptySelection(): void
     {
         $this->mockIdentity();
@@ -139,6 +178,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertFlashMessage('No seasons selected for deletion.');
     }
 
+    /**
+     * Tests bulk invalid action.
+     */
     public function testBulkInvalidAction(): void
     {
         $this->mockIdentity();
@@ -151,6 +193,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertFlashMessage('Invalid bulk action.');
     }
 
+    /**
+     * Tests ajax add.
+     */
     public function testAjaxAdd(): void
     {
         $this->mockIdentity();
@@ -164,6 +209,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertStringContainsString('success', $body);
     }
 
+    /**
+     * Tests ajax add invalid method.
+     */
     public function testAjaxAddInvalidMethod(): void
     {
         $this->mockIdentity();
@@ -177,6 +225,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertStringContainsString('Invalid request method', $body);
     }
 
+    /**
+     * Tests view with previous and next seasons.
+     */
     public function testViewWithPreviousAndNextSeasons(): void
     {
         $this->mockIdentity();
@@ -207,6 +258,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertEquals(2025, $nextSeason->end, 'Next season should be 2024-2025');
     }
 
+    /**
+     * Tests view first season has no previous.
+     */
     public function testViewFirstSeasonHasNoPrevious(): void
     {
         $this->mockIdentity();
@@ -226,6 +280,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertNull($nextSeason, 'Only season should have no next season');
     }
 
+    /**
+     * Tests view navigation buttons in template.
+     */
     public function testViewNavigationButtonsInTemplate(): void
     {
         $this->mockIdentity();

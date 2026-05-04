@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller\Api\V1;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Api\V1\TeamSeasonsController
+ */
 class TeamSeasonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -17,6 +20,9 @@ class TeamSeasonsControllerTest extends TestCase
         'app.TeamSeasons',
     ];
 
+    /**
+     * Tests index default.
+     */
     public function testIndexDefault(): void
     {
         $this->get('/api/v1/team-seasons?limit=10');
@@ -33,6 +39,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertArrayHasKey('label', $first);
     }
 
+    /**
+     * Tests index include details.
+     */
     public function testIndexIncludeDetails(): void
     {
         $this->get('/api/v1/team-seasons?include=details&limit=10');
@@ -48,6 +57,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertArrayHasKey('season', $first);
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/api/v1/team-seasons/1');
@@ -62,6 +74,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertIsArray($payload['data']['team'] ?? null);
     }
 
+    /**
+     * Tests view not found.
+     */
     public function testViewNotFound(): void
     {
         $this->get('/api/v1/team-seasons/999');

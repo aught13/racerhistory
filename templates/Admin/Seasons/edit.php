@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Season $season
+ */
+?>
 <?php $this->assign('title', 'Edit Season'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -39,7 +45,7 @@
                             'label' => false,
                             'required' => true,
                             'id' => 'start-year',
-                            'placeholder' => 'e.g., 2023'
+                            'placeholder' => 'e.g., 2023',
                         ]) ?>
                         <div class="form-text">The starting year of the season (e.g., 2023 for 2023-2024 season).</div>
                     </div>
@@ -52,7 +58,7 @@
                             'label' => false,
                             'required' => true,
                             'id' => 'end-year',
-                            'placeholder' => 'e.g., 2024'
+                            'placeholder' => 'e.g., 2024',
                         ]) ?>
                         <div class="form-text">The ending year of the season (e.g., 2024 for 2023-2024 season).</div>
                     </div>
@@ -60,7 +66,7 @@
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Update Season'), [
                             'type' => 'submit',
-                            'class' => 'btn btn-primary'
+                            'class' => 'btn btn-primary',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'view', $season->id]) ?>"
                             class="btn btn-secondary">Cancel</a>
@@ -110,7 +116,7 @@
                 <div class="card-body">
                     <p class="small text-muted mb-1">
                         <strong>Created:</strong>
-                        <?php if ($season->created_at instanceof \DateTimeInterface) : ?>
+                        <?php if ($season->created_at instanceof DateTimeInterface) : ?>
                             <?= h($season->created_at->format('M j, Y g:i A')) ?>
                         <?php else : ?>
                             <?= h($season->created_at) ?>
@@ -118,7 +124,7 @@
                     </p>
                     <p class="small text-muted mb-0">
                         <strong>Last Updated:</strong>
-                        <?php if ($season->updated_at instanceof \DateTimeInterface) : ?>
+                        <?php if ($season->updated_at instanceof DateTimeInterface) : ?>
                             <?= h($season->updated_at->format('M j, Y g:i A')) ?>
                         <?php else : ?>
                             <?= h($season->updated_at) ?>

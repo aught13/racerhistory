@@ -7,6 +7,24 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\TeamSeasonsTable&\Cake\ORM\Association\BelongsTo $TeamSeasons
+ * @method \App\Model\Entity\StatBasketSeasonTeam newEmptyEntity()
+ * @method \App\Model\Entity\StatBasketSeasonTeam newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\StatBasketSeasonTeam findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonTeam>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonTeam> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonTeam>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketSeasonTeam[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketSeasonTeam> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class StatBasketSeasonTeamTable extends Table
 {
     /**

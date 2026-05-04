@@ -1,3 +1,11 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var object $nextSeason
+ * @var object $previousSeason
+ * @var \App\Model\Entity\Season $season
+ */
+?>
 <?php $this->assign('title', 'Season Details'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -76,7 +84,7 @@
                             <dl class="row">
                                 <dt class="col-sm-4">Created:</dt>
                                 <dd class="col-sm-8">
-                                    <?php if ($season->created_at instanceof \DateTimeInterface) : ?>
+                                    <?php if ($season->created_at instanceof DateTimeInterface) : ?>
                                         <?= h($season->created_at->format('M j, Y g:i A')) ?>
                                     <?php else : ?>
                                         <?= h($season->created_at) ?>
@@ -85,7 +93,7 @@
 
                                 <dt class="col-sm-4">Updated:</dt>
                                 <dd class="col-sm-8">
-                                    <?php if ($season->updated_at instanceof \DateTimeInterface) : ?>
+                                    <?php if ($season->updated_at instanceof DateTimeInterface) : ?>
                                         <?= h($season->updated_at->format('M j, Y g:i A')) ?>
                                     <?php else : ?>
                                         <?= h($season->updated_at) ?>

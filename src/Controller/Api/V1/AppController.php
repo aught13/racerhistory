@@ -5,6 +5,13 @@ namespace App\Controller\Api\V1;
 
 use App\Controller\AppController as BaseAppController;
 
+/**
+ * AppController
+ *
+ * Base controller for API v1 controllers.
+ *
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ */
 class AppController extends BaseAppController
 {
     /**
@@ -19,19 +26,26 @@ class AppController extends BaseAppController
     }
 
     /**
-     * @param array<string,mixed> $payload
+     * Runs the respond routine.
+     *
+     * @param array $payload Data to be serialized in the response.
+     * @param int $status HTTP status code.
      */
     protected function respond(array $payload, int $status = 200): void
     {
         $this->set($payload);
         $this->viewBuilder()->setOption('serialize', array_keys($payload));
-        $this->response = $this->response
-            ->withType('application/json')
-            ->withStatus($status);
+        $this->setResponse(
+            $this->getResponse()
+                ->withType('application/json')
+                ->withStatus($status),
+        );
     }
 
     /**
-     * @param array<string,mixed> $details
+     * @param string $message Error message.
+     * @param int $status HTTP status code.
+     * @param array<string,mixed> $details Extra error details.
      */
     protected function respondError(string $message, int $status = 400, array $details = []): void
     {
@@ -45,6 +59,9 @@ class AppController extends BaseAppController
 
     /**
      * Safely read an integer query parameter.
+     *
+     * @param string $key Query parameter name.
+     * @param int|null $default Default value when the parameter is absent or invalid.
      */
     protected function getIntQuery(string $key, ?int $default = null): ?int
     {
@@ -62,6 +79,9 @@ class AppController extends BaseAppController
 
     /**
      * Read and clamp a "limit" query parameter.
+     *
+     * @param int $default Default limit.
+     * @param int $max Maximum allowed limit.
      */
     protected function getLimit(int $default = 50, int $max = 200): int
     {

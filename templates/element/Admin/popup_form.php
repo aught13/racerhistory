@@ -2,6 +2,8 @@
 
 /** Lightweight popup form element.
  * Variables: $popupId, $title, $formUrl, $fields (see previous doc), $successCallback, $targetSelectId.
+ *
+ * @var \App\View\AppView $this
  */
 
 $popupId = $popupId ?? 'popup-form-modal';
@@ -43,12 +45,12 @@ $extraHtml = $extraHtml ?? '';
                         $req = !empty($f['required']);
                         ?>
 
-                    <?php if ($type === 'hidden') : ?>
+                        <?php if ($type === 'hidden') : ?>
                         <input type="hidden"
                                id="<?= h($popupId . '-' . $name) ?>"
                                name="<?= h($name) ?>"
                                value="" />
-                    <?php else : ?>
+                        <?php else : ?>
                     <div class="mb-3">
                         <label class="form-label" for="<?= h($popupId . '-' . $name) ?>">
                             <?= h($label) ?>
@@ -57,14 +59,14 @@ $extraHtml = $extraHtml ?? '';
                             <?php endif; ?>
                         </label>
 
-                        <?php if ($type === 'textarea') : ?>
+                            <?php if ($type === 'textarea') : ?>
                             <textarea
                                 class="form-control"
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?>></textarea>
 
-                        <?php elseif ($type === 'select') : ?>
+                            <?php elseif ($type === 'select') : ?>
                             <select
                                 class="form-select"
                                 id="<?= h($popupId . '-' . $name) ?>"
@@ -76,7 +78,7 @@ $extraHtml = $extraHtml ?? '';
                                 <?php endforeach; ?>
                             </select>
 
-                        <?php else : ?>
+                            <?php else : ?>
                             <input
                                 type="<?= h($type) ?>"
                                 class="form-control"
@@ -84,9 +86,9 @@ $extraHtml = $extraHtml ?? '';
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?> />
 
-                        <?php endif; ?>
+                            <?php endif; ?>
                     </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
 
                     <?php endforeach; ?>
 

@@ -7,6 +7,9 @@ use PHPUnit\Framework\TestCase;
 
 class SanityTest extends TestCase
 {
+    /**
+     * Tests truth.
+     */
     public function testTruth(): void
     {
         $this->assertTrue(true);

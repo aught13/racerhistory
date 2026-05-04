@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var object $stats
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Player Game Stats'); ?>
 <div class="container-fluid py-4">
     <nav aria-label="breadcrumb">
@@ -38,7 +45,7 @@
         </a>
     </div>
 
-    <?php if ($stats->count() > 0): ?>
+    <?php if ($stats->count() > 0) : ?>
         <div class="table-responsive">
             <table class="table table-striped table-hover">
                 <thead>
@@ -69,7 +76,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($stats as $stat): ?>
+                    <?php foreach ($stats as $stat) : ?>
                         <tr>
                             <td><?= h($stat->team_season_roster->roster_number ?? '') ?></td>
                             <td>
@@ -115,7 +122,7 @@
                 </tbody>
             </table>
         </div>
-    <?php else: ?>
+    <?php else : ?>
         <div class="alert alert-info">
             <i class="bi bi-info-circle"></i> No player stats have been entered for this game yet.
         </div>

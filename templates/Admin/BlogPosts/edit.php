@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * Admin Blog Post Edit/Add Template
  *
@@ -11,6 +12,14 @@ declare(strict_types=1);
  *
  * @var \App\Model\Entity\BlogPost $post
  * @var \App\View\AppView $this
+ * @var mixed $currentTags
+ * @var mixed $games
+ * @var mixed $opponents
+ * @var mixed $sites
+ * @var mixed $sports
+ * @var mixed $tagString
+ * @var mixed $teamSeasons
+ * @var mixed $teams
  */
 
 $this->assign('title', isset($post->id) ? 'Edit Blog Post' : 'Add Blog Post');
@@ -126,7 +135,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
                     <div class="form-text mb-3">Published posts are visible on the public blog. Uncheck to keep the post a draft.</div>
                     <?php if (!empty($post->slug) && ($post->is_published ?? false)) :
                         $viewUrl = '/blog/' . rawurlencode((string)$post->slug);
-                    ?>
+                        ?>
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <?= $this->Html->link('View published post', $viewUrl, [
                                 'class' => 'btn btn-sm btn-outline-primary',

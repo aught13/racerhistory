@@ -9,7 +9,7 @@
     <div class="col-md-6 col-lg-4">
         <h2 class="mb-4 text-center">Admin Login</h2>
         <?= $this->Form->create(null, [
-            'url' => ['controller' => 'Users', 'action' => 'login', 'prefix' => 'Admin']
+            'url' => ['controller' => 'Users', 'action' => 'login', 'prefix' => 'Admin'],
         ]) ?>
         <?= $this->Form->control('username', ['label' => 'Username', 'required' => true, 'class' => 'form-control mb-3']) ?>
         <div class="mb-3">
@@ -20,7 +20,7 @@
                     'id' => 'admin-password',
                     'class' => 'form-control',
                     'label' => false,
-                    'required' => true
+                    'required' => true,
                 ]) ?>
                 <span class="input-group-text p-0">
                     <button type="button" class="btn border-0 bg-transparent px-2" id="toggle-admin-password"

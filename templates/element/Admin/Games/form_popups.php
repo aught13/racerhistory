@@ -1,4 +1,7 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ */
 // Popup forms and hidden FormProtection token forms for Games add/edit.
 // MUST be rendered OUTSIDE the main game Form->create() / Form->end() block.
 // Expects: $opponents (unused), $places, $sites (unused),

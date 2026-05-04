@@ -42,8 +42,8 @@ $this->assign('title', 'Login'); ?>
                     <h2 class="card-title text-center mb-4">Sign In</h2>
                     <?php $redirect = $this->getRequest()->getQuery('redirect'); ?>
                     <?= $this->Form->create(null, ['url' => ['controller' => 'Users', 'action' => 'login'], 'class' => 'needs-validation', 'novalidate' => true]) ?>
-                    <?php if ($redirect): ?>
-                    <?= $this->Form->hidden('redirect', ['value' => $redirect]) ?>
+                    <?php if ($redirect) : ?>
+                        <?= $this->Form->hidden('redirect', ['value' => $redirect]) ?>
                     <?php endif; ?>
                     <div class="mb-3">
                         <?= $this->Form->control('username', [

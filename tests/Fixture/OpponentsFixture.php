@@ -11,6 +11,9 @@ class OpponentsFixture extends TestFixture
     public string $table = 'opponents';
     public $import = ['table' => 'opponents'];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

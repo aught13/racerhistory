@@ -5,9 +5,13 @@ namespace App\Test\TestCase\Controller;
 
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use DOMDocument;
+use DOMXPath;
 
 /**
  * App\Controller\SeasonsController Test Case
+ *
+ * @link \App\Controller\SeasonsController
  */
 class SeasonsControllerTest extends TestCase
 {
@@ -33,6 +37,9 @@ class SeasonsControllerTest extends TestCase
         'app.BlogPostsBlogTags',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->get('/seasons');
@@ -46,6 +53,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="seasons-table-frame"');
     }
 
+    /**
+     * Tests index displays team seasons.
+     */
     public function testIndexDisplaysTeamSeasons(): void
     {
         $this->get('/seasons');
@@ -58,23 +68,29 @@ class SeasonsControllerTest extends TestCase
         $this->assertIsArray($recordSummaries);
     }
 
+    /**
+     * Tests index postseason type label replaces pct.
+     */
     public function testIndexPostseasonTypeLabelReplacesPct(): void
     {
         $this->get('/seasons');
         $this->assertResponseOk();
 
         $html = (string)$this->_response->getBody();
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         libxml_use_internal_errors(true);
         $dom->loadHTML($html);
         libxml_clear_errors();
 
-        $xpath = new \DOMXPath($dom);
+        $xpath = new DOMXPath($dom);
         $cell = $xpath->query('//table[@id="seasons-table"]/tbody/tr[1]/td[last()]')->item(0);
         $this->assertNotNull($cell);
         $this->assertSame('-', trim((string)$cell->textContent));
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/seasons/1');
@@ -82,6 +98,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('Game Log');
     }
 
+    /**
+     * Tests view with invalid id.
+     */
     public function testViewWithInvalidId(): void
     {
         $this->get('/seasons/9999');
@@ -89,6 +108,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests view sets variables.
+     */
     public function testViewSetsVariables(): void
     {
         $this->get('/seasons/1');
@@ -119,6 +141,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertIsArray($recordSummary);
     }
 
+    /**
+     * Tests authorization skipped.
+     */
     public function testAuthorizationSkipped(): void
     {
         // Public pages should not require authentication
@@ -129,6 +154,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests splits.
+     */
     public function testSplits(): void
     {
         $this->get('/seasons/splits?team=all');
@@ -138,6 +166,9 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="seasons-table-frame"');
     }
 
+    /**
+     * Tests splits turbo frame.
+     */
     public function testSplitsTurboFrame(): void
     {
         $this->configRequest([
@@ -149,18 +180,21 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="season-splits-table"');
     }
 
+    /**
+     * Tests splits postseason type shows dash when missing.
+     */
     public function testSplitsPostseasonTypeShowsDashWhenMissing(): void
     {
         $this->get('/seasons/splits?team=all');
         $this->assertResponseOk();
 
         $html = (string)$this->_response->getBody();
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         libxml_use_internal_errors(true);
         $dom->loadHTML($html);
         libxml_clear_errors();
 
-        $xpath = new \DOMXPath($dom);
+        $xpath = new DOMXPath($dom);
         $cell = $xpath->query('//table[@id="season-splits-table"]/tbody/tr[1]/td[last()]')->item(0);
         $this->assertNotNull($cell);
         $this->assertSame('-', trim((string)$cell->textContent));

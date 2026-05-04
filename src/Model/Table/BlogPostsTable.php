@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use ArrayObject;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventInterface;
 use Cake\ORM\RulesChecker;
@@ -10,6 +11,24 @@ use Cake\ORM\Table;
 use Cake\Utility\Text;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\BlogTagsTable&\Cake\ORM\Association\BelongsToMany $BlogTags
+ * @method \App\Model\Entity\BlogPost newEmptyEntity()
+ * @method \App\Model\Entity\BlogPost newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\BlogPost[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\BlogPost get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\BlogPost findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\BlogPost patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\BlogPost[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\BlogPost|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\BlogPost saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\BlogPost[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\BlogPost>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\BlogPost[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\BlogPost> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\BlogPost[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\BlogPost>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\BlogPost[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\BlogPost> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class BlogPostsTable extends Table
 {
     /**
@@ -31,6 +50,8 @@ class BlogPostsTable extends Table
 
     /**
      * Default validation rules.
+     *
+     * @param \Cake\Validation\Validator $validator
      */
     public function validationDefault(Validator $validator): Validator
     {
@@ -52,6 +73,8 @@ class BlogPostsTable extends Table
 
     /**
      * Build rules.
+     *
+     * @param \Cake\ORM\RulesChecker $rules
      */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
@@ -63,11 +86,11 @@ class BlogPostsTable extends Table
     /**
      * Auto-populate slug from title when missing.
      *
-     * @param \Cake\Event\EventInterface $event Event.
-     * @param \Cake\Datasource\EntityInterface $entity Entity being saved.
-     * @param \ArrayObject $options Save options.
+     * @param \Cake\Event\EventInterface $event
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @param \ArrayObject $options
      */
-    public function beforeSave(EventInterface $event, EntityInterface $entity, \ArrayObject $options): void
+    public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
     {
         if ($entity->isNew() && !$entity->get('slug') && $entity->get('title')) {
             $base = Text::slug((string)$entity->get('title')) ?: uniqid('post-', true);

@@ -45,6 +45,9 @@ class UserManagerComponentTest extends TestCase
      */
     public $Users;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -118,12 +121,18 @@ class UserManagerComponentTest extends TestCase
         $this->assertNotEmpty($this->Users->find()->where(['username' => 'testuser'])->first());
     }
 
+    /**
+     * Tests update user.
+     */
     public function testUpdateUser(): void
     {
         $result = $this->component->updateUser($this->controller, 1, ['username' => 'updated', 'password' => 'updated']);
         $this->assertInstanceOf(Response::class, $result);
     }
 
+    /**
+     * Tests delete user.
+     */
     public function testDeleteUser(): void
     {
         $mockRequest = $this->getMockBuilder(ServerRequest::class)
@@ -135,12 +144,18 @@ class UserManagerComponentTest extends TestCase
         $this->assertInstanceOf(Response::class, $result);
     }
 
+    /**
+     * Tests approve user.
+     */
     public function testApproveUser(): void
     {
         $result = $this->component->approveUser($this->controller, 1);
         $this->assertInstanceOf(Response::class, $result);
     }
 
+    /**
+     * Tests bulk activate.
+     */
     public function testBulkActivate(): void
     {
         $mockRequest = $this->getMockBuilder(ServerRequest::class)
@@ -155,6 +170,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertInstanceOf(Response::class, $result);
     }
 
+    /**
+     * Tests bulk delete.
+     */
     public function testBulkDelete(): void
     {
         $mockRequest = $this->getMockBuilder(ServerRequest::class)
@@ -169,24 +187,36 @@ class UserManagerComponentTest extends TestCase
         $this->assertInstanceOf(Response::class, $result);
     }
 
+    /**
+     * Tests login.
+     */
     public function testLogin(): void
     {
         $result = $this->component->login($this->controller);
         $this->assertNull($result);
     }
 
+    /**
+     * Tests logout.
+     */
     public function testLogout(): void
     {
         $result = $this->component->logout($this->controller);
         $this->assertNotNull($result);
     }
 
+    /**
+     * Tests reset password.
+     */
     public function testResetPassword(): void
     {
         $result = $this->component->resetPassword($this->controller);
         $this->assertNull($result);
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         // Reset table state (except original fixture rows) to avoid cumulative growth
@@ -231,6 +261,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertNull($userFail);
     }
 
+    /**
+     * Tests update user integration.
+     */
     public function testUpdateUserIntegration(): void
     {
         $user = $this->Users->get(1);
@@ -240,6 +273,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertEquals('admin_updated', $updated->username);
     }
 
+    /**
+     * Tests delete user integration.
+     */
     public function testDeleteUserIntegration(): void
     {
         $mockRequest = $this->getMockBuilder(ServerRequest::class)
@@ -255,6 +291,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertEmpty($user);
     }
 
+    /**
+     * Tests approve user integration.
+     */
     public function testApproveUserIntegration(): void
     {
         $user = $this->Users->get(2);
@@ -264,6 +303,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertEquals('active', $updated->status);
     }
 
+    /**
+     * Tests bulk activate integration.
+     */
     public function testBulkActivateIntegration(): void
     {
         $this->Users->find()->where(['status' => 'inactive'])->all();
@@ -280,6 +322,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertEquals('active', $user->status);
     }
 
+    /**
+     * Tests bulk delete integration.
+     */
     public function testBulkDeleteIntegration(): void
     {
         $mockRequest = $this->getMockBuilder(ServerRequest::class)
@@ -295,6 +340,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertEmpty($user);
     }
 
+    /**
+     * Tests process login invalid result shows error.
+     */
     public function testProcessLoginInvalidResultShowsError(): void
     {
         $result = $this->createMock(ResultInterface::class);
@@ -306,6 +354,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertSame('Invalid username or password', $this->getFlashMessage());
     }
 
+    /**
+     * Tests bulk activate requires selection.
+     */
     public function testBulkActivateRequiresSelection(): void
     {
         $request = $this->controller->getRequest()->withParsedBody(['user_ids' => []]);
@@ -316,6 +367,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertSame('No users selected.', $this->getFlashMessage());
     }
 
+    /**
+     * Tests bulk delete requires selection.
+     */
     public function testBulkDeleteRequiresSelection(): void
     {
         $request = $this->controller->getRequest()->withParsedBody(['user_ids' => []]);
@@ -326,6 +380,9 @@ class UserManagerComponentTest extends TestCase
         $this->assertSame('No users selected.', $this->getFlashMessage());
     }
 
+    /**
+     * Runs the get flash message routine.
+     */
     private function getFlashMessage(): ?string
     {
         return $this->controller->getRequest()->getSession()->read('Flash.flash.0.message');

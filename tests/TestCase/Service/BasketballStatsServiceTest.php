@@ -34,12 +34,18 @@ class BasketballStatsServiceTest extends TestCase
 
     protected BasketballStatsService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new BasketballStatsService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
@@ -180,6 +186,9 @@ class BasketballStatsServiceTest extends TestCase
         $this->assertIsArray($stats);
     }
 
+    /**
+     * Tests add game person stat to season totals adds values.
+     */
     public function testAddGamePersonStatToSeasonTotalsAddsValues(): void
     {
         /** @var \App\Model\Table\StatBasketGamePersonTable $gameTable */
@@ -203,6 +212,9 @@ class BasketballStatsServiceTest extends TestCase
         $this->assertSame((string)($beforeGp + 1), (string)$after->GP);
     }
 
+    /**
+     * Tests update game person stat season totals subtracts and adds.
+     */
     public function testUpdateGamePersonStatSeasonTotalsSubtractsAndAdds(): void
     {
         /** @var \App\Model\Table\StatBasketGamePersonTable $gameTable */
@@ -235,6 +247,9 @@ class BasketballStatsServiceTest extends TestCase
         $this->assertSame((string)($beforeGp - 1 + 1), (string)$after->GP);
     }
 
+    /**
+     * Tests apply game box to season totals adds and updates.
+     */
     public function testApplyGameBoxToSeasonTotalsAddsAndUpdates(): void
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
@@ -277,7 +292,7 @@ class BasketballStatsServiceTest extends TestCase
         $updatedOpponentBox->PTS = '72';
 
         $this->assertTrue(
-            $this->service->applyGameBoxToSeasonTotals($game, $updatedTeamBox, $updatedOpponentBox, $teamBox, $opponentBox)
+            $this->service->applyGameBoxToSeasonTotals($game, $updatedTeamBox, $updatedOpponentBox, $teamBox, $opponentBox),
         );
 
         /** @var \App\Model\Entity\StatBasketSeasonTeam $teamAfterUpdate */

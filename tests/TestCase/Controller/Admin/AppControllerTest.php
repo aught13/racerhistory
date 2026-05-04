@@ -11,6 +11,8 @@ use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\Admin\AppController Test Case
+ *
+ * @link \App\Controller\Admin\AppController
  */
 class AppControllerTest extends TestCase
 {

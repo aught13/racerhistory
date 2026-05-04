@@ -26,6 +26,9 @@ class ImagesControllerEdgeTest extends TestCase
         'app.Users',
     ];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         // Capture current PHP error handler before calling parent::setUp so we
@@ -40,6 +43,9 @@ class ImagesControllerEdgeTest extends TestCase
         $this->enableSecurityToken();
     }
 
+    /**
+     * Tests upload zero byte file.
+     */
     public function testUploadZeroByteFile(): void
     {
         $this->mockIdentity();
@@ -58,6 +64,9 @@ class ImagesControllerEdgeTest extends TestCase
         $this->assertFalse($json['success'] ?? true);
     }
 
+    /**
+     * Tests upload malformed image.
+     */
     public function testUploadMalformedImage(): void
     {
         $this->mockIdentity();
@@ -76,6 +85,9 @@ class ImagesControllerEdgeTest extends TestCase
         $this->assertFalse($json['success'] ?? true);
     }
 
+    /**
+     * Tests upload unauthorized.
+     */
     public function testUploadUnauthorized(): void
     {
         // No identity
@@ -97,6 +109,9 @@ class ImagesControllerEdgeTest extends TestCase
         $this->assertStringContainsString('Unauthenticated', $json['error'] ?? '');
     }
 
+    /**
+     * Tests delete nonexistent image.
+     */
     public function testDeleteNonexistentImage(): void
     {
         $this->mockIdentity();
@@ -120,6 +135,9 @@ class ImagesControllerEdgeTest extends TestCase
         return $prev;
     }
 
+    /**
+     * Tears down the test case.
+     */
     protected function tearDown(): void
     {
         if ($this->savedErrorHandler !== null) {

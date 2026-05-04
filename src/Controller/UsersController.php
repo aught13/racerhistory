@@ -35,6 +35,8 @@ use Cake\Http\Response;
  *
  * @property \App\Controller\Component\UserManagerComponent $UserManager
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \App\Model\Table\UsersTable $Users
+ * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
  */
 class UsersController extends AppController
 {
@@ -80,7 +82,7 @@ class UsersController extends AppController
     public function login()
     {
         $response = $this->UserManager->login($this);
-        if ($response instanceof \Cake\Http\Response) {
+        if ($response instanceof Response) {
             return $response;
         }
         // If already authenticated (identity exists) honor redirect param even on GET
@@ -167,8 +169,8 @@ class UsersController extends AppController
     /**
      * Fallback for undefined actions: redirect to home.
      *
-     * @param string $name Method name invoked
-     * @param array $arguments Arguments passed
+     * @param string $name      Method name invoked
+     * @param array  $arguments Arguments passed
      * @return \Cake\Http\Response
      */
     public function __call(string $name, array $arguments): Response

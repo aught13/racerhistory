@@ -7,7 +7,32 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use DateTime;
+use Exception;
+use Throwable;
 
+/**
+ * @property \App\Model\Table\TeamSeasonTable&\Cake\ORM\Association\BelongsTo $TeamSeason
+ * @property \App\Model\Table\GameTypesTable&\Cake\ORM\Association\BelongsTo $GameTypes
+ * @property \App\Model\Table\OpponentsTable&\Cake\ORM\Association\BelongsTo $Opponents
+ * @property \App\Model\Table\PlacesTable&\Cake\ORM\Association\BelongsTo $Places
+ * @property \App\Model\Table\SitesTable&\Cake\ORM\Association\BelongsTo $Sites
+ * @method \App\Model\Entity\Game newEmptyEntity()
+ * @method \App\Model\Entity\Game newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\Game[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Game get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\Game findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\Game patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Game[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Game|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Game saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Game[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Game>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Game[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Game> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Game[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Game>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Game[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Game> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class GamesTable extends Table
 {
     use LocatorAwareTrait;
@@ -82,7 +107,7 @@ class GamesTable extends Table
                     if (!empty($teamSeason->team) && !empty($teamSeason->team->sport)) {
                         $sportId = $teamSeason->team->sport->id;
                     }
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // ignore and continue
                 }
             }
@@ -99,7 +124,7 @@ class GamesTable extends Table
                 if ($scoringType !== 'cumulative') {
                     return true;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // If the config lookup fails, fall through and validate if per-period data present
             }
         }
@@ -196,11 +221,11 @@ class GamesTable extends Table
                         return true;
                     }
                     try {
-                        $dt = new \DateTime((string)$value);
-                    } catch (\Exception $e) {
+                        $dt = new DateTime((string)$value);
+                    } catch (Exception $e) {
                         return false;
                     }
-                    $now = new \DateTime('today');
+                    $now = new DateTime('today');
                     // Allow dates up to 3 years in the future
                     $max = (clone $now)->modify('+3 years');
 
@@ -227,12 +252,12 @@ class GamesTable extends Table
                     if (!$teamSeason || !$teamSeason->season) {
                         return true; // let existsIn handle missing relations
                     }
-                    $year = (int)(new \DateTime((string)$value))->format('Y');
+                    $year = (int)(new DateTime((string)$value))->format('Y');
                     $start = (int)$teamSeason->season->start;
                     $end = (int)$teamSeason->season->end;
 
                     return $year >= $start && $year <= $end;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     return true;
                 }
             },
@@ -296,11 +321,11 @@ class GamesTable extends Table
                     return true;
                 }
                 try {
-                    $gameDate = new \DateTime((string)$data['game_date']);
-                } catch (\Exception $e) {
+                    $gameDate = new DateTime((string)$data['game_date']);
+                } catch (Exception $e) {
                     return true;
                 }
-                $today = new \DateTime('today');
+                $today = new DateTime('today');
                 if ($gameDate > $today) {
                     // Future game: no scores should be present
                     return empty($value) && empty($data['pts_opp']) && empty($data['w']) && empty($data['l']);
@@ -362,7 +387,7 @@ class GamesTable extends Table
             $validPeriods = $configs['valid_periods'] ?? [2, 4];
 
             return in_array($periodsInt, $validPeriods, true);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return true; // Allow if validation fails
         }
     }
@@ -421,7 +446,7 @@ class GamesTable extends Table
                 $errors['officials'] = sprintf(
                     'This sport typically requires %d officials, but only %d were provided.',
                     $expectedOfficials,
-                    $actualOfficials
+                    $actualOfficials,
                 );
             }
 
@@ -470,7 +495,7 @@ class GamesTable extends Table
                     $errors['periods_opp_total'] = 'Sum of period scores does not equal opponent total (pts_opp).';
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Validation failed - don't block save but log warning
             $errors['validation'] = 'Could not validate against sport configuration.';
         }

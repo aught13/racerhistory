@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: tests/season-view-init.coverage.test.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: tests/season-view-init.coverage.test.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { jest } from "@jest/globals";
+
+/**
+ * Coverage tests for modules/season-view-init.mjs
+ * Targets: initTable, scheduleTableInit, setupBlogClicks, safeDivide,
+ *   formatPercent, formatInteger, createAdvancedRow, buildAdvancedColumns,
+ *   mountAdvancedShootingTable, initSeasonStatsTabs, setupImageGallery
+ */
+
+function setupDT() {
+    const dtInstance = {
+        destroy: jest.fn(),
+        draw: jest.fn(),
+    };
+    const DataTableFn = jest.fn().mockReturnValue(dtInstance);
+    DataTableFn.isDataTable = jest.fn().mockReturnValue(false);
+
+    const jq = jest.fn((sel) => {
+        if (typeof sel === "string") {
+            const el = document.querySelector(sel);
+            return {
+                length: el ? 1 : 0,
+                get: () => el,
+                DataTable: DataTableFn,
+                remove: jest.fn(),
+            };
+        }
+        return {
+            length: 1,
+            get: () => sel,
+            DataTable: DataTableFn,
+        };
+    });
+    jq.fn = {
+        DataTable: DataTableFn,
+        dataTable: Object.assign(DataTableFn, {
+            isDataTable: DataTableFn.isDataTable,
+        }),
+    };
+    window.$ = jq;
+    return { jq, DataTableFn, dtInstance };
+}
+
+beforeEach(() => {
+    jest.resetModules();
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+    document.body.innerHTML = "";
+    delete window.$;
+    delete window.Turbo;
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+});
+
+describe("season-view-init.mjs (coverage)", () => {
+    describe("initTable", () => {
+        test("initializes DataTable on table with headers", async () => {
+            document.body.innerHTML = `
+                &lt;table id="season-games-table">&lt;thead>&lt;tr>&lt;th>A&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            const result = mod.default({
+                tableSelectors: ["#season-games-table"],
+            });
+            expect(result.tables).toHaveLength(1);
+        });
+
+        test("returns null when table is null", async () => {
+            document.body.innerHTML = `&lt;div>no table&lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            const result = mod.default({
+                tableSelectors: ["#nonexistent"],
+            });
+            expect(result.tables).toHaveLength(0);
+        });
+
+        test("destroys existing DataTable before re-init", async () => {
+            document.body.innerHTML = `
+                &lt;table id="season-games-table">&lt;thead>&lt;tr>&lt;th>A&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>`;
+            const { DataTableFn, dtInstance } = setupDT();
+            DataTableFn.isDataTable.mockReturnValue(true);
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: ["#season-games-table"] });
+            expect(dtInstance.destroy).toHaveBeenCalled();
+        });
+
+        test("schedules init when table has no headers", async () => {
+            document.body.innerHTML = `
+                &lt;table id="season-games-table">&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>`;
+            setupDT();
+            jest.useFakeTimers();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: ["#season-games-table"] });
+            // After timeout, should try again
+            jest.advanceTimersByTime(100);
+        });
+
+        test("does not init without jQuery", async () => {
+            document.body.innerHTML = `
+                &lt;table id="season-games-table">&lt;thead>&lt;tr>&lt;th>A&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>`;
+            // No jQuery
+            const mod = await import("../modules/season-view-init.mjs");
+            const result = mod.default({
+                tableSelectors: ["#season-games-table"],
+            });
+            expect(result.tables).toHaveLength(1);
+            expect(result.tables[0]).toBeNull();
+        });
+    });
+
+    describe("setupBlogClicks", () => {
+        test("binds click handler to blog list items", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-blog>
+                    &lt;turbo-frame id="blog-frame">
+                        &lt;turbo-frame data-view-frame id="view-frame">&lt;/turbo-frame>
+                        &lt;div class="blog-list-item" data-blog-post="my-post">Post&lt;/div>
+                    &lt;/turbo-frame>
+                &lt;/div>`;
+            setupDT();
+            window.Turbo = { visit: jest.fn() };
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const item = document.querySelector(".blog-list-item");
+            item.click();
+            expect(window.Turbo.visit).toHaveBeenCalledWith(
+                "/blog/my-post",
+                expect.objectContaining({ frame: "view-frame" }),
+            );
+        });
+
+        test("navigates via location when no view frame", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-blog>
+                    &lt;div class="blog-list-item" data-blog-post="my-post">Post&lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const item = document.querySelector(".blog-list-item");
+            item.click();
+            // window.location.href would be set
+        });
+
+        test("navigates via location when no Turbo", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-blog>
+                    &lt;turbo-frame id="blog-frame">
+                        &lt;turbo-frame data-view-frame id="vf">&lt;/turbo-frame>
+                        &lt;div class="blog-list-item" data-blog-post="my-post">Post&lt;/div>
+                    &lt;/turbo-frame>
+                &lt;/div>`;
+            setupDT();
+            delete window.Turbo;
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const item = document.querySelector(".blog-list-item");
+            item.click();
+        });
+
+        test("ignores clicks on non-blog items", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-blog>
+                    &lt;div class="other-item">Not a blog&lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const item = document.querySelector(".other-item");
+            item.click();
+        });
+
+        test("does not re-bind on already bound root", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-blog>
+                    &lt;div class="blog-list-item" data-blog-post="p">Post&lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+            mod.default({ tableSelectors: [] }); // second call
+        });
+
+        test("ignores blog item without slug", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-blog>
+                    &lt;div class="blog-list-item">No slug&lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const item = document.querySelector(".blog-list-item");
+            item.click();
+        });
+    });
+
+    describe("initSeasonStatsTabs", () => {
+        test("switches tabs and panels", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="basic" class="active" aria-selected="true">Basic&lt;/button>
+                    &lt;button data-season-stats-tab="advanced" aria-selected="false">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="basic" class="active">Basic panel&lt;/div>
+                    &lt;div data-season-stats-panel="advanced" class="d-none">
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            // Click advanced tab
+            const advBtn = document.querySelector(
+                '[data-season-stats-tab="advanced"]',
+            );
+            advBtn.click();
+
+            expect(advBtn.classList.contains("active")).toBe(true);
+            expect(advBtn.getAttribute("aria-selected")).toBe("true");
+
+            const basicBtn = document.querySelector(
+                '[data-season-stats-tab="basic"]',
+            );
+            expect(basicBtn.classList.contains("active")).toBe(false);
+
+            const advPanel = document.querySelector(
+                '[data-season-stats-panel="advanced"]',
+            );
+            expect(advPanel.classList.contains("active")).toBe(true);
+        });
+
+        test("handles empty tab target", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="">Empty&lt;/button>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document.querySelector('[data-season-stats-tab=""]').click();
+        });
+
+        test("does nothing when no tabs", async () => {
+            document.body.innerHTML = `&lt;div data-season-stats-tabs>&lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+        });
+    });
+
+    describe("mountAdvancedShootingTable", () => {
+        test("mounts table with 3-point stats and team totals", async () => {
+            const payload = {
+                players: [
+                    {
+                        name: "Player1",
+                        GP: 10,
+                        FGM: 50,
+                        FGA: 100,
+                        TPM: 10,
+                        TPA: 30,
+                        FTM: 20,
+                        FTA: 25,
+                        PTS: 130,
+                    },
+                ],
+                teamTotals: {
+                    name: "Team",
+                    GP: 10,
+                    FGM: 50,
+                    FGA: 100,
+                    TPM: 10,
+                    TPA: 30,
+                    FTM: 20,
+                    FTA: 25,
+                    PTS: 130,
+                },
+            };
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='${JSON.stringify(payload)}'>
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            // Click to trigger mount
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+
+            const container = document.querySelector(
+                "[data-season-advanced-table-container]",
+            );
+            expect(container.querySelector("table")).toBeTruthy();
+            expect(container.querySelector("tfoot")).toBeTruthy();
+
+            // Verify headers include 3-point columns
+            const headers = Array.from(
+                container.querySelectorAll("thead th"),
+            ).map((th) => th.textContent);
+            expect(headers).toContain("TP%");
+            expect(headers).toContain("eFG%");
+            expect(headers).toContain("2PM");
+        });
+
+        test("mounts table without 3-point stats", async () => {
+            const payload = {
+                players: [
+                    {
+                        name: "Player1",
+                        GP: 10,
+                        FGM: 50,
+                        FGA: 100,
+                        TPM: 0,
+                        TPA: 0,
+                        FTM: 20,
+                        FTA: 25,
+                        PTS: 120,
+                    },
+                ],
+            };
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='${JSON.stringify(payload)}'>
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+
+            const container = document.querySelector(
+                "[data-season-advanced-table-container]",
+            );
+            const headers = Array.from(
+                container.querySelectorAll("thead th"),
+            ).map((th) => th.textContent);
+            expect(headers).not.toContain("TP%");
+            expect(headers).not.toContain("eFG%");
+            expect(headers).not.toContain("2PM");
+            expect(headers).toContain("TS%");
+        });
+
+        test("handles empty players array", async () => {
+            const payload = { players: [] };
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='${JSON.stringify(payload)}'>
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+
+            const container = document.querySelector(
+                "[data-season-advanced-table-container]",
+            );
+            expect(container.textContent).toContain("unavailable");
+        });
+
+        test("handles invalid JSON payload", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='invalid{json'>
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+
+            const container = document.querySelector(
+                "[data-season-advanced-table-container]",
+            );
+            expect(container.textContent).toContain("could not be loaded");
+        });
+
+        test("handles no data attribute", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced">
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+        });
+
+        test("handles no container element", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='{"players":[]}'>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+        });
+
+        test("already rendered panel skips re-mount", async () => {
+            const payload = {
+                players: [
+                    {
+                        name: "P",
+                        GP: 1,
+                        FGM: 1,
+                        FGA: 2,
+                        TPM: 0,
+                        TPA: 0,
+                        FTM: 1,
+                        FTA: 1,
+                        PTS: 3,
+                    },
+                ],
+            };
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='${JSON.stringify(payload)}'
+                         data-season-advanced-rendered="true">
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+        });
+
+        test("player with zero FGA for edge case coverage", async () => {
+            const payload = {
+                players: [
+                    {
+                        name: "Zero",
+                        GP: 0,
+                        FGM: 0,
+                        FGA: 0,
+                        TPM: 0,
+                        TPA: 0,
+                        FTM: 0,
+                        FTA: 0,
+                        PTS: 0,
+                    },
+                ],
+            };
+            document.body.innerHTML = `
+                &lt;div data-season-stats-tabs>
+                    &lt;button data-season-stats-tab="advanced">Adv&lt;/button>
+                    &lt;div data-season-stats-panel="advanced"
+                         data-season-advanced-stats='${JSON.stringify(payload)}'>
+                        &lt;div data-season-advanced-table-container>&lt;/div>
+                    &lt;/div>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document
+                .querySelector('[data-season-stats-tab="advanced"]')
+                .click();
+
+            const cells = document.querySelectorAll("tbody td");
+            // All percentage columns should show "—"
+            const values = Array.from(cells).map((td) => td.textContent);
+            expect(values).toContain("—");
+        });
+    });
+
+    describe("setupImageGallery", () => {
+        test("opens modal on thumb click and sets sources", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" data-image-id="42" data-image-filename="photo.jpg" />
+                &lt;/div>
+                &lt;div data-season-image-modal>
+                    &lt;button data-modal-close>X&lt;/button>
+                    &lt;picture>
+                        &lt;source data-modal-image-webp />
+                        &lt;img data-modal-image-fallback />
+                    &lt;/picture>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const thumb = document.querySelector(".season-photo-thumb-img");
+            thumb.click();
+
+            const modal = document.querySelector("[data-season-image-modal]");
+            expect(modal.getAttribute("data-modal-open")).toBe("true");
+
+            const img = document.querySelector("[data-modal-image-fallback]");
+            expect(img.src).toContain("/images/serve/42");
+
+            const webp = document.querySelector("[data-modal-image-webp]");
+            expect(webp.srcset).toContain("/images/serve/42?format=webp");
+        });
+
+        test("closes modal on close button click", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" data-image-id="1" />
+                &lt;/div>
+                &lt;div data-season-image-modal data-modal-open="true">
+                    &lt;button data-modal-close>X&lt;/button>
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const closeBtn = document.querySelector("[data-modal-close]");
+            closeBtn.click();
+
+            const modal = document.querySelector("[data-season-image-modal]");
+            expect(modal.hasAttribute("data-modal-open")).toBe(false);
+        });
+
+        test("closes modal on background click", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" data-image-id="1" />
+                &lt;/div>
+                &lt;div data-season-image-modal data-modal-open="true">
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const modal = document.querySelector("[data-season-image-modal]");
+            modal.click();
+            expect(modal.hasAttribute("data-modal-open")).toBe(false);
+        });
+
+        test("closes modal on Escape key", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" data-image-id="1" />
+                &lt;/div>
+                &lt;div data-season-image-modal data-modal-open="true">
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Escape" }),
+            );
+            const modal = document.querySelector("[data-season-image-modal]");
+            expect(modal.hasAttribute("data-modal-open")).toBe(false);
+        });
+
+        test("Escape key does nothing when modal not open", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" data-image-id="1" />
+                &lt;/div>
+                &lt;div data-season-image-modal>
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Escape" }),
+            );
+        });
+
+        test("ignores click on non-thumb in gallery", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;div class="other-element">Not a thumb&lt;/div>
+                &lt;/div>
+                &lt;div data-season-image-modal>
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document.querySelector(".other-element").click();
+        });
+
+        test("ignores thumb without image-id", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" />
+                &lt;/div>
+                &lt;div data-season-image-modal>
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document.querySelector(".season-photo-thumb-img").click();
+            const modal = document.querySelector("[data-season-image-modal]");
+            expect(modal.hasAttribute("data-modal-open")).toBe(false);
+        });
+
+        test("does nothing when no gallery or modal", async () => {
+            document.body.innerHTML = `&lt;div>No gallery&lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+        });
+
+        test("handles missing modalImg", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>&lt;/div>
+                &lt;div data-season-image-modal>&lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+        });
+
+        test("handles thumb without webp source element", async () => {
+            document.body.innerHTML = `
+                &lt;div data-season-image-gallery>
+                    &lt;img class="season-photo-thumb-img" data-image-id="5" data-image-filename="test.jpg" />
+                &lt;/div>
+                &lt;div data-season-image-modal>
+                    &lt;img data-modal-image-fallback />
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            document.querySelector(".season-photo-thumb-img").click();
+            const modal = document.querySelector("[data-season-image-modal]");
+            expect(modal.getAttribute("data-modal-open")).toBe("true");
+            const img = document.querySelector("[data-modal-image-fallback]");
+            expect(img.alt).toBe("test.jpg");
+        });
+    });
+
+    describe("default initSeasonView", () => {
+        test("uses default selectors", async () => {
+            document.body.innerHTML = `
+                &lt;table id="season-games-table">&lt;thead>&lt;tr>&lt;th>A&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>
+                &lt;table id="season-roster-table">&lt;thead>&lt;tr>&lt;th>B&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>
+                &lt;table id="season-stats-table">&lt;thead>&lt;tr>&lt;th>C&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            const result = mod.default();
+            expect(result.tables).toHaveLength(3);
+        });
+
+        test("uses custom root", async () => {
+            document.body.innerHTML = `
+                &lt;div id="custom-root">
+                    &lt;table id="season-games-table">&lt;thead>&lt;tr>&lt;th>A&lt;/th>&lt;/tr>&lt;/thead>&lt;/table>
+                &lt;/div>`;
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            const root = document.getElementById("custom-root");
+            const result = mod.default({
+                root,
+                tableSelectors: ["#season-games-table"],
+            });
+            expect(result.tables).toHaveLength(1);
+        });
+    });
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-game-form-lookups.html">game-form-lookups</a></li><li><a href="module-modules_tinymce-bootstrap-config.html">modules/tinymce-bootstrap-config</a></li></ul><h3>Classes</h3><ul><li><a href="CropSelector.html">CropSelector</a></li><li><a href="global.html#ImageSelector">ImageSelector</a></li><li><a href="SportAwareGameForm.html">SportAwareGameForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CDN_URLS">CDN_URLS</a></li><li><a href="global.html#DATATABLES_CORE_SRC">DATATABLES_CORE_SRC</a></li><li><a href="global.html#DEBOUNCE_MS">DEBOUNCE_MS</a></li><li><a href="global.html#NUMERIC_COLUMNS">NUMERIC_COLUMNS</a></li><li><a href="global.html#SCROLLER_THRESHOLD">SCROLLER_THRESHOLD</a></li><li><a href="global.html#_initialised">_initialised</a></li><li><a href="global.html#addRow">addRow</a></li><li><a href="global.html#autoSelectNewPerson">autoSelectNewPerson</a></li><li><a href="global.html#buildDom">buildDom</a></li><li><a href="global.html#buildEditDom">buildEditDom</a></li><li><a href="global.html#buildOpponentDom">buildOpponentDom</a></li><li><a href="global.html#buildPersonDom">buildPersonDom</a></li><li><a href="global.html#buildResults">buildResults</a></li><li><a href="global.html#calculateRecord">calculateRecord</a></li><li><a href="global.html#ensureDataTablesLoaded">ensureDataTablesLoaded</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#fixScrollXHeaderAlignment">fixScrollXHeaderAlignment</a></li><li><a href="global.html#flush">flush</a></li><li><a href="global.html#initCardHover">initCardHover</a></li><li><a href="global.html#initDragScroll">initDragScroll</a></li><li><a href="global.html#initGamesDataTable">initGamesDataTable</a></li><li><a href="global.html#initGamesPage">initGamesPage</a></li><li><a href="global.html#initPersonSearch">initPersonSearch</a></li><li><a href="global.html#initRosterMultiAdd">initRosterMultiAdd</a></li><li><a href="global.html#initStatMultiAdd">initStatMultiAdd</a></li><li><a href="global.html#initStatsDataTable">initStatsDataTable</a></li><li><a href="global.html#initStatsPage">initStatsPage</a></li><li><a href="global.html#initializingTables">initializingTables</a></li><li><a href="global.html#isDataTablesAvailable">isDataTablesAvailable</a></li><li><a href="global.html#jq">jq</a></li><li><a href="global.html#reindexRows">reindexRows</a></li><li><a href="global.html#reinitBootstrap">reinitBootstrap</a></li><li><a href="global.html#setupBlogPostCollapse">setupBlogPostCollapse</a></li><li><a href="global.html#setupDT">setupDT</a></li><li><a href="global.html#setupJQueryMock">setupJQueryMock</a></li><li><a href="global.html#syncScrollerColumns">syncScrollerColumns</a></li><li><a href="global.html#updateRecordDisplay">updateRecordDisplay</a></li><li><a href="global.html#updateRemoveButtons">updateRemoveButtons</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun May 03 2026 13:42:29 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

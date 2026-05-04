@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\BlogPostsController
+ */
 class BlogPostsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -19,12 +22,18 @@ class BlogPostsControllerTest extends TestCase
         'app.Users',
     ];
 
+    /**
+     * Tests index requires auth.
+     */
     public function testIndexRequiresAuth(): void
     {
         $this->get('/admin/blog-posts');
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -33,6 +42,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertResponseContains('Blog Posts');
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -41,6 +53,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertResponseContains('Post Details');
     }
 
+    /**
+     * Tests add post.
+     */
     public function testAddPost(): void
     {
         $this->mockIdentity();
@@ -58,6 +73,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertFlashMessage('The blog post has been saved.');
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -66,6 +84,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertResponseContains('Post Details');
     }
 
+    /**
+     * Tests edit post.
+     */
     public function testEditPost(): void
     {
         $this->mockIdentity();
@@ -81,6 +102,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertFlashMessage('The blog post has been saved.');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();

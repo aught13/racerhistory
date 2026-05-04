@@ -1,4 +1,8 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\User $user
+ */
 
 $this->assign('title', 'Manage ' . h($user->username)); ?>
 <!-- Manage User test string for integration test -->
@@ -18,7 +22,7 @@ $this->assign('title', 'Manage ' . h($user->username)); ?>
                 <div class="card-body">
                     <?= $this->Form->create($user, [
                         'url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'edit', $user->id],
-                        'class' => 'mb-4'
+                        'class' => 'mb-4',
                     ]) ?>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -42,16 +46,16 @@ $this->assign('title', 'Manage ' . h($user->username)); ?>
                                 'type' => 'select',
                                 'options' => [
                                     'user' => 'User',
-                                    'admin' => 'Admin'
+                                    'admin' => 'Admin',
                                 ],
                                 'label' => 'Role',
-                                'class' => 'form-select'
+                                'class' => 'form-select',
                             ]) ?>
                         </div>
                         <div class="col-md-6 mb-3">
                             <?= $this->Form->control('active', [
                                 'type' => 'checkbox',
-                                'label' => 'Active'
+                                'label' => 'Active',
                             ]) ?>
                         </div>
                     </div>

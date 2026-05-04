@@ -1,3 +1,11 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $seasonsList
+ * @var mixed $teams
+ * @var \App\Model\Entity\TeamSeason $teamSeason
+ */
+?>
 <?php $this->assign('title', 'Edit Team Season'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -272,7 +280,7 @@
                 <div class="card-body">
                     <p class="small text-muted mb-1">
                         <strong>Created:</strong>
-                        <?php if ($teamSeason->created_at instanceof \DateTimeInterface) : ?>
+                        <?php if ($teamSeason->created_at instanceof DateTimeInterface) : ?>
                             <?= h($teamSeason->created_at->format('M j, Y g:i A')) ?>
                         <?php else : ?>
                             <?= h($teamSeason->created_at) ?>
@@ -280,7 +288,7 @@
                     </p>
                     <p class="small text-muted mb-0">
                         <strong>Last Updated:</strong>
-                        <?php if ($teamSeason->updated_at instanceof \DateTimeInterface) : ?>
+                        <?php if ($teamSeason->updated_at instanceof DateTimeInterface) : ?>
                             <?= h($teamSeason->updated_at->format('M j, Y g:i A')) ?>
                         <?php else : ?>
                             <?= h($teamSeason->updated_at) ?>

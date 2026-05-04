@@ -4,9 +4,11 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Throwable;
 
 class ImagesControllerMoreTest extends TestCase
 {
@@ -31,6 +33,9 @@ class ImagesControllerMoreTest extends TestCase
      */
     private array $createdImageIds = [];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -42,6 +47,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->storageRoot = WWW_ROOT . 'img' . DS . 'storage' . DS;
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         // Best-effort cleanup for created images (files + variants).
@@ -50,7 +58,7 @@ class ImagesControllerMoreTest extends TestCase
             foreach ($this->createdImageIds as $id) {
                 try {
                     $record = $images->get($id);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     continue;
                 }
 
@@ -83,6 +91,9 @@ class ImagesControllerMoreTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests upload without file returns json error.
+     */
     public function testUploadWithoutFileReturnsJsonError(): void
     {
         $this->mockIdentity();
@@ -95,6 +106,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertSame('No file uploaded', $json['error'] ?? null);
     }
 
+    /**
+     * Tests bulk upload with invalid payload entry returns error result.
+     */
     public function testBulkUploadWithInvalidPayloadEntryReturnsErrorResult(): void
     {
         $this->mockIdentity();
@@ -110,6 +124,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertSame('Invalid upload payload', $json['results'][0]['error'] ?? null);
     }
 
+    /**
+     * Tests bulk upload with string tags and context succeeds.
+     */
     public function testBulkUploadWithStringTagsAndContextSucceeds(): void
     {
         $this->mockIdentity();
@@ -140,6 +157,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->createdImageIds[] = $imageId;
     }
 
+    /**
+     * Tests edit post with no fields redirects.
+     */
     public function testEditPostWithNoFieldsRedirects(): void
     {
         $this->mockIdentity();
@@ -149,6 +169,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertRedirectContains('/admin/images/edit/1');
     }
 
+    /**
+     * Tests edit post updates fields and redirects.
+     */
     public function testEditPostUpdatesFieldsAndRedirects(): void
     {
         $this->mockIdentity();
@@ -167,6 +190,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertSame('inactive', $updated->get('status'));
     }
 
+    /**
+     * Tests manipulate post missing file redirects to index.
+     */
     public function testManipulatePostMissingFileRedirectsToIndex(): void
     {
         $this->mockIdentity();
@@ -180,6 +206,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertRedirectContains('/admin/images');
     }
 
+    /**
+     * Tests manipulate post no manipulations redirects back to form.
+     */
     public function testManipulatePostNoManipulationsRedirectsBackToForm(): void
     {
         $this->mockIdentity();
@@ -192,6 +221,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Tests crop thumb missing file redirects to edit.
+     */
     public function testCropThumbMissingFileRedirectsToEdit(): void
     {
         $this->mockIdentity();
@@ -204,6 +236,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertRedirectContains('/admin/images/edit/1');
     }
 
+    /**
+     * Tests crop thumb invalid crop redirects back to crop.
+     */
     public function testCropThumbInvalidCropRedirectsBackToCrop(): void
     {
         $this->mockIdentity();
@@ -220,6 +255,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Tests tags post applies and redirects.
+     */
     public function testTagsPostAppliesAndRedirects(): void
     {
         $this->mockIdentity();
@@ -242,6 +280,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertContains('freeform-tag', $slugs);
     }
 
+    /**
+     * Tests bulk delete deletes one image.
+     */
     public function testBulkDeleteDeletesOneImage(): void
     {
         $this->mockIdentity();
@@ -254,10 +295,13 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertRedirectContains('/admin/images');
 
         $images = $this->getTableLocator()->get('Images');
-        $this->expectException(\Cake\Datasource\Exception\RecordNotFoundException::class);
+        $this->expectException(RecordNotFoundException::class);
         $images->get(1);
     }
 
+    /**
+     * Tests rosters endpoint with no person id returns empty list.
+     */
     public function testRostersEndpointWithNoPersonIdReturnsEmptyList(): void
     {
         $this->mockIdentity();
@@ -270,6 +314,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertSame([], $json['rosters'] ?? null);
     }
 
+    /**
+     * Tests rosters endpoint returns rows.
+     */
     public function testRostersEndpointReturnsRows(): void
     {
         $this->mockIdentity();
@@ -287,6 +334,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertStringContainsString('John', $row['label']);
     }
 
+    /**
+     * Tests persons endpoint with empty query returns empty list.
+     */
     public function testPersonsEndpointWithEmptyQueryReturnsEmptyList(): void
     {
         $this->mockIdentity();
@@ -299,6 +349,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertSame([], $json['persons'] ?? null);
     }
 
+    /**
+     * Tests persons endpoint returns matches.
+     */
     public function testPersonsEndpointReturnsMatches(): void
     {
         $this->mockIdentity();
@@ -317,6 +370,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertStringContainsString('John', $first['label']);
     }
 
+    /**
+     * Tests serve legacy sizing query maps to thumb variant.
+     */
     public function testServeLegacySizingQueryMapsToThumbVariant(): void
     {
         $this->mockIdentity();
@@ -326,6 +382,9 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    /**
+     * Runs the tiny png bytes routine.
+     */
     private function tinyPngBytes(): string
     {
         $b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=';
@@ -333,6 +392,12 @@ class ImagesControllerMoreTest extends TestCase
         return (string)base64_decode($b64);
     }
 
+    /**
+     * Runs the write fixture image file routine.
+     *
+     * @param int $id
+     * @param string $bytes
+     */
     private function writeFixtureImageFile(int $id, string $bytes): string
     {
         $images = TableRegistry::getTableLocator()->get('Images');
@@ -351,6 +416,11 @@ class ImagesControllerMoreTest extends TestCase
         return $fullPath;
     }
 
+    /**
+     * Runs the safe unlink routine.
+     *
+     * @param string $path
+     */
     private function safeUnlink(string $path): void
     {
         if (!is_file($path)) {

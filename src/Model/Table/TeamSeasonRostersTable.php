@@ -6,6 +6,25 @@ namespace App\Model\Table;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\TeamSeasonsTable&\Cake\ORM\Association\BelongsTo $TeamSeasons
+ * @property \App\Model\Table\PersonsTable&\Cake\ORM\Association\BelongsTo $Persons
+ * @property \App\Model\Table\StatBasketGamePersonTable&\Cake\ORM\Association\HasMany $StatBasketGamePerson
+ * @property \App\Model\Table\StatBasketSeasonPersonTable&\Cake\ORM\Association\HasMany $StatBasketSeasonPerson
+ * @method \App\Model\Entity\TeamSeasonRosters newEmptyEntity()
+ * @method \App\Model\Entity\TeamSeasonRosters newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\TeamSeasonRosters findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\TeamSeasonRosters>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\TeamSeasonRosters> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\TeamSeasonRosters>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\TeamSeasonRosters[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\TeamSeasonRosters> deleteManyOrFail(iterable $entities, array $options = [])
+ */
 class TeamSeasonRostersTable extends Table
 {
     /**

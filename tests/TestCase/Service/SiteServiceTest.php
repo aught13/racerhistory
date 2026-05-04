@@ -15,12 +15,18 @@ class SiteServiceTest extends TestCase
 
     private SiteService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new SiteService();
     }
 
+    /**
+     * Tests get site by id.
+     */
     public function testGetSiteById(): void
     {
         $site = $this->service->getSiteById(1);
@@ -28,12 +34,18 @@ class SiteServiceTest extends TestCase
         $this->assertSame(1, $site->id);
     }
 
+    /**
+     * Tests get site by id returns null for invalid id.
+     */
     public function testGetSiteByIdReturnsNullForInvalidId(): void
     {
         $site = $this->service->getSiteById(99999);
         $this->assertNull($site);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -41,30 +53,45 @@ class SiteServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Site #99999', $label);
     }
 
+    /**
+     * Tests search sites.
+     */
     public function testSearchSites(): void
     {
         $results = $this->service->searchSites('Test', 10);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search sites returns empty for empty query.
+     */
     public function testSearchSitesReturnsEmptyForEmptyQuery(): void
     {
         $results = $this->service->searchSites('');
         $this->assertSame([], $results);
     }
 
+    /**
+     * Tests search sites respects limit.
+     */
     public function testSearchSitesRespectsLimit(): void
     {
         $results = $this->service->searchSites('a', 5);
         $this->assertLessThanOrEqual(5, count($results));
     }
 
+    /**
+     * Tests get all sites.
+     */
     public function testGetAllSites(): void
     {
         $sites = $this->service->getAllSites();
@@ -72,12 +99,18 @@ class SiteServiceTest extends TestCase
         $this->assertGreaterThan(0, count($sites));
     }
 
+    /**
+     * Tests get all sites respects limit.
+     */
     public function testGetAllSitesRespectsLimit(): void
     {
         $sites = $this->service->getAllSites(2);
         $this->assertLessThanOrEqual(2, count($sites));
     }
 
+    /**
+     * Tests create site.
+     */
     public function testCreateSite(): void
     {
         // Sites require a place_id (foreign key constraint)
@@ -93,6 +126,9 @@ class SiteServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests update site.
+     */
     public function testUpdateSite(): void
     {
         $site = $this->service->updateSite(1, ['site_name' => 'Updated Site']);
@@ -100,6 +136,9 @@ class SiteServiceTest extends TestCase
         $this->assertSame('Updated Site', $site->site_name);
     }
 
+    /**
+     * Tests delete site.
+     */
     public function testDeleteSite(): void
     {
         // Test deletion on existing fixture data
@@ -110,6 +149,9 @@ class SiteServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get sites for select.
+     */
     public function testGetSitesForSelect(): void
     {
         $results = $this->service->getSitesForSelect();

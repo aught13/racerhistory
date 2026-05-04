@@ -12,15 +12,15 @@ use Cake\ORM\Entity;
  * @property string|null $first
  * @property string|null $last
  * @property string|null $full
- * @property string $display
+ * @property string|null $display
  * @property string|null $person_image
  * @property string|null $bio
- * @property mixed $birth
- * @property mixed $death
+ * @property \Cake\I18n\Date|null $birth
+ * @property \Cake\I18n\Date|null $death
  * @property int|null $birth_place_id
  * @property string|null $person_previous
- * @property mixed $created_at
- * @property mixed $updated_at
+ * @property \Cake\I18n\DateTime $created_at
+ * @property \Cake\I18n\DateTime $updated_at
  * @property string $label
  * @property \App\Model\Entity\Place|null $birth_place
  * @property \App\Model\Entity\TeamSeasonRosters[] $team_season_rosters

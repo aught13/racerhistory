@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
-/** @var \App\Model\Entity\BlogPost[] $posts */
+
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $posts
+ */
+/** @var array<\App\Model\Entity\BlogPost> $posts */
 ?>
 <?php $this->assign('title', 'Blog Posts'); ?>
 <div class="container py-4" aria-label="Blog Posts">
@@ -24,16 +29,16 @@ declare(strict_types=1);
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($posts)): ?>
+                        <?php if (empty($posts)) : ?>
                             <tr><td colspan="6" class="text-center text-muted py-4">No posts yet.</td></tr>
                         <?php endif; ?>
-                        <?php foreach ($posts as $post): ?>
+                        <?php foreach ($posts as $post) : ?>
                             <tr>
                                 <td><?= h($post->title) ?></td>
                                 <td>
-                                    <?php if ($post->is_published): ?>
+                                    <?php if ($post->is_published) : ?>
                                         <span class="badge bg-success">Published</span>
-                                    <?php else: ?>
+                                    <?php else : ?>
                                         <span class="badge bg-secondary">Draft</span>
                                     <?php endif; ?>
                                 </td>
@@ -51,18 +56,18 @@ declare(strict_types=1);
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-nowrap">
-                                    <?php if (!empty($post->published_at)): ?>
+                                    <?php if (!empty($post->published_at)) : ?>
                                         <?= h($post->published_at->format('Y-m-d')) ?>
-                                    <?php else: ?>
+                                    <?php else : ?>
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if (!empty($post->blog_tags)): ?>
-                                        <?php foreach ($post->blog_tags as $tag): ?>
+                                    <?php if (!empty($post->blog_tags)) : ?>
+                                        <?php foreach ($post->blog_tags as $tag) : ?>
                                             <span class="badge bg-info text-dark me-1 mb-1"><?= h($tag->name) ?></span>
                                         <?php endforeach; ?>
-                                    <?php else: ?>
+                                    <?php else : ?>
                                         <span class="text-muted">None</span>
                                     <?php endif; ?>
                                 </td>

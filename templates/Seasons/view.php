@@ -1,8 +1,8 @@
 <?php
 /**
  * @var \App\Model\Entity\TeamSeason $teamSeason
- * @var array<int,\App\Model\Entity\Image> $images
- * @var array<int,\App\Model\Entity\Game> $games
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Game> $games
  * @var array<int,\App\Model\Entity\TeamSeasonRosters> $roster
  * @var array<string,mixed> $recordSummary
  * @var array{playerStats?:\Cake\Collection\CollectionInterface|null,teamStats?:object|null,opponentStats?:object|null}|null $seasonStats
@@ -11,21 +11,15 @@
  * @var array<int,\App\Model\Entity\BlogPost> $previewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $reviewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $otherPosts
+ * @var \App\View\AppView $this
  */
 
 $seasonStart = $teamSeason->season->start ?? '';
 $seasonEnd = $teamSeason->season->end ?? '';
-$seasonLabel = ($seasonStart !== '' && $seasonEnd !== '')
+$seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
 $teamName = $teamSeason->team->team_name ?? 'Team';
-$sportName = $teamSeason->team->sport->sport_name ?? 'Sport';
-$genderDisplay = match ($teamSeason->team->gender ?? '') {
-    'M' => "Men's",
-    'F' => "Women's",
-    'C' => 'Co-ed',
-    default => (string)($teamSeason->team->gender ?? ''),
-};
 $hasRecord = static function (array $record): bool {
     $wins = (int)($record['W'] ?? 0);
     $losses = (int)($record['L'] ?? 0);
@@ -172,7 +166,7 @@ $this->start('css'); ?>
                             <span class="season-stat-label"><?= h($group['label']) ?></span>
                             <strong class="season-stat-value"><?= h($record ?? '—') ?></strong>
                             <span class="season-stat-subtext"><?= $pct !== null ? number_format((float)$pct, 3, '.', '') : '—' ?></span>
-                            <?php if ((count($splitLines) + count($byTypeLines)) > 1) : ?>
+                            <?php if (count($splitLines) + count($byTypeLines) > 1) : ?>
                                 <ul class="season-stat-splits list-unstyled mb-0">
                                     <?php foreach ($splitLines as $line) : ?>
                                         <li>
@@ -272,7 +266,9 @@ $this->start('css'); ?>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?= h($game->place_city ?? '') ?><?php if (!empty($game->place_state)) : ?>, <?= h($game->place_state) ?><?php endif; ?>
+                                                <?= h($game->place_city ?? '') ?><?php if (!empty($game->place_state)) :
+                                                    ?>, <?= h($game->place_state) ?><?php
+                                                endif; ?>
                                                 <?php if (!empty($game->site_name)) : ?>
                                                     <div class="text-muted small"><?= h($game->site_name) ?></div>
                                                 <?php endif; ?>

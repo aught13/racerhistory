@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var array<int,\App\Model\Entity\Person> $people
  * @var array<int,array{person:\App\Model\Entity\Person,teams:array<int,string>,years:array<int,string>}> $peopleRows
  * @var int $peopleCount
+ * @var \App\View\AppView $this
  */
 $this->assign('title', 'People');
 

@@ -10,6 +10,9 @@ class SeasonsFixture extends TestFixture
 {
     public $import = ['table' => 'seasons'];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

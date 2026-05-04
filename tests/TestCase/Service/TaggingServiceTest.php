@@ -30,6 +30,9 @@ class TaggingServiceTest extends TestCase
         'app.Games',
     ];
 
+    /**
+     * Tests apply from data generates friendly labels for image.
+     */
     public function testApplyFromDataGeneratesFriendlyLabelsForImage(): void
     {
         $service = TaggingService::forImages();
@@ -105,6 +108,9 @@ class TaggingServiceTest extends TestCase
         $this->assertSame('extra', $extraTag->slug);
     }
 
+    /**
+     * Tests parse tags from request adds friendly team season label.
+     */
     public function testParseTagsFromRequestAddsFriendlyTeamSeasonLabel(): void
     {
         $service = TaggingService::forImages();
@@ -143,6 +149,9 @@ class TaggingServiceTest extends TestCase
         $this->assertStringContainsString("Men's Basketball", (string)$tsTag->name);
     }
 
+    /**
+     * Tests replace tags for blog post creates linkage.
+     */
     public function testReplaceTagsForBlogPostCreatesLinkage(): void
     {
         $service = TaggingService::forBlogPosts();
@@ -157,6 +166,9 @@ class TaggingServiceTest extends TestCase
         $this->assertSame(1, $count);
     }
 
+    /**
+     * Tests apply from data allows multiple persons when no roster selected.
+     */
     public function testApplyFromDataAllowsMultiplePersonsWhenNoRosterSelected(): void
     {
         $service = TaggingService::forImages();
@@ -190,6 +202,9 @@ class TaggingServiceTest extends TestCase
         $this->assertContains('extra', $applied);
     }
 
+    /**
+     * Tests apply from data ignores multiple persons when roster selected.
+     */
     public function testApplyFromDataIgnoresMultiplePersonsWhenRosterSelected(): void
     {
         $service = TaggingService::forImages();
@@ -223,6 +238,9 @@ class TaggingServiceTest extends TestCase
         $this->assertNotContains('person-2', $applied);
     }
 
+    /**
+     * Tests apply from data generates friendly game label.
+     */
     public function testApplyFromDataGeneratesFriendlyGameLabel(): void
     {
         $service = TaggingService::forImages();
@@ -258,6 +276,9 @@ class TaggingServiceTest extends TestCase
         $this->assertStringContainsString('Belmont', (string)$gameTag->name);
     }
 
+    /**
+     * Tests parse tags from request adds friendly game label.
+     */
     public function testParseTagsFromRequestAddsFriendlyGameLabel(): void
     {
         $service = TaggingService::forImages();

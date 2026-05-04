@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Throwable;
+
 /**
  * GameEavMetaService
  *
@@ -55,7 +57,7 @@ class GameEavMetaService
                 ],
                 'metadata' => $metadata,
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return [
                 'payload' => [
                     'success' => false,

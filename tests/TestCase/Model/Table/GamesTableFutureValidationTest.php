@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Model\Table;
 
 use Cake\TestSuite\TestCase;
+use DateTime;
 
 class GamesTableFutureValidationTest extends TestCase
 {
@@ -16,12 +17,18 @@ class GamesTableFutureValidationTest extends TestCase
      */
     protected $Games;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->Games = $this->getTableLocator()->get('Games');
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->Games);
@@ -29,9 +36,12 @@ class GamesTableFutureValidationTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests future game cannot have scores or result.
+     */
     public function testFutureGameCannotHaveScoresOrResult(): void
     {
-        $futureDate = (new \DateTime('tomorrow'))->format('Y-m-d');
+        $futureDate = (new DateTime('tomorrow'))->format('Y-m-d');
         $data = [
             'team_season_id' => 1,
             'game_date' => $futureDate,
@@ -44,9 +54,12 @@ class GamesTableFutureValidationTest extends TestCase
         $this->assertNotEmpty($game->getErrors(), 'Expected validation errors for future game with scores/result');
     }
 
+    /**
+     * Tests future game without scores is valid.
+     */
     public function testFutureGameWithoutScoresIsValid(): void
     {
-        $futureDate = (new \DateTime('tomorrow'))->format('Y-m-d');
+        $futureDate = (new DateTime('tomorrow'))->format('Y-m-d');
         $data = [
             'team_season_id' => 1,
             'game_date' => $futureDate,
@@ -56,9 +69,12 @@ class GamesTableFutureValidationTest extends TestCase
         $this->assertEmpty($game->getErrors(), 'Expected no validation errors for future game without scores/result');
     }
 
+    /**
+     * Tests past game with scores is valid.
+     */
     public function testPastGameWithScoresIsValid(): void
     {
-        $pastDate = (new \DateTime('yesterday'))->format('Y-m-d');
+        $pastDate = (new DateTime('yesterday'))->format('Y-m-d');
         $data = [
             'team_season_id' => 1,
             'game_date' => $pastDate,

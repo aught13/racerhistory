@@ -14,7 +14,7 @@
                 <?= $this->Html->link(
                     '← Back to Edit',
                     ['action' => 'edit', $image->id],
-                    ['class' => 'btn btn-outline-secondary']
+                    ['class' => 'btn btn-outline-secondary'],
                 ) ?>
             </div>
         </div>
@@ -153,7 +153,7 @@
                                 'value' => 'apply',
                                 'class' => 'btn btn-primary',
                                 'escapeTitle' => false,
-                            ]
+                            ],
                         ) ?>
                         <?= $this->Form->button(
                             '<i class="bi bi-files"></i> Save As Copy',
@@ -163,7 +163,7 @@
                                 'value' => 'copy',
                                 'class' => 'btn btn-outline-primary',
                                 'escapeTitle' => false,
-                            ]
+                            ],
                         ) ?>
                         <button type="button" class="btn btn-outline-secondary" onclick="resetAll()">
                             <i class="bi bi-arrow-counterclockwise"></i> Reset All

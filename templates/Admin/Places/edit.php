@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $sites
+ * @var \App\Model\Entity\Place $place
+ */
+?>
 <?php $this->assign('title', 'Edit Place'); ?>
 <div class="container py-4">
     <h1 class="mb-3">Edit Place</h1>

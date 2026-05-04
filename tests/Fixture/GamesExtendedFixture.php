@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\Fixture;
 
 use Cake\TestSuite\Fixture\TestFixture;
+use DateTime;
 
 /**
  * GamesExtendedFixture
@@ -43,13 +44,16 @@ class GamesExtendedFixture extends TestFixture
         ],
     ];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [
             [
                 'id' => 1,
                 'team_season_id' => 1,
-                'game_date' => new \DateTime('2025-01-15'),
+                'game_date' => new DateTime('2025-01-15'),
                 'game_time' => '19:00',
                 'game_duration' => '2:05',
                 'game_type_id' => 1,
@@ -69,7 +73,7 @@ class GamesExtendedFixture extends TestFixture
             [
                 'id' => 2,
                 'team_season_id' => 1,
-                'game_date' => new \DateTime('2025-01-16'),
+                'game_date' => new DateTime('2025-01-16'),
                 'game_time' => '19:30',
                 'game_duration' => '2:10',
                 'game_type_id' => 2,
@@ -89,7 +93,7 @@ class GamesExtendedFixture extends TestFixture
             [
                 'id' => 3,
                 'team_season_id' => 1,
-                'game_date' => new \DateTime('2025-01-17'),
+                'game_date' => new DateTime('2025-01-17'),
                 'game_time' => '18:00',
                 'game_duration' => '2:00',
                 'game_type_id' => 1,

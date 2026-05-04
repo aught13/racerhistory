@@ -24,7 +24,7 @@
                 <h5 class="card-title mb-0"><?= __('Period Names') ?></h5>
             </div>
             <div class="card-body">
-                <?php if (!empty($configs['period_names'])): ?>
+                <?php if (!empty($configs['period_names'])) : ?>
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
@@ -35,7 +35,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($configs['period_names'] as $periods => $config): ?>
+                                <?php foreach ($configs['period_names'] as $periods => $config) : ?>
                                 <tr>
                                     <td><span class="badge bg-secondary"><?= h($periods) ?></span></td>
                                     <td><strong><?= h($config['value']) ?></strong></td>
@@ -45,7 +45,7 @@
                             </tbody>
                         </table>
                     </div>
-                <?php else: ?>
+                <?php else : ?>
                     <p class="text-muted"><?= __('No period names configured.') ?></p>
                 <?php endif; ?>
             </div>
@@ -59,24 +59,24 @@
                 <h5 class="card-title mb-0"><?= __('Officials') ?></h5>
             </div>
             <div class="card-body">
-                <?php if (!empty($configs['officials']['value'])): ?>
+                <?php if (!empty($configs['officials']['value'])) : ?>
                     <ul class="list-unstyled">
                         <?php
                         $officials = $configs['officials']['value'];
                         if (is_string($officials)) {
                             $officials = array_filter(array_map('trim', explode(',', $officials)));
                         }
-                        foreach ($officials as $official): ?>
+                        foreach ($officials as $official) : ?>
                         <li class="mb-1">
                             <i class="fas fa-user-tie text-muted me-2"></i>
                             <?= h($official) ?>
                         </li>
                         <?php endforeach; ?>
                     </ul>
-                    <?php if (!empty($configs['officials']['description'])): ?>
+                    <?php if (!empty($configs['officials']['description'])) : ?>
                         <p class="text-muted small mt-2"><?= h($configs['officials']['description']) ?></p>
                     <?php endif; ?>
-                <?php else: ?>
+                <?php else : ?>
                     <p class="text-muted"><?= __('No officials configured.') ?></p>
                 <?php endif; ?>
             </div>
@@ -85,7 +85,7 @@
 </div>
 
 <!-- Other Settings -->
-<?php if (!empty($configs['settings'])): ?>
+<?php if (!empty($configs['settings'])) : ?>
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -103,13 +103,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($configs['settings'] as $key => $config): ?>
+                            <?php foreach ($configs['settings'] as $key => $config) : ?>
                             <tr>
                                 <td><code><?= h($key) ?></code></td>
                                 <td>
-                                    <?php if (is_array($config['value'])): ?>
+                                    <?php if (is_array($config['value'])) : ?>
                                         <span class="badge bg-info"><?= implode(', ', $config['value']) ?></span>
-                                    <?php else: ?>
+                                    <?php else : ?>
                                         <span class="badge bg-secondary"><?= h($config['value']) ?></span>
                                     <?php endif; ?>
                                 </td>

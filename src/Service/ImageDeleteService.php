@@ -5,6 +5,7 @@ namespace App\Service;
 
 use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
+use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 
 class ImageDeleteService
@@ -15,7 +16,7 @@ class ImageDeleteService
 
     /**
      * @param \App\Service\ImageStorageService|null $storage Optional storage service override.
-     * @param \App\Service\TaggingService|null $tagging Optional tagging service override.
+     * @param \App\Service\TaggingService|null      $tagging Optional tagging service override.
      */
     public function __construct(?ImageStorageService $storage = null, ?TaggingService $tagging = null)
     {
@@ -26,6 +27,7 @@ class ImageDeleteService
     /**
      * Delete a single image by id.
      *
+     * @param int $id
      * @return array{success:bool,deleted:bool}
      */
     public function deleteImageById(int $id): array
@@ -39,6 +41,8 @@ class ImageDeleteService
     /**
      * Delete a single image entity and related data.
      *
+     * @param \App\Model\Table\ImagesTable $images
+     * @param \App\Model\Entity\Image $image
      * @return array{success:bool,deleted:bool}
      */
     public function deleteImage(ImagesTable $images, Image $image): array
@@ -100,6 +104,8 @@ class ImageDeleteService
 
     /**
      * Delete the original image file and any variant files on disk.
+     *
+     * @param \App\Model\Entity\Image $image
      */
     private function deleteImageFiles(Image $image): void
     {
@@ -149,7 +155,7 @@ class ImageDeleteService
     /**
      * Lookup the join table that links images to tags.
      */
-    private function imagesImageTagsTable(): \Cake\ORM\Table
+    private function imagesImageTagsTable(): Table
     {
         return TableRegistry::getTableLocator()->get('ImagesImageTags');
     }

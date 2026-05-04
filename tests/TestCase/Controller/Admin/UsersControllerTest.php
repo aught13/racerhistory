@@ -10,6 +10,7 @@ use Cake\TestSuite\TestCase;
 /**
  * @property \App\Test\Fixture\UsersFixture $Users
  * @property \App\Test\Fixture\SiteOptionsFixture $SiteOptions
+ * @link \App\Controller\Admin\UsersController
  */
 class UsersControllerTest extends TestCase
 {
@@ -23,6 +24,9 @@ class UsersControllerTest extends TestCase
      */
     protected array $fixtures = ['app.Users', 'app.SiteOptions'];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -30,11 +34,17 @@ class UsersControllerTest extends TestCase
         $this->enableSecurityToken();
     }
 
+    /**
+     * Runs the login as admin routine.
+     */
     private function loginAsAdmin(): void
     {
         $this->mockIdentity();
     }
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->loginAsAdmin();
@@ -43,6 +53,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Manage Users');
     }
 
+    /**
+     * Tests login get.
+     */
     public function testLoginGet(): void
     {
         $this->session(['Auth' => null]); // explicit clear
@@ -51,6 +64,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Admin Login');
     }
 
+    /**
+     * Tests login post invalid.
+     */
     public function testLoginPostInvalid(): void
     {
         $this->session(['Auth' => null]);
@@ -64,6 +80,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Invalid username or password');
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->loginAsAdmin();
@@ -72,6 +91,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Add User');
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->loginAsAdmin();
@@ -80,6 +102,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Edit User');
     }
 
+    /**
+     * Tests manage get.
+     */
     public function testManageGet(): void
     {
         $this->loginAsAdmin();
@@ -88,6 +113,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('Manage User');
     }
 
+    /**
+     * Tests approve.
+     */
     public function testApprove(): void
     {
         $this->loginAsAdmin();
@@ -99,6 +127,9 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect();
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->loginAsAdmin();
@@ -109,6 +140,9 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect();
     }
 
+    /**
+     * Tests bulk activate.
+     */
     public function testBulkActivate(): void
     {
         $this->loginAsAdmin();
@@ -121,6 +155,9 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect('/admin/users');
     }
 
+    /**
+     * Tests bulk delete.
+     */
     public function testBulkDelete(): void
     {
         $this->loginAsAdmin();
@@ -150,6 +187,9 @@ class UsersControllerTest extends TestCase
         $this->assertSession('1 user(s) have been deleted.', 'Flash.flash.0.message');
     }
 
+    /**
+     * Tests toggle registration.
+     */
     public function testToggleRegistration(): void
     {
         $this->loginAsAdmin();
@@ -159,6 +199,9 @@ class UsersControllerTest extends TestCase
         $this->assertRedirect('/admin/users');
     }
 
+    /**
+     * Tests bulk invalid action.
+     */
     public function testBulkInvalidAction(): void
     {
         $this->loginAsAdmin();
@@ -172,6 +215,9 @@ class UsersControllerTest extends TestCase
         $this->assertSession('Invalid bulk action.', 'Flash.flash.0.message');
     }
 
+    /**
+     * Tests bulk activate no selection.
+     */
     public function testBulkActivateNoSelection(): void
     {
         $this->loginAsAdmin();
@@ -185,6 +231,9 @@ class UsersControllerTest extends TestCase
         $this->assertSession('No users selected.', 'Flash.flash.0.message');
     }
 
+    /**
+     * Tests bulk delete no selection.
+     */
     public function testBulkDeleteNoSelection(): void
     {
         $this->loginAsAdmin();
@@ -209,6 +258,9 @@ class UsersControllerTest extends TestCase
         $this->assertResponseContains('id="confirm-delete-modal"');
     }
 
+    /**
+     * Tests toggle registration disables.
+     */
     public function testToggleRegistrationDisables(): void
     {
         // Starts true in fixture (value 'true'), first toggle should disable
@@ -220,6 +272,9 @@ class UsersControllerTest extends TestCase
         $this->assertSession('Registration disabled.', 'Flash.flash.0.message');
     }
 
+    /**
+     * Tests toggle registration enables.
+     */
     public function testToggleRegistrationEnables(): void
     {
         // Force current value to false then toggle to enable
@@ -236,6 +291,9 @@ class UsersControllerTest extends TestCase
         $this->assertSession('Registration enabled.', 'Flash.flash.0.message');
     }
 
+    /**
+     * Tests toggle registration creates when missing.
+     */
     public function testToggleRegistrationCreatesWhenMissing(): void
     {
         $table = $this->getTableLocator()->get('SiteOptions');

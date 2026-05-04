@@ -9,6 +9,10 @@
  * Variables expected:
  * - `teamSeasonRosters`: A collection of `TeamSeasonRoster` entities.
  * - `teamSeason`: The `TeamSeason` entity being viewed.
+ *
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRosters
+ * @var \App\Model\Entity\TeamSeason $teamSeason
  */
 ?>
 <div class="card mt-4">

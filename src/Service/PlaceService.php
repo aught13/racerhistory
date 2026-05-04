@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Place;
+use App\Model\Entity\Site;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -31,7 +33,7 @@ class PlaceService
      * @param int $placeId Place ID
      * @return \App\Model\Entity\Place|null
      */
-    public function getPlaceById(int $placeId): ?\App\Model\Entity\Place
+    public function getPlaceById(int $placeId): ?Place
     {
         $places = TableRegistry::getTableLocator()->get('Places');
 
@@ -115,7 +117,7 @@ class PlaceService
      * @param array<string, mixed> $data Place data
      * @return \App\Model\Entity\Place|false
      */
-    public function createPlace(array $data): \App\Model\Entity\Place|false
+    public function createPlace(array $data): Place|false
     {
         $places = TableRegistry::getTableLocator()->get('Places');
 
@@ -142,7 +144,7 @@ class PlaceService
      * @param array<string, mixed> $data Place data
      * @return \App\Model\Entity\Place|false
      */
-    public function updatePlace(int $placeId, array $data): \App\Model\Entity\Place|false
+    public function updatePlace(int $placeId, array $data): Place|false
     {
         $places = TableRegistry::getTableLocator()->get('Places');
         $place = $places->get($placeId);
@@ -223,7 +225,7 @@ class PlaceService
      * @param int $siteId Site ID
      * @return \App\Model\Entity\Site|null
      */
-    public function getSiteById(int $siteId): ?\App\Model\Entity\Site
+    public function getSiteById(int $siteId): ?Site
     {
         return $this->siteService->getSiteById($siteId);
     }
@@ -268,7 +270,7 @@ class PlaceService
      * @param array<string, mixed> $data Site data
      * @return \App\Model\Entity\Site|false
      */
-    public function createSite(array $data): \App\Model\Entity\Site|false
+    public function createSite(array $data): Site|false
     {
         return $this->siteService->createSite($data);
     }
@@ -280,7 +282,7 @@ class PlaceService
      * @param array<string, mixed> $data Site data
      * @return \App\Model\Entity\Site|false
      */
-    public function updateSite(int $siteId, array $data): \App\Model\Entity\Site|false
+    public function updateSite(int $siteId, array $data): Site|false
     {
         return $this->siteService->updateSite($siteId, $data);
     }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Policy;
 
 use App\Model\Entity\User;
+use ArrayAccess;
 use Authorization\IdentityInterface;
+use Throwable;
 
 /**
  * User Policy
@@ -144,14 +146,14 @@ class UserPolicy
             return $data[$field] ?? null;
         }
 
-        if ($data instanceof \ArrayAccess && isset($data[$field])) {
+        if ($data instanceof ArrayAccess && isset($data[$field])) {
             return $data[$field];
         }
 
         if (is_object($data) && method_exists($data, 'get')) {
             try {
                 return $data->get($field);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Fall through
             }
         }

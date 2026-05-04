@@ -5,6 +5,9 @@ namespace App\Controller\Admin;
 
 use Cake\Http\Response;
 
+/**
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ */
 class BlogController extends AppController
 {
     /**

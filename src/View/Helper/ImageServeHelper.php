@@ -18,6 +18,8 @@ class ImageServeHelper extends Helper
 {
     /**
      * Build the base path for an image id.
+     *
+     * @param string|int $id
      */
     public function path(int|string $id): string
     {
@@ -47,7 +49,8 @@ class ImageServeHelper extends Helper
     /**
      * Build a full public serve URL for an image id.
      *
-     * @param array<string, mixed> $params
+     * @param string|int $id
+     * @param array $params
      */
     public function url(int|string $id, array $params = []): string
     {
@@ -144,7 +147,7 @@ class ImageServeHelper extends Helper
             htmlspecialchars($webpUrl, ENT_QUOTES, 'UTF-8'),
             htmlspecialchars($fallbackUrl, ENT_QUOTES, 'UTF-8'),
             htmlspecialchars($alt, ENT_QUOTES, 'UTF-8'),
-            $attrStr
+            $attrStr,
         );
     }
 
@@ -229,7 +232,7 @@ class ImageServeHelper extends Helper
             htmlspecialchars($sizes, ENT_QUOTES, 'UTF-8'),
             htmlspecialchars($fallbackUrl, ENT_QUOTES, 'UTF-8'),
             htmlspecialchars($alt, ENT_QUOTES, 'UTF-8'),
-            $attrStr
+            $attrStr,
         );
     }
 
@@ -256,7 +259,7 @@ class ImageServeHelper extends Helper
                 $parts[] = sprintf(
                     '%s="%s"',
                     htmlspecialchars($key, ENT_QUOTES, 'UTF-8'),
-                    htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8')
+                    htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'),
                 );
             }
         }

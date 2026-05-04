@@ -17,6 +17,9 @@ class ImageBrowseServiceTest extends TestCase
         'app.ImagesImageTags',
     ];
 
+    /**
+     * Tests browse returns payload.
+     */
     public function testBrowseReturnsPayload(): void
     {
         $service = new ImageBrowseService();
@@ -36,6 +39,9 @@ class ImageBrowseServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests browse with tag filter.
+     */
     public function testBrowseWithTagFilter(): void
     {
         $service = new ImageBrowseService();
@@ -49,6 +55,9 @@ class ImageBrowseServiceTest extends TestCase
         $this->assertContains('Roster', $first['tags'] ?? []);
     }
 
+    /**
+     * Tests browse clamps limit to maximum.
+     */
     public function testBrowseClampsLimitToMaximum(): void
     {
         $service = new ImageBrowseService();

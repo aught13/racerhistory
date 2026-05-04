@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\PersonsController
+ */
 class PersonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -27,6 +30,9 @@ class PersonsControllerTest extends TestCase
         'app.Places',
     ];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -34,12 +40,18 @@ class PersonsControllerTest extends TestCase
         $this->enableSecurityToken();
     }
 
+    /**
+     * Tests index requires auth.
+     */
     public function testIndexRequiresAuth(): void
     {
         $this->get('/admin/persons');
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests index authenticated.
+     */
     public function testIndexAuthenticated(): void
     {
         $this->mockIdentity();
@@ -52,6 +64,9 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseContains('total');
     }
 
+    /**
+     * Tests datatables returns json.
+     */
     public function testDatatablesReturnsJson(): void
     {
         $this->mockIdentity();
@@ -66,6 +81,9 @@ class PersonsControllerTest extends TestCase
         $this->assertSame(1, $body['draw']);
     }
 
+    /**
+     * Tests datatables search filters.
+     */
     public function testDatatablesSearchFilters(): void
     {
         $this->mockIdentity();
@@ -82,6 +100,9 @@ class PersonsControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tests datatables respects length cap.
+     */
     public function testDatatablesRespectsLengthCap(): void
     {
         $this->mockIdentity();
@@ -92,12 +113,18 @@ class PersonsControllerTest extends TestCase
         $this->assertLessThanOrEqual(500, count($body['data']));
     }
 
+    /**
+     * Tests datatables requires auth.
+     */
     public function testDatatablesRequiresAuth(): void
     {
         $this->get('/admin/persons/datatables');
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests datatables ordering.
+     */
     public function testDatatablesOrdering(): void
     {
         $this->mockIdentity();
@@ -114,6 +141,9 @@ class PersonsControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->mockIdentity();
@@ -122,6 +152,9 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseContains('Sample biography for John Doe.');
     }
 
+    /**
+     * Tests view shows person image when set.
+     */
     public function testViewShowsPersonImageWhenSet(): void
     {
         $this->mockIdentity();
@@ -143,6 +176,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('/images/serve/1', $body);
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -150,6 +186,9 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests add post valid.
+     */
     public function testAddPostValid(): void
     {
         $this->mockIdentity();
@@ -163,6 +202,9 @@ class PersonsControllerTest extends TestCase
         $this->assertFlashMessage('The person has been saved.');
     }
 
+    /**
+     * Tests add post invalid.
+     */
     public function testAddPostInvalid(): void
     {
         $this->mockIdentity();
@@ -173,6 +215,9 @@ class PersonsControllerTest extends TestCase
         $this->assertFlashMessage('The person could not be saved. Please, try again.');
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -180,6 +225,9 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests edit post.
+     */
     public function testEditPost(): void
     {
         $this->mockIdentity();
@@ -189,6 +237,9 @@ class PersonsControllerTest extends TestCase
         $this->assertFlashMessage('The person has been saved.');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();
@@ -196,6 +247,9 @@ class PersonsControllerTest extends TestCase
         $this->assertRedirect('/admin/persons');
     }
 
+    /**
+     * Tests bulk delete none selected.
+     */
     public function testBulkDeleteNoneSelected(): void
     {
         $this->mockIdentity();
@@ -205,6 +259,9 @@ class PersonsControllerTest extends TestCase
         $this->assertFlashMessage('No persons selected for deletion.');
     }
 
+    /**
+     * Tests bulk delete some.
+     */
     public function testBulkDeleteSome(): void
     {
         $this->mockIdentity();
@@ -212,6 +269,9 @@ class PersonsControllerTest extends TestCase
         $this->assertRedirect('/admin/persons');
     }
 
+    /**
+     * Tests bulk dispatcher invalid.
+     */
     public function testBulkDispatcherInvalid(): void
     {
         $this->mockIdentity();
@@ -221,6 +281,9 @@ class PersonsControllerTest extends TestCase
         $this->assertFlashMessage('Invalid bulk action.');
     }
 
+    /**
+     * Tests bulk dispatcher delete.
+     */
     public function testBulkDispatcherDelete(): void
     {
         $this->mockIdentity();
@@ -228,6 +291,9 @@ class PersonsControllerTest extends TestCase
         $this->assertRedirect('/admin/persons');
     }
 
+    /**
+     * Tests ajax add invalid method.
+     */
     public function testAjaxAddInvalidMethod(): void
     {
         $this->mockIdentity();
@@ -237,6 +303,9 @@ class PersonsControllerTest extends TestCase
         $this->assertFalse($response['success']);
     }
 
+    /**
+     * Tests ajax add valid.
+     */
     public function testAjaxAddValid(): void
     {
         $this->mockIdentity();
@@ -248,6 +317,9 @@ class PersonsControllerTest extends TestCase
         $this->assertEquals('The person has been saved.', $body['message']);
     }
 
+    /**
+     * Tests ajax search.
+     */
     public function testAjaxSearch(): void
     {
         $this->mockIdentity();
@@ -258,6 +330,9 @@ class PersonsControllerTest extends TestCase
         $this->assertArrayHasKey('results', $data);
     }
 
+    /**
+     * Tests view with roster entries.
+     */
     public function testViewWithRosterEntries(): void
     {
         $this->mockIdentity();
@@ -269,6 +344,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('Roster Entries', $body);
     }
 
+    /**
+     * Tests view with basketball stats.
+     */
     public function testViewWithBasketballStats(): void
     {
         $this->mockIdentity();
@@ -281,6 +359,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('Season Totals', $body);
     }
 
+    /**
+     * Tests view with career stats.
+     */
     public function testViewWithCareerStats(): void
     {
         $this->mockIdentity();
@@ -293,6 +374,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('Career Totals', $body);
     }
 
+    /**
+     * Tests view without roster entries.
+     */
     public function testViewWithoutRosterEntries(): void
     {
         $this->mockIdentity();
@@ -315,6 +399,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringNotContainsString('Career Statistics', $body);
     }
 
+    /**
+     * Tests view with supported sport but no stats shows fallbacks.
+     */
     public function testViewWithSupportedSportButNoStatsShowsFallbacks(): void
     {
         $this->mockIdentity();
@@ -358,6 +445,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('No career statistics have been recorded yet.', $body);
     }
 
+    /**
+     * Tests view multi sport fallbacks supported vs unsupported.
+     */
     public function testViewMultiSportFallbacksSupportedVsUnsupported(): void
     {
         $this->mockIdentity();
@@ -427,6 +517,9 @@ class PersonsControllerTest extends TestCase
         $this->assertSame(1, substr_count($body, 'No career statistics have been recorded yet.'));
     }
 
+    /**
+     * Tests add form contains birth place and previous fields.
+     */
     public function testAddFormContainsBirthPlaceAndPreviousFields(): void
     {
         $this->mockIdentity();
@@ -439,6 +532,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('person_previous', $body);
     }
 
+    /**
+     * Tests edit form contains birth place and previous fields.
+     */
     public function testEditFormContainsBirthPlaceAndPreviousFields(): void
     {
         $this->mockIdentity();
@@ -451,6 +547,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('person_previous', $body);
     }
 
+    /**
+     * Tests edit shows existing birth place.
+     */
     public function testEditShowsExistingBirthPlace(): void
     {
         $this->mockIdentity();
@@ -461,6 +560,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('Murray', $body);
     }
 
+    /**
+     * Tests edit shows existing previous school.
+     */
     public function testEditShowsExistingPreviousSchool(): void
     {
         $this->mockIdentity();
@@ -471,6 +573,9 @@ class PersonsControllerTest extends TestCase
         $this->assertStringContainsString('Central High', $body);
     }
 
+    /**
+     * Tests add post with new fields.
+     */
     public function testAddPostWithNewFields(): void
     {
         $this->mockIdentity();
@@ -490,6 +595,9 @@ class PersonsControllerTest extends TestCase
         $this->assertSame('Springfield High', $person->person_previous);
     }
 
+    /**
+     * Tests edit post with new fields.
+     */
     public function testEditPostWithNewFields(): void
     {
         $this->mockIdentity();
@@ -507,6 +615,9 @@ class PersonsControllerTest extends TestCase
         $this->assertSame('Updated High', $person->person_previous);
     }
 
+    /**
+     * Tests ajax add with new fields.
+     */
     public function testAjaxAddWithNewFields(): void
     {
         $this->mockIdentity();
@@ -555,7 +666,7 @@ class PersonsControllerTest extends TestCase
         $this->assertSame(
             1,
             substr_count($body, '<turbo-frame id="'),
-            'Person add form must not be wrapped in a nested turbo-frame'
+            'Person add form must not be wrapped in a nested turbo-frame',
         );
 
         $this->get('/admin/persons/edit/1');
@@ -564,7 +675,7 @@ class PersonsControllerTest extends TestCase
         $this->assertSame(
             1,
             substr_count($body, '<turbo-frame id="'),
-            'Person edit form must not be wrapped in a nested turbo-frame'
+            'Person edit form must not be wrapped in a nested turbo-frame',
         );
     }
 }

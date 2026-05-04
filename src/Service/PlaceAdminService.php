@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Place;
+use App\Model\Table\PlacesTable;
+use App\Model\Table\SitesTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
 
@@ -211,7 +214,7 @@ class PlaceAdminService
      * @param \App\Model\Entity\Place $place Place entity
      * @return string
      */
-    private function buildPlaceLabel(\App\Model\Entity\Place $place): string
+    private function buildPlaceLabel(Place $place): string
     {
         $label = (string)$place->place_city;
         if (!empty($place->place_state)) {
@@ -242,7 +245,7 @@ class PlaceAdminService
     /**
      * @return \App\Model\Table\PlacesTable
      */
-    private function getPlacesTable(): \App\Model\Table\PlacesTable
+    private function getPlacesTable(): PlacesTable
     {
         /** @var \App\Model\Table\PlacesTable $table */
         $table = TableRegistry::getTableLocator()->get('Places');
@@ -253,7 +256,7 @@ class PlaceAdminService
     /**
      * @return \App\Model\Table\SitesTable
      */
-    private function getSitesTable(): \App\Model\Table\SitesTable
+    private function getSitesTable(): SitesTable
     {
         /** @var \App\Model\Table\SitesTable $table */
         $table = TableRegistry::getTableLocator()->get('Sites');

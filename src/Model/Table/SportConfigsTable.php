@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\SportConfig;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -10,20 +11,22 @@ use Cake\Validation\Validator;
 /**
  * SportConfigs Model
  *
- * @property \Cake\ORM\Association\BelongsTo $Sports
+ * @property \App\Model\Table\SportsTable&\Cake\ORM\Association\BelongsTo $Sports
  * @method \App\Model\Entity\SportConfig newEmptyEntity()
  * @method \App\Model\Entity\SportConfig newEntity(array $data, array $options = [])
- * @method array<\App\Model\Entity\SportConfig> newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\SportConfig[] newEntities(array $data, array $options = [])
  * @method \App\Model\Entity\SportConfig get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \App\Model\Entity\SportConfig findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\SportConfig findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
  * @method \App\Model\Entity\SportConfig patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\App\Model\Entity\SportConfig> patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\SportConfig[] patchEntities(iterable $entities, array $data, array $options = [])
  * @method \App\Model\Entity\SportConfig|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
  * @method \App\Model\Entity\SportConfig saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\App\Model\Entity\SportConfig>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\SportConfig>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\SportConfig>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\SportConfig>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportConfig[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportConfig[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportConfig[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportConfig[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportConfig> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
 class SportConfigsTable extends Table
 {
@@ -109,7 +112,7 @@ class SportConfigsTable extends Table
 
         $result = [];
         foreach ($configs as $config) {
-            if (!($config instanceof \App\Model\Entity\SportConfig)) {
+            if (!($config instanceof SportConfig)) {
                 continue;
             }
             $value = $config->config_value;
@@ -174,7 +177,7 @@ class SportConfigsTable extends Table
         ];
 
         foreach ($configs as $config) {
-            if (!($config instanceof \App\Model\Entity\SportConfig)) {
+            if (!($config instanceof SportConfig)) {
                 continue;
             }
             $key = $config->config_key;

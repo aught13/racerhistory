@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: tests/people-index-init.coverage.test.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: tests/people-index-init.coverage.test.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { jest } from "@jest/globals";
+
+/**
+ * Coverage tests for modules/people-index-init.js
+ * Targets: destroyExisting, setupSearchBuilder, setupNameFilter,
+ *   server-side mode, client-side filter, error handling
+ */
+
+let jq, DataTableFn, dtInstance;
+
+function setupMocks() {
+    dtInstance = {
+        destroy: jest.fn(),
+        draw: jest.fn(),
+        search: jest.fn().mockReturnThis(),
+        columns: { adjust: jest.fn().mockReturnValue({ draw: jest.fn() }) },
+        table: jest.fn().mockReturnValue({
+            node: jest.fn().mockReturnValue(null),
+        }),
+        api: jest.fn(),
+    };
+    dtInstance.api.mockReturnValue(dtInstance);
+
+    DataTableFn = jest.fn().mockReturnValue(dtInstance);
+    DataTableFn.isDataTable = jest.fn().mockReturnValue(false);
+
+    jq = jest.fn((sel) => {
+        if (typeof sel === "string") {
+            const els = document.querySelectorAll(sel);
+            return {
+                length: els.length,
+                get: (i) => els[i] || null,
+                DataTable: DataTableFn,
+                remove: jest.fn(),
+                append: jest.fn((child) => {
+                    if (els[0] &amp;&amp; child instanceof Node) {
+                        els[0].appendChild(child);
+                    }
+                }),
+                empty: jest.fn(() => {
+                    if (els[0]) els[0].innerHTML = "";
+                }),
+                addClass: jest.fn(),
+            };
+        }
+        return {
+            length: 1,
+            get: () => sel,
+            DataTable: DataTableFn,
+            remove: jest.fn(),
+        };
+    });
+
+    jq.fn = {
+        DataTable: DataTableFn,
+        dataTable: Object.assign(jest.fn(), {
+            isDataTable: DataTableFn.isDataTable,
+            ext: { search: [] },
+        }),
+    };
+    window.$ = jq;
+
+    return { dtInstance, DataTableFn };
+}
+
+beforeEach(() => {
+    jest.resetModules();
+    jest.restoreAllMocks();
+    document.body.innerHTML = "";
+    delete window.$;
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+    delete window.$;
+});
+
+describe("people-index-init.js (coverage)", () => {
+    test("returns null when DataTables not available", async () => {
+        document.body.innerHTML = `&lt;table id="people-table">&lt;/table>`;
+        // No jQuery
+        const mod = await import("../modules/people-index-init.js");
+        const result = mod.default();
+        expect(result).toEqual({ table: null });
+    });
+
+    test("returns null when $.fn.DataTable is missing", async () => {
+        document.body.innerHTML = `&lt;table id="people-table">&lt;/table>`;
+        window.$ = jest.fn();
+        window.$.fn = {};
+        const mod = await import("../modules/people-index-init.js");
+        const result = mod.default();
+        expect(result).toEqual({ table: null });
+    });
+
+    test("returns null when table not found", async () => {
+        document.body.innerHTML = `&lt;div>No table&lt;/div>`;
+        setupMocks();
+        const mod = await import("../modules/people-index-init.js");
+        const result = mod.default({ tableSelector: "#people-table" });
+        expect(result).toEqual({ table: null });
+    });
+
+    test("destroys existing DataTable on re-init", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+            &lt;input id="people-name-search" />
+        `;
+        const { dtInstance: _dt, DataTableFn: DT } = setupMocks();
+        DT.isDataTable.mockReturnValue(true);
+        const mod = await import("../modules/people-index-init.js");
+
+        // First init
+        mod.default();
+        expect(DT.isDataTable).toHaveBeenCalled();
+    });
+
+    test("initComplete triggers setupNameFilter", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;th>Team&lt;/th>&lt;th>Pos&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;td>B&lt;/td>&lt;td>C&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+            &lt;input id="people-name-search" />
+        `;
+        setupMocks();
+        const mod = await import("../modules/people-index-init.js");
+        mod.default();
+
+        // Capture the initComplete callback
+        const opts = DataTableFn.mock.calls[0]?.[0];
+        expect(opts).toBeDefined();
+        expect(opts.initComplete).toBeDefined();
+
+        // Simulate initComplete being called
+        const drawFn = jest.fn();
+        const adjustFn = jest.fn().mockReturnValue({ draw: drawFn });
+        const context = {
+            api: jest.fn().mockReturnValue({
+                columns: { adjust: adjustFn },
+                draw: drawFn,
+                table: jest.fn().mockReturnValue({
+                    node: jest
+                        .fn()
+                        .mockReturnValue(
+                            document.querySelector("#people-table"),
+                        ),
+                }),
+                search: jest.fn().mockReturnThis(),
+            }),
+        };
+        opts.initComplete.call(context);
+
+        expect(adjustFn).toHaveBeenCalled();
+    });
+
+    test("server-side mode uses search() on input", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table" data-people-data-url="/api/people">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+            &lt;input id="people-name-search" />
+        `;
+        setupMocks();
+        const mod = await import("../modules/people-index-init.js");
+        mod.default({ dataUrl: "/api/people" });
+
+        const opts = DataTableFn.mock.calls[0]?.[0];
+        expect(opts.serverSide).toBe(true);
+        expect(opts.ajax.url).toBe("/api/people");
+
+        // Simulate initComplete for name filter binding
+        const apiMock = {
+            columns: { adjust: jest.fn().mockReturnValue({ draw: jest.fn() }) },
+            draw: jest.fn(),
+            search: jest.fn().mockReturnThis(),
+            table: jest.fn().mockReturnValue({
+                node: jest
+                    .fn()
+                    .mockReturnValue(document.querySelector("#people-table")),
+            }),
+        };
+        const context = { api: jest.fn().mockReturnValue(apiMock) };
+        opts.initComplete.call(context);
+
+        // Simulate typing in the search input
+        const input = document.querySelector("#people-name-search");
+        input.value = "Smith";
+        input.dispatchEvent(new Event("input"));
+
+        expect(apiMock.search).toHaveBeenCalledWith("Smith");
+        expect(apiMock.draw).toHaveBeenCalled();
+    });
+
+    test("client-side mode uses custom filter function", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">
+                &lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>
+                &lt;tbody>
+                    &lt;tr data-person-search="John Smith">&lt;td>John Smith&lt;/td>&lt;/tr>
+                    &lt;tr data-person-search="Jane Doe">&lt;td>Jane Doe&lt;/td>&lt;/tr>
+                &lt;/tbody>
+            &lt;/table>
+            &lt;input id="people-name-search" />
+        `;
+        const { dtInstance: _dt } = setupMocks();
+        const filters = window.$.fn.dataTable.ext.search;
+
+        const mod = await import("../modules/people-index-init.js");
+        mod.default();
+
+        const opts = DataTableFn.mock.calls[0]?.[0];
+        const tableNode = document.querySelector("#people-table");
+        const apiMock = {
+            columns: { adjust: jest.fn().mockReturnValue({ draw: jest.fn() }) },
+            draw: jest.fn(),
+            table: jest.fn().mockReturnValue({
+                node: jest.fn().mockReturnValue(tableNode),
+            }),
+        };
+        const context = { api: jest.fn().mockReturnValue(apiMock) };
+
+        // Trigger initComplete
+        opts.initComplete.call(context);
+
+        // A filter function should have been pushed
+        expect(filters.length).toBeGreaterThan(0);
+        const filterFn = filters[filters.length - 1];
+
+        // Test: empty query passes all rows
+        const input = document.querySelector("#people-name-search");
+        input.value = "";
+        expect(
+            filterFn(
+                {
+                    nTable: tableNode,
+                    aoData: [{ nTr: tableNode.querySelector("tbody tr") }],
+                },
+                ["John Smith"],
+                0,
+            ),
+        ).toBe(true);
+
+        // Test: matching query
+        input.value = "john";
+        expect(
+            filterFn(
+                {
+                    nTable: tableNode,
+                    aoData: [{ nTr: tableNode.querySelector("tbody tr") }],
+                },
+                ["John Smith"],
+                0,
+            ),
+        ).toBe(true);
+
+        // Test: non-matching query
+        input.value = "zzz";
+        expect(
+            filterFn(
+                {
+                    nTable: tableNode,
+                    aoData: [
+                        {
+                            nTr: tableNode.querySelectorAll("tbody tr")[1],
+                        },
+                    ],
+                },
+                ["Jane Doe"],
+                0,
+            ),
+        ).toBe(false);
+
+        // Test: different table should pass
+        expect(
+            filterFn(
+                {
+                    nTable: document.createElement("table"),
+                    aoData: [],
+                },
+                [],
+                0,
+            ),
+        ).toBe(true);
+    });
+
+    test("drawCallback re-binds name filter", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+            &lt;input id="people-name-search" />
+        `;
+        setupMocks();
+        const mod = await import("../modules/people-index-init.js");
+        mod.default();
+
+        const opts = DataTableFn.mock.calls[0]?.[0];
+        expect(opts.drawCallback).toBeDefined();
+
+        // Call drawCallback
+        const apiMock = {
+            draw: jest.fn(),
+            table: jest.fn().mockReturnValue({
+                node: jest
+                    .fn()
+                    .mockReturnValue(document.querySelector("#people-table")),
+            }),
+            api: jest.fn(),
+        };
+        apiMock.api.mockReturnValue(apiMock);
+        opts.drawCallback.call(apiMock);
+    });
+
+    test("DataTable construction error returns null", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+        `;
+        setupMocks();
+        DataTableFn.mockImplementation(() => {
+            throw new Error("DT error");
+        });
+        const debugSpy = jest
+            .spyOn(console, "debug")
+            .mockImplementation(() => {});
+        const mod = await import("../modules/people-index-init.js");
+        const result = mod.default();
+        expect(result).toEqual({ table: null });
+        expect(debugSpy).toHaveBeenCalled();
+    });
+
+    test("setupNameFilter with no search input does nothing", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+        `;
+        setupMocks();
+        const mod = await import("../modules/people-index-init.js");
+        mod.default({ searchInputSelector: "#nonexistent" });
+
+        const opts = DataTableFn.mock.calls[0]?.[0];
+        const context = {
+            api: jest.fn().mockReturnValue({
+                columns: {
+                    adjust: jest.fn().mockReturnValue({ draw: jest.fn() }),
+                },
+                draw: jest.fn(),
+                table: jest.fn().mockReturnValue({
+                    node: jest.fn().mockReturnValue(null),
+                }),
+            }),
+        };
+        opts.initComplete.call(context);
+    });
+
+    test("custom options are merged", async () => {
+        document.body.innerHTML = `
+            &lt;table id="people-table">&lt;thead>&lt;tr>&lt;th>Name&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>&lt;tr>&lt;td>A&lt;/td>&lt;/tr>&lt;/tbody>&lt;/table>
+        `;
+        setupMocks();
+        const mod = await import("../modules/people-index-init.js");
+        mod.default({ dataTableOptions: { pageLength: 25 } });
+
+        const opts = DataTableFn.mock.calls[0]?.[0];
+        expect(opts.pageLength).toBe(25);
+    });
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-game-form-lookups.html">game-form-lookups</a></li><li><a href="module-modules_tinymce-bootstrap-config.html">modules/tinymce-bootstrap-config</a></li></ul><h3>Classes</h3><ul><li><a href="CropSelector.html">CropSelector</a></li><li><a href="global.html#ImageSelector">ImageSelector</a></li><li><a href="SportAwareGameForm.html">SportAwareGameForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CDN_URLS">CDN_URLS</a></li><li><a href="global.html#DATATABLES_CORE_SRC">DATATABLES_CORE_SRC</a></li><li><a href="global.html#DEBOUNCE_MS">DEBOUNCE_MS</a></li><li><a href="global.html#NUMERIC_COLUMNS">NUMERIC_COLUMNS</a></li><li><a href="global.html#SCROLLER_THRESHOLD">SCROLLER_THRESHOLD</a></li><li><a href="global.html#_initialised">_initialised</a></li><li><a href="global.html#addRow">addRow</a></li><li><a href="global.html#autoSelectNewPerson">autoSelectNewPerson</a></li><li><a href="global.html#buildDom">buildDom</a></li><li><a href="global.html#buildEditDom">buildEditDom</a></li><li><a href="global.html#buildOpponentDom">buildOpponentDom</a></li><li><a href="global.html#buildPersonDom">buildPersonDom</a></li><li><a href="global.html#buildResults">buildResults</a></li><li><a href="global.html#calculateRecord">calculateRecord</a></li><li><a href="global.html#ensureDataTablesLoaded">ensureDataTablesLoaded</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#fixScrollXHeaderAlignment">fixScrollXHeaderAlignment</a></li><li><a href="global.html#flush">flush</a></li><li><a href="global.html#initCardHover">initCardHover</a></li><li><a href="global.html#initDragScroll">initDragScroll</a></li><li><a href="global.html#initGamesDataTable">initGamesDataTable</a></li><li><a href="global.html#initGamesPage">initGamesPage</a></li><li><a href="global.html#initPersonSearch">initPersonSearch</a></li><li><a href="global.html#initRosterMultiAdd">initRosterMultiAdd</a></li><li><a href="global.html#initStatMultiAdd">initStatMultiAdd</a></li><li><a href="global.html#initStatsDataTable">initStatsDataTable</a></li><li><a href="global.html#initStatsPage">initStatsPage</a></li><li><a href="global.html#initializingTables">initializingTables</a></li><li><a href="global.html#isDataTablesAvailable">isDataTablesAvailable</a></li><li><a href="global.html#jq">jq</a></li><li><a href="global.html#reindexRows">reindexRows</a></li><li><a href="global.html#reinitBootstrap">reinitBootstrap</a></li><li><a href="global.html#setupBlogPostCollapse">setupBlogPostCollapse</a></li><li><a href="global.html#setupDT">setupDT</a></li><li><a href="global.html#setupJQueryMock">setupJQueryMock</a></li><li><a href="global.html#syncScrollerColumns">syncScrollerColumns</a></li><li><a href="global.html#updateRecordDisplay">updateRecordDisplay</a></li><li><a href="global.html#updateRemoveButtons">updateRemoveButtons</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun May 03 2026 13:42:29 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

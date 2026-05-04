@@ -1,5 +1,9 @@
 <?php
 declare(strict_types=1);
+
+/**
+ * @var \App\View\AppView $this
+ */
 /** @var \App\Model\Entity\BlogPost $post */
 ?>
-<?= $this->element('blog/view_frame') ?>
+<?= $this->element('blog/view_frame');

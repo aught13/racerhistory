@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Psr\Http\Message\UploadedFileInterface;
+use Throwable;
 
 class ImageProcessor
 {
@@ -30,16 +32,16 @@ class ImageProcessor
                     // Try array config (v3) then legacy string
                     try {
                         if (class_exists('Intervention\\Image\\Drivers\\Gd\\Driver')) {
-                            $driver = new \Intervention\Image\Drivers\Gd\Driver();
+                            $driver = new Driver();
                             $this->manager = new ImageManager($driver);
                         } else {
                             $this->manager = new ImageManager('gd');
                         }
-                    } catch (\Throwable $inner) {
+                    } catch (Throwable $inner) {
                         $this->manager = null; // will degrade
                     }
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $this->manager = null; // operate in degraded mode
             }
         }
@@ -67,7 +69,7 @@ class ImageProcessor
         if ($this->manager) {
             try {
                 $image = $this->manager->read($contents);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $image = null; // degrade
             }
         } else {
@@ -209,7 +211,7 @@ class ImageProcessor
 
         try {
             $image = $this->manager->read($fileContent);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Fallback on read failure
             return [
                 'original' => [
@@ -320,6 +322,9 @@ class ImageProcessor
 
     /**
      * Convenience: images tagged for a team season.
+     *
+     * @param int $teamSeasonId
+     * @param int $limit
      */
     public function getImagesForTeamSeason(int $teamSeasonId, int $limit = 10): array
     {
@@ -328,6 +333,10 @@ class ImageProcessor
 
     /**
      * Convenience: roster image (person + team season).
+     *
+     * @param int $personId
+     * @param int $teamSeasonId
+     * @param int $limit
      */
     public function getRosterImages(int $personId, int $teamSeasonId, int $limit = 1): array
     {
@@ -337,7 +346,7 @@ class ImageProcessor
     /**
      * Resolve or create and return ImageTags for provided slugs (utility for controllers).
      *
-     * @param array<int,string> $tagSlugs Tag slugs.
+     * @param array $tagSlugs
      * @return array<int,\App\Model\Entity\ImageTag>
      */
     public function ensureTags(array $tagSlugs): array
@@ -348,8 +357,8 @@ class ImageProcessor
     /**
      * Apply image manipulations (crop, rotate, brightness, contrast).
      *
-     * @param mixed $image Image instance.
-     * @param array<string,mixed> $manipulations Manipulations array.
+     * @param mixed $image
+     * @param array $manipulations
      * @return mixed
      */
     private function applyManipulations(
@@ -425,7 +434,7 @@ class ImageProcessor
     /**
      * Infer a file extension from a MIME type.
      *
-     * @param string|null $mime MIME type.
+     * @param string|null $mime
      * @return string
      */
     private function inferExtension(?string $mime): string

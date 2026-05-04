@@ -3,9 +3,29 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\Person;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\TeamSeasonRostersTable&\Cake\ORM\Association\HasMany $TeamSeasonRosters
+ * @property \App\Model\Table\PlacesTable&\Cake\ORM\Association\BelongsTo $BirthPlace
+ * @method \App\Model\Entity\Person newEmptyEntity()
+ * @method \App\Model\Entity\Person newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\Person[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Person get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\Person findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\Person patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Person[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Person|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Person saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Person[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Person>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Person[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Person> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Person[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Person>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Person[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Person> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class PersonsTable extends Table
 {
     /**
@@ -39,7 +59,7 @@ class PersonsTable extends Table
 
         // Add a callback to automatically set the full name
         $this->getEventManager()->on('Model.beforeSave', function ($event, $entity, $options): void {
-            if ($entity instanceof \App\Model\Entity\Person) {
+            if ($entity instanceof Person) {
                 if (empty($entity->full) && !empty($entity->first) && !empty($entity->last)) {
                     $entity->full = trim($entity->first . ' ' . $entity->last);
                 }

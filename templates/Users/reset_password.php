@@ -1,4 +1,7 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ */
 
 $this->assign('title', 'Reset Password'); ?>
 <div class="users reset-password">

@@ -8,6 +8,9 @@ use Cake\TestSuite\TestCase;
 
 class GameEavUiServiceTest extends TestCase
 {
+    /**
+     * Tests map legacy keys adds team and opponent keys when missing.
+     */
     public function testMapLegacyKeysAddsTeamAndOpponentKeysWhenMissing(): void
     {
         $service = new GameEavUiService();
@@ -27,6 +30,9 @@ class GameEavUiServiceTest extends TestCase
         $this->assertSame('12', $mapped['period_2_team']);
     }
 
+    /**
+     * Tests merge posted period and overtime fields only merges eav keys.
+     */
     public function testMergePostedPeriodAndOvertimeFieldsOnlyMergesEavKeys(): void
     {
         $service = new GameEavUiService();

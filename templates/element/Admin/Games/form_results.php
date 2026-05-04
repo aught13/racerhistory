@@ -1,4 +1,8 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Game $game
+ */
 // Game results form element – scores, rankings, attendance, and EAV (period scores, officials).
 // Expects: $game, $eav (array), $eavTemplate (array), $teamSeasonList (for hidden field),
 //          optional $sportId, $sportName, $sportHasStats

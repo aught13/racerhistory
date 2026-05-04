@@ -6,6 +6,12 @@ namespace App\Model\Table;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\ImagesTable&\Cake\ORM\Association\BelongsTo $Images
+ * @property \App\Model\Table\ImageTagsTable&\Cake\ORM\Association\BelongsTo $ImageTags
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class ImagesImageTagsTable extends Table
 {
     /**

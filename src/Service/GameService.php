@@ -3,9 +3,13 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Game;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\I18n\Date;
 use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\ORM\Query;
+use DateTimeInterface;
 
 /**
  * GameService
@@ -46,7 +50,7 @@ class GameService
      * @return \App\Model\Entity\Game
      * @throws \Cake\Datasource\Exception\RecordNotFoundException
      */
-    public function getGameWithAssociations(int $gameId): \App\Model\Entity\Game
+    public function getGameWithAssociations(int $gameId): Game
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
@@ -190,7 +194,7 @@ class GameService
      * @param array $eavData EAV key-value pairs
      * @return bool Success status
      */
-    public function saveGameWithEav(\App\Model\Entity\Game $game, array $eavData): bool
+    public function saveGameWithEav(Game $game, array $eavData): bool
     {
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
@@ -361,7 +365,7 @@ class GameService
      * @param \App\Model\Entity\Game $game Game entity
      * @return string|null
      */
-    public function getResultFlag(\App\Model\Entity\Game $game): ?string
+    public function getResultFlag(Game $game): ?string
     {
         if ($game->pts_mur !== null && $game->pts_opp !== null) {
             if ($game->pts_mur > $game->pts_opp) {
@@ -393,7 +397,7 @@ class GameService
      * @param \App\Model\Entity\Game $game
      * @return string|null
      */
-    public function getPlaceName(\App\Model\Entity\Game $game): ?string
+    public function getPlaceName(Game $game): ?string
     {
         if (empty($game->place)) {
             return null;
@@ -408,7 +412,7 @@ class GameService
      * @param \App\Model\Entity\Game $game
      * @return string|null
      */
-    public function getPlaceState(\App\Model\Entity\Game $game): ?string
+    public function getPlaceState(Game $game): ?string
     {
         if (empty($game->place)) {
             return null;
@@ -423,7 +427,7 @@ class GameService
      * @param \App\Model\Entity\Game $game
      * @return string|null
      */
-    public function getSiteName(\App\Model\Entity\Game $game): ?string
+    public function getSiteName(Game $game): ?string
     {
         if (empty($game->site)) {
             return null;
@@ -633,9 +637,9 @@ class GameService
                 'checkbox' => '<input type="checkbox" name="game_ids[]" value="' . $game->id .
                     '" class="game-checkbox" aria-label="Select game #' . $game->id . '">',
                 'game_date' => $game->game_date
-                    ? ($game->game_date instanceof \Cake\I18n\Date
+                    ? ($game->game_date instanceof Date
                         ? $game->game_date->i18nFormat('yyyy-MM-dd')
-                        : ($game->game_date instanceof \DateTimeInterface
+                        : ($game->game_date instanceof DateTimeInterface
                             ? $game->game_date->format('Y-m-d')
                             : (string)$game->game_date))
                     : '',
@@ -672,7 +676,7 @@ class GameService
      * @param string $logic Logic operator AND/OR
      * @return void
      */
-    public function applySearchBuilderCriteria(\Cake\ORM\Query $query, array $criteria, string $logic = 'AND'): void
+    public function applySearchBuilderCriteria(Query $query, array $criteria, string $logic = 'AND'): void
     {
         $conditions = [];
         $hrnMap = ['H' => 1, 'R' => 2, 'N' => 3];
@@ -781,21 +785,19 @@ class GameService
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
         $teamSeasonId = null;
-        try {
-            $first = $gamesTable->get((int)$ids[0]);
-            $teamSeasonId = $first->get('team_season_id');
-        } catch (RecordNotFoundException $e) {
-            // ignore
-        }
+        $first = $gamesTable->find()
+            ->where(['id' => $ids[0]])
+            ->first();
+
+        $teamSeasonId = $first ? $first->get('team_season_id') : null;
 
         $deleted = 0;
         foreach ($ids as $id) {
-            try {
-                $entity = $gamesTable->get((int)$id);
-            } catch (RecordNotFoundException $e) {
-                continue;
-            }
-            if ($gamesTable->delete($entity)) {
+            $entity = $gamesTable->find()
+                ->where(['id' => $id])
+                ->first();
+
+            if ($entity && $gamesTable->delete($entity)) {
                 $deleted++;
             }
         }
@@ -899,6 +901,8 @@ class GameService
 
     /**
      * Resolve a display label for a game id used by context tagging.
+     *
+     * @param int $gameId
      */
     public function getGameTagDisplayLabel(int $gameId): string
     {
@@ -928,7 +932,10 @@ class GameService
     /**
      * Format a tag label from known game fields without reloading the entity.
      *
-     * @param mixed $gameDate Date value as stored on the Game entity.
+     * @param mixed $gameDate
+     * @param string $opponentName
+     * @param int $hrn
+     * @param int $gameId
      */
     public function formatGameTagLabelFromRow(
         mixed $gameDate,
@@ -941,17 +948,19 @@ class GameService
 
     /**
      * Format a stable, human-readable label for game selects.
+     *
+     * @param \App\Model\Entity\Game $game
      */
-    private function formatGameSelectLabel(\App\Model\Entity\Game $game): string
+    private function formatGameSelectLabel(Game $game): string
     {
         $teamName = $game->team_season->team->team_name ?? 'Team';
         $oppName = $game->opponent->opponent_name ?? 'Opponent';
 
         $date = '';
         if (!empty($game->game_date)) {
-            if ($game->game_date instanceof \Cake\I18n\Date) {
+            if ($game->game_date instanceof Date) {
                 $date = $game->game_date->i18nFormat('yyyy-MM-dd');
-            } elseif ($game->game_date instanceof \DateTimeInterface) {
+            } elseif ($game->game_date instanceof DateTimeInterface) {
                 $date = $game->game_date->format('Y-m-d');
             } else {
                 $date = (string)$game->game_date;
@@ -981,15 +990,18 @@ class GameService
     /**
      * Format a recognizable label for a game tag.
      *
-     * @param mixed $gameDate Date value as stored on the Game entity.
+     * @param mixed $gameDate
+     * @param string $opponentName
+     * @param int $hrn
+     * @param int $gameId
      */
     private function formatGameTagLabel(mixed $gameDate, string $opponentName, int $hrn, int $gameId): string
     {
         $date = '';
         if (!empty($gameDate)) {
-            if ($gameDate instanceof \Cake\I18n\Date) {
+            if ($gameDate instanceof Date) {
                 $date = $gameDate->i18nFormat('yyyy-MM-dd');
-            } elseif ($gameDate instanceof \DateTimeInterface) {
+            } elseif ($gameDate instanceof DateTimeInterface) {
                 $date = $gameDate->format('Y-m-d');
             } else {
                 $date = (string)$gameDate;
@@ -1017,7 +1029,7 @@ class GameService
      * Get games for a team season with optional ordering.
      *
      * @param int|null $teamSeasonId
-     * @param string $direction ASC or DESC
+     * @param string $direction
      * @return array<int,\App\Model\Entity\Game>
      */
     public function getGamesByTeamSeason(?int $teamSeasonId = null, string $direction = 'DESC'): array

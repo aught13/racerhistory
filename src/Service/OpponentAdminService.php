@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Table\OpponentsTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
 
@@ -201,7 +202,7 @@ class OpponentAdminService
     /**
      * @return \App\Model\Table\OpponentsTable
      */
-    private function getOpponentsTable(): \App\Model\Table\OpponentsTable
+    private function getOpponentsTable(): OpponentsTable
     {
         /** @var \App\Model\Table\OpponentsTable $table */
         $table = TableRegistry::getTableLocator()->get('Opponents');

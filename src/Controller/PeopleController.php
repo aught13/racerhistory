@@ -85,6 +85,8 @@ class PeopleController extends AppController
 
     /**
      * Skip authorization for public actions.
+     *
+     * @param \Cake\Event\EventInterface $event
      */
     public function beforeFilter(EventInterface $event): void
     {
@@ -176,8 +178,9 @@ class PeopleController extends AppController
 
     /**
      * Apply DataTables order settings to the People index query.
-     *
      * Currently we only support server-side ordering by the Name column.
+     *
+     * @param \Cake\ORM\Query\SelectQuery $query
      */
     private function applyDataTablesOrderToPeopleQuery(SelectQuery $query): void
     {
@@ -208,7 +211,9 @@ class PeopleController extends AppController
     }
 
     /**
-     * @param array<int,\App\Model\Entity\Person> $people
+     * Runs the build people rows routine.
+     *
+     * @param array $people
      * @return array<int,array{person:\App\Model\Entity\Person,teams:array<int,string>,years:array<int,array{id:int,label:string,start:int}>}>
      */
     private function buildPeopleRows(array $people): array
@@ -291,7 +296,9 @@ class PeopleController extends AppController
     }
 
     /**
-     * @param array<int,array{person:\App\Model\Entity\Person,teams:array<int,string>,years:array<int,array{id:int,label:string,start:int}>}> $peopleRows
+     * Runs the format people rows for data tables routine.
+     *
+     * @param array $peopleRows
      * @return array<int,array<int,string>>
      */
     private function formatPeopleRowsForDataTables(array $peopleRows): array
@@ -348,6 +355,8 @@ class PeopleController extends AppController
     }
 
     /**
+     * Runs the escape routine.
+     *
      * @param string $value
      * @return string
      */
@@ -359,7 +368,7 @@ class PeopleController extends AppController
     /**
      * View a single person with related data.
      *
-     * @param int $id Person ID
+     * @param int $id
      */
     public function view(int $id): void
     {
@@ -466,8 +475,8 @@ class PeopleController extends AppController
     /**
      * Render the game log for a person and team season.
      *
-     * @param int $personId Person ID
-     * @param int $teamSeasonId Team season ID
+     * @param int $personId
+     * @param int $teamSeasonId
      */
     public function gameLog(int $personId, int $teamSeasonId): void
     {
@@ -521,7 +530,7 @@ class PeopleController extends AppController
     /**
      * Get blog posts by tag slug.
      *
-     * @param string $tagSlug Tag slug
+     * @param string $tagSlug
      * @return array<int,\App\Model\Entity\BlogPost>
      */
     private function getBlogPostsByTag(string $tagSlug): array
@@ -544,7 +553,7 @@ class PeopleController extends AppController
     /**
      * Get roster entries for a person.
      *
-     * @param int $personId Person ID
+     * @param int $personId
      * @return array<int,\App\Model\Entity\TeamSeasonRosters>
      */
     private function getRosterEntriesForPerson(int $personId): array
@@ -563,7 +572,7 @@ class PeopleController extends AppController
     /**
      * Build game log groups for supported sports.
      *
-     * @param array<int,\App\Model\Entity\TeamSeasonRosters> $rosterEntries
+     * @param array $rosterEntries
      * @return array<int,array{sportId:int,sport:\App\Model\Entity\Sport,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,rosterId:int,label:string,startYear:int}>,activeSeasonId:int|null}>
      */
     private function buildGameLogGroups(array $rosterEntries): array
@@ -626,6 +635,8 @@ class PeopleController extends AppController
     }
 
     /**
+     * Runs the format season label routine.
+     *
      * @param object|null $season
      */
     private function formatSeasonLabel(?object $season): string

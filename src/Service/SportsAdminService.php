@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Sport;
+use App\Model\Table\SportsTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\Datasource\ResultSetInterface;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -37,12 +40,12 @@ class SportsAdminService
     /**
      * @var \App\Model\Table\SportsTable
      */
-    private \App\Model\Table\SportsTable $sportsTable;
+    private SportsTable $sportsTable;
 
     /**
      * @param \App\Model\Table\SportsTable|null $sportsTable
      */
-    public function __construct(?\App\Model\Table\SportsTable $sportsTable = null)
+    public function __construct(?SportsTable $sportsTable = null)
     {
         /** @var \App\Model\Table\SportsTable $table */
         $table = $sportsTable ?? TableRegistry::getTableLocator()->get('Sports');
@@ -57,7 +60,7 @@ class SportsAdminService
      *
      * @return \Cake\Datasource\ResultSetInterface
      */
-    public function getIndexData(): \Cake\Datasource\ResultSetInterface
+    public function getIndexData(): ResultSetInterface
     {
         return $this->sportsTable->find()->contain(['Teams'])->all();
     }
@@ -69,7 +72,7 @@ class SportsAdminService
      * @return \App\Model\Entity\Sport
      * @throws \Cake\Datasource\Exception\RecordNotFoundException
      */
-    public function getViewEntity(string $id): \App\Model\Entity\Sport
+    public function getViewEntity(string $id): Sport
     {
         /** @var \App\Model\Entity\Sport $sport */
         $sport = $this->sportsTable->get($id, contain: ['Teams']);
@@ -82,7 +85,7 @@ class SportsAdminService
      *
      * @return \App\Model\Entity\Sport
      */
-    public function newEntity(): \App\Model\Entity\Sport
+    public function newEntity(): Sport
     {
         /** @var \App\Model\Entity\Sport $sport */
         $sport = $this->sportsTable->newEmptyEntity();
@@ -116,7 +119,7 @@ class SportsAdminService
      * @return \App\Model\Entity\Sport
      * @throws \Cake\Datasource\Exception\RecordNotFoundException
      */
-    public function getEditEntity(string $id): \App\Model\Entity\Sport
+    public function getEditEntity(string $id): Sport
     {
         /** @var \App\Model\Entity\Sport $sport */
         $sport = $this->sportsTable->get($id, contain: ['Teams']);

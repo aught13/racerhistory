@@ -7,6 +7,23 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @method \App\Model\Entity\Place newEmptyEntity()
+ * @method \App\Model\Entity\Place newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\Place[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Place get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\Place findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\Place patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Place[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Place|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Place saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Place[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Place>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Place[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Place> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Place[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Place>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Place[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Place> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class PlacesTable extends Table
 {
     /**
@@ -66,7 +83,7 @@ class PlacesTable extends Table
         $rules->addCreate(
             $rules->isUnique(
                 ['place_country', 'place_city', 'place_state'],
-                'A place with that country, city, and state already exists.'
+                'A place with that country, city, and state already exists.',
             ),
         );
 

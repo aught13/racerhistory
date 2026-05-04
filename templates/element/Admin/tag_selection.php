@@ -1,8 +1,25 @@
 <?php
 declare(strict_types=1);
 
+use App\Service\PersonService;
+use App\Service\TeamSeasonRosterService;
+
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $idPrefix
+ * @var mixed $tagSelection
+ * @var mixed $tagString
+ * @var array<\App\Model\Entity\Team> $teams <-- Add these
+ * @var array<\App\Model\Entity\TeamSeason> $teamSeasons
+ * @var array<\App\Model\Entity\Game> $games
+ * @var array<\App\Model\Entity\Site> $sites
+ * @var array<\App\Model\Entity\Opponent> $opponents
+ * @var array<\App\Model\Entity\Sport> $sports
+ * @var array<\App\Model\Entity\Tag> $currentTags
+ */
+
 $idPrefixBase = (string)($idPrefix ?? '');
-$idPrefixNormalized = $idPrefixBase !== '' ? (rtrim($idPrefixBase, '_') . '_') : '';
+$idPrefixNormalized = $idPrefixBase !== '' ? rtrim($idPrefixBase, '_') . '_' : '';
 $id = fn(string $name): string => $idPrefixNormalized . $name;
 
 $teams = is_iterable($teams ?? []) ? $teams : [];
@@ -35,7 +52,6 @@ $freeform['attributes']['id'] = $id($freeformId);
 
 $selectionOverrides = (array)($tagSelection ?? []);
 $selectedPersonIds = $selectionOverrides['selectedPersonIds'] ?? null;
-$selectedPersonNames = $selectionOverrides['selectedPersonNames'] ?? null;
 $selectedTeamId = $selectionOverrides['selectedTeamId'] ?? null;
 $selectedTeamSeasonId = $selectionOverrides['selectedTeamSeasonId'] ?? null;
 $selectedGameId = $selectionOverrides['selectedGameId'] ?? null;
@@ -51,8 +67,8 @@ if ($selectedPersonIds === null) {
     $selectedPersonIds = [];
 }
 
-$personService = new \App\Service\PersonService();
-$rosterService = new \App\Service\TeamSeasonRosterService();
+$personService = new PersonService();
+$rosterService = new TeamSeasonRosterService();
 $selectedGameLabelFromTag = '';
 $selectedSiteLabelFromTag = '';
 $selectedOpponentLabelFromTag = '';
@@ -93,7 +109,6 @@ foreach ($currentTags as $tag) {
         if (!$selectedPersonIds && $selectedRosterId) {
             $rosterData = $rosterService->getRosterDisplayData($selectedRosterId);
             $selectedPersonIds = [(int)($rosterData['person_id'] ?? 0)];
-            $selectedPersonNames = [(string)($rosterData['person_label'] ?? '')];
             if ($selectedRosterLabelFromTag === '') {
                 $selectedRosterLabelFromTag = (string)($rosterData['team_season_label'] ?? '');
             }
@@ -144,7 +159,6 @@ $selectedOpponentLabel = $selectedOpponentLabel !== '' ? $selectedOpponentLabel 
 $selectedRosterLabel = $selectedRosterLabelFromTag;
 
 $initialPersonCount = count($selectedPersons);
-$initialPersonIds = array_map(fn(array $p) => (int)$p['id'], $selectedPersons);
 $initialRosterId = (int)($selectedRosterId ?? 0);
 $unlockedFields = [
     'person_search',
@@ -185,7 +199,7 @@ foreach ($unlockedFields as $field) {
         </div>
         <datalist id="<?= h($id('personsList')) ?>"></datalist>
         <div id="<?= h($id('person_hidden_inputs')) ?>">
-            <?php foreach ($selectedPersons as $p): ?>
+            <?php foreach ($selectedPersons as $p) : ?>
                 <input type="hidden" name="person_select[]" value="<?= h((int)$p['id']) ?>" />
             <?php endforeach; ?>
         </div>
@@ -210,7 +224,7 @@ foreach ($unlockedFields as $field) {
         <label class="form-label">Team Season</label>
         <select name="teamseason_select" id="<?= h($id('teamseason_select')) ?>" class="form-select">
             <option value="">-- select team season --</option>
-            <?php foreach ($teamSeasons as $ts): ?>
+            <?php foreach ($teamSeasons as $ts) : ?>
                 <option value="<?= h($ts['id']) ?>" <?= $selectedTeamSeasonId === (int)$ts['id'] ? 'selected' : '' ?>><?= h($ts['label']) ?></option>
             <?php endforeach; ?>
         </select>
@@ -275,7 +289,7 @@ foreach ($unlockedFields as $field) {
         <label class="form-label">Sport</label>
         <select name="sport_select" id="<?= h($id('sport_select')) ?>" class="form-select">
             <option value="">-- select sport --</option>
-            <?php foreach ($sports as $sp): ?>
+            <?php foreach ($sports as $sp) : ?>
                 <option value="<?= h($sp['id']) ?>" <?= $selectedSportId === (int)$sp['id'] ? 'selected' : '' ?>><?= h($sp['label']) ?></option>
             <?php endforeach; ?>
         </select>
@@ -293,12 +307,16 @@ foreach ($unlockedFields as $field) {
 
 <div class="mb-3">
     <label class="form-label" for="<?= h($freeform['attributes']['id']) ?>"><?= h($freeform['label']) ?></label>
-    <?php if ($freeform['type'] === 'textarea'): ?>
-        <textarea name="<?= h($freeform['name']) ?>" <?php foreach ($freeform['attributes'] as $attr => $value): ?> <?= h($attr) ?>="<?= h($value) ?>"<?php endforeach; ?>><?= h($freeform['value']) ?></textarea>
-    <?php else: ?>
-        <input type="<?= h($freeform['type']) ?>" name="<?= h($freeform['name']) ?>" value="<?= h($freeform['value']) ?>" <?php foreach ($freeform['attributes'] as $attr => $value): ?> <?= h($attr) ?>="<?= h($value) ?>"<?php endforeach; ?> />
+    <?php if ($freeform['type'] === 'textarea') : ?>
+        <textarea name="<?= h($freeform['name']) ?>" <?php foreach ($freeform['attributes'] as $attr => $value) :
+            ?> <?= h($attr) ?>="<?= h($value) ?>"<?php
+                        endforeach; ?>><?= h($freeform['value']) ?></textarea>
+    <?php else : ?>
+        <input type="<?= h($freeform['type']) ?>" name="<?= h($freeform['name']) ?>" value="<?= h($freeform['value']) ?>" <?php foreach ($freeform['attributes'] as $attr => $value) :
+            ?> <?= h($attr) ?>="<?= h($value) ?>"<?php
+                     endforeach; ?> />
     <?php endif; ?>
-    <?php if (!empty($freeform['help'])): ?>
+    <?php if (!empty($freeform['help'])) : ?>
         <div class="form-text"><?= h($freeform['help']) ?></div>
     <?php endif; ?>
 </div>

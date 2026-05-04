@@ -6,9 +6,13 @@ namespace App\Controller\Admin;
 use App\Service\GameEavMetaService;
 use App\Service\GameEavUiService;
 use App\Service\GamesAdminService;
+use App\Service\GameService;
 use App\Service\GameUpsertService;
 use App\Service\GameViewService;
+use App\Service\SportConfigService;
+use App\Service\StatsService;
 use Cake\Http\Response;
+use Cake\Routing\Router;
 
 /**
  * Admin Games Controller
@@ -35,6 +39,7 @@ use Cake\Http\Response;
  * @property \App\Service\GameUpsertService $gameUpsert
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\GamesTable $Games
  */
 class GamesController extends AppController
 {
@@ -51,17 +56,17 @@ class GamesController extends AppController
     /**
      * @var \App\Service\GameService Service for game-related business logic
      */
-    protected \App\Service\GameService $Game;
+    protected GameService $Game;
 
     /**
      * @var \App\Service\SportConfigService Service for sport configuration management
      */
-    protected \App\Service\SportConfigService $SportConfig;
+    protected SportConfigService $SportConfig;
 
     /**
      * @var \App\Service\StatsService Service for sport-specific statistics
      */
-    protected \App\Service\StatsService $Stats;
+    protected StatsService $Stats;
 
     /**
      * Initialize controller
@@ -263,7 +268,7 @@ class GamesController extends AppController
                 if ($sportHasStats) {
                     $this->Flash->success(__('Would you like to enter box scores? {0}', sprintf(
                         '<a href="%s" class="alert-link">Enter Box Scores</a>',
-                        \Cake\Routing\Router::url([
+                        Router::url([
                             'prefix' => 'Admin',
                             'controller' => 'StatBasketGameBox',
                             'action' => 'gameBox',
@@ -342,6 +347,8 @@ class GamesController extends AppController
 
     /**
      * Delete a game.
+     *
+     * @param string $id
      */
     public function delete(string $id): Response
     {

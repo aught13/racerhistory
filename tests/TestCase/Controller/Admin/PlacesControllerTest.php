@@ -4,9 +4,14 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Exception;
 
+/**
+ * @link \App\Controller\Admin\PlacesController
+ */
 class PlacesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -18,6 +23,9 @@ class PlacesControllerTest extends TestCase
         'app.Sites',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -26,6 +34,9 @@ class PlacesControllerTest extends TestCase
         $this->assertResponseContains('Places');
     }
 
+    /**
+     * Tests add post.
+     */
     public function testAddPost(): void
     {
         $this->mockIdentity();
@@ -35,6 +46,9 @@ class PlacesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']);
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -43,6 +57,9 @@ class PlacesControllerTest extends TestCase
         $this->assertResponseContains('Add Place');
     }
 
+    /**
+     * Tests edit.
+     */
     public function testEdit(): void
     {
         $this->mockIdentity();
@@ -52,6 +69,9 @@ class PlacesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']);
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -60,6 +80,9 @@ class PlacesControllerTest extends TestCase
         $this->assertResponseContains('Edit Place');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();
@@ -68,6 +91,9 @@ class PlacesControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests delete non existent.
+     */
     public function testDeleteNonExistent(): void
     {
         $this->mockIdentity();
@@ -76,11 +102,14 @@ class PlacesControllerTest extends TestCase
         try {
             $this->delete('/admin/places/delete/999');
             $this->assertResponseError();
-        } catch (\Exception $e) {
-            $this->assertInstanceOf(\Cake\Datasource\Exception\RecordNotFoundException::class, $e);
+        } catch (Exception $e) {
+            $this->assertInstanceOf(RecordNotFoundException::class, $e);
         }
     }
 
+    /**
+     * Tests unauthenticated access.
+     */
     public function testUnauthenticatedAccess(): void
     {
         $this->session([]);
@@ -88,6 +117,9 @@ class PlacesControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests ajax search returns results.
+     */
     public function testAjaxSearchReturnsResults(): void
     {
         $this->mockIdentity();
@@ -102,6 +134,9 @@ class PlacesControllerTest extends TestCase
         $this->assertArrayHasKey('place_state', $data['results'][0]);
     }
 
+    /**
+     * Tests ajax search empty query.
+     */
     public function testAjaxSearchEmptyQuery(): void
     {
         $this->mockIdentity();
@@ -112,6 +147,9 @@ class PlacesControllerTest extends TestCase
         $this->assertEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search no match.
+     */
     public function testAjaxSearchNoMatch(): void
     {
         $this->mockIdentity();
@@ -122,6 +160,9 @@ class PlacesControllerTest extends TestCase
         $this->assertEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search rejects post method.
+     */
     public function testAjaxSearchRejectsPostMethod(): void
     {
         $this->mockIdentity();
@@ -131,6 +172,9 @@ class PlacesControllerTest extends TestCase
         $this->assertResponseCode(405);
     }
 
+    /**
+     * Tests ajax add success.
+     */
     public function testAjaxAddSuccess(): void
     {
         $this->mockIdentity();
@@ -148,6 +192,9 @@ class PlacesControllerTest extends TestCase
         $this->assertNotEmpty($data['newOption']['value']);
     }
 
+    /**
+     * Tests ajax add validation error.
+     */
     public function testAjaxAddValidationError(): void
     {
         $this->mockIdentity();
@@ -163,6 +210,9 @@ class PlacesControllerTest extends TestCase
         $this->assertNotEmpty($data['errors']);
     }
 
+    /**
+     * Tests ajax add invalid method.
+     */
     public function testAjaxAddInvalidMethod(): void
     {
         $this->mockIdentity();
@@ -172,6 +222,9 @@ class PlacesControllerTest extends TestCase
         $this->assertFalse($data['success']);
     }
 
+    /**
+     * Tests ajax add duplicate returns existing.
+     */
     public function testAjaxAddDuplicateReturnsExisting(): void
     {
         $this->mockIdentity();
@@ -190,6 +243,9 @@ class PlacesControllerTest extends TestCase
         $this->assertStringContainsString('already exists', $data['message']);
     }
 
+    /**
+     * Tests add post duplicate shows error.
+     */
     public function testAddPostDuplicateShowsError(): void
     {
         $this->mockIdentity();
@@ -218,7 +274,7 @@ class PlacesControllerTest extends TestCase
         $this->assertSame(
             1,
             substr_count($body, '<turbo-frame id="'),
-            'Place add form must not be wrapped in a nested turbo-frame'
+            'Place add form must not be wrapped in a nested turbo-frame',
         );
 
         $this->get('/admin/places/edit/1');
@@ -227,7 +283,7 @@ class PlacesControllerTest extends TestCase
         $this->assertSame(
             1,
             substr_count($body, '<turbo-frame id="'),
-            'Place edit form must not be wrapped in a nested turbo-frame'
+            'Place edit form must not be wrapped in a nested turbo-frame',
         );
     }
 }

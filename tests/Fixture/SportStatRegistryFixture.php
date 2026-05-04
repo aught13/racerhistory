@@ -27,6 +27,9 @@ class SportStatRegistryFixture extends TestFixture
         ],
     ];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

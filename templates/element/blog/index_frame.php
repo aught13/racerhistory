@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
-/** @var \App\Model\Entity\BlogPost[] $posts */
-/** @var \App\Model\Entity\BlogPost[] $paginatedPosts */
+
+/**
+ * @var \App\View\AppView $this
+ * @var array $posts
+ */
+/** @var array<\App\Model\Entity\BlogPost> $posts */
+/** @var array<\App\Model\Entity\BlogPost> $paginatedPosts */
 /** @var int $page */
 /** @var int $limit */
 /** @var int $total */
@@ -10,7 +15,7 @@ $page = $page ?? 1;
 $limit = $limit ?? 10;
 $total = $total ?? count($posts ?? []);
 $paginatedPosts = $paginatedPosts ?? $posts ?? [];
-$hasMore = ($page * $limit) < $total;
+$hasMore = $page * $limit < $total;
 $featured = null;
 $listPosts = $paginatedPosts;
 if ($page === 1 && !empty($posts)) {
@@ -20,25 +25,25 @@ if ($page === 1 && !empty($posts)) {
 ?>
 <turbo-frame id="blog">
     <div class="container py-4">
-        <?php if (empty($paginatedPosts) && $page === 1): ?>
+        <?php if (empty($paginatedPosts) && $page === 1) : ?>
             <div class="alert alert-info mb-0">No posts yet.</div>
-        <?php else: ?>
+        <?php else : ?>
             <!-- Featured Hero Post (only on page 1) -->
-            <?php if ($page === 1 && $featured): ?>
+            <?php if ($page === 1 && $featured) : ?>
             <turbo-frame id="blog-post-<?= h($featured->slug) ?>" class="blog-featured-frame mb-5 pb-4 border-bottom">
                 <!-- Main featured view: title → hero image → blurb (shown by default) -->
                 <div class="blog-featured cursor-pointer" data-blog-post="<?= h($featured->slug) ?>" style="cursor: pointer;">
                     <h1 class="h2 mb-2 blog-hero-title"><?= h($featured->title) ?></h1>
                     <p class="text-muted small mb-3">
-                        <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
+                        <?php if ($featured->published_at instanceof DateTimeInterface) : ?>
                             <time datetime="<?= h($featured->published_at->format('Y-m-d')) ?>">
                                 <?= h($featured->published_at->format('F j, Y')) ?>
                             </time>
-                        <?php else: ?>
+                        <?php else : ?>
                             <?= h($featured->published_at ?? '') ?>
                         <?php endif; ?>
                     </p>
-                    <?php if (!empty($featured->hero_image_id)): ?>
+                    <?php if (!empty($featured->hero_image_id)) : ?>
                     <div class="blog-featured-hero mb-3">
                         <?= $this->ImageServe->responsivePicture(
                             $featured->hero_image_id,
@@ -48,7 +53,7 @@ if ($page === 1 && !empty($posts)) {
                                 'alt' => h($featured->title),
                                 'class' => 'img-fluid rounded blog-hero-image',
                                 'sizes' => '(max-width: 991px) 100vw, 100%',
-                            ]
+                            ],
                         ) ?>
                     </div>
                     <?php endif; ?>
@@ -56,7 +61,7 @@ if ($page === 1 && !empty($posts)) {
                 </div>
                 <!-- Thumb view: shown when another post is expanded (initially hidden) -->
                 <div class="blog-featured-as-list cursor-pointer d-none d-flex gap-3 align-items-start" data-blog-post="<?= h($featured->slug) ?>" style="cursor: pointer;">
-                    <?php if (!empty($featured->hero_image_id)): ?>
+                    <?php if (!empty($featured->hero_image_id)) : ?>
                     <figure style="flex-shrink: 0; width: 120px; height: 90px; margin: 0;">
                         <?= $this->ImageServe->picture(
                             $featured->hero_image_id,
@@ -65,18 +70,18 @@ if ($page === 1 && !empty($posts)) {
                                 'alt' => h($featured->title),
                                 'class' => 'img-fluid rounded',
                                 'style' => 'object-fit: cover; width: 100%; height: 100%;',
-                            ]
+                            ],
                         ) ?>
                     </figure>
                     <?php endif; ?>
                     <div class="flex-grow-1">
                         <h2 class="h6 mb-1"><?= h($featured->title) ?></h2>
                         <p class="text-muted small mb-2">
-                            <?php if ($featured->published_at instanceof \DateTimeInterface): ?>
+                            <?php if ($featured->published_at instanceof DateTimeInterface) : ?>
                                 <time datetime="<?= h($featured->published_at->format('Y-m-d')) ?>">
                                     <?= h($featured->published_at->format('M j, Y')) ?>
                                 </time>
-                            <?php else: ?>
+                            <?php else : ?>
                                 <?= h($featured->published_at ?? '') ?>
                             <?php endif; ?>
                         </p>
@@ -94,7 +99,7 @@ if ($page === 1 && !empty($posts)) {
             </div>
 
             <!-- Load More Trigger -->
-            <?php if ($hasMore): ?>
+            <?php if ($hasMore) : ?>
             <div id="load-more-trigger" class="text-center py-4">
                 <button id="load-more-btn" class="btn btn-outline-secondary" data-page="<?= $page + 1 ?>" data-limit="<?= $limit ?>">
                     Load More Stories

@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\TeamSeasonsController
+ */
 class TeamSeasonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -31,6 +34,9 @@ class TeamSeasonsControllerTest extends TestCase
         'app.Places',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -39,6 +45,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="confirm-delete-modal"');
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->mockIdentity();
@@ -53,6 +62,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('Season Statistics');
     }
 
+    /**
+     * Tests view season stats display.
+     */
     public function testViewSeasonStatsDisplay(): void
     {
         $this->mockIdentity();
@@ -65,6 +77,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('PTS');
     }
 
+    /**
+     * Tests view contains roster management element.
+     */
     public function testViewContainsRosterManagementElement(): void
     {
         $this->mockIdentity();
@@ -77,6 +92,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('rosters-table');
     }
 
+    /**
+     * Tests view with roster entries shows table.
+     */
     public function testViewWithRosterEntriesShowsTable(): void
     {
         $this->mockIdentity();
@@ -98,6 +116,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('select-all-rosters');
     }
 
+    /**
+     * Tests view with no roster entries shows empty message.
+     */
     public function testViewWithNoRosterEntriesShowsEmptyMessage(): void
     {
         $this->mockIdentity();
@@ -112,6 +133,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('Add the first roster entry');
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -124,6 +148,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('team-season-recap');
     }
 
+    /**
+     * Tests add post valid.
+     */
     public function testAddPostValid(): void
     {
         $this->mockIdentity();
@@ -136,6 +163,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
     }
 
+    /**
+     * Tests add post invalid.
+     */
     public function testAddPostInvalid(): void
     {
         $this->mockIdentity();
@@ -151,6 +181,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('The team season could not be saved.');
     }
 
+    /**
+     * Tests delete post.
+     */
     public function testDeletePost(): void
     {
         $this->mockIdentity();
@@ -161,6 +194,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
     }
 
+    /**
+     * Tests bulk delete.
+     */
     public function testBulkDelete(): void
     {
         $this->mockIdentity();
@@ -171,6 +207,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
     }
 
+    /**
+     * Tests bulk delete empty selection.
+     */
     public function testBulkDeleteEmptySelection(): void
     {
         $this->mockIdentity();
@@ -183,6 +222,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertFlashMessage('No team seasons selected for deletion.');
     }
 
+    /**
+     * Tests bulk invalid action.
+     */
     public function testBulkInvalidAction(): void
     {
         $this->mockIdentity();
@@ -195,6 +237,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertFlashMessage('Invalid bulk action.');
     }
 
+    /**
+     * Tests roster bulk delete through team seasons view.
+     */
     public function testRosterBulkDeleteThroughTeamSeasonsView(): void
     {
         $this->mockIdentity();
@@ -222,6 +267,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertEquals(0, $remaining);
     }
 
+    /**
+     * Tests roster bulk delete empty selection through team seasons view.
+     */
     public function testRosterBulkDeleteEmptySelectionThroughTeamSeasonsView(): void
     {
         $this->mockIdentity();
@@ -240,6 +288,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertFlashMessage('No team season rosters selected for deletion.');
     }
 
+    /**
+     * Tests view with same sport navigation.
+     */
     public function testViewWithSameSportNavigation(): void
     {
         $this->mockIdentity();
@@ -287,6 +338,9 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertEquals(1, $nextTeamSeason->team->sport_id, 'Next should be same sport');
     }
 
+    /**
+     * Tests view with different sport does not show in navigation.
+     */
     public function testViewWithDifferentSportDoesNotShowInNavigation(): void
     {
         $this->mockIdentity();
@@ -331,11 +385,14 @@ class TeamSeasonsControllerTest extends TestCase
             $this->assertNotEquals(
                 $differentSport->id,
                 $nextTeamSeason->team->sport_id,
-                'Navigation should not include different sport team seasons'
+                'Navigation should not include different sport team seasons',
             );
         }
     }
 
+    /**
+     * Tests view navigation buttons show team season links.
+     */
     public function testViewNavigationButtonsShowTeamSeasonLinks(): void
     {
         $this->mockIdentity();

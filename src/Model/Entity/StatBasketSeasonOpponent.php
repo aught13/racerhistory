@@ -9,7 +9,7 @@ use Cake\ORM\Entity;
  * StatBasketSeasonOpponent Entity
  *
  * @property int $id
- * @property int $team_season_id
+ * @property int|null $team_season_id
  * @property string|null $GP
  * @property string|null $MIN
  * @property string|null $FGM
@@ -31,7 +31,7 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime $created_at
  * @property \Cake\I18n\DateTime $updated_at
  *
- * @property \App\Model\Entity\TeamSeason $team_season
+ * @property \App\Model\Entity\TeamSeason|null $team_season
  */
 class StatBasketSeasonOpponent extends Entity
 {

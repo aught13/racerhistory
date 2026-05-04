@@ -14,18 +14,18 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\Team newEmptyEntity()
  * @method \App\Model\Entity\Team newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\Team[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\Team get($primaryKey, array $options = [])
+ * @method \App\Model\Entity\Team get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
  * @method \App\Model\Entity\Team get($primaryKey, array $options = [])
  * @method \App\Model\Entity\Team get($primaryKey, ?array $options = null, mixed ...$args)
- * @method \App\Model\Entity\Team findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Team findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
  * @method \App\Model\Entity\Team patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\Team[] patchEntities(iterable $entities, array $data, array $options = [])
- * @method \App\Model\Entity\Team|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Team saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
- * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Team|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Team saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Team>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Team> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Team>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Team[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Team> deleteManyOrFail(iterable $entities, array $options = [])
  *
  * Table Fields:
  * - id: Primary key, auto-increment integer
@@ -38,6 +38,9 @@ use Cake\Validation\Validator;
  * - gender: Gender classification - M (Male), F (Female), C (Co-ed) (required)
  * - created_at: Timestamp when record was created
  * - updated_at: Timestamp when record was last modified
+ * @property \App\Model\Table\SportsTable&\Cake\ORM\Association\BelongsTo $Sports
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
 class TeamsTable extends Table
 {

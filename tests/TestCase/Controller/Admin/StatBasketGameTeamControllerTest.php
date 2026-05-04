@@ -11,6 +11,8 @@ use Cake\TestSuite\TestCase;
  * StatBasketGameTeamController Test Case
  *
  * Tests basketball team-level game statistics CRUD operations.
+ *
+ * @link \App\Controller\Admin\StatBasketGameTeamController
  */
 class StatBasketGameTeamControllerTest extends TestCase
 {
@@ -103,11 +105,11 @@ class StatBasketGameTeamControllerTest extends TestCase
 
         // Verify the stats were created
         $stats = $this->getTableLocator()->get('StatBasketGameTeam');
-        $teamStat = $stats->find()->where(['game_id' => 1, 'opp' => 0])->first();
+        $teamStat = $stats->find()->where(['game_id' => 1, 'opp' => false])->first();
         $this->assertNotNull($teamStat);
         $this->assertEquals('75', $teamStat->PTS);
 
-        $oppStat = $stats->find()->where(['game_id' => 1, 'opp' => 1])->first();
+        $oppStat = $stats->find()->where(['game_id' => 1, 'opp' => true])->first();
         $this->assertNotNull($oppStat);
         $this->assertEquals('68', $oppStat->PTS);
     }

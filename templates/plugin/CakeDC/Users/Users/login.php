@@ -5,6 +5,8 @@
  * Goal: Keep CakeDC/Users controller/action for authentication, but present UI
  * consistent with the app (Bootstrap 5) and route password reset to the app's
  * existing reset-password flow.
+ *
+ * @var \App\View\AppView $this
  */
 
 declare(strict_types=1);
@@ -24,7 +26,7 @@ $redirect = (string)($this->getRequest()->getQuery('redirect') ?? '');
                 <fieldset>
                     <legend class="visually-hidden"><?= __d('cake_d_c/users', 'Login') ?></legend>
 
-                    <?php if ($redirect !== ''): ?>
+                    <?php if ($redirect !== '') : ?>
                         <?= $this->Form->control('redirect', ['type' => 'hidden', 'value' => $redirect]) ?>
                     <?php endif; ?>
 
@@ -53,7 +55,7 @@ $redirect = (string)($this->getRequest()->getQuery('redirect') ?? '');
                             echo $this->Html->link(
                                 __d('cake_d_c/users', 'Reset Password'),
                                 ['plugin' => null, 'controller' => 'Users', 'action' => 'resetPassword'],
-                                ['class' => 'link-secondary']
+                                ['class' => 'link-secondary'],
                             );
                         }
                         ?>

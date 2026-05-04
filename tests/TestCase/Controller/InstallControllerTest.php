@@ -7,10 +7,16 @@ use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\InstallController
+ */
 class InstallControllerTest extends TestCase
 {
     use IntegrationTestTrait;
 
+    /**
+     * Tests index accessible in debug mode.
+     */
     public function testIndexAccessibleInDebugMode(): void
     {
         Configure::write('debug', true);
@@ -21,6 +27,9 @@ class InstallControllerTest extends TestCase
         $this->assertResponseContains('auditAccordion');
     }
 
+    /**
+     * Tests index shows audit categories.
+     */
     public function testIndexShowsAuditCategories(): void
     {
         Configure::write('debug', true);
@@ -35,6 +44,9 @@ class InstallControllerTest extends TestCase
         $this->assertResponseContains('Frontend Assets');
     }
 
+    /**
+     * Tests index shows overall banner.
+     */
     public function testIndexShowsOverallBanner(): void
     {
         Configure::write('debug', true);
@@ -49,6 +61,9 @@ class InstallControllerTest extends TestCase
         $this->assertTrue($hasStatus, 'Expected an overall status banner in the response');
     }
 
+    /**
+     * Tests index blocked in production without token.
+     */
     public function testIndexBlockedInProductionWithoutToken(): void
     {
         Configure::write('debug', false);
@@ -59,6 +74,9 @@ class InstallControllerTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests index blocked in production with wrong token.
+     */
     public function testIndexBlockedInProductionWithWrongToken(): void
     {
         Configure::write('debug', false);
@@ -70,6 +88,9 @@ class InstallControllerTest extends TestCase
         putenv('INSTALL_TOKEN');
     }
 
+    /**
+     * Tests index allowed in production with valid token.
+     */
     public function testIndexAllowedInProductionWithValidToken(): void
     {
         Configure::write('debug', false);
@@ -82,6 +103,9 @@ class InstallControllerTest extends TestCase
         putenv('INSTALL_TOKEN');
     }
 
+    /**
+     * Tests uses install layout.
+     */
     public function testUsesInstallLayout(): void
     {
         Configure::write('debug', true);
@@ -95,6 +119,9 @@ class InstallControllerTest extends TestCase
         $this->assertFalse(str_contains($body, 'turbo-refresh-method'), 'Install page should use minimal layout without Turbo');
     }
 
+    /**
+     * Tests contains cli hint.
+     */
     public function testContainsCliHint(): void
     {
         Configure::write('debug', true);

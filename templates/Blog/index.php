@@ -1,12 +1,13 @@
 <?php
 declare(strict_types=1);
+
 /**
  * Blog Index Page
  *
  * Displays the public blog listing with featured posts and infinite scroll.
  * Uses Turbo Frames for SPA-like navigation and picture elements for responsive WebP images.
  *
- * @var \App\Model\Entity\BlogPost[] $posts
+ * @var array<\App\Model\Entity\BlogPost> $posts
  * @var int $page
  * @var int $limit
  * @var int $total
@@ -23,4 +24,4 @@ $this->assign('title', 'Blog');
 
 <?php $this->start('script'); ?>
 <?= $this->Html->script('blog-view-init-loader', ['type' => 'module']) ?>
-<?php $this->end(); ?>
+<?php $this->end();

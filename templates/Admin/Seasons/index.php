@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Season> $seasons
+ */
+?>
 <?php $this->assign('title', 'Manage Seasons'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -54,7 +60,7 @@
                                 <span class="badge bg-secondary"><?= $teamSeasonCount ?></span>
                             </td>
                             <td>
-                                <?php if ($season->created_at instanceof \DateTimeInterface) : ?>
+                                <?php if ($season->created_at instanceof DateTimeInterface) : ?>
                                     <?= h($season->created_at->format('M j, Y g:i A')) ?>
                                 <?php else : ?>
                                     <?= h($season->created_at) ?>

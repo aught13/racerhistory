@@ -19,12 +19,18 @@ class TeamSeasonRosterServiceTest extends TestCase
 
     private TeamSeasonRosterService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new TeamSeasonRosterService();
     }
 
+    /**
+     * Tests get roster by id.
+     */
     public function testGetRosterById(): void
     {
         $roster = $this->service->getRosterById(1);
@@ -32,12 +38,18 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertSame(1, $roster->id);
     }
 
+    /**
+     * Tests get roster by id returns null for invalid id.
+     */
     public function testGetRosterByIdReturnsNullForInvalidId(): void
     {
         $roster = $this->service->getRosterById(99999);
         $this->assertNull($roster);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -45,12 +57,18 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Roster #99999', $label);
     }
 
+    /**
+     * Tests get rosters for person.
+     */
     public function testGetRostersForPerson(): void
     {
         $results = $this->service->getRostersForPerson(1);
@@ -62,6 +80,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get rosters for person lookup.
+     */
     public function testGetRostersForPersonLookup(): void
     {
         $results = $this->service->getRostersForPersonLookup(1, 25);
@@ -75,6 +96,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertStringContainsString('Los Angeles Lakers', (string)$first['label']);
     }
 
+    /**
+     * Tests get roster display data.
+     */
     public function testGetRosterDisplayData(): void
     {
         $data = $this->service->getRosterDisplayData(1);
@@ -85,6 +109,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertArrayHasKey('team_season_label', $data);
     }
 
+    /**
+     * Tests get roster display data fallback for invalid id.
+     */
     public function testGetRosterDisplayDataFallbackForInvalidId(): void
     {
         $data = $this->service->getRosterDisplayData(99999);
@@ -93,6 +120,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertSame('Unknown', $data['person_label']);
     }
 
+    /**
+     * Tests get all rosters.
+     */
     public function testGetAllRosters(): void
     {
         $rosters = $this->service->getAllRosters();
@@ -100,6 +130,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertGreaterThan(0, count($rosters));
     }
 
+    /**
+     * Tests create roster.
+     */
     public function testCreateRoster(): void
     {
         $data = [
@@ -116,6 +149,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests update roster.
+     */
     public function testUpdateRoster(): void
     {
         $roster = $this->service->updateRoster(1, ['jersey_number' => '88']);
@@ -126,6 +162,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests delete roster.
+     */
     public function testDeleteRoster(): void
     {
         // Test deletion on existing fixture data
@@ -136,6 +175,9 @@ class TeamSeasonRosterServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get rosters for select.
+     */
     public function testGetRostersForSelect(): void
     {
         $results = $this->service->getRostersForSelect();

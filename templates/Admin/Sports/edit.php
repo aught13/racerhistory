@@ -1,4 +1,8 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Sport $sport
+ */
 
 $this->assign('title', 'Edit Sport'); ?>
 <div class="container py-4">
@@ -15,7 +19,7 @@ $this->assign('title', 'Edit Sport'); ?>
                     <?= $this->Form->create($sport, [
                         'url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id],
                         'class' => 'needs-validation',
-                        'novalidate' => true
+                        'novalidate' => true,
                     ]) ?>
 
                     <div class="mb-3">
@@ -25,7 +29,7 @@ $this->assign('title', 'Edit Sport'); ?>
                             'label' => ['text' => 'Sport Name *', 'class' => 'form-label'],
                             'placeholder' => 'Enter sport name (e.g., Basketball, Football, Soccer)',
                             'required' => true,
-                            'maxlength' => 162
+                            'maxlength' => 162,
                         ]) ?>
                         <div class="form-text">
                             Name of the sport category (maximum 162 characters). Must be unique across all sports.
@@ -39,7 +43,7 @@ $this->assign('title', 'Edit Sport'); ?>
                     <div class="d-flex gap-2">
                         <?= $this->Form->button('Update Sport', [
                             'type' => 'submit',
-                            'class' => 'btn btn-success'
+                            'class' => 'btn btn-success',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>"
                            class="btn btn-secondary">Cancel</a>

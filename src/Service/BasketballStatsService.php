@@ -3,7 +3,12 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Game;
+use App\Model\Entity\StatBasketGameBox;
+use App\Model\Entity\StatBasketGamePerson;
+use App\Model\Entity\StatBasketSeasonPerson;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
+use Cake\Collection\CollectionInterface;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
@@ -184,7 +189,7 @@ class BasketballStatsService
             'opponentPlayerStats',
             'teamTeamStats',
             'opponentTeamStats',
-            'hasPeriodStats'
+            'hasPeriodStats',
         );
     }
 
@@ -250,7 +255,7 @@ class BasketballStatsService
      * @return array<string, string>
      */
     public function getSeasonStatColumns(
-        \Cake\Collection\CollectionInterface|array|null $playerStats,
+        CollectionInterface|array|null $playerStats,
         ?object $teamStats,
         ?object $opponentStats,
     ): array {
@@ -296,7 +301,7 @@ class BasketballStatsService
      */
     protected function columnHasData(
         string $key,
-        \Cake\Collection\CollectionInterface|array|null $playerStats,
+        CollectionInterface|array|null $playerStats,
         ?object $teamStats,
         ?object $opponentStats,
     ): bool {
@@ -365,7 +370,7 @@ class BasketballStatsService
      * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStats Season stats entity
      * @return void
      */
-    public function addSeasonStats(array &$totals, \App\Model\Entity\StatBasketSeasonPerson $seasonStats): void
+    public function addSeasonStats(array &$totals, StatBasketSeasonPerson $seasonStats): void
     {
         $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
                    'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS'];
@@ -382,7 +387,7 @@ class BasketballStatsService
      * @param int $teamSeasonRosterId Team season roster ID
      * @return \App\Model\Entity\StatBasketSeasonPerson|null
      */
-    public function getPersonSeasonStats(int $teamSeasonRosterId): ?\App\Model\Entity\StatBasketSeasonPerson
+    public function getPersonSeasonStats(int $teamSeasonRosterId): ?StatBasketSeasonPerson
     {
         /** @var \App\Model\Table\StatBasketSeasonPersonTable $personTable */
         $personTable = $this->fetchTable('StatBasketSeasonPerson');
@@ -436,7 +441,7 @@ class BasketballStatsService
      * @param \App\Model\Entity\StatBasketGamePerson $gameStat
      * @return bool
      */
-    public function addGamePersonStatToSeasonTotals(\App\Model\Entity\StatBasketGamePerson $gameStat): bool
+    public function addGamePersonStatToSeasonTotals(StatBasketGamePerson $gameStat): bool
     {
         if (!$gameStat->team_season_roster_id || (string)$gameStat->period !== 'Z') {
             return false;
@@ -468,8 +473,8 @@ class BasketballStatsService
      * @return bool
      */
     public function updateGamePersonStatSeasonTotals(
-        \App\Model\Entity\StatBasketGamePerson $original,
-        \App\Model\Entity\StatBasketGamePerson $updated,
+        StatBasketGamePerson $original,
+        StatBasketGamePerson $updated,
     ): bool {
         if (!$updated->team_season_roster_id || (string)$updated->period !== 'Z') {
             return false;
@@ -502,7 +507,7 @@ class BasketballStatsService
      * @param \App\Model\Entity\StatBasketGamePerson $gameStat The game stat to remove.
      * @return bool True on success, false if no season stat exists or not applicable.
      */
-    public function removeGamePersonStatFromSeasonTotals(\App\Model\Entity\StatBasketGamePerson $gameStat): bool
+    public function removeGamePersonStatFromSeasonTotals(StatBasketGamePerson $gameStat): bool
     {
         if (!$gameStat->team_season_roster_id || (string)$gameStat->period !== 'Z') {
             return false;
@@ -536,11 +541,11 @@ class BasketballStatsService
      * @return bool
      */
     public function applyGameBoxToSeasonTotals(
-        \App\Model\Entity\Game $game,
-        \App\Model\Entity\StatBasketGameBox $teamBox,
-        \App\Model\Entity\StatBasketGameBox $opponentBox,
-        ?\App\Model\Entity\StatBasketGameBox $originalTeamBox = null,
-        ?\App\Model\Entity\StatBasketGameBox $originalOpponentBox = null,
+        Game $game,
+        StatBasketGameBox $teamBox,
+        StatBasketGameBox $opponentBox,
+        ?StatBasketGameBox $originalTeamBox = null,
+        ?StatBasketGameBox $originalOpponentBox = null,
     ): bool {
         if (!$game->team_season_id) {
             return false;
@@ -1242,10 +1247,13 @@ class BasketballStatsService
 
     /**
      * Add stat values from a game stat into a season stat entity.
+     *
+     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStat
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat
      */
     private function addSeasonPersonStatValues(
-        \App\Model\Entity\StatBasketSeasonPerson $seasonStat,
-        \App\Model\Entity\StatBasketGamePerson $gameStat,
+        StatBasketSeasonPerson $seasonStat,
+        StatBasketGamePerson $gameStat,
     ): void {
         $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
             'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];
@@ -1263,10 +1271,14 @@ class BasketballStatsService
 
     /**
      * Subtract stat values from a season stat entity.
+     *
+     * @param \App\Model\Entity\StatBasketSeasonPerson $seasonStat
+     * @param \App\Model\Entity\StatBasketGamePerson $gameStat
+     * @return void
      */
     private function subtractSeasonPersonStatValues(
-        \App\Model\Entity\StatBasketSeasonPerson $seasonStat,
-        \App\Model\Entity\StatBasketGamePerson $gameStat,
+        StatBasketSeasonPerson $seasonStat,
+        StatBasketGamePerson $gameStat,
     ): void {
         $fields = ['GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
             'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF'];

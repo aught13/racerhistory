@@ -1,8 +1,10 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\Model\Entity\TeamSeason $teamSeason
  * @var array<int,\App\Model\Entity\StatBasketSeasonPerson> $playerStats
+ * @var \App\View\AppView $this
  */
 $this->assign('title', ($teamSeason->season->start ?? '') . '-' . ($teamSeason->season->end ?? '') . ' Stats');
 ?>
@@ -55,21 +57,21 @@ $this->assign('title', ($teamSeason->season->start ?? '') . '-' . ($teamSeason->
                                     <td><?= number_format($stat->apg ?? 0, 1) ?></td>
                                     <td>
                                         <?php if (!empty($stat->fga) && $stat->fga > 0) : ?>
-                                            <?= number_format(($stat->fgm / $stat->fga) * 100, 1) ?>%
+                                            <?= number_format($stat->fgm / $stat->fga * 100, 1) ?>%
                                         <?php else : ?>
                                             -
                                         <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if (!empty($stat->fg3a) && $stat->fg3a > 0) : ?>
-                                            <?= number_format(($stat->fg3m / $stat->fg3a) * 100, 1) ?>%
+                                            <?= number_format($stat->fg3m / $stat->fg3a * 100, 1) ?>%
                                         <?php else : ?>
                                             -
                                         <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if (!empty($stat->fta) && $stat->fta > 0) : ?>
-                                            <?= number_format(($stat->ftm / $stat->fta) * 100, 1) ?>%
+                                            <?= number_format($stat->ftm / $stat->fta * 100, 1) ?>%
                                         <?php else : ?>
                                             -
                                         <?php endif; ?>

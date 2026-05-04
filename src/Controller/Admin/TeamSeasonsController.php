@@ -79,7 +79,7 @@ class TeamSeasonsController extends AppController
             $result = $this->teamSeasonAdminService->saveNewTeamSeason(
                 (array)$this->request->getData(),
                 $teamId,
-                $seasonId
+                $seasonId,
             );
             $viewData['teamSeason'] = $result['teamSeason'];
 
@@ -151,7 +151,7 @@ class TeamSeasonsController extends AppController
     {
         $this->request->allowMethod(['post']);
         $teamSeasonIds = $this->teamSeasonAdminService->sanitizeIdentifierList(
-            (array)$this->request->getData('team_season_ids')
+            (array)$this->request->getData('team_season_ids'),
         );
 
         if (empty($teamSeasonIds)) {

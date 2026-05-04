@@ -17,12 +17,18 @@ class GameEavTableEdgeTest extends TestCase
 
     protected GameEavTable $GameEav;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->GameEav = $this->getTableLocator()->get('GameEav');
     }
 
+    /**
+     * Tests set attribute update failure.
+     */
     public function testSetAttributeUpdateFailure(): void
     {
         // Simulate save failure by mocking Table
@@ -34,12 +40,18 @@ class GameEavTableEdgeTest extends TestCase
         $this->assertFalse($result);
     }
 
+    /**
+     * Tests delete attribute not found.
+     */
     public function testDeleteAttributeNotFound(): void
     {
         $result = $this->GameEav->deleteAttribute(9999, 'not_a_key');
         $this->assertFalse($result);
     }
 
+    /**
+     * Tests get eav template for sport missing config.
+     */
     public function testGetEavTemplateForSportMissingConfig(): void
     {
         // Use a non-existent sportId
@@ -48,6 +60,9 @@ class GameEavTableEdgeTest extends TestCase
         $this->assertArrayHasKey('period_1_team', $template); // Should fallback to default
     }
 
+    /**
+     * Tests get formatted scoring missing data.
+     */
     public function testGetFormattedScoringMissingData(): void
     {
         $result = $this->GameEav->getFormattedScoring(9999, 2, 1);

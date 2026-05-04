@@ -6,6 +6,24 @@ namespace App\Model\Table;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
+/**
+ * @property \App\Model\Table\ImagesTable&\Cake\ORM\Association\BelongsToMany $Images
+ * @method \App\Model\Entity\ImageTag newEmptyEntity()
+ * @method \App\Model\Entity\ImageTag newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\ImageTag[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\ImageTag get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\ImageTag findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\ImageTag patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\ImageTag[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\ImageTag|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\ImageTag saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\ImageTag[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\ImageTag>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\ImageTag[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\ImageTag> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\ImageTag[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\ImageTag>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\ImageTag[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\ImageTag> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class ImageTagsTable extends Table
 {
     /**

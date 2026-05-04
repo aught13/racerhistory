@@ -6,6 +6,12 @@
  * - array $seasons: entries of ['teamSeason' => TeamSeason, 'stats' => StatBasketSeasonPerson]
  * - array $totals: accumulated totals fields
  * - int|null $minYear, $maxYear
+ *
+ * @var \App\View\AppView $this
+ * @var mixed $maxYear
+ * @var mixed $minYear
+ * @var mixed $seasons
+ * @var array $totals
  */
 ?>
 <div class="table-responsive">

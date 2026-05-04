@@ -19,18 +19,27 @@ class SportConfigAdminServiceTest extends TestCase
 
     private SportConfigAdminService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new SportConfigAdminService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
         parent::tearDown();
     }
 
+    /**
+     * Tests get formatted configs for sport returns expected structure.
+     */
     public function testGetFormattedConfigsForSportReturnsExpectedStructure(): void
     {
         $configs = $this->service->getFormattedConfigsForSport(1);
@@ -48,6 +57,9 @@ class SportConfigAdminServiceTest extends TestCase
         $this->assertContains('Referee 1', $configs['officials']['value']);
     }
 
+    /**
+     * Tests normalize formatted configs seeds defaults when empty.
+     */
     public function testNormalizeFormattedConfigsSeedsDefaultsWhenEmpty(): void
     {
         $normalized = $this->service->normalizeFormattedConfigs([
@@ -68,6 +80,9 @@ class SportConfigAdminServiceTest extends TestCase
         $this->assertNotEmpty($normalized['officials']['value']);
     }
 
+    /**
+     * Tests set config and delete config.
+     */
     public function testSetConfigAndDeleteConfig(): void
     {
         $this->assertTrue($this->service->setConfig(1, 'test_key', 'abc', 'test desc'));
@@ -82,6 +97,9 @@ class SportConfigAdminServiceTest extends TestCase
         $this->assertArrayNotHasKey('test_key', $configs['settings']);
     }
 
+    /**
+     * Tests reset to defaults replaces existing configs.
+     */
     public function testResetToDefaultsReplacesExistingConfigs(): void
     {
         $this->assertTrue($this->service->setConfig(1, 'officials', ['Only Official'], 'custom'));
@@ -103,6 +121,9 @@ class SportConfigAdminServiceTest extends TestCase
         $this->assertSame('cumulative', $configs['settings']['scoring_type']['value']);
     }
 
+    /**
+     * Tests save bulk configs persists java script period name keys.
+     */
     public function testSaveBulkConfigsPersistsJavaScriptPeriodNameKeys(): void
     {
         $ok = $this->service->saveBulkConfigs(1, [

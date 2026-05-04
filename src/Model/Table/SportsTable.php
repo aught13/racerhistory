@@ -14,23 +14,28 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\Sport newEmptyEntity()
  * @method \App\Model\Entity\Sport newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\Sport[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\Sport get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Sport get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
  * @method \App\Model\Entity\Sport get($primaryKey, $contain = [])
- * @method \App\Model\Entity\Sport findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Sport findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
  * @method \App\Model\Entity\Sport patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\Sport[] patchEntities(iterable $entities, array $data, array $options = [])
- * @method \App\Model\Entity\Sport|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Sport saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
- * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Sport|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Sport saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Sport>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Sport> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Sport>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Sport[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Sport> deleteManyOrFail(iterable $entities, array $options = [])
  *
  * Table Fields:
  * - id: Primary key, auto-increment integer
  * - sport_name: Name of the sport (max 162 chars, unique, required)
  * - created_at: Timestamp when record was created
  * - updated_at: Timestamp when record was last modified
+ * @property \App\Model\Table\TeamsTable&\Cake\ORM\Association\HasMany $Teams
+ * @property \App\Model\Table\SportConfigsTable&\Cake\ORM\Association\HasMany $SportConfigs
+ * @property \App\Model\Table\SportStatRegistryTable&\Cake\ORM\Association\HasMany $SportStatRegistry
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
 class SportsTable extends Table
 {

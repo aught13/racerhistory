@@ -15,17 +15,17 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\Season newEmptyEntity()
  * @method \App\Model\Entity\Season newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\Season[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\Season get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Season get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
  * @method \App\Model\Entity\Season get($primaryKey, $contain = [])
- * @method \App\Model\Entity\Season findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Season findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
  * @method \App\Model\Entity\Season patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\Season[] patchEntities(iterable $entities, array $data, array $options = [])
- * @method \App\Model\Entity\Season|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Season saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
- * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ * @method \App\Model\Entity\Season|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Season saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Season>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Season> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Season>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\Season[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Season> deleteManyOrFail(iterable $entities, array $options = [])
  *
  * Table Fields:
  * - id: Primary key, auto-increment integer
@@ -33,6 +33,9 @@ use Cake\Validation\Validator;
  * - end: Ending year of the season (required)
  * - created_at: Timestamp when record was created
  * - updated_at: Timestamp when record was last modified
+ * @property \App\Model\Table\TeamSeasonsTable&\Cake\ORM\Association\HasMany $TeamSeasons
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
 class SeasonsTable extends Table
 {

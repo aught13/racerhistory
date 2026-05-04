@@ -14,6 +14,8 @@ use Cake\TestSuite\TestCase;
  *  - app.Teams
  *  - app.Sports
  *  - app.Users
+ *
+ * @link \App\Controller\Admin\TeamsController
  */
 class TeamsControllerTest extends TestCase
 {

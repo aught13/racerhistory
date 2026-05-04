@@ -45,6 +45,7 @@ use Cake\Http\Exception\NotFoundException;
  * season information is intended to be publicly accessible.
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \App\Model\Table\SeasonsTable $Seasons
  */
 class SeasonsController extends AppController
 {

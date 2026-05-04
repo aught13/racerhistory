@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\SportStatsController
+ */
 class SportStatsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -19,6 +22,9 @@ class SportStatsControllerTest extends TestCase
         'app.SportConfigs',
     ];
 
+    /**
+     * Tests index displays registry list.
+     */
     public function testIndexDisplaysRegistryList(): void
     {
         $this->mockIdentity();
@@ -28,6 +34,9 @@ class SportStatsControllerTest extends TestCase
         $this->assertResponseContains('Sport Statistics Registry');
     }
 
+    /**
+     * Tests index filters by sport id.
+     */
     public function testIndexFiltersBySportId(): void
     {
         $this->mockIdentity();
@@ -37,6 +46,9 @@ class SportStatsControllerTest extends TestCase
         $this->assertResponseContains('Basketball');
     }
 
+    /**
+     * Tests add post creates new registry.
+     */
     public function testAddPostCreatesNewRegistry(): void
     {
         $this->mockIdentity();
@@ -67,6 +79,9 @@ class SportStatsControllerTest extends TestCase
         $this->assertEquals($count + 1, $table->find()->count());
     }
 
+    /**
+     * Tests add post validation failure keeps form.
+     */
     public function testAddPostValidationFailureKeepsForm(): void
     {
         $this->mockIdentity();
@@ -89,6 +104,9 @@ class SportStatsControllerTest extends TestCase
         $this->assertEquals($count, $table->find()->count());
     }
 
+    /**
+     * Tests edit post updates field mapping.
+     */
     public function testEditPostUpdatesFieldMapping(): void
     {
         $this->mockIdentity();
@@ -118,6 +136,9 @@ class SportStatsControllerTest extends TestCase
         $this->assertSame('Free Throws Made', $mapping['FTM']);
     }
 
+    /**
+     * Tests delete removes registry.
+     */
     public function testDeleteRemovesRegistry(): void
     {
         $this->mockIdentity();

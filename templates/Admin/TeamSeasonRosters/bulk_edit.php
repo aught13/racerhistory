@@ -7,9 +7,9 @@
  *
  * @var \App\View\AppView $this
  * @var int|null $teamSeasonId Pre-selected team season ID
- * @var \Cake\Collection\CollectionInterface|string[] $teamSeasonsList
- * @var \Cake\Collection\CollectionInterface|string[] $sports
- * @var \App\Model\Entity\TeamSeasonRosters[] $existingRosters
+ * @var \Cake\Collection\CollectionInterface|array<string> $teamSeasonsList
+ * @var \Cake\Collection\CollectionInterface|array<string> $sports
+ * @var array<\App\Model\Entity\TeamSeasonRosters> $existingRosters
  */
 $this->assign('title', 'Edit Team Season Roster');
 ?>
@@ -18,15 +18,18 @@ $this->assign('title', 'Edit Team Season Roster');
         <div class="col">
             <?php
             if ($teamSeasonId) {
-                $backUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonId]);
+                $backUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                    'action' => 'view', $teamSeasonId]);
             } else {
-                $backUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
+                $backUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                    'action' => 'index']);
             }
             ?>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a
-                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">Team
+                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                            'action' => 'index']) ?>">Team
                             Seasons</a></li>
                     <?php if ($teamSeasonId) : ?>
                     <li class="breadcrumb-item"><a href="<?= $backUrl ?>">Team Season View</a></li>
@@ -60,7 +63,8 @@ $this->assign('title', 'Edit Team Season Roster');
                 </div>
             </div>
 
-            <div id="roster-rows" data-person-search-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>">
+            <div id="roster-rows" data-person-search-url="<?= $this->Url->build(['prefix' => 'Admin',
+                'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>">
                 <?php if (!empty($existingRosters)) : ?>
                     <?php foreach ($existingRosters as $i => $roster) : ?>
                 <div class="card mb-2 roster-row" data-row-index="<?= $i ?>">
@@ -69,11 +73,15 @@ $this->assign('title', 'Edit Team Season Roster');
                             <input type="hidden" name="rows[<?= $i ?>][id]" value="<?= $roster->id ?>">
                             <div class="col-md-3" style="position:relative">
                                 <label class="form-label">Person</label>
-                                <input type="text" class="form-control roster-person-search" placeholder="Search persons..." autocomplete="off">
-                                <input type="hidden" name="rows[<?= $i ?>][person_id]" class="roster-person-id" value="<?= $roster->person_id ?>" required>
+                                <input type="text" class="form-control roster-person-search"
+                                    placeholder="Search persons..." autocomplete="off">
+                                <input type="hidden" name="rows[<?= $i ?>][person_id]" class="roster-person-id"
+                                    value="<?= $roster->person_id ?>" required>
                                 <div class="roster-person-selected small mt-1">
-                                    <span class="badge bg-primary me-1"><?= h($roster->person->display ?? ($roster->person->first . ' ' . $roster->person->last)) ?>
-                                        <button type="button" class="btn-close btn-close-white ms-1 roster-clear-person"
+                                    <span class="badge bg-primary me-1"><?= h($roster->person->display ??
+                                        ($roster->person->first . ' ' . $roster->person->last)) ?>
+                                        <button type="button"
+                                            class="btn-close btn-close-white ms-1 roster-clear-person"
                                             aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button>
                                     </span>
                                 </div>
@@ -81,26 +89,32 @@ $this->assign('title', 'Edit Team Season Roster');
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">Year</label>
-                                <input type="text" name="rows[<?= $i ?>][roster_year]" class="form-control" maxlength="10" placeholder="Sr." value="<?= h($roster->roster_year) ?>">
+                                <input type="text" name="rows[<?= $i ?>][roster_year]" class="form-control"
+                                    maxlength="10" placeholder="Sr." value="<?= h($roster->roster_year) ?>">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Number</label>
-                                <input type="text" name="rows[<?= $i ?>][roster_number]" class="form-control" maxlength="3" value="<?= h($roster->roster_number) ?>">
+                                <input type="text" name="rows[<?= $i ?>][roster_number]" class="form-control"
+                                    maxlength="3" value="<?= h($roster->roster_number) ?>">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Position</label>
-                                <input type="text" name="rows[<?= $i ?>][roster_position]" class="form-control" maxlength="30" value="<?= h($roster->roster_position) ?>">
+                                <input type="text" name="rows[<?= $i ?>][roster_position]" class="form-control"
+                                    maxlength="30" value="<?= h($roster->roster_position) ?>">
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">Height</label>
-                                <input type="text" name="rows[<?= $i ?>][roster_height]" class="form-control" maxlength="5" placeholder="6-1" value="<?= h($roster->roster_height) ?>">
+                                <input type="text" name="rows[<?= $i ?>][roster_height]" class="form-control"
+                                    maxlength="5" placeholder="6-1" value="<?= h($roster->roster_height) ?>">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Weight</label>
-                                <input type="text" name="rows[<?= $i ?>][roster_weight]" class="form-control" maxlength="5" value="<?= h($roster->roster_weight) ?>">
+                                <input type="text" name="rows[<?= $i ?>][roster_weight]" class="form-control"
+                                    maxlength="5" value="<?= h($roster->roster_weight) ?>">
                             </div>
                             <div class="col-md-1 text-end">
-                                <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn" title="Remove row">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn"
+                                    title="Remove row">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
@@ -115,14 +129,17 @@ $this->assign('title', 'Edit Team Season Roster');
                         <div class="row g-2 align-items-end">
                             <div class="col-md-3" style="position:relative">
                                 <label class="form-label">Person</label>
-                                <input type="text" class="form-control roster-person-search" placeholder="Search persons..." autocomplete="off">
+                                <input type="text" class="form-control roster-person-search"
+                                    placeholder="Search persons..." autocomplete="off">
                                 <input type="hidden" name="rows[0][person_id]" class="roster-person-id" required>
-                                <div class="roster-person-selected small mt-1"><span class="text-muted fst-italic">None selected</span></div>
+                                <div class="roster-person-selected small mt-1"><span
+                                    class="text-muted fst-italic">None selected</span></div>
                                 <div class="roster-person-results"></div>
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">Year</label>
-                                <input type="text" name="rows[0][roster_year]" class="form-control" maxlength="10" placeholder="Sr.">
+                                <input type="text" name="rows[0][roster_year]" class="form-control" maxlength="10"
+                                    placeholder="Sr.">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Number</label>
@@ -134,14 +151,16 @@ $this->assign('title', 'Edit Team Season Roster');
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">Height</label>
-                                <input type="text" name="rows[0][roster_height]" class="form-control" maxlength="5" placeholder="6-1">
+                                <input type="text" name="rows[0][roster_height]" class="form-control" maxlength="5"
+                                    placeholder="6-1">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Weight</label>
                                 <input type="text" name="rows[0][roster_weight]" class="form-control" maxlength="5">
                             </div>
                             <div class="col-md-1 text-end">
-                                <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn" title="Remove row" disabled>
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-row-btn"
+                                    title="Remove row" disabled>
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
@@ -216,7 +235,13 @@ echo $this->element('Admin/popup_form', [
     'successCallback' => 'onRosterPersonAdded',
     'fields' => $personFields,
     'hiddenFormId' => 'hidden-person-form',
-    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
+    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group">' .
+        '<input type="text" id="add-person-modal-birth-place-search" class="form-control" ' .
+        'placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" ' .
+        'data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place">' .
+        '<i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" ' .
+        'class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1">' .
+        '<span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
 
@@ -269,14 +294,16 @@ function boot() {
         const hiddenInput = document.getElementById('add-person-modal-birth_place_id');
         if (!searchInput || !hiddenInput) return;
 
-        const searchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']) ?>';
+        const searchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places',
+            'action' => 'ajaxSearch']) ?>';
         let debounce = null;
 
         function setSelected(id, text) {
             hiddenInput.value = id;
             if (selectedDiv) {
                 selectedDiv.innerHTML = '<span class="badge bg-primary me-1">' + text +
-                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
+                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" ' +
+                    'style="font-size:.5em;vertical-align:middle"></button></span>';
                 selectedDiv.querySelector('.btn-close').addEventListener('click', function() {
                     hiddenInput.value = '';
                     selectedDiv.innerHTML = '<span class="text-muted fst-italic">None selected</span>';
@@ -288,7 +315,8 @@ function boot() {
 
         window.handleRosterBirthPlaceAdded = function(data) {
             if (data && data.place && data.place.id) {
-                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
+                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' +
+                    data.place.place_state : '');
                 setSelected(data.place.id, label);
             }
         };
@@ -305,15 +333,19 @@ function boot() {
                             resultsDiv.innerHTML = '<div class="text-muted small">No results</div>';
                             return;
                         }
-                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
+                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;' +
+                            'max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
                         data.results.forEach(function(r) {
                             const label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
-                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
+                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small"' +
+                                ' data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label +
+                                '</button>';
                         });
                         html += '</div>';
                         resultsDiv.innerHTML = html;
                         resultsDiv.querySelectorAll('button').forEach(function(btn) {
-                            btn.addEventListener('click', function() { setSelected(btn.dataset.id, btn.dataset.text); });
+                            btn.addEventListener('click', function() {
+                                setSelected(btn.dataset.id, btn.dataset.text); });
                         });
                     })
                     .catch(function() { resultsDiv.innerHTML = '<div class="text-danger small">Error</div>'; });

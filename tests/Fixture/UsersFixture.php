@@ -9,6 +9,9 @@ class UsersFixture extends TestFixture
     // Define the schema directly instead of importing
     public array $schema = [];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->schema = [

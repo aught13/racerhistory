@@ -1,3 +1,12 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $allUsers
+ * @var mixed $hasInactive
+ * @var mixed $registrationEnabled
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\User> $users
+ */
+?>
 <?php $this->assign('title', 'Manage Users'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -8,7 +17,7 @@
             <?= $this->Form->postLink(
                 $registrationEnabled ? 'Disable Registration' : 'Enable Registration',
                 ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'toggleRegistration'],
-                ['class' => 'btn btn-warning mb-3', 'style' => 'display:inline;']
+                ['class' => 'btn btn-warning mb-3', 'style' => 'display:inline;'],
             ) ?>
         </div>
     </div>
@@ -56,9 +65,9 @@
                             <td><?= h($user->email) ?></td>
                             <td><?= h($user->role) ?></td>
                             <td>
-                                <?php if ($user->active): ?>
+                                <?php if ($user->active) : ?>
                                     <span class="badge bg-success">Active</span>
-                                <?php else: ?>
+                                <?php else : ?>
                                     <span class="badge bg-warning text-dark">Inactive</span>
                                 <?php endif; ?>
                             </td>
@@ -109,9 +118,9 @@
                         <td><?= h(trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))) ?: '<em>N/A</em>' ?></td>
                         <td><?= h($user->email) ?></td>
                         <td>
-                            <?php if (isset($user->status) && $user->status === 'active'): ?>
+                            <?php if (isset($user->status) && $user->status === 'active') : ?>
                                 <span class="badge bg-success">Active</span>
-                            <?php else: ?>
+                            <?php else : ?>
                                 <span class="badge bg-warning text-dark">Inactive</span>
                             <?php endif; ?>
                         </td>

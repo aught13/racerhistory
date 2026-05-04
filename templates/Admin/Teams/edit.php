@@ -1,4 +1,9 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $sports
+ * @var \App\Model\Entity\Team $team
+ */
 
 $this->assign('title', 'Edit Team'); ?>
 <div class="container py-4">
@@ -38,7 +43,7 @@ $this->assign('title', 'Edit Team'); ?>
                             'empty' => 'Select a Sport',
                             'class' => 'form-control',
                             'label' => ['class' => 'form-label', 'text' => 'Sport *'],
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Select the sport category this team will compete in.</div>
                     </div>
@@ -50,7 +55,7 @@ $this->assign('title', 'Edit Team'); ?>
                             'label' => ['class' => 'form-label', 'text' => 'Team Name *'],
                             'placeholder' => 'Enter team name (e.g., Women\'s Basketball)',
                             'maxlength' => 162,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Short display name of the team (maximum 162 characters).</div>
                     </div>
@@ -62,7 +67,7 @@ $this->assign('title', 'Edit Team'); ?>
                             'label' => ['class' => 'form-label', 'text' => 'Long Name'],
                             'placeholder' => 'Enter full team name (e.g., Murray St Racers Women\'s Basketball)',
                             'rows' => 3,
-                            'maxlength' => 240
+                            'maxlength' => 240,
                         ]) ?>
                         <div class="form-text">Full official name including institution and sport (maximum 240 characters).</div>
                     </div>
@@ -74,7 +79,7 @@ $this->assign('title', 'Edit Team'); ?>
                             'label' => ['class' => 'form-label', 'text' => 'Abbreviation *'],
                             'placeholder' => 'Enter team abbreviation (e.g., WBB)',
                             'maxlength' => 5,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Short abbreviation for compact display (maximum 5 characters, e.g., "WBB" for Women's Basketball).</div>
                     </div>
@@ -86,7 +91,7 @@ $this->assign('title', 'Edit Team'); ?>
                             'label' => ['class' => 'form-label', 'text' => 'Team Nickname/Mascot *'],
                             'placeholder' => 'Enter team nickname (e.g., Racers)',
                             'maxlength' => 30,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Team mascot or nickname (maximum 30 characters).</div>
                     </div>
@@ -98,7 +103,7 @@ $this->assign('title', 'Edit Team'); ?>
                             'label' => ['class' => 'form-label', 'text' => 'Scorebug Name *'],
                             'placeholder' => 'Enter scorebug name (e.g., MURRAY)',
                             'maxlength' => 6,
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Shortened name for score display (maximum 6 characters).</div>
                     </div>
@@ -109,19 +114,19 @@ $this->assign('title', 'Edit Team'); ?>
                             'options' => [
                                 'M' => 'Male',
                                 'F' => 'Female',
-                                'C' => 'Co-ed'
+                                'C' => 'Co-ed',
                             ],
                             'empty' => 'Select Gender Classification',
                             'class' => 'form-control',
                             'label' => ['class' => 'form-label', 'text' => 'Gender Classification *'],
-                            'required' => true
+                            'required' => true,
                         ]) ?>
                         <div class="form-text">Specify whether this is a Male, Female, or Co-ed team for proper competition classification.</div>
                     </div>
 
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Update Team'), [
-                            'class' => 'btn btn-success'
+                            'class' => 'btn btn-success',
                         ]) ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $team->id]) ?>"
                             class="btn btn-secondary">Cancel</a>

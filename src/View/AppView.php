@@ -24,6 +24,10 @@ use Cake\View\View;
  * Your application's default view class
  *
  * @link https://book.cakephp.org/5/en/views.html#the-app-view
+ * @property \App\View\Helper\ImageServeHelper $ImageServe
+ * @property \Cake\View\Helper\FormHelper $Form
+ * @property \Cake\View\Helper\UrlHelper $Url
+ * @property \Cake\View\Helper\HtmlHelper $Html
  */
 class AppView extends View
 {

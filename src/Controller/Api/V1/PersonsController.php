@@ -5,6 +5,9 @@ namespace App\Controller\Api\V1;
 
 use App\Service\PersonService;
 
+/**
+ * @property \App\Model\Table\PersonsTable $Persons
+ */
 class PersonsController extends AppController
 {
     private PersonService $personService;
@@ -59,6 +62,8 @@ class PersonsController extends AppController
 
     /**
      * Get a single person.
+     *
+     * @param int $id
      */
     public function view(int $id): void
     {

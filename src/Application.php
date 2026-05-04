@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Policy\RequestPolicy;
 use Authentication\AuthenticationService;
 use Authentication\AuthenticationServiceInterface;
 use Authentication\AuthenticationServiceProviderInterface;
@@ -36,9 +37,11 @@ use Cake\Http\BaseApplication;
 use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
+use Cake\Http\ServerRequest;
 use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
+use CakeDC\Users\Loader\AuthenticationServiceLoader;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -71,7 +74,7 @@ class Application extends BaseApplication implements
         }
 
         // Image variants configuration (central place)
-        \Cake\Core\Configure::write('Images.variants', [
+        Configure::write('Images.variants', [
             'thumb' => ['fit' => [150,150], 'format' => 'webp'],
             'medium' => ['maxWidth' => 800, 'format' => 'webp'],
             'webp' => ['format' => 'webp'], // WebP alternate of original
@@ -152,7 +155,7 @@ class Application extends BaseApplication implements
         // which triggers deprecations when AuthenticationService builds the AuthenticatorCollection.
         // Keep CakeDC/Users in place, but move the Password identifier config onto the Form authenticator.
         $serviceLoader = Configure::read('Auth.Authentication.serviceLoader');
-        if ($serviceLoader === \CakeDC\Users\Loader\AuthenticationServiceLoader::class) {
+        if ($serviceLoader === AuthenticationServiceLoader::class) {
             Configure::write('Auth.Identifiers', []);
             Configure::write('Auth.PasswordRehash.identifiers', []);
 
@@ -235,7 +238,7 @@ class Application extends BaseApplication implements
         $mapResolver = new MapResolver();
 
         // Map concrete ServerRequest class to RequestPolicy (not the interface)
-        $mapResolver->map(\Cake\Http\ServerRequest::class, \App\Policy\RequestPolicy::class);
+        $mapResolver->map(ServerRequest::class, RequestPolicy::class);
 
         // Create resolver collection with both map and ORM resolvers
         $resolvers = new ResolverCollection([

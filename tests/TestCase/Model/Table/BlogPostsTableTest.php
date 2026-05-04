@@ -17,6 +17,9 @@ class BlogPostsTableTest extends TestCase
 
     private BlogPostsTable $BlogPosts;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -26,12 +29,18 @@ class BlogPostsTableTest extends TestCase
         $this->BlogPosts = $table;
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->BlogPosts);
         parent::tearDown();
     }
 
+    /**
+     * Tests validation requires title and body.
+     */
     public function testValidationRequiresTitleAndBody(): void
     {
         $entity = $this->BlogPosts->newEntity([
@@ -44,6 +53,9 @@ class BlogPostsTableTest extends TestCase
         $this->assertArrayHasKey('body', $entity->getErrors());
     }
 
+    /**
+     * Tests unique slug rule.
+     */
     public function testUniqueSlugRule(): void
     {
         $entity = $this->BlogPosts->newEntity([

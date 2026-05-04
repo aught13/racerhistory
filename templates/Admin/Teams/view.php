@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Team $team
+ */
+?>
 <?php $this->assign('title', 'Team Details'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -89,7 +95,7 @@
                         <div class="col-sm-9">
                             <?php
                             $created = $team->created_at;
-                            if ($created instanceof \DateTimeInterface) {
+                            if ($created instanceof DateTimeInterface) {
                                 echo h($created->format('M j, Y g:i A'));
                             } else {
                                 echo h($created);
@@ -107,7 +113,7 @@
                         <div class="col-sm-9">
                             <?php
                             $updated = $team->updated_at;
-                            if ($updated instanceof \DateTimeInterface) {
+                            if ($updated instanceof DateTimeInterface) {
                                 echo h($updated->format('M j, Y g:i A'));
                             } else {
                                 echo h($updated);

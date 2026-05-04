@@ -1,21 +1,40 @@
 <?xml version="1.0"?>
 <ruleset name="App">
     <rule ref="CakePHP"/>
+
+    <!-- Force verbose descriptions on Classes and Methods -->
+    <rule ref="Squiz.Commenting.FunctionComment.Missing">
+        <message>Every function must have a DocBlock.</message>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingShort">
+        <message>Provide a summary of what this function does.</message>
+    </rule>
+
+    <!-- Sync Params: Ensure docs match the actual code variables -->
+    <rule ref="Squiz.Commenting.FunctionComment.ParamNameNoMatch" />
+    <rule ref="Squiz.Commenting.FunctionComment.MissingParamTag" />
+
+    <!-- Clean up Slevomat: Remove the 'severity 0' hacks if possible -->
     <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.MissingNativeTypeHint">
         <exclude-pattern>*/src/Controller/*</exclude-pattern>
     </rule>
 
-    <!-- Workaround: disable specific Slevomat sniffs that trigger runtime errors in this
-         environment. These are temporarily disabled until an upstream fix is available. -->
-    <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInCall">
-        <severity>0</severity>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
-        <severity>0</severity>
-    </rule>
+    <!-- Enforce/Sync Parameter types -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ParameterTypeHint" />
 
+    <!-- Enforce/Sync Return types -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint" />
 
+    <!-- Enforce/Sync Property types -->
+    <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint" />
+
+    <!-- Remove docs that provide no info beyond the native type -->
+    <rule ref="SlevomatCodingStandard.TypeHints.ReturnTypeHint.UselessReturnTypeAnnotation" />
+    <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>*/templates/*</exclude-pattern>
+    </rule>
 
     <file>src/</file>
+    <file>templates/</file>
     <file>tests/</file>
 </ruleset>

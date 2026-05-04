@@ -37,8 +37,9 @@ class AppController extends BaseController
 
     /**
      * Before filter callback.
-     *
      * Enforces admin authentication and authorization for all admin routes.
+     *
+     * @param \Cake\Event\EventInterface $event
      */
     public function beforeFilter(EventInterface $event): void
     {
