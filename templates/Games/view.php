@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\Model\Entity\Game $game
  * @var array<string,mixed> $eav
@@ -14,8 +15,10 @@ declare(strict_types=1);
  * @var bool $hasPeriodStats
  * @var array<string,string> $fieldLabels
  * @var string|null $statsElement
- * @var array<int,\App\Model\Entity\Image> $images
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
  * @var array<int,\App\Model\Entity\BlogPost> $blogPosts
+ * @var \App\View\AppView $this
+ * @var array $match
  */
 
 $teamName = $game->team_season->team->team_name ?? 'Team';
@@ -26,7 +29,7 @@ $gameDate = $game->game_date?->format('M j, Y') ?? '';
 $fullDate = $game->game_date?->format('l, F j, Y') ?? '';
 $seasonStart = $game->team_season->season->start ?? '';
 $seasonEnd = $game->team_season->season->end ?? '';
-$seasonLabel = ($seasonStart && $seasonEnd)
+$seasonLabel = $seasonStart && $seasonEnd
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
 $resultFlag = $game->result_flag ?? null;
@@ -59,13 +62,13 @@ $officials = array_filter([
 
 $gameTimeDisplay = '';
 if (!empty($game->game_time)) {
-    if ($game->game_time instanceof \DateTimeInterface) {
+    if ($game->game_time instanceof DateTimeInterface) {
         $gameTimeDisplay = $game->game_time->format('g:i A');
     } else {
         try {
-            $timeObj = new \DateTime($game->game_time);
+            $timeObj = new DateTime($game->game_time);
             $gameTimeDisplay = $timeObj->format('g:i A');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $gameTimeDisplay = (string)$game->game_time;
         }
     }

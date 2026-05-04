@@ -33,6 +33,11 @@ class StubController extends Controller
 
     protected ?ServerRequest $_request = null;
 
+    /**
+     * Runs the construct routine.
+     *
+     * @param ServerRequest|null $request
+     */
     public function __construct(?ServerRequest $request = null)
     {
         parent::__construct($request);
@@ -41,6 +46,11 @@ class StubController extends Controller
         }
     }
 
+    /**
+     * Runs the set request routine.
+     *
+     * @param mixed $request
+     */
     public function setRequest($request): self
     {
         $this->_request = $request;
@@ -49,11 +59,21 @@ class StubController extends Controller
         return $this;
     }
 
+    /**
+     * Runs the get request routine.
+     */
     public function getRequest(): ServerRequest
     {
         return $this->_request ?? parent::getRequest();
     }
 
+    /**
+     * Runs the redirect routine.
+     *
+     * @param mixed $url
+     * @param int $status
+     * @param bool $exit
+     */
     public function redirect($url, int $status = 302, bool $exit = true): Response
     {
         // Prevent actual routing during tests

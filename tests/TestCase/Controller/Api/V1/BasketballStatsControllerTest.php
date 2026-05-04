@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller\Api\V1;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Api\V1\BasketballStatsController
+ */
 class BasketballStatsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -31,6 +34,9 @@ class BasketballStatsControllerTest extends TestCase
         'app.StatBasketSeasonOpponent',
     ];
 
+    /**
+     * Tests game stats.
+     */
     public function testGameStats(): void
     {
         $this->get('/api/v1/basketball-stats/games/1');
@@ -44,12 +50,18 @@ class BasketballStatsControllerTest extends TestCase
         $this->assertArrayHasKey('playerStats', $payload['data']);
     }
 
+    /**
+     * Tests game stats not found.
+     */
     public function testGameStatsNotFound(): void
     {
         $this->get('/api/v1/basketball-stats/games/999');
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests season stats.
+     */
     public function testSeasonStats(): void
     {
         $this->get('/api/v1/basketball-stats/team-seasons/1');
@@ -64,6 +76,9 @@ class BasketballStatsControllerTest extends TestCase
         $this->assertArrayHasKey('opponentStats', $payload['data']);
     }
 
+    /**
+     * Tests season stats not found.
+     */
     public function testSeasonStatsNotFound(): void
     {
         $this->get('/api/v1/basketball-stats/team-seasons/999');

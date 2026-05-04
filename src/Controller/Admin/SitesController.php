@@ -21,6 +21,7 @@ use Cake\Http\Response;
  * @property \App\Service\SiteAdminService $siteAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\SitesTable $Sites
  */
 class SitesController extends AppController
 {
@@ -78,6 +79,8 @@ class SitesController extends AppController
 
     /**
      * Edit a site.
+     *
+     * @param string $id
      */
     public function edit(string $id): ?Response
     {
@@ -101,6 +104,8 @@ class SitesController extends AppController
 
     /**
      * Delete a site.
+     *
+     * @param string $id
      */
     public function delete(string $id): Response
     {
@@ -129,7 +134,7 @@ class SitesController extends AppController
         $payload = $this->siteAdminService->buildSearchResponse(
             (string)$this->request->getQuery('q'),
             $placeId,
-            30
+            30,
         );
 
         return $this->response

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Site;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -18,7 +19,7 @@ class SiteService
      * @param int $siteId Site ID
      * @return \App\Model\Entity\Site|null
      */
-    public function getSiteById(int $siteId): ?\App\Model\Entity\Site
+    public function getSiteById(int $siteId): ?Site
     {
         $sites = TableRegistry::getTableLocator()->get('Sites');
 
@@ -108,7 +109,7 @@ class SiteService
      * @param array<string, mixed> $data Site data
      * @return \App\Model\Entity\Site|false
      */
-    public function createSite(array $data): \App\Model\Entity\Site|false
+    public function createSite(array $data): Site|false
     {
         $sites = TableRegistry::getTableLocator()->get('Sites');
         $site = $sites->newEntity($data);
@@ -123,7 +124,7 @@ class SiteService
      * @param array<string, mixed> $data Site data
      * @return \App\Model\Entity\Site|false
      */
-    public function updateSite(int $siteId, array $data): \App\Model\Entity\Site|false
+    public function updateSite(int $siteId, array $data): Site|false
     {
         $sites = TableRegistry::getTableLocator()->get('Sites');
         $site = $sites->get($siteId);

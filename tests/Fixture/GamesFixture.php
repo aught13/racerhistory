@@ -11,6 +11,9 @@ class GamesFixture extends TestFixture
     public string $table = 'games';
     public array $schema = [];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->schema = [

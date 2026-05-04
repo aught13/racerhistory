@@ -6,6 +6,9 @@ namespace App\Controller\Api\V1;
 use App\Service\SeasonViewService;
 use App\Service\TeamSeasonService;
 
+/**
+ * @property \App\Model\Table\TeamSeasonsTable $TeamSeasons
+ */
 class TeamSeasonsController extends AppController
 {
     private TeamSeasonService $teamSeasonService;
@@ -84,6 +87,8 @@ class TeamSeasonsController extends AppController
 
     /**
      * Get a single team season.
+     *
+     * @param int $id
      */
     public function view(int $id): void
     {

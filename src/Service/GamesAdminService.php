@@ -84,6 +84,8 @@ class GamesAdminService
 
     /**
      * Determine if a sport has configured stat tables.
+     *
+     * @param int $sportId
      */
     public function hasStats(int $sportId): bool
     {
@@ -110,6 +112,8 @@ class GamesAdminService
 
     /**
      * Delete one game by ID.
+     *
+     * @param int $id
      */
     public function delete(int $id): bool
     {
@@ -119,7 +123,7 @@ class GamesAdminService
     /**
      * Bulk delete game IDs.
      *
-     * @param array<int|string,mixed> $ids
+     * @param array $ids
      * @return array{deleted:int,teamSeasonId:int|null}
      */
     public function bulkDelete(array $ids): array

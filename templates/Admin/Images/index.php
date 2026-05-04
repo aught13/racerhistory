@@ -1,4 +1,8 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $images
+ */
 $this->assign('title', 'Images');
 ?>
 <div class="container py-4">
@@ -17,16 +21,16 @@ $this->assign('title', 'Images');
       </tr>
     </thead>
     <tbody>
-    <?php foreach ($images as $img): ?>
+    <?php foreach ($images as $img) : ?>
       <tr>
         <td><?= h($img->id) ?></td>
         <td>
           <?php
           // Use stored thumb variant so custom crops are shown
-          $thumbUrl = $this->ImageServe->urlForImage($img, [
+            $thumbUrl = $this->ImageServe->urlForImage($img, [
             'variant' => 'thumb',
-          ]);
-          ?>
+            ]);
+            ?>
           <img src="<?= h($thumbUrl) ?>" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" />
         </td>
         <td><?= h($img->original_name ?: $img->filename) ?></td>
@@ -35,7 +39,7 @@ $this->assign('title', 'Images');
         <td><?= h($img->width . '×' . $img->height) ?></td>
         <td><span class="badge bg-secondary"><?= h($img->status) ?></span></td>
         <td>
-          <?= $this->Html->link('Edit', ['action'=>'edit',$img->id], ['class'=>'btn btn-sm btn-primary']) ?>
+          <?= $this->Html->link('Edit', ['action' => 'edit',$img->id], ['class' => 'btn btn-sm btn-primary']) ?>
         </td>
       </tr>
     <?php endforeach; ?>

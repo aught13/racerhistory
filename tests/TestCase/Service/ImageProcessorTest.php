@@ -9,6 +9,8 @@ use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use Intervention\Image\ImageManager;
 use Laminas\Diactoros\UploadedFile;
+use ReflectionClass;
+use RuntimeException;
 
 class ImageProcessorTest extends TestCase
 {
@@ -23,6 +25,9 @@ class ImageProcessorTest extends TestCase
         'app.ImagesImageTags',
     ];
 
+    /**
+     * Tests process degraded mode.
+     */
     public function testProcessDegradedMode(): void
     {
         $processor = new ImageProcessor(null); // Force degraded mode
@@ -36,6 +41,9 @@ class ImageProcessorTest extends TestCase
         $this->assertArrayHasKey('variants', $result);
     }
 
+    /**
+     * Tests process degraded mode with no variants configured.
+     */
     public function testProcessDegradedModeWithNoVariantsConfigured(): void
     {
         $processor = new ImageProcessor(null);
@@ -51,6 +59,9 @@ class ImageProcessorTest extends TestCase
         $this->assertSame('png', $result['original']['ext'] ?? null);
     }
 
+    /**
+     * Tests process throws exception.
+     */
     public function testProcessThrowsException(): void
     {
         // Mock file to throw on getStream
@@ -58,12 +69,15 @@ class ImageProcessorTest extends TestCase
             ->onlyMethods(['getStream'])
             ->disableOriginalConstructor()
             ->getMock();
-        $mock->method('getStream')->will($this->throwException(new \RuntimeException('fail')));
+        $mock->method('getStream')->will($this->throwException(new RuntimeException('fail')));
         $processor = new ImageProcessor(null);
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $processor->process($mock, []);
     }
 
+    /**
+     * Tests infer extension.
+     */
     public function testInferExtension(): void
     {
         $processor = new ImageProcessor(null);
@@ -115,6 +129,9 @@ class ImageProcessorTest extends TestCase
         $this->assertCount(2, (array)$reloaded->get('image_tags'));
     }
 
+    /**
+     * Tests attach tags with empty tags is no op.
+     */
     public function testAttachTagsWithEmptyTagsIsNoOp(): void
     {
         $processor = new ImageProcessor(null);
@@ -125,6 +142,9 @@ class ImageProcessorTest extends TestCase
         $this->assertNotEmpty((array)$reloaded->get('image_tags'), 'Fixture should still have its original tags');
     }
 
+    /**
+     * Tests attach tags updates generic existing name when better name provided.
+     */
     public function testAttachTagsUpdatesGenericExistingNameWhenBetterNameProvided(): void
     {
         $processor = new ImageProcessor(null);
@@ -236,6 +256,9 @@ class ImageProcessorTest extends TestCase
         $this->assertContains($image2->id, $ids);
     }
 
+    /**
+     * Tests get images by all tags with empty input returns empty.
+     */
     public function testGetImagesByAllTagsWithEmptyInputReturnsEmpty(): void
     {
         $processor = new ImageProcessor(null);
@@ -366,6 +389,9 @@ class ImageProcessorTest extends TestCase
         $this->assertSame('new-tag-2', $tags[1]->name);
     }
 
+    /**
+     * Tests ensure tags normalizes slugs.
+     */
     public function testEnsureTagsNormalizesSlugs(): void
     {
         $processor = new ImageProcessor(null);
@@ -391,9 +417,15 @@ class ImageProcessorTest extends TestCase
         $this->assertSame($tags1[0]->id, $tags2[0]->id);
     }
 
+    /**
+     * Runs the invoke infer extension routine.
+     *
+     * @param \App\Service\ImageProcessor $proc
+     * @param mixed $mime
+     */
     private function invokeInferExtension(ImageProcessor $proc, $mime): string
     {
-        $ref = new \ReflectionClass($proc);
+        $ref = new ReflectionClass($proc);
         $meth = $ref->getMethod('inferExtension');
         if (PHP_VERSION_ID < 80500) {
             $meth->setAccessible(true);
@@ -402,6 +434,9 @@ class ImageProcessorTest extends TestCase
         return $meth->invoke($proc, $mime);
     }
 
+    /**
+     * Tests rotate before crop order.
+     */
     public function testRotateBeforeCropOrder(): void
     {
         // Build a simple in-memory PNG (100x50)
@@ -420,7 +455,7 @@ class ImageProcessorTest extends TestCase
             [
                 'rotate' => 90,
                 'crop' => ['x' => 0, 'y' => 0, 'width' => 10, 'height' => 20],
-            ]
+            ],
         );
 
         // If rotate happens first, then crop (0,0,10x20) on rotated 50x100 yields 10x20
@@ -428,6 +463,9 @@ class ImageProcessorTest extends TestCase
         $this->assertSame(20, $result['original']['height']);
     }
 
+    /**
+     * Tests negative rotation accepted.
+     */
     public function testNegativeRotationAccepted(): void
     {
         // In-memory PNG (100x50)
@@ -443,7 +481,7 @@ class ImageProcessorTest extends TestCase
             $raw,
             'image/png',
             [],
-            [ 'rotate' => -90 ]
+            [ 'rotate' => -90 ],
         );
 
         // -90 should be treated like 270 CCW: width/height swap to 50x100
@@ -451,12 +489,15 @@ class ImageProcessorTest extends TestCase
         $this->assertSame(100, $result['original']['height']);
     }
 
+    /**
+     * Tests manipulate existing degraded when manager missing.
+     */
     public function testManipulateExistingDegradedWhenManagerMissing(): void
     {
         $proc = new ImageProcessor();
 
         // Force manager=null regardless of environment so we cover the degraded branch.
-        $ref = new \ReflectionClass($proc);
+        $ref = new ReflectionClass($proc);
         $prop = $ref->getProperty('manager');
         if (PHP_VERSION_ID < 80500) {
             $prop->setAccessible(true);
@@ -469,6 +510,9 @@ class ImageProcessorTest extends TestCase
         $this->assertSame([], $result['variants']);
     }
 
+    /**
+     * Tests manipulate existing falls back when read fails.
+     */
     public function testManipulateExistingFallsBackWhenReadFails(): void
     {
         $proc = new ImageProcessor();
@@ -480,6 +524,9 @@ class ImageProcessorTest extends TestCase
         $this->assertSame([], $result['variants']);
     }
 
+    /**
+     * Tests process with real manager covers manipulations and variant formatting.
+     */
     public function testProcessWithRealManagerCoversManipulationsAndVariantFormatting(): void
     {
         if (!extension_loaded('gd') && !extension_loaded('imagick')) {

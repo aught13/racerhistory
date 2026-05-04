@@ -4,6 +4,7 @@
  * @var array<int,array<string,array<string,mixed>>> $recordSummaries
  * @var string|null $mode
  * @var string|null $teamFilter
+ * @var \App\View\AppView $this
  */
 $mode = $mode ?? 'standard';
 $teamFilter = $teamFilter ?? 'all';
@@ -45,7 +46,7 @@ if (!empty($teamSeasons)) {
     foreach ($teamSeasons as $index => $teamSeason) {
         $seasonStart = $teamSeason->season->start ?? '';
         $seasonEnd = $teamSeason->season->end ?? '';
-        $seasonLabel = ($seasonStart !== '' && $seasonEnd !== '')
+        $seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
             ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
             : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
         $teamLabel = $teamSeason->team->team_name ?? 'Team';
@@ -230,12 +231,12 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                 <?php foreach ($teamSeasons as $index => $teamSeason) :
                                     $seasonStart = $teamSeason->season->start ?? '';
                                     $seasonEnd = $teamSeason->season->end ?? '';
-                                    $seasonLabel = ($seasonStart !== '' && $seasonEnd !== '')
+                                    $seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
                                         ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
                                         : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
                                     $teamLabel = $teamSeason->team->team_name ?? 'Team';
                                     $primarySummary = $recordSummaries[$teamSeason->id] ?? [];
-                                ?>
+                                    ?>
                                     <tr>
                                         <td class="text-muted seasons-row-number"><?= $index + 1 ?></td>
                                         <td><?= h($teamLabel) ?></td>
@@ -268,7 +269,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                                 : ($pct ?? '—');
                                             $dataSearch = $typeKey === 'Postseason' ? $postLabel : null;
                                             $dataFilter = $typeKey === 'Postseason' ? $postLabel : null;
-                                        ?>
+                                            ?>
                                             <td class="text-end"><?= $wins ?? '—' ?></td>
                                             <td class="text-end"><?= $losses ?? '—' ?></td>
                                             <td class="text-end"<?= $dataSearch !== null ? ' data-search="' . h($dataSearch) . '"' : '' ?><?= $dataFilter !== null ? ' data-filter="' . h($dataFilter) . '"' : '' ?>>

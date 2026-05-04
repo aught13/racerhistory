@@ -11,6 +11,8 @@ use Cake\TestSuite\TestCase;
  * StatBasketGameOpponentController Test Case
  *
  * Tests basketball opponent player game statistics CRUD operations.
+ *
+ * @link \App\Controller\Admin\StatBasketGameOpponentController
  */
 class StatBasketGameOpponentControllerTest extends TestCase
 {

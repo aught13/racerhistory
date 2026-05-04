@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $searchTypes
@@ -48,9 +49,14 @@ $filterLabels = [
 
     <?php
         // Separate active streaks from ended ones
-        $activeStreaks = array_filter($streaks, function ($s) { return !empty($s['active']); });
-        $endedStreaks = array_filter($streaks, function ($s) { return empty($s['active']); });
-    ?>
+        $activeStreaks = array_filter($streaks, function ($s) {
+            return !empty($s['active']);
+        });
+        $endedStreaks = array_filter($streaks, function ($s) {
+
+            return empty($s['active']);
+        });
+        ?>
 
     <div class="card mb-4">
         <div class="card-body">
@@ -92,19 +98,19 @@ $filterLabels = [
                                     <td><strong><?= (int)$streak['length'] ?></strong></td>
                                     <td><?php
                                         $parts = explode('-', trim($streak['start_date']));
-                                        if (count($parts) === 3) {
-                                            echo h(sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]));
-                                        } else {
-                                            echo h($streak['start_date']);
-                                        }
+                                    if (count($parts) === 3) {
+                                        echo h(sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]));
+                                    } else {
+                                        echo h($streak['start_date']);
+                                    }
                                     ?></td>
                                     <td><?php
                                         $parts = explode('-', trim($streak['end_date']));
-                                        if (count($parts) === 3) {
-                                            echo h(sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]));
-                                        } else {
-                                            echo h($streak['end_date']);
-                                        }
+                                    if (count($parts) === 3) {
+                                        echo h(sprintf('%s/%s/%s', $parts[1], $parts[2], $parts[0]));
+                                    } else {
+                                        echo h($streak['end_date']);
+                                    }
                                     ?></td>
                                     <td><?= h($streak['start_opponent']) ?></td>
                                     <td><?= h($streak['end_opponent']) ?></td>

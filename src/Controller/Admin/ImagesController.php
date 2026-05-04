@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Model\Entity\Image;
 use App\Service\ImageBrowseService;
 use App\Service\ImagesAdminService;
 use App\Service\ImageStorageService;
@@ -10,8 +11,11 @@ use App\Service\PersonService;
 use App\Service\TaggingService;
 use App\Service\TeamSeasonRosterService;
 use Cake\Http\Response;
+use Cake\Log\Log;
 use Cake\Utility\Text;
+use Laminas\Diactoros\UploadedFile;
 use Psr\Http\Message\UploadedFileInterface;
+use Throwable;
 
 /**
  * Admin Images Controller
@@ -99,8 +103,8 @@ class ImagesController extends AppController
             $detail = $result['error'] ?? $storage->getLastError() ?? 'Unable to save image';
 
             return $this->json(['success' => false, 'error' => $detail]);
-        } catch (\Throwable $e) {
-            \Cake\Log\Log::error('Image upload exception: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            Log::error('Image upload exception: ' . $e->getMessage());
 
             return $this->json(['success' => false, 'error' => 'Exception: ' . $e->getMessage()]);
         }
@@ -109,6 +113,8 @@ class ImagesController extends AppController
     /**
      * Serve an image (original or variant) by id and optional variant name.
      * Example: /admin/images/serve/123?variant=thumb
+     *
+     * @param int $id
      */
     public function serve(int $id): Response
     {
@@ -130,11 +136,11 @@ class ImagesController extends AppController
         $image = $storage->loadImageOrFail($id);
         [$path, $mime] = $storage->resolveImagePath($image, $variant);
 
-        \Cake\Log\Log::debug("Serve image #{$id}, variant: '{$variant}', path: {$path}, mime: {$mime}");
+        Log::debug("Serve image #{$id}, variant: '{$variant}', path: {$path}, mime: {$mime}");
         if (is_file($path)) {
-            \Cake\Log\Log::debug("File exists at {$path}, size: " . filesize($path) . ' bytes');
+            Log::debug("File exists at {$path}, size: " . filesize($path) . ' bytes');
         } else {
-            \Cake\Log\Log::debug("File NOT found at {$path}");
+            Log::debug("File NOT found at {$path}");
         }
 
         $contents = is_file($path)
@@ -247,7 +253,7 @@ class ImagesController extends AppController
                 // Normalize array-style uploads to PSR-7 UploadedFile
                 if (!$file instanceof UploadedFileInterface) {
                     if (is_array($file) && !empty($file['tmp_name'])) {
-                        $file = new \Laminas\Diactoros\UploadedFile(
+                        $file = new UploadedFile(
                             $file['tmp_name'],
                             (int)($file['size'] ?? 0),
                             (int)($file['error'] ?? UPLOAD_ERR_OK),
@@ -287,8 +293,8 @@ class ImagesController extends AppController
                 'success' => $anySuccess,
                 'results' => $results,
             ]);
-        } catch (\Throwable $e) {
-            \Cake\Log\Log::error('Bulk upload exception: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            Log::error('Bulk upload exception: ' . $e->getMessage());
 
             return $this->json(['success' => false, 'error' => 'Upload failed: ' . $e->getMessage()]);
         }
@@ -296,6 +302,8 @@ class ImagesController extends AppController
 
     /**
      * Edit image metadata (status or original_name only for now).
+     *
+     * @param int $id
      */
     public function edit(int $id): ?Response
     {
@@ -321,6 +329,8 @@ class ImagesController extends AppController
 
     /**
      * Manage tags for an image.
+     *
+     * @param int $id
      */
     public function tags(int $id): ?Response
     {
@@ -343,6 +353,8 @@ class ImagesController extends AppController
 
     /**
      * Delete an image and all its references.
+     *
+     * @param int $id
      */
     public function delete(int $id): Response
     {
@@ -385,7 +397,7 @@ class ImagesController extends AppController
      * GET: Display manipulation form with preview
      * POST: Apply manipulations and save
      *
-     * @param int $id Image ID.
+     * @param int $id
      * @return \Cake\Http\Response
      */
     public function manipulate(int $id): Response
@@ -395,12 +407,12 @@ class ImagesController extends AppController
 
         $request = $this->getRequest();
 
-        \Cake\Log\Log::debug("Manipulate action called for image ID: {$id}");
-        \Cake\Log\Log::debug('Image entity: ' . json_encode($image->toArray()));
+        Log::debug("Manipulate action called for image ID: {$id}");
+        Log::debug('Image entity: ' . json_encode($image->toArray()));
         $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
         $originalPath = $baseDir . $image->storage_path;
 
-        \Cake\Log\Log::debug("Original path: {$originalPath}");
+        Log::debug("Original path: {$originalPath}");
 
         if ($request->is('post')) {
             $mode = (string)($request->getData('mode') ?? 'apply');
@@ -408,7 +420,7 @@ class ImagesController extends AppController
             // Apply manipulations
             // Verify file existence
             if (!is_file($originalPath)) {
-                \Cake\Log\Log::error("Image file not found: {$originalPath}");
+                Log::error("Image file not found: {$originalPath}");
                 $this->Flash->error('Original image file not found');
 
                 return $this->redirect(['action' => 'index']);
@@ -435,7 +447,7 @@ class ImagesController extends AppController
                 if (empty($result['success']) && ($result['status'] ?? null) === 'missing_library') {
                     $this->Flash->error(
                         'Server-side image manipulation is unavailable (missing PHP GD/Imagick). '
-                        . 'Install `php-gd` (recommended) or `php-imagick`, then restart PHP/Apache.'
+                        . 'Install `php-gd` (recommended) or `php-imagick`, then restart PHP/Apache.',
                     );
 
                     return $this->redirect(['action' => 'manipulate', $id]);
@@ -450,8 +462,8 @@ class ImagesController extends AppController
                 $this->Flash->success('Image manipulations applied successfully');
 
                 return $this->redirect(['action' => 'edit', $id]);
-            } catch (\Throwable $e) {
-                \Cake\Log\Log::error('Failed to save manipulated image: ' . $e->getMessage());
+            } catch (Throwable $e) {
+                Log::error('Failed to save manipulated image: ' . $e->getMessage());
                 $this->Flash->error('Failed to save manipulated image: ' . $e->getMessage());
 
                 return $this->redirect(['action' => 'manipulate', $id]);
@@ -469,6 +481,8 @@ class ImagesController extends AppController
      * Only regenerates the thumb variant without touching the original or other variants.
      * GET: Display crop editor form
      * POST: Apply crop and regenerate thumb variant
+     *
+     * @param int $id
      */
     public function cropThumb(int $id): Response
     {
@@ -483,7 +497,7 @@ class ImagesController extends AppController
         if ($request->is('post')) {
             // Verify file exists
             if (!is_file($originalPath)) {
-                \Cake\Log\Log::error("Image file not found: {$originalPath}");
+                Log::error("Image file not found: {$originalPath}");
                 $this->Flash->error('Original image file not found');
 
                 return $this->redirect(['action' => 'edit', $id]);
@@ -519,8 +533,8 @@ class ImagesController extends AppController
                 $this->Flash->success('Thumbnail crop updated successfully');
 
                 return $this->redirect(['action' => 'edit', $id]);
-            } catch (\Throwable $e) {
-                \Cake\Log\Log::error('Failed to crop thumbnail: ' . $e->getMessage());
+            } catch (Throwable $e) {
+                Log::error('Failed to crop thumbnail: ' . $e->getMessage());
                 $this->Flash->error('Failed to crop thumbnail: ' . $e->getMessage());
 
                 return $this->redirect(['action' => 'cropThumb', $id]);
@@ -573,7 +587,6 @@ class ImagesController extends AppController
 
     /**
      * Determine if the current request is authenticated.
-     *
      * If the Authentication component is not available we assume this is
      * controlled elsewhere and return true to avoid blocking internal
      * operations during CLI/test runs.
@@ -586,7 +599,7 @@ class ImagesController extends AppController
         if ($this->components()->has('Authentication')) {
             try {
                 $identity = $this->Authentication->getIdentity();
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $identity = null;
             }
             if ($identity !== null) {
@@ -627,7 +640,7 @@ class ImagesController extends AppController
     /**
      * Backward-compatible helper used by legacy private-method tests.
      *
-     * @param array<string,mixed> $data
+     * @param array $data
      * @return array<int,array<string,string>|string>
      */
     public function buildCommonEntityTags(array $data): array
@@ -640,8 +653,8 @@ class ImagesController extends AppController
     /**
      * Build tags for a bulk-uploaded file by index.
      *
-     * @param array<string|int,mixed>|string|null $tagsInput
-     * @param array<string|int,mixed>|string|null $contextInput
+     * @param array|string|null $tagsInput
+     * @param array|string|null $contextInput
      * @param string $index
      * @return array<int,string|array>
      */
@@ -709,12 +722,12 @@ class ImagesController extends AppController
         $request = $this->getRequest();
         $file = $request->getData('upload') ?? $request->getData('file');
         if (is_array($file) && isset($file['tmp_name'])) {
-            $file = new \Laminas\Diactoros\UploadedFile(
+            $file = new UploadedFile(
                 $file['tmp_name'],
                 (int)($file['size'] ?? 0),
                 (int)($file['error'] ?? UPLOAD_ERR_OK),
                 (string)($file['name'] ?? ''),
-                (string)($file['type'] ?? '')
+                (string)($file['type'] ?? ''),
             );
         }
 
@@ -789,7 +802,7 @@ class ImagesController extends AppController
         // Single pixel transparent PNG
         $data = base64_decode(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMA' .
-            'AQAABQABDQottAAAAABJRU5ErkJggg=='
+            'AQAABQABDQottAAAAABJRU5ErkJggg==',
         );
 
         return $this->getResponse()
@@ -801,10 +814,10 @@ class ImagesController extends AppController
     /**
      * Serialize image entity for JSON response.
      *
-     * @param \App\Model\Entity\Image $image Image entity.
+     * @param \App\Model\Entity\Image $image
      * @return array<string,mixed>
      */
-    private function serializeImage(\App\Model\Entity\Image $image): array
+    private function serializeImage(Image $image): array
     {
         $variants = [];
         $raw = $image->variants;
@@ -833,7 +846,7 @@ class ImagesController extends AppController
     /**
      * Return JSON response helper.
      *
-     * @param array<string,mixed> $payload Payload.
+     * @param array $payload
      */
     private function json(array $payload): Response
     {

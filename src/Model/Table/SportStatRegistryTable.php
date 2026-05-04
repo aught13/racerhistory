@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -10,20 +11,22 @@ use Cake\Validation\Validator;
 /**
  * SportStatRegistry Model
  *
- * @property \Cake\ORM\Association\BelongsTo $Sports
+ * @property \App\Model\Table\SportsTable&\Cake\ORM\Association\BelongsTo $Sports
  * @method \App\Model\Entity\SportStatRegistry newEmptyEntity()
  * @method \App\Model\Entity\SportStatRegistry newEntity(array $data, array $options = [])
- * @method array<\App\Model\Entity\SportStatRegistry> newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry[] newEntities(array $data, array $options = [])
  * @method \App\Model\Entity\SportStatRegistry get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \App\Model\Entity\SportStatRegistry findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
  * @method \App\Model\Entity\SportStatRegistry patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\App\Model\Entity\SportStatRegistry> patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry[] patchEntities(iterable $entities, array $data, array $options = [])
  * @method \App\Model\Entity\SportStatRegistry|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
  * @method \App\Model\Entity\SportStatRegistry saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\App\Model\Entity\SportStatRegistry>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\SportStatRegistry>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\SportStatRegistry>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\SportStatRegistry>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\SportStatRegistry[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\SportStatRegistry> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
 class SportStatRegistryTable extends Table
 {
@@ -135,7 +138,7 @@ class SportStatRegistryTable extends Table
      * @param int $sport_id The sport identifier to filter by
      * @return \Cake\ORM\Query
      */
-    public function findBySport(\Cake\ORM\Query $query, int $sport_id): \Cake\ORM\Query
+    public function findBySport(Query $query, int $sport_id): Query
     {
         return $query->where(['sport_id' => $sport_id]);
     }
@@ -147,7 +150,7 @@ class SportStatRegistryTable extends Table
      * @param string $context The context to filter by
      * @return \Cake\ORM\Query
      */
-    public function findByContext(\Cake\ORM\Query $query, string $context): \Cake\ORM\Query
+    public function findByContext(Query $query, string $context): Query
     {
         return $query->where(['context' => $context]);
     }
@@ -159,7 +162,7 @@ class SportStatRegistryTable extends Table
      * @param string $entity_type The entity type to filter by
      * @return \Cake\ORM\Query
      */
-    public function findByEntityType(\Cake\ORM\Query $query, string $entity_type): \Cake\ORM\Query
+    public function findByEntityType(Query $query, string $entity_type): Query
     {
         return $query->where(['entity_type' => $entity_type]);
     }

@@ -7,8 +7,8 @@
  *
  * @var \App\View\AppView $this
  * @var int|null $teamSeasonId Pre-selected team season ID
- * @var \Cake\Collection\CollectionInterface|string[] $teamSeasonsList
- * @var \Cake\Collection\CollectionInterface|string[] $sports
+ * @var \Cake\Collection\CollectionInterface|array<string> $teamSeasonsList
+ * @var \Cake\Collection\CollectionInterface|array<string> $sports
  */
 $this->assign('title', 'Add Team Season Roster');
 ?>

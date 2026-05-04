@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\BasketballStatsAdminService;
+use App\Service\SportConfigService;
 use Cake\Http\Response;
 
 /**
@@ -16,13 +17,14 @@ use Cake\Http\Response;
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\StatBasketGameBoxTable $StatBasketGameBox
  */
 class StatBasketGameBoxController extends AppController
 {
     /**
      * @var \App\Service\SportConfigService Service for sport configuration management
      */
-    protected \App\Service\SportConfigService $SportConfig;
+    protected SportConfigService $SportConfig;
 
     private BasketballStatsAdminService $basketballStatsAdminService;
 

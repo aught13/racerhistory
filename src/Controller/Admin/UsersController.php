@@ -15,6 +15,7 @@ use Cake\Http\Response;
  *
  * @property \App\Controller\Component\UserManagerComponent $UserManager
  * @property \App\Model\Table\UsersTable $Users
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class UsersController extends AppController
 {

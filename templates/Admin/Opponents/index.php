@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $opponents
+ */
+?>
 <?php $this->assign('title', 'Opponents'); ?>
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -7,7 +13,7 @@
     <table class="table table-striped">
         <thead><tr><th>Name</th><th>Place</th><th></th></tr></thead>
         <tbody>
-        <?php foreach ($opponents as $o): ?>
+        <?php foreach ($opponents as $o) : ?>
             <tr>
                 <td><?= h($o->opponent_name) ?></td>
                 <td><?= h($o->place->place_city ?? '-') ?></td>

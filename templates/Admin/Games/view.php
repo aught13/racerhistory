@@ -1,3 +1,21 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var array $eav
+ * @var mixed $hasPeriodStats
+ * @var mixed $hasSportConfig
+ * @var array $m
+ * @var array $opponentBoxStats
+ * @var mixed $opponentPeriodStats
+ * @var object $opponentPlayerStats
+ * @var object $opponentTeamStats
+ * @var object $playerStats
+ * @var array $teamBoxStats
+ * @var mixed $teamPeriodStats
+ * @var object $teamTeamStats
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Game Details'); ?>
 <div class="col-md-12" style="min-height: 500px;">
     <!-- Top Action Buttons: Edit Game, Edit Opponent, Back -->
@@ -44,7 +62,7 @@
             <?= h($game->opponent->opponent_name ?? '') ?>
         </span>
         <span class="h3 col-sm-12 text-center text-nowrap">
-            <?= h((new \DateTime($game->game_date))->format('l, F jS, Y')) ?>
+            <?= h((new DateTime($game->game_date))->format('l, F jS, Y')) ?>
         </span>
         <hr>
     </div>
@@ -180,14 +198,14 @@
                     // Format game_time to 12-hour format if it exists
                     $gameTimeDisplay = '';
                     if (!empty($game->game_time)) {
-                        if ($game->game_time instanceof \DateTimeInterface) {
+                        if ($game->game_time instanceof DateTimeInterface) {
                             $gameTimeDisplay = $game->game_time->format('g:i A');
                         } else {
                             // Try to parse string time
                             try {
-                                $timeObj = new \DateTime($game->game_time);
+                                $timeObj = new DateTime($game->game_time);
                                 $gameTimeDisplay = $timeObj->format('g:i A');
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 $gameTimeDisplay = $game->game_time;
                             }
                         }
@@ -268,7 +286,7 @@
                                         <td>
                                             <?= h(
                                                 $stat->team_season_roster->person->display ??
-                                                $stat->team_season_roster->person->full ?? ''
+                                                $stat->team_season_roster->person->full ?? '',
                                             ) ?>
                                         </td>
                                         <td>

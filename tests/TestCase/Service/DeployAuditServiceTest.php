@@ -10,18 +10,27 @@ class DeployAuditServiceTest extends TestCase
 {
     private DeployAuditService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new DeployAuditService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
         parent::tearDown();
     }
 
+    /**
+     * Tests run returns expected structure.
+     */
     public function testRunReturnsExpectedStructure(): void
     {
         $audit = $this->service->run();
@@ -36,6 +45,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertContains($audit['overall'], ['pass', 'warn', 'fail']);
     }
 
+    /**
+     * Tests result items have required keys.
+     */
     public function testResultItemsHaveRequiredKeys(): void
     {
         $audit = $this->service->run();
@@ -49,6 +61,9 @@ class DeployAuditServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests php version check present.
+     */
     public function testPhpVersionCheckPresent(): void
     {
         $audit = $this->service->run();
@@ -62,6 +77,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertStringContains('PHP', $first['label']);
     }
 
+    /**
+     * Tests php extensions checked.
+     */
     public function testPhpExtensionsChecked(): void
     {
         $audit = $this->service->run();
@@ -75,6 +93,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertContains('ext-intl', $labels);
     }
 
+    /**
+     * Tests config category present.
+     */
     public function testConfigCategoryPresent(): void
     {
         $audit = $this->service->run();
@@ -83,6 +104,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertNotEmpty($configResults);
     }
 
+    /**
+     * Tests directory permissions category present.
+     */
     public function testDirectoryPermissionsCategoryPresent(): void
     {
         $audit = $this->service->run();
@@ -91,6 +115,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertNotEmpty($dirResults);
     }
 
+    /**
+     * Tests security category present.
+     */
     public function testSecurityCategoryPresent(): void
     {
         $audit = $this->service->run();
@@ -99,6 +126,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertNotEmpty($secResults);
     }
 
+    /**
+     * Tests assets category present.
+     */
     public function testAssetsCategoryPresent(): void
     {
         $audit = $this->service->run();
@@ -107,6 +137,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertNotEmpty($assetResults);
     }
 
+    /**
+     * Tests error and warning counts match results.
+     */
     public function testErrorAndWarningCountsMatchResults(): void
     {
         $audit = $this->service->run();
@@ -118,6 +151,9 @@ class DeployAuditServiceTest extends TestCase
         $this->assertSame($warnCount, $audit['warnings']);
     }
 
+    /**
+     * Tests overall pass when no issues.
+     */
     public function testOverallPassWhenNoIssues(): void
     {
         // We can't control environment fully, but we can verify the logic:
@@ -137,12 +173,15 @@ class DeployAuditServiceTest extends TestCase
 
     /**
      * Helper: PHPUnit 10-compatible string assertion.
+     *
+     * @param string $needle
+     * @param string $haystack
      */
     private function assertStringContains(string $needle, string $haystack): void
     {
         $this->assertTrue(
             str_contains($haystack, $needle),
-            "Failed asserting that '{$haystack}' contains '{$needle}'"
+            "Failed asserting that '{$haystack}' contains '{$needle}'",
         );
     }
 }

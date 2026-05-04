@@ -37,7 +37,7 @@ class StatBasketGamePersonController extends AppController
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
             $this->FormProtection->setConfig(
                 'unlockedActions',
-                array_merge($current, ['bulkAdd', 'delete', 'deleteConfirm'])
+                array_merge($current, ['bulkAdd', 'delete', 'deleteConfirm']),
             );
         }
     }
@@ -136,7 +136,7 @@ class StatBasketGamePersonController extends AppController
             $result = $this->basketballStatsAdminService->updateAdminGamePersonStat(
                 $id,
                 (array)$this->request->getData(),
-                (bool)$this->request->getData('add_to_totals')
+                (bool)$this->request->getData('add_to_totals'),
             );
             $stat = $result['stat'];
             if ($result['success']) {

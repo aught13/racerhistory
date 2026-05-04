@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Table\SportsTable;
+use App\Model\Table\TeamsTable;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
@@ -228,7 +230,7 @@ class TeamAdminService
     /**
      * @return \App\Model\Table\TeamsTable
      */
-    private function getTeamsTable(): \App\Model\Table\TeamsTable
+    private function getTeamsTable(): TeamsTable
     {
         /** @var \App\Model\Table\TeamsTable $table */
         $table = TableRegistry::getTableLocator()->get('Teams');
@@ -239,7 +241,7 @@ class TeamAdminService
     /**
      * @return \App\Model\Table\SportsTable
      */
-    private function getSportsTable(): \App\Model\Table\SportsTable
+    private function getSportsTable(): SportsTable
     {
         /** @var \App\Model\Table\SportsTable $table */
         $table = TableRegistry::getTableLocator()->get('Sports');

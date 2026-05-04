@@ -4,14 +4,18 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Exception;
 
 /**
  * StatBasketGameBoxController Test Case
  *
  * Tests basketball game box score management
+ *
+ * @link \App\Controller\Admin\StatBasketGameBoxController
  */
 class StatBasketGameBoxControllerTest extends TestCase
 {
@@ -37,6 +41,9 @@ class StatBasketGameBoxControllerTest extends TestCase
         'app.SportConfigs',
     ];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -193,9 +200,9 @@ class StatBasketGameBoxControllerTest extends TestCase
         try {
             $this->get('/admin/stat-basket-game-box/game-box/99999');
             $this->assertResponseError();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // RecordNotFoundException is expected
-            $this->assertInstanceOf(\Cake\Datasource\Exception\RecordNotFoundException::class, $e);
+            $this->assertInstanceOf(RecordNotFoundException::class, $e);
         }
     }
 
@@ -217,6 +224,9 @@ class StatBasketGameBoxControllerTest extends TestCase
         $this->assertResponseSuccess();
     }
 
+    /**
+     * Tests game box redirects for non basketball game.
+     */
     public function testGameBoxRedirectsForNonBasketballGame(): void
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
@@ -246,6 +256,9 @@ class StatBasketGameBoxControllerTest extends TestCase
         $this->assertFlashMessage('Game box scores are currently only supported for basketball games.');
     }
 
+    /**
+     * Tests game box post redirects to period entry when requested.
+     */
     public function testGameBoxPostRedirectsToPeriodEntryWhenRequested(): void
     {
         $this->enableCsrfToken();
@@ -264,6 +277,9 @@ class StatBasketGameBoxControllerTest extends TestCase
         $this->assertRedirect('/admin/stat-basket-game-box/game-box-periods/1');
     }
 
+    /**
+     * Tests game box periods post redirects to game view.
+     */
     public function testGameBoxPeriodsPostRedirectsToGameView(): void
     {
         $this->enableCsrfToken();

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: game-form-lookups.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: game-form-lookups.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Game Form Lookups - AJAX search with dynamic results tables and popover forms
+ *
+ * Replaces static select dropdowns with type-ahead search inputs and small
+ * results tables. Each lookup manages:
+ *  - Debounced search queries to AJAX endpoints
+ *  - A compact results table showing entity fields
+ *  - A hidden input for the selected entity ID
+ *  - Visual feedback for the current selection
+ *
+ * @module game-form-lookups
+ */
+
+/**
+ * @typedef {Object} LookupConfig
+ * @property {string} searchInputId - ID of the text search input
+ * @property {string} hiddenInputId - ID of the hidden input for the selected ID
+ * @property {string} resultsTableId - ID of the results table container
+ * @property {string} selectedDisplayId - ID of the element showing the current selection
+ * @property {string} searchUrl - AJAX search endpoint URL
+ * @property {string[]} columns - Column keys to display in results
+ * @property {string[]} columnLabels - Human labels for columns
+ * @property {string} displayField - The field to show when an item is selected
+ * @property {function} [onSelect] - Callback when an item is selected
+ * @property {function} [getExtraParams] - Returns extra query params for search
+ */
+
+const DEBOUNCE_MS = 300;
+const MIN_QUERY_LENGTH = 1;
+
+/**
+ * Escape HTML to prevent XSS in dynamic table content.
+ *
+ * @param {string} str - Raw string
+ * @returns {string} Escaped string
+ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode(String(str)));
+    return div.innerHTML;
+}
+
+/**
+ * Initialize a single entity lookup.
+ *
+ * @param {LookupConfig} config
+ * @returns {{ setSelected: function, clearSelection: function, refresh: function }}
+ */
+export function initLookup(config) {
+    const searchInput = document.getElementById(config.searchInputId);
+    const hiddenInput = document.getElementById(config.hiddenInputId);
+    const resultsContainer = document.getElementById(config.resultsTableId);
+    const selectedDisplay = document.getElementById(config.selectedDisplayId);
+
+    if (!searchInput || !hiddenInput || !resultsContainer) {
+        return {
+            setSelected: () => {},
+            clearSelection: () => {},
+            refresh: () => {},
+        };
+    }
+
+    let debounceTimer = null;
+    let abortController = null;
+
+    function setSelected(id, displayText) {
+        hiddenInput.value = id;
+        if (selectedDisplay) {
+            selectedDisplay.innerHTML =
+                '&lt;span class="badge bg-primary me-2">' +
+                escapeHtml(displayText) +
+                ' &lt;button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle">&lt;/button>&lt;/span>';
+            const clearBtn = selectedDisplay.querySelector(".btn-close");
+            if (clearBtn) {
+                clearBtn.addEventListener("click", clearSelection);
+            }
+        }
+        resultsContainer.innerHTML = "";
+        searchInput.value = "";
+        if (config.onSelect) {
+            config.onSelect(id, displayText);
+        }
+    }
+
+    function clearSelection() {
+        hiddenInput.value = "";
+        if (selectedDisplay) {
+            selectedDisplay.innerHTML =
+                '&lt;span class="text-muted fst-italic">None selected&lt;/span>';
+        }
+        if (config.onSelect) {
+            config.onSelect(null, null);
+        }
+    }
+
+    function buildTable(results) {
+        if (!results || results.length === 0) {
+            resultsContainer.innerHTML =
+                '&lt;div class="text-muted small py-1">No results found&lt;/div>';
+            return;
+        }
+
+        let html =
+            '&lt;table class="table table-sm table-hover table-striped mb-0 lookup-results-table">';
+        html += "&lt;thead>&lt;tr>";
+        for (const label of config.columnLabels) {
+            html += '&lt;th class="small">' + escapeHtml(label) + "&lt;/th>";
+        }
+        html += "&lt;th>&lt;/th>&lt;/tr>&lt;/thead>&lt;tbody>";
+
+        for (const row of results) {
+            html +=
+                '&lt;tr class="lookup-result-row" role="button" style="cursor:pointer"';
+            html += ' data-id="' + escapeHtml(String(row.id)) + '"';
+            html +=
+                ' data-display="' +
+                escapeHtml(String(row[config.displayField] || row.id)) +
+                '">';
+            for (const col of config.columns) {
+                const val = row[col];
+                html += '&lt;td class="small">' + escapeHtml(val) + "&lt;/td>";
+            }
+            html +=
+                '&lt;td>&lt;button type="button" class="btn btn-sm btn-outline-primary select-btn">Select&lt;/button>&lt;/td>';
+            html += "&lt;/tr>";
+        }
+
+        html += "&lt;/tbody>&lt;/table>";
+        resultsContainer.innerHTML = html;
+
+        // Attach click handlers
+        resultsContainer
+            .querySelectorAll(".lookup-result-row")
+            .forEach((tr) => {
+                tr.addEventListener("click", function () {
+                    setSelected(this.dataset.id, this.dataset.display);
+                });
+            });
+    }
+
+    function doSearch(query) {
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
+
+        let url = config.searchUrl + "?q=" + encodeURIComponent(query);
+        if (config.getExtraParams) {
+            const extra = config.getExtraParams();
+            for (const [k, v] of Object.entries(extra)) {
+                if (v !== null &amp;&amp; v !== undefined &amp;&amp; v !== "") {
+                    url +=
+                        "&amp;" +
+                        encodeURIComponent(k) +
+                        "=" +
+                        encodeURIComponent(v);
+                }
+            }
+        }
+
+        fetch(url, {
+            signal: abortController.signal,
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.success) {
+                    buildTable(data.results);
+                } else {
+                    resultsContainer.innerHTML =
+                        '&lt;div class="text-danger small">Search error&lt;/div>';
+                }
+            })
+            .catch((err) => {
+                if (err.name !== "AbortError") {
+                    resultsContainer.innerHTML =
+                        '&lt;div class="text-danger small">Network error&lt;/div>';
+                }
+            });
+    }
+
+    searchInput.addEventListener("input", function () {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length &lt; MIN_QUERY_LENGTH) {
+            resultsContainer.innerHTML = "";
+            return;
+        }
+        debounceTimer = setTimeout(() => doSearch(q), DEBOUNCE_MS);
+    });
+
+    // Close results when clicking outside
+    document.addEventListener("click", function (e) {
+        if (
+            !searchInput.contains(e.target) &amp;&amp;
+            !resultsContainer.contains(e.target)
+        ) {
+            resultsContainer.innerHTML = "";
+        }
+    });
+
+    // If there's an initial value, show it
+    if (hiddenInput.value &amp;&amp; config.initialDisplay) {
+        setSelected(hiddenInput.value, config.initialDisplay);
+    } else if (!hiddenInput.value) {
+        clearSelection();
+    }
+
+    return {
+        setSelected,
+        clearSelection,
+        refresh: () => doSearch(searchInput.value.trim()),
+    };
+}
+
+/**
+ * Initialize all game form lookups.
+ * Call this on DOMContentLoaded and turbo:load.
+ */
+export function initGameFormLookups() {
+    const formContainer = document.getElementById("game-form-card");
+    if (!formContainer) return;
+
+    // URLs are stored as data attributes on the form container
+    const opponentSearchUrl = formContainer.dataset.opponentSearchUrl;
+    const placeSearchUrl = formContainer.dataset.placeSearchUrl;
+    const siteSearchUrl = formContainer.dataset.siteSearchUrl;
+    const gameTypeSearchUrl = formContainer.dataset.gameTypeSearchUrl;
+
+    let placeLookup = null;
+    let siteLookup = null;
+
+    // Game Type lookup
+    initLookup({
+        searchInputId: "game-type-search",
+        hiddenInputId: "game-type-id",
+        resultsTableId: "game-type-results",
+        selectedDisplayId: "game-type-selected",
+        searchUrl: gameTypeSearchUrl,
+        columns: ["game_type_name", "abr"],
+        columnLabels: ["Name", "Abbr"],
+        displayField: "game_type_name",
+        initialDisplay: formContainer.dataset.gameTypeDisplay || null,
+    });
+
+    // Opponent lookup
+    initLookup({
+        searchInputId: "opponent-search",
+        hiddenInputId: "opponent-id",
+        resultsTableId: "opponent-results",
+        selectedDisplayId: "opponent-selected",
+        searchUrl: opponentSearchUrl,
+        columns: ["opponent_name", "opponent_short", "opponent_mascot"],
+        columnLabels: ["Name", "Short", "Mascot"],
+        displayField: "opponent_name",
+        initialDisplay: formContainer.dataset.opponentDisplay || null,
+    });
+
+    // Place lookup
+    placeLookup = initLookup({
+        searchInputId: "place-search",
+        hiddenInputId: "place-id",
+        resultsTableId: "place-results",
+        selectedDisplayId: "place-selected",
+        searchUrl: placeSearchUrl,
+        columns: ["place_city", "place_state"],
+        columnLabels: ["Locality", "Subdivision"],
+        displayField: "place_city",
+        initialDisplay: formContainer.dataset.placeDisplay || null,
+        onSelect: function (id) {
+            // When place changes, clear site selection and update site search context
+            if (siteLookup) {
+                siteLookup.clearSelection();
+            }
+            // Update the "Add New Site" button state
+            const addSiteBtn = document.getElementById("add-site-btn");
+            if (addSiteBtn) {
+                if (id) {
+                    addSiteBtn.disabled = false;
+                    addSiteBtn.title = "Add New Site";
+                } else {
+                    addSiteBtn.disabled = true;
+                    addSiteBtn.title = "Select a place first";
+                }
+            }
+            // Inject place_id into the site popup form
+            const sitePopupPlaceId = document.getElementById(
+                "add-site-modal-place_id",
+            );
+            if (sitePopupPlaceId) {
+                sitePopupPlaceId.value = id || "";
+            }
+        },
+    });
+
+    // Site lookup
+    siteLookup = initLookup({
+        searchInputId: "site-search",
+        hiddenInputId: "site-id",
+        resultsTableId: "site-results",
+        selectedDisplayId: "site-selected",
+        searchUrl: siteSearchUrl,
+        columns: ["site_name", "capacity", "place_city"],
+        columnLabels: ["Site", "Capacity", "Place"],
+        displayField: "site_name",
+        initialDisplay: formContainer.dataset.siteDisplay || null,
+        getExtraParams: function () {
+            const placeId = document.getElementById("place-id");
+            return { place_id: placeId ? placeId.value : "" };
+        },
+    });
+
+    // Wire up popup form success callbacks
+    window.handleOpponentAdded = function (data) {
+        if (data.newOption) {
+            const oppLookup = document.getElementById("opponent-id");
+            if (oppLookup) {
+                oppLookup.value = data.newOption.value;
+                const display = document.getElementById("opponent-selected");
+                if (display) {
+                    display.innerHTML =
+                        '&lt;span class="badge bg-primary me-2">' +
+                        escapeHtml(data.newOption.text) +
+                        ' &lt;button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle">&lt;/button>&lt;/span>';
+                }
+            }
+        }
+    };
+
+    // Place lookup inside the opponent popup modal
+    const opponentPlaceLookup = initLookup({
+        searchInputId: "opponent-place-search",
+        hiddenInputId: "add-opponent-modal-place_id",
+        resultsTableId: "opponent-place-results",
+        selectedDisplayId: "opponent-place-selected",
+        searchUrl: placeSearchUrl,
+        columns: ["place_city", "place_state"],
+        columnLabels: ["Locality", "Subdivision"],
+        displayField: "place_city",
+    });
+
+    // Callback when a new place is created from within the opponent popup
+    window.handleOpponentPlaceAdded = function (data) {
+        if (data.newOption &amp;&amp; opponentPlaceLookup) {
+            opponentPlaceLookup.setSelected(
+                data.newOption.value,
+                data.newOption.text,
+            );
+        }
+    };
+
+    window.handlePlaceAdded = function (data) {
+        if (data.newOption &amp;&amp; placeLookup) {
+            placeLookup.setSelected(data.newOption.value, data.newOption.text);
+        }
+    };
+
+    window.handleSiteAdded = function (data) {
+        if (data.newOption &amp;&amp; siteLookup) {
+            siteLookup.setSelected(data.newOption.value, data.newOption.text);
+        }
+    };
+
+    window.handleGameTypeAdded = function (data) {
+        if (data.newOption) {
+            const gtInput = document.getElementById("game-type-id");
+            if (gtInput) {
+                gtInput.value = data.newOption.value;
+                const display = document.getElementById("game-type-selected");
+                if (display) {
+                    display.innerHTML =
+                        '&lt;span class="badge bg-primary me-2">' +
+                        escapeHtml(data.newOption.text) +
+                        ' &lt;button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle">&lt;/button>&lt;/span>';
+                }
+            }
+        }
+    };
+
+    // Initial state: disable "Add Site" if no place selected
+    const placeId = document.getElementById("place-id");
+    const addSiteBtn = document.getElementById("add-site-btn");
+    if (addSiteBtn &amp;&amp; placeId &amp;&amp; !placeId.value) {
+        addSiteBtn.disabled = true;
+        addSiteBtn.title = "Select a place first";
+    }
+
+    // Reset opponent place lookup when opponent modal is hidden normally (not for place toggle)
+    const opponentModal = document.getElementById("add-opponent-modal");
+    let opponentModalTogglingToPlace = false;
+    if (opponentModal &amp;&amp; opponentPlaceLookup) {
+        opponentModal.addEventListener("hidden.bs.modal", function () {
+            if (!opponentModalTogglingToPlace) {
+                opponentPlaceLookup.clearSelection();
+            }
+        });
+    }
+
+    // Handle nested modal: opponent → add place
+    // Bootstrap doesn't support true nested modals; toggle between them.
+    const opponentAddPlaceBtn = document.getElementById(
+        "opponent-add-place-btn",
+    );
+    const opponentPlaceModal = document.getElementById(
+        "add-opponent-place-modal",
+    );
+    if (opponentAddPlaceBtn &amp;&amp; opponentModal &amp;&amp; opponentPlaceModal) {
+        opponentAddPlaceBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            opponentModalTogglingToPlace = true;
+            // Hide the opponent modal first, then show the place modal
+            const bsOpponentModal =
+                bootstrap.Modal.getOrCreateInstance(opponentModal);
+            bsOpponentModal.hide();
+            opponentModal.addEventListener(
+                "hidden.bs.modal",
+                function showPlace() {
+                    opponentModal.removeEventListener(
+                        "hidden.bs.modal",
+                        showPlace,
+                    );
+                    opponentModalTogglingToPlace = false;
+                    const bsPlaceModal =
+                        bootstrap.Modal.getOrCreateInstance(opponentPlaceModal);
+                    bsPlaceModal.show();
+                },
+            );
+        });
+
+        // When the nested place modal closes, re-open the opponent modal
+        opponentPlaceModal.addEventListener("hidden.bs.modal", function () {
+            const bsOpponentModal =
+                bootstrap.Modal.getOrCreateInstance(opponentModal);
+            bsOpponentModal.show();
+        });
+    }
+}
+
+// Auto-init on page load (DOMContentLoaded + turbo:load)
+function init() {
+    initGameFormLookups();
+}
+
+if (typeof document !== "undefined") {
+    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("turbo:load", init);
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-game-form-lookups.html">game-form-lookups</a></li><li><a href="module-modules_tinymce-bootstrap-config.html">modules/tinymce-bootstrap-config</a></li></ul><h3>Classes</h3><ul><li><a href="CropSelector.html">CropSelector</a></li><li><a href="global.html#ImageSelector">ImageSelector</a></li><li><a href="SportAwareGameForm.html">SportAwareGameForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CDN_URLS">CDN_URLS</a></li><li><a href="global.html#DATATABLES_CORE_SRC">DATATABLES_CORE_SRC</a></li><li><a href="global.html#DEBOUNCE_MS">DEBOUNCE_MS</a></li><li><a href="global.html#NUMERIC_COLUMNS">NUMERIC_COLUMNS</a></li><li><a href="global.html#SCROLLER_THRESHOLD">SCROLLER_THRESHOLD</a></li><li><a href="global.html#_initialised">_initialised</a></li><li><a href="global.html#addRow">addRow</a></li><li><a href="global.html#autoSelectNewPerson">autoSelectNewPerson</a></li><li><a href="global.html#buildDom">buildDom</a></li><li><a href="global.html#buildEditDom">buildEditDom</a></li><li><a href="global.html#buildOpponentDom">buildOpponentDom</a></li><li><a href="global.html#buildPersonDom">buildPersonDom</a></li><li><a href="global.html#buildResults">buildResults</a></li><li><a href="global.html#calculateRecord">calculateRecord</a></li><li><a href="global.html#ensureDataTablesLoaded">ensureDataTablesLoaded</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#fixScrollXHeaderAlignment">fixScrollXHeaderAlignment</a></li><li><a href="global.html#flush">flush</a></li><li><a href="global.html#initCardHover">initCardHover</a></li><li><a href="global.html#initDragScroll">initDragScroll</a></li><li><a href="global.html#initGamesDataTable">initGamesDataTable</a></li><li><a href="global.html#initGamesPage">initGamesPage</a></li><li><a href="global.html#initPersonSearch">initPersonSearch</a></li><li><a href="global.html#initRosterMultiAdd">initRosterMultiAdd</a></li><li><a href="global.html#initStatMultiAdd">initStatMultiAdd</a></li><li><a href="global.html#initStatsDataTable">initStatsDataTable</a></li><li><a href="global.html#initStatsPage">initStatsPage</a></li><li><a href="global.html#initializingTables">initializingTables</a></li><li><a href="global.html#isDataTablesAvailable">isDataTablesAvailable</a></li><li><a href="global.html#jq">jq</a></li><li><a href="global.html#reindexRows">reindexRows</a></li><li><a href="global.html#reinitBootstrap">reinitBootstrap</a></li><li><a href="global.html#setupBlogPostCollapse">setupBlogPostCollapse</a></li><li><a href="global.html#setupDT">setupDT</a></li><li><a href="global.html#setupJQueryMock">setupJQueryMock</a></li><li><a href="global.html#syncScrollerColumns">syncScrollerColumns</a></li><li><a href="global.html#updateRecordDisplay">updateRecordDisplay</a></li><li><a href="global.html#updateRemoveButtons">updateRemoveButtons</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun May 03 2026 13:42:29 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

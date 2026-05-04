@@ -27,18 +27,27 @@ class StatsServicePersonTest extends TestCase
 
     protected StatsService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new StatsService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
         parent::tearDown();
     }
 
+    /**
+     * Tests get person season stats basketball.
+     */
     public function testGetPersonSeasonStatsBasketball(): void
     {
         // Basketball sport id is 1 in fixtures
@@ -48,6 +57,9 @@ class StatsServicePersonTest extends TestCase
         $this->assertSame(120, (int)($stats->PTS ?? 0));
     }
 
+    /**
+     * Tests get person game stats basketball.
+     */
     public function testGetPersonGameStatsBasketball(): void
     {
         $games = $this->service->getPersonGameStats(1, 1);

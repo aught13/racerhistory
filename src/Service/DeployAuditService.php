@@ -64,8 +64,8 @@ class DeployAuditService
      * Record a passing check.
      *
      * @param string $category Check category.
-     * @param string $label Short description.
-     * @param string $detail Optional detail text.
+     * @param string $label    Short description.
+     * @param string $detail   Optional detail text.
      * @return void
      */
     private function ok(string $category, string $label, string $detail = ''): void
@@ -77,8 +77,8 @@ class DeployAuditService
      * Record a warning.
      *
      * @param string $category Check category.
-     * @param string $label Short description.
-     * @param string $detail Optional detail text.
+     * @param string $label    Short description.
+     * @param string $detail   Optional detail text.
      * @return void
      */
     private function warn(string $category, string $label, string $detail = ''): void
@@ -91,8 +91,8 @@ class DeployAuditService
      * Record a failure.
      *
      * @param string $category Check category.
-     * @param string $label Short description.
-     * @param string $detail Optional detail text.
+     * @param string $label    Short description.
+     * @param string $detail   Optional detail text.
      * @return void
      */
     private function fail(string $category, string $label, string $detail = ''): void

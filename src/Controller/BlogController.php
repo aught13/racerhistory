@@ -32,6 +32,7 @@ use Cake\Http\Exception\NotFoundException;
  * - RequestHandlerComponent: Can be used to automatically detect AJAX requests and set response types, although in this implementation we manually check for Turbo Frame requests in the applyTurboFrameResponse method to adjust the response format accordingly.
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \Cake\Http\ServerRequest $request
  */
 class BlogController extends AppController
 {
@@ -47,6 +48,8 @@ class BlogController extends AppController
 
     /**
      * For Turbo Frame requests, return a minimal frame-only response.
+     *
+     * @param string $template
      */
     private function applyTurboFrameResponse(string $template): void
     {
@@ -101,6 +104,8 @@ class BlogController extends AppController
 
     /**
      * View single post by slug.
+     *
+     * @param string $slug Blog post slug.
      */
     public function view(string $slug): void
     {

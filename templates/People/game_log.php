@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var array<int,array{game:object,stats:array<int,object>}> $gameLogRows
  * @var string|null $gameLogElement
  * @var string $frameId
+ * @var \App\View\AppView $this
  */
 ?>
 <turbo-frame id="<?= h($frameId) ?>">

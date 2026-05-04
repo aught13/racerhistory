@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: games-series-opponents-init.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: games-series-opponents-init.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Series opponents list DataTable initializer.
+ *
+ * Creates a lazy-loaded opponents list with scrollX/scroller and
+ * an external text input filter that matches name/abbreviation criteria.
+ */
+
+const DATATABLES_CORE_SRC =
+    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
+const DATATABLES_BOOTSTRAP_SRC =
+    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
+const DATATABLES_SCROLLER_SRC =
+    "https://cdn.datatables.net/scroller/2.3.0/js/dataTables.scroller.min.js";
+
+function hasJquery() {
+    return typeof window.$ === "function" &amp;&amp; typeof window.$.fn === "object";
+}
+
+function hasDataTables() {
+    return (
+        typeof window.$?.fn?.DataTable === "function" ||
+        typeof window.$?.fn?.dataTable === "function"
+    );
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.addEventListener("load", resolve);
+        script.addEventListener("error", () => {
+            reject(new Error(`Failed to load ${src}`));
+        });
+        document.head.appendChild(script);
+    });
+}
+
+function waitForDataTables(timeoutMs = 10000, intervalMs = 50) {
+    if (hasDataTables()) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const tick = () => {
+            if (hasDataTables()) {
+                resolve();
+                return;
+            }
+            if (Date.now() - startedAt >= timeoutMs) {
+                reject(new Error("DataTables not available"));
+                return;
+            }
+            window.setTimeout(tick, intervalMs);
+        };
+        tick();
+    });
+}
+
+function ensureDataTablesLoaded() {
+    if (hasDataTables()) {
+        return Promise.resolve();
+    }
+
+    if (!hasJquery()) {
+        return Promise.reject(new Error("jQuery not available"));
+    }
+
+    return loadScript(DATATABLES_CORE_SRC)
+        .then(() => loadScript(DATATABLES_BOOTSTRAP_SRC))
+        .then(() => loadScript(DATATABLES_SCROLLER_SRC))
+        .then(() => waitForDataTables());
+}
+
+function bindOpponentSearchInput(dtApi) {
+    const input = document.getElementById("series-opponents-search");
+    if (!input) {
+        return;
+    }
+
+    if (input._seriesOpponentsSearchTimer) {
+        window.clearTimeout(input._seriesOpponentsSearchTimer);
+    }
+
+    if (typeof input._seriesOpponentsSearchHandler === "function") {
+        input.removeEventListener("input", input._seriesOpponentsSearchHandler);
+    }
+
+    const handler = () => {
+        input._seriesOpponentsSearchTimer = window.setTimeout(() => {
+            if (typeof dtApi.search === "function") {
+                dtApi.search(input.value).draw();
+            }
+        }, 250);
+    };
+
+    input.addEventListener("input", handler);
+    input._seriesOpponentsSearchHandler = handler;
+}
+
+function initSeriesOpponentsTable() {
+    const table = document.getElementById("series-opponents-table");
+    if (!table) {
+        return;
+    }
+
+    const opponentsUrl = table.dataset.opponentsUrl;
+    if (!opponentsUrl) {
+        return;
+    }
+
+    const init = () => {
+        try {
+            const $table = window.$(table);
+            if (window.$.fn.dataTable.isDataTable(table)) {
+                const existing = $table.DataTable();
+                bindOpponentSearchInput(existing);
+                return;
+            }
+
+            const dt = $table.DataTable({
+                serverSide: true,
+                processing: true,
+                deferRender: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                autoWidth: false,
+                scrollX: true,
+                scrollY: "55vh",
+                scrollCollapse: true,
+                scroller: true,
+                pageLength: 50,
+                searchDelay: 250,
+                dom: "rtip",
+                order: [[0, "asc"]],
+                ajax: {
+                    url: opponentsUrl,
+                    dataSrc: "data",
+                },
+                columnDefs: [
+                    { targets: [3], orderable: false, searchable: false },
+                    { targets: [2], type: "num" },
+                ],
+                language: {
+                    info: "Showing _START_ to _END_ of _TOTAL_ opponents",
+                    infoEmpty: "No opponents available",
+                    infoFiltered: "(filtered from _MAX_ total opponents)",
+                    loadingRecords: "Loading opponents...",
+                    processing: "Loading opponents...",
+                    zeroRecords: "No matching opponents found",
+                },
+                initComplete: function () {
+                    bindOpponentSearchInput(this.api());
+                },
+                drawCallback: function () {
+                    if (typeof this.api === "function") {
+                        this.api().columns.adjust();
+                    }
+                },
+            });
+
+            bindOpponentSearchInput(dt);
+        } catch (err) {
+            console.warn("Series opponents DataTable init failed", err);
+        }
+    };
+
+    ensureDataTablesLoaded()
+        .then(init)
+        .catch((err) => {
+            console.warn("Series opponents DataTables load failed", err);
+        });
+}
+
+function cleanupSeriesOpponentsTable() {
+    const table = document.getElementById("series-opponents-table");
+    if (table &amp;&amp; hasDataTables() &amp;&amp; window.$.fn.dataTable.isDataTable(table)) {
+        try {
+            window.$(table).DataTable().destroy(false);
+        } catch (err) {
+            console.warn("Failed to destroy series opponents table", err);
+        }
+    }
+
+    const input = document.getElementById("series-opponents-search");
+    if (!input) {
+        return;
+    }
+
+    if (input._seriesOpponentsSearchTimer) {
+        window.clearTimeout(input._seriesOpponentsSearchTimer);
+        input._seriesOpponentsSearchTimer = null;
+    }
+
+    if (typeof input._seriesOpponentsSearchHandler === "function") {
+        input.removeEventListener("input", input._seriesOpponentsSearchHandler);
+        input._seriesOpponentsSearchHandler = null;
+    }
+}
+
+export { initSeriesOpponentsTable, cleanupSeriesOpponentsTable };
+
+document.addEventListener("turbo:before-fetch", cleanupSeriesOpponentsTable);
+document.addEventListener("turbo:before-cache", cleanupSeriesOpponentsTable);
+document.addEventListener("DOMContentLoaded", initSeriesOpponentsTable);
+document.addEventListener("turbo:load", initSeriesOpponentsTable);
+
+if (document.readyState !== "loading") {
+    initSeriesOpponentsTable();
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-game-form-lookups.html">game-form-lookups</a></li><li><a href="module-modules_tinymce-bootstrap-config.html">modules/tinymce-bootstrap-config</a></li></ul><h3>Classes</h3><ul><li><a href="CropSelector.html">CropSelector</a></li><li><a href="global.html#ImageSelector">ImageSelector</a></li><li><a href="SportAwareGameForm.html">SportAwareGameForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CDN_URLS">CDN_URLS</a></li><li><a href="global.html#DATATABLES_CORE_SRC">DATATABLES_CORE_SRC</a></li><li><a href="global.html#DEBOUNCE_MS">DEBOUNCE_MS</a></li><li><a href="global.html#NUMERIC_COLUMNS">NUMERIC_COLUMNS</a></li><li><a href="global.html#SCROLLER_THRESHOLD">SCROLLER_THRESHOLD</a></li><li><a href="global.html#_initialised">_initialised</a></li><li><a href="global.html#addRow">addRow</a></li><li><a href="global.html#autoSelectNewPerson">autoSelectNewPerson</a></li><li><a href="global.html#buildDom">buildDom</a></li><li><a href="global.html#buildEditDom">buildEditDom</a></li><li><a href="global.html#buildOpponentDom">buildOpponentDom</a></li><li><a href="global.html#buildPersonDom">buildPersonDom</a></li><li><a href="global.html#buildResults">buildResults</a></li><li><a href="global.html#calculateRecord">calculateRecord</a></li><li><a href="global.html#ensureDataTablesLoaded">ensureDataTablesLoaded</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#fixScrollXHeaderAlignment">fixScrollXHeaderAlignment</a></li><li><a href="global.html#flush">flush</a></li><li><a href="global.html#initCardHover">initCardHover</a></li><li><a href="global.html#initDragScroll">initDragScroll</a></li><li><a href="global.html#initGamesDataTable">initGamesDataTable</a></li><li><a href="global.html#initGamesPage">initGamesPage</a></li><li><a href="global.html#initPersonSearch">initPersonSearch</a></li><li><a href="global.html#initRosterMultiAdd">initRosterMultiAdd</a></li><li><a href="global.html#initStatMultiAdd">initStatMultiAdd</a></li><li><a href="global.html#initStatsDataTable">initStatsDataTable</a></li><li><a href="global.html#initStatsPage">initStatsPage</a></li><li><a href="global.html#initializingTables">initializingTables</a></li><li><a href="global.html#isDataTablesAvailable">isDataTablesAvailable</a></li><li><a href="global.html#jq">jq</a></li><li><a href="global.html#reindexRows">reindexRows</a></li><li><a href="global.html#reinitBootstrap">reinitBootstrap</a></li><li><a href="global.html#setupBlogPostCollapse">setupBlogPostCollapse</a></li><li><a href="global.html#setupDT">setupDT</a></li><li><a href="global.html#setupJQueryMock">setupJQueryMock</a></li><li><a href="global.html#syncScrollerColumns">syncScrollerColumns</a></li><li><a href="global.html#updateRecordDisplay">updateRecordDisplay</a></li><li><a href="global.html#updateRemoveButtons">updateRemoveButtons</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun May 03 2026 13:42:29 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

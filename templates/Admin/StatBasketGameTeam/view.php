@@ -1,3 +1,11 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var object $opponentStats
+ * @var object $teamStats
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Team Stats'); ?>
 <div class="container py-4">
     <nav aria-label="breadcrumb">
@@ -45,7 +53,7 @@
                     <h5 class="mb-0"><?= h($game->team_season->team->team_name ?? 'Team') ?></h5>
                 </div>
                 <div class="card-body">
-                    <?php if ($teamStats): ?>
+                    <?php if ($teamStats) : ?>
                         <table class="table table-sm">
                             <tbody>
                                 <tr>
@@ -74,7 +82,7 @@
                                 </tr>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php else : ?>
                         <p class="text-muted">No team stats entered yet.</p>
                     <?php endif; ?>
                 </div>
@@ -87,7 +95,7 @@
                     <h5 class="mb-0"><?= h($game->opponent->opponent_name ?? 'Opponent') ?></h5>
                 </div>
                 <div class="card-body">
-                    <?php if ($opponentStats): ?>
+                    <?php if ($opponentStats) : ?>
                         <table class="table table-sm">
                             <tbody>
                                 <tr>
@@ -116,7 +124,7 @@
                                 </tr>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php else : ?>
                         <p class="text-muted">No opponent stats entered yet.</p>
                     <?php endif; ?>
                 </div>

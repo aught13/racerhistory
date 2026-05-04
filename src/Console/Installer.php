@@ -77,8 +77,8 @@ class Installer
     /**
      * Create config/app_local.php file if it does not exist.
      *
-     * @param string $dir The application's root directory.
-     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @param string                   $dir The application's root directory.
+     * @param \Composer\IO\IOInterface $io  IO interface to write to console.
      * @return void
      */
     public static function createAppLocalConfig(string $dir, IOInterface $io): void
@@ -94,8 +94,8 @@ class Installer
     /**
      * Create the `logs` and `tmp` directories.
      *
-     * @param string $dir The application's root directory.
-     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @param string                   $dir The application's root directory.
+     * @param \Composer\IO\IOInterface $io  IO interface to write to console.
      * @return void
      */
     public static function createWritableDirectories(string $dir, IOInterface $io): void
@@ -114,8 +114,8 @@ class Installer
      *
      * This is not the most secure default, but it gets people up and running quickly.
      *
-     * @param string $dir The application's root directory.
-     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @param string                   $dir The application's root directory.
+     * @param \Composer\IO\IOInterface $io  IO interface to write to console.
      * @return void
      */
     public static function setFolderPermissions(string $dir, IOInterface $io): void
@@ -178,8 +178,8 @@ class Installer
     /**
      * Set the security.salt value in the application's config file.
      *
-     * @param string $dir The application's root directory.
-     * @param \Composer\IO\IOInterface $io IO interface to write to console.
+     * @param string                   $dir The application's root directory.
+     * @param \Composer\IO\IOInterface $io  IO interface to write to console.
      * @return void
      */
     public static function setSecuritySalt(string $dir, IOInterface $io): void
@@ -191,10 +191,10 @@ class Installer
     /**
      * Set the security.salt value in a given file
      *
-     * @param string $dir The application's root directory.
-     * @param \Composer\IO\IOInterface $io IO interface to write to console.
-     * @param string $newKey key to set in the file
-     * @param string $file A path to a file relative to the application's root
+     * @param string                   $dir    The application's root directory.
+     * @param \Composer\IO\IOInterface $io     IO interface to write to console.
+     * @param string                   $newKey key to set in the file
+     * @param string                   $file   A path to a file relative to the application's root
      * @return void
      */
     public static function setSecuritySaltInFile(string $dir, IOInterface $io, string $newKey, string $file): void
@@ -227,10 +227,10 @@ class Installer
     /**
      * Set the APP_NAME value in a given file
      *
-     * @param string $dir The application's root directory.
-     * @param \Composer\IO\IOInterface $io IO interface to write to console.
-     * @param string $appName app name to set in the file
-     * @param string $file A path to a file relative to the application's root
+     * @param string                   $dir     The application's root directory.
+     * @param \Composer\IO\IOInterface $io      IO interface to write to console.
+     * @param string                   $appName app name to set in the file
+     * @param string                   $file    A path to a file relative to the application's root
      * @return void
      */
     public static function setAppNameInFile(string $dir, IOInterface $io, string $appName, string $file): void

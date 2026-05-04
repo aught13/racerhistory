@@ -14,12 +14,18 @@ class SportServiceTest extends TestCase
 
     private SportService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new SportService();
     }
 
+    /**
+     * Tests get sport by id.
+     */
     public function testGetSportById(): void
     {
         $sport = $this->service->getSportById(1);
@@ -27,12 +33,18 @@ class SportServiceTest extends TestCase
         $this->assertSame(1, $sport->id);
     }
 
+    /**
+     * Tests get sport by id returns null for invalid id.
+     */
     public function testGetSportByIdReturnsNullForInvalidId(): void
     {
         $sport = $this->service->getSportById(99999);
         $this->assertNull($sport);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -40,12 +52,18 @@ class SportServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Sport #99999', $label);
     }
 
+    /**
+     * Tests get all sports.
+     */
     public function testGetAllSports(): void
     {
         $sports = $this->service->getAllSports();
@@ -53,6 +71,9 @@ class SportServiceTest extends TestCase
         $this->assertGreaterThan(0, count($sports));
     }
 
+    /**
+     * Tests create sport.
+     */
     public function testCreateSport(): void
     {
         $data = ['sport_name' => 'Test Sport'];
@@ -61,6 +82,9 @@ class SportServiceTest extends TestCase
         $this->assertSame('Test Sport', $sport->sport_name);
     }
 
+    /**
+     * Tests update sport.
+     */
     public function testUpdateSport(): void
     {
         $sport = $this->service->updateSport(1, ['sport_name' => 'Updated Sport']);
@@ -68,6 +92,9 @@ class SportServiceTest extends TestCase
         $this->assertSame('Updated Sport', $sport->sport_name);
     }
 
+    /**
+     * Tests delete sport.
+     */
     public function testDeleteSport(): void
     {
         $data = ['sport_name' => 'Delete Me'];
@@ -81,6 +108,9 @@ class SportServiceTest extends TestCase
         $this->assertNull($deleted);
     }
 
+    /**
+     * Tests get sports for select.
+     */
     public function testGetSportsForSelect(): void
     {
         $results = $this->service->getSportsForSelect();

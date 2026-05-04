@@ -1,4 +1,8 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Season $season
+ */
 
 $this->assign('title', 'Add Season'); ?>
 <div class="container py-4">

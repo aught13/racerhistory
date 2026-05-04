@@ -8,6 +8,8 @@ use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\GamesController Test Case
+ *
+ * @link \App\Controller\GamesController
  */
 class GamesControllerTest extends TestCase
 {
@@ -37,6 +39,9 @@ class GamesControllerTest extends TestCase
         'app.Persons',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->get('/games');
@@ -45,6 +50,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Explore Men\'s Basketball game history');
     }
 
+    /**
+     * Tests index displays search types.
+     */
     public function testIndexDisplaysSearchTypes(): void
     {
         $this->get('/games');
@@ -58,6 +66,9 @@ class GamesControllerTest extends TestCase
         $this->assertArrayHasKey('series', $searchTypes);
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/games/1');
@@ -65,6 +76,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Box Score');
     }
 
+    /**
+     * Tests view with invalid id.
+     */
     public function testViewWithInvalidId(): void
     {
         $this->get('/games/9999');
@@ -72,6 +86,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests view sets variables.
+     */
     public function testViewSetsVariables(): void
     {
         $this->get('/games/1');
@@ -93,6 +110,9 @@ class GamesControllerTest extends TestCase
         $this->assertIsArray($blogPosts);
     }
 
+    /**
+     * Tests stats frame.
+     */
     public function testStatsFrame(): void
     {
         $this->get('/games/stats/1');
@@ -100,6 +120,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Player Stats');
     }
 
+    /**
+     * Tests authorization skipped.
+     */
     public function testAuthorizationSkipped(): void
     {
         // Public pages should not require authentication
@@ -119,6 +142,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Ranked Games');
     }
 
+    /**
+     * Tests ranked json.
+     */
     public function testRankedJson(): void
     {
         $this->configRequest([
@@ -132,6 +158,9 @@ class GamesControllerTest extends TestCase
         $this->assertArrayHasKey('data', $data);
     }
 
+    /**
+     * Tests all page.
+     */
     public function testAllPage(): void
     {
         $this->get('/games/all');
@@ -139,6 +168,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('All Games');
     }
 
+    /**
+     * Tests all json.
+     */
     public function testAllJson(): void
     {
         $this->get('/games/all?format=json');
@@ -151,6 +183,9 @@ class GamesControllerTest extends TestCase
         $this->assertSame('Conf', (string)$data['data'][0][9]);
     }
 
+    /**
+     * Tests overtime page.
+     */
     public function testOvertimePage(): void
     {
         $this->get('/games/overtime');
@@ -158,6 +193,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Overtime Games');
     }
 
+    /**
+     * Tests overtime json.
+     */
     public function testOvertimeJson(): void
     {
         $this->get('/games/overtime?format=json');
@@ -165,6 +203,9 @@ class GamesControllerTest extends TestCase
         $this->assertContentType('application/json');
     }
 
+    /**
+     * Tests hundred point page.
+     */
     public function testHundredPointPage(): void
     {
         $this->get('/games/hundred-point');
@@ -179,6 +220,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseNotContains('<th>Score</th>');
     }
 
+    /**
+     * Tests hundred point json.
+     */
     public function testHundredPointJson(): void
     {
         $this->get('/games/hundred-point?format=json');
@@ -203,6 +247,9 @@ class GamesControllerTest extends TestCase
         $this->assertStringContainsString('/games/series?opponent_id=1', (string)$row[1]);
     }
 
+    /**
+     * Tests hundred point json team filter.
+     */
     public function testHundredPointJsonTeamFilter(): void
     {
         $this->get('/games/hundred-point?format=json&filter=team');
@@ -217,6 +264,9 @@ class GamesControllerTest extends TestCase
         $this->assertSame('105', (string)$payload['data'][0][4]);
     }
 
+    /**
+     * Tests hundred point json opponent filter.
+     */
     public function testHundredPointJsonOpponentFilter(): void
     {
         $this->get('/games/hundred-point?format=json&filter=opponent');
@@ -230,6 +280,9 @@ class GamesControllerTest extends TestCase
         $this->assertCount(0, $payload['data']);
     }
 
+    /**
+     * Tests openers page.
+     */
     public function testOpenersPage(): void
     {
         $this->get('/games/openers');
@@ -242,6 +295,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseNotContains('&amp;amp;type=');
     }
 
+    /**
+     * Tests openers with type.
+     */
     public function testOpenersWithType(): void
     {
         $this->get('/games/openers?type=home');
@@ -249,6 +305,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Season Openers');
     }
 
+    /**
+     * Tests openers json.
+     */
     public function testOpenersJson(): void
     {
         $this->get('/games/openers?format=json&type=season');
@@ -270,6 +329,9 @@ class GamesControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tests streaks page.
+     */
     public function testStreaksPage(): void
     {
         $this->get('/games/streaks');
@@ -278,6 +340,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Streaks');
     }
 
+    /**
+     * Tests streaks losing.
+     */
     public function testStreaksLosing(): void
     {
         $this->get('/games/streaks?result=L&filter=home');
@@ -285,6 +350,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Losing');
     }
 
+    /**
+     * Tests margins page.
+     */
     public function testMarginsPage(): void
     {
         $this->get('/games/margins');
@@ -301,6 +369,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseNotContains('<th>Score</th>');
     }
 
+    /**
+     * Tests margins loss.
+     */
     public function testMarginsLoss(): void
     {
         $this->get('/games/margins?type=loss&filter=road');
@@ -308,6 +379,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Largest Losses');
     }
 
+    /**
+     * Tests margins uses dense ranking and tie date sort.
+     */
     public function testMarginsUsesDenseRankingAndTieDateSort(): void
     {
         $this->get('/games/margins?type=win&filter=overall');
@@ -333,6 +407,9 @@ class GamesControllerTest extends TestCase
         $this->assertSame(2, (int)($games[2]->rank ?? 0));
     }
 
+    /**
+     * Tests series page.
+     */
     public function testSeriesPage(): void
     {
         $this->get('/games/series');
@@ -343,6 +420,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('series-opponents-table');
     }
 
+    /**
+     * Tests series with opponent.
+     */
     public function testSeriesWithOpponent(): void
     {
         $this->get('/games/series?opponent_id=1');
@@ -350,6 +430,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Series History');
     }
 
+    /**
+     * Tests series json.
+     */
     public function testSeriesJson(): void
     {
         $this->get('/games/series?opponent_id=1&format=json');
@@ -357,6 +440,9 @@ class GamesControllerTest extends TestCase
         $this->assertContentType('application/json');
     }
 
+    /**
+     * Tests series opponents json.
+     */
     public function testSeriesOpponentsJson(): void
     {
         $this->get('/games/series-opponents?format=json&draw=1&start=0&length=25');
@@ -376,6 +462,9 @@ class GamesControllerTest extends TestCase
         $this->assertStringContainsString('Belmont', (string)$payload['data'][0][0]);
     }
 
+    /**
+     * Tests series opponents json with search.
+     */
     public function testSeriesOpponentsJsonWithSearch(): void
     {
         $this->get('/games/series-opponents?format=json&draw=2&start=0&length=25&search[value]=BEL');
@@ -392,6 +481,9 @@ class GamesControllerTest extends TestCase
         $this->assertStringContainsString('Belmont', (string)$payload['data'][0][0]);
     }
 
+    /**
+     * Tests sub nav on all pages.
+     */
     public function testSubNavOnAllPages(): void
     {
         $pages = [

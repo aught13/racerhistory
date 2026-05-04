@@ -84,6 +84,8 @@ class PlacesController extends AppController
 
     /**
      * Edit a place.
+     *
+     * @param string $id
      */
     public function edit(string $id): ?Response
     {
@@ -113,6 +115,8 @@ class PlacesController extends AppController
 
     /**
      * Delete a place.
+     *
+     * @param string $id
      */
     public function delete(string $id): Response
     {

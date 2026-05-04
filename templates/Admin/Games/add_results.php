@@ -1,3 +1,14 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $eavTemplate
+ * @var mixed $legacyMappedEav
+ * @var mixed $sportHasStats
+ * @var mixed $sportId
+ * @var mixed $sportName
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Add Results'); ?>
 <div class="container py-4">
     <?php if (isset($game) && $game->team_season_id) : ?>

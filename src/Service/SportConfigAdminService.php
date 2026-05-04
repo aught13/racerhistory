@@ -15,6 +15,8 @@ class SportConfigAdminService
 {
     /**
      * Get configs formatted for the sport edit/view pages.
+     *
+     * @param int $sportId
      */
     public function getFormattedConfigsForSport(int $sportId): array
     {
@@ -26,6 +28,9 @@ class SportConfigAdminService
 
     /**
      * Persist config payload from the editConfigs form.
+     *
+     * @param int $sportId
+     * @param array $configData
      */
     public function saveBulkConfigs(int $sportId, array $configData): bool
     {
@@ -49,6 +54,8 @@ class SportConfigAdminService
     /**
      * Ensure the formatted config structure contains the expected keys and
      * optionally seeds defaults when no configs exist.
+     *
+     * @param array $formatted
      */
     public function normalizeFormattedConfigs(array $formatted): array
     {
@@ -81,6 +88,11 @@ class SportConfigAdminService
 
     /**
      * Set a single config key/value.
+     *
+     * @param int $sportId
+     * @param string $key
+     * @param mixed $value
+     * @param string|null $description
      */
     public function setConfig(int $sportId, string $key, mixed $value, ?string $description = null): bool
     {
@@ -92,6 +104,9 @@ class SportConfigAdminService
 
     /**
      * Delete a single config record.
+     *
+     * @param int $sportId
+     * @param string $configKey
      */
     public function deleteConfig(int $sportId, string $configKey): bool
     {
@@ -107,6 +122,8 @@ class SportConfigAdminService
 
     /**
      * Reset configs by deleting current and seeding defaults.
+     *
+     * @param int $sportId
      */
     public function resetToDefaults(int $sportId): bool
     {

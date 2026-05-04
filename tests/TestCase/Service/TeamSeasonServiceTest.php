@@ -19,12 +19,18 @@ class TeamSeasonServiceTest extends TestCase
 
     private TeamSeasonService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new TeamSeasonService();
     }
 
+    /**
+     * Tests get team season by id.
+     */
     public function testGetTeamSeasonById(): void
     {
         $teamSeason = $this->service->getTeamSeasonById(1);
@@ -32,12 +38,18 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertSame(1, $teamSeason->id);
     }
 
+    /**
+     * Tests get team season by id returns null for invalid id.
+     */
     public function testGetTeamSeasonByIdReturnsNullForInvalidId(): void
     {
         $teamSeason = $this->service->getTeamSeasonById(99999);
         $this->assertNull($teamSeason);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -45,12 +57,18 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Team Season #99999', $label);
     }
 
+    /**
+     * Tests get sport display label.
+     */
     public function testGetSportDisplayLabel(): void
     {
         $label = $this->service->getSportDisplayLabel(1);
@@ -58,12 +76,18 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get sport display label fallback for invalid id.
+     */
     public function testGetSportDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getSportDisplayLabel(99999);
         $this->assertSame('Team Season #99999', $label);
     }
 
+    /**
+     * Tests get record summary.
+     */
     public function testGetRecordSummary(): void
     {
         $summary = $this->service->getRecordSummary(1);
@@ -114,6 +138,9 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertArrayNotHasKey('By Type', $postSplits);
     }
 
+    /**
+     * Tests get all team seasons.
+     */
     public function testGetAllTeamSeasons(): void
     {
         $teamSeasons = $this->service->getAllTeamSeasons();
@@ -121,6 +148,9 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertGreaterThan(0, count($teamSeasons));
     }
 
+    /**
+     * Tests create team season.
+     */
     public function testCreateTeamSeason(): void
     {
         $data = [
@@ -136,6 +166,9 @@ class TeamSeasonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests update team season.
+     */
     public function testUpdateTeamSeason(): void
     {
         $teamSeason = $this->service->updateTeamSeason(1, ['season_id' => 2]);
@@ -143,6 +176,9 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertSame(2, $teamSeason->season_id);
     }
 
+    /**
+     * Tests delete team season.
+     */
     public function testDeleteTeamSeason(): void
     {
         // Test deletion on existing fixture data
@@ -153,6 +189,9 @@ class TeamSeasonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get team seasons for select.
+     */
     public function testGetTeamSeasonsForSelect(): void
     {
         $results = $this->service->getTeamSeasonsForSelect();
@@ -164,6 +203,9 @@ class TeamSeasonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get team seasons list for roster select.
+     */
     public function testGetTeamSeasonsListForRosterSelect(): void
     {
         $list = $this->service->getTeamSeasonsListForRosterSelect(50);
@@ -172,6 +214,9 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertSame('Los Angeles Lakers (2023-2024)', $list[1]);
     }
 
+    /**
+     * Tests get public seasons list returns baskeball.
+     */
     public function testGetPublicSeasonsListReturnsBaskeball(): void
     {
         $results = $this->service->getPublicSeasonsList('Basketball', 'M');
@@ -184,6 +229,9 @@ class TeamSeasonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get public seasons list empty filters returns all.
+     */
     public function testGetPublicSeasonsListEmptyFiltersReturnsAll(): void
     {
         $all = $this->service->getPublicSeasonsList('', '');
@@ -192,6 +240,9 @@ class TeamSeasonServiceTest extends TestCase
         $this->assertGreaterThanOrEqual(count($filtered), count($all));
     }
 
+    /**
+     * Tests calculate season stats returns expected shape.
+     */
     public function testCalculateSeasonStatsReturnsExpectedShape(): void
     {
         $stats = $this->service->calculateSeasonStats([1]);
@@ -208,6 +259,9 @@ class TeamSeasonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests calculate season stats empty input.
+     */
     public function testCalculateSeasonStatsEmptyInput(): void
     {
         $stats = $this->service->calculateSeasonStats([]);

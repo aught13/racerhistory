@@ -2,6 +2,8 @@
 /**
  * Element: Admin/person_stats_empty
  * Friendly fallback message when a supported sport has no stats to show.
+ *
+ * @var \App\View\AppView $this
  */
 ?>
 <div class="alert alert-info d-flex align-items-center" role="alert">

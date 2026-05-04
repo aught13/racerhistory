@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller\Api\V1;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Api\V1\PersonsController
+ */
 class PersonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -14,6 +17,9 @@ class PersonsControllerTest extends TestCase
         'app.Persons',
     ];
 
+    /**
+     * Tests index default.
+     */
     public function testIndexDefault(): void
     {
         $this->get('/api/v1/persons?limit=1');
@@ -26,6 +32,9 @@ class PersonsControllerTest extends TestCase
         $this->assertCount(1, $payload['data']);
     }
 
+    /**
+     * Tests index search.
+     */
     public function testIndexSearch(): void
     {
         $this->get('/api/v1/persons?q=John');
@@ -40,6 +49,9 @@ class PersonsControllerTest extends TestCase
         $this->assertContains('John Doe', $labels);
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/api/v1/persons/1');
@@ -52,6 +64,9 @@ class PersonsControllerTest extends TestCase
         $this->assertSame('John Doe', $payload['data']['label'] ?? null);
     }
 
+    /**
+     * Tests view not found.
+     */
     public function testViewNotFound(): void
     {
         $this->get('/api/v1/persons/999');

@@ -11,6 +11,9 @@ class GameTypesFixture extends TestFixture
     public string $table = 'game_types';
     public $import = ['table' => 'game_types'];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

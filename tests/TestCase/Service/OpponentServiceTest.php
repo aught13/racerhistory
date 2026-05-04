@@ -14,12 +14,18 @@ class OpponentServiceTest extends TestCase
 
     private OpponentService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new OpponentService();
     }
 
+    /**
+     * Tests get opponent by id.
+     */
     public function testGetOpponentById(): void
     {
         $opponent = $this->service->getOpponentById(1);
@@ -27,12 +33,18 @@ class OpponentServiceTest extends TestCase
         $this->assertSame(1, $opponent->id);
     }
 
+    /**
+     * Tests get opponent by id returns null for invalid id.
+     */
     public function testGetOpponentByIdReturnsNullForInvalidId(): void
     {
         $opponent = $this->service->getOpponentById(99999);
         $this->assertNull($opponent);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -40,30 +52,45 @@ class OpponentServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Opponent #99999', $label);
     }
 
+    /**
+     * Tests search opponents.
+     */
     public function testSearchOpponents(): void
     {
         $results = $this->service->searchOpponents('Test', 10);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search opponents returns empty for empty query.
+     */
     public function testSearchOpponentsReturnsEmptyForEmptyQuery(): void
     {
         $results = $this->service->searchOpponents('');
         $this->assertSame([], $results);
     }
 
+    /**
+     * Tests search opponents respects limit.
+     */
     public function testSearchOpponentsRespectsLimit(): void
     {
         $results = $this->service->searchOpponents('a', 5);
         $this->assertLessThanOrEqual(5, count($results));
     }
 
+    /**
+     * Tests get all opponents.
+     */
     public function testGetAllOpponents(): void
     {
         $opponents = $this->service->getAllOpponents();
@@ -71,12 +98,18 @@ class OpponentServiceTest extends TestCase
         $this->assertGreaterThan(0, count($opponents));
     }
 
+    /**
+     * Tests get all opponents respects limit.
+     */
     public function testGetAllOpponentsRespectsLimit(): void
     {
         $opponents = $this->service->getAllOpponents(2);
         $this->assertLessThanOrEqual(2, count($opponents));
     }
 
+    /**
+     * Tests create opponent.
+     */
     public function testCreateOpponent(): void
     {
         // Opponents require a place_id (foreign key constraint)
@@ -92,6 +125,9 @@ class OpponentServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests update opponent.
+     */
     public function testUpdateOpponent(): void
     {
         $opponent = $this->service->updateOpponent(1, ['opponent_name' => 'Updated Opponent']);
@@ -99,6 +135,9 @@ class OpponentServiceTest extends TestCase
         $this->assertSame('Updated Opponent', $opponent->opponent_name);
     }
 
+    /**
+     * Tests delete opponent.
+     */
     public function testDeleteOpponent(): void
     {
         // Test deletion on existing fixture data
@@ -109,6 +148,9 @@ class OpponentServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get opponents for select.
+     */
     public function testGetOpponentsForSelect(): void
     {
         $results = $this->service->getOpponentsForSelect();

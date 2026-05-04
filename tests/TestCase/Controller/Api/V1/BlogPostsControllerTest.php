@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller\Api\V1;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Api\V1\BlogPostsController
+ */
 class BlogPostsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -17,6 +20,9 @@ class BlogPostsControllerTest extends TestCase
         'app.Images',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->get('/api/v1/blog-posts');
@@ -30,6 +36,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertSame('first-post', $payload['data'][0]['slug'] ?? null);
     }
 
+    /**
+     * Tests view.
+     */
     public function testView(): void
     {
         $this->get('/api/v1/blog-posts/first-post');
@@ -42,6 +51,9 @@ class BlogPostsControllerTest extends TestCase
         $this->assertSame('Body content', $payload['data']['body'] ?? null);
     }
 
+    /**
+     * Tests view not found.
+     */
     public function testViewNotFound(): void
     {
         $this->get('/api/v1/blog-posts/missing-post');

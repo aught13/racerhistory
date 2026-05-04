@@ -61,7 +61,8 @@ $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Person
             </table>
 
             <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'bulkDelete'], 'id' => 'delete-form-persons-bulk', 'style' => 'display:none']) ?>
-            <?php $this->Form->unlockField('person_ids'); $this->Form->unlockField('bulk_action'); ?>
+            <?php $this->Form->unlockField('person_ids');
+            $this->Form->unlockField('bulk_action'); ?>
             <?= $this->Form->hidden('person_ids[]', ['value' => '']) ?>
             <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
             <?= $this->Form->end() ?>

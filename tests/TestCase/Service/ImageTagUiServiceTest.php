@@ -10,6 +10,9 @@ use Cake\TestSuite\TestCase;
 
 class ImageTagUiServiceTest extends TestCase
 {
+    /**
+     * Tests format tags for ui builds freeform tag string and reorders.
+     */
     public function testFormatTagsForUiBuildsFreeformTagStringAndReorders(): void
     {
         $rosterService = $this->createMock(TeamSeasonRosterService::class);
@@ -28,6 +31,9 @@ class ImageTagUiServiceTest extends TestCase
         $this->assertSame('cool', (string)($result['currentTags'][1]->slug ?? ''));
     }
 
+    /**
+     * Tests format tags for ui rewrites roster display name when available.
+     */
     public function testFormatTagsForUiRewritesRosterDisplayNameWhenAvailable(): void
     {
         $rosterService = $this->createMock(TeamSeasonRosterService::class);

@@ -8,6 +8,9 @@ use Cake\TestSuite\TestCase;
 
 class PersonLabelTest extends TestCase
 {
+    /**
+     * Tests label with display.
+     */
     public function testLabelWithDisplay(): void
     {
         $person = new Person([
@@ -18,6 +21,9 @@ class PersonLabelTest extends TestCase
         $this->assertEquals('John Doe', $person->getLabel());
     }
 
+    /**
+     * Tests label with first last.
+     */
     public function testLabelWithFirstLast(): void
     {
         $person = new Person([
@@ -28,6 +34,9 @@ class PersonLabelTest extends TestCase
         $this->assertEquals('Jane Smith', $person->getLabel());
     }
 
+    /**
+     * Tests label with no name uses id.
+     */
     public function testLabelWithNoNameUsesId(): void
     {
         $person = new Person([
@@ -39,6 +48,9 @@ class PersonLabelTest extends TestCase
         $this->assertEquals('Person #123', $person->getLabel());
     }
 
+    /**
+     * Tests label with no name no id uses default.
+     */
     public function testLabelWithNoNameNoIdUsesDefault(): void
     {
         $person = new Person([

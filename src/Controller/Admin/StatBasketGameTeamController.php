@@ -15,6 +15,8 @@ use App\Service\BasketballStatsAdminService;
  * @property \App\Model\Table\StatBasketGameTeamTable $StatBasketGameTeam
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \Cake\Http\ServerRequest $request
+ * @property \Cake\Http\Response $response
  */
 class StatBasketGameTeamController extends AppController
 {
@@ -64,9 +66,9 @@ class StatBasketGameTeamController extends AppController
             }
 
             if ($result['success']) {
-                $this->Flash->success(__('The team stats have been saved.'));
+                 $this->Flash->success(__('The team stats have been saved.'));
 
-                return $this->redirect(['action' => 'view', $gameId]);
+                 return $this->redirect(['action' => 'view', $gameId]);
             }
         }
 

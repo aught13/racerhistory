@@ -71,6 +71,8 @@ class BlogPostsAdminService
 
     /**
      * Load a blog post for edit, including tags.
+     *
+     * @param int $id
      */
     public function getEditEntity(int $id): BlogPost
     {
@@ -134,6 +136,9 @@ class BlogPostsAdminService
 
     /**
      * Delete a post by ID.
+     *
+     * @param int $id
+     * @return bool
      */
     public function delete(int $id): bool
     {
@@ -143,6 +148,7 @@ class BlogPostsAdminService
     /**
      * Build all shared view variables required by add/edit templates.
      *
+     * @param \App\Model\Entity\BlogPost $post
      * @return array<string,mixed>
      */
     public function buildFormViewData(BlogPost $post): array

@@ -10,6 +10,9 @@ class ImagesFixture extends TestFixture
 {
     public string $table = 'images';
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

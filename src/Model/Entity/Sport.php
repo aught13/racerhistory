@@ -55,7 +55,7 @@ class Sport extends Entity
     public function getSupportedPeriods(): array
     {
         foreach ((array)($this->sport_configs ?? []) as $config) {
-            if (!$config instanceof \App\Model\Entity\SportConfig) {
+            if (!$config instanceof SportConfig) {
                 continue;
             }
             if ($config->config_key === 'supports_periods') {
@@ -79,7 +79,7 @@ class Sport extends Entity
     public function getDefaultPeriods(): int
     {
         foreach ((array)($this->sport_configs ?? []) as $config) {
-            if (!$config instanceof \App\Model\Entity\SportConfig) {
+            if (!$config instanceof SportConfig) {
                 continue;
             }
             if ($config->config_key === 'default_periods') {
@@ -100,7 +100,7 @@ class Sport extends Entity
     public function getPeriodName(int $periodCount): string
     {
         foreach ((array)($this->sport_configs ?? []) as $config) {
-            if (!$config instanceof \App\Model\Entity\SportConfig) {
+            if (!$config instanceof SportConfig) {
                 continue;
             }
             if ($config->config_key === "period_name_{$periodCount}") {
@@ -125,7 +125,7 @@ class Sport extends Entity
     public function getOfficials(): array
     {
         foreach ((array)($this->sport_configs ?? []) as $config) {
-            if (!$config instanceof \App\Model\Entity\SportConfig) {
+            if (!$config instanceof SportConfig) {
                 continue;
             }
             if ($config->config_key === 'officials') {
@@ -149,7 +149,7 @@ class Sport extends Entity
     public function getScoringType(): string
     {
         foreach ((array)($this->sport_configs ?? []) as $config) {
-            if (!$config instanceof \App\Model\Entity\SportConfig) {
+            if (!$config instanceof SportConfig) {
                 continue;
             }
             if ($config->config_key === 'scoring_type') {
@@ -177,13 +177,13 @@ class Sport extends Entity
         $registry = (array)$this->sport_stat_registry;
 
         if ($context !== null) {
-            $registry = array_filter($registry, function (\App\Model\Entity\SportStatRegistry $item) use ($context) {
+            $registry = array_filter($registry, function (SportStatRegistry $item) use ($context) {
                 return $item->context === $context;
             });
         }
 
         if ($entityType !== null) {
-            $registry = array_filter($registry, function (\App\Model\Entity\SportStatRegistry $item) use ($entityType) {
+            $registry = array_filter($registry, function (SportStatRegistry $item) use ($entityType) {
                 return $item->entity_type === $entityType;
             });
         }
@@ -205,7 +205,7 @@ class Sport extends Entity
         }
 
         foreach ((array)$this->sport_stat_registry as $registry) {
-            if (!($registry instanceof \App\Model\Entity\SportStatRegistry)) {
+            if (!($registry instanceof SportStatRegistry)) {
                 continue;
             }
             if ($registry->context === $context && $registry->entity_type === $entityType) {

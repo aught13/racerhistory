@@ -24,7 +24,7 @@ class ImageStorageService
 
     /**
      * @param \App\Service\ImageProcessor|null $processor Optional processor override
-     * @param \App\Service\TaggingService|null $tagging Optional tagging override
+     * @param \App\Service\TaggingService|null $tagging   Optional tagging override
      */
     public function __construct(?ImageProcessor $processor = null, ?TaggingService $tagging = null)
     {
@@ -45,8 +45,8 @@ class ImageStorageService
      * Returns ['success' => bool, 'image' => ?Image, 'existing' => bool, 'error' => ?string].
      *
      * @param \Psr\Http\Message\UploadedFileInterface $file
-     * @param array<int|string,string|array> $tags
-     * @param array<string,mixed> $manipulations
+     * @param array<int|string,string|array>          $tags
+     * @param array<string,mixed>                     $manipulations
      * @return array<string,mixed>
      */
     public function upload(UploadedFileInterface $file, array $tags = [], array $manipulations = []): array
@@ -84,6 +84,8 @@ class ImageStorageService
 
     /**
      * Validate uploaded file type and error state.
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $file
      */
     public function validateUpload(UploadedFileInterface $file): bool|string
     {
@@ -119,6 +121,8 @@ class ImageStorageService
     /**
      * Process uploaded file via ImageProcessor and return processed structure.
      *
+     * @param \Psr\Http\Message\UploadedFileInterface $file
+     * @param array $manipulations
      * @return array{0:array,1:string,2:string,3:string}
      */
     public function processFile(UploadedFileInterface $file, array $manipulations = []): array
@@ -137,6 +141,13 @@ class ImageStorageService
 
     /**
      * Persist image entity and return saved entity or null on failure.
+     *
+     * @param \App\Model\Table\ImagesTable $images
+     * @param array $processed
+     * @param string $hash
+     * @param string $mime
+     * @param string $ext
+     * @param string|null $originalName
      */
     public function persistNewImage(
         ImagesTable $images,
@@ -190,6 +201,11 @@ class ImageStorageService
     /**
      * Write original + variants to storage directory.
      *
+     * @param string $uuid
+     * @param string $ext
+     * @param string $storageDir
+     * @param array $processed
+     * @param array $writeErrors
      * @return array{0:string,1:array}
      */
     private function writeImageFiles(
@@ -226,7 +242,8 @@ class ImageStorageService
     /**
      * Ensure storage directory exists and is writable.
      *
-     * @param array<int,string> $errors
+     * @param string $dir
+     * @param array $errors
      */
     private function createStorageDir(string $dir, array &$errors): bool
     {
@@ -246,6 +263,8 @@ class ImageStorageService
 
     /**
      * Load image or throw.
+     *
+     * @param int $id
      */
     public function loadImageOrFail(int $id): Image
     {
@@ -255,6 +274,8 @@ class ImageStorageService
     /**
      * Resolve file path and mime for an image and optional variant.
      *
+     * @param \App\Model\Entity\Image $image
+     * @param string $variant
      * @return array{0:string,1:string}
      */
     public function resolveImagePath(Image $image, string $variant): array
@@ -309,7 +330,6 @@ class ImageStorageService
 
     /**
      * Get the configured storage root path for images.
-     *
      * Returns the configured Images.storageRoot value or defaults to WWW_ROOT/img/storage/.
      * Ensures the path ends with a directory separator.
      *
@@ -327,7 +347,6 @@ class ImageStorageService
 
     /**
      * Get the configured legacy storage root path for images.
-     *
      * Returns the configured Images.legacyStorageRoot value or defaults to ROOT/storage/images/.
      * Ensures the path ends with a directory separator.
      *

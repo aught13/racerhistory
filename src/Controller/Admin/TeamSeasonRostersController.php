@@ -43,7 +43,7 @@ class TeamSeasonRostersController extends AppController
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
             $this->FormProtection->setConfig(
                 'unlockedActions',
-                array_merge($current, ['bulkAdd', 'bulkEdit'])
+                array_merge($current, ['bulkAdd', 'bulkEdit']),
             );
         }
     }
@@ -235,7 +235,7 @@ class TeamSeasonRostersController extends AppController
     {
         $this->request->allowMethod(['post']);
         $result = $this->teamSeasonRosterAdminService->bulkDeleteRosters(
-            (array)$this->request->getData('team_season_roster_ids')
+            (array)$this->request->getData('team_season_roster_ids'),
         );
 
         if (!$result['validSelection']) {

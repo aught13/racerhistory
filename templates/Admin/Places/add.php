@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Place $place
+ */
+?>
 <?php $this->assign('title', 'Add Place'); ?>
 <div class="container py-4">
     <h1 class="mb-3">Add Place</h1>

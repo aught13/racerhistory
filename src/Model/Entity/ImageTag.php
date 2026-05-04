@@ -11,10 +11,11 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property \DateTimeInterface $created
- * @property \DateTimeInterface $modified
+ * @property \Cake\I18n\DateTime|null $created
+ * @property \Cake\I18n\DateTime|null $modified
  *
  * @property \App\Model\Entity\Image[] $images
+ * @property \Cake\ORM\Entity $_joinData
  */
 class ImageTag extends Entity
 {

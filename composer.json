@@ -27,7 +27,8 @@
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.5.5 || ^11.1.3 || ^12.1",
         "slevomat/coding-standard": "^8.20.0",
-        "squizlabs/php_codesniffer": "^4.0.1"
+        "squizlabs/php_codesniffer": "^4.0.1",
+        "dereuromark/cakephp-ide-helper": "^2.0"
     },
     "suggest": {
         "cakephp/repl": "Console tools for a REPL interface for CakePHP applications.",
@@ -62,6 +63,7 @@
         "post-create-project-cmd": "App\\Console\\Installer::postInstall",
         "hooks:install": "git config core.hooksPath .githooks",
         "phpstan:check": "php -d memory_limit=1G vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress --memory-limit=1G",
+        "check:coauthor": "sh scripts/check-no-coauthor.sh",
         "full-check": [
         "npm run test:js",
         "@test",
@@ -73,12 +75,17 @@
         "@cs-fix"
         ],
         "check": [
+            "@check:coauthor",
             "@test",
             "@cs-check"
         ],
         "cs-check": "phpcs --colors -p",
         "cs-fix": "phpcbf --colors -p",
-        "test": "phpunit --colors=always"
+        "test": "phpunit --colors=always",
+        "docs:generate": [
+            "bin/cake annotate all",
+            "jsdoc -c jsdoc.json"
+        ]
     },
     "extra": {
         "phpunit": {

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Table\SportsTable;
+use App\Model\Table\TeamSeasonRostersTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
 
@@ -31,7 +33,7 @@ class TeamSeasonRosterAdminService
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get(
             $id,
-            ['contain' => ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']]
+            ['contain' => ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']],
         );
 
         return compact('teamSeasonRoster');
@@ -208,7 +210,7 @@ class TeamSeasonRosterAdminService
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get(
             $id,
-            contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']
+            contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons'],
         );
 
         $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
@@ -231,7 +233,7 @@ class TeamSeasonRosterAdminService
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get(
             $id,
-            contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']
+            contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons'],
         );
 
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->patchEntity($teamSeasonRoster, $data);
@@ -368,7 +370,7 @@ class TeamSeasonRosterAdminService
     /**
      * @return \App\Model\Table\TeamSeasonRostersTable
      */
-    private function getTeamSeasonRostersTable(): \App\Model\Table\TeamSeasonRostersTable
+    private function getTeamSeasonRostersTable(): TeamSeasonRostersTable
     {
         /** @var \App\Model\Table\TeamSeasonRostersTable $table */
         $table = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
@@ -379,7 +381,7 @@ class TeamSeasonRosterAdminService
     /**
      * @return \App\Model\Table\SportsTable
      */
-    private function getSportsTable(): \App\Model\Table\SportsTable
+    private function getSportsTable(): SportsTable
     {
         /** @var \App\Model\Table\SportsTable $table */
         $table = TableRegistry::getTableLocator()->get('Sports');

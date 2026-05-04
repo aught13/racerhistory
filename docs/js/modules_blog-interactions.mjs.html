@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: modules/blog-interactions.mjs</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: modules/blog-interactions.mjs</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Blog Post Interactions Module
+ * Handles collapse/expand of blog post views and list item interactions
+ */
+
+export function setupBlogPostCollapse(root = document) {
+    const collapseButtons = root.querySelectorAll(".blog-collapse");
+
+    collapseButtons.forEach((closeBtn) => {
+        if (closeBtn.dataset.collapseListenerBound === "true") {
+            return;
+        }
+        closeBtn.dataset.collapseListenerBound = "true";
+
+        closeBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Get the view frame
+            const viewFrame = closeBtn.closest("turbo-frame[data-view-frame]");
+            if (!viewFrame) {
+                return;
+            }
+
+            // Find the parent blog-post frame by traversing up from view frame
+            let parentFrame = viewFrame.parentElement;
+            while (parentFrame &amp;&amp; !parentFrame.id.startsWith("blog-post-")) {
+                parentFrame = parentFrame.parentElement;
+            }
+
+            if (parentFrame &amp;&amp; parentFrame.id.startsWith("blog-post-")) {
+                // Reset the parent frame state
+                parentFrame.removeAttribute("data-expanded");
+                parentFrame.classList.remove("blog-post-expanded");
+
+                const featured = parentFrame.querySelector(".blog-featured");
+                if (featured) featured.style.display = "";
+
+                const listItem = parentFrame.querySelector(".blog-list-item");
+                if (listItem) listItem.style.display = "";
+            }
+
+            // Clear the view frame content
+            viewFrame.innerHTML = "";
+
+            // Notify the page so the featured post hero can be restored if needed
+            document.dispatchEvent(
+                new CustomEvent("blog:post-collapsed", {
+                    detail: { frameId: parentFrame ? parentFrame.id : null },
+                }),
+            );
+        });
+    });
+}
+
+export function markBlogPostExpanded(root = document) {
+    const postView = root.querySelector(".blog-post-view[data-blog-post]");
+    if (!postView) {
+        return;
+    }
+
+    const slug = postView.dataset.blogPost;
+    if (!slug) {
+        return;
+    }
+
+    // Find the containing blog-post frame - look in the document, not just root
+    const containerFrame = document.getElementById("blog-post-" + slug);
+    if (!containerFrame) {
+        return;
+    }
+
+    containerFrame.setAttribute("data-expanded", "true");
+    containerFrame.classList.add("blog-post-expanded");
+
+    const featured = containerFrame.querySelector(".blog-featured");
+    if (featured) featured.style.display = "none";
+
+    const listItem = containerFrame.querySelector(".blog-list-item");
+    if (listItem) listItem.style.display = "none";
+}
+
+export default function initBlogInteractions(options = {}) {
+    const root = options.root || document;
+
+    setupBlogPostCollapse(root);
+    markBlogPostExpanded(root);
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-game-form-lookups.html">game-form-lookups</a></li><li><a href="module-modules_tinymce-bootstrap-config.html">modules/tinymce-bootstrap-config</a></li></ul><h3>Classes</h3><ul><li><a href="CropSelector.html">CropSelector</a></li><li><a href="global.html#ImageSelector">ImageSelector</a></li><li><a href="SportAwareGameForm.html">SportAwareGameForm</a></li></ul><h3>Global</h3><ul><li><a href="global.html#CDN_URLS">CDN_URLS</a></li><li><a href="global.html#DATATABLES_CORE_SRC">DATATABLES_CORE_SRC</a></li><li><a href="global.html#DEBOUNCE_MS">DEBOUNCE_MS</a></li><li><a href="global.html#NUMERIC_COLUMNS">NUMERIC_COLUMNS</a></li><li><a href="global.html#SCROLLER_THRESHOLD">SCROLLER_THRESHOLD</a></li><li><a href="global.html#_initialised">_initialised</a></li><li><a href="global.html#addRow">addRow</a></li><li><a href="global.html#autoSelectNewPerson">autoSelectNewPerson</a></li><li><a href="global.html#buildDom">buildDom</a></li><li><a href="global.html#buildEditDom">buildEditDom</a></li><li><a href="global.html#buildOpponentDom">buildOpponentDom</a></li><li><a href="global.html#buildPersonDom">buildPersonDom</a></li><li><a href="global.html#buildResults">buildResults</a></li><li><a href="global.html#calculateRecord">calculateRecord</a></li><li><a href="global.html#ensureDataTablesLoaded">ensureDataTablesLoaded</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#fixScrollXHeaderAlignment">fixScrollXHeaderAlignment</a></li><li><a href="global.html#flush">flush</a></li><li><a href="global.html#initCardHover">initCardHover</a></li><li><a href="global.html#initDragScroll">initDragScroll</a></li><li><a href="global.html#initGamesDataTable">initGamesDataTable</a></li><li><a href="global.html#initGamesPage">initGamesPage</a></li><li><a href="global.html#initPersonSearch">initPersonSearch</a></li><li><a href="global.html#initRosterMultiAdd">initRosterMultiAdd</a></li><li><a href="global.html#initStatMultiAdd">initStatMultiAdd</a></li><li><a href="global.html#initStatsDataTable">initStatsDataTable</a></li><li><a href="global.html#initStatsPage">initStatsPage</a></li><li><a href="global.html#initializingTables">initializingTables</a></li><li><a href="global.html#isDataTablesAvailable">isDataTablesAvailable</a></li><li><a href="global.html#jq">jq</a></li><li><a href="global.html#reindexRows">reindexRows</a></li><li><a href="global.html#reinitBootstrap">reinitBootstrap</a></li><li><a href="global.html#setupBlogPostCollapse">setupBlogPostCollapse</a></li><li><a href="global.html#setupDT">setupDT</a></li><li><a href="global.html#setupJQueryMock">setupJQueryMock</a></li><li><a href="global.html#syncScrollerColumns">syncScrollerColumns</a></li><li><a href="global.html#updateRecordDisplay">updateRecordDisplay</a></li><li><a href="global.html#updateRemoveButtons">updateRemoveButtons</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sun May 03 2026 13:42:29 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

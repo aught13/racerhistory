@@ -4,9 +4,13 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\BlogPost;
+use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
+use DateTimeImmutable;
+use DateTimeInterface;
+use Exception;
 
 /**
  * BlogPostService
@@ -29,6 +33,8 @@ class BlogPostService
 
     /**
      * Fetch a blog post by id.
+     *
+     * @param int $id
      */
     public function getPostById(int $id): ?BlogPost
     {
@@ -41,6 +47,8 @@ class BlogPostService
 
     /**
      * Fetch a published blog post by slug.
+     *
+     * @param string $slug
      */
     public function getPublishedBySlug(string $slug): ?BlogPost
     {
@@ -72,8 +80,8 @@ class BlogPostService
     /**
      * Get published posts by a tag slug.
      *
-     * @param string $tagSlug Tag slug
-     * @param int $limit Max number of posts
+     * @param string $tagSlug
+     * @param int $limit
      * @return array<int,\App\Model\Entity\BlogPost>
      */
     public function getPublishedByTag(string $tagSlug, int $limit = 20): array
@@ -95,8 +103,8 @@ class BlogPostService
     /**
      * Get published posts with pagination metadata.
      *
-     * @param int $limit Page size
-     * @param int $offset Result offset
+     * @param int $limit
+     * @param int $offset
      * @return array{posts:array<int,\App\Model\Entity\BlogPost>,total:int}
      */
     public function getPublishedPostsPage(int $limit, int $offset = 0): array
@@ -111,7 +119,7 @@ class BlogPostService
     /**
      * Build the published posts query with pinned ordering.
      */
-    private function getPublishedPostsQuery(): \Cake\ORM\Query
+    private function getPublishedPostsQuery(): Query
     {
         $table = $this->posts();
         $query = $table->find()
@@ -150,7 +158,7 @@ class BlogPostService
     /**
      * Create a blog post and apply tags.
      *
-     * @param array<string,mixed> $data
+     * @param array $data
      * @return \App\Model\Entity\BlogPost|false
      */
     public function createPost(array $data): BlogPost|false
@@ -174,8 +182,8 @@ class BlogPostService
     /**
      * Update an existing blog post and reapply tags.
      *
-     * @param int $id Blog post id.
-     * @param array<string,mixed> $data
+     * @param int $id
+     * @param array $data
      * @return \App\Model\Entity\BlogPost|false
      */
     public function updatePost(int $id, array $data): BlogPost|false
@@ -199,6 +207,8 @@ class BlogPostService
 
     /**
      * Delete a blog post.
+     *
+     * @param int $id
      */
     public function deletePost(int $id): bool
     {
@@ -210,6 +220,8 @@ class BlogPostService
 
     /**
      * Get label for UI display.
+     *
+     * @param int $id
      */
     public function getDisplayLabel(int $id): string
     {
@@ -221,9 +233,9 @@ class BlogPostService
     /**
      * Normalize incoming data (slug, publish dates, status).
      *
-     * @param array<string,mixed> $data
+     * @param array $data
      * @param \Cake\ORM\Table $table
-     * @param int|null $ignoreId Id to exclude when ensuring slug uniqueness.
+     * @param int|null $ignoreId
      * @return array<string,mixed>
      */
     private function normalizeData(array $data, Table $table, ?int $ignoreId = null): array
@@ -254,24 +266,24 @@ class BlogPostService
 
         $publishedAt = $normalized['published_at'] ?? null;
         $publishedAtInstance = null;
-        if ($publishedAt instanceof \DateTimeInterface) {
-            $publishedAtInstance = $publishedAt instanceof \DateTimeImmutable
+        if ($publishedAt instanceof DateTimeInterface) {
+            $publishedAtInstance = $publishedAt instanceof DateTimeImmutable
                 ? $publishedAt
-                : \DateTimeImmutable::createFromMutable($publishedAt);
+                : DateTimeImmutable::createFromMutable($publishedAt);
         } elseif (is_string($publishedAt) && $publishedAt !== '') {
             try {
-                $publishedAtInstance = new \DateTimeImmutable($publishedAt);
-            } catch (\Exception) {
+                $publishedAtInstance = new DateTimeImmutable($publishedAt);
+            } catch (Exception) {
                 $publishedAtInstance = null;
             }
         }
 
         if ($isPublished) {
             if ($publishedAtInstance === null) {
-                $normalized['published_at'] = new \DateTimeImmutable();
+                $normalized['published_at'] = new DateTimeImmutable();
             }
         } elseif ($publishedAtInstance !== null) {
-            $now = new \DateTimeImmutable();
+            $now = new DateTimeImmutable();
             if ($publishedAtInstance <= $now) {
                 $normalized['published_at'] = null;
             }
@@ -282,6 +294,10 @@ class BlogPostService
 
     /**
      * Ensure slug uniqueness with numeric suffix.
+     *
+     * @param string $slug
+     * @param \Cake\ORM\Table $table
+     * @param int|null $ignoreId
      */
     private function uniqueSlug(string $slug, Table $table, ?int $ignoreId = null): string
     {

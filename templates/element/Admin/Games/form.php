@@ -1,4 +1,10 @@
 <?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $eavTemplate
+ * @var mixed $teamSeasonList
+ * @var \App\Model\Entity\Game $game
+ */
 // Shared form element for Games add/edit
 // Expects: $game, $teamSeasonList, $gameTypes, $opponents, $places, $sites, optional $eav, $lookupDisplays
 $eav = $eav ?? [];
@@ -16,10 +22,6 @@ $placeSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Place
 $siteSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'ajaxSearch']);
 $gameTypeSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'ajaxSearch']);
 
-$opponentAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'ajaxAdd']);
-$placeAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']);
-$siteAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'ajaxAdd']);
-$gameTypeAjaxAddUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'ajaxAdd']);
 ?>
 <div class="card" id="game-form-card"
      data-opponent-search-url="<?= h($opponentSearchUrl) ?>"

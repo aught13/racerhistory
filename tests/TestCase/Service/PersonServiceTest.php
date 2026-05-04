@@ -14,12 +14,18 @@ class PersonServiceTest extends TestCase
 
     private PersonService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new PersonService();
     }
 
+    /**
+     * Tests get person by id.
+     */
     public function testGetPersonById(): void
     {
         $person = $this->service->getPersonById(1);
@@ -27,12 +33,18 @@ class PersonServiceTest extends TestCase
         $this->assertSame(1, $person->id);
     }
 
+    /**
+     * Tests get person by id returns null for invalid id.
+     */
     public function testGetPersonByIdReturnsNullForInvalidId(): void
     {
         $person = $this->service->getPersonById(99999);
         $this->assertNull($person);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -40,12 +52,18 @@ class PersonServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Person #99999', $label);
     }
 
+    /**
+     * Tests search persons.
+     */
     public function testSearchPersons(): void
     {
         $results = $this->service->searchPersons('Doe', 10);
@@ -58,18 +76,27 @@ class PersonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests search persons returns empty for empty query.
+     */
     public function testSearchPersonsReturnsEmptyForEmptyQuery(): void
     {
         $results = $this->service->searchPersons('');
         $this->assertSame([], $results);
     }
 
+    /**
+     * Tests search persons respects limit.
+     */
     public function testSearchPersonsRespectsLimit(): void
     {
         $results = $this->service->searchPersons('a', 5);
         $this->assertLessThanOrEqual(5, count($results));
     }
 
+    /**
+     * Tests get all persons.
+     */
     public function testGetAllPersons(): void
     {
         $persons = $this->service->getAllPersons();
@@ -77,6 +104,9 @@ class PersonServiceTest extends TestCase
         $this->assertGreaterThan(0, count($persons));
     }
 
+    /**
+     * Tests create person.
+     */
     public function testCreatePerson(): void
     {
         $data = [
@@ -90,6 +120,9 @@ class PersonServiceTest extends TestCase
         $this->assertSame('Person', $person->last);
     }
 
+    /**
+     * Tests update person.
+     */
     public function testUpdatePerson(): void
     {
         $person = $this->service->updatePerson(1, ['first' => 'Updated']);
@@ -97,6 +130,9 @@ class PersonServiceTest extends TestCase
         $this->assertSame('Updated', $person->first);
     }
 
+    /**
+     * Tests delete person.
+     */
     public function testDeletePerson(): void
     {
         $data = [
@@ -114,6 +150,9 @@ class PersonServiceTest extends TestCase
         $this->assertNull($deleted);
     }
 
+    /**
+     * Tests get persons for select.
+     */
     public function testGetPersonsForSelect(): void
     {
         $results = $this->service->getPersonsForSelect();
@@ -125,6 +164,9 @@ class PersonServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get persons list.
+     */
     public function testGetPersonsList(): void
     {
         $list = $this->service->getPersonsList(200);

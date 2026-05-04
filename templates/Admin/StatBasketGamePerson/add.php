@@ -9,6 +9,7 @@
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Game $game
  * @var array $teamSeasonRoster
+ * @var mixed $alreadyAddedCount
  */
 $this->assign('title', 'Add Player Stats');
 ?>
@@ -45,14 +46,14 @@ $this->assign('title', 'Add Player Stats');
     </div>
 
     <turbo-frame id="stat-person-add-frame" target="_top">
-    <?php if ($alreadyAddedCount > 0): ?>
+    <?php if ($alreadyAddedCount > 0) : ?>
     <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
         <i class="bi bi-info-circle me-2"></i>
         <?= __n(
             '{0} player already has stats recorded for this game and is not shown in the dropdown.',
             '{0} players already have stats recorded for this game and are not shown in the dropdown.',
             $alreadyAddedCount,
-            $alreadyAddedCount
+            $alreadyAddedCount,
         ) ?>
     </div>
     <?php endif; ?>
@@ -76,7 +77,7 @@ $this->assign('title', 'Add Player Stats');
                         <label class="form-label">Player *</label>
                         <select name="rows[0][team_season_roster_id]" class="form-select stat-player-select" required>
                             <option value="">-- Select Player --</option>
-                            <?php foreach ($teamSeasonRoster as $id => $label): ?>
+                            <?php foreach ($teamSeasonRoster as $id => $label) : ?>
                             <option value="<?= (int)$id ?>"><?= h($label) ?></option>
                             <?php endforeach; ?>
                         </select>

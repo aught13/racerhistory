@@ -10,6 +10,9 @@
  * - $variant: Optional image variant query param
  * - $class: Optional CSS classes
  * - $style: Optional inline styles
+ *
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\TeamSeason $teamSeason
  */
 
 $size = $size ?? 'medium';
@@ -36,12 +39,12 @@ if (!empty($teamSeason->team_season_image) && is_numeric($teamSeason->team_seaso
     ]);
     echo '<img src="' . h($imageUrl) . '" alt="Season image" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
 } else {
-    echo $this->Html->div('placeholder-image ' . $cssClass,
+    echo $this->Html->div(
+        'placeholder-image ' . $cssClass,
         $this->Html->tag('span', 'TS', [
             'class' => 'd-flex align-items-center justify-content-center h-100 bg-secondary text-white fw-bold',
-            'style' => 'font-size: ' . ($width * 0.4) . 'px;'
+            'style' => 'font-size: ' . ($width * 0.4) . 'px;',
         ]),
-        ['style' => $cssStyle . ' background-color: #6c757d;']
+        ['style' => $cssStyle . ' background-color: #6c757d;'],
     );
 }
-?>

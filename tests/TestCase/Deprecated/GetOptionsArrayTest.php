@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Deprecated;
 
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 /**
  * Ensure Table::get() is not called with an options array (deprecated pattern).
@@ -14,10 +16,13 @@ use PHPUnit\Framework\TestCase;
  */
 class GetOptionsArrayTest extends TestCase
 {
+    /**
+     * Tests no get with options array.
+     */
     public function testNoGetWithOptionsArray(): void
     {
         $root = __DIR__ . '/../../..';
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root));
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
         $matches = [];
         foreach ($iterator as $file) {
             if (!$file->isFile()) {

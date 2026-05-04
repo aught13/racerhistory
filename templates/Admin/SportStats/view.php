@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $tableSchema
+ * @var \App\Model\Entity\SportStatRegistry $sportStatRegistry
+ */
+?>
 <?php $this->assign('title', h($sportStatRegistry->display_name) . ' Configuration'); ?>
 <div class="container py-4">
     <div class="row mb-4">
@@ -28,7 +35,7 @@
                         'confirm' => 'Are you sure you want to delete this configuration?',
                         'class' => 'btn btn-danger ms-auto',
                         'escape' => false,
-                    ]
+                    ],
                 ) ?>
             </div>
         </div>
@@ -69,7 +76,7 @@
                         <tr>
                             <th scope="row">Created</th>
                             <td>
-                                <?php if ($sportStatRegistry->created instanceof \DateTimeInterface) : ?>
+                                <?php if ($sportStatRegistry->created instanceof DateTimeInterface) : ?>
                                     <?= h($sportStatRegistry->created->format('M j, Y g:i A')) ?>
                                 <?php else : ?>
                                     <?= h($sportStatRegistry->created) ?>
@@ -79,7 +86,7 @@
                         <tr>
                             <th scope="row">Modified</th>
                             <td>
-                                <?php if ($sportStatRegistry->modified instanceof \DateTimeInterface) : ?>
+                                <?php if ($sportStatRegistry->modified instanceof DateTimeInterface) : ?>
                                     <?= h($sportStatRegistry->modified->format('M j, Y g:i A')) ?>
                                 <?php else : ?>
                                     <?= h($sportStatRegistry->modified) ?>

@@ -3,11 +3,27 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\SportStatRegistry;
 use App\Service\SportConfigService;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 
+/**
+ * @method \App\Model\Entity\GameEav newEmptyEntity()
+ * @method \App\Model\Entity\GameEav newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\GameEav[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\GameEav get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\GameEav findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\GameEav patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\GameEav[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\GameEav|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\GameEav saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\GameEav[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameEav>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\GameEav[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameEav> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\GameEav[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameEav>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\GameEav[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameEav> deleteManyOrFail(iterable $entities, array $options = [])
+ */
 class GameEavTable extends Table
 {
     /**
@@ -416,7 +432,7 @@ class GameEavTable extends Table
         // First check SportStatRegistry for database configuration
         $query = $this->sportStatRegistry->find(
             'bySport',
-            ['sport_id' => $sportId]
+            ['sport_id' => $sportId],
         );
 
         // Apply optional filters
@@ -433,7 +449,7 @@ class GameEavTable extends Table
         if (!empty($statTablesFromDb)) {
             $result = [];
             foreach ($statTablesFromDb as $registry) {
-                if (!($registry instanceof \App\Model\Entity\SportStatRegistry)) {
+                if (!($registry instanceof SportStatRegistry)) {
                     continue;
                 }
                 $key = "{$registry->context}.{$registry->entity_type}";

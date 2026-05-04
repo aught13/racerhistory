@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Table\GameTypesTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
 
@@ -199,7 +200,7 @@ class GameTypeAdminService
     /**
      * @return \App\Model\Table\GameTypesTable
      */
-    private function getGameTypesTable(): \App\Model\Table\GameTypesTable
+    private function getGameTypesTable(): GameTypesTable
     {
         /** @var \App\Model\Table\GameTypesTable $table */
         $table = TableRegistry::getTableLocator()->get('GameTypes');

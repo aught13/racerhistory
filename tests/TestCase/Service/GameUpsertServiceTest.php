@@ -12,11 +12,15 @@ use App\Service\GameEavUiService;
 use App\Service\GameService;
 use App\Service\GameUpsertService;
 use App\Service\SportConfigService;
+use Cake\I18n\Date;
 use Cake\ORM\Query\SelectQuery;
 use Cake\TestSuite\TestCase;
 
 class GameUpsertServiceTest extends TestCase
 {
+    /**
+     * Tests process add returns errors and view data when period validation fails.
+     */
     public function testProcessAddReturnsErrorsAndViewDataWhenPeriodValidationFails(): void
     {
         $teamSeasonId = 1;
@@ -84,6 +88,9 @@ class GameUpsertServiceTest extends TestCase
         $this->assertArrayHasKey('legacyMappedEav', $viewData);
     }
 
+    /**
+     * Tests process add redirects to opponent edit when inline opponent created.
+     */
     public function testProcessAddRedirectsToOpponentEditWhenInlineOpponentCreated(): void
     {
         $teamSeasonId = 1;
@@ -167,10 +174,13 @@ class GameUpsertServiceTest extends TestCase
                 'action' => 'edit',
                 555,
             ],
-            $result['redirect']
+            $result['redirect'],
         );
     }
 
+    /**
+     * Tests process edit returns errors and merges posted period fields.
+     */
     public function testProcessEditReturnsErrorsAndMergesPostedPeriodFields(): void
     {
         $gameId = 1;
@@ -249,11 +259,14 @@ class GameUpsertServiceTest extends TestCase
         $this->assertSame($game, $result['viewData']['game']);
     }
 
+    /**
+     * Tests process add past game redirects to add results.
+     */
     public function testProcessAddPastGameRedirectsToAddResults(): void
     {
         $teamSeasonId = 1;
 
-        $pastDate = new \Cake\I18n\Date('-3 days');
+        $pastDate = new Date('-3 days');
         $game = new Game(['id' => 42, 'game_date' => $pastDate]);
 
         $metadata = [
@@ -297,11 +310,14 @@ class GameUpsertServiceTest extends TestCase
         $this->assertStringContainsString('Add results', $result['flashSuccess']);
     }
 
+    /**
+     * Tests process add future game redirects to add another.
+     */
     public function testProcessAddFutureGameRedirectsToAddAnother(): void
     {
         $teamSeasonId = 5;
 
-        $futureDate = new \Cake\I18n\Date('+7 days');
+        $futureDate = new Date('+7 days');
         $game = new Game(['id' => 43, 'game_date' => $futureDate]);
 
         $metadata = [

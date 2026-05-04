@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * Public Basketball Game Stats Element
  *
@@ -14,6 +15,7 @@ declare(strict_types=1);
  * @var array $opponentPeriodStats
  * @var bool $hasPeriodStats
  * @var array<string,string> $fieldLabels
+ * @var \App\View\AppView $this
  */
 
 $teamName = $game->team_season->team->team_nickname
@@ -27,6 +29,7 @@ $opponentRows = $opponentPlayerStats ? $opponentPlayerStats->toArray() : [];
 $formatPair = static function ($made, $attempted): string {
     $madeVal = is_numeric($made) ? (int)$made : 0;
     $attemptVal = is_numeric($attempted) ? (int)$attempted : 0;
+
     return sprintf('%d-%d', $madeVal, $attemptVal);
 };
 
@@ -36,7 +39,8 @@ $formatPercent = static function ($made, $attempted): string {
     if ($attemptVal <= 0) {
         return '-';
     }
-    return number_format(($madeVal / $attemptVal) * 100, 1) . '%';
+
+    return number_format($madeVal / $attemptVal * 100, 1) . '%';
 };
 
 $hasStatValue = static function ($value): bool {
@@ -52,6 +56,7 @@ $formatPairForStats = static function (array $stats, string $madeKey, string $at
     if (!$hasStatValue($attempt)) {
         return (string)$made;
     }
+
     return $formatPair($made, $attempt);
 };
 
@@ -61,6 +66,7 @@ $formatPairForPlayer = static function (object $stat, string $madeKey, string $a
     if ($attempt === null || $attempt === '') {
         return $made !== null && $made !== '' ? (string)$made : '-';
     }
+
     return $formatPair($made, $attempt);
 };
 
@@ -70,6 +76,7 @@ $formatPercentForStats = static function (array $stats, string $madeKey, string 
     if (!$hasStatValue($made) && !$hasStatValue($attempt)) {
         return '-';
     }
+
     return $formatPercent($made, $attempt);
 };
 
@@ -82,6 +89,7 @@ $playerColumns = [
             if ($gs <= 0) {
                 return '';
             }
+
             return $position ?? 'GS';
         },
         'total' => static fn(): string => '',
@@ -235,12 +243,12 @@ $hasPlayerStatValue = static function (array $rows, string $columnId): bool {
 
 $visibleTeamPlayerColumns = array_values(array_filter(
     $playerColumns,
-    static fn($column) => $hasPlayerStatValue($playerRows, $column['id'])
+    static fn($column) => $hasPlayerStatValue($playerRows, $column['id']),
 ));
 
 $visibleOpponentPlayerColumns = array_values(array_filter(
     $playerColumns,
-    static fn($column) => $hasPlayerStatValue($opponentRows, $column['id'])
+    static fn($column) => $hasPlayerStatValue($opponentRows, $column['id']),
 ));
 
 $hasAnyStats = !empty($playerRows) || !empty($opponentRows) || !empty($teamBoxStats) || !empty($opponentBoxStats);

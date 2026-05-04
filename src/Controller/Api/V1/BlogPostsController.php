@@ -5,6 +5,9 @@ namespace App\Controller\Api\V1;
 
 use App\Service\BlogPostService;
 
+/**
+ * @property \App\Model\Table\BlogPostsTable $BlogPosts
+ */
 class BlogPostsController extends AppController
 {
     private BlogPostService $blogPostService;
@@ -40,7 +43,7 @@ class BlogPostsController extends AppController
                         'name' => $t->name ?? null,
                         'slug' => $t->slug ?? null,
                     ],
-                    is_iterable($post->blog_tags ?? null) ? $post->blog_tags : []
+                    is_iterable($post->blog_tags ?? null) ? $post->blog_tags : [],
                 ),
             ];
         }
@@ -55,6 +58,8 @@ class BlogPostsController extends AppController
 
     /**
      * Get a single published post by slug.
+     *
+     * @param string $slug
      */
     public function view(string $slug): void
     {
@@ -81,7 +86,7 @@ class BlogPostsController extends AppController
                         'name' => $t->name ?? null,
                         'slug' => $t->slug ?? null,
                     ],
-                    is_iterable($post->blog_tags ?? null) ? $post->blog_tags : []
+                    is_iterable($post->blog_tags ?? null) ? $post->blog_tags : [],
                 ),
             ],
         ]);

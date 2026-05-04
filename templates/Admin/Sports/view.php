@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var array $configs
+ * @var \App\Model\Entity\Sport $sport
+ */
+?>
 <?php $this->assign('title', 'View Sport'); ?>
 <div class="container py-4">
     <div class="row">
@@ -49,10 +56,10 @@
                             </div>
                         </div>
 
-                        <?php if (!empty($configs['period_names']) || !empty($configs['officials']['value']) || !empty($configs['settings'])): ?>
+                        <?php if (!empty($configs['period_names']) || !empty($configs['officials']['value']) || !empty($configs['settings'])) : ?>
                             <div class="row">
                                 <!-- Period Names -->
-                                <?php if (!empty($configs['period_names'])): ?>
+                                <?php if (!empty($configs['period_names'])) : ?>
                                 <div class="col-md-6 mb-3">
                                     <div class="card border-primary">
                                         <div class="card-header bg-primary text-white">
@@ -64,7 +71,7 @@
                                         <div class="card-body">
                                             <div class="table-responsive">
                                                 <table class="table table-sm table-borderless">
-                                                    <?php foreach ($configs['period_names'] as $periods => $config): ?>
+                                                    <?php foreach ($configs['period_names'] as $periods => $config) : ?>
                                                     <tr>
                                                         <td>
                                                             <span class="badge bg-secondary"><?= h($periods) ?> periods</span>
@@ -82,7 +89,7 @@
                                 <?php endif; ?>
 
                                 <!-- Officials -->
-                                <?php if (!empty($configs['officials']['value'])): ?>
+                                <?php if (!empty($configs['officials']['value'])) : ?>
                                 <div class="col-md-6 mb-3">
                                     <div class="card border-success">
                                         <div class="card-header bg-success text-white">
@@ -93,7 +100,7 @@
                                         </div>
                                         <div class="card-body">
                                             <ul class="list-unstyled mb-0">
-                                                <?php foreach ($configs['officials']['value'] as $official): ?>
+                                                <?php foreach ($configs['officials']['value'] as $official) : ?>
                                                 <li class="mb-1">
                                                     <i class="fas fa-check-circle text-success me-2"></i>
                                                     <?= h($official) ?>
@@ -107,7 +114,7 @@
                             </div>
 
                             <!-- Other Settings -->
-                            <?php if (!empty($configs['settings'])): ?>
+                            <?php if (!empty($configs['settings'])) : ?>
                             <div class="row">
                                 <div class="col-12">
                                     <div class="card border-info">
@@ -119,18 +126,18 @@
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
-                                                <?php foreach (array_chunk($configs['settings'], 3, true) as $settingsChunk): ?>
-                                                    <?php foreach ($settingsChunk as $key => $config): ?>
+                                                <?php foreach (array_chunk($configs['settings'], 3, true) as $settingsChunk) : ?>
+                                                    <?php foreach ($settingsChunk as $key => $config) : ?>
                                                     <div class="col-md-4 mb-2">
                                                         <div class="d-flex align-items-center">
                                                             <code class="me-2"><?= h($key) ?>:</code>
-                                                            <?php if (is_array($config['value'])): ?>
+                                                            <?php if (is_array($config['value'])) : ?>
                                                                 <span class="badge bg-info"><?= implode(', ', $config['value']) ?></span>
-                                                            <?php else: ?>
+                                                            <?php else : ?>
                                                                 <span class="badge bg-secondary"><?= h($config['value']) ?></span>
                                                             <?php endif; ?>
                                                         </div>
-                                                        <?php if (!empty($config['description'])): ?>
+                                                        <?php if (!empty($config['description'])) : ?>
                                                             <small class="text-muted d-block"><?= h($config['description']) ?></small>
                                                         <?php endif; ?>
                                                     </div>
@@ -142,7 +149,7 @@
                                 </div>
                             </div>
                             <?php endif; ?>
-                        <?php else: ?>
+                        <?php else : ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>No configurations found.</strong>
@@ -189,7 +196,7 @@
                                                     $genderLabels = [
                                                         'M' => ['Male', 'primary'],
                                                         'F' => ['Female', 'danger'],
-                                                        'C' => ['Co-ed', 'success']
+                                                        'C' => ['Co-ed', 'success'],
                                                     ];
                                                     $genderInfo = $genderLabels[$team->gender] ?? ['Unknown', 'secondary'];
                                                     ?>

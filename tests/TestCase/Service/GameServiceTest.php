@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\GameService;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
@@ -34,6 +35,9 @@ class GameServiceTest extends TestCase
 
     protected GameService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -162,7 +166,7 @@ class GameServiceTest extends TestCase
      */
     public function testGetGameWithAssociationsInvalidId(): void
     {
-        $this->expectException(\Cake\Datasource\Exception\RecordNotFoundException::class);
+        $this->expectException(RecordNotFoundException::class);
         $this->service->getGameWithAssociations(999);
     }
 
@@ -202,6 +206,9 @@ class GameServiceTest extends TestCase
         $this->assertIsArray($sites);
     }
 
+    /**
+     * Tests search games for select uses hrn punctuation.
+     */
     public function testSearchGamesForSelectUsesHrnPunctuation(): void
     {
         $results = $this->service->searchGamesForSelect('Belmont', 1, 25);
@@ -271,6 +278,9 @@ class GameServiceTest extends TestCase
         $this->assertIsArray($lists['teamSeasonList']);
     }
 
+    /**
+     * Tests normalize associated inline create creates inline entities.
+     */
     public function testNormalizeAssociatedInlineCreateCreatesInlineEntities(): void
     {
         $data = [
@@ -296,6 +306,9 @@ class GameServiceTest extends TestCase
         $this->assertSame('Hometown', $place->place_city);
     }
 
+    /**
+     * Tests load game eav values returns fixture metadata.
+     */
     public function testLoadGameEavValuesReturnsFixtureMetadata(): void
     {
         $values = $this->service->loadGameEavValues(1);
@@ -304,6 +317,9 @@ class GameServiceTest extends TestCase
         $this->assertSame('30', $values['period_1_opponent']);
     }
 
+    /**
+     * Tests get game eav metadata includes template and values.
+     */
     public function testGetGameEavMetadataIncludesTemplateAndValues(): void
     {
         $metadata = $this->service->getGameEavMetadata(1);
@@ -314,6 +330,9 @@ class GameServiceTest extends TestCase
         $this->assertSame('35', $metadata['values']['period_1_team']);
     }
 
+    /**
+     * Tests get recent games for select respects limit.
+     */
     public function testGetRecentGamesForSelectRespectsLimit(): void
     {
         $results = $this->service->getRecentGamesForSelect(2);
@@ -321,6 +340,9 @@ class GameServiceTest extends TestCase
         $this->assertCount(2, $results);
     }
 
+    /**
+     * Tests search games for select filters by query.
+     */
     public function testSearchGamesForSelectFiltersByQuery(): void
     {
         $results = $this->service->searchGamesForSelect('Lakers');
@@ -330,6 +352,9 @@ class GameServiceTest extends TestCase
         $this->assertStringContainsString('Lakers', $labels[0]);
     }
 
+    /**
+     * Tests apply search builder criteria adds where.
+     */
     public function testApplySearchBuilderCriteriaAddsWhere(): void
     {
         $query = TableRegistry::getTableLocator()->get('Games')

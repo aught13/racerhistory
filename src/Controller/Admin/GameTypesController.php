@@ -79,6 +79,8 @@ class GameTypesController extends AppController
 
     /**
      * Edit a game type.
+     *
+     * @param string $id
      */
     public function edit(string $id): ?Response
     {
@@ -102,6 +104,8 @@ class GameTypesController extends AppController
 
     /**
      * Delete a game type.
+     *
+     * @param string $id
      */
     public function delete(string $id): Response
     {

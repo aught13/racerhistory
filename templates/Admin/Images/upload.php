@@ -98,7 +98,7 @@
             <?= $this->Html->link(
                 '← Back to Images',
                 ['action' => 'index'],
-                ['class' => 'btn btn-outline-secondary']
+                ['class' => 'btn btn-outline-secondary'],
             ) ?>
         </div>
     </div>

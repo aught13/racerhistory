@@ -5,6 +5,8 @@ namespace App\Service;
 
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Query\SelectQuery;
+use DateTimeInterface;
+use Throwable;
 
 /**
  * GameSearchService
@@ -133,6 +135,7 @@ class GameSearchService
     /**
      * 100-point games (team or opponent scored 100+).
      *
+     * @param string $filter
      * @return array
      */
     public function hundredPointGames(string $filter = 'all'): array
@@ -468,14 +471,14 @@ class GameSearchService
             return '';
         }
 
-        if ($date instanceof \DateTimeInterface) {
+        if ($date instanceof DateTimeInterface) {
             return $date->format('Y-m-d');
         }
 
         if (is_object($date) && method_exists($date, 'format')) {
             try {
                 return (string)$date->format('Y-m-d');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
             }
         }
 

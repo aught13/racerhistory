@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Team;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -40,7 +41,7 @@ class TeamService
      * @param int $teamId Team ID
      * @return \App\Model\Entity\Team|null
      */
-    public function getTeamById(int $teamId): ?\App\Model\Entity\Team
+    public function getTeamById(int $teamId): ?Team
     {
         $teams = TableRegistry::getTableLocator()->get('Teams');
 
@@ -101,7 +102,7 @@ class TeamService
      * @param array<string, mixed> $data Team data
      * @return \App\Model\Entity\Team|false
      */
-    public function createTeam(array $data): \App\Model\Entity\Team|false
+    public function createTeam(array $data): Team|false
     {
         $teams = TableRegistry::getTableLocator()->get('Teams');
         $team = $teams->newEntity($data);
@@ -116,7 +117,7 @@ class TeamService
      * @param array<string, mixed> $data Team data
      * @return \App\Model\Entity\Team|false
      */
-    public function updateTeam(int $teamId, array $data): \App\Model\Entity\Team|false
+    public function updateTeam(int $teamId, array $data): Team|false
     {
         $teams = TableRegistry::getTableLocator()->get('Teams');
         $team = $teams->get($teamId);

@@ -5,6 +5,11 @@
  * Expects:
  * - array $gameStats: entries of ['game' => Game, 'stats' => StatBasketGamePerson[]]
  * - object|null $seasonStats: StatBasketSeasonPerson
+ *
+ * @var \App\View\AppView $this
+ * @var mixed $gameStats
+ * @var object $seasonStats
+ * @var mixed $value
  */
 ?>
 <?php if (!empty($gameStats)) : ?>
@@ -48,7 +53,7 @@
                 ?>
                 <tr>
                     <td>
-                        <?= $game->game_date instanceof \DateTimeInterface
+                        <?= $game->game_date instanceof DateTimeInterface
                             ? h($game->game_date->format('M j, Y'))
                             : 'N/A' ?>
                     </td>

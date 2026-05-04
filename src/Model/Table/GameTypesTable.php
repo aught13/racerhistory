@@ -9,7 +9,20 @@ use Cake\Validation\Validator;
 /**
  * GameTypes Table
  *
- * @property \App\Model\Table\GamesTable $Games
+ * @property \App\Model\Table\GamesTable&\Cake\ORM\Association\HasMany $Games
+ * @method \App\Model\Entity\GameType newEmptyEntity()
+ * @method \App\Model\Entity\GameType newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\GameType[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\GameType get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\GameType findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\GameType patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\GameType[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\GameType|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\GameType saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\GameType[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameType>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\GameType[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameType> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\GameType[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameType>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\GameType[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\GameType> deleteManyOrFail(iterable $entities, array $options = [])
  */
 class GameTypesTable extends Table
 {

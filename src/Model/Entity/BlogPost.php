@@ -15,14 +15,15 @@ use Cake\ORM\Entity;
  * @property string $body
  * @property string $status
  * @property bool $is_published
- * @property \DateTimeInterface|null $published_at
+ * @property \Cake\I18n\DateTime|null $published_at
  * @property int|null $hero_image_id
- * @property bool|null $is_pinned
+ * @property bool $is_pinned
  * @property int|null $pinned_rank
- * @property \DateTimeInterface|null $pinned_until
- * @property \DateTimeInterface|null $created
- * @property \DateTimeInterface|null $modified
- * @property \Cake\Collection\CollectionInterface|array<\App\Model\Entity\BlogTag> $blog_tags
+ * @property \Cake\I18n\DateTime|null $pinned_until
+ * @property \Cake\I18n\DateTime|null $created
+ * @property \Cake\I18n\DateTime|null $modified
+ * @property \App\Model\Entity\BlogTag[] $blog_tags
+ * @property \Cake\ORM\Entity $_joinData
  */
 class BlogPost extends Entity
 {

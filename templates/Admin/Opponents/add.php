@@ -1,3 +1,11 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $opponentsList
+ * @var mixed $places
+ * @var \App\Model\Entity\Opponent $opponent
+ */
+?>
 <?php $this->assign('title', 'Add Opponent'); ?>
 <div class="container py-4">
     <h1 class="mb-3">Add Opponent</h1>

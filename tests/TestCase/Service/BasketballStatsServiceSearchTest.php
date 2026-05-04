@@ -34,12 +34,18 @@ class BasketballStatsServiceSearchTest extends TestCase
 
     protected BasketballStatsService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new BasketballStatsService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
@@ -58,6 +64,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('teamSeason', $results[0]);
     }
 
+    /**
+     * Tests search player season stats filter by season.
+     */
     public function testSearchPlayerSeasonStatsFilterBySeason(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['season_id' => 1]);
@@ -65,6 +74,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search player season stats filter by team.
+     */
     public function testSearchPlayerSeasonStatsFilterByTeam(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['team_id' => 1]);
@@ -72,6 +84,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search player season stats no results.
+     */
     public function testSearchPlayerSeasonStatsNoResults(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['season_id' => 999]);
@@ -79,24 +94,36 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertEmpty($results);
     }
 
+    /**
+     * Tests search player season stats sort by rebounds.
+     */
     public function testSearchPlayerSeasonStatsSortByRebounds(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['sort' => 'RB', 'direction' => 'DESC']);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search player season stats invalid sort defaults to pts.
+     */
     public function testSearchPlayerSeasonStatsInvalidSortDefaultsToPts(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['sort' => 'INVALID']);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search player season stats invalid direction defaults to desc.
+     */
     public function testSearchPlayerSeasonStatsInvalidDirectionDefaultsToDesc(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['direction' => 'INVALID']);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search player season stats limit clamp.
+     */
     public function testSearchPlayerSeasonStatsLimitClamp(): void
     {
         $results = $this->service->searchPlayerSeasonStats(['limit' => 500]);
@@ -114,6 +141,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('teamSeason', $results[0]);
     }
 
+    /**
+     * Tests search team season stats filter by season.
+     */
     public function testSearchTeamSeasonStatsFilterBySeason(): void
     {
         $results = $this->service->searchTeamSeasonStats(['season_id' => 1]);
@@ -121,6 +151,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search team season stats filter by team.
+     */
     public function testSearchTeamSeasonStatsFilterByTeam(): void
     {
         $results = $this->service->searchTeamSeasonStats(['team_id' => 1]);
@@ -128,6 +161,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search team season stats no results.
+     */
     public function testSearchTeamSeasonStatsNoResults(): void
     {
         $results = $this->service->searchTeamSeasonStats(['season_id' => 999]);
@@ -146,6 +182,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('teamSeason', $results[0]);
     }
 
+    /**
+     * Tests search team season opponent stats filter by season.
+     */
     public function testSearchTeamSeasonOpponentStatsFilterBySeason(): void
     {
         $results = $this->service->searchTeamSeasonOpponentStats(['season_id' => 1]);
@@ -153,6 +192,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search team season opponent stats no results.
+     */
     public function testSearchTeamSeasonOpponentStatsNoResults(): void
     {
         $results = $this->service->searchTeamSeasonOpponentStats(['season_id' => 999]);
@@ -172,6 +214,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('game', $results[0]);
     }
 
+    /**
+     * Tests search player game stats filter by game.
+     */
     public function testSearchPlayerGameStatsFilterByGame(): void
     {
         $results = $this->service->searchPlayerGameStats(['game_id' => 1]);
@@ -179,6 +224,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search player game stats filter by season.
+     */
     public function testSearchPlayerGameStatsFilterBySeason(): void
     {
         $results = $this->service->searchPlayerGameStats(['season_id' => 1]);
@@ -186,6 +234,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search player game stats no results.
+     */
     public function testSearchPlayerGameStatsNoResults(): void
     {
         $results = $this->service->searchPlayerGameStats(['game_id' => 999]);
@@ -204,6 +255,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('game', $results[0]);
     }
 
+    /**
+     * Tests search opponent player game stats filter by game.
+     */
     public function testSearchOpponentPlayerGameStatsFilterByGame(): void
     {
         $results = $this->service->searchOpponentPlayerGameStats(['game_id' => 1]);
@@ -211,6 +265,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search opponent player game stats no results.
+     */
     public function testSearchOpponentPlayerGameStatsNoResults(): void
     {
         $results = $this->service->searchOpponentPlayerGameStats(['game_id' => 999]);
@@ -230,6 +287,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('seasons', $results[0]);
     }
 
+    /**
+     * Tests search player career stats aggregates.
+     */
     public function testSearchPlayerCareerStatsAggregates(): void
     {
         $results = $this->service->searchPlayerCareerStats();
@@ -243,6 +303,9 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertGreaterThan(0, $totals['PTS']);
     }
 
+    /**
+     * Tests search player career stats filter by team.
+     */
     public function testSearchPlayerCareerStatsFilterByTeam(): void
     {
         $results = $this->service->searchPlayerCareerStats(['team_id' => 1]);
@@ -250,18 +313,27 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertNotEmpty($results);
     }
 
+    /**
+     * Tests search player career stats sort asc.
+     */
     public function testSearchPlayerCareerStatsSortAsc(): void
     {
         $results = $this->service->searchPlayerCareerStats(['sort' => 'GP', 'direction' => 'ASC']);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search player career stats invalid sort.
+     */
     public function testSearchPlayerCareerStatsInvalidSort(): void
     {
         $results = $this->service->searchPlayerCareerStats(['sort' => 'INVALID']);
         $this->assertIsArray($results);
     }
 
+    /**
+     * Tests search player career stats limit.
+     */
     public function testSearchPlayerCareerStatsLimit(): void
     {
         $results = $this->service->searchPlayerCareerStats(['limit' => 1]);
@@ -279,12 +351,18 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertArrayHasKey('teams', $options);
     }
 
+    /**
+     * Tests get filter options seasons not empty.
+     */
     public function testGetFilterOptionsSeasonsNotEmpty(): void
     {
         $options = $this->service->getFilterOptions();
         $this->assertNotEmpty($options['seasons']);
     }
 
+    /**
+     * Tests get filter options teams contains basketball.
+     */
     public function testGetFilterOptionsTeamsContainsBasketball(): void
     {
         $options = $this->service->getFilterOptions();

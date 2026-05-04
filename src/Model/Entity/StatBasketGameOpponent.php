@@ -9,9 +9,9 @@ use Cake\ORM\Entity;
  * StatBasketGameOpponent Entity
  *
  * @property int $id
- * @property int $game_id
- * @property string $period
- * @property string $name
+ * @property int|null $game_id
+ * @property string|null $period
+ * @property string|null $name
  * @property string|null $jersey
  * @property string|null $position
  * @property string|null $GP
@@ -38,7 +38,7 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime $created_at
  * @property \Cake\I18n\DateTime $updated_at
  *
- * @property \App\Model\Entity\Game $game
+ * @property \App\Model\Entity\Game|null $game
  */
 class StatBasketGameOpponent extends Entity
 {

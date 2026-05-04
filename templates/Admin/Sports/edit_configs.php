@@ -19,7 +19,7 @@
 
 <?= $this->Form->create(null, [
     'url' => ['controller' => 'Sports', 'action' => 'editConfigs', $sport->id],
-    'type' => 'post'
+    'type' => 'post',
 ]) ?>
 
 <div class="row">
@@ -35,7 +35,7 @@
             <div class="card-body">
                 <div id="period-names-container">
                     <?php $periodIndex = 0; ?>
-                    <?php foreach ($configs['period_names'] as $periods => $config): ?>
+                    <?php foreach ($configs['period_names'] as $periods => $config) : ?>
                     <div class="period-name-row mb-3" data-index="<?= $periodIndex ?>">
                         <div class="row">
                             <div class="col-3">
@@ -46,7 +46,7 @@
                                     'placeholder' => '# periods',
                                     'type' => 'number',
                                     'min' => 1,
-                                    'max' => 20
+                                    'max' => 20,
                                 ]) ?>
                             </div>
                             <div class="col-6">
@@ -54,7 +54,7 @@
                                     'label' => false,
                                     'value' => $config['value'],
                                     'class' => 'form-control form-control-sm',
-                                    'placeholder' => 'Period name (Half, Quarter, etc.)'
+                                    'placeholder' => 'Period name (Half, Quarter, etc.)',
                                 ]) ?>
                             </div>
                             <div class="col-2">
@@ -69,12 +69,12 @@
                                     'label' => false,
                                     'value' => $config['description'],
                                     'class' => 'form-control form-control-sm text-muted',
-                                    'placeholder' => 'Description (optional)'
+                                    'placeholder' => 'Description (optional)',
                                 ]) ?>
                             </div>
                         </div>
                     </div>
-                    <?php $periodIndex++; ?>
+                        <?php $periodIndex++; ?>
                     <?php endforeach; ?>
                 </div>
                 <small class="text-muted">
@@ -96,14 +96,14 @@
                     'value' => is_array($configs['officials']['value']) ? implode(', ', $configs['officials']['value']) : ($configs['officials']['value'] ?? ''),
                     'class' => 'form-control',
                     'placeholder' => 'Referee 1, Referee 2, Official 3',
-                    'help' => 'Separate multiple officials with commas'
+                    'help' => 'Separate multiple officials with commas',
                 ]) ?>
 
                 <?= $this->Form->control('configs.officials.description', [
                     'label' => __('Description'),
                     'value' => $configs['officials']['description'] ?? '',
                     'class' => 'form-control',
-                    'placeholder' => 'Description of officials for this sport'
+                    'placeholder' => 'Description of officials for this sport',
                 ]) ?>
             </div>
         </div>
@@ -122,7 +122,7 @@
             </div>
             <div class="card-body">
                 <div id="settings-container">
-                    <?php foreach ($configs['settings'] as $key => $config): ?>
+                    <?php foreach ($configs['settings'] as $key => $config) : ?>
                     <div class="setting-row mb-3">
                         <div class="row">
                             <div class="col-3">
@@ -131,28 +131,28 @@
                                     'value' => $key,
                                     'class' => 'form-control form-control-sm',
                                     'placeholder' => 'Setting key',
-                                    'readonly' => in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type'])
+                                    'readonly' => in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type']),
                                 ]) ?>
                             </div>
                             <div class="col-6">
-                                <?php if ($key === 'supports_periods'): ?>
+                                <?php if ($key === 'supports_periods') : ?>
                                     <?= $this->Form->control("configs.{$key}.value", [
                                         'label' => false,
                                         'value' => is_array($config['value']) ? implode(', ', $config['value']) : $config['value'],
                                         'class' => 'form-control form-control-sm',
-                                        'placeholder' => 'Comma-separated numbers (e.g., 2, 4)'
+                                        'placeholder' => 'Comma-separated numbers (e.g., 2, 4)',
                                     ]) ?>
-                                <?php else: ?>
+                                <?php else : ?>
                                     <?= $this->Form->control("configs.{$key}.value", [
                                         'label' => false,
                                         'value' => $config['value'],
                                         'class' => 'form-control form-control-sm',
-                                        'placeholder' => 'Setting value'
+                                        'placeholder' => 'Setting value',
                                     ]) ?>
                                 <?php endif; ?>
                             </div>
                             <div class="col-2">
-                                <?php if (!in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type'])): ?>
+                                <?php if (!in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type'])) : ?>
                                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSetting(this)">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -165,7 +165,7 @@
                                     'label' => false,
                                     'value' => $config['description'],
                                     'class' => 'form-control form-control-sm text-muted',
-                                    'placeholder' => 'Description (optional)'
+                                    'placeholder' => 'Description (optional)',
                                 ]) ?>
                             </div>
                         </div>
@@ -184,12 +184,13 @@
         <?= $this->Html->link(__('Cancel'), ['action' => 'configs', $sport->id], ['class' => 'btn btn-secondary']) ?>
     </div>
     <div>
-        <?= $this->Form->postLink(__('Reset to Defaults'),
+        <?= $this->Form->postLink(
+            __('Reset to Defaults'),
             ['action' => 'resetConfigs', $sport->id],
             [
                 'class' => 'btn btn-outline-warning',
-                'confirm' => __('Are you sure you want to reset all configurations to defaults? This action cannot be undone.')
-            ]
+                'confirm' => __('Are you sure you want to reset all configurations to defaults? This action cannot be undone.'),
+            ],
         ) ?>
     </div>
 </div>

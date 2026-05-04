@@ -9,6 +9,9 @@ class TeamSeasonRostersFixture extends TestFixture
 {
     public string $table = 'team_season_roster';
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

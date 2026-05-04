@@ -35,12 +35,18 @@ class StatsServiceTest extends TestCase
 
     protected StatsService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new StatsService();
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->service);
@@ -180,6 +186,9 @@ class StatsServiceTest extends TestCase
         $this->assertNull($stats);
     }
 
+    /**
+     * Tests get season stats element returns configured path.
+     */
     public function testGetSeasonStatsElementReturnsConfiguredPath(): void
     {
         $element = $this->service->getSeasonStatsElement(1);
@@ -187,6 +196,9 @@ class StatsServiceTest extends TestCase
         $this->assertSame('Seasons/basketball_season_stats', $element);
     }
 
+    /**
+     * Tests get season stats columns includes points column.
+     */
     public function testGetSeasonStatsColumnsIncludesPointsColumn(): void
     {
         $seasonStats = $this->service->getSeasonStats(1);
@@ -249,6 +261,9 @@ class StatsServiceTest extends TestCase
         $this->assertSame(120, $cells[17]); // PTS
     }
 
+    /**
+     * Tests get team season stat cells returns expected count.
+     */
     public function testGetTeamSeasonStatCellsReturnsExpectedCount(): void
     {
         $statTable = $this->fetchTable('StatBasketSeasonPerson');
@@ -270,6 +285,9 @@ class StatsServiceTest extends TestCase
         $this->assertSame(1100, $cells[16]); // PTS
     }
 
+    /**
+     * Tests get player career stat cells returns expected count.
+     */
     public function testGetPlayerCareerStatCellsReturnsExpectedCount(): void
     {
         $totals = [
@@ -289,6 +307,9 @@ class StatsServiceTest extends TestCase
         $this->assertSame(1200, $cells[17]); // PTS
     }
 
+    /**
+     * Tests get team game stat cells returns expected count.
+     */
     public function testGetTeamGameStatCellsReturnsExpectedCount(): void
     {
         $statTable = $this->fetchTable('StatBasketSeasonPerson');
@@ -307,6 +328,9 @@ class StatsServiceTest extends TestCase
         $this->assertCount(15, $cells);
     }
 
+    /**
+     * Tests get opponent player name returns string.
+     */
     public function testGetOpponentPlayerNameReturnsString(): void
     {
         $statTable = $this->fetchTable('StatBasketSeasonPerson');
@@ -316,6 +340,9 @@ class StatsServiceTest extends TestCase
         $this->assertIsString($name);
     }
 
+    /**
+     * Tests get opponent player game stat cells returns expected count.
+     */
     public function testGetOpponentPlayerGameStatCellsReturnsExpectedCount(): void
     {
         $statTable = $this->fetchTable('StatBasketSeasonPerson');
@@ -335,6 +362,9 @@ class StatsServiceTest extends TestCase
         $this->assertCount(16, $cells);
     }
 
+    /**
+     * Tests stat cell methods return empty for unsupported sport.
+     */
     public function testStatCellMethodsReturnEmptyForUnsupportedSport(): void
     {
         $statTable = $this->fetchTable('StatBasketSeasonPerson');
@@ -349,12 +379,18 @@ class StatsServiceTest extends TestCase
         $this->assertSame([], $this->service->getPlayerCareerStatCells(999, []));
     }
 
+    /**
+     * Tests get season player stats list returns array for valid season.
+     */
     public function testGetSeasonPlayerStatsListReturnsArrayForValidSeason(): void
     {
         $stats = $this->service->getSeasonPlayerStatsList(1);
         $this->assertIsArray($stats);
     }
 
+    /**
+     * Tests get season player stats list returns empty for invalid season.
+     */
     public function testGetSeasonPlayerStatsListReturnsEmptyForInvalidSeason(): void
     {
         $stats = $this->service->getSeasonPlayerStatsList(9999);

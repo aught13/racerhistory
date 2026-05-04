@@ -1,3 +1,12 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $sportId
+ * @var mixed $sports
+ * @var object $statRegistries
+ * @var \App\Model\Entity\Sport $sport
+ */
+?>
 <?php $this->assign('title', 'Manage Sport Stat Configurations'); ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -84,7 +93,7 @@
                             <?php foreach ($statRegistries as $registry) : ?>
                             <tr>
                                 <td>
-                                    <?php $sportLabel = $registry->sport->sport_name ?? ('Sport #' . $registry->sport_id); ?>
+                                    <?php $sportLabel = $registry->sport->sport_name ?? 'Sport #' . $registry->sport_id; ?>
                                     <a href="<?= $this->Url->build(['action' => 'index', $registry->sport_id]) ?>">
                                         <?= h($sportLabel) ?>
                                     </a>

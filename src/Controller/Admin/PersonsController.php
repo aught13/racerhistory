@@ -37,6 +37,7 @@ use Cake\Http\Response;
  * @property \App\Service\PersonAdminService $personAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\PersonsTable $Persons
  */
 class PersonsController extends AppController
 {

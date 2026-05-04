@@ -10,6 +10,8 @@
  *  - data-ids (JSON array for bulk) + data-ids-name
  *  - data-form-id (optional existing form to submit)
  *  - data-bulk-action (optional)
+ *
+ * @var \App\View\AppView $this
  */
 
 $modalId = $modalId ?? 'confirm-delete-modal';

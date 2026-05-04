@@ -5,6 +5,25 @@ namespace App\Model\Table;
 
 use Cake\ORM\Table;
 
+/**
+ * @property \App\Model\Table\GamesTable&\Cake\ORM\Association\BelongsTo $Games
+ * @property \App\Model\Table\OpponentsTable&\Cake\ORM\Association\BelongsTo $Opponents
+ * @method \App\Model\Entity\StatBasketGameBox newEmptyEntity()
+ * @method \App\Model\Entity\StatBasketGameBox newEntity(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\StatBasketGameBox findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGameBox>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGameBox> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGameBox>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\StatBasketGameBox[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\StatBasketGameBox> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ */
 class StatBasketGameBoxTable extends Table
 {
     /**

@@ -7,6 +7,14 @@ use Cake\ORM\Entity;
 
 /**
  * BlogTag Entity
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $slug
+ * @property \Cake\I18n\DateTime|null $created
+ * @property \Cake\I18n\DateTime|null $modified
+ * @property \App\Model\Entity\BlogPost[] $blog_posts
+ * @property \Cake\ORM\Entity $_joinData
  */
 class BlogTag extends Entity
 {

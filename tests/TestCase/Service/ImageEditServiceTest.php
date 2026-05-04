@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\ImageEditService;
+use App\Service\ImageProcessor;
 use Cake\Core\Configure;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
@@ -18,6 +19,9 @@ class ImageEditServiceTest extends TestCase
 
     private array $previousConfig = [];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -66,6 +70,9 @@ class ImageEditServiceTest extends TestCase
         file_put_contents($subdirPath . 'seed-thumb.webp', 'OLDTHUMB');
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         if ($this->previousConfig) {
@@ -80,6 +87,9 @@ class ImageEditServiceTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests manipulate image apply reuses variant filenames and updates metadata.
+     */
     public function testManipulateImageApplyReusesVariantFilenamesAndUpdatesMetadata(): void
     {
         $images = TableRegistry::getTableLocator()->get('Images');
@@ -116,6 +126,9 @@ class ImageEditServiceTest extends TestCase
         $this->assertSame(50, (int)$reloaded->height);
     }
 
+    /**
+     * Tests crop thumb variant updates thumb file and hash.
+     */
     public function testCropThumbVariantUpdatesThumbFileAndHash(): void
     {
         $images = TableRegistry::getTableLocator()->get('Images');
@@ -142,6 +155,11 @@ class ImageEditServiceTest extends TestCase
         $this->assertSame(hash('sha256', 'NEWVAR-thumb'), (string)$reloaded->hash);
     }
 
+    /**
+     * Runs the delete dir recursive routine.
+     *
+     * @param string $dir
+     */
     private function deleteDirRecursive(string $dir): void
     {
         $items = scandir($dir);
@@ -166,9 +184,12 @@ class ImageEditServiceTest extends TestCase
         rmdir($dir);
     }
 
-    private function createFakeProcessor(): \App\Service\ImageProcessor
+    /**
+     * Runs the create fake processor routine.
+     */
+    private function createFakeProcessor(): ImageProcessor
     {
-        $mock = $this->getMockBuilder(\App\Service\ImageProcessor::class)
+        $mock = $this->getMockBuilder(ImageProcessor::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['manipulateExisting'])
             ->getMock();
@@ -203,7 +224,7 @@ class ImageEditServiceTest extends TestCase
                     ],
                     'variants' => $variants,
                 ];
-            }
+            },
         );
 
         return $mock;

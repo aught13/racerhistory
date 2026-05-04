@@ -1,7 +1,7 @@
 <?php
 /**
  * @var \App\View\AppView $this
- * @var \Cake\Collection\CollectionInterface|string[] $sports
+ * @var \Cake\Collection\CollectionInterface|array<string> $sports
  */
 ?>
 <div class="modal fade" id="add-person-modal" tabindex="-1" aria-labelledby="addPersonModalLabel" aria-hidden="true">

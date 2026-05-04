@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\BlogController
+ */
 class BlogControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -21,6 +24,9 @@ class BlogControllerTest extends TestCase
         'app.Users',
     ];
 
+    /**
+     * Tests index redirects to blog posts.
+     */
     public function testIndexRedirectsToBlogPosts(): void
     {
         $this->mockIdentity();
@@ -30,6 +36,9 @@ class BlogControllerTest extends TestCase
         $this->assertRedirectContains('/admin/blog-posts');
     }
 
+    /**
+     * Tests unauthenticated access redirects to login.
+     */
     public function testUnauthenticatedAccessRedirectsToLogin(): void
     {
         $this->get('/admin/blog');

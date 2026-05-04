@@ -10,6 +10,9 @@ use Cake\TestSuite\TestCase;
 
 class GameEavMetaServiceTest extends TestCase
 {
+    /**
+     * Tests get metadata result returns success payload and metadata.
+     */
     public function testGetMetadataResultReturnsSuccessPayloadAndMetadata(): void
     {
         $metadata = [
@@ -40,6 +43,9 @@ class GameEavMetaServiceTest extends TestCase
         $this->assertSame($metadata['values'], $result['payload']['values']);
     }
 
+    /**
+     * Tests get metadata result returns failure when no params provided.
+     */
     public function testGetMetadataResultReturnsFailureWhenNoParamsProvided(): void
     {
         $gameService = $this->getMockBuilder(GameService::class)
@@ -57,6 +63,9 @@ class GameEavMetaServiceTest extends TestCase
         $this->assertNull($result['metadata']);
     }
 
+    /**
+     * Tests build sport specific fields element vars maps legacy keys.
+     */
     public function testBuildSportSpecificFieldsElementVarsMapsLegacyKeys(): void
     {
         $metadata = [

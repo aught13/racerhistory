@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * @var \App\Model\Entity\Game $game
  * @var array $teamBoxStats
@@ -13,6 +14,7 @@ declare(strict_types=1);
  * @var bool $hasPeriodStats
  * @var array<string,string> $fieldLabels
  * @var string|null $statsElement
+ * @var \App\View\AppView $this
  */
 ?>
 <turbo-frame id="game-stats-frame">

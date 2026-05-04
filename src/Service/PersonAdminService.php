@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Person;
+use App\Model\Table\PersonsTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 use Cake\Routing\Router;
@@ -39,7 +41,7 @@ class PersonAdminService
     /**
      * @var \App\Model\Table\PersonsTable
      */
-    private \App\Model\Table\PersonsTable $personsTable;
+    private PersonsTable $personsTable;
 
     /**
      * @var \App\Service\StatsService
@@ -51,7 +53,7 @@ class PersonAdminService
      * @param \App\Service\StatsService|null $statsService
      */
     public function __construct(
-        ?\App\Model\Table\PersonsTable $personsTable = null,
+        ?PersonsTable $personsTable = null,
         ?StatsService $statsService = null,
     ) {
         /** @var \App\Model\Table\PersonsTable $table */
@@ -269,7 +271,7 @@ class PersonAdminService
      * @return \App\Model\Entity\Person
      * @throws \Cake\Datasource\Exception\RecordNotFoundException
      */
-    public function getEditEntity(string $id): \App\Model\Entity\Person
+    public function getEditEntity(string $id): Person
     {
         /** @var \App\Model\Entity\Person $person */
         $person = $this->personsTable->get($id, contain: ['BirthPlace']);

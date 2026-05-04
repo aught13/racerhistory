@@ -2,6 +2,12 @@
 /**
  * Element: sport_specific_fields
  * Expects: $eavTemplate (array), $eav (array) optionally, $legacyMappedEav (array) optionally, $sportName (string)
+ *
+ * @var \App\View\AppView $this
+ * @var array $eav
+ * @var mixed $eavTemplate
+ * @var array $legacyMappedEav
+ * @var mixed $sportName
  */
 ?>
 <div>
@@ -14,7 +20,7 @@
     }
     ?>
 
-    <?php foreach ($fieldsByGroup as $groupName => $fields): ?>
+    <?php foreach ($fieldsByGroup as $groupName => $fields) : ?>
         <div class="card mt-2">
             <div class="card-header">
                 <h6 class="mb-0"><?= h(ucfirst($groupName)) ?></h6>
@@ -24,9 +30,9 @@
                 $fieldsPerRow = 4;
                 $chunks = array_chunk($fields, $fieldsPerRow);
                 ?>
-                <?php foreach ($chunks as $fieldChunk): ?>
+                <?php foreach ($chunks as $fieldChunk) : ?>
                     <div class="row g-3 mb-2">
-                        <?php foreach ($fieldChunk as $field): ?>
+                        <?php foreach ($fieldChunk as $field) : ?>
                             <div class="col-md-<?= 12 / min(count($fieldChunk), $fieldsPerRow) ?>">
                                 <?php
                                 $fieldName = $field['field_name'];
@@ -41,8 +47,12 @@
                                 ];
                                 if ($fieldType === 'number') {
                                     $options['type'] = 'number';
-                                    if (isset($field['min'])) $options['min'] = $field['min'];
-                                    if (isset($field['max'])) $options['max'] = $field['max'];
+                                    if (isset($field['min'])) {
+                                        $options['min'] = $field['min'];
+                                    }
+                                    if (isset($field['max'])) {
+                                        $options['max'] = $field['max'];
+                                    }
                                 }
                                 ?>
                                 <?= $this->Form->control($fieldName, $options) ?>

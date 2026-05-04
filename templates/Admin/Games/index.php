@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $teamSeasonId
+ * @var \App\Model\Entity\TeamSeason $teamSeason
+ */
+?>
 <?php $this->assign('title', 'Manage Games'); ?>
 <div class="container py-4">
     <?php if (isset($teamSeason)) : ?>
@@ -75,7 +82,8 @@
             </form>
 
             <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk'], 'id' => 'delete-form-games-bulk', 'style' => 'display:none']) ?>
-            <?php $this->Form->unlockField('game_ids'); $this->Form->unlockField('bulk_action'); ?>
+            <?php $this->Form->unlockField('game_ids');
+            $this->Form->unlockField('bulk_action'); ?>
             <?= $this->Form->hidden('game_ids[]', ['value' => '']) ?>
             <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
             <?= $this->Form->end() ?>
@@ -108,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'prefix' => 'Admin',
         'controller' => 'Games',
         'action' => 'ajaxList',
-        '?' => $teamSeasonId ? ['team_season_id' => $teamSeasonId] : []
+        '?' => $teamSeasonId ? ['team_season_id' => $teamSeasonId] : [],
     ])) ?>;
 
     const table = $('#games-table').DataTable({

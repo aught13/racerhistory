@@ -4,9 +4,14 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Exception;
 
+/**
+ * @link \App\Controller\Admin\GamesController
+ */
 class GamesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -33,6 +38,9 @@ class GamesControllerTest extends TestCase
         'app.StatBasketGameBox',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -43,6 +51,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('DataTables');
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -51,6 +62,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Add Game');
     }
 
+    /**
+     * Tests add post valid.
+     */
     public function testAddPostValid(): void
     {
         $this->mockIdentity();
@@ -110,6 +124,9 @@ class GamesControllerTest extends TestCase
         $this->assertRedirectContains('/admin/games/add?team_season_id=2');
     }
 
+    /**
+     * Tests edit post.
+     */
     public function testEditPost(): void
     {
         $this->mockIdentity();
@@ -129,6 +146,9 @@ class GamesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
     }
 
+    /**
+     * Tests edit post save and box score redirects.
+     */
     public function testEditPostSaveAndBoxScoreRedirects(): void
     {
         $this->mockIdentity();
@@ -152,6 +172,9 @@ class GamesControllerTest extends TestCase
         ]);
     }
 
+    /**
+     * Tests edit form shows legacy period scores.
+     */
     public function testEditFormShowsLegacyPeriodScores(): void
     {
         $this->mockIdentity();
@@ -162,6 +185,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('value="30"');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();
@@ -171,6 +197,9 @@ class GamesControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']);
     }
 
+    /**
+     * Tests bulk delete.
+     */
     public function testBulkDelete(): void
     {
         $this->mockIdentity();
@@ -305,6 +334,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('F'); // Final column in period table
     }
 
+    /**
+     * Tests delete invalid id.
+     */
     public function testDeleteInvalidId(): void
     {
         $this->mockIdentity();
@@ -313,11 +345,14 @@ class GamesControllerTest extends TestCase
         try {
             $this->delete('/admin/games/delete/999');
             $this->assertResponseError();
-        } catch (\Exception $e) {
-            $this->assertInstanceOf(\Cake\Datasource\Exception\RecordNotFoundException::class, $e);
+        } catch (Exception $e) {
+            $this->assertInstanceOf(RecordNotFoundException::class, $e);
         }
     }
 
+    /**
+     * Tests edit with invalid data.
+     */
     public function testEditWithInvalidData(): void
     {
         $this->mockIdentity();
@@ -333,6 +368,9 @@ class GamesControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests add with missing required fields.
+     */
     public function testAddWithMissingRequiredFields(): void
     {
         $this->mockIdentity();
@@ -573,7 +611,7 @@ class GamesControllerTest extends TestCase
         $this->assertSame(
             1,
             substr_count($body, '<turbo-frame id="'),
-            'Game add form must not be wrapped in a nested turbo-frame'
+            'Game add form must not be wrapped in a nested turbo-frame',
         );
 
         $this->get('/admin/games/edit/1');
@@ -582,7 +620,7 @@ class GamesControllerTest extends TestCase
         $this->assertSame(
             1,
             substr_count($body, '<turbo-frame id="'),
-            'Game edit form must not be wrapped in a nested turbo-frame'
+            'Game edit form must not be wrapped in a nested turbo-frame',
         );
     }
 }

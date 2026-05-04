@@ -44,6 +44,7 @@ class SportConfig extends Entity
      * Get decoded config value (handles JSON)
      *
      * @return mixed Decoded value
+     * @see \App\Model\Entity\SportConfig::$decoded_value
      */
     protected function _getDecodedValue(): mixed
     {

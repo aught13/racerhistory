@@ -35,7 +35,7 @@ class StatBasketGameOpponentController extends AppController
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
             $this->FormProtection->setConfig(
                 'unlockedActions',
-                array_merge($current, ['bulkAdd'])
+                array_merge($current, ['bulkAdd']),
             );
         }
     }

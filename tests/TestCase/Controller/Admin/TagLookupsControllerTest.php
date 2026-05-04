@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\TagLookupsController
+ */
 class TagLookupsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -23,12 +26,18 @@ class TagLookupsControllerTest extends TestCase
         'app.Opponents',
     ];
 
+    /**
+     * Tests persons requires auth.
+     */
     public function testPersonsRequiresAuth(): void
     {
         $this->get('/admin/tag-lookups/persons?q=John');
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests persons returns json results.
+     */
     public function testPersonsReturnsJsonResults(): void
     {
         $this->mockIdentity();
@@ -46,6 +55,9 @@ class TagLookupsControllerTest extends TestCase
         $this->assertContains('John Doe', $labels);
     }
 
+    /**
+     * Tests rosters returns json results.
+     */
     public function testRostersReturnsJsonResults(): void
     {
         $this->mockIdentity();
@@ -65,6 +77,9 @@ class TagLookupsControllerTest extends TestCase
         $this->assertArrayHasKey('label', $first);
     }
 
+    /**
+     * Tests games label uses hrn punctuation.
+     */
     public function testGamesLabelUsesHrnPunctuation(): void
     {
         $this->mockIdentity();

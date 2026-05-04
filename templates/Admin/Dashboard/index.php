@@ -13,7 +13,7 @@ $this->assign('title', 'Admin Dashboard');
 $this->Html->script('admin-dashboard.js', ['block' => true]);
 
 $statusIcon = [
-    'ok'   => '<i class="bi bi-check-circle-fill text-success"></i>',
+    'ok' => '<i class="bi bi-check-circle-fill text-success"></i>',
     'warn' => '<i class="bi bi-exclamation-triangle-fill text-warning"></i>',
     'fail' => '<i class="bi bi-x-circle-fill text-danger"></i>',
 ];
@@ -83,17 +83,19 @@ foreach ($audit['results'] as $r) {
                     <h5 class="mb-0"><i class="bi bi-heart-pulse me-2"></i>System Health</h5>
                     <span class="badge <?= $overallClass ?>">
                         <?= h($overallLabel) ?>
-                        <?php if ($audit['errors']): ?>
+                        <?php if ($audit['errors']) : ?>
                             &middot; <?= $audit['errors'] ?> error<?= $audit['errors'] !== 1 ? 's' : '' ?>
                         <?php endif; ?>
-                        <?php if ($audit['warnings']): ?>
+                        <?php if ($audit['warnings']) : ?>
                             &middot; <?= $audit['warnings'] ?> warning<?= $audit['warnings'] !== 1 ? 's' : '' ?>
                         <?php endif; ?>
                     </span>
                 </div>
                 <div class="card-body p-0">
                     <div class="accordion accordion-flush" id="healthAccordion">
-                        <?php $i = 0; foreach ($grouped as $category => $items): $i++; ?>
+                        <?php $i = 0;
+                        foreach ($grouped as $category => $items) :
+                            $i++; ?>
                             <?php
                             $catHasError = false;
                             $catHasWarn = false;
@@ -107,8 +109,8 @@ foreach ($audit['results'] as $r) {
                             }
                             $catBadge = $catHasError ? 'bg-danger' : ($catHasWarn ? 'bg-warning text-dark' : 'bg-success');
                             $catIcon = $catHasError ? 'bi-x-circle-fill text-danger' : ($catHasWarn ? 'bi-exclamation-triangle-fill text-warning' : 'bi-check-circle-fill text-success');
-                            $expanded = ($catHasError || $catHasWarn) ? 'true' : 'false';
-                            $showClass = ($catHasError || $catHasWarn) ? 'show' : '';
+                            $expanded = $catHasError || $catHasWarn ? 'true' : 'false';
+                            $showClass = $catHasError || $catHasWarn ? 'show' : '';
                             ?>
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="healthHeading<?= $i ?>">
@@ -128,12 +130,12 @@ foreach ($audit['results'] as $r) {
                                      data-bs-parent="#healthAccordion">
                                     <div class="accordion-body p-0">
                                         <ul class="list-group list-group-flush">
-                                            <?php foreach ($items as $item): ?>
+                                            <?php foreach ($items as $item) : ?>
                                                 <li class="list-group-item d-flex align-items-start">
                                                     <span class="me-2 mt-1"><?= $statusIcon[$item['status']] ?></span>
                                                     <div>
                                                         <span><?= h($item['label']) ?></span>
-                                                        <?php if ($item['detail']): ?>
+                                                        <?php if ($item['detail']) : ?>
                                                             <br><small class="text-body-secondary"><?= h($item['detail']) ?></small>
                                                         <?php endif; ?>
                                                     </div>

@@ -18,6 +18,7 @@ use Cake\Http\Response;
  * @property \App\Service\BlogPostsAdminService $blogPostsAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\BlogPostsTable $BlogPosts
  */
 class BlogPostsController extends AppController
 {
@@ -75,6 +76,8 @@ class BlogPostsController extends AppController
 
     /**
      * Edit post.
+     *
+     * @param int $id
      */
     public function edit(int $id): ?Response
     {
@@ -100,6 +103,9 @@ class BlogPostsController extends AppController
 
     /**
      * Delete post.
+     *
+     * @param int $id
+     * @return \Cake\Http\Response
      */
     public function delete(int $id): Response
     {

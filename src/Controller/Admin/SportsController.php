@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 use App\Service\SportConfigAdminService;
 use App\Service\SportsAdminService;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
 /**
@@ -42,6 +43,7 @@ use Cake\Http\Response;
  * @property \App\Service\SportConfigAdminService $sportConfigAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \App\Model\Table\SportsTable $Sports
  */
 
 class SportsController extends AppController
@@ -75,7 +77,7 @@ class SportsController extends AppController
      * @param \Cake\Event\EventInterface $event An Event instance
      * @return void
      */
-    public function beforeFilter(\Cake\Event\EventInterface $event): void
+    public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
 
@@ -357,7 +359,7 @@ class SportsController extends AppController
     /**
      * Delete a sport configuration
      *
-     * @param string $id Sport ID
+     * @param string $id        Sport ID
      * @param string $configKey Configuration key
      * @return \Cake\Http\Response Redirects
      */

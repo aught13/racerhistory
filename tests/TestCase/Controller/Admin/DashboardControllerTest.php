@@ -8,6 +8,9 @@ use Cake\Cache\Cache;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\DashboardController
+ */
 class DashboardControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -35,6 +38,9 @@ class DashboardControllerTest extends TestCase
         $this->enableSecurityToken();
     }
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->get('/admin');

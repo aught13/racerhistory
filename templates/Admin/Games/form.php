@@ -1,3 +1,18 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var array $eav
+ * @var mixed $eavTemplate
+ * @var mixed $gameTypes
+ * @var mixed $legacyMappedEav
+ * @var mixed $opponents
+ * @var mixed $places
+ * @var mixed $sites
+ * @var mixed $sportName
+ * @var mixed $teamSeasonList
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php // Clean production form (debug instrumentation removed) ?>
 <input type="hidden" id="game-id-hidden" value="<?= isset($game) && isset($game->id) ? h($game->id) : 'NO_GAME_ID' ?>" />
 <div class="card">
@@ -93,9 +108,9 @@
         </div>
 
     <div id="sport-specific-section" class="mt-3" data-initial-loaded="1">
-        <?php if (!empty($eavTemplate)): ?>
+        <?php if (!empty($eavTemplate)) : ?>
             <?= $this->element('Admin/Games/sport_specific_fields', compact('eavTemplate', 'eav', 'legacyMappedEav', 'sportName')) ?>
-        <?php else: ?>
+        <?php else : ?>
             <!-- Fallback Traditional EAV Fields -->
             <div class="row g-3 mt-1">
                 <div class="col-md-3"><?= $this->Form->control('periods', ['label' => 'Periods', 'type' => 'number', 'min' => 0, 'max' => 10, 'class' => 'form-control', 'value' => $game->periods ?? ($eav['periods'] ?? '')]) ?></div>
@@ -106,7 +121,8 @@
 
             <?php
             $pCount = (int)($game->periods ?? 2);
-            for ($i = 1; $i <= max(1, $pCount); $i++): ?>
+            $periodCount = max(1, $pCount);
+            for ($i = 1; $i <= $periodCount; $i++) : ?>
                 <div class="row g-3 mt-1">
                     <div class="col-md-6"><?= $this->Form->control('period_' . $i . '_mur', ['label' => 'Period ' . $i . ' - Team', 'class' => 'form-control', 'value' => $eav['period_' . $i . '_mur'] ?? '']) ?></div>
                     <div class="col-md-6"><?= $this->Form->control('period_' . $i . '_opp', ['label' => 'Period ' . $i . ' - Opponent', 'class' => 'form-control', 'value' => $eav['period_' . $i . '_opp'] ?? '']) ?></div>

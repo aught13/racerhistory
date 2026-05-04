@@ -7,6 +7,9 @@ use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\Admin\TeamSeasonRostersController
+ */
 class TeamSeasonRostersControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -23,6 +26,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         'app.Places',
     ];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -30,12 +36,18 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->enableSecurityToken();
     }
 
+    /**
+     * Tests add get requires auth.
+     */
     public function testAddGetRequiresAuth(): void
     {
         $this->get('/admin/team-season-rosters/add');
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests add get shows multi row form.
+     */
     public function testAddGetShowsMultiRowForm(): void
     {
         $this->mockIdentity();
@@ -51,6 +63,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('roster-person-search');
     }
 
+    /**
+     * Tests add get shows team season select.
+     */
     public function testAddGetShowsTeamSeasonSelect(): void
     {
         $this->mockIdentity();
@@ -59,6 +74,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('team_season_id');
     }
 
+    /**
+     * Tests bulk add single row.
+     */
     public function testBulkAddSingleRow(): void
     {
         $this->mockIdentity();
@@ -73,6 +91,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('Saved 1 roster entry/entries.');
     }
 
+    /**
+     * Tests bulk add multiple rows.
+     */
     public function testBulkAddMultipleRows(): void
     {
         $this->mockIdentity();
@@ -88,6 +109,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('Saved 2 roster entry/entries.');
     }
 
+    /**
+     * Tests bulk add skips empty rows.
+     */
     public function testBulkAddSkipsEmptyRows(): void
     {
         $this->mockIdentity();
@@ -103,6 +127,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('Saved 1 roster entry/entries.');
     }
 
+    /**
+     * Tests bulk add no rows redirects.
+     */
     public function testBulkAddNoRowsRedirects(): void
     {
         $this->mockIdentity();
@@ -116,6 +143,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('No roster entries to save.');
     }
 
+    /**
+     * Tests bulk add requires post.
+     */
     public function testBulkAddRequiresPost(): void
     {
         $this->mockIdentity();
@@ -123,6 +153,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseCode(405);
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -130,6 +163,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests edit post.
+     */
     public function testEditPost(): void
     {
         $this->mockIdentity();
@@ -139,6 +175,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('The team season roster has been saved.');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();
@@ -146,6 +185,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertRedirectContains('/admin/team-seasons/view/1');
     }
 
+    /**
+     * Tests bulk delete none selected.
+     */
     public function testBulkDeleteNoneSelected(): void
     {
         $this->mockIdentity();
@@ -155,6 +197,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('No team season rosters selected for deletion.');
     }
 
+    /**
+     * Tests bulk delete some.
+     */
     public function testBulkDeleteSome(): void
     {
         $this->mockIdentity();
@@ -166,6 +211,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertRedirectContains('/admin/team-seasons/view/1');
     }
 
+    /**
+     * Tests ajax add invalid method.
+     */
     public function testAjaxAddInvalidMethod(): void
     {
         $this->mockIdentity();
@@ -175,6 +223,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFalse($res['success']);
     }
 
+    /**
+     * Tests ajax add valid.
+     */
     public function testAjaxAddValid(): void
     {
         $this->mockIdentity();
@@ -185,6 +236,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertTrue($res['success']);
     }
 
+    /**
+     * Tests add form contains roster year field.
+     */
     public function testAddFormContainsRosterYearField(): void
     {
         $this->mockIdentity();
@@ -194,6 +248,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('roster_year', $body);
     }
 
+    /**
+     * Tests add form contains hidden person form.
+     */
     public function testAddFormContainsHiddenPersonForm(): void
     {
         $this->mockIdentity();
@@ -204,6 +261,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('/admin/persons/ajax-add', $body);
     }
 
+    /**
+     * Tests edit form contains roster year field.
+     */
     public function testEditFormContainsRosterYearField(): void
     {
         $this->mockIdentity();
@@ -214,6 +274,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('Year', $body);
     }
 
+    /**
+     * Tests edit form contains hidden person form.
+     */
     public function testEditFormContainsHiddenPersonForm(): void
     {
         $this->mockIdentity();
@@ -223,6 +286,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('hidden-person-form', $body);
     }
 
+    /**
+     * Tests view shows roster year.
+     */
     public function testViewShowsRosterYear(): void
     {
         $this->mockIdentity();
@@ -233,6 +299,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('2024', $body);
     }
 
+    /**
+     * Tests bulk add with roster year.
+     */
     public function testBulkAddWithRosterYear(): void
     {
         $this->mockIdentity();
@@ -258,6 +327,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertRedirectContains('/users/login');
     }
 
+    /**
+     * Tests bulk edit get loads existing roster.
+     */
     public function testBulkEditGetLoadsExistingRoster(): void
     {
         $this->mockIdentity();
@@ -270,6 +342,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('Save All');
     }
 
+    /**
+     * Tests bulk edit get pre populates existing entries.
+     */
     public function testBulkEditGetPrePopulatesExistingEntries(): void
     {
         $this->mockIdentity();
@@ -282,6 +357,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertStringContainsString('value="G"', $body);
     }
 
+    /**
+     * Tests bulk edit get shows edit all button.
+     */
     public function testBulkEditGetShowsEditAllButton(): void
     {
         $this->mockIdentity();
@@ -291,6 +369,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('bulk-edit');
     }
 
+    /**
+     * Tests bulk edit get no team season.
+     */
     public function testBulkEditGetNoTeamSeason(): void
     {
         $this->mockIdentity();
@@ -299,6 +380,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('Edit Team Season Roster');
     }
 
+    /**
+     * Tests bulk edit get contains turbo frame.
+     */
     public function testBulkEditGetContainsTurboFrame(): void
     {
         $this->mockIdentity();
@@ -328,6 +412,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertSame('Sr.', $roster->roster_year);
     }
 
+    /**
+     * Tests bulk edit post adds new row.
+     */
     public function testBulkEditPostAddsNewRow(): void
     {
         $this->mockIdentity();
@@ -346,6 +433,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertSame(2, $count);
     }
 
+    /**
+     * Tests bulk edit post deletes removed record.
+     */
     public function testBulkEditPostDeletesRemovedRecord(): void
     {
         $this->mockIdentity();
@@ -370,6 +460,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFalse($table->exists(['id' => $extra->id]));
     }
 
+    /**
+     * Tests bulk edit post deletes all and adds new.
+     */
     public function testBulkEditPostDeletesAllAndAddsNew(): void
     {
         $this->mockIdentity();
@@ -389,6 +482,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertSame('PG', $newRoster->roster_position);
     }
 
+    /**
+     * Tests bulk edit post shows deleted count in flash.
+     */
     public function testBulkEditPostShowsDeletedCountInFlash(): void
     {
         $this->mockIdentity();
@@ -410,6 +506,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('Saved 1 roster entry/entries. Removed 1 roster entry/entries.');
     }
 
+    /**
+     * Tests bulk edit post invalid team season.
+     */
     public function testBulkEditPostInvalidTeamSeason(): void
     {
         $this->mockIdentity();
@@ -423,6 +522,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertFlashMessage('Invalid team season.');
     }
 
+    /**
+     * Tests bulk edit post skips empty rows.
+     */
     public function testBulkEditPostSkipsEmptyRows(): void
     {
         $this->mockIdentity();
@@ -441,6 +543,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertSame(1, $count);
     }
 
+    /**
+     * Tests bulk edit form contains person search and popup.
+     */
     public function testBulkEditFormContainsPersonSearchAndPopup(): void
     {
         $this->mockIdentity();

@@ -67,3 +67,10 @@ psalm.xml
 tests/manual_sport_test.php
 
 .prettierrc.json
+.eslintrc.json
+jsdoc.json
+
+phpDocumentor.phar
+/build/
+/.phpdoc/
+phpdoc.dist.xml

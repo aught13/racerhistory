@@ -583,7 +583,7 @@ class SportConfigService
                 'Regular period scores must be tied when overtime periods exist. ' .
                 'Team: %d, Opponent: %d',
                 $teamPeriodSum,
-                $oppPeriodSum
+                $oppPeriodSum,
             );
         }
 
@@ -595,7 +595,7 @@ class SportConfigService
             $errors[] = sprintf(
                 'Team period scores (%d) must equal final team score (%d)',
                 $teamTotalPeriods,
-                $teamScore
+                $teamScore,
             );
         }
 
@@ -603,7 +603,7 @@ class SportConfigService
             $errors[] = sprintf(
                 'Opponent period scores (%d) must equal final opponent score (%d)',
                 $oppTotalPeriods,
-                $oppScore
+                $oppScore,
             );
         }
 

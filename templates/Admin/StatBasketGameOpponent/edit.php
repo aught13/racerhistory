@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var object $stat
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', isset($stat->id) ? 'Edit Opponent Player' : 'Add Opponent Player'); ?>
 <div class="container py-4">
     <nav aria-label="breadcrumb">

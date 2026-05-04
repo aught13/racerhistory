@@ -16,15 +16,16 @@ use Cake\ORM\Entity;
  * @property int $byte_size
  * @property int|null $width
  * @property int|null $height
- * @property array|string|null $variants
+ * @property string|null $variants
  * @property string $hash
  * @property string $status
  * @property string|null $storage_subdir
- * @property string|null $storage_path
- * @property mixed $created
- * @property mixed $modified
+ * @property string $storage_path
+ * @property \Cake\I18n\DateTime $created
+ * @property \Cake\I18n\DateTime $modified
  *
  * @property \App\Model\Entity\ImageTag[] $image_tags
+ * @property \Cake\ORM\Entity $_joinData
  */
 class Image extends Entity
 {

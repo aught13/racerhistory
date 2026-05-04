@@ -8,6 +8,8 @@ use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\StatsController Test Case
+ *
+ * @link \App\Controller\StatsController
  */
 class StatsControllerTest extends TestCase
 {
@@ -44,6 +46,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-type-cards');
     }
 
+    /**
+     * Tests index displays stat types.
+     */
     public function testIndexDisplaysStatTypes(): void
     {
         $this->get('/stats');
@@ -56,6 +61,9 @@ class StatsControllerTest extends TestCase
         $this->assertArrayHasKey('player-career', $statTypes);
     }
 
+    /**
+     * Tests index sets current sport.
+     */
     public function testIndexSetsCurrentSport(): void
     {
         $this->get('/stats');
@@ -75,6 +83,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-results-table');
     }
 
+    /**
+     * Tests player season json response.
+     */
     public function testPlayerSeasonJsonResponse(): void
     {
         $this->configRequest([
@@ -90,6 +101,9 @@ class StatsControllerTest extends TestCase
         $this->assertArrayHasKey('data', $json);
     }
 
+    /**
+     * Tests player season json via format param.
+     */
     public function testPlayerSeasonJsonViaFormatParam(): void
     {
         $this->get('/stats/player-season?format=json');
@@ -101,6 +115,9 @@ class StatsControllerTest extends TestCase
         $this->assertArrayHasKey('data', $json);
     }
 
+    /**
+     * Tests player season sets stat type.
+     */
     public function testPlayerSeasonSetsStatType(): void
     {
         $this->get('/stats/player-season');
@@ -120,6 +137,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-results-table');
     }
 
+    /**
+     * Tests team season json response.
+     */
     public function testTeamSeasonJsonResponse(): void
     {
         $this->get('/stats/team-season?format=json');
@@ -141,6 +161,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-results-table');
     }
 
+    /**
+     * Tests team season opponent json response.
+     */
     public function testTeamSeasonOpponentJsonResponse(): void
     {
         $this->get('/stats/team-season-opponent?format=json');
@@ -161,6 +184,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('Player Career');
     }
 
+    /**
+     * Tests player career json response.
+     */
     public function testPlayerCareerJsonResponse(): void
     {
         $this->get('/stats/player-career?format=json');
@@ -182,6 +208,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-results-table');
     }
 
+    /**
+     * Tests player game json response.
+     */
     public function testPlayerGameJsonResponse(): void
     {
         $this->get('/stats/player-game?format=json');
@@ -203,6 +232,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-results-table');
     }
 
+    /**
+     * Tests opponent player game json response.
+     */
     public function testOpponentPlayerGameJsonResponse(): void
     {
         $this->get('/stats/opponent-player-game?format=json');
@@ -224,6 +256,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-results-table');
     }
 
+    /**
+     * Tests team game json response.
+     */
     public function testTeamGameJsonResponse(): void
     {
         $this->get('/stats/team-game?format=json');
@@ -235,6 +270,9 @@ class StatsControllerTest extends TestCase
         $this->assertArrayHasKey('data', $json);
     }
 
+    /**
+     * Tests team game contains ajax url.
+     */
     public function testTeamGameContainsAjaxUrl(): void
     {
         $this->get('/stats/team-game');
@@ -251,12 +289,18 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('Stats');
     }
 
+    /**
+     * Tests season with invalid id.
+     */
     public function testSeasonWithInvalidId(): void
     {
         $this->get('/stats/season/9999');
         $this->assertRedirect();
     }
 
+    /**
+     * Tests season sets variables.
+     */
     public function testSeasonSetsVariables(): void
     {
         $this->get('/stats/season/1');
@@ -307,6 +351,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Tests player season limit clamp.
+     */
     public function testPlayerSeasonLimitClamp(): void
     {
         $this->get('/stats/player-season?limit=500');
@@ -323,6 +370,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('format=json');
     }
 
+    /**
+     * Tests team season contains ajax url.
+     */
     public function testTeamSeasonContainsAjaxUrl(): void
     {
         $this->get('/stats/team-season');
@@ -349,6 +399,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('stats-init-loader');
     }
 
+    /**
+     * Tests player season includes stats script.
+     */
     public function testPlayerSeasonIncludesStatsScript(): void
     {
         $this->get('/stats/player-season');
@@ -367,6 +420,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('Team Season');
     }
 
+    /**
+     * Tests player season contains sub nav.
+     */
     public function testPlayerSeasonContainsSubNav(): void
     {
         $this->get('/stats/player-season');
@@ -374,6 +430,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
+    /**
+     * Tests team season contains sub nav.
+     */
     public function testTeamSeasonContainsSubNav(): void
     {
         $this->get('/stats/team-season');
@@ -381,6 +440,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
+    /**
+     * Tests player career contains sub nav.
+     */
     public function testPlayerCareerContainsSubNav(): void
     {
         $this->get('/stats/player-career');
@@ -388,6 +450,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
+    /**
+     * Tests opponent player game contains sub nav.
+     */
     public function testOpponentPlayerGameContainsSubNav(): void
     {
         $this->get('/stats/opponent-player-game');
@@ -395,6 +460,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('rh-stats-subnav-wrap');
     }
 
+    /**
+     * Tests team game contains sub nav.
+     */
     public function testTeamGameContainsSubNav(): void
     {
         $this->get('/stats/team-game');
@@ -436,6 +504,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('scroller.dataTables.min.css');
     }
 
+    /**
+     * Tests team season includes data tables css.
+     */
     public function testTeamSeasonIncludesDataTablesCss(): void
     {
         $this->get('/stats/team-season');

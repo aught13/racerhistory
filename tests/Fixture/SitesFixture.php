@@ -11,6 +11,9 @@ class SitesFixture extends TestFixture
     public string $table = 'sites';
     public $import = ['table' => 'sites'];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

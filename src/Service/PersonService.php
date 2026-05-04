@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Person;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -18,7 +19,7 @@ class PersonService
      * @param int $personId
      * @return \App\Model\Entity\Person|null
      */
-    public function getPersonById(int $personId): ?\App\Model\Entity\Person
+    public function getPersonById(int $personId): ?Person
     {
         $persons = TableRegistry::getTableLocator()->get('Persons');
         $person = $persons->find()->where(['Persons.id' => $personId])->first();
@@ -106,9 +107,11 @@ class PersonService
 
     /**
      * Person lookup used by image tagging UI.
-     *
      * Includes a best-effort "latest roster" context to help disambiguate
      * identical names, while keeping the base label consistent.
+     *
+     * @param string $query
+     * @param int $limit
      */
     public function searchPersonsForImageTagging(string $query, int $limit = 25): array
     {
@@ -200,7 +203,7 @@ class PersonService
      * @param array $data Person data (first, last, display, etc.)
      * @return \App\Model\Entity\Person|false
      */
-    public function createPerson(array $data): \App\Model\Entity\Person|false
+    public function createPerson(array $data): Person|false
     {
         $persons = TableRegistry::getTableLocator()->get('Persons');
         $person = $persons->newEntity($data);
@@ -215,7 +218,7 @@ class PersonService
      * @param array $data Updated person data
      * @return \App\Model\Entity\Person|false
      */
-    public function updatePerson(int $personId, array $data): \App\Model\Entity\Person|false
+    public function updatePerson(int $personId, array $data): Person|false
     {
         $persons = TableRegistry::getTableLocator()->get('Persons');
         $person = $persons->get($personId);

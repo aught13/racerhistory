@@ -1,3 +1,15 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $gameTypes
+ * @var mixed $lookupDisplays
+ * @var mixed $opponents
+ * @var mixed $places
+ * @var mixed $sites
+ * @var mixed $teamSeasonList
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Add Game'); ?>
 <div class="container py-4">
     <?php $teamSeasonId = $this->getRequest()->getQuery('team_season_id'); ?>

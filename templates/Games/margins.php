@@ -1,11 +1,13 @@
 <?php
 declare(strict_types=1);
 
+use App\Service\GameSearchService;
+
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $searchTypes
  * @var string $currentSearch
- * @var array $games
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Game> $games
  * @var string $type
  * @var string $filter
  */
@@ -102,14 +104,14 @@ $filterLabels = [
                                                 $game->opponent->opponent_short
                                                 ?? $game->opponent->opponent_abbr
                                                 ?? $game->opponent->opponent_name
-                                                ?? '?'
+                                                ?? '?',
                                             ) ?>
                                         </a>
                                     </td>
                                     <td><strong><?= (int)($game->margin ?? 0) ?></strong></td>
                                     <td><?= (int)($game->pts_mur ?? 0) ?></td>
                                     <td><?= (int)($game->pts_opp ?? 0) ?></td>
-                                    <td><?= \App\Service\GameSearchService::hrnLabel((int)($game->hrn ?? 0)) ?></td>
+                                    <td><?= GameSearchService::hrnLabel((int)($game->hrn ?? 0)) ?></td>
                                     <td><?= !empty($game->game_type?->conf) ? 'Y' : 'N' ?></td>
                                     <td>
                                         <?php
@@ -129,7 +131,7 @@ $filterLabels = [
                                         <?= h(
                                             ($game->team_season->season->start ?? '')
                                             . '-'
-                                            . ($game->team_season->season->end ?? '')
+                                            . ($game->team_season->season->end ?? ''),
                                         ) ?>
                                     </td>
                                 </tr>

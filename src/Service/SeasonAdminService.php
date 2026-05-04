@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Table\SeasonsTable;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
@@ -228,7 +229,7 @@ class SeasonAdminService
     /**
      * @return \App\Model\Table\SeasonsTable
      */
-    private function getSeasonsTable(): \App\Model\Table\SeasonsTable
+    private function getSeasonsTable(): SeasonsTable
     {
         /** @var \App\Model\Table\SeasonsTable $table */
         $table = TableRegistry::getTableLocator()->get('Seasons');

@@ -10,6 +10,12 @@ use Cake\ORM\TableRegistry;
  */
 trait BaselineSeedTrait
 {
+    /**
+     * Runs the seed baseline routine.
+     *
+     * @param bool $users
+     * @param bool $siteOptions
+     */
     protected function seedBaseline(bool $users = true, bool $siteOptions = true): void
     {
         if ($users) {

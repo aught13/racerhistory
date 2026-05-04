@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Service\SportService;
 use App\Service\TeamService;
 use Cake\TestSuite\TestCase;
 
@@ -15,12 +16,18 @@ class TeamServiceTest extends TestCase
 
     private TeamService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new TeamService();
     }
 
+    /**
+     * Tests get team by id.
+     */
     public function testGetTeamById(): void
     {
         $team = $this->service->getTeamById(1);
@@ -28,12 +35,18 @@ class TeamServiceTest extends TestCase
         $this->assertSame(1, $team->id);
     }
 
+    /**
+     * Tests get team by id returns null for invalid id.
+     */
     public function testGetTeamByIdReturnsNullForInvalidId(): void
     {
         $team = $this->service->getTeamById(99999);
         $this->assertNull($team);
     }
 
+    /**
+     * Tests get display label.
+     */
     public function testGetDisplayLabel(): void
     {
         $label = $this->service->getDisplayLabel(1);
@@ -41,6 +54,9 @@ class TeamServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label with gender.
+     */
     public function testGetDisplayLabelWithGender(): void
     {
         $label = $this->service->getDisplayLabel(1, true);
@@ -48,12 +64,18 @@ class TeamServiceTest extends TestCase
         $this->assertNotEmpty($label);
     }
 
+    /**
+     * Tests get display label fallback for invalid id.
+     */
     public function testGetDisplayLabelFallbackForInvalidId(): void
     {
         $label = $this->service->getDisplayLabel(99999);
         $this->assertSame('Team #99999', $label);
     }
 
+    /**
+     * Tests get all teams.
+     */
     public function testGetAllTeams(): void
     {
         $teams = $this->service->getAllTeams();
@@ -61,12 +83,18 @@ class TeamServiceTest extends TestCase
         $this->assertGreaterThan(0, count($teams));
     }
 
+    /**
+     * Tests get all teams with sport filter.
+     */
     public function testGetAllTeamsWithSportFilter(): void
     {
         $teams = $this->service->getAllTeams(1);
         $this->assertIsArray($teams);
     }
 
+    /**
+     * Tests create team.
+     */
     public function testCreateTeam(): void
     {
         $data = [
@@ -81,6 +109,9 @@ class TeamServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests update team.
+     */
     public function testUpdateTeam(): void
     {
         $team = $this->service->updateTeam(1, ['team_name' => 'Updated Team']);
@@ -88,6 +119,9 @@ class TeamServiceTest extends TestCase
         $this->assertSame('Updated Team', $team->team_name);
     }
 
+    /**
+     * Tests delete team.
+     */
     public function testDeleteTeam(): void
     {
         // Test deletion on existing fixture data
@@ -98,6 +132,9 @@ class TeamServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get teams for select.
+     */
     public function testGetTeamsForSelect(): void
     {
         $results = $this->service->getTeamsForSelect();
@@ -110,9 +147,12 @@ class TeamServiceTest extends TestCase
         }
     }
 
+    /**
+     * Tests get sport service.
+     */
     public function testGetSportService(): void
     {
         $sportService = $this->service->getSportService();
-        $this->assertInstanceOf(\App\Service\SportService::class, $sportService);
+        $this->assertInstanceOf(SportService::class, $sportService);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\SportStatsAdminService;
+use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
 /**
@@ -59,7 +60,7 @@ class SportStatsController extends AppController
      * @param \Cake\Event\EventInterface $event An Event instance
      * @return void
      */
-    public function beforeFilter(\Cake\Event\EventInterface $event): void
+    public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
 

@@ -63,7 +63,7 @@ class ImageTagService
                         if (
                             preg_match(
                                 '/^(?:roster|team ?season|team_season_roster|person)[\s_-]*\d+$/i',
-                                $existingName
+                                $existingName,
                             )
                         ) {
                             $shouldUpdateName = true;
@@ -82,7 +82,6 @@ class ImageTagService
         }
 
         if ($tagEntities) {
-            // @phpstan-ignore property.notFound
             $imagesTable->ImageTags->link($image, $tagEntities);
         }
     }
@@ -118,6 +117,9 @@ class ImageTagService
 
     /**
      * Convenience: images tagged for a person.
+     *
+     * @param int $personId
+     * @param int $limit
      */
     public function getImagesForPerson(int $personId, int $limit = 10): array
     {
@@ -126,6 +128,9 @@ class ImageTagService
 
     /**
      * Convenience: images tagged for a team season.
+     *
+     * @param int $teamSeasonId
+     * @param int $limit
      */
     public function getImagesForTeamSeason(int $teamSeasonId, int $limit = 10): array
     {
@@ -134,6 +139,10 @@ class ImageTagService
 
     /**
      * Convenience: roster image (person + team season).
+     *
+     * @param int $personId
+     * @param int $teamSeasonId
+     * @param int $limit
      */
     public function getRosterImages(int $personId, int $teamSeasonId, int $limit = 1): array
     {
@@ -147,7 +156,7 @@ class ImageTagService
     /**
      * Resolve or create and return ImageTags for provided slugs.
      *
-     * @param array<int,string> $tagSlugs Tag slugs.
+     * @param array $tagSlugs
      * @return array<int,\App\Model\Entity\ImageTag>
      */
     public function ensureTags(array $tagSlugs): array

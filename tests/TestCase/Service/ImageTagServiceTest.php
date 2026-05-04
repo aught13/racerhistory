@@ -16,12 +16,18 @@ class ImageTagServiceTest extends TestCase
 
     private ImageTagService $service;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->service = new ImageTagService();
     }
 
+    /**
+     * Tests get images by all tags.
+     */
     public function testGetImagesByAllTags(): void
     {
         $images = $this->service->getImagesByAllTags(['person-1', 'roster'], 10);
@@ -29,6 +35,9 @@ class ImageTagServiceTest extends TestCase
         $this->assertSame(1, (int)$images[0]->id);
     }
 
+    /**
+     * Tests ensure tags creates missing.
+     */
     public function testEnsureTagsCreatesMissing(): void
     {
         $tags = $this->service->ensureTags(['new-tag']);

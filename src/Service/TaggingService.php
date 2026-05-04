@@ -511,7 +511,7 @@ class TaggingService
                         $row->game_date ?? null,
                         $opponentName,
                         (int)($row->hrn ?? 0),
-                        $id
+                        $id,
                     );
                 },
             ],
@@ -566,6 +566,8 @@ class TaggingService
 
     /**
      * Determine whether the name should be synced when saving a tag.
+     *
+     * @param string $existingName
      */
     private function shouldUpdateName(string $existingName): bool
     {
@@ -584,6 +586,8 @@ class TaggingService
 
     /**
      * Resolve a display label for a game id used by context tagging.
+     *
+     * @param int $gameId
      */
     private function getGameTagDisplayLabel(int $gameId): string
     {

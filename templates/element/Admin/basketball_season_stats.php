@@ -82,17 +82,17 @@ $hasStats = $playerStats && $playerStats->count() > 0;
                     <?= $this->Html->link(
                         '<i class="bi bi-plus-circle"></i> Add Player Stats',
                         ['controller' => 'StatBasketSeasonPerson', 'action' => 'add', $teamSeason->id],
-                        ['class' => 'btn btn-sm btn-primary', 'escape' => false]
+                        ['class' => 'btn btn-sm btn-primary', 'escape' => false],
                     ) ?>
                     <?= $this->Html->link(
                         '<i class="bi bi-pencil"></i> Edit Team Stats',
                         ['controller' => 'StatBasketSeasonTeam', 'action' => 'edit', $teamSeason->id],
-                        ['class' => 'btn btn-sm btn-secondary', 'escape' => false]
+                        ['class' => 'btn btn-sm btn-secondary', 'escape' => false],
                     ) ?>
                     <?= $this->Html->link(
                         '<i class="bi bi-pencil"></i> Edit Opponent Stats',
                         ['controller' => 'StatBasketSeasonOpponent', 'action' => 'edit', $teamSeason->id],
-                        ['class' => 'btn btn-sm btn-secondary', 'escape' => false]
+                        ['class' => 'btn btn-sm btn-secondary', 'escape' => false],
                     ) ?>
                 </div>
             </div>
@@ -131,12 +131,12 @@ $hasStats = $playerStats && $playerStats->count() > 0;
                                                 <?= $this->Html->link(
                                                     '<i class="bi bi-pencil"></i>',
                                                     ['controller' => 'StatBasketSeasonPerson', 'action' => 'edit', $stat->id],
-                                                    ['class' => 'btn btn-sm btn-outline-primary', 'escape' => false, 'title' => 'Edit']
+                                                    ['class' => 'btn btn-sm btn-outline-primary', 'escape' => false, 'title' => 'Edit'],
                                                 ) ?>
                                                 <?= $this->Form->postLink(
                                                     '<i class="bi bi-trash"></i>',
                                                     ['controller' => 'StatBasketSeasonPerson', 'action' => 'delete', $stat->id],
-                                                    ['class' => 'btn btn-sm btn-outline-danger', 'escape' => false, 'title' => 'Delete', 'confirm' => 'Delete this player stat?']
+                                                    ['class' => 'btn btn-sm btn-outline-danger', 'escape' => false, 'title' => 'Delete', 'confirm' => 'Delete this player stat?'],
                                                 ) ?>
                                             </td>
                                         </tr>

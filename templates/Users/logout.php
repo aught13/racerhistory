@@ -1,3 +1,8 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ */
+?>
 <!-- templates/Users/logout.php -->
 <?php $this->assign('title', 'Logout'); ?>
 <div class="users logout">

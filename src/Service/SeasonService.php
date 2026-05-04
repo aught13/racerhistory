@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Season;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -19,7 +20,7 @@ class SeasonService
      * @param int $seasonId Season ID
      * @return \App\Model\Entity\Season|null
      */
-    public function getSeasonById(int $seasonId): ?\App\Model\Entity\Season
+    public function getSeasonById(int $seasonId): ?Season
     {
         $seasons = TableRegistry::getTableLocator()->get('Seasons');
 
@@ -75,7 +76,7 @@ class SeasonService
      * @param array<string, mixed> $data Season data
      * @return \App\Model\Entity\Season|false
      */
-    public function createSeason(array $data): \App\Model\Entity\Season|false
+    public function createSeason(array $data): Season|false
     {
         $seasons = TableRegistry::getTableLocator()->get('Seasons');
         $season = $seasons->newEntity($data);
@@ -90,7 +91,7 @@ class SeasonService
      * @param array<string, mixed> $data Season data
      * @return \App\Model\Entity\Season|false
      */
-    public function updateSeason(int $seasonId, array $data): \App\Model\Entity\Season|false
+    public function updateSeason(int $seasonId, array $data): Season|false
     {
         $seasons = TableRegistry::getTableLocator()->get('Seasons');
         $season = $seasons->get($seasonId);

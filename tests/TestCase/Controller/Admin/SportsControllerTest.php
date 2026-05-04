@@ -286,6 +286,9 @@ class SportsControllerTest extends TestCase
         $this->assertEquals('Test AJAX Sport', $response['newOption']['text']);
     }
 
+    /**
+     * Tests bulk action authenticated.
+     */
     public function testBulkActionAuthenticated()
     {
         $this->mockIdentity();
@@ -613,6 +616,9 @@ class SportsControllerTest extends TestCase
         $this->assertResponseNotContains('new_1');
     }
 
+    /**
+     * Tests add config validates key.
+     */
     public function testAddConfigValidatesKey(): void
     {
         $this->mockIdentity();
@@ -630,6 +636,9 @@ class SportsControllerTest extends TestCase
         $this->assertFlashMessage('Configuration key is required.');
     }
 
+    /**
+     * Tests add config creates value.
+     */
     public function testAddConfigCreatesValue(): void
     {
         $this->mockIdentity();
@@ -652,6 +661,9 @@ class SportsControllerTest extends TestCase
         $this->assertResponseContains('Blue');
     }
 
+    /**
+     * Tests delete config removes entry.
+     */
     public function testDeleteConfigRemovesEntry(): void
     {
         $this->mockIdentity();
@@ -666,6 +678,9 @@ class SportsControllerTest extends TestCase
         $this->assertResponseNotContains('Referee 1');
     }
 
+    /**
+     * Tests reset configs restores defaults.
+     */
     public function testResetConfigsRestoresDefaults(): void
     {
         $this->mockIdentity();

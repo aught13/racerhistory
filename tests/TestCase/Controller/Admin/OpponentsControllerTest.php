@@ -4,9 +4,14 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Exception;
 
+/**
+ * @link \App\Controller\Admin\OpponentsController
+ */
 class OpponentsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -18,6 +23,9 @@ class OpponentsControllerTest extends TestCase
         'app.Opponents',
     ];
 
+    /**
+     * Tests index.
+     */
     public function testIndex(): void
     {
         $this->mockIdentity();
@@ -26,6 +34,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseContains('Opponents');
     }
 
+    /**
+     * Tests add post.
+     */
     public function testAddPost(): void
     {
         $this->mockIdentity();
@@ -35,6 +46,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'index']);
     }
 
+    /**
+     * Tests add get.
+     */
     public function testAddGet(): void
     {
         $this->mockIdentity();
@@ -43,6 +57,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseContains('Add Opponent');
     }
 
+    /**
+     * Tests edit.
+     */
     public function testEdit(): void
     {
         $this->mockIdentity();
@@ -52,6 +69,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'index']);
     }
 
+    /**
+     * Tests edit get.
+     */
     public function testEditGet(): void
     {
         $this->mockIdentity();
@@ -60,6 +80,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseContains('Edit Opponent');
     }
 
+    /**
+     * Tests delete.
+     */
     public function testDelete(): void
     {
         $this->mockIdentity();
@@ -69,6 +92,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests delete non existent.
+     */
     public function testDeleteNonExistent(): void
     {
         $this->mockIdentity();
@@ -77,11 +103,14 @@ class OpponentsControllerTest extends TestCase
         try {
             $this->delete('/admin/opponents/delete/999');
             $this->assertResponseError();
-        } catch (\Exception $e) {
-            $this->assertInstanceOf(\Cake\Datasource\Exception\RecordNotFoundException::class, $e);
+        } catch (Exception $e) {
+            $this->assertInstanceOf(RecordNotFoundException::class, $e);
         }
     }
 
+    /**
+     * Tests add validation error.
+     */
     public function testAddValidationError(): void
     {
         $this->mockIdentity();
@@ -94,6 +123,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests edit validation error.
+     */
     public function testEditValidationError(): void
     {
         $this->mockIdentity();
@@ -106,6 +138,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests unauthenticated access.
+     */
     public function testUnauthenticatedAccess(): void
     {
         $this->session([]); // Clear session
@@ -114,6 +149,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertTrue($this->_response->getStatusCode() >= 200);
     }
 
+    /**
+     * Tests ajax search returns results.
+     */
     public function testAjaxSearchReturnsResults(): void
     {
         $this->mockIdentity();
@@ -129,6 +167,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertArrayHasKey('opponent_mascot', $data['results'][0]);
     }
 
+    /**
+     * Tests ajax search empty query.
+     */
     public function testAjaxSearchEmptyQuery(): void
     {
         $this->mockIdentity();
@@ -139,6 +180,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search no match.
+     */
     public function testAjaxSearchNoMatch(): void
     {
         $this->mockIdentity();
@@ -149,6 +193,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertEmpty($data['results']);
     }
 
+    /**
+     * Tests ajax search rejects post method.
+     */
     public function testAjaxSearchRejectsPostMethod(): void
     {
         $this->mockIdentity();
@@ -158,6 +205,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseCode(405);
     }
 
+    /**
+     * Tests ajax add success.
+     */
     public function testAjaxAddSuccess(): void
     {
         $this->mockIdentity();
@@ -174,6 +224,9 @@ class OpponentsControllerTest extends TestCase
         $this->assertNotEmpty($data['newOption']['value']);
     }
 
+    /**
+     * Tests ajax add invalid method.
+     */
     public function testAjaxAddInvalidMethod(): void
     {
         $this->mockIdentity();

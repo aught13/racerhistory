@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $sports
+ * @var object $statRegistry
+ */
+?>
 <?php $this->assign('title', 'Edit Sport Stat Configuration'); ?>
 <div class="container py-4">
     <div class="row mb-3">

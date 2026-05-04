@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\User;
 use ArrayObject;
 use Authentication\PasswordHasher\DefaultPasswordHasher;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventInterface;
+use Cake\I18n\DateTime;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -20,16 +22,18 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\User newEmptyEntity()
  * @method \App\Model\Entity\User newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\User[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\User get($primaryKey, $options = [])
- * @method \App\Model\Entity\User findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \App\Model\Entity\User get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\User findOrCreate(\Cake\ORM\Query\SelectQuery|callable|array $search, ?callable $callback = null, array $options = [])
  * @method \App\Model\Entity\User patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\User[] patchEntities(iterable $entities, array $data, array $options = [])
- * @method \App\Model\Entity\User|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\User saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
- * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
- * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ * @method \App\Model\Entity\User|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\User saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\User>|false saveMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\User> saveManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\User>|false deleteMany(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\User> deleteManyOrFail(iterable $entities, array $options = [])
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
 class UsersTable extends Table
 {
@@ -95,15 +99,15 @@ class UsersTable extends Table
      * Automatically hashes passwords when they are set or changed.
      * Synchronizes 'active' field with 'status' for backward compatibility.
      *
-     * @param \Cake\Event\EventInterface $event The beforeSave event.
-     * @param \Cake\Datasource\EntityInterface $entity The entity being saved.
-     * @param \ArrayObject $options Additional options.
+     * @param \Cake\Event\EventInterface       $event   The beforeSave event.
+     * @param \App\Model\Entity\User $entity  The entity being saved.
+     * @param \ArrayObject                     $options Additional options.
      * @return void
      */
     public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
     {
         // Type assertion for IDE and static analysis
-        assert($entity instanceof \App\Model\Entity\User);
+        assert($entity instanceof User);
 
         // Hash password if changed
         if (!empty($entity->password) && $entity->isDirty('password')) {
@@ -125,15 +129,15 @@ class UsersTable extends Table
 
         // Set activation_date when user becomes active
         if ($entity->isDirty('active') && $entity->active && !$entity->activation_date) {
-            $entity->activation_date = new \Cake\I18n\DateTime();
+            $entity->activation_date = new DateTime();
         }
     }
 
     /**
      * Find active users.
      *
-     * @param \Cake\ORM\Query\SelectQuery $query The query to modify.
-     * @param array $options Options for the find.
+     * @param \Cake\ORM\Query\SelectQuery $query   The query to modify.
+     * @param array                       $options Options for the find.
      * @return \Cake\ORM\Query\SelectQuery
      */
     public function findActive(SelectQuery $query, array $options): SelectQuery

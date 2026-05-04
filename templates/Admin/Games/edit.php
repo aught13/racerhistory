@@ -1,3 +1,20 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $eavTemplate
+ * @var mixed $gameTypes
+ * @var mixed $legacyMappedEav
+ * @var mixed $lookupDisplays
+ * @var mixed $opponents
+ * @var mixed $places
+ * @var mixed $sites
+ * @var mixed $sportHasStats
+ * @var mixed $sportId
+ * @var mixed $sportName
+ * @var mixed $teamSeasonList
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Edit Game'); ?>
 <?php
 // Determine if this is a past game (game_date is today or before)

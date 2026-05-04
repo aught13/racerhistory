@@ -2,8 +2,8 @@
 /**
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\TeamSeasonRoster $teamSeasonRoster
- * @var \Cake\Collection\CollectionInterface|string[] $teamSeasonsList
- * @var \Cake\Collection\CollectionInterface|string[] $persons
+ * @var \Cake\Collection\CollectionInterface|array<string> $teamSeasonsList
+ * @var \Cake\Collection\CollectionInterface|array<string> $persons
  */
 $this->assign('title', 'Edit Team Season Roster');
 ?>
@@ -13,10 +13,11 @@ $this->assign('title', 'Edit Team Season Roster');
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a
-                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>">Team
-                            Seasons</a></li>
+                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                            'action' => 'index']) ?>">Team Seasons</a></li>
                     <li class="breadcrumb-item"><a
-                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonRoster->team_season_id]) ?>">Team
+                            href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                            'action' => 'view', $teamSeasonRoster->team_season_id]) ?>">Team
                             Season View</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Edit Roster</li>
                 </ol>
@@ -35,7 +36,7 @@ $this->assign('title', 'Edit Team Season Roster');
                         echo $this->Form->control('team_season_id', [
                             'options' => $teamSeasonsList,
                             'class' => 'form-select',
-                            'label' => 'Team Season'
+                            'label' => 'Team Season',
                         ]);
                         echo $this->Form->control('person_id', [
                             'empty' => '(Start typing to search people...)',
@@ -43,9 +44,10 @@ $this->assign('title', 'Edit Team Season Roster');
                             'class' => 'form-select',
                             'label' => 'Person',
                             'id' => 'person-id-select',
-                            'data-dynamic-person' => '1'
+                            'data-dynamic-person' => '1',
                         ]);
-                        echo '<small class="text-muted">Type at least 2 characters to search by display / first / last name.</small>';
+                        echo '<small class="text-muted">
+                        Type at least 2 characters to search by display / first / last name.</small>';
                         ?>
                         <div class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
@@ -56,14 +58,16 @@ $this->assign('title', 'Edit Team Season Roster');
                         <?php
                         echo $this->Form->control('roster_year', ['class' => 'form-control', 'label' => 'Year']);
                         echo $this->Form->control('roster_number', ['class' => 'form-control', 'label' => 'Number']);
-                        echo $this->Form->control('roster_position', ['class' => 'form-control', 'label' => 'Position']);
+                        echo $this->Form->control('roster_position', ['class' => 'form-control',
+                        'label' => 'Position']);
                         echo $this->Form->control('roster_height', ['class' => 'form-control', 'label' => 'Height']);
                         echo $this->Form->control('roster_weight', ['class' => 'form-control', 'label' => 'Weight']);
                         ?>
                     </fieldset>
                     <div class="mt-3">
                         <?= $this->Form->button(__('Save Changes'), ['class' => 'btn btn-primary']) ?>
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeasonRoster->team_season_id]) ?>"
+                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons',
+                        'action' => 'view', $teamSeasonRoster->team_season_id]) ?>"
                             class="btn btn-secondary">Cancel</a>
                     </div>
                     <?= $this->Form->end() ?>
@@ -111,7 +115,13 @@ echo $this->element('Admin/popup_form', [
     'targetSelectId' => 'person-id-select',
     'fields' => $personFields,
     'hiddenFormId' => 'hidden-person-form',
-    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-edit-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
+    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group">.
+    <input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places...".
+    autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal".
+    data-bs-target="#add-roster-edit-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle">.
+    </i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div>.
+    <div id="add-person-modal-birth-place-selected" class="small mt-1">.
+    <span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
 
@@ -163,7 +173,8 @@ document.addEventListener('DOMContentLoaded', function(){
     let debounceTimer = null; let lastQuery='';
     function performSearch(q){
         if (q.length < 2){ return; }
-        fetch('<?= $this->Url->build(['prefix' => 'Admin','controller' => 'Persons','action' => 'ajaxSearch']) ?>?q=' + encodeURIComponent(q), {credentials:'same-origin'})
+        fetch('<?= $this->Url->build(['prefix' => 'Admin','controller' => 'Persons','action' => 'ajaxSearch']) ?>?q=' +
+        encodeURIComponent(q), {credentials:'same-origin'})
             .then(r=>r.json())
             .then(data => {
                 if(!data.success) return;
@@ -174,13 +185,15 @@ document.addEventListener('DOMContentLoaded', function(){
                 const emptyOpt = document.createElement('option');
                 emptyOpt.value=''; emptyOpt.textContent='(Select a person)'; select.appendChild(emptyOpt);
                 if (preserved) select.appendChild(preserved);
-                data.results.forEach(r => { const opt = document.createElement('option'); opt.value=r.value; opt.textContent=r.text; select.appendChild(opt); });
+                data.results.forEach(r => { const opt = document.createElement('option'); opt.value=r.value;
+                opt.textContent=r.text; select.appendChild(opt); });
                 if (current) select.value=current;
             })
             .catch(err => console.error('Person search failed', err));
     }
     searchInput.addEventListener('input', function(){
-        const q = this.value.trim(); if (q===lastQuery) return; lastQuery=q; clearTimeout(debounceTimer); debounceTimer=setTimeout(()=>performSearch(q),300);
+        const q = this.value.trim(); if (q===lastQuery) return; lastQuery=q; clearTimeout(debounceTimer);
+        debounceTimer=setTimeout(()=>performSearch(q),300);
     });
 
     // Birth place AJAX lookup in person popup
@@ -191,14 +204,16 @@ document.addEventListener('DOMContentLoaded', function(){
         const bpHidden = document.getElementById('add-person-modal-birth_place_id');
         if (!bpSearch || !bpHidden) return;
 
-        const placeSearchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']) ?>';
+        const placeSearchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places',
+        'action' => 'ajaxSearch']) ?>';
         let bpDebounce = null;
 
         function setBpSelected(id, text) {
             bpHidden.value = id;
             if (bpSelected) {
                 bpSelected.innerHTML = '<span class="badge bg-primary me-1">' + text +
-                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
+                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" ' +
+                    'style="font-size:.5em;vertical-align:middle"></button></span>';
                 bpSelected.querySelector('.btn-close').addEventListener('click', function() {
                     bpHidden.value = '';
                     bpSelected.innerHTML = '<span class="text-muted fst-italic">None selected</span>';
@@ -211,7 +226,8 @@ document.addEventListener('DOMContentLoaded', function(){
         // Callback for popup_form after a new place is added
         window.handleRosterEditBirthPlaceAdded = function(data) {
             if (data && data.place && data.place.id) {
-                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
+                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' +
+                data.place.place_state : '');
                 setBpSelected(data.place.id, label);
             }
         };
@@ -228,15 +244,19 @@ document.addEventListener('DOMContentLoaded', function(){
                             bpResults.innerHTML = '<div class="text-muted small">No results</div>';
                             return;
                         }
-                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
+                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;' +
+                        'max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
                         data.results.forEach(function(r) {
                             const label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
-                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
+                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small" ' +
+                            'data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label +
+                            '</button>';
                         });
                         html += '</div>';
                         bpResults.innerHTML = html;
                         bpResults.querySelectorAll('button').forEach(function(btn) {
-                            btn.addEventListener('click', function() { setBpSelected(btn.dataset.id, btn.dataset.text); });
+                            btn.addEventListener('click', function() {
+                                setBpSelected(btn.dataset.id, btn.dataset.text); });
                         });
                     })
                     .catch(function() { bpResults.innerHTML = '<div class="text-danger small">Error</div>'; });

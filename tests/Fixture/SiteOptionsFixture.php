@@ -8,6 +8,9 @@ class SiteOptionsFixture extends TestFixture
 {
     public $import = ['table' => 'site_options'];
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

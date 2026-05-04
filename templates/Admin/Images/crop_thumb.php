@@ -14,7 +14,7 @@ $this->assign('title', 'Crop Thumbnail');
                 <?= $this->Html->link(
                     '← Back to Edit',
                     ['action' => 'edit', $image->id],
-                    ['class' => 'btn btn-outline-secondary']
+                    ['class' => 'btn btn-outline-secondary'],
                 ) ?>
             </div>
         </div>
@@ -89,7 +89,7 @@ $this->assign('title', 'Crop Thumbnail');
                                 'type' => 'submit',
                                 'class' => 'btn btn-primary',
                                 'escapeTitle' => false,
-                            ]
+                            ],
                         ) ?>
                         <button type="button" class="btn btn-outline-secondary" onclick="resetCrop()">Reset</button>
                     </div>

@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Team> $teams
+ */
+?>
 <?php $this->assign('title', 'Manage Teams'); ?>
 <div class="container py-4">
     <div class="row mb-3">

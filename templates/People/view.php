@@ -3,12 +3,13 @@ declare(strict_types=1);
 
 /**
  * @var \App\Model\Entity\Person $person
- * @var array<int,\App\Model\Entity\Image> $images
+ * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
  * @var array<int,\App\Model\Entity\BlogPost> $blogPosts
  * @var array<int,\App\Model\Entity\TeamSeasonRosters> $rosterEntries
  * @var array<int,array{sport:\App\Model\Entity\Sport,rosters:array<int,array{roster:\App\Model\Entity\TeamSeasonRosters,teamSeason:\App\Model\Entity\TeamSeason}>}> $rostersBySport
  * @var array<int,array{sport:\App\Model\Entity\Sport,totals:array,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,stats:array}>,minYear:int|null,maxYear:int|null}> $careerStatsBySport
  * @var array<int,array{sportId:int,sport:\App\Model\Entity\Sport,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,rosterId:int,label:string,startYear:int}>,activeSeasonId:int|null}> $gameLogGroups
+ * @var \App\View\AppView $this
  */
 
 $first = (string)($person->first ?? $person->first_name ?? '');
@@ -418,7 +419,7 @@ $this->end();
                                         <div class="flex-grow-1">
                                             <h3 class="h6 mb-1"><?= h($post->title) ?></h3>
                                             <p class="text-muted small mb-2">
-                                                <?php if ($post->published_at instanceof \DateTimeInterface) : ?>
+                                                <?php if ($post->published_at instanceof DateTimeInterface) : ?>
                                                     <?= h($post->published_at->format('M j, Y')) ?>
                                                 <?php else : ?>
                                                     <?= h($post->published_at ?? '') ?>

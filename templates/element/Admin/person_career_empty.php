@@ -2,6 +2,8 @@
 /**
  * Element: Admin/person_career_empty
  * Friendly fallback for missing career totals (no seasons).
+ *
+ * @var \App\View\AppView $this
  */
 ?>
 <div class="alert alert-secondary d-flex align-items-center" role="alert">

@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
+/**
+ * @link \App\Controller\BlogController
+ */
 class BlogControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -17,6 +20,9 @@ class BlogControllerTest extends TestCase
         'app.Images',
     ];
 
+    /**
+     * Tests the blog index page.
+     */
     public function testIndex(): void
     {
         $this->get('/blog');
@@ -27,6 +33,9 @@ class BlogControllerTest extends TestCase
         $this->assertResponseContains('fm=webp');
     }
 
+    /**
+     * Tests viewing a published blog post.
+     */
     public function testView(): void
     {
         $this->get('/blog/first-post');
@@ -37,6 +46,9 @@ class BlogControllerTest extends TestCase
         $this->assertResponseContains('type="image/webp"');
     }
 
+    /**
+     * Tests the not found response for a missing post.
+     */
     public function testViewNotFound(): void
     {
         $this->get('/blog/missing-post');

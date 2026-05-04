@@ -76,6 +76,8 @@ class StatsController extends AppController
 
     /**
      * Skip authorization for public actions.
+     *
+     * @param \Cake\Event\EventInterface $event
      */
     public function beforeFilter(EventInterface $event): void
     {
@@ -85,6 +87,8 @@ class StatsController extends AppController
 
     /**
      * Push stat types to every view for the sub-nav element.
+     *
+     * @param \Cake\Event\EventInterface $event
      */
     public function beforeRender(EventInterface $event): void
     {
@@ -134,7 +138,7 @@ class StatsController extends AppController
     /**
      * Return a JSON response with DataTables-compatible data array.
      *
-     * @param array $rows Flat row arrays
+     * @param array $rows
      * @return \Cake\Http\Response
      */
     protected function jsonResponse(array $rows): Response
@@ -147,8 +151,8 @@ class StatsController extends AppController
     /**
      * Build a safe HTML anchor tag.
      *
-     * @param string $text Display text (will be escaped)
-     * @param array $url CakePHP URL array
+     * @param string $text
+     * @param array $url
      * @return string
      */
     protected function link(string $text, array $url): string
@@ -341,7 +345,7 @@ class StatsController extends AppController
     /**
      * Legacy season stats view.
      *
-     * @param int $teamSeasonId Team season ID
+     * @param int $teamSeasonId
      * @return \Cake\Http\Response|null
      */
     public function season(int $teamSeasonId)
@@ -368,7 +372,7 @@ class StatsController extends AppController
     /**
      * Format player season results for DataTables JSON.
      *
-     * @param array $results Service results
+     * @param array $results
      * @param int $sportId
      * @return array<int, array>
      */
@@ -383,7 +387,7 @@ class StatsController extends AppController
             $playerCell = $person
                 ? $this->link(
                     $person->display ?? $person->label,
-                    ['controller' => 'People', 'action' => 'view', $person->id]
+                    ['controller' => 'People', 'action' => 'view', $person->id],
                 )
                 : '-';
 
@@ -393,7 +397,7 @@ class StatsController extends AppController
                     h($ts->team->team_name ?? '-'),
                     h(($ts->season->start ?? '') . '-' . ($ts->season->end ?? '')),
                 ],
-                $this->statsService->getPlayerSeasonStatCells($sportId, $stat)
+                $this->statsService->getPlayerSeasonStatCells($sportId, $stat),
             );
         }
 
@@ -403,7 +407,7 @@ class StatsController extends AppController
     /**
      * Format team season (and opponent) results for DataTables JSON.
      *
-     * @param array $results Service results
+     * @param array $results
      * @param int $sportId
      * @return array<int, array>
      */
@@ -417,7 +421,7 @@ class StatsController extends AppController
             $seasonCell = $ts
                 ? $this->link(
                     ($ts->season->start ?? '') . '-' . ($ts->season->end ?? ''),
-                    ['controller' => 'Seasons', 'action' => 'view', $ts->id]
+                    ['controller' => 'Seasons', 'action' => 'view', $ts->id],
                 )
                 : '-';
 
@@ -426,7 +430,7 @@ class StatsController extends AppController
                     h($ts->team->team_name ?? '-'),
                     $seasonCell,
                 ],
-                $this->statsService->getTeamSeasonStatCells($sportId, $stat)
+                $this->statsService->getTeamSeasonStatCells($sportId, $stat),
             );
         }
 
@@ -436,7 +440,7 @@ class StatsController extends AppController
     /**
      * Format player career results for DataTables JSON.
      *
-     * @param array $results Service results
+     * @param array $results
      * @param int $sportId
      * @return array<int, array>
      */
@@ -451,13 +455,13 @@ class StatsController extends AppController
             $playerCell = $person
                 ? $this->link(
                     $person->display ?? $person->label,
-                    ['controller' => 'People', 'action' => 'view', $person->id]
+                    ['controller' => 'People', 'action' => 'view', $person->id],
                 )
                 : '-';
 
             $rows[] = array_merge(
                 [$playerCell, (int)$seasons],
-                $this->statsService->getPlayerCareerStatCells($sportId, $totals)
+                $this->statsService->getPlayerCareerStatCells($sportId, $totals),
             );
         }
 
@@ -467,7 +471,7 @@ class StatsController extends AppController
     /**
      * Format player game results for DataTables JSON.
      *
-     * @param array $results Service results
+     * @param array $results
      * @param int $sportId
      * @return array<int, array>
      */
@@ -482,14 +486,14 @@ class StatsController extends AppController
             $playerCell = $person
                 ? $this->link(
                     $person->display ?? $person->label,
-                    ['controller' => 'People', 'action' => 'view', $person->id]
+                    ['controller' => 'People', 'action' => 'view', $person->id],
                 )
                 : '-';
 
             $opponentCell = $game
                 ? $this->link(
                     $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
-                    ['controller' => 'Games', 'action' => 'view', $game->id]
+                    ['controller' => 'Games', 'action' => 'view', $game->id],
                 )
                 : '-';
 
@@ -499,7 +503,7 @@ class StatsController extends AppController
                     $opponentCell,
                     h((string)($game->game_date ?? '-')),
                 ],
-                $this->statsService->getPlayerGameStatCells($sportId, $stat)
+                $this->statsService->getPlayerGameStatCells($sportId, $stat),
             );
         }
 
@@ -509,7 +513,7 @@ class StatsController extends AppController
     /**
      * Format team game box score results for DataTables JSON.
      *
-     * @param array $results Service results
+     * @param array $results
      * @param int $sportId
      * @return array<int, array>
      */
@@ -523,7 +527,7 @@ class StatsController extends AppController
             $opponentCell = $game
                 ? $this->link(
                     $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
-                    ['controller' => 'Games', 'action' => 'view', $game->id]
+                    ['controller' => 'Games', 'action' => 'view', $game->id],
                 )
                 : '-';
 
@@ -532,7 +536,7 @@ class StatsController extends AppController
                     $opponentCell,
                     h((string)($game->game_date ?? '-')),
                 ],
-                $this->statsService->getTeamGameStatCells($sportId, $stat)
+                $this->statsService->getTeamGameStatCells($sportId, $stat),
             );
         }
 
@@ -542,7 +546,7 @@ class StatsController extends AppController
     /**
      * Format opponent player game results for DataTables JSON.
      *
-     * @param array $results Service results
+     * @param array $results
      * @param int $sportId
      * @return array<int, array>
      */
@@ -558,7 +562,7 @@ class StatsController extends AppController
             $opponentCell = $game
                 ? $this->link(
                     $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
-                    ['controller' => 'Games', 'action' => 'view', $game->id]
+                    ['controller' => 'Games', 'action' => 'view', $game->id],
                 )
                 : '-';
 
@@ -568,7 +572,7 @@ class StatsController extends AppController
                     $opponentCell,
                     h((string)($game->game_date ?? '-')),
                 ],
-                $this->statsService->getOpponentPlayerGameStatCells($sportId, $stat)
+                $this->statsService->getOpponentPlayerGameStatCells($sportId, $stat),
             );
         }
 

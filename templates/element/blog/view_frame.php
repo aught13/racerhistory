@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * Blog Post View Frame Element
  *
@@ -21,17 +22,17 @@ declare(strict_types=1);
         <header class="d-flex flex-column gap-2 mb-4">
             <h1 class="mb-0"><?= h($post->title) ?></h1>
             <p class="text-muted mb-0">
-                <?php if ($post->published_at instanceof \DateTimeInterface): ?>
+                <?php if ($post->published_at instanceof DateTimeInterface) : ?>
                     <time datetime="<?= h($post->published_at->format('Y-m-d')) ?>">
                         <?= h($post->published_at->format('F j, Y')) ?>
                     </time>
-                <?php else: ?>
+                <?php else : ?>
                     <?= h($post->published_at ?? '') ?>
                 <?php endif; ?>
             </p>
         </header>
 
-        <?php if (!empty($post->hero_image_id)): ?>
+        <?php if (!empty($post->hero_image_id)) : ?>
         <figure class="mb-4 text-center">
             <?= $this->ImageServe->picture(
                 $post->hero_image_id,
@@ -40,7 +41,7 @@ declare(strict_types=1);
                     'alt' => h($post->title),
                     'class' => 'img-fluid rounded',
                     'style' => 'object-fit: contain; max-height: 500px;',
-                ]
+                ],
             ) ?>
         </figure>
         <?php endif; ?>
@@ -49,9 +50,9 @@ declare(strict_types=1);
             <?= $post->body ?>
         </div>
 
-        <?php if (!empty($post->blog_tags)): ?>
+        <?php if (!empty($post->blog_tags)) : ?>
         <footer class="blog-tags">
-            <?php foreach ((array)$post->blog_tags as $tag): ?>
+            <?php foreach ((array)$post->blog_tags as $tag) : ?>
                 <span class="blog-tag badge bg-secondary"><?= h($tag->name) ?></span>
             <?php endforeach; ?>
         </footer>

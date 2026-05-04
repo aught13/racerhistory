@@ -189,7 +189,7 @@ class GameUpsertService
         $this->gameService->normalizeAssociatedInlineCreate($data);
         $data = $this->gameService->calculateWinLoss($data);
 
-        $sportId = $game->team_season?->team?->sport?->id;
+        $sportId = $game->team_season->team->sport->id;
 
         $eavErrors = $sportId ? $this->sportConfigService->validatePeriodScores((int)$sportId, $data) : [];
         if (!empty($eavErrors)) {

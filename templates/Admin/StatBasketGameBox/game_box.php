@@ -2,6 +2,13 @@
 /**
  * Game Box Score Entry Template
  * For entering team and opponent final (period Z) box scores
+ *
+ * @var \App\View\AppView $this
+ * @var array $fieldLabels
+ * @var mixed $hasPeriodStats
+ * @var object $opponentBox
+ * @var object $teamBox
+ * @var \App\Model\Entity\Game $game
  */
 $this->assign('title', 'Game Box Scores');
 ?>

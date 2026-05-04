@@ -11,18 +11,27 @@ class GamesTableSeasonAndCumulativeTest extends TestCase
 
     protected $Games;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->Games = $this->getTableLocator()->get('Games');
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->Games);
         parent::tearDown();
     }
 
+    /**
+     * Tests game date outside season is invalid.
+     */
     public function testGameDateOutsideSeasonIsInvalid(): void
     {
         // TeamSeason 1 uses Season 1 from fixture; set a date outside its range
@@ -35,6 +44,9 @@ class GamesTableSeasonAndCumulativeTest extends TestCase
         $this->assertNotEmpty($game->getErrors(), 'Expected validation error for date outside season');
     }
 
+    /**
+     * Tests cumulative period sums must match totals.
+     */
     public function testCumulativePeriodSumsMustMatchTotals(): void
     {
         $data = [

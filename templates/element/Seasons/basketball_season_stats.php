@@ -9,6 +9,7 @@ declare(strict_types=1);
  * @var object|null $teamStats
  * @var object|null $opponentStats
  * @var array<string,string> $statsColumns
+ * @var \App\View\AppView $this
  */
 
 $statsColumns = $statsColumns ?? [];

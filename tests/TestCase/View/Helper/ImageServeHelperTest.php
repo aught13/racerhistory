@@ -12,18 +12,27 @@ class ImageServeHelperTest extends TestCase
 {
     private ImageServeHelper $helper;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
         $this->helper = new ImageServeHelper(new View());
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         unset($this->helper);
         parent::tearDown();
     }
 
+    /**
+     * Tests path.
+     */
     public function testPath(): void
     {
         $this->assertSame('/images/serve/123', $this->helper->path(123));
@@ -31,6 +40,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertSame('', $this->helper->path(0));
     }
 
+    /**
+     * Tests query filters and builds.
+     */
     public function testQueryFiltersAndBuilds(): void
     {
         $qs = $this->helper->query([
@@ -56,6 +68,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertArrayNotHasKey('fm', $parsed);
     }
 
+    /**
+     * Tests url.
+     */
     public function testUrl(): void
     {
         $url = $this->helper->url(5, ['w' => 60, 'h' => 60, 'fit' => 'cover']);
@@ -69,6 +84,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertSame('cover', $parsed['fit']);
     }
 
+    /**
+     * Tests url for image injects version.
+     */
     public function testUrlForImageInjectsVersion(): void
     {
         $image = (object)[
@@ -84,6 +102,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertSame('100', (string)$parsed['w']);
     }
 
+    /**
+     * Tests url for image does not override explicit version.
+     */
     public function testUrlForImageDoesNotOverrideExplicitVersion(): void
     {
         $image = (object)[
@@ -116,6 +137,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('class="img-fluid"', $html);
     }
 
+    /**
+     * Tests picture with image object.
+     */
     public function testPictureWithImageObject(): void
     {
         $image = (object)[
@@ -132,6 +156,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('fit=cover', $html);
     }
 
+    /**
+     * Tests picture with custom attributes.
+     */
     public function testPictureWithCustomAttributes(): void
     {
         $html = $this->helper->picture(7, ['w' => 400], [
@@ -147,6 +174,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('data-lightbox="gallery"', $html);
     }
 
+    /**
+     * Tests picture returns empty for invalid id.
+     */
     public function testPictureReturnsEmptyForInvalidId(): void
     {
         $this->assertSame('', $this->helper->picture(0));
@@ -154,6 +184,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertSame('', $this->helper->picture('invalid'));
     }
 
+    /**
+     * Tests picture with date time modified.
+     */
     public function testPictureWithDateTimeModified(): void
     {
         $modified = new DateTime('2025-01-15 10:30:00');
@@ -167,6 +200,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('v=' . $modified->getTimestamp(), $html);
     }
 
+    /**
+     * Tests picture handles special characters in alt.
+     */
     public function testPictureHandlesSpecialCharactersInAlt(): void
     {
         $html = $this->helper->picture(5, [], ['alt' => 'Test <script> & "quotes"']);
@@ -197,18 +233,24 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('class="img-fluid"', $html);
     }
 
+    /**
+     * Tests responsive picture with custom sizes.
+     */
     public function testResponsivePictureWithCustomSizes(): void
     {
         $html = $this->helper->responsivePicture(
             30,
             [600, 1200],
             [],
-            ['sizes' => '(max-width: 768px) 100vw, 50vw']
+            ['sizes' => '(max-width: 768px) 100vw, 50vw'],
         );
 
         $this->assertStringContainsString('sizes="(max-width: 768px) 100vw, 50vw"', $html);
     }
 
+    /**
+     * Tests responsive picture with image object.
+     */
     public function testResponsivePictureWithImageObject(): void
     {
         $image = (object)[
@@ -224,24 +266,33 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('w=900', $html);
     }
 
+    /**
+     * Tests responsive picture returns empty for invalid id.
+     */
     public function testResponsivePictureReturnsEmptyForInvalidId(): void
     {
         $this->assertSame('', $this->helper->responsivePicture(0));
         $this->assertSame('', $this->helper->responsivePicture(-5, [400, 800]));
     }
 
+    /**
+     * Tests responsive picture with additional params.
+     */
     public function testResponsivePictureWithAdditionalParams(): void
     {
         $html = $this->helper->responsivePicture(
             12,
             [400, 800],
-            ['fit' => 'cover', 'q' => 80]
+            ['fit' => 'cover', 'q' => 80],
         );
 
         $this->assertStringContainsString('fit=cover', $html);
         $this->assertStringContainsString('q=80', $html);
     }
 
+    /**
+     * Tests responsive picture with custom attributes.
+     */
     public function testResponsivePictureWithCustomAttributes(): void
     {
         $html = $this->helper->responsivePicture(
@@ -252,7 +303,7 @@ class ImageServeHelperTest extends TestCase
                 'alt' => 'Responsive Test',
                 'class' => 'hero-image',
                 'decoding' => 'sync',
-            ]
+            ],
         );
 
         $this->assertStringContainsString('alt="Responsive Test"', $html);
@@ -260,6 +311,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('decoding="sync"', $html);
     }
 
+    /**
+     * Tests responsive picture sorts widths.
+     */
     public function testResponsivePictureSortsWidths(): void
     {
         $html = $this->helper->responsivePicture(99, [1200, 400, 800]);
@@ -269,6 +323,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertMatchesRegularExpression($pattern, $html);
     }
 
+    /**
+     * Tests responsive picture fallback uses middle width.
+     */
     public function testResponsivePictureFallbackUsesMiddleWidth(): void
     {
         $html = $this->helper->responsivePicture(50, [300, 600, 900]);
@@ -277,6 +334,9 @@ class ImageServeHelperTest extends TestCase
         $this->assertStringContainsString('<img src="/images/serve/50?w=600', $html);
     }
 
+    /**
+     * Tests responsive picture has both source types.
+     */
     public function testResponsivePictureHasBothSourceTypes(): void
     {
         $html = $this->helper->responsivePicture(33, [400, 800]);

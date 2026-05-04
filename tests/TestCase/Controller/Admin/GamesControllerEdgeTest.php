@@ -28,6 +28,9 @@ class GamesControllerEdgeTest extends TestCase
         'app.Sports',
     ];
 
+    /**
+     * Tests add invalid data.
+     */
     public function testAddInvalidData(): void
     {
         $this->mockIdentity();
@@ -38,6 +41,9 @@ class GamesControllerEdgeTest extends TestCase
         $this->assertResponseContains('error');
     }
 
+    /**
+     * Tests edit nonexistent game.
+     */
     public function testEditNonexistentGame(): void
     {
         $this->mockIdentity();
@@ -47,6 +53,9 @@ class GamesControllerEdgeTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests delete nonexistent game.
+     */
     public function testDeleteNonexistentGame(): void
     {
         $this->mockIdentity();
@@ -56,6 +65,9 @@ class GamesControllerEdgeTest extends TestCase
         $this->assertResponseCode(404);
     }
 
+    /**
+     * Tests bulk delete invalid ids.
+     */
     public function testBulkDeleteInvalidIds(): void
     {
         $this->mockIdentity();
@@ -68,6 +80,9 @@ class GamesControllerEdgeTest extends TestCase
         $this->assertFlashMessage('No games were deleted.');
     }
 
+    /**
+     * Tests add unauthorized.
+     */
     public function testAddUnauthorized(): void
     {
         // No identity; omit required team_season_id query to trigger redirect path
@@ -79,7 +94,7 @@ class GamesControllerEdgeTest extends TestCase
         $this->assertNotEmpty($location, 'Expected a redirect Location header');
         $this->assertTrue(
             str_contains($location, '/users/login') || str_contains($location, '/admin/team-seasons'),
-            'Unexpected redirect target: ' . $location
+            'Unexpected redirect target: ' . $location,
         );
     }
 }

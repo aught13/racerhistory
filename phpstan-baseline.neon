@@ -13,12 +13,6 @@ parameters:
 			path: src/Controller/PeopleController.php
 
 		-
-			message: '#^Parameter \#1 \$people of method App\\Controller\\PeopleController\:\:buildPeopleRows\(\) expects array\<int, App\\Model\\Entity\\Person\>, array\<int\|string, array\|Cake\\Datasource\\EntityInterface\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Controller/PeopleController.php
-
-		-
 			message: '#^Cannot access property \$key on array\|Cake\\Datasource\\EntityInterface\.$#'
 			identifier: property.nonObject
 			count: 1

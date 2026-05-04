@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * Stats filter form element.
  *
@@ -27,7 +28,7 @@ $action = $actionMap[$statType] ?? 'index';
         <select name="season_id" id="filter-season" class="form-select form-select-sm">
             <option value="">All Seasons</option>
             <?php foreach ($filterOptions['seasons'] as $id => $label) : ?>
-                <option value="<?= (int)$id ?>" <?= (isset($filters['season_id']) && (int)$filters['season_id'] === (int)$id) ? 'selected' : '' ?>>
+                <option value="<?= (int)$id ?>" <?= isset($filters['season_id']) && (int)$filters['season_id'] === (int)$id ? 'selected' : '' ?>>
                     <?= h($label) ?>
                 </option>
             <?php endforeach; ?>
@@ -39,7 +40,7 @@ $action = $actionMap[$statType] ?? 'index';
         <select name="team_id" id="filter-team" class="form-select form-select-sm">
             <option value="">All Teams</option>
             <?php foreach ($filterOptions['teams'] as $id => $name) : ?>
-                <option value="<?= (int)$id ?>" <?= (isset($filters['team_id']) && (int)$filters['team_id'] === (int)$id) ? 'selected' : '' ?>>
+                <option value="<?= (int)$id ?>" <?= isset($filters['team_id']) && (int)$filters['team_id'] === (int)$id ? 'selected' : '' ?>>
                     <?= h($name) ?>
                 </option>
             <?php endforeach; ?>
@@ -54,7 +55,7 @@ $action = $actionMap[$statType] ?? 'index';
                 'BS' => 'Blocks', 'GP' => 'Games Played', 'MIN' => 'Minutes', 'FGM' => 'Field Goals Made',
                 'TPM' => '3-Pointers Made', 'FTM' => 'Free Throws Made', 'TRN' => 'Turnovers'];
             foreach ($sortOptions as $val => $lbl) : ?>
-                <option value="<?= h($val) ?>" <?= (isset($filters['sort']) && $filters['sort'] === $val) ? 'selected' : '' ?>>
+                <option value="<?= h($val) ?>" <?= isset($filters['sort']) && $filters['sort'] === $val ? 'selected' : '' ?>>
                     <?= h($lbl) ?>
                 </option>
             <?php endforeach; ?>
@@ -64,8 +65,8 @@ $action = $actionMap[$statType] ?? 'index';
     <div class="col-md-2">
         <label for="filter-direction" class="form-label">Order</label>
         <select name="direction" id="filter-direction" class="form-select form-select-sm">
-            <option value="DESC" <?= (isset($filters['direction']) && strtoupper($filters['direction']) === 'DESC') ? 'selected' : '' ?>>High to Low</option>
-            <option value="ASC" <?= (isset($filters['direction']) && strtoupper($filters['direction']) === 'ASC') ? 'selected' : '' ?>>Low to High</option>
+            <option value="DESC" <?= isset($filters['direction']) && strtoupper($filters['direction']) === 'DESC' ? 'selected' : '' ?>>High to Low</option>
+            <option value="ASC" <?= isset($filters['direction']) && strtoupper($filters['direction']) === 'ASC' ? 'selected' : '' ?>>Low to High</option>
         </select>
     </div>
 

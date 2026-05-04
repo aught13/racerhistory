@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use App\Service\DeployAuditService;
 use Cake\Core\Configure;
+use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 
 /**
@@ -37,7 +38,7 @@ class InstallController extends AppController
      * @param \Cake\Event\EventInterface $event Event.
      * @return void
      */
-    public function beforeFilter(\Cake\Event\EventInterface $event): void
+    public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();

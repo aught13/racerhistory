@@ -16,6 +16,9 @@ use Cake\TestSuite\TestCase;
 
 class GameViewServiceTest extends TestCase
 {
+    /**
+     * Tests get view data with sport config.
+     */
     public function testGetViewDataWithSportConfig(): void
     {
         $gameId = 123;
@@ -87,6 +90,9 @@ class GameViewServiceTest extends TestCase
         $this->assertSame(['FGM' => 1], $result['teamBoxStats']);
     }
 
+    /**
+     * Tests get view data without sport config uses defaults.
+     */
     public function testGetViewDataWithoutSportConfigUsesDefaults(): void
     {
         $gameId = 123;

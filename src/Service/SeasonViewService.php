@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use Throwable;
+
 /**
  * SeasonViewService
  *
@@ -71,7 +73,7 @@ class SeasonViewService
                     $prefix = 'vs';
                 }
                 $g->set('opponent_prefix', $prefix);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // ignore enrichment errors
             }
         }

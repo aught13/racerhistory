@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var mixed $gameTypes
+ */
+?>
 <?php $this->assign('title', 'Game Types'); ?>
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -7,7 +13,7 @@
     <table class="table table-striped">
         <thead><tr><th>Name</th><th>Post</th><th>Conf</th><th>Abr</th><th></th></tr></thead>
         <tbody>
-        <?php foreach ($gameTypes as $gt): ?>
+        <?php foreach ($gameTypes as $gt) : ?>
             <tr>
                 <td><?= h($gt->game_type_name) ?></td>
                 <td><?= $gt->post ? 'Yes' : 'No' ?></td>

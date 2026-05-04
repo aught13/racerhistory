@@ -3,6 +3,14 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Season;
+use App\Model\Table\GamesTable;
+use App\Model\Table\ImagesTable;
+use App\Model\Table\SeasonsTable;
+use App\Model\Table\SportsTable;
+use App\Model\Table\TeamSeasonRostersTable;
+use App\Model\Table\TeamSeasonsTable;
+use App\Model\Table\TeamsTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 
@@ -109,7 +117,7 @@ class TeamSeasonAdminService
             'nextTeamSeason',
             'playerStats',
             'teamStats',
-            'opponentStats'
+            'opponentStats',
         );
     }
 
@@ -295,7 +303,7 @@ class TeamSeasonAdminService
 
         $seasonsList = [];
         foreach ($rows as $season) {
-            if (!($season instanceof \App\Model\Entity\Season)) {
+            if (!($season instanceof Season)) {
                 continue;
             }
             $seasonsList[(int)$season->id] = $season->start . '-' . $season->end;
@@ -307,7 +315,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\TeamSeasonsTable
      */
-    private function getTeamSeasonsTable(): \App\Model\Table\TeamSeasonsTable
+    private function getTeamSeasonsTable(): TeamSeasonsTable
     {
         /** @var \App\Model\Table\TeamSeasonsTable $table */
         $table = TableRegistry::getTableLocator()->get('TeamSeasons');
@@ -318,7 +326,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\TeamSeasonRostersTable
      */
-    private function getTeamSeasonRostersTable(): \App\Model\Table\TeamSeasonRostersTable
+    private function getTeamSeasonRostersTable(): TeamSeasonRostersTable
     {
         /** @var \App\Model\Table\TeamSeasonRostersTable $table */
         $table = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
@@ -329,7 +337,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\GamesTable
      */
-    private function getGamesTable(): \App\Model\Table\GamesTable
+    private function getGamesTable(): GamesTable
     {
         /** @var \App\Model\Table\GamesTable $table */
         $table = TableRegistry::getTableLocator()->get('Games');
@@ -340,7 +348,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\TeamsTable
      */
-    private function getTeamsTable(): \App\Model\Table\TeamsTable
+    private function getTeamsTable(): TeamsTable
     {
         /** @var \App\Model\Table\TeamsTable $table */
         $table = TableRegistry::getTableLocator()->get('Teams');
@@ -351,7 +359,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\SeasonsTable
      */
-    private function getSeasonsTable(): \App\Model\Table\SeasonsTable
+    private function getSeasonsTable(): SeasonsTable
     {
         /** @var \App\Model\Table\SeasonsTable $table */
         $table = TableRegistry::getTableLocator()->get('Seasons');
@@ -362,7 +370,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\SportsTable
      */
-    private function getSportsTable(): \App\Model\Table\SportsTable
+    private function getSportsTable(): SportsTable
     {
         /** @var \App\Model\Table\SportsTable $table */
         $table = TableRegistry::getTableLocator()->get('Sports');
@@ -373,7 +381,7 @@ class TeamSeasonAdminService
     /**
      * @return \App\Model\Table\ImagesTable
      */
-    private function getImagesTable(): \App\Model\Table\ImagesTable
+    private function getImagesTable(): ImagesTable
     {
         /** @var \App\Model\Table\ImagesTable $table */
         $table = TableRegistry::getTableLocator()->get('Images');

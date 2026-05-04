@@ -1,3 +1,9 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\User $user
+ */
+?>
 <?php $this->assign('title', 'Edit User'); ?>
 <div class="container py-4">
     <h1 class="mb-4">Edit User</h1>
@@ -24,15 +30,15 @@
                 'type' => 'select',
                 'options' => [
                     'user' => 'User',
-                    'admin' => 'Admin'
+                    'admin' => 'Admin',
                 ],
-                'class' => 'form-select'
+                'class' => 'form-select',
             ]) ?>
         </div>
         <div class="col-md-6">
             <?= $this->Form->control('active', [
                 'type' => 'checkbox',
-                'label' => 'Active'
+                'label' => 'Active',
             ]) ?>
         </div>
     </div>
@@ -44,7 +50,7 @@
                 'id' => 'admin-edit-password',
                 'class' => 'form-control',
                 'label' => false,
-                'value' => ''
+                'value' => '',
             ]) ?>
             <button type="button" class="btn btn-outline-secondary" id="toggle-admin-edit-password" tabindex="-1">
                 <span class="bi bi-eye"></span>

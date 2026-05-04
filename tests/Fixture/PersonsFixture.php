@@ -10,6 +10,9 @@ class PersonsFixture extends TestFixture
 {
     public string $table = 'persons';
 
+    /**
+     * Initializes the fixture data.
+     */
     public function init(): void
     {
         $this->records = [

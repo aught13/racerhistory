@@ -66,7 +66,7 @@ class GameViewService
             'fieldLabels' => [],
         ];
 
-        $sportId = $game->team_season?->team?->sport?->id;
+        $sportId = $game->team_season->team->sport->id;
         if ($sportId) {
             $viewData['hasSportConfig'] = true;
 

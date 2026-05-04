@@ -21,6 +21,9 @@ class ImageDeleteServiceTest extends TestCase
 
     private array $previousConfig = [];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -61,6 +64,9 @@ class ImageDeleteServiceTest extends TestCase
         file_put_contents($subdirPath . 'seed-thumb.webp', 'THUMB');
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         if ($this->previousConfig) {
@@ -74,6 +80,9 @@ class ImageDeleteServiceTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests delete image by id removes db rows and files and prunes tags.
+     */
     public function testDeleteImageByIdRemovesDbRowsAndFilesAndPrunesTags(): void
     {
         $images = TableRegistry::getTableLocator()->get('Images');
@@ -98,6 +107,9 @@ class ImageDeleteServiceTest extends TestCase
         $images->get(1);
     }
 
+    /**
+     * Tests bulk delete images deletes join rows and prunes all orphan tags.
+     */
     public function testBulkDeleteImagesDeletesJoinRowsAndPrunesAllOrphanTags(): void
     {
         $service = new ImageDeleteService();
@@ -110,6 +122,11 @@ class ImageDeleteServiceTest extends TestCase
         $this->assertSame(0, $imageTags->find()->count());
     }
 
+    /**
+     * Runs the delete dir recursive routine.
+     *
+     * @param string $dir
+     */
     private function deleteDirRecursive(string $dir): void
     {
         $items = scandir($dir);

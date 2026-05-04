@@ -9,10 +9,10 @@ use Cake\ORM\Entity;
  * StatBasketGamePerson Entity
  *
  * @property int $id
- * @property int $game_id
+ * @property int|null $game_id
  * @property int $team_season_id
- * @property int $team_season_roster_id
- * @property string $period
+ * @property int|null $team_season_roster_id
+ * @property string|null $period
  * @property string|null $GP
  * @property string|null $GS
  * @property string|null $MIN
@@ -37,8 +37,8 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime $created_at
  * @property \Cake\I18n\DateTime $updated_at
  *
- * @property \App\Model\Entity\Game $game
- * @property \App\Model\Entity\TeamSeasonRosters $team_season_roster
+ * @property \App\Model\Entity\Game|null $game
+ * @property \App\Model\Entity\TeamSeasonRosters|null $team_season_roster
  */
 class StatBasketGamePerson extends Entity
 {

@@ -9,7 +9,13 @@ use Cake\Core\Configure;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use ReflectionClass;
+use ReflectionMethod;
+use Throwable;
 
+/**
+ * @link \App\Controller\Admin\ImagesController
+ */
 class ImagesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -38,6 +44,9 @@ class ImagesControllerTest extends TestCase
      */
     protected array $createdImageIds = [];
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         // Capture current PHP error handler before calling parent::setUp so we
@@ -53,6 +62,9 @@ class ImagesControllerTest extends TestCase
         $this->storageRoot = rtrim((string)Configure::read('Images.storageRoot', WWW_ROOT . 'img' . DS . 'storage'), DS) . DS;
     }
 
+    /**
+     * Tests upload success.
+     */
     public function testUploadSuccess(): void
     {
         $this->mockIdentity();
@@ -104,6 +116,9 @@ class ImagesControllerTest extends TestCase
         return $prev;
     }
 
+    /**
+     * Tests upload rejects unsupported mime.
+     */
     public function testUploadRejectsUnsupportedMime(): void
     {
         $this->mockIdentity();
@@ -126,6 +141,9 @@ class ImagesControllerTest extends TestCase
         $this->assertFalse($json['success'] ?? true, 'Should fail with unsupported mime');
     }
 
+    /**
+     * Tests bulk upload requires auth.
+     */
     public function testBulkUploadRequiresAuth(): void
     {
         $tmp = tempnam(sys_get_temp_dir(), 'img');
@@ -144,6 +162,9 @@ class ImagesControllerTest extends TestCase
         $this->assertRedirect();
     }
 
+    /**
+     * Tests bulk upload success.
+     */
     public function testBulkUploadSuccess(): void
     {
         $this->mockIdentity();
@@ -198,6 +219,9 @@ class ImagesControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tests serve original and variant.
+     */
     public function testServeOriginalAndVariant(): void
     {
         $this->mockIdentity();
@@ -231,6 +255,9 @@ class ImagesControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tests serve missing file falls back to transparent png.
+     */
     public function testServeMissingFileFallsBackToTransparentPng(): void
     {
         $this->mockIdentity();
@@ -244,6 +271,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame("\x89PNG", substr($body, 0, 4), 'Should start with PNG signature');
     }
 
+    /**
+     * Tests public serve route.
+     */
     public function testPublicServeRoute(): void
     {
         // No auth needed for public route
@@ -252,6 +282,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    /**
+     * Tests public serve variant after upload.
+     */
     public function testPublicServeVariantAfterUpload(): void
     {
         $this->mockIdentity();
@@ -281,6 +314,9 @@ class ImagesControllerTest extends TestCase
         $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    /**
+     * Tests public serve supports transform params.
+     */
     public function testPublicServeSupportsTransformParams(): void
     {
         if (!extension_loaded('gd') && !extension_loaded('imagick')) {
@@ -312,6 +348,9 @@ class ImagesControllerTest extends TestCase
         $this->assertNotEmpty((string)$this->_response->getBody());
     }
 
+    /**
+     * Tests public serve missing variant falls back.
+     */
     public function testPublicServeMissingVariantFallsBack(): void
     {
         // record 1 exists but has no variants, request a non-existent variant
@@ -320,6 +359,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'), 'Fallback should be PNG');
     }
 
+    /**
+     * Tests admin index renders list.
+     */
     public function testAdminIndexRendersList(): void
     {
         $this->mockIdentity();
@@ -329,6 +371,9 @@ class ImagesControllerTest extends TestCase
         $this->assertStringContainsString('<table', $body, 'Expected table markup in images index');
     }
 
+    /**
+     * Tests admin edit renders form.
+     */
     public function testAdminEditRendersForm(): void
     {
         $this->mockIdentity();
@@ -337,6 +382,9 @@ class ImagesControllerTest extends TestCase
         $this->assertStringContainsString('<form', (string)$this->_response->getBody(), 'Edit form should render');
     }
 
+    /**
+     * Tests manipulate post accepts custom fields.
+     */
     public function testManipulatePostAcceptsCustomFields(): void
     {
         $this->mockIdentity();
@@ -367,6 +415,9 @@ class ImagesControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tears down the test case.
+     */
     protected function tearDown(): void
     {
         // Remove any files created in configured storage during tests
@@ -375,7 +426,7 @@ class ImagesControllerTest extends TestCase
             foreach ($this->createdImageIds as $id) {
                 try {
                     $record = $images->get($id);
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     continue;
                 }
                 $storagePath = $record->get('storage_path');
@@ -387,7 +438,7 @@ class ImagesControllerTest extends TestCase
                     if (is_file($full)) {
                         try {
                             unlink($full);
-                        } catch (\Throwable $e) {
+                        } catch (Throwable $e) {
                             // best-effort cleanup; ignore any unlink failures
                         }
                     }
@@ -401,7 +452,7 @@ class ImagesControllerTest extends TestCase
                                 if (is_file($vf)) {
                                     try {
                                         unlink($vf);
-                                    } catch (\Throwable $e) {
+                                    } catch (Throwable $e) {
                                         // ignore cleanup failure
                                     }
                                 }
@@ -440,12 +491,18 @@ class ImagesControllerTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests browse requires authentication.
+     */
     public function testBrowseRequiresAuthentication(): void
     {
         $this->get('/admin/images/browse');
         $this->assertResponseCode(302, 'Unauthenticated request should redirect');
     }
 
+    /**
+     * Tests browse returns json.
+     */
     public function testBrowseReturnsJson(): void
     {
         $this->mockIdentity();
@@ -454,6 +511,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame('application/json', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    /**
+     * Tests browse returns all images.
+     */
     public function testBrowseReturnsAllImages(): void
     {
         $this->mockIdentity();
@@ -473,6 +533,9 @@ class ImagesControllerTest extends TestCase
         }
     }
 
+    /**
+     * Tests browse with tag filter.
+     */
     public function testBrowseWithTagFilter(): void
     {
         $this->mockIdentity();
@@ -484,6 +547,9 @@ class ImagesControllerTest extends TestCase
         $this->assertIsArray($json['images'] ?? null);
     }
 
+    /**
+     * Tests browse respect limit parameter.
+     */
     public function testBrowseRespectLimitParameter(): void
     {
         $this->mockIdentity();
@@ -494,6 +560,9 @@ class ImagesControllerTest extends TestCase
         $this->assertLessThanOrEqual(5, count($json['images'] ?? []));
     }
 
+    /**
+     * Tests browse clamp limit to maximum.
+     */
     public function testBrowseClampLimitToMaximum(): void
     {
         $this->mockIdentity();
@@ -504,6 +573,9 @@ class ImagesControllerTest extends TestCase
         $this->assertLessThanOrEqual(100, count($json['images'] ?? []));
     }
 
+    /**
+     * Tests build common entity tags skips other entities when roster selected.
+     */
     public function testBuildCommonEntityTagsSkipsOtherEntitiesWhenRosterSelected(): void
     {
         $controller = $this->createImagesControllerForPrivateMethods();
@@ -537,6 +609,9 @@ class ImagesControllerTest extends TestCase
         $this->assertGreaterThanOrEqual(1, count($slugs));
     }
 
+    /**
+     * Tests collect bulk tags parses tag arrays and context.
+     */
     public function testCollectBulkTagsParsesTagArraysAndContext(): void
     {
         $controller = $this->createImagesControllerForPrivateMethods();
@@ -551,6 +626,9 @@ class ImagesControllerTest extends TestCase
         $this->assertNotEmpty($contextTags, 'Context tag should be generated when context text is provided.');
     }
 
+    /**
+     * Runs the create images controller for private methods routine.
+     */
     private function createImagesControllerForPrivateMethods(): ImagesController
     {
         $request = new ServerRequest(['url' => '/admin/images']);
@@ -558,9 +636,15 @@ class ImagesControllerTest extends TestCase
         return new ImagesController($request);
     }
 
-    private function getPrivateMethod(ImagesController $controller, string $name): \ReflectionMethod
+    /**
+     * Runs the get private method routine.
+     *
+     * @param \App\Controller\Admin\ImagesController $controller
+     * @param string $name
+     */
+    private function getPrivateMethod(ImagesController $controller, string $name): ReflectionMethod
     {
-        $ref = new \ReflectionClass($controller);
+        $ref = new ReflectionClass($controller);
         $method = $ref->getMethod($name);
         if (PHP_VERSION_ID < 80500) {
             $method->setAccessible(true);

@@ -9,8 +9,8 @@ use Cake\ORM\Entity;
  * StatBasketGameTeam Entity
  *
  * @property int $id
- * @property int $game_id
- * @property int $opp
+ * @property int|null $game_id
+ * @property bool $opp
  * @property string|null $ORB
  * @property string|null $DRB
  * @property string|null $RB
@@ -20,9 +20,26 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime $created_at
  * @property \Cake\I18n\DateTime $updated_at
  *
- * @property \App\Model\Entity\Game $game
+ * @property \App\Model\Entity\Game|null $game
  */
 class StatBasketGameTeam extends Entity
 {
+    /**
+     * Fields that can be mass assigned using newEntity() or patchEntity().
+     *
+     * @var array<string, bool>
+     */
+    protected array $_accessible = [
+        'game_id' => true,
+        'opp' => true,
+        'ORB' => true,
+        'DRB' => true,
+        'RB' => true,
+        'TRN' => true,
+        'TF' => true,
+        'PTS' => true,
+        'created_at' => true,
+        'updated_at' => true,
+    ];
     // Add custom methods or virtual fields if needed
 }

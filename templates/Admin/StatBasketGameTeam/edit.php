@@ -1,3 +1,11 @@
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var object $opponentStats
+ * @var object $teamStats
+ * @var \App\Model\Entity\Game $game
+ */
+?>
 <?php $this->assign('title', 'Edit Team Stats'); ?>
 <div class="container py-4">
     <nav aria-label="breadcrumb">

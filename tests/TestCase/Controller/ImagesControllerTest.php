@@ -9,7 +9,12 @@ use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use ReflectionClass;
+use ReflectionMethod;
 
+/**
+ * @link \App\Controller\ImagesController
+ */
 class ImagesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
@@ -20,6 +25,9 @@ class ImagesControllerTest extends TestCase
 
     private string $storageRoot;
 
+    /**
+     * Sets up the test case.
+     */
     public function setUp(): void
     {
         parent::setUp();
@@ -27,6 +35,9 @@ class ImagesControllerTest extends TestCase
         $this->storageRoot = WWW_ROOT . 'img' . DS . 'storage' . DS;
     }
 
+    /**
+     * Tears down the test case.
+     */
     public function tearDown(): void
     {
         // Best-effort cleanup of derivative cache created by serveTransformed()
@@ -45,6 +56,9 @@ class ImagesControllerTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * Tests serve missing record returns placeholder png.
+     */
     public function testServeMissingRecordReturnsPlaceholderPng(): void
     {
         $this->get('/images/serve/999999');
@@ -57,6 +71,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame("\x89PNG", substr($body, 0, 4));
     }
 
+    /**
+     * Tests serve missing file returns placeholder png.
+     */
     public function testServeMissingFileReturnsPlaceholderPng(): void
     {
         $this->get('/images/serve/1');
@@ -68,6 +85,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame("\x89PNG", substr($body, 0, 4));
     }
 
+    /**
+     * Tests serve when file exists returns body and etag.
+     */
     public function testServeWhenFileExistsReturnsBodyAndEtag(): void
     {
         $png = $this->tinyPngBytes();
@@ -92,6 +112,9 @@ class ImagesControllerTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Tests serve with version enables long cache.
+     */
     public function testServeWithVersionEnablesLongCache(): void
     {
         $png = $this->tinyPngBytes();
@@ -104,6 +127,9 @@ class ImagesControllerTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Tests serve without version uses public short cache.
+     */
     public function testServeWithoutVersionUsesPublicShortCache(): void
     {
         $png = $this->tinyPngBytes();
@@ -118,6 +144,9 @@ class ImagesControllerTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Tests serve returns304 when etag matches.
+     */
     public function testServeReturns304WhenEtagMatches(): void
     {
         $png = $this->tinyPngBytes();
@@ -136,6 +165,9 @@ class ImagesControllerTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Tests serve with invalid transform params does not transform.
+     */
     public function testServeWithInvalidTransformParamsDoesNotTransform(): void
     {
         // fit=invalid and w=0 should yield no transform path.
@@ -144,6 +176,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
     }
 
+    /**
+     * Tests serve transformed uses derivative cache when present.
+     */
     public function testServeTransformedUsesDerivativeCacheWhenPresent(): void
     {
         $png = $this->tinyPngBytes();
@@ -176,6 +211,11 @@ class ImagesControllerTest extends TestCase
         $this->safeUnlink($fullPath);
     }
 
+    /**
+     * Runs the safe unlink routine.
+     *
+     * @param string $path
+     */
     private function safeUnlink(string $path): void
     {
         if (!is_file($path)) {
@@ -187,6 +227,11 @@ class ImagesControllerTest extends TestCase
         restore_error_handler();
     }
 
+    /**
+     * Runs the safe rmdir routine.
+     *
+     * @param string $path
+     */
     private function safeRmdir(string $path): void
     {
         if (!is_dir($path)) {
@@ -198,6 +243,9 @@ class ImagesControllerTest extends TestCase
         restore_error_handler();
     }
 
+    /**
+     * Tests resolve path accepts numeric id via reflection.
+     */
     public function testResolvePathAcceptsNumericIdViaReflection(): void
     {
         $request = new ServerRequest(['url' => '/images/serve/1']);
@@ -206,7 +254,7 @@ class ImagesControllerTest extends TestCase
             ->setConstructorArgs([$request])
             ->getMock();
 
-        $ref = new \ReflectionClass(ImagesController::class);
+        $ref = new ReflectionClass(ImagesController::class);
         $method = $ref->getMethod('resolvePath');
         if (PHP_VERSION_ID < 80500) {
             $method->setAccessible(true);
@@ -219,6 +267,9 @@ class ImagesControllerTest extends TestCase
         $this->assertIsString($result[1]);
     }
 
+    /**
+     * Tests extract transform params returns null without values.
+     */
     public function testExtractTransformParamsReturnsNullWithoutValues(): void
     {
         $controller = $this->createImagesControllerWithQuery(['variant' => 'thumb', 'v' => '1']);
@@ -227,6 +278,9 @@ class ImagesControllerTest extends TestCase
         $this->assertNull($method->invoke($controller));
     }
 
+    /**
+     * Tests extract transform params filters and normalizes inputs.
+     */
     public function testExtractTransformParamsFiltersAndNormalizesInputs(): void
     {
         $controller = $this->createImagesControllerWithQuery([
@@ -248,6 +302,9 @@ class ImagesControllerTest extends TestCase
         ], $method->invoke($controller));
     }
 
+    /**
+     * Tests output format and mime helpers cover common cases.
+     */
     public function testOutputFormatAndMimeHelpersCoverCommonCases(): void
     {
         $controller = $this->createImagesControllerWithQuery();
@@ -263,6 +320,9 @@ class ImagesControllerTest extends TestCase
         $this->assertSame('jpg', $mimeToExt->invoke($controller, 'application/octet-stream'));
     }
 
+    /**
+     * Tests build etag produces consistent value.
+     */
     public function testBuildEtagProducesConsistentValue(): void
     {
         $controller = $this->createImagesControllerWithQuery();
@@ -272,6 +332,13 @@ class ImagesControllerTest extends TestCase
         $this->assertSame($expected, $method->invoke($controller, 'hash', 'thumb', []));
     }
 
+    /**
+     * Runs the compute etag routine.
+     *
+     * @param string $hash
+     * @param string $variant
+     * @param array $transform
+     */
     private function computeEtag(string $hash, string $variant, array $transform): string
     {
         $basis = $hash . '|' . $variant . '|' . json_encode($transform);
@@ -279,6 +346,9 @@ class ImagesControllerTest extends TestCase
         return '"' . hash('sha256', $basis) . '"';
     }
 
+    /**
+     * Runs the tiny png bytes routine.
+     */
     private function tinyPngBytes(): string
     {
         $b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=';
@@ -286,6 +356,12 @@ class ImagesControllerTest extends TestCase
         return (string)base64_decode($b64);
     }
 
+    /**
+     * Runs the write fixture image file routine.
+     *
+     * @param int $id
+     * @param string $bytes
+     */
     private function writeFixtureImageFile(int $id, string $bytes): string
     {
         $images = TableRegistry::getTableLocator()->get('Images');
@@ -304,6 +380,11 @@ class ImagesControllerTest extends TestCase
         return $fullPath;
     }
 
+    /**
+     * Runs the create images controller with query routine.
+     *
+     * @param array $query
+     */
     private function createImagesControllerWithQuery(array $query = []): ImagesController
     {
         $request = new ServerRequest([
@@ -318,9 +399,15 @@ class ImagesControllerTest extends TestCase
             ->getMock();
     }
 
-    private function getPrivateMethod(ImagesController $controller, string $name): \ReflectionMethod
+    /**
+     * Runs the get private method routine.
+     *
+     * @param \App\Controller\ImagesController $controller
+     * @param string $name
+     */
+    private function getPrivateMethod(ImagesController $controller, string $name): ReflectionMethod
     {
-        $ref = new \ReflectionClass($controller);
+        $ref = new ReflectionClass($controller);
         $method = $ref->getMethod($name);
         if (PHP_VERSION_ID < 80500) {
             $method->setAccessible(true);

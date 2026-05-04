@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\GameType;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -18,7 +19,7 @@ class GameTypeService
      * @param int $gameTypeId Game type ID
      * @return \App\Model\Entity\GameType|null
      */
-    public function getGameTypeById(int $gameTypeId): ?\App\Model\Entity\GameType
+    public function getGameTypeById(int $gameTypeId): ?GameType
     {
         $gameTypes = TableRegistry::getTableLocator()->get('GameTypes');
 
@@ -92,7 +93,7 @@ class GameTypeService
      * @param array<string,mixed> $data Game type data
      * @return \App\Model\Entity\GameType|false
      */
-    public function createGameType(array $data): \App\Model\Entity\GameType|false
+    public function createGameType(array $data): GameType|false
     {
         $gameTypes = TableRegistry::getTableLocator()->get('GameTypes');
         $gameType = $gameTypes->newEntity($data);
@@ -107,7 +108,7 @@ class GameTypeService
      * @param array<string,mixed> $data Updated game type data
      * @return \App\Model\Entity\GameType|false
      */
-    public function updateGameType(int $gameTypeId, array $data): \App\Model\Entity\GameType|false
+    public function updateGameType(int $gameTypeId, array $data): GameType|false
     {
         $gameTypes = TableRegistry::getTableLocator()->get('GameTypes');
         $gameType = $gameTypes->get($gameTypeId);

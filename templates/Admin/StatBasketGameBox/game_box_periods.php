@@ -1,6 +1,13 @@
 <?php
 /**
  * Period-by-Period Box Score Entry Template
+ *
+ * @var \App\View\AppView $this
+ * @var array $existingStats
+ * @var array $fieldLabels
+ * @var mixed $numOT
+ * @var mixed $numPeriods
+ * @var \App\Model\Entity\Game $game
  */
 $this->assign('title', 'Period Box Scores');
 ?>
