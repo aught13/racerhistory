@@ -1,0 +1,141 @@
+name: Production Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Install Production Dependencies
+        run: |
+          composer install \
+            --no-dev \
+            --classmap-authoritative \
+            --optimize-autoloader \
+            --no-interaction \
+            --prefer-dist
+      - name: Build Clean Production Bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUILD_ROOT="build"
+          BUILD_DIR="$BUILD_ROOT/deploy"
+          ARCHIVE_NAME="racerhistory-production-${GITHUB_SHA}.tar.gz"
+
+          rm -rf "$BUILD_ROOT"
+          mkdir -p "$BUILD_DIR"
+
+          # Copy app with obvious non-runtime paths excluded.
+          rsync -a ./ "$BUILD_DIR/" \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='tests/' \
+            --exclude='e2e/' \
+            --exclude='external/' \
+            --exclude='docs/' \
+            --exclude='coverage*/' \
+            --exclude='playwright-report/' \
+            --exclude='test-results/' \
+            --exclude='tmp/coverage/' \
+            --exclude='node_modules/' \
+            --exclude='.vscode/' \
+            --exclude='.idea/' \
+            --exclude='.gitignore' \
+            --exclude='.gitattributes' \
+            --exclude='__mocks__/' \
+            --exclude='build/'
+
+          # Gather local files linked from README.md and keep them in the package.
+          declare -A KEEP_FILES=()
+          KEEP_FILES["README.md"]=1
+
+          while IFS= read -r raw_link; do
+            link="${raw_link%%#*}"
+            link="${link%%\?*}"
+            link="${link#./}"
+
+            if [[ -z "$link" ]]; then
+              continue
+            fi
+            if [[ "$link" =~ ^https?:// ]] || [[ "$link" =~ ^mailto: ]] || [[ "$link" =~ ^# ]]; then
+              continue
+            fi
+            if [[ -f "$link" ]]; then
+              KEEP_FILES["$link"]=1
+              mkdir -p "$BUILD_DIR/$(dirname "$link")"
+              cp -a "$link" "$BUILD_DIR/$link"
+            fi
+          done < <(grep -oE '\[[^][]+\]\(([^)]+)\)' README.md | sed -E 's/.*\(([^)]+)\).*/\1/')
+
+          # Remove markdown docs except README.md and files linked from README.md.
+          while IFS= read -r md_file; do
+            rel_path="${md_file#"$BUILD_DIR/"}"
+            if [[ -n "${KEEP_FILES[$rel_path]:-}" ]]; then
+              continue
+            fi
+            rm -f "$md_file"
+          done < <(find "$BUILD_DIR" -type f -name '*.md')
+
+          # Remove development-only configuration files.
+          rm -f \
+            "$BUILD_DIR/.editorconfig" \
+            "$BUILD_DIR/.prettierignore" \
+            "$BUILD_DIR/.prettierrc" \
+            "$BUILD_DIR/.prettierrc.json" \
+            "$BUILD_DIR/.prettierrc.yml" \
+            "$BUILD_DIR/.prettierrc.yaml" \
+            "$BUILD_DIR/.eslintrc" \
+            "$BUILD_DIR/.eslintrc.js" \
+            "$BUILD_DIR/.eslintrc.cjs" \
+            "$BUILD_DIR/.eslintrc.json" \
+            "$BUILD_DIR/eslint.config.cjs" \
+            "$BUILD_DIR/stylelint.config.cjs" \
+            "$BUILD_DIR/jest.setup.js" \
+            "$BUILD_DIR/jsdoc.json" \
+            "$BUILD_DIR/phpunit.xml" \
+            "$BUILD_DIR/phpunit.xml.dist" \
+            "$BUILD_DIR/phpunit.ci.xml" \
+            "$BUILD_DIR/phpstan.neon" \
+            "$BUILD_DIR/phpstan-baseline.neon" \
+            "$BUILD_DIR/phpcs.xml" \
+            "$BUILD_DIR/codecov.yml" \
+            "$BUILD_DIR/docs-status.json" \
+            "$BUILD_DIR/phpcs-status.json" \
+            "$BUILD_DIR/test-results.xml" \
+            "$BUILD_DIR/playwright.config.js" \
+            "$BUILD_DIR/AGENTS.md"
+
+          tar -czf "$BUILD_ROOT/$ARCHIVE_NAME" -C "$BUILD_DIR" .
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload Production Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-bundle
+          path: build/${{ env.ARCHIVE_NAME }}
+          if-no-files-found: error
+
+      - name: Deploy to Shared Hosting (FTP)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: build/deploy/
+          server-dir: /public_html/new.racerhistory.com/
