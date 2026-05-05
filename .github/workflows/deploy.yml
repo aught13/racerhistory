@@ -138,4 +138,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: build/deploy/
-          server-dir: /public_html/new.racerhistory.com/
+          server-dir: /
