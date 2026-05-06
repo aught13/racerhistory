@@ -25,6 +25,7 @@ jobs:
         run: |
           composer install \
             --no-dev \
+            --no-scripts \
             --classmap-authoritative \
             --optimize-autoloader \
             --no-interaction \
@@ -45,6 +46,7 @@ jobs:
           rsync -a ./ "$BUILD_DIR/" \
             --exclude='.git/' \
             --exclude='.github/' \
+            --exclude='config/app_local.php' \
             --exclude='tests/' \
             --exclude='e2e/' \
             --exclude='external/' \
@@ -94,6 +96,7 @@ jobs:
 
           # Remove development-only configuration files.
           rm -f \
+            "$BUILD_DIR/config/app_local.php" \
             "$BUILD_DIR/.editorconfig" \
             "$BUILD_DIR/.prettierignore" \
             "$BUILD_DIR/.prettierrc" \
@@ -104,6 +107,7 @@ jobs:
             "$BUILD_DIR/.eslintrc.js" \
             "$BUILD_DIR/.eslintrc.cjs" \
             "$BUILD_DIR/.eslintrc.json" \
+            "$BUILD_DIR/.stylelintignore" \
             "$BUILD_DIR/eslint.config.cjs" \
             "$BUILD_DIR/stylelint.config.cjs" \
             "$BUILD_DIR/jest.setup.js" \
@@ -120,6 +124,9 @@ jobs:
             "$BUILD_DIR/test-results.xml" \
             "$BUILD_DIR/playwright.config.js" \
             "$BUILD_DIR/AGENTS.md"
+
+          # Write a release marker consumed by bin/run-release-migrations.sh
+          printf '%s\n' "$GITHUB_SHA" > "$BUILD_DIR/.release_sha"
 
           tar -czf "$BUILD_ROOT/$ARCHIVE_NAME" -C "$BUILD_DIR" .
           echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
@@ -139,3 +146,11 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: build/deploy/
           server-dir: /
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            config/app_local.php
+            logs/**
+            tmp/**
+            storage/**
