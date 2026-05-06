@@ -62,15 +62,21 @@ if (!chdir($appRoot)) {
 
 $log('new release detected (' . $currentRelease . '); running migrations');
 
-$migrateCmd = escapeshellarg($phpBin) . ' bin/cake migrations migrate --no-interaction';
-passthru($migrateCmd, $migrateExitCode);
+$migrateCmd = escapeshellarg($phpBin) . ' bin/cake.php migrations migrate --no-interaction 2>&1';
+$migrateOutput = [];
+exec($migrateCmd, $migrateOutput, $migrateExitCode);
 if ($migrateExitCode !== 0) {
     $log('migration command failed with exit code ' . (string)$migrateExitCode);
+    foreach ($migrateOutput as $line) {
+        if (trim($line) !== '') {
+            $log('  ' . $line);
+        }
+    }
     exit($migrateExitCode);
 }
 
 // Verify that migrations actually applied by checking the migrations table
-$verifyCmd = escapeshellarg($phpBin) . ' bin/cake migrations status 2>&1';
+$verifyCmd = escapeshellarg($phpBin) . ' bin/cake.php migrations status 2>&1';
 $output = [];
 exec($verifyCmd, $output, $verifyExitCode);
 
@@ -93,8 +99,9 @@ if ($hasPending) {
     exit(1);
 }
 
-$cacheCmd = escapeshellarg($phpBin) . ' bin/cake cache clear_all';
-passthru($cacheCmd, $cacheExitCode);
+$cacheCmd = escapeshellarg($phpBin) . ' bin/cake.php cache clear_all 2>&1';
+$cacheOutput = [];
+exec($cacheCmd, $cacheOutput, $cacheExitCode);
 if ($cacheExitCode !== 0) {
     $log('cache clear returned non-zero exit code ' . (string)$cacheExitCode . ' (continuing)');
 }
