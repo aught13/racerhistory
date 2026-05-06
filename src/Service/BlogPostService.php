@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\BlogPost;
-use Cake\ORM\Query;
+use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
@@ -119,7 +119,7 @@ class BlogPostService
     /**
      * Build the published posts query with pinned ordering.
      */
-    private function getPublishedPostsQuery(): Query
+    private function getPublishedPostsQuery(): SelectQuery
     {
         $table = $this->posts();
         $query = $table->find()
