@@ -47,6 +47,7 @@ jobs:
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='config/app_local.php' \
+            --exclude='webroot/img/storage/' \
             --exclude='tests/' \
             --exclude='e2e/' \
             --exclude='external/' \
@@ -154,3 +155,5 @@ jobs:
             logs/**
             tmp/**
             storage/**
+            webroot/img/storage
+            webroot/img/storage/**
