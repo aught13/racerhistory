@@ -55,7 +55,7 @@ jobs:
             --exclude='coverage*/' \
             --exclude='playwright-report/' \
             --exclude='test-results/' \
-            --exclude='tmp/coverage/' \
+            --exclude='tmp/' \
             --exclude='node_modules/' \
             --exclude='.vscode/' \
             --exclude='.idea/' \
@@ -154,6 +154,7 @@ jobs:
             config/app_local.php
             logs/**
             tmp/**
+            tmp/deploy/.last_migrated_release
             storage/**
             webroot/img/storage
             webroot/img/storage/**

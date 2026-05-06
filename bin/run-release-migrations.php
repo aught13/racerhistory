@@ -69,6 +69,30 @@ if ($migrateExitCode !== 0) {
     exit($migrateExitCode);
 }
 
+// Verify that migrations actually applied by checking the migrations table
+$verifyCmd = escapeshellarg($phpBin) . ' bin/cake migrations status 2>&1';
+$output = [];
+exec($verifyCmd, $output, $verifyExitCode);
+
+if ($verifyExitCode !== 0) {
+    $log('failed to verify migrations status: ' . implode(' ', $output));
+    exit(1);
+}
+
+// Check if there are any pending migrations (lines starting with "DOWN")
+$hasPending = false;
+foreach ($output as $line) {
+    if (preg_match('/^\s*DOWN\s+/', $line)) {
+        $hasPending = true;
+        $log('pending migration detected after migrate command: ' . trim($line));
+    }
+}
+
+if ($hasPending) {
+    $log('migrations still pending after migrate command; state not updated');
+    exit(1);
+}
+
 $cacheCmd = escapeshellarg($phpBin) . ' bin/cake cache clear_all';
 passthru($cacheCmd, $cacheExitCode);
 if ($cacheExitCode !== 0) {
