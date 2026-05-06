@@ -62,7 +62,7 @@ if (!chdir($appRoot)) {
 
 $log('new release detected (' . $currentRelease . '); running migrations');
 
-$migrateCmd = escapeshellarg($phpBin) . ' bin/cake.php migrations migrate --no-interaction 2>&1';
+$migrateCmd = escapeshellarg($phpBin) . ' bin/cake.php migrations migrate 2>&1';
 $migrateOutput = [];
 exec($migrateCmd, $migrateOutput, $migrateExitCode);
 if ($migrateExitCode !== 0) {
