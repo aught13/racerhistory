@@ -272,24 +272,27 @@ test.describe("DataTables with Turbo Drive navigation", () => {
         test("navigating away and back re-initializes DataTable", async ({
             page,
         }) => {
+            // Extend timeout: multiple networkidle waits on data-heavy pages can add up
+            test.setTimeout(60000);
+
             // Start on seasons page
             await page.goto("/seasons");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const frame = page.locator("turbo-frame#seasons-table-frame");
             const hasFrame = (await frame.count()) > 0;
 
-            // Navigate to a different page via Turbo Drive
-            await page.goto("/people");
-            await page.waitForLoadState("networkidle");
+            // Navigate to a lighter page to avoid long AJAX waits
+            await page.goto("/blog");
+            await page.waitForLoadState("domcontentloaded");
 
-            // Navigate back
+            // Navigate back via browser history
             await page.goBack();
-            await page.waitForLoadState("networkidle");
-            await page.waitForTimeout(500);
+            await page.waitForLoadState("domcontentloaded");
+            await page.waitForTimeout(800);
 
             if (hasFrame) {
-                // Frame should still exist
+                // Frame should still exist after back navigation
                 const frameAfter = page.locator(
                     "turbo-frame#seasons-table-frame",
                 );

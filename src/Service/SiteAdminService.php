@@ -7,6 +7,7 @@ use App\Model\Table\PlacesTable;
 use App\Model\Table\SitesTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
+use Cake\Routing\Router;
 
 /**
  * SiteAdminService
@@ -22,6 +23,112 @@ use Cake\ORM\TableRegistry;
  */
 class SiteAdminService
 {
+    /**
+     * Return total number of sites for index page summary.
+     *
+     * @return int
+     */
+    public function getTotalCount(): int
+    {
+        return $this->getSitesTable()->find()->count();
+    }
+
+    /**
+     * Build DataTables server-side payload.
+     *
+     * @param array<string,mixed> $params
+     * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
+     */
+    public function buildDataTablesResponse(array $params): array
+    {
+        $sitesTable = $this->getSitesTable();
+        $siteSchema = $sitesTable->getSchema();
+        $hasCapacityColumn = $siteSchema->hasColumn('capacity');
+
+        $draw = (int)($params['draw'] ?? 1);
+        $start = max(0, (int)($params['start'] ?? 0));
+        $length = (int)($params['length'] ?? 50);
+        if ($length < 1) {
+            $length = 50;
+        }
+        $length = min($length, 500);
+        $searchValue = trim((string)($params['searchValue'] ?? ''));
+
+        $orderDir = strtolower((string)($params['orderDir'] ?? 'asc'));
+        if (!in_array($orderDir, ['asc', 'desc'], true)) {
+            $orderDir = 'asc';
+        }
+
+        $orderColumn = (int)($params['orderColumn'] ?? 0);
+        $orderMap = [
+            0 => 'Sites.site_name',
+            1 => 'Places.place_city',
+            2 => $hasCapacityColumn ? 'Sites.capacity' : 'Sites.site_name',
+        ];
+        $orderField = $orderMap[$orderColumn] ?? 'Sites.site_name';
+
+        $total = $sitesTable->find()->count();
+
+        $selectFields = [
+            'Sites.id',
+            'Sites.site_name',
+            'Sites.place_id',
+            'Places.place_city',
+            'Places.place_state',
+        ];
+        if ($hasCapacityColumn) {
+            $selectFields[] = 'Sites.capacity';
+        }
+
+        $query = $sitesTable->find()
+            ->select($selectFields)
+            ->leftJoinWith('Places');
+
+        if ($searchValue !== '') {
+            $query->where([
+                'OR' => [
+                    'Sites.site_name LIKE' => '%' . $searchValue . '%',
+                    'Places.place_city LIKE' => '%' . $searchValue . '%',
+                    'Places.place_state LIKE' => '%' . $searchValue . '%',
+                ],
+            ]);
+        }
+
+        if ($orderDir === 'desc') {
+            $query->orderByDesc($orderField);
+        } else {
+            $query->orderByAsc($orderField);
+        }
+
+        $filtered = $query->count();
+        /** @var array<\App\Model\Entity\Site> $sites */
+        $sites = $query->limit($length)->offset($start)->all()->toArray();
+
+        $data = [];
+        foreach ($sites as $site) {
+            $editUrl = Router::url([
+                'prefix' => 'Admin',
+                'controller' => 'Sites',
+                'action' => 'edit',
+                $site->id,
+            ]);
+            $placeCity = (string)($site->place_city ?? '');
+            $placeState = (string)($site->place_state ?? '');
+            $placeLabel = trim($placeCity . ($placeState !== '' ? ', ' . $placeState : ''));
+
+            $data[] = [
+                'id' => (int)$site->id,
+                'name' => h($site->site_name ?? ''),
+                'place' => h($placeLabel !== '' ? $placeLabel : '-'),
+                'capacity' => h((string)($hasCapacityColumn ? ($site->capacity ?? '') : '')),
+                'actions' => '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>',
+                'DT_RowId' => 'site-row-' . $site->id,
+            ];
+        }
+
+        return compact('draw', 'total', 'filtered', 'data');
+    }
+
     /**
      * Return index page data.
      *

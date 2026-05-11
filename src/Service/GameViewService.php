@@ -3,6 +3,11 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Game;
+use App\Model\Entity\Sport;
+use App\Model\Entity\Team;
+use App\Model\Entity\TeamSeason;
+
 /**
  * GameViewService
  *
@@ -66,7 +71,7 @@ class GameViewService
             'fieldLabels' => [],
         ];
 
-        $sportId = $game->team_season->team->sport->id;
+        $sportId = $this->resolveSportId($game);
         if ($sportId) {
             $viewData['hasSportConfig'] = true;
 
@@ -87,5 +92,31 @@ class GameViewService
         }
 
         return $viewData;
+    }
+
+    /**
+     * Resolve sport id from optional nested associations.
+     *
+     * @param \App\Model\Entity\Game $game Game entity with optional associations.
+     * @return int|null
+     */
+    private function resolveSportId(Game $game): ?int
+    {
+        $teamSeason = $game->get('team_season');
+        if (!$teamSeason instanceof TeamSeason) {
+            return null;
+        }
+
+        $team = $teamSeason->get('team');
+        if (!$team instanceof Team) {
+            return null;
+        }
+
+        $sport = $team->get('sport');
+        if (!$sport instanceof Sport) {
+            return null;
+        }
+
+        return isset($sport->id) ? (int)$sport->id : null;
     }
 }

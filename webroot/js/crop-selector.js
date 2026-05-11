@@ -719,6 +719,10 @@ class CropSelector {
     }
 }
 
+if (typeof window !== "undefined") {
+    window.CropSelector = CropSelector;
+}
+
 // Export class for CommonJS consumers (e.g., Jest tests)
 /* eslint-disable no-undef */
 if (typeof module !== "undefined" && typeof module.exports !== "undefined") {

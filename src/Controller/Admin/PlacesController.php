@@ -51,7 +51,49 @@ class PlacesController extends AppController
      */
     public function index(): void
     {
-        $this->set($this->placeAdminService->getIndexData());
+        $this->set('placeCount', $this->placeAdminService->getTotalCount());
+    }
+
+    /**
+     * DataTables server-side JSON endpoint.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function datatables(): Response
+    {
+        $this->request->allowMethod(['get']);
+
+        $orderColumn = 1;
+        $orderDir = 'asc';
+        $order = $this->request->getQuery('order');
+        if (is_array($order) && !empty($order)) {
+            $firstOrder = reset($order);
+            if (is_array($firstOrder)) {
+                $orderColumn = (int)($firstOrder['column'] ?? 1);
+                $dir = strtolower((string)($firstOrder['dir'] ?? 'asc'));
+                if (in_array($dir, ['asc', 'desc'], true)) {
+                    $orderDir = $dir;
+                }
+            }
+        }
+
+        $result = $this->placeAdminService->buildDataTablesResponse([
+            'draw' => (int)$this->request->getQuery('draw'),
+            'start' => (int)$this->request->getQuery('start'),
+            'length' => (int)$this->request->getQuery('length'),
+            'searchValue' => trim((string)($this->request->getQuery('search')['value'] ?? '')),
+            'orderColumn' => $orderColumn,
+            'orderDir' => $orderDir,
+        ]);
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody((string)json_encode([
+                'draw' => $result['draw'],
+                'recordsTotal' => $result['total'],
+                'recordsFiltered' => $result['filtered'],
+                'data' => $result['data'],
+            ]));
     }
 
     /**

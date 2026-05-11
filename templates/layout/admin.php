@@ -33,6 +33,15 @@
     <meta name="csrfToken" content="<?= $this->request->getAttribute('csrfToken') ?>">
     <title><?= $this->fetch('title') ?></title>
     <?= $this->Html->meta('icon') ?>
+    <script>
+        // Admin UI is intentionally light-only; set this before CSS paints.
+        (function () {
+            const root = document.documentElement;
+            root.setAttribute('data-bs-theme', 'light');
+            root.setAttribute('data-theme', 'light');
+            root.classList.remove('dark-mode', 'theme-dark');
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -49,6 +58,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous">
     </script>
     <?= $this->Html->script('admin.js') ?>
+    <?= $this->Html->script('admin-image-pages.js') ?>
     <?= $this->fetch('script') ?>
 </head>
 
