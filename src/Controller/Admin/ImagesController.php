@@ -807,7 +807,9 @@ class ImagesController extends AppController
 
         return $this->getResponse()
             ->withType('image/png')
-            ->withHeader('Cache-Control', 'public, max-age=60')
+            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+            ->withHeader('Pragma', 'no-cache')
+            ->withHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
             ->withStringBody($data ?: '');
     }
 

@@ -64,7 +64,7 @@ class ImagesControllerTest extends TestCase
         $this->get('/images/serve/999999');
         $this->assertResponseOk();
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
-        $this->assertStringContainsString('public', $this->_response->getHeaderLine('Cache-Control'));
+        $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
 
         $body = (string)$this->_response->getBody();
         $this->assertNotEmpty($body);
@@ -79,6 +79,7 @@ class ImagesControllerTest extends TestCase
         $this->get('/images/serve/1');
         $this->assertResponseOk();
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
 
         $body = (string)$this->_response->getBody();
         $this->assertNotEmpty($body);

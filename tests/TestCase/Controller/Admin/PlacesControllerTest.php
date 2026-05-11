@@ -32,6 +32,54 @@ class PlacesControllerTest extends TestCase
         $this->get('/admin/places');
         $this->assertResponseOk();
         $this->assertResponseContains('Places');
+        $this->assertResponseContains('places-table');
+        $this->assertResponseContains('data-datatables-url');
+        $this->assertResponseContains('total');
+    }
+
+    /**
+     * Tests datatables returns json.
+     */
+    public function testDatatablesReturnsJson(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/datatables?draw=1&start=0&length=25');
+        $this->assertResponseOk();
+
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertArrayHasKey('draw', $body);
+        $this->assertArrayHasKey('recordsTotal', $body);
+        $this->assertArrayHasKey('recordsFiltered', $body);
+        $this->assertArrayHasKey('data', $body);
+        $this->assertIsArray($body['data']);
+        $this->assertSame(1, $body['draw']);
+    }
+
+    /**
+     * Tests datatables search filters.
+     */
+    public function testDatatablesSearchFilters(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/datatables?draw=2&start=0&length=25&search[value]=Murray');
+        $this->assertResponseOk();
+
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(2, $body['draw']);
+        $this->assertLessThanOrEqual($body['recordsTotal'], $body['recordsFiltered']);
+        foreach ($body['data'] as $row) {
+            $rowText = strtolower($row['country'] . ' ' . $row['city'] . ' ' . $row['state']);
+            $this->assertStringContainsString('murray', $rowText);
+        }
+    }
+
+    /**
+     * Tests datatables requires auth.
+     */
+    public function testDatatablesRequiresAuth(): void
+    {
+        $this->get('/admin/places/datatables');
+        $this->assertRedirectContains('/users/login');
     }
 
     /**

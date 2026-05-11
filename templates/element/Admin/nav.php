@@ -93,6 +93,24 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
+                        Places</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
+                        Sites</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'index']) ?>"
+                        data-turbo-frame="admin-content">
+                        Opponents</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
                         href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Blog', 'action' => 'index']) ?>"
                         data-turbo-frame="admin-content">
                         Blog</a>

@@ -15,7 +15,11 @@
     <h1 class="mb-3">Bulk Upload Images</h1>
     <p class="text-muted mb-4">Select multiple images, then apply shared tags to all of them.</p>
 
-    <?= $this->Form->create(null, ['type' => 'file', 'id' => 'bulkUploadForm']) ?>
+    <?= $this->Form->create(null, [
+        'type' => 'file',
+        'id' => 'bulkUploadForm',
+        'url' => ['action' => 'bulkUpload'],
+    ]) ?>
     <div class="card shadow-sm">
         <div class="card-header bg-light">
             <h5 class="mb-0">Select Files</h5>
@@ -83,112 +87,3 @@
     <?= $this->Form->end() ?>
 </div>
 
-<script>
-const uploadsInput = document.getElementById('uploads');
-const fileList = document.getElementById('fileList');
-const uploadBtn = document.getElementById('uploadAll');
-const statusBox = document.getElementById('uploadStatus');
-const csrfToken = document.querySelector('input[name="_csrfToken"]')?.value;
-
-
-function renderFileRows(files) {
-    fileList.innerHTML = '';
-    if (!files.length) {
-        uploadBtn.setAttribute('disabled', 'disabled');
-        return;
-    }
-    uploadBtn.removeAttribute('disabled');
-
-    Array.from(files).forEach((file, index) => {
-        const col = document.createElement('div');
-        col.className = 'col-12';
-        col.innerHTML = `
-            <div class="border rounded p-3">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                    <div>
-                        <strong>${file.name}</strong>
-                        <div class="text-muted small">${Math.round(file.size / 1024)} KB</div>
-                    </div>
-                    <span class="badge bg-secondary">#${index + 1}</span>
-                </div>
-                <div class="text-muted small">Tags will be applied from the "Entity Tags (Apply to All Files)" section above.</div>
-            </div>
-        `;
-        fileList.appendChild(col);
-    });
-}
-
-uploadsInput?.addEventListener('change', (e) => {
-    renderFileRows(e.target.files || []);
-});
-
-function showStatus(type, message, details = '') {
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.innerHTML = `<div class="fw-semibold mb-1">${message}</div>${details ? `<div class="small">${details}</div>` : ''}`;
-    statusBox.innerHTML = '';
-    statusBox.appendChild(alert);
-}
-
-    uploadBtn?.addEventListener('click', async () => {
-    const files = uploadsInput.files;
-    if (!files || !files.length) {
-        showStatus('danger', 'Please choose at least one image file.');
-        return;
-    }
-
-    uploadBtn.querySelector('.label').classList.add('d-none');
-    uploadBtn.querySelector('.spinner-border').classList.remove('d-none');
-    uploadBtn.setAttribute('disabled', 'disabled');
-    statusBox.innerHTML = '';
-
-    const formElement = document.getElementById('bulkUploadForm');
-    if (!formElement) {
-        showStatus('danger', 'Unable to locate the upload form.');
-        return;
-    }
-    const formData = new FormData(formElement);
-
-    try {
-        const response = await fetch('/admin/images/bulk-upload', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Non-JSON response:', text.substring(0, 500));
-            showStatus('danger', 'Server returned invalid response (expected JSON, got HTML). Check console for details.');
-            return;
-        }
-
-        const data = await response.json();
-        const successes = (data.results || []).filter(r => r.success);
-        const failures = (data.results || []).filter(r => !r.success);
-
-        let detailHtml = '<ul class="mb-0 ps-3">';
-        (data.results || []).forEach(r => {
-            const status = r.success ? 'text-success' : 'text-danger';
-            const icon = r.success ? 'bi-check-circle' : 'bi-exclamation-circle';
-            detailHtml += `<li class="${status}"><i class="bi ${icon}"></i> ${r.name || 'unnamed'}${r.existing ? ' (duplicate)' : ''}${r.error ? ': ' + r.error : ''}</li>`;
-        });
-        detailHtml += '</ul>';
-
-        if (successes.length && failures.length === 0) {
-            showStatus('success', 'All images uploaded successfully.', detailHtml);
-        } else if (successes.length && failures.length) {
-            showStatus('warning', 'Some images uploaded; some failed.', detailHtml);
-        } else {
-            showStatus('danger', 'Upload failed.', detailHtml);
-        }
-    } catch (err) {
-        showStatus('danger', 'Unexpected error while uploading.', err?.message || '');
-    } finally {
-        uploadBtn.querySelector('.label').classList.remove('d-none');
-        uploadBtn.querySelector('.spinner-border').classList.add('d-none');
-        uploadBtn.removeAttribute('disabled');
-    }
-});
-</script>
