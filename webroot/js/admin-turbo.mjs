@@ -13,6 +13,23 @@ import * as Turbo from "@hotwired/turbo";
 window.Turbo = Turbo;
 
 /**
+ * Admin UI intentionally runs in light mode only.
+ * Turbo preserves document state across visits, so normalize theme each time.
+ */
+function enforceAdminLightTheme() {
+    const root = document.documentElement;
+    if (!root) return;
+
+    root.setAttribute("data-bs-theme", "light");
+    root.setAttribute("data-theme", "light");
+    root.classList.remove("dark-mode", "theme-dark");
+
+    if (document.body) {
+        document.body.classList.remove("dark-mode", "theme-dark");
+    }
+}
+
+/**
  * Re-initialise Bootstrap components (tooltips, popovers, modals, etc.)
  * that were inserted into the DOM by a Turbo Frame swap or Turbo Drive visit.
  */
@@ -42,14 +59,25 @@ document.addEventListener("turbo:before-cache", () => {
 });
 
 // Re-initialise after every Turbo navigation (Drive visits + Frame loads)
-document.addEventListener("turbo:load", reinitBootstrap);
-document.addEventListener("turbo:frame-load", reinitBootstrap);
+document.addEventListener("turbo:before-render", enforceAdminLightTheme);
+document.addEventListener("turbo:load", () => {
+    enforceAdminLightTheme();
+    reinitBootstrap();
+});
+document.addEventListener("turbo:frame-load", () => {
+    enforceAdminLightTheme();
+    reinitBootstrap();
+});
 
 // Also run once on first load
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", reinitBootstrap);
+    document.addEventListener("DOMContentLoaded", () => {
+        enforceAdminLightTheme();
+        reinitBootstrap();
+    });
 } else {
+    enforceAdminLightTheme();
     reinitBootstrap();
 }
 
-export { reinitBootstrap };
+export { enforceAdminLightTheme, reinitBootstrap };

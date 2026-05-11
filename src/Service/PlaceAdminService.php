@@ -8,6 +8,7 @@ use App\Model\Table\PlacesTable;
 use App\Model\Table\SitesTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
+use Cake\Routing\Router;
 
 /**
  * PlaceAdminService
@@ -23,6 +24,93 @@ use Cake\ORM\TableRegistry;
  */
 class PlaceAdminService
 {
+    /**
+     * Return total number of places for index page summary.
+     *
+     * @return int
+     */
+    public function getTotalCount(): int
+    {
+        return $this->getPlacesTable()->find()->count();
+    }
+
+    /**
+     * Build DataTables server-side payload.
+     *
+     * @param array<string,mixed> $params
+     * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
+     */
+    public function buildDataTablesResponse(array $params): array
+    {
+        $draw = (int)($params['draw'] ?? 1);
+        $start = max(0, (int)($params['start'] ?? 0));
+        $length = (int)($params['length'] ?? 50);
+        if ($length < 1) {
+            $length = 50;
+        }
+        $length = min($length, 500);
+        $searchValue = trim((string)($params['searchValue'] ?? ''));
+
+        $orderDir = strtolower((string)($params['orderDir'] ?? 'asc'));
+        if (!in_array($orderDir, ['asc', 'desc'], true)) {
+            $orderDir = 'asc';
+        }
+
+        $orderColumn = (int)($params['orderColumn'] ?? 1);
+        $orderMap = [
+            0 => 'Places.place_country',
+            1 => 'Places.place_city',
+            2 => 'Places.place_state',
+        ];
+        $orderField = $orderMap[$orderColumn] ?? 'Places.place_city';
+
+        $total = $this->getPlacesTable()->find()->count();
+
+        $query = $this->getPlacesTable()->find()
+            ->select(['id', 'place_country', 'place_city', 'place_state']);
+
+        if ($searchValue !== '') {
+            $query->where([
+                'OR' => [
+                    'Places.place_country LIKE' => '%' . $searchValue . '%',
+                    'Places.place_city LIKE' => '%' . $searchValue . '%',
+                    'Places.place_state LIKE' => '%' . $searchValue . '%',
+                ],
+            ]);
+        }
+
+        if ($orderDir === 'desc') {
+            $query->orderByDesc($orderField);
+        } else {
+            $query->orderByAsc($orderField);
+        }
+
+        $filtered = $query->count();
+        /** @var array<\App\Model\Entity\Place> $places */
+        $places = $query->limit($length)->offset($start)->all()->toArray();
+
+        $data = [];
+        foreach ($places as $place) {
+            $editUrl = Router::url([
+                'prefix' => 'Admin',
+                'controller' => 'Places',
+                'action' => 'edit',
+                $place->id,
+            ]);
+
+            $data[] = [
+                'id' => (int)$place->id,
+                'country' => h($place->place_country ?? ''),
+                'city' => h($place->place_city ?? ''),
+                'state' => h($place->place_state ?? ''),
+                'actions' => '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>',
+                'DT_RowId' => 'place-row-' . $place->id,
+            ];
+        }
+
+        return compact('draw', 'total', 'filtered', 'data');
+    }
+
     /**
      * Return index page data.
      *

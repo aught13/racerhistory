@@ -6,6 +6,7 @@ namespace App\Service;
 use App\Model\Table\OpponentsTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
+use Cake\Routing\Router;
 
 /**
  * OpponentAdminService
@@ -21,6 +22,134 @@ use Cake\ORM\TableRegistry;
  */
 class OpponentAdminService
 {
+    /**
+     * Return total number of opponents for index page summary.
+     *
+     * @return int
+     */
+    public function getTotalCount(): int
+    {
+        return $this->getOpponentsTable()->find()->count();
+    }
+
+    /**
+     * Build DataTables server-side payload.
+     *
+     * @param array<string,mixed> $params
+     * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
+     */
+    public function buildDataTablesResponse(array $params): array
+    {
+        $opponentsTable = $this->getOpponentsTable();
+        $schema = $opponentsTable->getSchema();
+        $hasShortColumn = $schema->hasColumn('opponent_short');
+        $hasAbbrColumn = $schema->hasColumn('opponent_abbr');
+        $hasMascotColumn = $schema->hasColumn('opponent_mascot');
+
+        $draw = (int)($params['draw'] ?? 1);
+        $start = max(0, (int)($params['start'] ?? 0));
+        $length = (int)($params['length'] ?? 50);
+        if ($length < 1) {
+            $length = 50;
+        }
+        $length = min($length, 500);
+        $searchValue = trim((string)($params['searchValue'] ?? ''));
+
+        $orderDir = strtolower((string)($params['orderDir'] ?? 'asc'));
+        if (!in_array($orderDir, ['asc', 'desc'], true)) {
+            $orderDir = 'asc';
+        }
+
+        $orderColumn = (int)($params['orderColumn'] ?? 0);
+        $orderMap = [
+            0 => 'Opponents.opponent_name',
+            1 => $hasShortColumn ? 'Opponents.opponent_short' : 'Opponents.opponent_name',
+            2 => $hasAbbrColumn ? 'Opponents.opponent_abbr' : 'Opponents.opponent_name',
+            3 => 'Places.place_city',
+        ];
+        $orderField = $orderMap[$orderColumn] ?? 'Opponents.opponent_name';
+
+        $total = $opponentsTable->find()->count();
+
+        $selectFields = [
+            'Opponents.id',
+            'Opponents.opponent_name',
+            'Opponents.place_id',
+            'Places.place_city',
+            'Places.place_state',
+        ];
+        if ($hasShortColumn) {
+            $selectFields[] = 'Opponents.opponent_short';
+        }
+        if ($hasAbbrColumn) {
+            $selectFields[] = 'Opponents.opponent_abbr';
+        }
+        if ($hasMascotColumn) {
+            $selectFields[] = 'Opponents.opponent_mascot';
+        }
+
+        $searchOr = [
+            'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
+            'Places.place_city LIKE' => '%' . $searchValue . '%',
+            'Places.place_state LIKE' => '%' . $searchValue . '%',
+        ];
+        if ($hasShortColumn) {
+            $searchOr['Opponents.opponent_short LIKE'] = '%' . $searchValue . '%';
+        }
+        if ($hasAbbrColumn) {
+            $searchOr['Opponents.opponent_abbr LIKE'] = '%' . $searchValue . '%';
+        }
+        if ($hasMascotColumn) {
+            $searchOr['Opponents.opponent_mascot LIKE'] = '%' . $searchValue . '%';
+        }
+
+        $query = $opponentsTable->find()
+            ->select($selectFields)
+            ->leftJoinWith('Places');
+
+        if ($searchValue !== '') {
+            $query->where([
+                'OR' => $searchOr,
+            ]);
+        }
+
+        if ($orderDir === 'desc') {
+            $query->orderByDesc($orderField);
+        } else {
+            $query->orderByAsc($orderField);
+        }
+
+        $filtered = $query->count();
+        /** @var array<\App\Model\Entity\Opponent> $opponents */
+        $opponents = $query->limit($length)->offset($start)->all()->toArray();
+
+        $data = [];
+        foreach ($opponents as $opponent) {
+            $editUrl = Router::url([
+                'prefix' => 'Admin',
+                'controller' => 'Opponents',
+                'action' => 'edit',
+                $opponent->id,
+            ]);
+
+            $placeCity = (string)($opponent->place_city ?? '');
+            $placeState = (string)($opponent->place_state ?? '');
+            $placeLabel = trim($placeCity . ($placeState !== '' ? ', ' . $placeState : ''));
+
+            $data[] = [
+                'id' => (int)$opponent->id,
+                'name' => h($opponent->opponent_name ?? ''),
+                'short' => h($hasShortColumn ? ($opponent->opponent_short ?? '') : ''),
+                'abbr' => h($hasAbbrColumn ? ($opponent->opponent_abbr ?? '') : ''),
+                'place' => h($placeLabel !== '' ? $placeLabel : '-'),
+                'actions' => '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>',
+                'DT_RowId' => 'opponent-row-' . $opponent->id,
+            ];
+        }
+
+        return compact('draw', 'total', 'filtered', 'data');
+    }
+
     /**
      * Return index page data.
      *

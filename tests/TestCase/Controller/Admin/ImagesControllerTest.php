@@ -265,6 +265,7 @@ class ImagesControllerTest extends TestCase
         $this->get('/admin/images/serve/1');
         $this->assertResponseOk();
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
         $body = (string)$this->_response->getBody();
         $this->assertNotEmpty($body, 'Placeholder PNG should have content');
         // Validate it looks like a PNG: starts with PNG signature bytes
@@ -357,6 +358,7 @@ class ImagesControllerTest extends TestCase
         $this->get('/images/serve/1?variant=thumb');
         $this->assertResponseOk();
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'), 'Fallback should be PNG');
+        $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
     }
 
     /**
