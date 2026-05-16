@@ -306,7 +306,7 @@ class ImagesControllerTest extends TestCase
         $id = (int)$json['image']['id'];
         $this->createdImageIds[] = $id;
         // Public original
-        $this->get('/images/serve/' . $id);
+        $this->get('/images/serve/' . $id . '?fm=webp');
         $this->assertResponseOk();
         $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
         // Public variant (thumb)
@@ -346,6 +346,79 @@ class ImagesControllerTest extends TestCase
         $this->get('/images/serve/' . $id . '?w=1&h=1&fit=cover&fm=png&q=90');
         $this->assertResponseOk();
         $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody());
+    }
+
+    /**
+     * Tests public serve defaults to WebP when client supports it.
+     */
+    public function testPublicServeDefaultsToWebpWhenAccepted(): void
+    {
+        $this->mockIdentity();
+        $tmp = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($tmp, $pngData);
+        $this->post('/admin/images/upload', [
+            'upload' => [
+                'tmp_name' => $tmp,
+                'name' => 'dot.png',
+                'type' => 'image/png',
+                'size' => strlen($pngData),
+                'error' => UPLOAD_ERR_OK,
+            ],
+        ]);
+
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
+        $id = (int)$json['image']['id'];
+        $this->createdImageIds[] = $id;
+
+        $this->get('/images/serve/' . $id);
+        $this->assertResponseOk();
+        $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody());
+
+        $this->get('/images/serve/' . $id);
+
+        $this->assertResponseOk();
+        $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody());
+    }
+
+    /**
+     * Tests transformed public serve defaults to WebP when format is omitted.
+     */
+    public function testPublicServeTransformDefaultsToWebpWhenFormatMissing(): void
+    {
+        $this->mockIdentity();
+        $tmp = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($tmp, $pngData);
+        $this->post('/admin/images/upload', [
+            'upload' => [
+                'tmp_name' => $tmp,
+                'name' => 'dot.png',
+                'type' => 'image/png',
+                'size' => strlen($pngData),
+                'error' => UPLOAD_ERR_OK,
+            ],
+        ]);
+
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
+        $id = (int)$json['image']['id'];
+        $this->createdImageIds[] = $id;
+
+        $this->get('/images/serve/' . $id . '?w=1&h=1&fit=cover');
+
+        $this->assertResponseOk();
+        $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody());
+
+        $this->get('/images/serve/' . $id . '?w=1&h=1&fit=cover&fm=webp');
+
+        $this->assertResponseOk();
+        $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
         $this->assertNotEmpty((string)$this->_response->getBody());
     }
 

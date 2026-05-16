@@ -31,13 +31,15 @@ $this->assign('title', 'Crop Thumbnail');
                         Click and drag on the image to select the area to use for the thumbnail. The thumbnail will be scaled to 150×150px.
                     </p>
                     <div id="crop-container" style="max-width: 100%; max-height: 600px; overflow: hidden; position: relative; background: #f5f5f5; margin-bottom: 15px;">
-                        <?php $serveUrl = $this->ImageServe->urlForImage($image); ?>
-                        <img
-                            id="crop-image"
-                            src="<?= h($serveUrl) ?>"
-                            alt="<?= h($image->original_name) ?>"
-                            style="display: block; max-width: 100%; height: auto; cursor: crosshair;"
-                        />
+                        <?= $this->ImageServe->picture(
+                            $image,
+                            [],
+                            [
+                                'id' => 'crop-image',
+                                'alt' => (string)$image->original_name,
+                                'style' => 'display: block; max-width: 100%; height: auto; cursor: crosshair;',
+                            ],
+                        ) ?>
                         <div id="crop-overlay" style="position: absolute; border: 2px solid #007bff; background: rgba(0,123,255,0.1); cursor: move; display: none;">
                             <div class="resize-handle" style="position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px; background: #007bff; cursor: se-resize; border-radius: 2px;"></div>
                         </div>

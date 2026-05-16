@@ -101,11 +101,14 @@ $this->start('css'); ?>
 
     <?php if (!empty($heroImageId)) : ?>
         <div class="season-hero-media mb-4">
-            <img
-                src="/images/serve/<?= h($heroImageId) ?>?w=1400&h=720&fit=cover"
-                alt="<?= h($teamName) ?> <?= h($seasonLabel) ?> Season"
-                class="img-fluid rounded season-hero-image"
-                loading="lazy">
+            <?= $this->ImageServe->picture(
+                (int)$heroImageId,
+                ['w' => 1400, 'h' => 720, 'fit' => 'cover'],
+                [
+                    'alt' => $teamName . ' ' . $seasonLabel . ' Season',
+                    'class' => 'img-fluid rounded season-hero-image',
+                ],
+            ) ?>
         </div>
     <?php endif; ?>
 
@@ -442,12 +445,16 @@ $this->start('css'); ?>
                         <div class="season-photos-grid" data-season-image-gallery>
                             <?php foreach ($images as $image) : ?>
                                 <div class="season-photo-thumb">
-                                    <img src="/images/serve/<?= h($image->id) ?>?w=240&h=180&fit=cover"
-                                         alt="<?= h($image->filename) ?>"
-                                         data-image-id="<?= h($image->id) ?>"
-                                         data-image-filename="<?= h($image->filename) ?>"
-                                         loading="lazy"
-                                         class="season-photo-thumb-img">
+                                    <?= $this->ImageServe->picture(
+                                        $image,
+                                        ['w' => 240, 'h' => 180, 'fit' => 'cover'],
+                                        [
+                                            'alt' => (string)$image->filename,
+                                            'data-image-id' => (string)$image->id,
+                                            'data-image-filename' => (string)$image->filename,
+                                            'class' => 'season-photo-thumb-img',
+                                        ],
+                                    ) ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>

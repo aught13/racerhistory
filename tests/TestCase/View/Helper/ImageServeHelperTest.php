@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\View\Helper;
 
 use App\View\Helper\ImageServeHelper;
+use Cake\Core\Configure;
 use Cake\I18n\DateTime;
 use Cake\TestSuite\TestCase;
 use Cake\View\View;
@@ -207,6 +208,26 @@ class ImageServeHelperTest extends TestCase
         $html = $this->helper->picture(5, [], ['alt' => 'Test <script> & "quotes"']);
 
         $this->assertStringContainsString('alt="Test &lt;script&gt; &amp; &quot;quotes&quot;"', $html);
+    }
+
+    /**
+     * Tests picture uses configured WebP variant and derives non-WebP fallback params.
+     */
+    public function testPictureWithWebpVariantBuildsDerivedFallback(): void
+    {
+        $previous = Configure::read('Images.variants');
+        Configure::write('Images.variants', [
+            'thumb' => ['fit' => [150, 150], 'format' => 'webp'],
+        ]);
+
+        try {
+            $html = $this->helper->picture(42, ['variant' => 'thumb']);
+
+            $this->assertStringContainsString('<source srcset="/images/serve/42?variant=thumb" type="image/webp">', $html);
+            $this->assertStringContainsString('<img src="/images/serve/42?w=150&amp;h=150&amp;fit=cover"', $html);
+        } finally {
+            Configure::write('Images.variants', $previous);
+        }
     }
 
     // ==================== Responsive Picture Tests ====================

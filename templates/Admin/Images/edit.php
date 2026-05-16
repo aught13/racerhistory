@@ -10,9 +10,15 @@ $this->assign('title', 'Edit Image');
   <h1 class="mb-4">Edit Image #<?= h($image->id) ?></h1>
   <div class="row g-4">
     <div class="col-md-4">
-      <?php $serveUrl = $this->ImageServe->urlForImage($image); ?>
       <figure>
-        <img src="<?= h($serveUrl) ?>" alt="Preview" class="img-fluid rounded border" />
+        <?= $this->ImageServe->picture(
+            $image,
+            [],
+            [
+                'alt' => 'Preview',
+                'class' => 'img-fluid rounded border',
+            ],
+        ) ?>
         <figcaption class="mt-2 small text-muted">Original</figcaption>
       </figure>
       <?php $variants = is_string($image->variants) ? json_decode($image->variants, true) : (array)$image->variants; ?>
@@ -21,11 +27,18 @@ $this->assign('title', 'Edit Image');
             <?php foreach ($variants as $name => $meta) : ?>
                 <?php
                 $meta = (array)$meta;
-                // Always use the stored variant so custom crops (e.g., thumb) are shown.
-                $thumbUrl = $this->ImageServe->urlForImage($image, ['variant' => (string)$name]);
+            // Always use the stored variant so custom crops (e.g., thumb) are shown.
+                $thumbParams = ['variant' => (string)$name];
                 ?>
             <div class="col-4 text-center">
-              <img src="<?= h($thumbUrl) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
+                <?= $this->ImageServe->picture(
+                    $image,
+                    $thumbParams,
+                    [
+                      'alt' => (string)$name,
+                      'class' => 'img-fluid border rounded',
+                    ],
+                ) ?>
               <div class="small mt-1"><?= h($name) ?></div>
             </div>
             <?php endforeach; ?>

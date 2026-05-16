@@ -253,12 +253,16 @@ $this->start('css'); ?>
                         <div class="game-photos-grid" data-game-image-gallery>
                             <?php foreach ($images as $image) : ?>
                                 <div class="game-photo-thumb">
-                                    <img src="/images/serve/<?= h($image->id) ?>?w=240&h=180&fit=cover"
-                                         alt="<?= h($image->filename) ?>"
-                                         data-image-id="<?= h($image->id) ?>"
-                                         data-image-filename="<?= h($image->filename) ?>"
-                                         loading="lazy"
-                                         class="game-photo-thumb-img">
+                                    <?= $this->ImageServe->picture(
+                                        $image,
+                                        ['w' => 240, 'h' => 180, 'fit' => 'cover'],
+                                        [
+                                            'alt' => (string)$image->filename,
+                                            'data-image-id' => (string)$image->id,
+                                            'data-image-filename' => (string)$image->filename,
+                                            'class' => 'game-photo-thumb-img',
+                                        ],
+                                    ) ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>
