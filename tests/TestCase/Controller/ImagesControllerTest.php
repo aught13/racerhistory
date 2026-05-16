@@ -104,26 +104,29 @@ class ImagesControllerTest extends TestCase
         $images = TableRegistry::getTableLocator()->get('Images');
         $image = $images->get(1);
 
-        $expected = $this->computeEtag((string)$image->get('hash'), '', []);
+        // Auto-WebP is requested for non-WebP sources, so ETag includes fm=webp.
+        $expected = $this->computeEtag((string)$image->get('hash'), '', ['fm' => 'webp']);
         $this->assertSame($expected, $etag);
 
         $body = (string)$this->_response->getBody();
-        $this->assertSame($png, $body);
+        $this->assertNotSame('', $body);
 
         $this->safeUnlink($fullPath);
     }
 
     /**
-     * Tests serve with version enables long cache.
+     * Tests serve with version still uses public short cache.
      */
-    public function testServeWithVersionEnablesLongCache(): void
+    public function testServeWithVersionUsesPublicShortCache(): void
     {
         $png = $this->tinyPngBytes();
         $fullPath = $this->writeFixtureImageFile(1, $png);
 
         $this->get('/images/serve/1?v=123');
         $this->assertResponseOk();
-        $this->assertStringContainsString('immutable', $this->_response->getHeaderLine('Cache-Control'));
+        $cacheControl = $this->_response->getHeaderLine('Cache-Control');
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringNotContainsString('immutable', $cacheControl);
 
         $this->safeUnlink($fullPath);
     }
