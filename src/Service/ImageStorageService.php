@@ -65,6 +65,10 @@ class ImageStorageService
         /** @var \App\Model\Entity\Image|null $existing */
         $existing = $images->find()->where(['hash' => $hash])->first();
         if ($existing) {
+            $restoreError = $this->restoreMissingImageFiles($images, $existing, $processed);
+            if ($restoreError !== null) {
+                return ['success' => false, 'error' => $restoreError];
+            }
             $this->tagging->attachTags((int)$existing->id, $tags);
 
             return ['success' => true, 'image' => $existing, 'existing' => true];
@@ -162,7 +166,9 @@ class ImageStorageService
         $storageDir = $this->storageRoot() . $subdir . DS;
         $writeErrors = [];
         if (!$this->createStorageDir($storageDir, $writeErrors)) {
-            $this->lastError = end($writeErrors) ?: 'Storage directory not writable';
+            $this->lastError = $writeErrors !== []
+                ? (string)$writeErrors[count($writeErrors) - 1]
+                : 'Storage directory not writable';
 
             return null;
         }
@@ -280,15 +286,7 @@ class ImageStorageService
      */
     public function resolveImagePath(Image $image, string $variant): array
     {
-        $storagePath = $image->storage_path ?? null;
-        if ($storagePath) {
-            $path = $this->storageRoot() . str_replace(['../', '..\\'], '', $storagePath);
-            $baseDir = dirname($path) . DS;
-        } else {
-            $subdir = $image->storage_subdir ?? (date('Y') . '/' . date('m'));
-            $baseDir = $this->storageRoot() . $subdir . DS;
-            $path = $baseDir . $image->filename;
-        }
+        [$path, $baseDir] = $this->storagePathDetails($image);
         $mime = $image->mime;
 
         $variants = $image->variants;
@@ -318,6 +316,102 @@ class ImageStorageService
     }
 
     /**
+     * Restore missing original or variant files for an existing image.
+     *
+     * Uploads that match an existing hash previously returned early and left
+     * missing files untouched. That made lost variants stay lost until a manual
+     * edit regenerated them.
+     *
+     * @param \App\Model\Table\ImagesTable $images
+     * @param \App\Model\Entity\Image $image
+     * @param array $processed
+     * @return string|null Error message when restore fails, otherwise null.
+     */
+    private function restoreMissingImageFiles(ImagesTable $images, Image $image, array $processed): ?string
+    {
+        [$originalPath, $baseDir] = $this->storagePathDetails($image);
+        $errors = [];
+        if (!$this->createStorageDir($baseDir, $errors)) {
+            $this->lastError = $errors !== []
+                ? (string)$errors[count($errors) - 1]
+                : 'Storage directory not writable';
+
+            return $this->lastError;
+        }
+
+        $restored = false;
+        $metadataChanged = false;
+        if (!is_file($originalPath)) {
+            if (
+                !isset($processed['original']['data'])
+                || !is_string($processed['original']['data'])
+                || $processed['original']['data'] === ''
+            ) {
+                $this->lastError = 'Missing original image data for restore';
+
+                return $this->lastError;
+            }
+            if (file_put_contents($originalPath, $processed['original']['data']) === false) {
+                $this->lastError = 'Failed to restore original image';
+
+                return $this->lastError;
+            }
+            $restored = true;
+        }
+
+        $variants = $image->variants;
+        if (is_string($variants)) {
+            $variants = json_decode($variants, true);
+        }
+        $variants = is_array($variants) ? $variants : [];
+
+        $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
+        foreach ((array)($processed['variants'] ?? []) as $name => $variant) {
+            $variantMeta = is_array($variants[$name] ?? null) ? $variants[$name] : [];
+            $existingFile = isset($variantMeta['file']) ? (string)$variantMeta['file'] : '';
+            $variantFile = $existingFile !== ''
+                ? $existingFile
+                : $baseName . '-' . $name . '.' . (string)($variant['ext'] ?? $image->ext ?? 'jpg');
+            $variantPath = $baseDir . str_replace(['../', '..\\'], '', ltrim($variantFile, '/\\'));
+
+            if (!is_file($variantPath)) {
+                if (!isset($variant['data']) || !is_string($variant['data']) || $variant['data'] === '') {
+                    $this->lastError = 'Missing data for variant ' . $name;
+
+                    return $this->lastError;
+                }
+                if (file_put_contents($variantPath, $variant['data']) === false) {
+                    $this->lastError = 'Failed to restore variant ' . $name;
+
+                    return $this->lastError;
+                }
+                $restored = true;
+            }
+
+            if (!isset($variants[$name]) || !is_array($variants[$name])) {
+                $variants[$name] = [
+                    'file' => $variantFile,
+                    'width' => $variant['width'] ?? null,
+                    'height' => $variant['height'] ?? null,
+                    'mime' => $variant['mime'] ?? null,
+                ];
+                $metadataChanged = true;
+            }
+        }
+
+        if (!$restored && !$metadataChanged) {
+            return null;
+        }
+
+        if ($metadataChanged) {
+            $image->set('variants', json_encode($variants));
+            $images->saveOrFail($image);
+        }
+
+        return null;
+    }
+
+    /**
      * Lookup a table instance.
      */
     private function imagesTable(): ImagesTable
@@ -326,6 +420,29 @@ class ImageStorageService
         $table = TableRegistry::getTableLocator()->get('Images');
 
         return $table;
+    }
+
+    /**
+     * Resolve the current storage path and base directory for an image.
+     *
+     * @param \App\Model\Entity\Image $image
+     * @return array{0:string,1:string}
+     */
+    private function storagePathDetails(Image $image): array
+    {
+        $storagePath = $image->storage_path ?? null;
+        if ($storagePath) {
+            $path = $this->storageRoot() . str_replace(['../', '..\\'], '', $storagePath);
+            $baseDir = dirname($path) . DS;
+
+            return [$path, $baseDir];
+        }
+
+        $subdir = $image->storage_subdir ?? (date('Y') . '/' . date('m'));
+        $baseDir = $this->storageRoot() . $subdir . DS;
+        $path = $baseDir . $image->filename;
+
+        return [$path, $baseDir];
     }
 
     /**
