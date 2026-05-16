@@ -38,13 +38,17 @@ $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; border-r
 
 // Build image URL
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
-    // Prefer stored variants so custom thumbnail crops are honored
-    $imageUrl = $this->ImageServe->url((int)$person->person_image, [
-        'variant' => $variant,
-    ]);
-
-    // Use direct img tag instead of Html->image() to avoid URL processing issues
-    echo '<img src="' . h($imageUrl) . '" alt="' . h($person->display ?? $person->first . ' ' . $person->last) . '" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
+    echo $this->ImageServe->picture(
+        (int)$person->person_image,
+        ['variant' => $variant],
+        [
+            'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
+            'class' => $cssClass,
+            'style' => $cssStyle,
+            'loading' => 'lazy',
+            'decoding' => 'async',
+        ],
+    );
 } else {
     // Show placeholder if no image - perfect circle to match photo avatars
     echo $this->Html->div(

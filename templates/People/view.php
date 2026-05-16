@@ -31,9 +31,6 @@ if (!empty($person->person_image) && is_numeric($person->person_image)) {
 } elseif (!empty($images) && !empty($images[0]->id)) {
     $heroImageId = (int)$images[0]->id;
 }
-$heroImageUrl = $heroImageId
-    ? $this->ImageServe->url($heroImageId, ['variant' => 'medium'])
-    : null;
 
 $teams = [];
 foreach ($rosterEntries as $entry) {
@@ -79,12 +76,15 @@ $this->end();
         <div class="card-body">
             <div class="row g-4 align-items-center">
                 <div class="col-12 col-lg-3 text-center">
-                    <?php if ($heroImageUrl) : ?>
-                        <img
-                            src="<?= h($heroImageUrl) ?>"
-                            alt="<?= h($name) ?>"
-                            class="img-fluid rounded shadow-sm"
-                            loading="lazy">
+                    <?php if ($heroImageId) : ?>
+                        <?= $this->ImageServe->picture(
+                            $heroImageId,
+                            ['variant' => 'medium'],
+                            [
+                                'alt' => $name,
+                                'class' => 'img-fluid rounded shadow-sm',
+                            ],
+                        ) ?>
                     <?php else : ?>
                         <div
                             class="d-inline-flex align-items-center justify-content-center rounded shadow-sm bg-light"
@@ -358,11 +358,14 @@ $this->end();
                             <?php foreach ($images as $image) : ?>
                                 <div class="col-6">
                                     <div class="card h-100">
-                                        <img
-                                            src="<?= h($this->ImageServe->urlForImage($image, ['w' => 300, 'h' => 300, 'fit' => 'cover'])) ?>"
-                                            class="card-img-top"
-                                            alt="<?= h($image->filename) ?>"
-                                            loading="lazy">
+                                        <?= $this->ImageServe->picture(
+                                            $image,
+                                            ['w' => 300, 'h' => 300, 'fit' => 'cover'],
+                                            [
+                                                'class' => 'card-img-top',
+                                                'alt' => (string)$image->filename,
+                                            ],
+                                        ) ?>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -394,10 +397,6 @@ $this->end();
                                     'action' => 'popover',
                                     $post->slug,
                                 ]);
-                                $heroImageSrc = '';
-                                if (!empty($post->hero_image_id)) {
-                                    $heroImageSrc = $this->ImageServe->url($post->hero_image_id, ['w' => 200, 'h' => 150, 'fit' => 'cover']);
-                                }
                                 ?>
                                 <a
                                     href="<?= h($viewUrl) ?>"
@@ -409,11 +408,15 @@ $this->end();
                                         <?php if (!empty($post->hero_image_id)) : ?>
                                             <div
                                                 style="flex-shrink: 0; width: 120px; height: 90px;">
-                                                <img
-                                                    src="<?= h($heroImageSrc) ?>"
-                                                    class="img-fluid rounded"
-                                                    alt="<?= h($post->title) ?>"
-                                                    style="object-fit: cover; width: 100%; height: 100%;">
+                                                <?= $this->ImageServe->picture(
+                                                    (int)$post->hero_image_id,
+                                                    ['w' => 200, 'h' => 150, 'fit' => 'cover'],
+                                                    [
+                                                        'class' => 'img-fluid rounded',
+                                                        'alt' => (string)$post->title,
+                                                        'style' => 'object-fit: cover; width: 100%; height: 100%;',
+                                                    ],
+                                                ) ?>
                                             </div>
                                         <?php endif; ?>
                                         <div class="flex-grow-1">

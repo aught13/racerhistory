@@ -33,11 +33,17 @@ $cssClass = trim($defaultClass . ' ' . $class);
 $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $style;
 
 if (!empty($teamSeason->team_season_image) && is_numeric($teamSeason->team_season_image)) {
-    // Prefer stored variants so custom thumbnail crops are honored
-    $imageUrl = $this->ImageServe->url((int)$teamSeason->team_season_image, [
-        'variant' => $variant,
-    ]);
-    echo '<img src="' . h($imageUrl) . '" alt="Season image" class="' . h($cssClass) . '" style="' . h($cssStyle) . '" loading="lazy" decoding="async">';
+    echo $this->ImageServe->picture(
+        (int)$teamSeason->team_season_image,
+        ['variant' => $variant],
+        [
+            'alt' => 'Season image',
+            'class' => $cssClass,
+            'style' => $cssStyle,
+            'loading' => 'lazy',
+            'decoding' => 'async',
+        ],
+    );
 } else {
     echo $this->Html->div(
         'placeholder-image ' . $cssClass,

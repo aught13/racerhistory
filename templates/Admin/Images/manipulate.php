@@ -6,7 +6,6 @@
 ?>
 
 <div class="container-fluid mt-4">
-    <?php $serveBase = $this->ImageServe->urlForImage($image); ?>
     <div class="row">
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between mb-4">
@@ -29,24 +28,30 @@
                 </div>
                 <div class="card-body">
                     <div class="image-preview-container" style="background: #f5f5f5; padding: 20px; border-radius: 4px; text-align: center; position: relative;">
-                        <img
-                            id="sourceImage"
-                            src="<?= h($serveBase) ?>"
-                            alt="<?= h($image->filename) ?>"
-                            style="display:none;"
-                            crossorigin="anonymous"
-                        />
+                        <?= $this->ImageServe->picture(
+                            $image,
+                            [],
+                            [
+                                'id' => 'sourceImage',
+                                'alt' => (string)$image->filename,
+                                'style' => 'display:none;',
+                                'crossorigin' => 'anonymous',
+                            ],
+                        ) ?>
                         <canvas
                             id="previewCanvas"
                             aria-label="Image with crop selection"
                             style="max-width: 100%; display: block; margin: 0 auto; cursor: crosshair;"
                         ></canvas>
                         <noscript>
-                            <img
-                                src="<?= h($serveBase) ?>"
-                                alt="<?= h($image->filename) ?>"
-                                style="max-width: 100%; max-height: 500px; display: block; margin: 0 auto;"
-                            />
+                            <?= $this->ImageServe->picture(
+                                $image,
+                                [],
+                                [
+                                    'alt' => (string)$image->filename,
+                                    'style' => 'max-width: 100%; max-height: 500px; display: block; margin: 0 auto;',
+                                ],
+                            ) ?>
                         </noscript>
                     </div>
                     <div class="mt-3">
