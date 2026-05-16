@@ -75,8 +75,8 @@ class OpponentAdminService
             'Opponents.id',
             'Opponents.opponent_name',
             'Opponents.place_id',
-            'Places.place_city',
-            'Places.place_state',
+            'place_city' => 'Places.place_city',
+            'place_state' => 'Places.place_state',
         ];
         if ($hasShortColumn) {
             $selectFields[] = 'Opponents.opponent_short';
