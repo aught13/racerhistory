@@ -335,7 +335,16 @@ class ImageStorageService
         $restored = false;
         $metadataChanged = false;
         if (!is_file($originalPath)) {
-            if (file_put_contents($originalPath, (string)($processed['original']['data'] ?? '')) === false) {
+            if (
+                !isset($processed['original']['data'])
+                || !is_string($processed['original']['data'])
+                || $processed['original']['data'] === ''
+            ) {
+                $this->lastError = 'Missing original image data for restore';
+
+                return false;
+            }
+            if (file_put_contents($originalPath, $processed['original']['data']) === false) {
                 $this->lastError = 'Failed to restore original image';
 
                 return false;
@@ -359,7 +368,12 @@ class ImageStorageService
             $variantPath = $baseDir . str_replace(['../', '..\\'], '', ltrim($variantFile, '/\\'));
 
             if (!is_file($variantPath)) {
-                if (file_put_contents($variantPath, (string)($variant['data'] ?? '')) === false) {
+                if (!isset($variant['data']) || !is_string($variant['data']) || $variant['data'] === '') {
+                    $this->lastError = 'Missing data for variant ' . $name;
+
+                    return false;
+                }
+                if (file_put_contents($variantPath, $variant['data']) === false) {
                     $this->lastError = 'Failed to restore variant ' . $name;
 
                     return false;
@@ -367,7 +381,7 @@ class ImageStorageService
                 $restored = true;
             }
 
-            if (!isset($variants[$name]) || !is_array($variants[$name]) || $variantMeta === []) {
+            if (!isset($variants[$name]) || !is_array($variants[$name])) {
                 $variants[$name] = [
                     'file' => $variantFile,
                     'width' => $variant['width'] ?? null,

@@ -158,7 +158,7 @@ class ImageStorageServiceTest extends TestCase
                 ->onlyMethods(['process'])
                 ->getMock();
 
-            $processor->method('process')->willReturn([
+            $processor->expects($this->once())->method('process')->willReturn([
                 'original' => [
                     'data' => $originalData,
                     'width' => 100,
@@ -199,6 +199,7 @@ class ImageStorageServiceTest extends TestCase
             $this->assertTrue($result['existing'] ?? false, 'Duplicate upload should return existing image');
             $this->assertSame($originalData, (string)file_get_contents($baseDir . (string)$image->filename));
             $this->assertSame($thumbData, (string)file_get_contents($baseDir . 'seed-thumb.webp'));
+            $this->assertSame('MEDIUM-BYTES', (string)file_get_contents($baseDir . 'seed-medium.webp'));
 
             $reloaded = $images->get(1);
             $variants = $reloaded->variants;
@@ -208,7 +209,15 @@ class ImageStorageServiceTest extends TestCase
 
             $this->assertIsArray($variants);
             $this->assertArrayHasKey('thumb', $variants);
+            $this->assertArrayHasKey('medium', $variants);
             $this->assertSame('seed-thumb.webp', $variants['thumb']['file']);
+            $this->assertSame(150, $variants['thumb']['width']);
+            $this->assertSame(150, $variants['thumb']['height']);
+            $this->assertSame('image/webp', $variants['thumb']['mime']);
+            $this->assertSame('seed-medium.webp', $variants['medium']['file']);
+            $this->assertSame(100, $variants['medium']['width']);
+            $this->assertSame(50, $variants['medium']['height']);
+            $this->assertSame('image/webp', $variants['medium']['mime']);
         } finally {
             if (is_file($uploadPath)) {
                 unlink($uploadPath);
