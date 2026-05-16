@@ -74,10 +74,7 @@ class ImagesController extends AppController
             return $this->placeholderTransparentPng();
         }
 
-        $hasVersion = (string)$request->getQuery('v') !== '';
-        $cacheControl = $hasVersion
-            ? 'public, max-age=31536000, immutable'
-            : 'public, max-age=3600, must-revalidate';
+        $cacheControl = 'public, max-age=3600, must-revalidate';
 
         $etag = $this->buildEtag((string)($image->hash ?? ''), $variant, []);
 

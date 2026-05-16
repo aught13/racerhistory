@@ -52,6 +52,7 @@ class ImageServeHelperTest extends TestCase
             'fit' => 'cover',
             'variant' => 'thumb',
             'q' => 90,
+            'v' => 'ignored-version',
             'bogus' => 'nope',
             'fm' => '',
         ]);
@@ -67,6 +68,7 @@ class ImageServeHelperTest extends TestCase
         $this->assertSame('90', (string)$parsed['q']);
         $this->assertArrayNotHasKey('bogus', $parsed);
         $this->assertArrayNotHasKey('fm', $parsed);
+        $this->assertArrayNotHasKey('v', $parsed);
     }
 
     /**
@@ -86,13 +88,14 @@ class ImageServeHelperTest extends TestCase
     }
 
     /**
-     * Tests url for image injects version.
+     * Tests url for image builds without version.
      */
-    public function testUrlForImageInjectsVersion(): void
+    public function testUrlForImageBuildsWithoutVersion(): void
     {
         $image = (object)[
             'id' => 9,
             'hash' => 'abc123',
+            'modified' => new DateTime('2025-01-15 10:30:00'),
         ];
 
         $url = $this->helper->urlForImage($image, ['w' => 100, 'h' => 100, 'fit' => 'cover']);
@@ -100,12 +103,13 @@ class ImageServeHelperTest extends TestCase
         parse_str($parts['query'] ?? '', $parsed);
 
         $this->assertSame('100', (string)$parsed['w']);
+        $this->assertArrayNotHasKey('v', $parsed);
     }
 
     /**
-     * Tests url for image does not override explicit version.
+     * Tests url for image ignores explicit version.
      */
-    public function testUrlForImageDoesNotOverrideExplicitVersion(): void
+    public function testUrlForImageIgnoresExplicitVersion(): void
     {
         $image = (object)[
             'id' => 9,
@@ -116,7 +120,7 @@ class ImageServeHelperTest extends TestCase
         $parts = parse_url($url);
         parse_str($parts['query'] ?? '', $parsed);
 
-        $this->assertSame('explicit', $parsed['v'] ?? null);
+        $this->assertArrayNotHasKey('v', $parsed);
         $this->assertSame('10', (string)$parsed['w']);
     }
 
@@ -140,17 +144,21 @@ class ImageServeHelperTest extends TestCase
     /**
      * Tests picture with image object.
      */
-    public function testPictureWithImageObject(): void
+    public function testPictureWithImageObjectBuildsWithoutVersion(): void
     {
+        $modified = new DateTime('2025-02-01 12:00:00');
         $image = (object)[
             'id' => 15,
             'hash' => 'testhash123',
+            'modified' => $modified,
         ];
 
         $html = $this->helper->picture($image, ['w' => 600, 'fit' => 'cover']);
 
         $this->assertStringContainsString('<picture>', $html);
-        $this->assertStringContainsString('v=testhash123', $html);
+        $this->assertStringNotContainsString('v=' . $modified->getTimestamp(), $html);
+        $this->assertStringNotContainsString('v=testhash123', $html);
+        $this->assertStringNotContainsString('v=', $html);
         $this->assertStringContainsString('fm=webp', $html);
         $this->assertStringContainsString('w=600', $html);
         $this->assertStringContainsString('fit=cover', $html);
@@ -187,7 +195,7 @@ class ImageServeHelperTest extends TestCase
     /**
      * Tests picture with date time modified.
      */
-    public function testPictureWithDateTimeModified(): void
+    public function testPictureWithDateTimeModifiedDoesNotAddVersion(): void
     {
         $modified = new DateTime('2025-01-15 10:30:00');
         $image = (object)[
@@ -197,7 +205,8 @@ class ImageServeHelperTest extends TestCase
 
         $html = $this->helper->picture($image, ['w' => 300]);
 
-        $this->assertStringContainsString('v=' . $modified->getTimestamp(), $html);
+        $this->assertStringNotContainsString('v=' . $modified->getTimestamp(), $html);
+        $this->assertStringNotContainsString('v=', $html);
     }
 
     /**
@@ -271,16 +280,20 @@ class ImageServeHelperTest extends TestCase
     /**
      * Tests responsive picture with image object.
      */
-    public function testResponsivePictureWithImageObject(): void
+    public function testResponsivePictureWithImageObjectBuildsWithoutVersion(): void
     {
+        $modified = new DateTime('2025-03-01 08:15:00');
         $image = (object)[
             'id' => 18,
             'hash' => 'responsive-hash',
+            'modified' => $modified,
         ];
 
         $html = $this->helper->responsivePicture($image, [300, 600, 900]);
 
-        $this->assertStringContainsString('v=responsive-hash', $html);
+        $this->assertStringNotContainsString('v=' . $modified->getTimestamp(), $html);
+        $this->assertStringNotContainsString('v=responsive-hash', $html);
+        $this->assertStringNotContainsString('v=', $html);
         $this->assertStringContainsString('w=300', $html);
         $this->assertStringContainsString('w=600', $html);
         $this->assertStringContainsString('w=900', $html);
