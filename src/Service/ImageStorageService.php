@@ -65,6 +65,7 @@ class ImageStorageService
         /** @var \App\Model\Entity\Image|null $existing */
         $existing = $images->find()->where(['hash' => $hash])->first();
         if ($existing) {
+            $this->restoreMissingImageFiles($images, $existing, $processed);
             $this->tagging->attachTags((int)$existing->id, $tags);
 
             return ['success' => true, 'image' => $existing, 'existing' => true];
@@ -280,15 +281,7 @@ class ImageStorageService
      */
     public function resolveImagePath(Image $image, string $variant): array
     {
-        $storagePath = $image->storage_path ?? null;
-        if ($storagePath) {
-            $path = $this->storageRoot() . str_replace(['../', '..\\'], '', $storagePath);
-            $baseDir = dirname($path) . DS;
-        } else {
-            $subdir = $image->storage_subdir ?? (date('Y') . '/' . date('m'));
-            $baseDir = $this->storageRoot() . $subdir . DS;
-            $path = $baseDir . $image->filename;
-        }
+        [$path, $baseDir] = $this->storagePathDetails($image);
         $mime = $image->mime;
 
         $variants = $image->variants;
@@ -318,6 +311,86 @@ class ImageStorageService
     }
 
     /**
+     * Restore missing original or variant files for an existing image.
+     *
+     * Uploads that match an existing hash previously returned early and left
+     * missing files untouched. That made lost variants stay lost until a manual
+     * edit regenerated them.
+     *
+     * @param \App\Model\Table\ImagesTable $images
+     * @param \App\Model\Entity\Image $image
+     * @param array $processed
+     * @return bool True when any file or metadata was restored.
+     */
+    private function restoreMissingImageFiles(ImagesTable $images, Image $image, array $processed): bool
+    {
+        [$originalPath, $baseDir] = $this->storagePathDetails($image);
+        $errors = [];
+        if (!$this->createStorageDir($baseDir, $errors)) {
+            $this->lastError = end($errors) ?: 'Storage directory not writable';
+
+            return false;
+        }
+
+        $restored = false;
+        $metadataChanged = false;
+        if (!is_file($originalPath)) {
+            if (file_put_contents($originalPath, (string)($processed['original']['data'] ?? '')) === false) {
+                $this->lastError = 'Failed to restore original image';
+
+                return false;
+            }
+            $restored = true;
+        }
+
+        $variants = $image->variants;
+        if (is_string($variants)) {
+            $variants = json_decode($variants, true);
+        }
+        $variants = is_array($variants) ? $variants : [];
+
+        $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
+        foreach ((array)($processed['variants'] ?? []) as $name => $variant) {
+            $variantMeta = is_array($variants[$name] ?? null) ? $variants[$name] : [];
+            $existingFile = isset($variantMeta['file']) ? (string)$variantMeta['file'] : '';
+            $variantFile = $existingFile !== ''
+                ? $existingFile
+                : $baseName . '-' . $name . '.' . (string)($variant['ext'] ?? $image->ext ?? 'jpg');
+            $variantPath = $baseDir . str_replace(['../', '..\\'], '', ltrim($variantFile, '/\\'));
+
+            if (!is_file($variantPath)) {
+                if (file_put_contents($variantPath, (string)($variant['data'] ?? '')) === false) {
+                    $this->lastError = 'Failed to restore variant ' . $name;
+
+                    return false;
+                }
+                $restored = true;
+            }
+
+            if (!isset($variants[$name]) || !is_array($variants[$name]) || $variantMeta === []) {
+                $variants[$name] = [
+                    'file' => $variantFile,
+                    'width' => $variant['width'] ?? null,
+                    'height' => $variant['height'] ?? null,
+                    'mime' => $variant['mime'] ?? null,
+                ];
+                $metadataChanged = true;
+            }
+        }
+
+        if (!$restored && !$metadataChanged) {
+            return false;
+        }
+
+        if ($metadataChanged) {
+            $image->set('variants', json_encode($variants));
+            $images->saveOrFail($image);
+        }
+
+        return $restored || $metadataChanged;
+    }
+
+    /**
      * Lookup a table instance.
      */
     private function imagesTable(): ImagesTable
@@ -326,6 +399,29 @@ class ImageStorageService
         $table = TableRegistry::getTableLocator()->get('Images');
 
         return $table;
+    }
+
+    /**
+     * Resolve the current storage path and base directory for an image.
+     *
+     * @param \App\Model\Entity\Image $image
+     * @return array{0:string,1:string}
+     */
+    private function storagePathDetails(Image $image): array
+    {
+        $storagePath = $image->storage_path ?? null;
+        if ($storagePath) {
+            $path = $this->storageRoot() . str_replace(['../', '..\\'], '', $storagePath);
+            $baseDir = dirname($path) . DS;
+
+            return [$path, $baseDir];
+        }
+
+        $subdir = $image->storage_subdir ?? (date('Y') . '/' . date('m'));
+        $baseDir = $this->storageRoot() . $subdir . DS;
+        $path = $baseDir . $image->filename;
+
+        return [$path, $baseDir];
     }
 
     /**
