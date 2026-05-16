@@ -10,10 +10,10 @@ $this->assign('title', 'Edit Image');
   <h1 class="mb-4">Edit Image #<?= h($image->id) ?></h1>
   <div class="row g-4">
     <div class="col-md-4">
-      <?php $serveUrl = $this->ImageServe->urlForImage($image); ?>
+      <?php $serveUrl = $this->ImageServe->adminUrlForImage($image); ?>
       <figure>
         <img src="<?= h($serveUrl) ?>" alt="Preview" class="img-fluid rounded border" />
-        <figcaption class="mt-2 small text-muted">Original (public)</figcaption>
+        <figcaption class="mt-2 small text-muted">Original</figcaption>
       </figure>
       <?php $variants = is_string($image->variants) ? json_decode($image->variants, true) : (array)$image->variants; ?>
       <?php if ($variants) : ?>
@@ -22,7 +22,7 @@ $this->assign('title', 'Edit Image');
                 <?php
                 $meta = (array)$meta;
                 // Always use the stored variant so custom crops (e.g., thumb) are shown.
-                $thumbUrl = $this->ImageServe->urlForImage($image, ['variant' => (string)$name]);
+                $thumbUrl = $this->ImageServe->adminUrlForImage($image, ['variant' => (string)$name]);
                 ?>
             <div class="col-4 text-center">
               <img src="<?= h($thumbUrl) ?>" alt="<?= h($name) ?>" class="img-fluid border rounded" />
