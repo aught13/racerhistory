@@ -5,7 +5,6 @@ namespace App\View\Helper;
 
 use Cake\Core\Configure;
 use Cake\View\Helper;
-use DateTimeInterface;
 
 /**
  * Helper for building public image serve URLs.
@@ -13,7 +12,6 @@ use DateTimeInterface;
  * Centralizes building `/images/serve/:id` URLs with common query params:
  * - w, h, fit, fm, q
  * - variant
- * - v (cache-busting / immutable caching)
  */
 class ImageServeHelper extends Helper
 {
@@ -66,7 +64,7 @@ class ImageServeHelper extends Helper
     /**
      * Build a public serve URL from an Image entity-like object.
      *
-     * @param object $image An object with `id` and optionally `hash` and/or `modified`.
+     * @param object $image An object with `id`.
      * @param array<string, mixed> $params
      */
     public function urlForImage(object $image, array $params = []): string
@@ -76,7 +74,7 @@ class ImageServeHelper extends Helper
             return '';
         }
 
-            return $this->url($id, $params);
+        return $this->url($id, $params);
     }
 
     /**
@@ -93,12 +91,6 @@ class ImageServeHelper extends Helper
     {
         if (is_object($image)) {
             $id = (int)($image->id ?? 0);
-            // Auto-inject version from entity
-            if (!isset($params['v']) && !empty($image->hash)) {
-                $params['v'] = $image->hash;
-            } elseif (!isset($params['v']) && ($image->modified ?? null) instanceof DateTimeInterface) {
-                $params['v'] = (string)$image->modified->getTimestamp();
-            }
         } else {
             $id = (int)$image;
         }
@@ -157,11 +149,6 @@ class ImageServeHelper extends Helper
     ): string {
         if (is_object($image)) {
             $id = (int)($image->id ?? 0);
-            if (!isset($params['v']) && !empty($image->hash)) {
-                $params['v'] = $image->hash;
-            } elseif (!isset($params['v']) && ($image->modified ?? null) instanceof DateTimeInterface) {
-                $params['v'] = (string)$image->modified->getTimestamp();
-            }
         } else {
             $id = (int)$image;
         }
@@ -362,7 +349,7 @@ class ImageServeHelper extends Helper
      */
     private function filterParams(array $params): array
     {
-        $allowed = ['w', 'h', 'fit', 'fm', 'q', 'variant', 'v', '_ts'];
+        $allowed = ['w', 'h', 'fit', 'fm', 'q', 'variant', '_ts'];
         $out = [];
 
         foreach ($allowed as $key) {
