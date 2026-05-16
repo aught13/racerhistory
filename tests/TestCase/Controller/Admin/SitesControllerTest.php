@@ -56,6 +56,20 @@ class SitesControllerTest extends TestCase
     }
 
     /**
+     * Tests datatables include resolved place label.
+     */
+    public function testDatatablesIncludesPlaceLabel(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/sites/datatables?draw=1&start=0&length=25');
+        $this->assertResponseOk();
+
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertNotEmpty($body['data']);
+        $this->assertSame('Murray, KY', $body['data'][0]['place']);
+    }
+
+    /**
      * Tests datatables search filters.
      */
     public function testDatatablesSearchFilters(): void

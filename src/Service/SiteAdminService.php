@@ -73,8 +73,8 @@ class SiteAdminService
             'Sites.id',
             'Sites.site_name',
             'Sites.place_id',
-            'Places.place_city',
-            'Places.place_state',
+            'place_city' => 'Places.place_city',
+            'place_state' => 'Places.place_state',
         ];
         if ($hasCapacityColumn) {
             $selectFields[] = 'Sites.capacity';
