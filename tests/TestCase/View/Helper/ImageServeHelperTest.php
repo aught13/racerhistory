@@ -98,7 +98,6 @@ class ImageServeHelperTest extends TestCase
         $parts = parse_url($url);
         parse_str($parts['query'] ?? '', $parsed);
 
-        $this->assertSame('abc123', $parsed['v'] ?? null);
         $this->assertSame('100', (string)$parsed['w']);
     }
 

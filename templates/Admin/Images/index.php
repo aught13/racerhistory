@@ -27,7 +27,7 @@ $this->assign('title', 'Images');
         <td>
           <?php
           // Use stored thumb variant so custom crops are shown
-            $thumbUrl = $this->ImageServe->adminUrlForImage($img, [
+            $thumbUrl = $this->ImageServe->urlForImage($img, [
             'variant' => 'thumb',
             ]);
             ?>

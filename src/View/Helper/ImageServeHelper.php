@@ -32,21 +32,6 @@ class ImageServeHelper extends Helper
     }
 
     /**
-     * Build the admin serve path for an image id.
-     *
-     * @param string|int $id
-     */
-    public function adminPath(int|string $id): string
-    {
-        $idInt = (int)$id;
-        if ($idInt <= 0) {
-            return '';
-        }
-
-        return '/admin/images/serve/' . $idInt;
-    }
-
-    /**
      * Build a query string (including leading '?') for supported parameters.
      *
      * @param array<string, mixed> $params
@@ -78,25 +63,7 @@ class ImageServeHelper extends Helper
     }
 
     /**
-     * Build a full admin serve URL for an image id.
-     *
-     * @param string|int $id
-     * @param array<string, mixed> $params
-     */
-    public function adminUrl(int|string $id, array $params = []): string
-    {
-        $path = $this->adminPath($id);
-        if ($path === '') {
-            return '';
-        }
-
-        return $path . $this->query($params);
-    }
-
-    /**
      * Build a public serve URL from an Image entity-like object.
-     *
-     * Automatically injects `v` from `hash` or `modified` when not explicitly provided.
      *
      * @param object $image An object with `id` and optionally `hash` and/or `modified`.
      * @param array<string, mixed> $params
@@ -108,53 +75,7 @@ class ImageServeHelper extends Helper
             return '';
         }
 
-        $params = $this->injectVersionParam($image, $params);
-
-        return $this->url($id, $params);
-    }
-
-    /**
-     * Build an admin serve URL from an Image entity-like object.
-     *
-     * Automatically injects `v` from `hash` or `modified` when not explicitly provided.
-     *
-     * @param object $image An object with `id` and optionally `hash` and/or `modified`.
-     * @param array<string, mixed> $params
-     */
-    public function adminUrlForImage(object $image, array $params = []): string
-    {
-        $id = (int)($image->id ?? 0);
-        if ($id <= 0) {
-            return '';
-        }
-
-        $params = $this->injectVersionParam($image, $params);
-
-        return $this->adminUrl($id, $params);
-    }
-
-    /**
-     * Ensure URL params include a cache-busting `v` value for image-like objects.
-     *
-     * @param object $image
-     * @param array<string, mixed> $params
-     * @return array<string, mixed>
-     */
-    private function injectVersionParam(object $image, array $params): array
-    {
-        if (!array_key_exists('v', $params) || $params['v'] === null || $params['v'] === '') {
-            $v = '';
-            if (!empty($image->hash) && is_string($image->hash)) {
-                $v = $image->hash;
-            } elseif (($image->modified ?? null) instanceof DateTimeInterface) {
-                $v = (string)$image->modified->getTimestamp();
-            }
-            if ($v !== '') {
-                $params['v'] = $v;
-            }
-        }
-
-        return $params;
+            return $this->url($id, $params);
     }
 
     /**

@@ -6,7 +6,7 @@
 ?>
 
 <div class="container-fluid mt-4">
-    <?php $serveBase = $this->ImageServe->adminUrlForImage($image); ?>
+    <?php $serveBase = $this->ImageServe->urlForImage($image); ?>
     <div class="row">
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between mb-4">
