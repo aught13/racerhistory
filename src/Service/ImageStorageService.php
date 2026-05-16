@@ -65,7 +65,10 @@ class ImageStorageService
         /** @var \App\Model\Entity\Image|null $existing */
         $existing = $images->find()->where(['hash' => $hash])->first();
         if ($existing) {
-            $this->restoreMissingImageFiles($images, $existing, $processed);
+            $restoreError = $this->restoreMissingImageFiles($images, $existing, $processed);
+            if ($restoreError !== null) {
+                return ['success' => false, 'error' => $restoreError];
+            }
             $this->tagging->attachTags((int)$existing->id, $tags);
 
             return ['success' => true, 'image' => $existing, 'existing' => true];
@@ -163,7 +166,9 @@ class ImageStorageService
         $storageDir = $this->storageRoot() . $subdir . DS;
         $writeErrors = [];
         if (!$this->createStorageDir($storageDir, $writeErrors)) {
-            $this->lastError = end($writeErrors) ?: 'Storage directory not writable';
+            $this->lastError = $writeErrors !== []
+                ? (string)$writeErrors[count($writeErrors) - 1]
+                : 'Storage directory not writable';
 
             return null;
         }
@@ -320,16 +325,18 @@ class ImageStorageService
      * @param \App\Model\Table\ImagesTable $images
      * @param \App\Model\Entity\Image $image
      * @param array $processed
-     * @return bool True when any file or metadata was restored.
+     * @return string|null Error message when restore fails, otherwise null.
      */
-    private function restoreMissingImageFiles(ImagesTable $images, Image $image, array $processed): bool
+    private function restoreMissingImageFiles(ImagesTable $images, Image $image, array $processed): ?string
     {
         [$originalPath, $baseDir] = $this->storagePathDetails($image);
         $errors = [];
         if (!$this->createStorageDir($baseDir, $errors)) {
-            $this->lastError = end($errors) ?: 'Storage directory not writable';
+            $this->lastError = $errors !== []
+                ? (string)$errors[count($errors) - 1]
+                : 'Storage directory not writable';
 
-            return false;
+            return $this->lastError;
         }
 
         $restored = false;
@@ -342,12 +349,12 @@ class ImageStorageService
             ) {
                 $this->lastError = 'Missing original image data for restore';
 
-                return false;
+                return $this->lastError;
             }
             if (file_put_contents($originalPath, $processed['original']['data']) === false) {
                 $this->lastError = 'Failed to restore original image';
 
-                return false;
+                return $this->lastError;
             }
             $restored = true;
         }
@@ -371,12 +378,12 @@ class ImageStorageService
                 if (!isset($variant['data']) || !is_string($variant['data']) || $variant['data'] === '') {
                     $this->lastError = 'Missing data for variant ' . $name;
 
-                    return false;
+                    return $this->lastError;
                 }
                 if (file_put_contents($variantPath, $variant['data']) === false) {
                     $this->lastError = 'Failed to restore variant ' . $name;
 
-                    return false;
+                    return $this->lastError;
                 }
                 $restored = true;
             }
@@ -393,7 +400,7 @@ class ImageStorageService
         }
 
         if (!$restored && !$metadataChanged) {
-            return false;
+            return null;
         }
 
         if ($metadataChanged) {
@@ -401,7 +408,7 @@ class ImageStorageService
             $images->saveOrFail($image);
         }
 
-        return $restored || $metadataChanged;
+        return null;
     }
 
     /**

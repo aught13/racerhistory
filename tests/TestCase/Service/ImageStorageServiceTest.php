@@ -234,6 +234,296 @@ class ImageStorageServiceTest extends TestCase
     }
 
     /**
+     * Tests upload fails when storage directory cannot be created
+     */
+    public function testUploadFailsWhenRestoreStorageDirectoryCannotBeCreated(): void
+    {
+        $previousStorageRoot = Configure::read('Images.storageRoot');
+        $previousVariants = Configure::read('Images.variants');
+
+        $blockedRoot = tempnam(sys_get_temp_dir(), 'racerhistory-storage-block-');
+        $uploadPath = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($uploadPath, $pngData);
+
+        Configure::write('Images.storageRoot', $blockedRoot);
+        Configure::write('Images.variants', [
+            'thumb' => ['fit' => [150, 150], 'format' => 'webp'],
+        ]);
+
+        try {
+            $images = $this->getTableLocator()->get('Images');
+            $image = $images->get(1);
+            $subdir = (string)$image->storage_subdir;
+            $originalData = 'ORIGINAL-BYTES';
+
+            $image = $images->patchEntity($image, [
+                'storage_subdir' => $subdir,
+                'storage_path' => $subdir . '/' . (string)$image->filename,
+                'hash' => hash('sha256', $originalData),
+                'variants' => json_encode([
+                    'thumb' => [
+                        'file' => 'seed-thumb.webp',
+                        'mime' => 'image/webp',
+                    ],
+                ]),
+            ], ['validate' => false]);
+            $images->saveOrFail($image);
+
+            $processor = $this->getMockBuilder(ImageProcessor::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['process'])
+                ->getMock();
+
+            $processor->expects($this->once())->method('process')->willReturn([
+                'original' => [
+                    'data' => $originalData,
+                    'width' => 100,
+                    'height' => 50,
+                    'mime' => 'image/png',
+                    'ext' => 'png',
+                ],
+                'variants' => [
+                    'thumb' => [
+                        'data' => 'THUMB-BYTES',
+                        'width' => 150,
+                        'height' => 150,
+                        'mime' => 'image/webp',
+                        'ext' => 'webp',
+                    ],
+                ],
+            ]);
+
+            $service = new ImageStorageService($processor, null);
+            $uploadedFile = new UploadedFile(
+                $uploadPath,
+                filesize($uploadPath),
+                UPLOAD_ERR_OK,
+                'dot.png',
+                'image/png',
+            );
+
+            $result = $service->upload($uploadedFile);
+
+            $this->assertFalse($result['success'] ?? true);
+            $this->assertStringContainsString('storage directory', (string)($result['error'] ?? ''));
+        } finally {
+            if ($blockedRoot !== false && is_file($blockedRoot)) {
+                unlink($blockedRoot);
+            }
+            if (is_file($uploadPath)) {
+                unlink($uploadPath);
+            }
+
+            Configure::write('Images.storageRoot', $previousStorageRoot);
+            Configure::write('Images.variants', $previousVariants);
+        }
+    }
+
+    /**
+     * Tests upload fails when processed variant data is missing
+     */
+    public function testUploadFailsWhenRestoreVariantDataMissing(): void
+    {
+        $previousStorageRoot = Configure::read('Images.storageRoot');
+        $previousVariants = Configure::read('Images.variants');
+
+        $tempRoot = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR
+            . 'racerhistory-image-storage-'
+            . uniqid('', true)
+            . DIRECTORY_SEPARATOR;
+        mkdir($tempRoot, 0775, true);
+
+        Configure::write('Images.storageRoot', $tempRoot);
+        Configure::write('Images.variants', [
+            'thumb' => ['fit' => [150, 150], 'format' => 'webp'],
+        ]);
+
+        $uploadPath = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($uploadPath, $pngData);
+
+        try {
+            $images = $this->getTableLocator()->get('Images');
+            $image = $images->get(1);
+            $subdir = (string)$image->storage_subdir;
+            $baseDir = $tempRoot . str_replace('/', DIRECTORY_SEPARATOR, $subdir) . DIRECTORY_SEPARATOR;
+            if (!is_dir($baseDir)) {
+                mkdir($baseDir, 0775, true);
+            }
+
+            $originalData = 'ORIGINAL-BYTES';
+            file_put_contents($baseDir . (string)$image->filename, $originalData);
+
+            $image = $images->patchEntity($image, [
+                'storage_subdir' => $subdir,
+                'storage_path' => $subdir . '/' . (string)$image->filename,
+                'hash' => hash('sha256', $originalData),
+                'variants' => json_encode([
+                    'thumb' => [
+                        'file' => 'seed-thumb.webp',
+                        'mime' => 'image/webp',
+                    ],
+                ]),
+            ], ['validate' => false]);
+            $images->saveOrFail($image);
+
+            $processor = $this->getMockBuilder(ImageProcessor::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['process'])
+                ->getMock();
+
+            $processor->expects($this->once())->method('process')->willReturn([
+                'original' => [
+                    'data' => $originalData,
+                    'width' => 100,
+                    'height' => 50,
+                    'mime' => 'image/png',
+                    'ext' => 'png',
+                ],
+                'variants' => [
+                    'thumb' => [
+                        'width' => 150,
+                        'height' => 150,
+                        'mime' => 'image/webp',
+                        'ext' => 'webp',
+                    ],
+                ],
+            ]);
+
+            $service = new ImageStorageService($processor, null);
+            $uploadedFile = new UploadedFile(
+                $uploadPath,
+                filesize($uploadPath),
+                UPLOAD_ERR_OK,
+                'dot.png',
+                'image/png',
+            );
+
+            $result = $service->upload($uploadedFile);
+
+            $this->assertFalse($result['success'] ?? true);
+            $this->assertSame('Missing data for variant thumb', (string)($result['error'] ?? ''));
+            $this->assertFileDoesNotExist($baseDir . 'seed-thumb.webp');
+        } finally {
+            if (is_file($uploadPath)) {
+                unlink($uploadPath);
+            }
+
+            $this->clearDir($tempRoot);
+            if (is_dir($tempRoot)) {
+                rmdir($tempRoot);
+            }
+
+            Configure::write('Images.storageRoot', $previousStorageRoot);
+            Configure::write('Images.variants', $previousVariants);
+        }
+    }
+
+    /**
+     * Tests upload fails when writing variant bytes to nested path fails
+     */
+    public function testUploadFailsWhenRestoreVariantWriteFails(): void
+    {
+        $previousStorageRoot = Configure::read('Images.storageRoot');
+        $previousVariants = Configure::read('Images.variants');
+
+        $tempRoot = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR
+            . 'racerhistory-image-storage-'
+            . uniqid('', true)
+            . DIRECTORY_SEPARATOR;
+        mkdir($tempRoot, 0775, true);
+
+        Configure::write('Images.storageRoot', $tempRoot);
+        Configure::write('Images.variants', [
+            'thumb' => ['fit' => [150, 150], 'format' => 'webp'],
+        ]);
+
+        $uploadPath = tempnam(sys_get_temp_dir(), 'img');
+        $pngData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8lmpwAAAAASUVORK5CYII=');
+        file_put_contents($uploadPath, $pngData);
+
+        try {
+            $images = $this->getTableLocator()->get('Images');
+            $image = $images->get(1);
+            $subdir = (string)$image->storage_subdir;
+            $baseDir = $tempRoot . str_replace('/', DIRECTORY_SEPARATOR, $subdir) . DIRECTORY_SEPARATOR;
+            if (!is_dir($baseDir)) {
+                mkdir($baseDir, 0775, true);
+            }
+
+            $originalData = 'ORIGINAL-BYTES';
+            file_put_contents($baseDir . (string)$image->filename, $originalData);
+
+            $image = $images->patchEntity($image, [
+                'storage_subdir' => $subdir,
+                'storage_path' => $subdir . '/' . (string)$image->filename,
+                'hash' => hash('sha256', $originalData),
+                'variants' => json_encode([
+                    'thumb' => [
+                        'file' => 'nested/path/seed-thumb.webp',
+                        'mime' => 'image/webp',
+                    ],
+                ]),
+            ], ['validate' => false]);
+            $images->saveOrFail($image);
+
+            $processor = $this->getMockBuilder(ImageProcessor::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['process'])
+                ->getMock();
+
+            $processor->expects($this->once())->method('process')->willReturn([
+                'original' => [
+                    'data' => $originalData,
+                    'width' => 100,
+                    'height' => 50,
+                    'mime' => 'image/png',
+                    'ext' => 'png',
+                ],
+                'variants' => [
+                    'thumb' => [
+                        'data' => 'THUMB-BYTES',
+                        'width' => 150,
+                        'height' => 150,
+                        'mime' => 'image/webp',
+                        'ext' => 'webp',
+                    ],
+                ],
+            ]);
+
+            $service = new ImageStorageService($processor, null);
+            $uploadedFile = new UploadedFile(
+                $uploadPath,
+                filesize($uploadPath),
+                UPLOAD_ERR_OK,
+                'dot.png',
+                'image/png',
+            );
+
+            $result = $service->upload($uploadedFile);
+
+            $this->assertFalse($result['success'] ?? true);
+            $this->assertSame('Failed to restore variant thumb', (string)($result['error'] ?? ''));
+            $this->assertFileDoesNotExist($baseDir . 'nested/path/seed-thumb.webp');
+        } finally {
+            if (is_file($uploadPath)) {
+                unlink($uploadPath);
+            }
+
+            $this->clearDir($tempRoot);
+            if (is_dir($tempRoot)) {
+                rmdir($tempRoot);
+            }
+
+            Configure::write('Images.storageRoot', $previousStorageRoot);
+            Configure::write('Images.variants', $previousVariants);
+        }
+    }
+
+    /**
      * Runs the clear dir routine.
      *
      * @param string $dir
