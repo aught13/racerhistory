@@ -82,6 +82,11 @@ class ImagesController extends AppController
         $etag = $this->buildEtag((string)($image->hash ?? ''), $variant, []);
 
         $transform = $this->extractTransformParams();
+        if ($this->shouldAutoServeWebp($mime) && ($transform === null || !isset($transform['fm']))) {
+            $transform ??= [];
+            $transform['fm'] = 'webp';
+        }
+
         if ($transform !== null) {
             return $this->serveTransformed($image, $path, $mime, $variant, $transform, $cacheControl);
         }
@@ -301,6 +306,19 @@ class ImagesController extends AppController
         $basis = $hash . '|' . $variant . '|' . json_encode($transform);
 
         return '"' . hash('sha256', $basis) . '"';
+    }
+
+    /**
+     * Determine whether automatic WebP output should be used.
+     *
+     * WebP is the default format unless the source is already WebP or a format
+     * is explicitly requested with `fm`.
+     *
+     * @param string $mime
+     */
+    private function shouldAutoServeWebp(string $mime): bool
+    {
+        return strtolower($mime) !== 'image/webp';
     }
 
     /**

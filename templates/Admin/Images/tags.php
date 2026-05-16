@@ -13,7 +13,6 @@
  */
 $this->assign('title', 'Manage Image Tags');
 $serveParams = ['w' => 400, 'h' => 400, 'fit' => 'cover'];
-$previewUrl = $this->ImageServe->urlForImage($image, $serveParams);
 $serveUrl = $this->ImageServe->urlForImage($image);
 $storagePath = $image->storage_path ?? ($image->storage_subdir ? ($image->storage_subdir . '/' . $image->filename) : $image->filename);
 $storagePath = ltrim((string)$storagePath, '/');
@@ -35,12 +34,14 @@ $formUrl = ['action' => 'tags', $image->id];
                 </div>
                 <div class="card-body text-center">
                     <div class="ratio ratio-4x3 mb-3">
-                        <img
-                            src="<?= h($previewUrl) ?>"
-                            alt="<?= h($displayName) ?>"
-                            class="img-fluid rounded"
-                            loading="lazy"
-                        />
+                        <?= $this->ImageServe->picture(
+                            $image,
+                            $serveParams,
+                            [
+                                'alt' => $displayName,
+                                'class' => 'img-fluid rounded',
+                            ],
+                        ) ?>
                     </div>
                     <p class="small text-muted mb-2"><?= h($displayName) ?></p>
                     <dl class="row text-start small mb-0">

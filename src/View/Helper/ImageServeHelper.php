@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\View\Helper;
 
+use Cake\Core\Configure;
 use Cake\View\Helper;
 use DateTimeInterface;
 
@@ -106,12 +107,12 @@ class ImageServeHelper extends Helper
             return '';
         }
 
-        // Build WebP URL
-        $webpParams = array_merge($params, ['fm' => 'webp']);
+        // Build WebP URL and fallback URL params based on variant config.
+        [$webpParams, $fallbackParams] = $this->buildPictureParams($params);
         $webpUrl = $this->url($id, $webpParams);
 
-        // Build fallback URL (without fm override)
-        $fallbackUrl = $this->url($id, $params);
+        // Build fallback URL
+        $fallbackUrl = $this->url($id, $fallbackParams);
 
         // Default attributes
         $defaultAttrs = [
@@ -172,6 +173,10 @@ class ImageServeHelper extends Helper
         // Sort widths ascending
         sort($widths);
 
+        $variantName = isset($params['variant']) ? (string)$params['variant'] : '';
+        $variantConfig = $this->getVariantConfig($variantName);
+        $fallbackBaseParams = $this->buildVariantFallbackParams($params, $variantConfig);
+
         // Build WebP srcset
         $webpSrcset = [];
         $fallbackSrcset = [];
@@ -179,8 +184,15 @@ class ImageServeHelper extends Helper
             $wParams = array_merge($params, ['w' => $w]);
             $webpParams = array_merge($wParams, ['fm' => 'webp']);
 
+            // Avoid forcing a transform when variant output is already WebP.
+            if ($variantName !== '' && ($variantConfig['format'] ?? null) === 'webp') {
+                unset($webpParams['fm']);
+            }
+
+            $fallbackWParams = array_merge($fallbackBaseParams, ['w' => $w]);
+
             $webpSrcset[] = $this->url($id, $webpParams) . ' ' . $w . 'w';
-            $fallbackSrcset[] = $this->url($id, $wParams) . ' ' . $w . 'w';
+            $fallbackSrcset[] = $this->url($id, $fallbackWParams) . ' ' . $w . 'w';
         }
 
         // Build sizes attribute (default responsive)
@@ -191,7 +203,7 @@ class ImageServeHelper extends Helper
         // Default fallback src is the middle size
         $middleIndex = (int)floor(count($widths) / 2);
         $fallbackWidth = $widths[$middleIndex] ?? $widths[0];
-        $fallbackUrl = $this->url($id, array_merge($params, ['w' => $fallbackWidth]));
+        $fallbackUrl = $this->url($id, array_merge($fallbackBaseParams, ['w' => $fallbackWidth]));
 
         // Default attributes
         $defaultAttrs = [
@@ -251,6 +263,97 @@ class ImageServeHelper extends Helper
         }
 
         return $parts ? ' ' . implode(' ', $parts) : '';
+    }
+
+    /**
+     * Build WebP and fallback params for picture rendering.
+     *
+     * When a selected variant is configured as WebP, keep that variant URL as the WebP source
+     * and derive a fallback from variant dimensions so non-WebP browsers still get an image.
+     *
+     * @param array<string, mixed> $params
+     * @return array{0:array<string,mixed>,1:array<string,mixed>}
+     */
+    private function buildPictureParams(array $params): array
+    {
+        $webpParams = $params;
+        $fallbackParams = $params;
+
+        $variantName = isset($params['variant']) ? (string)$params['variant'] : '';
+        $variantConfig = $this->getVariantConfig($variantName);
+        $variantFormat = isset($variantConfig['format']) ? (string)$variantConfig['format'] : '';
+
+        if ($variantName !== '' && $variantFormat === 'webp') {
+            unset($webpParams['fm']);
+            $fallbackParams = $this->buildVariantFallbackParams($params, $variantConfig);
+
+            return [$webpParams, $fallbackParams];
+        }
+
+        $webpParams['fm'] = 'webp';
+
+        return [$webpParams, $fallbackParams];
+    }
+
+    /**
+     * Resolve variant config from app config.
+     *
+     * @param string $variantName
+     * @return array<string, mixed>
+     */
+    private function getVariantConfig(string $variantName): array
+    {
+        if ($variantName === '') {
+            return [];
+        }
+
+        $variants = (array)Configure::read('Images.variants', []);
+        $variantConfig = $variants[$variantName] ?? null;
+
+        return is_array($variantConfig) ? $variantConfig : [];
+    }
+
+    /**
+     * Convert a variant-backed request into transform params suitable for non-WebP fallback.
+     *
+     * @param array<string, mixed> $params
+     * @param array<string, mixed> $variantConfig
+     * @return array<string, mixed>
+     */
+    private function buildVariantFallbackParams(array $params, array $variantConfig): array
+    {
+        $fallbackParams = $params;
+
+        // Fallback should target the original with equivalent transforms, not a WebP-only variant.
+        unset($fallbackParams['variant']);
+
+        $fit = $variantConfig['fit'] ?? null;
+        if (is_array($fit) && count($fit) >= 2) {
+            $fitW = is_numeric($fit[0]) ? (int)$fit[0] : null;
+            $fitH = is_numeric($fit[1]) ? (int)$fit[1] : null;
+
+            if ($fitW !== null && $fitW > 0 && !isset($fallbackParams['w'])) {
+                $fallbackParams['w'] = $fitW;
+            }
+            if ($fitH !== null && $fitH > 0 && !isset($fallbackParams['h'])) {
+                $fallbackParams['h'] = $fitH;
+            }
+            if (!isset($fallbackParams['fit'])) {
+                $fallbackParams['fit'] = 'cover';
+            }
+        }
+
+        $maxWidth = $variantConfig['maxWidth'] ?? null;
+        if (is_numeric($maxWidth) && (int)$maxWidth > 0 && !isset($fallbackParams['w'])) {
+            $fallbackParams['w'] = (int)$maxWidth;
+        }
+
+        $maxHeight = $variantConfig['maxHeight'] ?? null;
+        if (is_numeric($maxHeight) && (int)$maxHeight > 0 && !isset($fallbackParams['h'])) {
+            $fallbackParams['h'] = (int)$maxHeight;
+        }
+
+        return $fallbackParams;
     }
 
     /**
