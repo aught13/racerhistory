@@ -78,7 +78,8 @@ class ImagesAdminService
         if ($length <= 0) {
             $length = 15;
         }
-        $length = min($length, 120);
+        // Clamp aggressive scroller batch sizes to reduce origin spikes.
+        $length = min($length, 45);
 
         $searchValue = trim((string)($params['searchValue'] ?? ''));
         $orderDir = strtolower((string)($params['orderDir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
@@ -132,7 +133,9 @@ class ImagesAdminService
             $data[] = [
                 'id' => $id,
                 'preview' => sprintf(
-                    '<img src="%s" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" ' .
+                    '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-thumb-src="%s" alt="" ' .
+                    'class="img-thumbnail js-admin-image-thumb" width="60" height="60" ' .
+                    'style="width:60px; height:60px; object-fit:cover;" ' .
                     'loading="lazy" decoding="async">',
                     $this->escapeHtml($thumbUrl),
                 ),
