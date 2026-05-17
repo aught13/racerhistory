@@ -50,6 +50,7 @@ class ImageServeHelperTest extends TestCase
             'w' => 150,
             'h' => '150',
             'fit' => 'cover',
+            'profile' => 'roster_avatar',
             'variant' => 'thumb',
             'q' => 90,
             'v' => 'ignored-version',
@@ -64,6 +65,7 @@ class ImageServeHelperTest extends TestCase
         $this->assertSame('150', (string)$parsed['w']);
         $this->assertSame('150', (string)$parsed['h']);
         $this->assertSame('cover', $parsed['fit']);
+        $this->assertSame('roster_avatar', $parsed['profile']);
         $this->assertSame('thumb', $parsed['variant']);
         $this->assertSame('90', (string)$parsed['q']);
         $this->assertArrayNotHasKey('bogus', $parsed);
@@ -210,6 +212,17 @@ class ImageServeHelperTest extends TestCase
     }
 
     /**
+     * Tests picture keeps profile parameter for both source and fallback URLs.
+     */
+    public function testPictureWithProfileIncludesProfileInUrls(): void
+    {
+        $html = $this->helper->picture(42, ['profile' => 'roster_avatar']);
+
+        $this->assertStringContainsString('/images/serve/42?fm=webp&amp;profile=roster_avatar', $html);
+        $this->assertStringContainsString('/images/serve/42?profile=roster_avatar', $html);
+    }
+
+    /**
      * Tests picture handles special characters in alt.
      */
     public function testPictureHandlesSpecialCharactersInAlt(): void
@@ -321,6 +334,21 @@ class ImageServeHelperTest extends TestCase
 
         $this->assertStringContainsString('fit=cover', $html);
         $this->assertStringContainsString('q=80', $html);
+    }
+
+    /**
+     * Tests responsive picture retains profile parameter across generated srcset URLs.
+     */
+    public function testResponsivePictureWithProfileIncludesProfileAcrossSrcset(): void
+    {
+        $html = $this->helper->responsivePicture(
+            12,
+            [400, 800],
+            ['profile' => 'blog_featured'],
+        );
+
+        $this->assertStringContainsString('profile=blog_featured', $html);
+        $this->assertStringContainsString('fm=webp', $html);
     }
 
     /**

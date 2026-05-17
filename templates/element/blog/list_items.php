@@ -21,7 +21,7 @@ declare(strict_types=1);
         <figure style="flex-shrink: 0; width: 120px; height: 90px; margin: 0;">
             <?= $this->ImageServe->picture(
                 $post->hero_image_id,
-                ['w' => 200, 'h' => 150, 'fit' => 'cover'],
+                ['profile' => 'blog_index_card'],
                 [
                     'alt' => h($post->title),
                     'class' => 'img-fluid rounded',
