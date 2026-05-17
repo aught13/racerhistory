@@ -111,10 +111,14 @@ class ImagesController extends AppController
             return $this->placeholderTransparentWebp();
         }
 
+        // Calculate the precise size of the image payload in bytes
+        $contentLength = mb_strlen($body, '8bit');
+
         return $this->getResponse()
             ->withType($mime)
             ->withHeader('ETag', $etag)
             ->withHeader('Cache-Control', $cacheControl)
+            ->withHeader('Content-Length', (string)$contentLength)
             ->withStringBody($body);
     }
 
