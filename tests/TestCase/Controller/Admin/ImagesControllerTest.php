@@ -220,7 +220,7 @@ class ImagesControllerTest extends TestCase
     }
 
     /**
-     * Tests serve original and variant.
+     * Tests admin serve endpoint redirects original and variant requests to public serve.
      */
     public function testServeOriginalAndVariant(): void
     {
@@ -241,35 +241,40 @@ class ImagesControllerTest extends TestCase
         $json = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($json['success'] ?? false, 'Upload should succeed');
         $id = $json['image']['id'];
-        // Serve original
+
+        // Admin endpoint delegates to the public image endpoint.
         $this->get('/admin/images/serve/' . $id);
+        $this->assertRedirectContains('/images/serve/' . $id);
+
+        // Confirm public endpoint serves image content.
+        $this->get('/images/serve/' . $id);
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
-        $originalBody = (string)$this->_response->getBody();
-        $this->assertNotEmpty($originalBody, 'Original image body expected');
-        // Attempt to serve thumb variant (if generated)
+        $this->assertStringStartsWith('image/', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertNotEmpty((string)$this->_response->getBody(), 'Original image body expected');
+
+        // Variant requests are delegated with query string intact.
         $this->get('/admin/images/serve/' . $id . '?variant=thumb');
-        if ($this->_response->getStatusCode() === 200) {
-            $variantBody = (string)$this->_response->getBody();
-            $this->assertNotEmpty($variantBody, 'Variant body expected');
-        }
+        $this->assertRedirectContains('/images/serve/' . $id . '?variant=thumb');
     }
 
     /**
-     * Tests serve missing file falls back to transparent png.
+     * Tests admin serve redirects to the public endpoint for fallback handling.
      */
-    public function testServeMissingFileFallsBackToTransparentPng(): void
+    public function testServeMissingFileRedirectsToPublicEndpoint(): void
     {
         $this->mockIdentity();
         // From fixture we have id=1 but no actual file on disk.
         $this->get('/admin/images/serve/1');
+        $this->assertRedirectContains('/images/serve/1');
+
+        $this->get('/images/serve/1');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'));
         $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
         $body = (string)$this->_response->getBody();
-        $this->assertNotEmpty($body, 'Placeholder PNG should have content');
-        // Validate it looks like a PNG: starts with PNG signature bytes
-        $this->assertSame("\x89PNG", substr($body, 0, 4), 'Should start with PNG signature');
+        $this->assertNotEmpty($body, 'Placeholder WebP should have content');
+        $this->assertSame('RIFF', substr($body, 0, 4), 'Should start with RIFF signature');
+        $this->assertSame('WEBP', substr($body, 8, 4), 'Should identify as WEBP');
     }
 
     /**
@@ -280,7 +285,7 @@ class ImagesControllerTest extends TestCase
         // No auth needed for public route
         $this->get('/images/serve/1');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'));
     }
 
     /**
@@ -345,7 +350,7 @@ class ImagesControllerTest extends TestCase
         // Trigger the transform code path.
         $this->get('/images/serve/' . $id . '?w=1&h=1&fit=cover&fm=png&q=90');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'));
         $this->assertNotEmpty((string)$this->_response->getBody());
     }
 
@@ -430,7 +435,7 @@ class ImagesControllerTest extends TestCase
         // record 1 exists but has no variants, request a non-existent variant
         $this->get('/images/serve/1?variant=thumb');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'), 'Fallback should be PNG');
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'), 'Fallback should be WebP');
         $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
     }
 

@@ -371,15 +371,19 @@ class ImagesControllerMoreTest extends TestCase
     }
 
     /**
-     * Tests serve legacy sizing query maps to thumb variant.
+     * Tests admin serve preserves legacy sizing query when delegating to public serve.
      */
-    public function testServeLegacySizingQueryMapsToThumbVariant(): void
+    public function testServeLegacySizingQueryDelegatesToPublicServe(): void
     {
         $this->mockIdentity();
 
         $this->get('/admin/images/serve/1?w=300&h=300&fit=cover');
-        $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertRedirectContains('/images/serve/1');
+
+        $location = $this->_response->getHeaderLine('Location');
+        $this->assertStringContainsString('w=300', $location);
+        $this->assertStringContainsString('h=300', $location);
+        $this->assertStringContainsString('fit=cover', $location);
     }
 
     /**
