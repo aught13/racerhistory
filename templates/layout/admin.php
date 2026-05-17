@@ -66,6 +66,7 @@
                 return;
             }
             window.__rhImageRetryInit = true;
+            let retrySequence = 0;
 
             function isServeUrl(url) {
                 if (!url) {
@@ -123,19 +124,24 @@
 
                 img.dataset.rhRetryAttempted = '1';
 
-                const picture = img.closest('picture');
-                if (picture) {
-                    picture.querySelectorAll('source').forEach(function (sourceEl) {
-                        const srcset = sourceEl.getAttribute('srcset');
-                        if (!srcset) {
-                            return;
-                        }
-                        sourceEl.setAttribute('srcset', bustSrcset(srcset));
-                    });
-                }
+                // Stagger retries to avoid amplifying transient backend overload.
+                const delayMs = Math.min(2000, retrySequence * 75);
+                retrySequence += 1;
+                window.setTimeout(function () {
+                    const picture = img.closest('picture');
+                    if (picture) {
+                        picture.querySelectorAll('source').forEach(function (sourceEl) {
+                            const srcset = sourceEl.getAttribute('srcset');
+                            if (!srcset) {
+                                return;
+                            }
+                            sourceEl.setAttribute('srcset', bustSrcset(srcset));
+                        });
+                    }
 
-                const baseSrc = img.getAttribute('src') || current;
-                img.setAttribute('src', bustUrl(baseSrc));
+                    const baseSrc = img.getAttribute('src') || current;
+                    img.setAttribute('src', bustUrl(baseSrc));
+                }, delayMs);
             }
 
             function retryAlreadyBroken() {
@@ -152,6 +158,7 @@
 
             document.addEventListener('DOMContentLoaded', retryAlreadyBroken);
             document.addEventListener('turbo:load', retryAlreadyBroken);
+            document.addEventListener('turbo:frame-load', retryAlreadyBroken);
         })();
     </script>
 </head>

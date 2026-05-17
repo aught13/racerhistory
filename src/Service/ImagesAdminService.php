@@ -5,7 +5,7 @@ namespace App\Service;
 
 use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
-use Cake\Datasource\ResultSetInterface;
+use Cake\I18n\Number;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -57,13 +57,136 @@ class ImagesAdminService
     }
 
     /**
-     * Load index data for the images management page.
-     *
-     * @return \Cake\Datasource\ResultSetInterface
+     * Total images count for index heading text.
      */
-    public function getIndexImages(): ResultSetInterface
+    public function getTotalCount(): int
     {
-        return $this->imagesTable->find()->orderByDesc('id')->limit(100)->all();
+        return (int)$this->imagesTable->find()->count();
+    }
+
+    /**
+     * Build DataTables server-side payload for admin images index.
+     *
+     * @param array<string,mixed> $params
+     * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
+     */
+    public function buildIndexDataTablesResponse(array $params): array
+    {
+        $draw = max(0, (int)($params['draw'] ?? 0));
+        $start = max(0, (int)($params['start'] ?? 0));
+        $length = (int)($params['length'] ?? 15);
+        if ($length <= 0) {
+            $length = 15;
+        }
+        $length = min($length, 120);
+
+        $searchValue = trim((string)($params['searchValue'] ?? ''));
+        $orderDir = strtolower((string)($params['orderDir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+        $orderColumn = (string)($params['orderColumn'] ?? 'id');
+        $sortField = $this->resolveIndexSortField($orderColumn);
+
+        $total = (int)$this->imagesTable->find()->count();
+
+        $query = $this->imagesTable->find();
+        if ($searchValue !== '') {
+            $conditions = [
+                'Images.original_name LIKE' => '%' . $searchValue . '%',
+                'Images.filename LIKE' => '%' . $searchValue . '%',
+                'Images.mime LIKE' => '%' . $searchValue . '%',
+                'Images.status LIKE' => '%' . $searchValue . '%',
+            ];
+            if (ctype_digit($searchValue)) {
+                $conditions[] = ['Images.id' => (int)$searchValue];
+            }
+            $query->where(['OR' => $conditions]);
+        }
+
+        $filtered = (int)$query->count();
+
+        $rows = $query
+            ->order([$sortField => $orderDir])
+            ->offset($start)
+            ->limit($length)
+            ->all();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $rowData = is_array($row) ? $row : $row->toArray();
+
+            $id = (int)($rowData['id'] ?? 0);
+            $originalName = (string)($rowData['original_name'] ?? '');
+            $filename = (string)($rowData['filename'] ?? '');
+            $name = $originalName !== '' ? $originalName : $filename;
+            $mime = (string)($rowData['mime'] ?? '');
+            $byteSize = (int)($rowData['byte_size'] ?? 0);
+            $width = (int)($rowData['width'] ?? 0);
+            $height = (int)($rowData['height'] ?? 0);
+            $dimensions = $width > 0 && $height > 0 ? ($width . 'x' . $height) : '-';
+
+            $status = (string)($rowData['status'] ?? 'unknown');
+            $statusClass = strtolower($status) === 'active' ? 'bg-success' : 'bg-secondary';
+
+            $thumbUrl = '/images/serve/' . $id . '?variant=thumb';
+            $editUrl = '/admin/images/edit/' . $id;
+
+            $data[] = [
+                'id' => $id,
+                'preview' => sprintf(
+                    '<img src="%s" alt="" class="img-thumbnail" style="max-width:60px; height:auto;" ' .
+                    'loading="lazy" decoding="async">',
+                    $this->escapeHtml($thumbUrl),
+                ),
+                'original_name' => $this->escapeHtml($name),
+                'mime' => '<code>' . $this->escapeHtml($mime) . '</code>',
+                'size' => $this->escapeHtml((string)Number::toReadableSize($byteSize)),
+                'dimensions' => $this->escapeHtml($dimensions),
+                'status' => sprintf(
+                    '<span class="badge %s">%s</span>',
+                    $statusClass,
+                    $this->escapeHtml($status),
+                ),
+                'actions' => sprintf(
+                    '<a href="%s" class="btn btn-sm btn-primary">Edit</a>',
+                    $this->escapeHtml($editUrl),
+                ),
+            ];
+        }
+
+        return [
+            'draw' => $draw,
+            'total' => $total,
+            'filtered' => $filtered,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Resolve DataTables column key to a sortable database field.
+     *
+     * @param string $column
+     * @return string
+     */
+    private function resolveIndexSortField(string $column): string
+    {
+        return match ($column) {
+            'original_name' => 'Images.original_name',
+            'mime' => 'Images.mime',
+            'size' => 'Images.byte_size',
+            'dimensions' => 'Images.width',
+            'status' => 'Images.status',
+            default => 'Images.id',
+        };
+    }
+
+    /**
+     * Escape helper for HTML fragments returned to DataTables.
+     *
+     * @param string $value
+     * @return string
+     */
+    private function escapeHtml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 
     /**

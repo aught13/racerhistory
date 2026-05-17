@@ -132,9 +132,56 @@ class ImagesController extends AppController
     public function index(): void
     {
         $this->getRequest()->allowMethod(['get']);
-        $images = $this->imagesAdminService->getIndexImages();
-        $this->set(compact('images'));
+        $this->set('imageCount', $this->imagesAdminService->getTotalCount());
         // Let Cake render the template normally (no explicit return of Response which caused blank output)
+    }
+
+    /**
+     * DataTables server-side JSON endpoint for admin images index.
+     */
+    public function datatables(): Response
+    {
+        $request = $this->getRequest();
+        $request->allowMethod(['get']);
+
+        $orderDir = 'desc';
+        $orderColumn = 'id';
+
+        $order = $request->getQuery('order');
+        $columns = $request->getQuery('columns');
+        if (is_array($order) && !empty($order)) {
+            $firstOrder = reset($order);
+            if (is_array($firstOrder)) {
+                $dir = strtolower((string)($firstOrder['dir'] ?? 'desc'));
+                if (in_array($dir, ['asc', 'desc'], true)) {
+                    $orderDir = $dir;
+                }
+
+                $columnIndex = (int)($firstOrder['column'] ?? 0);
+                if (is_array($columns) && isset($columns[$columnIndex]['data'])) {
+                    $candidate = $columns[$columnIndex]['data'];
+                    if (is_string($candidate) && $candidate !== '') {
+                        $orderColumn = $candidate;
+                    }
+                }
+            }
+        }
+
+        $result = $this->imagesAdminService->buildIndexDataTablesResponse([
+            'draw' => (int)$request->getQuery('draw'),
+            'start' => (int)$request->getQuery('start'),
+            'length' => (int)$request->getQuery('length'),
+            'searchValue' => trim((string)($request->getQuery('search')['value'] ?? '')),
+            'orderDir' => $orderDir,
+            'orderColumn' => $orderColumn,
+        ]);
+
+        return $this->json([
+            'draw' => $result['draw'],
+            'recordsTotal' => $result['total'],
+            'recordsFiltered' => $result['filtered'],
+            'data' => $result['data'],
+        ]);
     }
 
     /**

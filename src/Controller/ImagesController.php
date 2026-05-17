@@ -75,6 +75,23 @@ class ImagesController extends AppController
             $profileConfig = $this->getProfileConfig($profileName);
 
             $variant = $this->resolveVariantForProfile((string)$request->getQuery('variant'), $profileConfig);
+
+            // Strict variant enforcement: if a named stored variant was requested but the image
+            // record has no entry for it, return a placeholder immediately rather than falling
+            // back to a full-resolution on-the-fly transform.  Loading the admin images index
+            // with many images that lack a stored thumb variant would otherwise trigger
+            // simultaneous full-res Intervention/Image transforms, exhausting PHP-FPM workers
+            // and causing Cloudflare to receive empty responses (→ 520).
+            if ($variant !== '') {
+                $rawVariants = $image->variants;
+                if (is_string($rawVariants)) {
+                    $rawVariants = json_decode($rawVariants, true);
+                }
+                if (!is_array($rawVariants) || !isset($rawVariants[$variant]['file'])) {
+                    return $this->placeholderTransparentWebp();
+                }
+            }
+
             [$path, $mime] = $this->resolvePath($image, $variant);
 
             if (!is_file($path)) {
