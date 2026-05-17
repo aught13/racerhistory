@@ -475,6 +475,7 @@ class ImagesControllerTest extends TestCase
             $this->assertArrayHasKey('id', $row);
             $this->assertArrayHasKey('preview', $row);
             $this->assertArrayHasKey('actions', $row);
+            $this->assertStringContainsString('data-thumb-src=', (string)$row['preview']);
         }
     }
 

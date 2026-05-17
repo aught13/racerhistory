@@ -64,8 +64,138 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
 
     var dtInstance = null;
     var searchDebounce = null;
+    var thumbObserver = null;
+    var thumbQueue = [];
+    var thumbInFlight = 0;
+    var initRetryTimer = null;
+    var initRetryCount = 0;
+    var THUMB_MAX_CONCURRENT = 2;
+    var THUMB_OBSERVER_MARGIN = '200px 0px';
+
+    function bustUrl(url) {
+        try {
+            var parsed = new URL(url, window.location.origin);
+            parsed.searchParams.set('_ts', String(Date.now()));
+
+            return parsed.pathname + parsed.search;
+        } catch (_) {
+            return url;
+        }
+    }
+
+    function resetThumbLoader() {
+        if (thumbObserver) {
+            thumbObserver.disconnect();
+            thumbObserver = null;
+        }
+        thumbQueue = [];
+        thumbInFlight = 0;
+    }
+
+    function flushThumbQueue() {
+        while (thumbInFlight < THUMB_MAX_CONCURRENT && thumbQueue.length > 0) {
+            (function () {
+                var img = thumbQueue.shift();
+                if (!img || img.dataset.thumbLoaded === '1') {
+                    return;
+                }
+
+                var thumbUrl = img.getAttribute('data-thumb-src');
+                if (!thumbUrl) {
+                    return;
+                }
+
+                thumbInFlight += 1;
+
+                var settled = false;
+                var done = function () {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    thumbInFlight = Math.max(0, thumbInFlight - 1);
+                    flushThumbQueue();
+                };
+
+                img.addEventListener('load', function () {
+                    img.dataset.thumbLoaded = '1';
+                    img.removeAttribute('data-thumb-src');
+                    done();
+                }, { once: true });
+
+                img.addEventListener('error', function () {
+                    if (img.dataset.thumbRetried !== '1') {
+                        img.dataset.thumbRetried = '1';
+                        img.src = bustUrl(thumbUrl);
+                    }
+                    done();
+                }, { once: true });
+
+                // Small stagger to avoid immediate N-way spikes when many rows appear at once.
+                window.setTimeout(function () {
+                    img.src = thumbUrl;
+                }, 90);
+            }());
+        }
+    }
+
+    function enqueueThumb(img) {
+        if (!img || img.dataset.thumbQueued === '1' || img.dataset.thumbLoaded === '1') {
+            return;
+        }
+        if (!img.getAttribute('data-thumb-src')) {
+            return;
+        }
+
+        img.dataset.thumbQueued = '1';
+        thumbQueue.push(img);
+    }
+
+    function wireDeferredThumbs() {
+        var imgs = document.querySelectorAll('#images-table img[data-thumb-src]');
+        if (imgs.length === 0) {
+            return;
+        }
+
+        // Fallback for older browsers: still paced via queue, but no viewport detection.
+        if (!('IntersectionObserver' in window)) {
+            imgs.forEach(function (img) {
+                enqueueThumb(img);
+            });
+            flushThumbQueue();
+
+            return;
+        }
+
+        var scrollBody = document.querySelector('#images-table_wrapper .dataTables_scrollBody');
+        thumbObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+                var img = entry.target;
+                thumbObserver.unobserve(img);
+                enqueueThumb(img);
+            });
+            flushThumbQueue();
+        }, {
+            root: scrollBody || null,
+            rootMargin: THUMB_OBSERVER_MARGIN,
+            threshold: 0.01,
+        });
+
+        imgs.forEach(function (img) {
+            thumbObserver.observe(img);
+        });
+    }
 
     function destroyTable() {
+        if (initRetryTimer) {
+            window.clearTimeout(initRetryTimer);
+            initRetryTimer = null;
+        }
+        initRetryCount = 0;
+        resetThumbLoader();
         if (dtInstance) {
             try {
                 dtInstance.destroy(false);
@@ -76,55 +206,102 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
         }
     }
 
+    function isDataTableReady() {
+        return Boolean(window.jQuery && $.fn && $.fn.DataTable && $.fn.DataTable.isDataTable('#images-table'));
+    }
+
+    function scheduleInitRetry() {
+        if (isDataTableReady()) {
+            return;
+        }
+        if (initRetryCount >= 8) {
+            return;
+        }
+
+        initRetryCount += 1;
+        if (initRetryTimer) {
+            window.clearTimeout(initRetryTimer);
+        }
+        initRetryTimer = window.setTimeout(function () {
+            initRetryTimer = null;
+            initImagesTable();
+        }, 300 * initRetryCount);
+    }
+
     function initImagesTable() {
         var tableEl = document.getElementById('images-table');
         if (!tableEl || !window.jQuery || typeof $.fn.DataTable !== 'function') {
+            scheduleInitRetry();
             return;
         }
 
         if ($.fn.DataTable.isDataTable('#images-table')) {
-            destroyTable();
+            dtInstance = $('#images-table').DataTable();
+            wireDeferredThumbs();
+
+            return;
         }
 
         var dataUrl = tableEl.dataset.datatablesUrl;
+        if (!dataUrl) {
+            scheduleInitRetry();
 
-        dtInstance = $('#images-table').DataTable({
-            serverSide: true,
-            processing: true,
-            ajax: {
-                url: dataUrl,
-                type: 'GET'
-            },
-            columns: [
-                { data: 'id', name: 'id' },
-                { data: 'preview', name: 'preview', orderable: false, searchable: false },
-                { data: 'original_name', name: 'original_name' },
-                { data: 'mime', name: 'mime' },
-                { data: 'size', name: 'size' },
-                { data: 'dimensions', name: 'dimensions' },
-                { data: 'status', name: 'status' },
-                { data: 'actions', name: 'actions', orderable: false, searchable: false }
-            ],
-            order: [[0, 'desc']],
-            pageLength: 15,
-            lengthMenu: [15, 30, 60, 120],
-            paging: true,
-            pagingType: 'simple_numbers',
-            scrollY: '60vh',
-            scrollX: true,
-            scrollCollapse: true,
-            scroller: true,
-            deferRender: true,
-            language: {
-                processing: '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading...',
-                search: '',
-                zeroRecords: 'No matching images found.',
-                info: 'Showing _START_ to _END_ of _TOTAL_ images',
-                infoEmpty: 'No images found.',
-                infoFiltered: '(filtered from _MAX_ total images)'
-            },
-            dom: 'rltip'
-        });
+            return;
+        }
+
+        try {
+            dtInstance = $('#images-table').DataTable({
+                serverSide: true,
+                processing: true,
+                ajax: {
+                    url: dataUrl,
+                    type: 'GET'
+                },
+                columns: [
+                    { data: 'id', name: 'id' },
+                    { data: 'preview', name: 'preview', orderable: false, searchable: false },
+                    { data: 'original_name', name: 'original_name' },
+                    { data: 'mime', name: 'mime' },
+                    { data: 'size', name: 'size' },
+                    { data: 'dimensions', name: 'dimensions' },
+                    { data: 'status', name: 'status' },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false }
+                ],
+                order: [[0, 'desc']],
+                pageLength: 15,
+                lengthMenu: [15, 30, 45],
+                paging: true,
+                pagingType: 'simple_numbers',
+                scrollY: '60vh',
+                scrollX: true,
+                scrollCollapse: true,
+                scroller: {
+                    loadingIndicator: true,
+                    displayBuffer: 2,
+                    boundaryScale: 0.2,
+                    serverWait: 350,
+                },
+                deferRender: true,
+                language: {
+                    processing: '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading...',
+                    search: '',
+                    zeroRecords: 'No matching images found.',
+                    info: 'Showing _START_ to _END_ of _TOTAL_ images',
+                    infoEmpty: 'No images found.',
+                    infoFiltered: '(filtered from _MAX_ total images)'
+                },
+                dom: 'rltip',
+                initComplete: function () {
+                    wireDeferredThumbs();
+                },
+                drawCallback: function () {
+                    wireDeferredThumbs();
+                },
+            });
+            initRetryCount = 0;
+        } catch (err) {
+            scheduleInitRetry();
+        }
 
         var searchInput = document.getElementById('images-search');
         if (searchInput) {
@@ -151,6 +328,10 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
     } else {
         initImagesTable();
     }
+
+    // Safety retries for edge Turbo timing/race conditions.
+    window.setTimeout(initImagesTable, 300);
+    window.setTimeout(initImagesTable, 1000);
 
     document.addEventListener('turbo:load', initImagesTable);
     document.addEventListener('turbo:frame-load', initImagesTable);
