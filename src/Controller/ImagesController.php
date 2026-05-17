@@ -67,7 +67,7 @@ class ImagesController extends AppController
         $request->allowMethod(['get', 'head']);
         $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
         if (!$image) {
-            return $this->placeholderTransparentPng();
+            return $this->placeholderTransparentWebp();
         }
         $profileName = strtolower((string)$request->getQuery('profile'));
         $profileConfig = $this->getProfileConfig($profileName);
@@ -76,7 +76,7 @@ class ImagesController extends AppController
         [$path, $mime] = $this->resolvePath($image, $variant);
 
         if (!is_file($path)) {
-            return $this->placeholderTransparentPng();
+            return $this->placeholderTransparentWebp();
         }
 
         $cacheControl = 'public, max-age=3600, must-revalidate';
@@ -108,7 +108,7 @@ class ImagesController extends AppController
 
         $body = file_get_contents($path) ?: '';
         if ($body === '') {
-            return $this->placeholderTransparentPng();
+            return $this->placeholderTransparentWebp();
         }
 
         return $this->getResponse()
@@ -295,7 +295,7 @@ class ImagesController extends AppController
             $manager = extension_loaded('imagick') ? ImageManager::imagick() : ImageManager::gd();
             $raw = file_get_contents($path) ?: '';
             if ($raw === '') {
-                return $this->placeholderTransparentPng();
+                return $this->placeholderTransparentWebp();
             }
 
             $img = $manager->read($raw);
@@ -317,7 +317,7 @@ class ImagesController extends AppController
                 : $img->encodeByMediaType($outMime);
             $body = (string)$encoded;
             if ($body === '') {
-                return $this->placeholderTransparentPng();
+                return $this->placeholderTransparentWebp();
             }
 
             $this->atomicWriteCache($cached, $body);
@@ -331,7 +331,7 @@ class ImagesController extends AppController
             // Degrade gracefully to original bytes if transform fails.
             $body = file_get_contents($path) ?: '';
             if ($body === '') {
-                return $this->placeholderTransparentPng();
+                return $this->placeholderTransparentWebp();
             }
 
             return $this->getResponse()
@@ -470,16 +470,18 @@ class ImagesController extends AppController
     }
 
     /**
-     * Return a 1x1 transparent PNG Response used as a safe placeholder.
+     * Return a 1x1 transparent WebP Response used as a safe placeholder.
      */
-    private function placeholderTransparentPng(): Response
+    private function placeholderTransparentWebp(): Response
     {
-        $b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMA'
-            . 'AQAABQABDQottAAAAABJRU5ErkJggg==';
+        $b64 = 'UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAARBxAR/QERFA0B' .
+           'VlA4WQoAAAAcAAAASUNDUAAREAAAbW50clJHQiBYWVogAAAAAAAAAAAAAAAAMVdQ' .
+           'S0AnAAAAAAAAAAAANmYAAHAGAABwYwAAZgAAVTRSTAAUAAAAAAAAAAAAAAAAAAAA' .
+           'AAAAAAA=';
         $data = base64_decode($b64);
 
         return $this->getResponse()
-            ->withType('image/png')
+            ->withType('image/webp')
             ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
             ->withHeader('Pragma', 'no-cache')
             ->withHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')

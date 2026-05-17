@@ -111,8 +111,8 @@ class ImagesController extends AppController
     }
 
     /**
-     * Serve an image (original or variant) by id and optional variant name.
-     * Example: /admin/images/serve/123?variant=thumb
+     * Compatibility endpoint that delegates image serving to the public controller.
+     * Example: /admin/images/serve/123?variant=thumb -> /images/serve/123?variant=thumb
      *
      * @param int $id
      */
@@ -120,46 +120,10 @@ class ImagesController extends AppController
     {
         $request = $this->getRequest();
         $request->allowMethod(['get', 'head']);
-        $variant = (string)$request->getQuery('variant');
-        // Support legacy query-based sizing by mapping to a prebuilt variant.
-        // If callers pass w/h/fit without an explicit variant, serve the "thumb".
-        if ($variant === '') {
-            $w = $request->getQuery('w');
-            $h = $request->getQuery('h');
-            $fit = $request->getQuery('fit');
-            if ($w !== null || $h !== null || $fit !== null) {
-                $variant = 'thumb';
-            }
-        }
+        $params = $request->getQueryParams();
+        $query = $params === [] ? '' : '?' . http_build_query($params);
 
-        $storage = new ImageStorageService();
-        $image = $storage->loadImageOrFail($id);
-        [$path, $mime] = $storage->resolveImagePath($image, $variant);
-
-        Log::debug("Serve image #{$id}, variant: '{$variant}', path: {$path}, mime: {$mime}");
-        if (is_file($path)) {
-            Log::debug("File exists at {$path}, size: " . filesize($path) . ' bytes');
-        } else {
-            Log::debug("File NOT found at {$path}");
-        }
-
-        $contents = is_file($path)
-            ? (file_get_contents($path) ?: '')
-            : '';
-        if ($contents === '') {
-            // Graceful fallback: return a 1x1 transparent PNG instead of 404 to avoid broken icons in editor/content.
-            return $this->placeholderTransparentPng();
-        }
-
-        // Add cache-busting headers
-        $response = $this->getResponse()
-            ->withType($mime)
-            ->withStringBody($contents)
-            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-            ->withHeader('Pragma', 'no-cache')
-            ->withHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT');
-
-        return $response;
+        return $this->redirect('/images/serve/' . $id . $query);
     }
 
     /**
@@ -795,25 +759,6 @@ class ImagesController extends AppController
     }
 
     /**
-     * Return a 1x1 transparent PNG response (base64 inline data) used as a safe placeholder.
-     */
-    private function placeholderTransparentPng(): Response
-    {
-        // Single pixel transparent PNG
-        $data = base64_decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMA' .
-            'AQAABQABDQottAAAAABJRU5ErkJggg==',
-        );
-
-        return $this->getResponse()
-            ->withType('image/png')
-            ->withHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
-            ->withHeader('Pragma', 'no-cache')
-            ->withHeader('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
-            ->withStringBody($data ?: '');
-    }
-
-    /**
      * Serialize image entity for JSON response.
      *
      * @param \App\Model\Entity\Image $image
@@ -829,9 +774,10 @@ class ImagesController extends AppController
         if (is_array($raw)) {
             $variants = $raw;
         }
-        // Provide signed/parameterized URL (for now simple route) to serve original
-        $baseUrl = '/admin/images/serve/' . $image->id;
+        // `url` is the canonical public serving endpoint; keep admin_url for legacy callers.
         $publicServeUrl = '/images/serve/' . $image->id;
+        $baseUrl = $publicServeUrl;
+        $adminServeUrl = '/admin/images/serve/' . $image->id;
         $directUrl = '/img/storage/' .
             ltrim($image->storage_path ?? ($image->storage_subdir . '/' . $image->filename), '/');
 
@@ -839,6 +785,7 @@ class ImagesController extends AppController
             'id' => $image->id,
             'filename' => $image->filename,
             'url' => $baseUrl,
+            'admin_url' => $adminServeUrl,
             'variants' => $variants,
             'direct_url' => $directUrl,
             'public_url' => $publicServeUrl,

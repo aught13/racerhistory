@@ -37,6 +37,9 @@ $this->assign('title', 'Crop Thumbnail');
                             [
                                 'id' => 'crop-image',
                                 'alt' => (string)$image->original_name,
+                                'loading' => 'eager',
+                                'decoding' => 'sync',
+                                'fetchpriority' => 'high',
                                 'style' => 'display: block; max-width: 100%; height: auto; cursor: crosshair;',
                             ],
                         ) ?>
