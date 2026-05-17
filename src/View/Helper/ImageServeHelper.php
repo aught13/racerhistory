@@ -12,6 +12,7 @@ use Cake\View\Helper;
  * Centralizes building `/images/serve/:id` URLs with common query params:
  * - w, h, fit, fm, q
  * - variant
+ * - profile
  */
 class ImageServeHelper extends Helper
 {
@@ -83,7 +84,7 @@ class ImageServeHelper extends Helper
      * Supports responsive srcset for multiple sizes on different breakpoints.
      *
      * @param object|string|int $image Image ID or Image entity
-     * @param array<string, mixed> $params URL parameters (w, h, fit, etc.)
+     * @param array<string, mixed> $params URL parameters (w, h, fit, variant, profile, etc.)
      * @param array<string, mixed> $attrs HTML attributes for the <img> element
      * @return string HTML picture element
      */
@@ -349,7 +350,7 @@ class ImageServeHelper extends Helper
      */
     private function filterParams(array $params): array
     {
-        $allowed = ['w', 'h', 'fit', 'fm', 'q', 'variant', '_ts'];
+        $allowed = ['w', 'h', 'fit', 'fm', 'q', 'profile', 'variant', '_ts'];
         $out = [];
 
         foreach ($allowed as $key) {

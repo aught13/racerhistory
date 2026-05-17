@@ -47,6 +47,18 @@ test.describe("Blog featured thumb behavior", () => {
         const img = featuredPicture.locator("img").first();
 
         await expect(source).toHaveAttribute("srcset", /\/images\/serve\/\d+/);
+        await expect(source).toHaveAttribute("srcset", /profile=blog_featured/);
         await expect(img).toHaveAttribute("src", /\/images\/serve\/\d+/);
+        await expect(img).toHaveAttribute("src", /profile=blog_featured/);
+
+        const featuredListThumb = page
+            .locator(".blog-featured-as-list picture img")
+            .first();
+        if ((await featuredListThumb.count()) > 0) {
+            await expect(featuredListThumb).toHaveAttribute(
+                "src",
+                /profile=blog_index_card/,
+            );
+        }
     });
 });
