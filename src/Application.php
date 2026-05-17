@@ -79,6 +79,31 @@ class Application extends BaseApplication implements
             'medium' => ['maxWidth' => 800, 'format' => 'webp'],
             'webp' => ['format' => 'webp'], // WebP alternate of original
         ]);
+
+        // Public image profiles for stable, semantic URLs backed by transforms.
+        // Profiles may optionally use a sourceVariant for custom-cropped inputs.
+        Configure::write('Images.profiles', [
+            'roster_avatar' => [
+                'sourceVariant' => 'thumb',
+                'w' => 150,
+                'h' => 150,
+                'fit' => 'cover',
+            ],
+            'season_billboard' => [
+                'w' => 1400,
+                'h' => 720,
+                'fit' => 'cover',
+            ],
+            'blog_featured' => [
+                'h' => 720,
+                'fit' => 'cover',
+            ],
+            'blog_index_card' => [
+                'w' => 200,
+                'h' => 150,
+                'fit' => 'cover',
+            ],
+        ]);
     }
 
     /**

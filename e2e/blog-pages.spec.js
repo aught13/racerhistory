@@ -73,6 +73,13 @@ test.describe("Blog - Public Pages", () => {
                 // Check srcset includes fm=webp
                 const srcset = await webpSource.getAttribute('srcset');
                 expect(srcset).toContain('fm=webp');
+
+                // Public blog pages should use image profiles for featured/list cards
+                expect(srcset).toMatch(/profile=blog_(featured|index_card)/);
+
+                const fallbackImg = pictures.first().locator('img').first();
+                const imgSrc = await fallbackImg.getAttribute('src');
+                expect(imgSrc || '').toMatch(/profile=blog_(featured|index_card)/);
             }
         }
     });

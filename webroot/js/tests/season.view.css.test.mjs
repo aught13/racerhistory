@@ -30,6 +30,19 @@ describe("Season view CSS", () => {
         );
     });
 
+    test("season hero image keeps cover layout", () => {
+        expect(css).toMatch(/\.season-hero-image[\s\S]*object-fit:\s*cover/i);
+        expect(css).toMatch(/\.season-hero-image[\s\S]*max-height:\s*480px/i);
+    });
+
+    test("season roster avatar image keeps circular crop", () => {
+        expect(css).toMatch(
+            /\.season-roster-avatar-img[\s\S]*border-radius:\s*50%/i,
+        );
+        expect(css).toMatch(/\.season-roster-avatar-img[\s\S]*width:\s*72px/i);
+        expect(css).toMatch(/\.season-roster-avatar-img[\s\S]*height:\s*72px/i);
+    });
+
     test("dark mode season games table links use readable link colour", () => {
         // Both [data-theme=dark] and prefers-color-scheme:dark must set --rh-link
         expect(css).toMatch(

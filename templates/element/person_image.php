@@ -7,6 +7,7 @@
  * Variables:
  * - $person: Person entity with person_image field
  * - $size: Optional size ('small', 'medium', 'large') - defaults to 'medium'
+ * - $profile: Optional image profile to use
  * - $variant: Optional image variant to use (e.g., 'thumb', 'medium')
  * - $class: Optional CSS classes
  * - $style: Optional inline styles
@@ -16,6 +17,7 @@
  */
 
 $size = $size ?? 'medium';
+$profile = $profile ?? null;
 $variant = $variant ?? 'thumb';
 $class = $class ?? '';
 $style = $style ?? '';
@@ -38,9 +40,16 @@ $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; border-r
 
 // Build image URL
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
+    $imageParams = [];
+    if (is_string($profile) && $profile !== '') {
+        $imageParams['profile'] = $profile;
+    } elseif (is_string($variant) && $variant !== '') {
+        $imageParams['variant'] = $variant;
+    }
+
     echo $this->ImageServe->picture(
         (int)$person->person_image,
-        ['variant' => $variant],
+        $imageParams,
         [
             'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
             'class' => $cssClass,

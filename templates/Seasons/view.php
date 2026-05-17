@@ -103,7 +103,7 @@ $this->start('css'); ?>
         <div class="season-hero-media mb-4">
             <?= $this->ImageServe->picture(
                 (int)$heroImageId,
-                ['w' => 1400, 'h' => 720, 'fit' => 'cover'],
+                ['profile' => 'season_billboard'],
                 [
                     'alt' => $teamName . ' ' . $seasonLabel . ' Season',
                     'class' => 'img-fluid rounded season-hero-image',
@@ -369,6 +369,7 @@ $this->start('css'); ?>
                                             <?= $this->element('person_image', [
                                                 'person' => $person,
                                                 'size' => 'small',
+                                                'profile' => 'roster_avatar',
                                                 'class' => 'season-roster-avatar-img',
                                                 'style' => 'width: 72px; height: 72px;',
                                             ]) ?>

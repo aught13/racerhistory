@@ -48,7 +48,7 @@ if ($page === 1 && !empty($posts)) {
                         <?= $this->ImageServe->responsivePicture(
                             $featured->hero_image_id,
                             [600, 900, 1200],
-                            ['fit' => 'cover', 'h' => 720],
+                            ['profile' => 'blog_featured'],
                             [
                                 'alt' => h($featured->title),
                                 'class' => 'img-fluid rounded blog-hero-image',
@@ -65,7 +65,7 @@ if ($page === 1 && !empty($posts)) {
                     <figure style="flex-shrink: 0; width: 120px; height: 90px; margin: 0;">
                         <?= $this->ImageServe->picture(
                             $featured->hero_image_id,
-                            ['w' => 200, 'h' => 150, 'fit' => 'cover'],
+                            ['profile' => 'blog_index_card'],
                             [
                                 'alt' => h($featured->title),
                                 'class' => 'img-fluid rounded',

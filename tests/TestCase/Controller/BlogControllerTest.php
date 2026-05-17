@@ -29,7 +29,8 @@ class BlogControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="blog">');
         $this->assertResponseContains('blog-featured-as-list');
-        $this->assertResponseContains('/images/serve/1?w=200&amp;h=150&amp;fit=cover');
+        $this->assertResponseContains('profile=blog_featured');
+        $this->assertResponseContains('profile=blog_index_card');
         $this->assertResponseContains('fm=webp');
     }
 

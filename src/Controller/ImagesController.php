@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
 use Cake\Log\Log;
@@ -56,6 +57,7 @@ class ImagesController extends AppController
     /**
      * Public serve endpoint (no auth) for original or variant.
      * /images/serve/123?variant=thumb
+     * /images/serve/123?profile=roster_avatar
      *
      * @param int $id
      */
@@ -67,7 +69,10 @@ class ImagesController extends AppController
         if (!$image) {
             return $this->placeholderTransparentPng();
         }
-        $variant = (string)$request->getQuery('variant');
+        $profileName = strtolower((string)$request->getQuery('profile'));
+        $profileConfig = $this->getProfileConfig($profileName);
+
+        $variant = $this->resolveVariantForProfile((string)$request->getQuery('variant'), $profileConfig);
         [$path, $mime] = $this->resolvePath($image, $variant);
 
         if (!is_file($path)) {
@@ -76,16 +81,21 @@ class ImagesController extends AppController
 
         $cacheControl = 'public, max-age=3600, must-revalidate';
 
-        $etag = $this->buildEtag((string)($image->hash ?? ''), $variant, []);
+        $etagVariant = $variant;
+        if ($profileName !== '') {
+            $etagVariant .= '|profile:' . $profileName;
+        }
 
-        $transform = $this->extractTransformParams();
+        $etag = $this->buildEtag((string)($image->hash ?? ''), $etagVariant, []);
+
+        $transform = $this->extractTransformParams($profileConfig);
         if ($this->shouldAutoServeWebp($mime) && ($transform === null || !isset($transform['fm']))) {
             $transform ??= [];
             $transform['fm'] = 'webp';
         }
 
         if ($transform !== null) {
-            return $this->serveTransformed($image, $path, $mime, $variant, $transform, $cacheControl);
+            return $this->serveTransformed($image, $path, $mime, $etagVariant, $transform, $cacheControl);
         }
 
         $ifNoneMatch = $request->getHeaderLine('If-None-Match');
@@ -114,20 +124,23 @@ class ImagesController extends AppController
      *
      * Supported (Glide-like): w, h, fit (cover|contain), fm (jpg|png|webp), q (1..100)
      *
+     * Profile defaults (Images.profiles) are merged first, then overridden by explicit query params.
+     *
+     * @param array<string,mixed> $profileConfig
      * @return array<string,mixed>|null
      */
-    private function extractTransformParams(): ?array
+    private function extractTransformParams(array $profileConfig = []): ?array
     {
+        $out = $this->profileToTransformParams($profileConfig);
+
         $q = $this->getRequest()->getQueryParams();
-        unset($q['variant'], $q['v']);
+        unset($q['variant'], $q['v'], $q['profile']);
 
         $w = $q['w'] ?? null;
         $h = $q['h'] ?? null;
         $fit = strtolower((string)($q['fit'] ?? ''));
         $fm = strtolower((string)($q['fm'] ?? ''));
         $quality = $q['q'] ?? null;
-
-        $out = [];
 
         $width = is_numeric($w) ? (int)$w : null;
         $height = is_numeric($h) ? (int)$h : null;
@@ -158,6 +171,76 @@ class ImagesController extends AppController
         }
 
         return $out ?: null;
+    }
+
+    /**
+     * Resolve an image profile from app config.
+     *
+     * @param string $profileName
+     * @return array<string,mixed>
+     */
+    private function getProfileConfig(string $profileName): array
+    {
+        if ($profileName === '') {
+            return [];
+        }
+
+        $profiles = (array)Configure::read('Images.profiles', []);
+        $profileConfig = $profiles[$profileName] ?? null;
+
+        return is_array($profileConfig) ? $profileConfig : [];
+    }
+
+    /**
+     * Resolve effective variant for profile-backed requests.
+     *
+     * @param string $variant
+     * @param array<string,mixed> $profileConfig
+     */
+    private function resolveVariantForProfile(string $variant, array $profileConfig): string
+    {
+        if ($variant !== '') {
+            return $variant;
+        }
+
+        $sourceVariant = $profileConfig['sourceVariant'] ?? null;
+
+        return is_string($sourceVariant) ? $sourceVariant : '';
+    }
+
+    /**
+     * Convert a profile config into validated transform parameters.
+     *
+     * @param array<string,mixed> $profileConfig
+     * @return array<string,mixed>
+     */
+    private function profileToTransformParams(array $profileConfig): array
+    {
+        $out = [];
+
+        $w = $profileConfig['w'] ?? null;
+        $h = $profileConfig['h'] ?? null;
+        $fit = strtolower((string)($profileConfig['fit'] ?? ''));
+        $fm = strtolower((string)($profileConfig['fm'] ?? ''));
+        $q = $profileConfig['q'] ?? null;
+
+        if (is_numeric($w) && (int)$w > 0) {
+            $out['w'] = (int)$w;
+        }
+        if (is_numeric($h) && (int)$h > 0) {
+            $out['h'] = (int)$h;
+        }
+        if ($fit !== '' && in_array($fit, ['cover', 'contain'], true)) {
+            $out['fit'] = $fit;
+        }
+        if ($fm !== '' && in_array($fm, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $out['fm'] = $fm === 'jpeg' ? 'jpg' : $fm;
+        }
+        if (is_numeric($q)) {
+            $out['q'] = max(1, min(100, (int)$q));
+        }
+
+        return $out;
     }
 
     /**

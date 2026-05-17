@@ -223,4 +223,30 @@ class SeasonsControllerTest extends TestCase
         sort($sorted);
         $this->assertSame($sorted, $dates, 'Games should be sorted by date ascending');
     }
+
+    /**
+     * Tests season view uses profile-based image URLs for billboards and roster avatars.
+     */
+    public function testViewUsesProfileBasedImageUrls(): void
+    {
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+
+        $teamSeason = $this->viewVariable('teamSeason');
+        if (!empty($teamSeason?->team_season_image)) {
+            $this->assertResponseContains('profile=season_billboard');
+        }
+
+        $roster = $this->viewVariable('roster');
+        $hasRosterImage = false;
+        foreach ($roster as $entry) {
+            if (!empty($entry?->person?->person_image)) {
+                $hasRosterImage = true;
+                break;
+            }
+        }
+        if ($hasRosterImage) {
+            $this->assertResponseContains('profile=roster_avatar');
+        }
+    }
 }

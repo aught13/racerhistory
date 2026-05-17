@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\ImagesController;
+use Cake\Core\Configure;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
@@ -304,6 +305,108 @@ class ImagesControllerTest extends TestCase
             'fm' => 'jpg',
             'q' => 100,
         ], $method->invoke($controller));
+    }
+
+    /**
+     * Tests profile transform defaults merge with explicit query overrides.
+     */
+    public function testExtractTransformParamsMergesProfileDefaultsAndQueryOverrides(): void
+    {
+        $previousProfiles = Configure::read('Images.profiles');
+        Configure::write('Images.profiles', [
+            'roster_avatar' => [
+                'w' => 150,
+                'h' => 150,
+                'fit' => 'cover',
+            ],
+        ]);
+
+        $controller = $this->createImagesControllerWithQuery([
+            'profile' => 'roster_avatar',
+            'w' => '72',
+            'q' => '150',
+        ]);
+        try {
+            $getProfile = $this->getPrivateMethod($controller, 'getProfileConfig');
+            $profileConfig = $getProfile->invoke($controller, 'roster_avatar');
+            $method = $this->getPrivateMethod($controller, 'extractTransformParams');
+
+            $this->assertSame([
+                'w' => 72,
+                'h' => 150,
+                'fit' => 'cover',
+                'q' => 100,
+            ], $method->invoke($controller, $profileConfig));
+        } finally {
+            Configure::write('Images.profiles', $previousProfiles);
+        }
+    }
+
+    /**
+     * Tests profile config lookup returns empty array for unknown profile.
+     */
+    public function testGetProfileConfigReturnsEmptyForUnknownProfile(): void
+    {
+        $controller = $this->createImagesControllerWithQuery();
+        $method = $this->getPrivateMethod($controller, 'getProfileConfig');
+
+        $this->assertSame([], $method->invoke($controller, 'does-not-exist'));
+    }
+
+    /**
+     * Tests profile source variant resolution honors explicit variant.
+     */
+    public function testResolveVariantForProfileHonorsExplicitVariant(): void
+    {
+        $controller = $this->createImagesControllerWithQuery();
+        $method = $this->getPrivateMethod($controller, 'resolveVariantForProfile');
+
+        $this->assertSame(
+            'medium',
+            $method->invoke($controller, 'medium', ['sourceVariant' => 'thumb']),
+        );
+        $this->assertSame(
+            'thumb',
+            $method->invoke($controller, '', ['sourceVariant' => 'thumb']),
+        );
+    }
+
+    /**
+     * Tests serve with profile applies configured transforms and profile-scoped ETag.
+     */
+    public function testServeWithProfileAppliesConfiguredTransforms(): void
+    {
+        $previousProfiles = Configure::read('Images.profiles');
+        Configure::write('Images.profiles', [
+            'blog_index_card' => [
+                'w' => 200,
+                'h' => 150,
+                'fit' => 'cover',
+            ],
+        ]);
+
+        $png = $this->tinyPngBytes();
+        $fullPath = $this->writeFixtureImageFile(1, $png);
+
+        try {
+            $this->get('/images/serve/1?profile=blog_index_card');
+            $this->assertResponseOk();
+            $contentType = $this->_response->getHeaderLine('Content-Type');
+            $this->assertContains($contentType, ['image/webp', 'image/png']);
+
+            $images = TableRegistry::getTableLocator()->get('Images');
+            $image = $images->get(1);
+            $expected = $this->computeEtag(
+                (string)$image->get('hash'),
+                '|profile:blog_index_card',
+                ['w' => 200, 'h' => 150, 'fit' => 'cover', 'fm' => 'webp'],
+            );
+
+            $this->assertSame($expected, $this->_response->getHeaderLine('ETag'));
+        } finally {
+            $this->safeUnlink($fullPath);
+            Configure::write('Images.profiles', $previousProfiles);
+        }
     }
 
     /**
