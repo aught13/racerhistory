@@ -58,33 +58,35 @@ class ImagesControllerTest extends TestCase
     }
 
     /**
-     * Tests serve missing record returns placeholder png.
+     * Tests serve missing record returns placeholder webp.
      */
-    public function testServeMissingRecordReturnsPlaceholderPng(): void
+    public function testServeMissingRecordReturnsPlaceholderWebp(): void
     {
         $this->get('/images/serve/999999');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'));
         $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
 
         $body = (string)$this->_response->getBody();
         $this->assertNotEmpty($body);
-        $this->assertSame("\x89PNG", substr($body, 0, 4));
+        $this->assertSame('RIFF', substr($body, 0, 4));
+        $this->assertSame('WEBP', substr($body, 8, 4));
     }
 
     /**
-     * Tests serve missing file returns placeholder png.
+     * Tests serve missing file returns placeholder webp.
      */
-    public function testServeMissingFileReturnsPlaceholderPng(): void
+    public function testServeMissingFileReturnsPlaceholderWebp(): void
     {
         $this->get('/images/serve/1');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'));
         $this->assertStringContainsString('no-store', $this->_response->getHeaderLine('Cache-Control'));
 
         $body = (string)$this->_response->getBody();
         $this->assertNotEmpty($body);
-        $this->assertSame("\x89PNG", substr($body, 0, 4));
+        $this->assertSame('RIFF', substr($body, 0, 4));
+        $this->assertSame('WEBP', substr($body, 8, 4));
     }
 
     /**
@@ -178,7 +180,7 @@ class ImagesControllerTest extends TestCase
         // fit=invalid and w=0 should yield no transform path.
         $this->get('/images/serve/1?fit=invalid&w=0&h=0&fm=bogus&q=nope');
         $this->assertResponseOk();
-        $this->assertSame('image/png', $this->_response->getHeaderLine('Content-Type'));
+        $this->assertSame('image/webp', $this->_response->getHeaderLine('Content-Type'));
     }
 
     /**
