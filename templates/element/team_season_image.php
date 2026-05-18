@@ -33,17 +33,19 @@ $cssClass = trim($defaultClass . ' ' . $class);
 $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $style;
 
 if (!empty($teamSeason->team_season_image) && is_numeric($teamSeason->team_season_image)) {
-    echo $this->ImageServe->picture(
-        (int)$teamSeason->team_season_image,
-        ['variant' => $variant],
-        [
-            'alt' => 'Season image',
-            'class' => $cssClass,
-            'style' => $cssStyle,
-            'loading' => 'lazy',
-            'decoding' => 'async',
-        ],
-    );
+    $thumbUrl = $this->ImageServe->url((int)$teamSeason->team_season_image, ['variant' => $variant]);
+
+    echo $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
+        'alt' => 'Season image',
+        'class' => trim($cssClass . ' js-team-season-thumb'),
+        'style' => $cssStyle,
+        'loading' => 'lazy',
+        'decoding' => 'async',
+        'width' => $width,
+        'height' => $height,
+        'data-thumb-src' => $thumbUrl,
+        'data-rh-no-retry' => '1',
+    ]);
 } else {
     echo $this->Html->div(
         'placeholder-image ' . $cssClass,

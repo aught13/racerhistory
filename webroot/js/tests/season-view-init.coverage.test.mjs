@@ -713,4 +713,131 @@ describe("season-view-init.mjs (coverage)", () => {
             expect(result.tables).toHaveLength(1);
         });
     });
+
+    describe("initDeferredImages", () => {
+        test("loads images when IntersectionObserver unavailable", async () => {
+            const origIO = window.IntersectionObserver;
+            delete window.IntersectionObserver;
+
+            document.body.innerHTML = `
+                <img class="js-person-thumb" data-thumb-src="/images/serve/1?variant=thumb" src="" alt="Test">
+                <img class="js-person-thumb" data-thumb-src="/images/serve/2?variant=thumb" src="" alt="Test2">`;
+
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.initDeferredImages(document);
+
+            const imgs = document.querySelectorAll("[data-thumb-src]");
+            expect(imgs.length).toBe(2);
+            // src is set immediately when no IntersectionObserver
+            imgs.forEach((img) => expect(img.src).not.toBe(""));
+
+            window.IntersectionObserver = origIO;
+        });
+
+        test("skips already-loaded images", async () => {
+            document.body.innerHTML = `
+                <img class="js-person-thumb" data-thumb-loaded="1" src="/loaded.jpg" alt="loaded">`;
+
+            const mod = await import("../modules/season-view-init.mjs");
+            // Should return early — no error and img unchanged
+            mod.initDeferredImages(document);
+
+            const img = document.querySelector("img");
+            expect(img.src).toContain("/loaded.jpg");
+        });
+
+        test("returns early when no deferred images present", async () => {
+            document.body.innerHTML = `<div><p>No images</p></div>`;
+            const mod = await import("../modules/season-view-init.mjs");
+            // Should not throw
+            expect(() => mod.initDeferredImages(document)).not.toThrow();
+        });
+
+        test("marks image loaded after successful load event", async () => {
+            const origIO = window.IntersectionObserver;
+            delete window.IntersectionObserver;
+
+            document.body.innerHTML = `
+                <img class="js-season-photo" data-thumb-src="/images/serve/5?w=240" src="" alt="photo">`;
+
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.initDeferredImages(document);
+
+            const img = document.querySelector("img");
+            img.dispatchEvent(new Event("load"));
+
+            expect(img.dataset.thumbLoaded).toBe("1");
+            expect(img.hasAttribute("data-thumb-src")).toBe(false);
+
+            window.IntersectionObserver = origIO;
+        });
+
+        test("retries once after error event", async () => {
+            const origIO = window.IntersectionObserver;
+            delete window.IntersectionObserver;
+
+            jest.useFakeTimers();
+            document.body.innerHTML = `
+                <img class="js-person-thumb" data-thumb-src="/images/serve/9?variant=thumb" src="" alt="retry">`;
+
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.initDeferredImages(document);
+
+            const img = document.querySelector("img");
+            img.dispatchEvent(new Event("error"));
+
+            expect(img.dataset.thumbRetried).toBe("1");
+
+            // Advance timer to trigger the retry
+            jest.advanceTimersByTime(900);
+
+            window.IntersectionObserver = origIO;
+        });
+
+        test("uses IntersectionObserver when available", async () => {
+            const observedEls = [];
+            const observerCb = jest.fn();
+            const mockObserver = {
+                observe: jest.fn((el) => observedEls.push(el)),
+                unobserve: jest.fn(),
+                disconnect: jest.fn(),
+            };
+            window.IntersectionObserver = jest.fn().mockImplementation((cb) => {
+                observerCb.mockImplementation(cb);
+                return mockObserver;
+            });
+
+            document.body.innerHTML = `
+                <img class="js-person-thumb" data-thumb-src="/images/serve/3?variant=thumb" src="" alt="a">
+                <img class="js-season-photo" data-thumb-src="/images/serve/4?w=240" src="" alt="b">`;
+
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.initDeferredImages(document);
+
+            expect(mockObserver.observe).toHaveBeenCalledTimes(2);
+
+            // Simulate intersection for first image
+            const img = document.querySelector(".js-person-thumb");
+            observerCb([{ isIntersecting: true, target: img }]);
+            expect(mockObserver.unobserve).toHaveBeenCalledWith(img);
+            expect(img.src).not.toBe("");
+        });
+
+        test("called by initSeasonView default export", async () => {
+            const origIO = window.IntersectionObserver;
+            delete window.IntersectionObserver;
+
+            document.body.innerHTML = `
+                <img class="js-person-thumb" data-thumb-src="/images/serve/7?variant=thumb" src="" alt="via-init">`;
+
+            setupDT();
+            const mod = await import("../modules/season-view-init.mjs");
+            mod.default({ tableSelectors: [] });
+
+            const img = document.querySelector("img");
+            expect(img.src).not.toBe("");
+
+            window.IntersectionObserver = origIO;
+        });
+    });
 });

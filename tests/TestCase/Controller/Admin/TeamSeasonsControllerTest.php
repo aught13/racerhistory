@@ -43,6 +43,8 @@ class TeamSeasonsControllerTest extends TestCase
         $this->get('/admin/team-seasons');
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-thumb-src=');
+        $this->assertResponseContains('data-rh-no-retry="1"');
     }
 
     /**

@@ -21,6 +21,7 @@ $profile = $profile ?? null;
 $variant = $variant ?? 'thumb';
 $class = $class ?? '';
 $style = $style ?? '';
+$deferred = $deferred ?? false;
 
 // Size presets
 $sizeMap = [
@@ -47,17 +48,32 @@ if (!empty($person->person_image) && is_numeric($person->person_image)) {
         $imageParams['variant'] = $variant;
     }
 
-    echo $this->ImageServe->picture(
-        (int)$person->person_image,
-        $imageParams,
-        [
+    if ($deferred) {
+        $thumbUrl = $this->ImageServe->url((int)$person->person_image, $imageParams);
+        echo $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
             'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
-            'class' => $cssClass,
+            'class' => trim($cssClass . ' js-person-thumb'),
             'style' => $cssStyle,
             'loading' => 'lazy',
             'decoding' => 'async',
-        ],
-    );
+            'width' => $width,
+            'height' => $height,
+            'data-thumb-src' => $thumbUrl,
+            'data-rh-no-retry' => '1',
+        ]);
+    } else {
+        echo $this->ImageServe->picture(
+            (int)$person->person_image,
+            $imageParams,
+            [
+                'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
+                'class' => $cssClass,
+                'style' => $cssStyle,
+                'loading' => 'lazy',
+                'decoding' => 'async',
+            ],
+        );
+    }
 } else {
     // Show placeholder if no image - perfect circle to match photo avatars
     echo $this->Html->div(
