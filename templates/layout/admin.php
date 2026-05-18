@@ -113,6 +113,12 @@
                 if (!(img instanceof HTMLImageElement)) {
                     return;
                 }
+                if (!img.isConnected) {
+                    return;
+                }
+                if (img.dataset.rhNoRetry === '1') {
+                    return;
+                }
                 if (img.dataset.rhRetryAttempted === '1') {
                     return;
                 }
