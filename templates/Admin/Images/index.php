@@ -69,19 +69,8 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
     var thumbInFlight = 0;
     var initRetryTimer = null;
     var initRetryCount = 0;
-    var THUMB_MAX_CONCURRENT = 2;
-    var THUMB_OBSERVER_MARGIN = '200px 0px';
-
-    function bustUrl(url) {
-        try {
-            var parsed = new URL(url, window.location.origin);
-            parsed.searchParams.set('_ts', String(Date.now()));
-
-            return parsed.pathname + parsed.search;
-        } catch (_) {
-            return url;
-        }
-    }
+    var THUMB_MAX_CONCURRENT = 1;
+    var THUMB_OBSERVER_MARGIN = '50px 0px';
 
     function resetThumbLoader() {
         if (thumbObserver) {
@@ -120,19 +109,40 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
                 img.addEventListener('load', function () {
                     img.dataset.thumbLoaded = '1';
                     img.removeAttribute('data-thumb-src');
+                    img.removeAttribute('data-thumb-queued');
                     done();
                 }, { once: true });
 
                 img.addEventListener('error', function () {
+                    img.removeAttribute('data-thumb-queued');
+
+                    if (!img.isConnected) {
+                        done();
+
+                        return;
+                    }
+
+                    // Retry once without cache-busting so caches can still be effective.
                     if (img.dataset.thumbRetried !== '1') {
                         img.dataset.thumbRetried = '1';
-                        img.src = bustUrl(thumbUrl);
+                        window.setTimeout(function () {
+                            if (!img.isConnected || img.dataset.thumbLoaded === '1') {
+                                return;
+                            }
+                            enqueueThumb(img);
+                            flushThumbQueue();
+                        }, 800);
                     }
                     done();
                 }, { once: true });
 
                 // Small stagger to avoid immediate N-way spikes when many rows appear at once.
                 window.setTimeout(function () {
+                    if (!img.isConnected || img.dataset.thumbLoaded === '1') {
+                        done();
+
+                        return;
+                    }
                     img.src = thumbUrl;
                 }, 90);
             }());
@@ -277,9 +287,9 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
                 scrollCollapse: true,
                 scroller: {
                     loadingIndicator: true,
-                    displayBuffer: 2,
+                    displayBuffer: 1,
                     boundaryScale: 0.2,
-                    serverWait: 350,
+                    serverWait: 500,
                 },
                 deferRender: true,
                 language: {
