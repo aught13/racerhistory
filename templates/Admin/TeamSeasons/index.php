@@ -137,57 +137,283 @@
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script>
-$(document).ready(function() {
-    $('#team-seasons-table').DataTable({
-        "pagingType": "simple_numbers",
-        "order": [[ 2, "desc" ]], // Sort by season descending
-        "drawCallback": function(settings) {
-            var api = this.api();
-            var pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
-            if (api.page.info().pages <= 1) {
-                pagination.hide();
-            } else {
-                pagination.show();
-            }
-        }
-    });
+(function () {
+    'use strict';
 
-    // Enable/disable bulk action button
-    $(document).on('change', '.team-season-checkbox, #select-all-team-seasons, #bulk-action-select', function() {
+    var dtInstance = null;
+    var thumbObserver = null;
+    var thumbQueue = [];
+    var thumbInFlight = 0;
+    var loadedThumbUrls = new Set();
+    var queuedThumbUrls = new Set();
+    var THUMB_MAX_CONCURRENT = 1;
+    var THUMB_OBSERVER_MARGIN = '50px 0px';
+
+    function resetThumbLoader() {
+        if (thumbObserver) {
+            thumbObserver.disconnect();
+            thumbObserver = null;
+        }
+        thumbQueue = [];
+        thumbInFlight = 0;
+        queuedThumbUrls.clear();
+    }
+
+    function flushThumbQueue() {
+        while (thumbInFlight < THUMB_MAX_CONCURRENT && thumbQueue.length > 0) {
+            (function () {
+                var img = thumbQueue.shift();
+                if (!img) {
+                    return;
+                }
+
+                var thumbUrl = img.getAttribute('data-thumb-src');
+                if (!thumbUrl) {
+                    img.removeAttribute('data-thumb-queued');
+
+                    return;
+                }
+
+                if (img.dataset.thumbLoaded === '1') {
+                    queuedThumbUrls.delete(thumbUrl);
+                    img.removeAttribute('data-thumb-queued');
+
+                    return;
+                }
+
+                thumbInFlight += 1;
+
+                var settled = false;
+                var done = function () {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    thumbInFlight = Math.max(0, thumbInFlight - 1);
+                    flushThumbQueue();
+                };
+
+                img.addEventListener('load', function () {
+                    img.dataset.thumbLoaded = '1';
+                    loadedThumbUrls.add(thumbUrl);
+                    queuedThumbUrls.delete(thumbUrl);
+                    img.removeAttribute('data-thumb-src');
+                    img.removeAttribute('data-thumb-queued');
+                    done();
+                }, { once: true });
+
+                img.addEventListener('error', function () {
+                    queuedThumbUrls.delete(thumbUrl);
+                    img.removeAttribute('data-thumb-queued');
+
+                    if (!img.isConnected) {
+                        done();
+
+                        return;
+                    }
+
+                    if (img.dataset.thumbRetried !== '1') {
+                        img.dataset.thumbRetried = '1';
+                        window.setTimeout(function () {
+                            if (!img.isConnected || img.dataset.thumbLoaded === '1') {
+                                return;
+                            }
+                            enqueueThumb(img);
+                            flushThumbQueue();
+                        }, 800);
+                    }
+                    done();
+                }, { once: true });
+
+                window.setTimeout(function () {
+                    if (!img.isConnected || img.dataset.thumbLoaded === '1') {
+                        queuedThumbUrls.delete(thumbUrl);
+                        img.removeAttribute('data-thumb-queued');
+                        done();
+
+                        return;
+                    }
+                    img.src = thumbUrl;
+                }, 80);
+            }());
+        }
+    }
+
+    function enqueueThumb(img) {
+        if (!img || img.dataset.thumbQueued === '1' || img.dataset.thumbLoaded === '1') {
+            return;
+        }
+
+        var thumbUrl = img.getAttribute('data-thumb-src');
+        if (!thumbUrl) {
+            return;
+        }
+
+        if (loadedThumbUrls.has(thumbUrl)) {
+            img.dataset.thumbLoaded = '1';
+            img.removeAttribute('data-thumb-src');
+            img.removeAttribute('data-thumb-queued');
+            img.src = thumbUrl;
+
+            return;
+        }
+
+        if (queuedThumbUrls.has(thumbUrl)) {
+            return;
+        }
+
+        img.dataset.thumbQueued = '1';
+        queuedThumbUrls.add(thumbUrl);
+        thumbQueue.push(img);
+    }
+
+    function wireTeamSeasonThumbs() {
+        var imgs = document.querySelectorAll('#team-seasons-table img.js-team-season-thumb[data-thumb-src]');
+        if (imgs.length === 0) {
+            return;
+        }
+
+        if (!('IntersectionObserver' in window)) {
+            imgs.forEach(function (img) {
+                enqueueThumb(img);
+            });
+            flushThumbQueue();
+
+            return;
+        }
+
+        var scrollBody = document.querySelector('#team-seasons-table_wrapper .dataTables_scrollBody');
+        thumbObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+                var img = entry.target;
+                thumbObserver.unobserve(img);
+                enqueueThumb(img);
+            });
+            flushThumbQueue();
+        }, {
+            root: scrollBody || null,
+            rootMargin: THUMB_OBSERVER_MARGIN,
+            threshold: 0.01,
+        });
+
+        imgs.forEach(function (img) {
+            thumbObserver.observe(img);
+        });
+    }
+
+    function updateBulkButtonState() {
         var checked = $('.team-season-checkbox:checked').length;
         var action = $('#bulk-action-select').val();
         $('#bulk-action-btn').prop('disabled', checked === 0 || !action);
-    });
+    }
 
-    // Select all checkboxes
-    $('#select-all-team-seasons').on('change', function() {
-        $('.team-season-checkbox').prop('checked', this.checked).trigger('change');
-    });
-
-    // Handle bulk action form submission -> open modal with selected item names
-    $('#bulk-action-form').on('submit', function(e) {
-        e.preventDefault();
-        var action = $('#bulk-action-select').val();
-        if (!action) return;
-        if (action === 'delete') {
-            var names = $('.team-season-checkbox:checked').map(function() {
-                var teamName = $(this).closest('tr').find('td:nth-child(2)').text().trim().split('\n')[0];
-                var seasonName = $(this).closest('tr').find('td:nth-child(3)').text().trim();
-                return teamName + ' (' + seasonName + ')';
-            }).get();
-            var ids = $('.team-season-checkbox:checked').map(function() { return $(this).val(); }).get();
-            window.showConfirmDelete && window.showConfirmDelete({
-                deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'bulk']) ?>',
-                itemType: 'team seasons (bulk)',
-                associated: names,
-                ids: ids,
-                idsName: 'team_season_ids[]',
-                formId: 'delete-form-team-seasons-bulk',
-                bulkAction: 'delete'
+    function bindBulkEvents() {
+        $(document)
+            .off('change.teamSeasonsBulk', '.team-season-checkbox, #select-all-team-seasons, #bulk-action-select')
+            .on('change.teamSeasonsBulk', '.team-season-checkbox, #select-all-team-seasons, #bulk-action-select', function () {
+                updateBulkButtonState();
             });
+
+        $(document)
+            .off('change.teamSeasonsSelectAll', '#select-all-team-seasons')
+            .on('change.teamSeasonsSelectAll', '#select-all-team-seasons', function () {
+                $('.team-season-checkbox').prop('checked', this.checked).trigger('change');
+            });
+
+        $(document)
+            .off('submit.teamSeasonsBulk', '#bulk-action-form')
+            .on('submit.teamSeasonsBulk', '#bulk-action-form', function (e) {
+                e.preventDefault();
+                var action = $('#bulk-action-select').val();
+                if (!action) {
+                    return;
+                }
+                if (action === 'delete') {
+                    var names = $('.team-season-checkbox:checked').map(function () {
+                        var teamName = $(this).closest('tr').find('td:nth-child(2)').text().trim().split('\n')[0];
+                        var seasonName = $(this).closest('tr').find('td:nth-child(3)').text().trim();
+
+                        return teamName + ' (' + seasonName + ')';
+                    }).get();
+                    var ids = $('.team-season-checkbox:checked').map(function () {
+                        return $(this).val();
+                    }).get();
+                    window.showConfirmDelete && window.showConfirmDelete({
+                        deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'bulk']) ?>',
+                        itemType: 'team seasons (bulk)',
+                        associated: names,
+                        ids: ids,
+                        idsName: 'team_season_ids[]',
+                        formId: 'delete-form-team-seasons-bulk',
+                        bulkAction: 'delete'
+                    });
+                }
+            });
+    }
+
+    function initTeamSeasonsTable() {
+        var tableEl = document.getElementById('team-seasons-table');
+        if (!tableEl || !window.jQuery || typeof $.fn.DataTable !== 'function') {
+            return;
         }
-    });
-});
+
+        if ($.fn.DataTable.isDataTable('#team-seasons-table')) {
+            dtInstance = $('#team-seasons-table').DataTable();
+            wireTeamSeasonThumbs();
+
+            return;
+        }
+
+        dtInstance = $('#team-seasons-table').DataTable({
+            pagingType: 'simple_numbers',
+            order: [[2, 'desc']],
+            drawCallback: function () {
+                var api = this.api();
+                var pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
+                if (api.page.info().pages <= 1) {
+                    pagination.hide();
+                } else {
+                    pagination.show();
+                }
+                wireTeamSeasonThumbs();
+            }
+        });
+
+        wireTeamSeasonThumbs();
+    }
+
+    function destroyTable() {
+        resetThumbLoader();
+        if (dtInstance) {
+            try {
+                dtInstance.destroy(false);
+            } catch (_) {
+                // no-op
+            }
+            dtInstance = null;
+        }
+    }
+
+    function initTeamSeasonsPage() {
+        initTeamSeasonsTable();
+        bindBulkEvents();
+        updateBulkButtonState();
+    }
+
+    document.addEventListener('turbo:before-cache', destroyTable);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTeamSeasonsPage);
+    } else {
+        initTeamSeasonsPage();
+    }
+
+    document.addEventListener('turbo:load', initTeamSeasonsPage);
+    document.addEventListener('turbo:frame-load', initTeamSeasonsPage);
+}());
 </script>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team season']) ?>

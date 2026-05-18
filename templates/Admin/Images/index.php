@@ -1,10 +1,13 @@
 <?php
+use Cake\Core\Configure;
+
 /**
  * @var \App\View\AppView $this
  * @var int $imageCount
  */
 $this->assign('title', 'Images');
 $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'datatables']);
+$thumbDebugEnabled = (bool)Configure::read('debug');
 ?>
 <?php $this->start('css'); ?>
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
@@ -67,10 +70,49 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
     var thumbObserver = null;
     var thumbQueue = [];
     var thumbInFlight = 0;
+    var loadedThumbUrls = new Set();
+    var queuedThumbUrls = new Set();
     var initRetryTimer = null;
     var initRetryCount = 0;
     var THUMB_MAX_CONCURRENT = 1;
     var THUMB_OBSERVER_MARGIN = '50px 0px';
+    var DEBUG_THUMB_METRICS = <?= $thumbDebugEnabled ? 'true' : 'false' ?>;
+    var thumbDebugStats = {
+        loaded: 0,
+        queued: 0,
+        cacheHit: 0,
+    };
+    var debugLogTimer = null;
+
+    function logThumbMetrics(reason) {
+        if (!DEBUG_THUMB_METRICS) {
+            return;
+        }
+
+        console.debug('[images/thumbs]', reason, {
+            loaded: thumbDebugStats.loaded,
+            queued: thumbDebugStats.queued,
+            cacheHit: thumbDebugStats.cacheHit,
+            inFlight: thumbInFlight,
+            pendingQueue: thumbQueue.length,
+            loadedUrlCount: loadedThumbUrls.size,
+            queuedUrlCount: queuedThumbUrls.size,
+        });
+    }
+
+    function scheduleThumbMetricsLog(reason) {
+        if (!DEBUG_THUMB_METRICS) {
+            return;
+        }
+        if (debugLogTimer) {
+            window.clearTimeout(debugLogTimer);
+        }
+
+        debugLogTimer = window.setTimeout(function () {
+            debugLogTimer = null;
+            logThumbMetrics(reason);
+        }, 120);
+    }
 
     function resetThumbLoader() {
         if (thumbObserver) {
@@ -79,18 +121,29 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
         }
         thumbQueue = [];
         thumbInFlight = 0;
+        queuedThumbUrls.clear();
+        // Keep loadedThumbUrls across redraws/navigation in the same page session
+        // so revisited rows can hydrate immediately without re-queueing.
     }
 
     function flushThumbQueue() {
         while (thumbInFlight < THUMB_MAX_CONCURRENT && thumbQueue.length > 0) {
             (function () {
                 var img = thumbQueue.shift();
-                if (!img || img.dataset.thumbLoaded === '1') {
+                if (!img) {
                     return;
                 }
 
                 var thumbUrl = img.getAttribute('data-thumb-src');
                 if (!thumbUrl) {
+                    img.removeAttribute('data-thumb-queued');
+                    return;
+                }
+
+                if (img.dataset.thumbLoaded === '1') {
+                    queuedThumbUrls.delete(thumbUrl);
+                    img.removeAttribute('data-thumb-queued');
+
                     return;
                 }
 
@@ -108,12 +161,17 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
 
                 img.addEventListener('load', function () {
                     img.dataset.thumbLoaded = '1';
+                    loadedThumbUrls.add(thumbUrl);
+                    queuedThumbUrls.delete(thumbUrl);
                     img.removeAttribute('data-thumb-src');
                     img.removeAttribute('data-thumb-queued');
+                    thumbDebugStats.loaded += 1;
+                    scheduleThumbMetricsLog('load');
                     done();
                 }, { once: true });
 
                 img.addEventListener('error', function () {
+                    queuedThumbUrls.delete(thumbUrl);
                     img.removeAttribute('data-thumb-queued');
 
                     if (!img.isConnected) {
@@ -139,6 +197,8 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
                 // Small stagger to avoid immediate N-way spikes when many rows appear at once.
                 window.setTimeout(function () {
                     if (!img.isConnected || img.dataset.thumbLoaded === '1') {
+                        queuedThumbUrls.delete(thumbUrl);
+                        img.removeAttribute('data-thumb-queued');
                         done();
 
                         return;
@@ -153,12 +213,32 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
         if (!img || img.dataset.thumbQueued === '1' || img.dataset.thumbLoaded === '1') {
             return;
         }
-        if (!img.getAttribute('data-thumb-src')) {
+        var thumbUrl = img.getAttribute('data-thumb-src');
+        if (!thumbUrl) {
+            return;
+        }
+
+        // Row was recycled and came back into view; hydrate immediately.
+        if (loadedThumbUrls.has(thumbUrl)) {
+            img.dataset.thumbLoaded = '1';
+            img.removeAttribute('data-thumb-src');
+            img.removeAttribute('data-thumb-queued');
+            img.src = thumbUrl;
+            thumbDebugStats.cacheHit += 1;
+            scheduleThumbMetricsLog('cache-hit');
+
+            return;
+        }
+
+        if (queuedThumbUrls.has(thumbUrl)) {
             return;
         }
 
         img.dataset.thumbQueued = '1';
+        queuedThumbUrls.add(thumbUrl);
         thumbQueue.push(img);
+        thumbDebugStats.queued += 1;
+        scheduleThumbMetricsLog('enqueue');
     }
 
     function wireDeferredThumbs() {
@@ -178,6 +258,13 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
         }
 
         var scrollBody = document.querySelector('#images-table_wrapper .dataTables_scrollBody');
+        if (DEBUG_THUMB_METRICS && scrollBody && !scrollBody._imagesThumbDebugScrollBound) {
+            scrollBody._imagesThumbDebugScrollBound = true;
+            scrollBody.addEventListener('scroll', function () {
+                scheduleThumbMetricsLog('scroll');
+            }, { passive: true });
+        }
+
         thumbObserver = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (!entry.isIntersecting) {
@@ -309,6 +396,7 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images'
                 },
             });
             initRetryCount = 0;
+            scheduleThumbMetricsLog('datatable-init');
         } catch (err) {
             scheduleInitRetry();
         }

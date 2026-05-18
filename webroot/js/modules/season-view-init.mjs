@@ -1,4 +1,4 @@
-/* global Element */
+/* global Element, IntersectionObserver */
 // ...existing code...
 import initBlogInteractions from "./blog-interactions.mjs";
 
@@ -339,6 +339,109 @@ function initSeasonStatsTabs(root) {
     });
 }
 
+const THUMB_MAX_CONCURRENT = 2;
+
+export function initDeferredImages(root) {
+    const imgs = Array.from(root.querySelectorAll("[data-thumb-src]")).filter(
+        (img) => img.dataset.thumbLoaded !== "1",
+    );
+    if (!imgs.length) {
+        return;
+    }
+
+    const queue = [];
+    let inFlight = 0;
+
+    function flush() {
+        while (inFlight < THUMB_MAX_CONCURRENT && queue.length > 0) {
+            (function () {
+                const img = queue.shift();
+                if (!img || img.dataset.thumbLoaded === "1") {
+                    return;
+                }
+
+                const src = img.getAttribute("data-thumb-src");
+                if (!src) {
+                    return;
+                }
+
+                inFlight += 1;
+                let settled = false;
+
+                const done = () => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    inFlight = Math.max(0, inFlight - 1);
+                    flush();
+                };
+
+                img.addEventListener(
+                    "load",
+                    () => {
+                        img.dataset.thumbLoaded = "1";
+                        img.removeAttribute("data-thumb-src");
+                        done();
+                    },
+                    { once: true },
+                );
+
+                img.addEventListener(
+                    "error",
+                    () => {
+                        if (
+                            img.isConnected &&
+                            img.dataset.thumbRetried !== "1"
+                        ) {
+                            img.dataset.thumbRetried = "1";
+                            window.setTimeout(() => {
+                                if (
+                                    !img.isConnected ||
+                                    img.dataset.thumbLoaded === "1"
+                                ) {
+                                    return;
+                                }
+                                img.src = src;
+                            }, 800);
+                        }
+                        done();
+                    },
+                    { once: true },
+                );
+
+                img.src = src;
+            })();
+        }
+    }
+
+    if (!("IntersectionObserver" in window)) {
+        imgs.forEach((img) => queue.push(img));
+        flush();
+
+        return;
+    }
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+                const img = entry.target;
+                observer.unobserve(img);
+                if (img.dataset.thumbLoaded !== "1") {
+                    queue.push(img);
+                }
+            });
+            flush();
+        },
+        { rootMargin: "100px 0px", threshold: 0.01 },
+    );
+
+    imgs.forEach((img) => observer.observe(img));
+}
+
 function setupImageGallery(root) {
     if (!root) {
         return;
@@ -426,6 +529,7 @@ export default function initSeasonView(options = {}) {
     });
 
     setupImageGallery(root);
+    initDeferredImages(root);
     initBlogInteractions({ root });
 
     return { tables };
