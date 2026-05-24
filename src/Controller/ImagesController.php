@@ -65,61 +65,87 @@ class ImagesController extends AppController
     {
         $request = $this->getRequest();
         $request->allowMethod(['get', 'head']);
-        $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
-        if (!$image) {
-            return $this->placeholderTransparentWebp();
-        }
-        $profileName = strtolower((string)$request->getQuery('profile'));
-        $profileConfig = $this->getProfileConfig($profileName);
 
-        $variant = $this->resolveVariantForProfile((string)$request->getQuery('variant'), $profileConfig);
-        [$path, $mime] = $this->resolvePath($image, $variant);
+        try {
+            $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
+            if (!$image) {
+                return $this->placeholderTransparentWebp();
+            }
+            $profileName = strtolower((string)$request->getQuery('profile'));
+            $profileConfig = $this->getProfileConfig($profileName);
 
-        if (!is_file($path)) {
-            return $this->placeholderTransparentWebp();
-        }
+            $variant = $this->resolveVariantForProfile((string)$request->getQuery('variant'), $profileConfig);
 
-        $cacheControl = 'public, max-age=3600, must-revalidate';
+            // Strict variant enforcement: if a named stored variant was requested but the image
+            // record has no entry for it, return a placeholder immediately rather than falling
+            // back to a full-resolution on-the-fly transform.  Loading the admin images index
+            // with many images that lack a stored thumb variant would otherwise trigger
+            // simultaneous full-res Intervention/Image transforms, exhausting PHP-FPM workers
+            // and causing Cloudflare to receive empty responses (→ 520).
+            if ($variant !== '') {
+                $rawVariants = $image->variants;
+                if (is_string($rawVariants)) {
+                    $rawVariants = json_decode($rawVariants, true);
+                }
+                if (!is_array($rawVariants) || !isset($rawVariants[$variant]['file'])) {
+                    return $this->placeholderTransparentWebp();
+                }
+            }
 
-        $etagVariant = $variant;
-        if ($profileName !== '') {
-            $etagVariant .= '|profile:' . $profileName;
-        }
+            [$path, $mime] = $this->resolvePath($image, $variant);
 
-        $etag = $this->buildEtag((string)($image->hash ?? ''), $etagVariant, []);
+            if (!is_file($path)) {
+                return $this->placeholderTransparentWebp();
+            }
 
-        $transform = $this->extractTransformParams($profileConfig);
-        if ($this->shouldAutoServeWebp($mime) && ($transform === null || !isset($transform['fm']))) {
-            $transform ??= [];
-            $transform['fm'] = 'webp';
-        }
+            $cacheControl = 'public, max-age=3600, must-revalidate';
 
-        if ($transform !== null) {
-            return $this->serveTransformed($image, $path, $mime, $etagVariant, $transform, $cacheControl);
-        }
+            $etagVariant = $variant;
+            if ($profileName !== '') {
+                $etagVariant .= '|profile:' . $profileName;
+            }
 
-        $ifNoneMatch = $request->getHeaderLine('If-None-Match');
-        if ($ifNoneMatch !== '' && $ifNoneMatch === $etag) {
+            $etag = $this->buildEtag((string)($image->hash ?? ''), $etagVariant, []);
+
+            $transform = $this->extractTransformParams($profileConfig);
+            if ($this->shouldAutoServeWebp($mime) && ($transform === null || !isset($transform['fm']))) {
+                $transform ??= [];
+                $transform['fm'] = 'webp';
+            }
+
+            if ($transform !== null) {
+                return $this->serveTransformed($image, $path, $mime, $etagVariant, $transform, $cacheControl);
+            }
+
+            $ifNoneMatch = $request->getHeaderLine('If-None-Match');
+            if ($ifNoneMatch !== '' && $ifNoneMatch === $etag) {
+                return $this->getResponse()
+                    ->withStatus(304)
+                    ->withHeader('ETag', $etag)
+                    ->withHeader('Cache-Control', $cacheControl);
+            }
+
+            $body = file_get_contents($path) ?: '';
+            if ($body === '') {
+                return $this->placeholderTransparentWebp();
+            }
+
             return $this->getResponse()
-                ->withStatus(304)
+                ->withType($mime)
                 ->withHeader('ETag', $etag)
-                ->withHeader('Cache-Control', $cacheControl);
-        }
+                ->withHeader('Cache-Control', $cacheControl)
+                ->withStringBody($body);
+        } catch (Throwable $e) {
+            $query = json_encode($request->getQueryParams());
+            Log::error(sprintf(
+                'image_serve_failed id=%d query=%s error=%s',
+                $id,
+                $query === false ? '{}' : $query,
+                $e->getMessage(),
+            ));
 
-        $body = file_get_contents($path) ?: '';
-        if ($body === '') {
             return $this->placeholderTransparentWebp();
         }
-
-        // Calculate the precise size of the image payload in bytes
-        $contentLength = mb_strlen($body, '8bit');
-
-        return $this->getResponse()
-            ->withType($mime)
-            ->withHeader('ETag', $etag)
-            ->withHeader('Cache-Control', $cacheControl)
-            ->withHeader('Content-Length', (string)$contentLength)
-            ->withStringBody($body);
     }
 
     /**
@@ -332,6 +358,13 @@ class ImagesController extends AppController
                 ->withHeader('Cache-Control', $cacheControl)
                 ->withStringBody($body);
         } catch (Throwable $e) {
+            Log::warning(sprintf(
+                'image_transform_failed id=%s path=%s error=%s',
+                (string)($image->id ?? 'unknown'),
+                $path,
+                $e->getMessage(),
+            ));
+
             // Degrade gracefully to original bytes if transform fails.
             $body = file_get_contents($path) ?: '';
             if ($body === '') {

@@ -452,6 +452,34 @@ class ImagesControllerTest extends TestCase
     }
 
     /**
+     * Tests datatables endpoint returns expected JSON shape.
+     */
+    public function testDatatablesReturnsExpectedJsonShape(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/images/datatables?draw=1&start=0&length=15');
+        $this->assertResponseCode(200);
+        $this->assertSame('application/json', $this->_response->getHeaderLine('Content-Type'));
+
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($json);
+        $this->assertSame(1, $json['draw'] ?? null);
+        $this->assertArrayHasKey('recordsTotal', $json);
+        $this->assertArrayHasKey('recordsFiltered', $json);
+        $this->assertArrayHasKey('data', $json);
+        $this->assertIsArray($json['data']);
+        $this->assertLessThanOrEqual(15, count($json['data']));
+
+        if (!empty($json['data'])) {
+            $row = $json['data'][0];
+            $this->assertArrayHasKey('id', $row);
+            $this->assertArrayHasKey('preview', $row);
+            $this->assertArrayHasKey('actions', $row);
+            $this->assertStringContainsString('data-thumb-src=', (string)$row['preview']);
+        }
+    }
+
+    /**
      * Tests admin edit renders form.
      */
     public function testAdminEditRendersForm(): void

@@ -372,6 +372,7 @@ $this->start('css'); ?>
                                                 'profile' => 'roster_avatar',
                                                 'class' => 'season-roster-avatar-img',
                                                 'style' => 'width: 72px; height: 72px;',
+                                                'deferred' => true,
                                             ]) ?>
                                             <?php if ($entry->roster_number !== null && $entry->roster_number !== '') : ?>
                                                 <?php
@@ -446,16 +447,20 @@ $this->start('css'); ?>
                         <div class="season-photos-grid" data-season-image-gallery>
                             <?php foreach ($images as $image) : ?>
                                 <div class="season-photo-thumb">
-                                    <?= $this->ImageServe->picture(
-                                        $image,
-                                        ['w' => 240, 'h' => 180, 'fit' => 'cover'],
-                                        [
-                                            'alt' => (string)$image->filename,
-                                            'data-image-id' => (string)$image->id,
-                                            'data-image-filename' => (string)$image->filename,
-                                            'class' => 'season-photo-thumb-img',
-                                        ],
-                                    ) ?>
+                                    <?php $photoThumbUrl = $this->ImageServe->urlForImage($image, ['w' => 240, 'h' => 180, 'fit' => 'cover']); ?>
+                                    <?= $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
+                                        'alt' => (string)$image->filename,
+                                        'class' => 'season-photo-thumb-img js-season-photo',
+                                        'width' => 240,
+                                        'height' => 180,
+                                        'style' => 'object-fit: cover;',
+                                        'loading' => 'lazy',
+                                        'decoding' => 'async',
+                                        'data-image-id' => (string)$image->id,
+                                        'data-image-filename' => (string)$image->filename,
+                                        'data-thumb-src' => $photoThumbUrl,
+                                        'data-rh-no-retry' => '1',
+                                    ]) ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>
