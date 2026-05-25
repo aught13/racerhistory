@@ -29,9 +29,7 @@ class BlogControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="blog">');
         $this->assertResponseContains('blog-featured-as-list');
-        $this->assertResponseContains('profile=blog_featured');
-        $this->assertResponseContains('profile=blog_index_card');
-        $this->assertResponseContains('fm=webp');
+        $this->assertResponseContains('/img/storage/');
     }
 
     /**
@@ -43,8 +41,7 @@ class BlogControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('First Post');
         $this->assertResponseContains('<turbo-frame id="blog-post-view-first-post"');
-        $this->assertResponseContains('/images/serve/1?w=1200&amp;fit=contain');
-        $this->assertResponseContains('type="image/webp"');
+        $this->assertResponseContains('/img/storage/');
     }
 
     /**

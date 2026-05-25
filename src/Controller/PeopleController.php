@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\BlogPost;
+use App\Model\Entity\TeamSeasonRosters;
 use App\Service\ImageProcessor;
 use App\Service\PersonService;
 use App\Service\StatsService;
@@ -494,7 +496,7 @@ class PeopleController extends AppController
             ])
             ->first();
 
-        if (!$roster) {
+        if (!($roster instanceof TeamSeasonRosters)) {
             throw new NotFoundException('Roster entry not found');
         }
 
@@ -536,7 +538,7 @@ class PeopleController extends AppController
     private function getBlogPostsByTag(string $tagSlug): array
     {
         $table = $this->fetchTable('BlogPosts');
-        $posts = $table->find()
+        $rows = $table->find()
             ->contain(['BlogTags'])
             ->matching('BlogTags', function ($q) use ($tagSlug) {
                 return $q->where(['BlogTags.slug' => $tagSlug]);
@@ -546,6 +548,9 @@ class PeopleController extends AppController
             ->limit(10)
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\BlogPost> $posts */
+        $posts = array_values(array_filter($rows, static fn($post): bool => $post instanceof BlogPost));
 
         return $posts;
     }
@@ -559,12 +564,15 @@ class PeopleController extends AppController
     private function getRosterEntriesForPerson(int $personId): array
     {
         $table = $this->fetchTable('TeamSeasonRosters');
-        $entries = $table->find()
+        $rows = $table->find()
             ->contain(['TeamSeasons' => ['Teams' => ['Sports'], 'Seasons']])
             ->where(['TeamSeasonRosters.person_id' => $personId])
             ->orderByDesc('Seasons.start')
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\TeamSeasonRosters> $entries */
+        $entries = array_values(array_filter($rows, static fn($entry): bool => $entry instanceof TeamSeasonRosters));
 
         return $entries;
     }

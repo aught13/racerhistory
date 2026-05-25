@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Image;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\TableRegistry;
 
@@ -13,7 +14,17 @@ class ImageBrowseService
      *
      * @param string|null $tag
      * @param int|null $limit
-     * @return array{success: bool, images: array<int, array{id: int, url: string, thumbnail_url: string, original_name: string, tags: array<int, string>}>}
+     * @return array{
+     *     success: bool,
+     *     images: array<int, array{
+     *         id: int,
+     *         url: string,
+     *         thumbnail_url: string,
+     *         hero_url: string,
+     *         original_name: string,
+     *         tags: array<int, string>
+     *     }>
+     * }
      */
     public function browse(?string $tag = null, ?int $limit = null): array
     {
@@ -40,18 +51,27 @@ class ImageBrowseService
             ->orderByDesc('Images.id')
             ->limit($requestedLimit);
 
+        $imageUrlService = new ImageUrlService($imagesTable);
         $results = [];
         foreach ($query->all() as $image) {
+            if (!$image instanceof Image) {
+                continue;
+            }
+
+            $tags = [];
+            foreach ((array)($image->image_tags ?? []) as $tag) {
+                if (is_object($tag) && isset($tag->name)) {
+                    $tags[] = (string)$tag->name;
+                }
+            }
+
             $results[] = [
                 'id' => (int)$image->id,
-                'url' => '/images/serve/' . $image->id,
-                'thumbnail_url' => '/images/serve/' . $image->id . '?' . http_build_query([
-                    'w' => 300,
-                    'h' => 300,
-                    'fit' => 'cover',
-                ]),
+                'url' => $imageUrlService->urlForImage($image),
+                'thumbnail_url' => $imageUrlService->urlForImage($image, ['variant' => 'thumb']),
+                'hero_url' => $imageUrlService->urlForImage($image, ['variant' => 'hero']),
                 'original_name' => (string)$image->original_name,
-                'tags' => array_map(static fn($t) => (string)$t->name, $image->image_tags ?? []),
+                'tags' => $tags,
             ];
         }
 

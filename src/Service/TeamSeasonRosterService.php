@@ -41,10 +41,12 @@ class TeamSeasonRosterService
     {
         $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
 
-        return $rosters->find()
+        $roster = $rosters->find()
             ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
             ->where(['TeamSeasonRosters.id' => $rosterId])
             ->first();
+
+        return $roster instanceof TeamSeasonRosters ? $roster : null;
     }
 
     /**
@@ -81,6 +83,9 @@ class TeamSeasonRosterService
             ->all();
 
         foreach ($rosterRecords as $roster) {
+            if (!($roster instanceof TeamSeasonRosters)) {
+                continue;
+            }
             $results[] = [
                 'id' => $roster->id,
                 'label' => $this->getDisplayLabel($roster->id),
@@ -207,12 +212,17 @@ class TeamSeasonRosterService
     {
         $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
 
-        return $rosters->find()
+        $rows = $rosters->find()
             ->contain(['Persons' => ['BirthPlace']])
             ->where(['TeamSeasonRosters.team_season_id' => $teamSeasonId])
             ->orderByAsc('TeamSeasonRosters.roster_number')
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\TeamSeasonRosters> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof TeamSeasonRosters));
+
+        return $result;
     }
 
     /**

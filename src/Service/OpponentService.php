@@ -22,8 +22,9 @@ class OpponentService
     public function getOpponentById(int $opponentId): ?Opponent
     {
         $opponents = TableRegistry::getTableLocator()->get('Opponents');
+        $opponent = $opponents->find()->where(['Opponents.id' => $opponentId])->first();
 
-        return $opponents->find()->where(['Opponents.id' => $opponentId])->first();
+        return $opponent instanceof Opponent ? $opponent : null;
     }
 
     /**
@@ -142,6 +143,9 @@ class OpponentService
         $results = [];
 
         foreach ($opponents as $opponent) {
+            if (!($opponent instanceof Opponent)) {
+                continue;
+            }
             $results[] = [
                 'id' => $opponent->id,
                 'label' => $opponent->opponent_name,
@@ -168,6 +172,9 @@ class OpponentService
 
         $list = [];
         foreach ($rows as $opponent) {
+            if (!($opponent instanceof Opponent)) {
+                continue;
+            }
             $list[(int)$opponent->id] = (string)($opponent->opponent_name ?? '');
         }
 

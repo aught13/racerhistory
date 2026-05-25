@@ -255,12 +255,13 @@ $this->start('css'); ?>
                                 <div class="game-photo-thumb">
                                     <?= $this->ImageServe->picture(
                                         $image,
-                                        ['w' => 240, 'h' => 180, 'fit' => 'cover'],
+                                        [],
                                         [
                                             'alt' => (string)$image->filename,
-                                            'data-image-id' => (string)$image->id,
+                                            'data-image-url' => $this->ImageServe->urlForImage($image),
                                             'data-image-filename' => (string)$image->filename,
                                             'class' => 'game-photo-thumb-img',
+                                            'style' => 'width: 240px; height: 180px; object-fit: cover;',
                                         ],
                                     ) ?>
                                 </div>

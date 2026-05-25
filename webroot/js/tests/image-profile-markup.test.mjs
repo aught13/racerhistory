@@ -33,4 +33,15 @@ describe("Hybrid image profile markup", () => {
         expect(indexFrame).toContain("profile' => 'blog_index_card'");
         expect(listItems).toContain("profile' => 'blog_index_card'");
     });
+
+    test("blog hero view uses the featured profile route", () => {
+        const viewFrame = readTemplate(
+            "templates",
+            "element",
+            "blog",
+            "view_frame.php",
+        );
+
+        expect(viewFrame).toContain("profile' => 'blog_featured'");
+    });
 });

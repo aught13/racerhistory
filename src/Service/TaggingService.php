@@ -129,7 +129,10 @@ class TaggingService
         $entity = $table->get($subjectId, contain: [$association]);
         $existingTagIds = [];
         foreach ($entity->{$association} ?? [] as $tag) {
-            $existingTagIds[] = $tag->id;
+            $tagId = (int)($tag->get('id') ?? 0);
+            if ($tagId > 0) {
+                $existingTagIds[] = $tagId;
+            }
         }
 
         $tagsTable = $this->tagsTable();
@@ -146,17 +149,18 @@ class TaggingService
                 $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
                 $tagsTable->save($existing);
             } else {
-                $existingName = (string)($existing->name ?? '');
+                $existingName = (string)($existing->get('name') ?? '');
                 if ($name !== '' && $this->shouldUpdateName($existingName)) {
-                    $existing->name = $name;
+                    $existing->set('name', $name);
                     $tagsTable->save($existing);
                 }
             }
 
-            if ($skipExistingCheck || !in_array($existing->id, $existingTagIds, true)) {
+            $existingId = (int)($existing->get('id') ?? 0);
+            if ($existingId > 0 && ($skipExistingCheck || !in_array($existingId, $existingTagIds, true))) {
                 $link[] = $existing;
             }
-            $applied[] = $existing->slug;
+            $applied[] = (string)($existing->get('slug') ?? '');
         }
 
         if ($link) {

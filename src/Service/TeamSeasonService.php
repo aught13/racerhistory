@@ -24,10 +24,12 @@ class TeamSeasonService
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
 
-        return $teamSeasons->find()
+        $teamSeason = $teamSeasons->find()
             ->where(['TeamSeasons.id' => $teamSeasonId])
             ->contain(['Teams' => ['Sports'], 'Seasons'])
             ->first();
+
+        return $teamSeason instanceof TeamSeason ? $teamSeason : null;
     }
 
     /**
@@ -209,6 +211,9 @@ class TeamSeasonService
 
         $list = [];
         foreach ($rows as $ts) {
+            if (!($ts instanceof TeamSeason)) {
+                continue;
+            }
             $list[(int)$ts->id] = $this->getSportDisplayLabel((int)$ts->id);
         }
 
@@ -549,7 +554,7 @@ class TeamSeasonService
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
 
-        return $teamSeasons->find()
+        $rows = $teamSeasons->find()
             ->contain(['Teams' => ['Sports'], 'Seasons'])
             ->matching('Teams.Sports', function ($q) use ($sportName) {
                 return $q->where(['Sports.sport_name' => $sportName]);
@@ -557,6 +562,11 @@ class TeamSeasonService
             ->orderByDesc('Seasons.start')
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\TeamSeason> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof TeamSeason));
+
+        return $result;
     }
 
     /**
@@ -584,7 +594,12 @@ class TeamSeasonService
             });
         }
 
-        return $query->orderByDesc('Seasons.start')->all()->toArray();
+        $rows = $query->orderByDesc('Seasons.start')->all()->toArray();
+
+        /** @var array<int,\App\Model\Entity\TeamSeason> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof TeamSeason));
+
+        return $result;
     }
 
     /**
@@ -626,11 +641,22 @@ class TeamSeasonService
 
         $stats = [];
         foreach ($rawStats as $row) {
-            $id = (int)$row['team_season_id'];
-            $ow = (int)$row['overall_wins'];
-            $ol = (int)$row['overall_losses'];
-            $cw = (int)$row['conf_wins'];
-            $cl = (int)$row['conf_losses'];
+            if (is_array($row)) {
+                $id = (int)($row['team_season_id'] ?? 0);
+                $ow = (int)($row['overall_wins'] ?? 0);
+                $ol = (int)($row['overall_losses'] ?? 0);
+                $cw = (int)($row['conf_wins'] ?? 0);
+                $cl = (int)($row['conf_losses'] ?? 0);
+            } else {
+                $id = (int)($row->get('team_season_id') ?? 0);
+                $ow = (int)($row->get('overall_wins') ?? 0);
+                $ol = (int)($row->get('overall_losses') ?? 0);
+                $cw = (int)($row->get('conf_wins') ?? 0);
+                $cl = (int)($row->get('conf_losses') ?? 0);
+            }
+            if ($id <= 0) {
+                continue;
+            }
             $overallTotal = $ow + $ol;
             $confTotal = $cw + $cl;
 

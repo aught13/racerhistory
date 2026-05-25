@@ -254,11 +254,8 @@ describe("season view init module", () => {
         const run = mod.default?.default || mod.default || mod;
         run({ root: document });
 
-        const originalLocation = window.location;
-        Object.defineProperty(window, "location", {
-            value: { href: "http://localhost/" },
-            configurable: true,
-        });
+        const navigateSpy = jest.fn();
+        window.__RH_NAVIGATE__ = navigateSpy;
 
         handler({ target: {} });
         const externalItem = document.createElement("div");
@@ -270,12 +267,8 @@ describe("season view init module", () => {
         section.appendChild(insideItem);
         handler({ target: insideItem });
 
-        expect(window.location.href).toBe("http://localhost/");
-
-        Object.defineProperty(window, "location", {
-            value: originalLocation,
-            configurable: true,
-        });
+        expect(navigateSpy).not.toHaveBeenCalled();
+        delete window.__RH_NAVIGATE__;
     });
 
     test("blog click handler falls back to location when view frame missing", async () => {
@@ -295,23 +288,16 @@ describe("season view init module", () => {
         frame.appendChild(item);
         section.appendChild(frame);
 
-        const originalLocation = window.location;
-        Object.defineProperty(window, "location", {
-            value: { href: "http://localhost/" },
-            configurable: true,
-        });
+        const navigateSpy = jest.fn();
+        window.__RH_NAVIGATE__ = navigateSpy;
 
         const mod = await loadModule();
         const run = mod.default?.default || mod.default || mod;
         run({ root: document });
 
         handler({ target: item });
-        expect(window.location.href).toContain("/blog/missing");
-
-        Object.defineProperty(window, "location", {
-            value: originalLocation,
-            configurable: true,
-        });
+        expect(navigateSpy).toHaveBeenCalledWith("/blog/missing");
+        delete window.__RH_NAVIGATE__;
     });
 
     test("blog click handler falls back when Turbo missing", async () => {
@@ -337,22 +323,15 @@ describe("season view init module", () => {
 
         delete window.Turbo;
 
-        const originalLocation = window.location;
-        Object.defineProperty(window, "location", {
-            value: { href: "http://localhost/" },
-            configurable: true,
-        });
+        const navigateSpy = jest.fn();
+        window.__RH_NAVIGATE__ = navigateSpy;
 
         const mod = await loadModule();
         const run = mod.default?.default || mod.default || mod;
         run({ root: document });
 
         handler({ target: item });
-        expect(window.location.href).toContain("/blog/alpha");
-
-        Object.defineProperty(window, "location", {
-            value: originalLocation,
-            configurable: true,
-        });
+        expect(navigateSpy).toHaveBeenCalledWith("/blog/alpha");
+        delete window.__RH_NAVIGATE__;
     });
 });

@@ -3,189 +3,224 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\View\Helper;
 
+use App\Model\Entity\Image;
 use App\View\Helper\ImageServeHelper;
 use Cake\Core\Configure;
-use Cake\I18n\DateTime;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 use Cake\View\View;
 
 class ImageServeHelperTest extends TestCase
 {
+    public array $fixtures = ['app.Images'];
+
     private ImageServeHelper $helper;
 
     /**
-     * Sets up the test case.
+     * @var \App\Model\Table\ImagesTable
+     */
+    private $imagesTable;
+
+    /**
+     * @var mixed
+     */
+    private $previousProfiles;
+
+    /**
+     * Set up helper and profile config for each test.
+     *
+     * @return void
      */
     public function setUp(): void
     {
         parent::setUp();
         $this->helper = new ImageServeHelper(new View());
+        $this->imagesTable = TableRegistry::getTableLocator()->get('Images');
+        $this->previousProfiles = Configure::read('Images.profiles');
+        Configure::write('Images.profiles', [
+            'roster_avatar' => ['sourceVariant' => 'thumb'],
+            'season_billboard' => ['sourceVariant' => 'hero'],
+            'blog_featured' => ['sourceVariant' => 'hero'],
+        ]);
     }
 
     /**
-     * Tears down the test case.
+     * Restore profile config and release helper state.
+     *
+     * @return void
      */
     public function tearDown(): void
     {
-        unset($this->helper);
+        Configure::write('Images.profiles', $this->previousProfiles);
+        unset($this->helper, $this->imagesTable);
         parent::tearDown();
     }
 
     /**
-     * Tests path.
+     * Path helper should resolve stored original URLs by id.
+     *
+     * @return void
      */
-    public function testPath(): void
+    public function testPathBuildsStoredUrlForExistingImageId(): void
     {
-        $this->assertSame('/images/serve/123', $this->helper->path(123));
-        $this->assertSame('/images/serve/123', $this->helper->path('123'));
+        /** @var \App\Model\Entity\Image $image */
+        $image = $this->imagesTable->get(1);
+        $expected = '/img/storage/' . ltrim((string)$image->storage_path, '/');
+
+        $this->assertSame($expected, $this->helper->path(1));
+        $this->assertSame($expected, $this->helper->path('1'));
         $this->assertSame('', $this->helper->path(0));
     }
 
     /**
-     * Tests query filters and builds.
+     * Query helper should only emit cache-bust timestamps.
+     *
+     * @return void
      */
-    public function testQueryFiltersAndBuilds(): void
+    public function testQueryOnlyKeepsCacheBustTimestamp(): void
     {
-        $qs = $this->helper->query([
-            'w' => 150,
-            'h' => '150',
-            'fit' => 'cover',
-            'profile' => 'roster_avatar',
-            'variant' => 'thumb',
-            'q' => 90,
-            'v' => 'ignored-version',
-            'bogus' => 'nope',
-            'fm' => '',
+        $this->assertSame('', $this->helper->query(['w' => 150, 'variant' => 'thumb']));
+        $this->assertSame('?_ts=123', $this->helper->query(['_ts' => 123, 'w' => 150]));
+    }
+
+    /**
+     * URL helper should resolve stored original URL for fixture image.
+     *
+     * @return void
+     */
+    public function testUrlUsesStoredOriginalForFixtureImage(): void
+    {
+        /** @var \App\Model\Entity\Image $image */
+        $image = $this->imagesTable->get(1);
+        $expected = '/img/storage/' . ltrim((string)$image->storage_path, '/');
+
+        $this->assertSame($expected, $this->helper->url(1, ['w' => 60, 'h' => 60, 'fit' => 'cover']));
+    }
+
+    /**
+     * URL helper should resolve existing stored variant when requested.
+     *
+     * @return void
+     */
+    public function testUrlForImageUsesStoredVariantWhenAvailable(): void
+    {
+        $image = new Image([
+            'id' => 99,
+            'filename' => 'photo.jpg',
+            'storage_subdir' => '2026/05',
+            'storage_path' => '2026/05/photo.jpg',
+            'variants' => json_encode([
+                'thumb' => ['file' => 'photo-thumb.webp'],
+                'hero' => ['file' => 'photo-hero.webp'],
+            ]),
         ]);
 
-        $this->assertNotSame('', $qs);
-        $this->assertStringStartsWith('?', $qs);
-
-        parse_str((string)parse_url($qs, PHP_URL_QUERY), $parsed);
-        $this->assertSame('150', (string)$parsed['w']);
-        $this->assertSame('150', (string)$parsed['h']);
-        $this->assertSame('cover', $parsed['fit']);
-        $this->assertSame('roster_avatar', $parsed['profile']);
-        $this->assertSame('thumb', $parsed['variant']);
-        $this->assertSame('90', (string)$parsed['q']);
-        $this->assertArrayNotHasKey('bogus', $parsed);
-        $this->assertArrayNotHasKey('fm', $parsed);
-        $this->assertArrayNotHasKey('v', $parsed);
+        $this->assertSame(
+            '/img/storage/2026/05/photo-thumb.webp',
+            $this->helper->urlForImage($image, ['variant' => 'thumb']),
+        );
+        $this->assertSame(
+            '/img/storage/2026/05/photo-thumb.webp',
+            $this->helper->urlForImage($image, ['profile' => 'roster_avatar']),
+        );
+        $this->assertSame(
+            '/img/storage/2026/05/photo-hero.webp',
+            $this->helper->urlForImage($image, ['profile' => 'season_billboard']),
+        );
     }
 
     /**
-     * Tests url.
+     * URL helper should fall back to stored original when profile variant is missing.
+     *
+     * @return void
      */
-    public function testUrl(): void
+    public function testUrlForImageFallsBackToStoredOriginalWhenProfileHasNoStoredVariant(): void
     {
-        $url = $this->helper->url(5, ['w' => 60, 'h' => 60, 'fit' => 'cover']);
-        $this->assertStringStartsWith('/images/serve/5?', $url);
+        $image = new Image([
+            'id' => 100,
+            'filename' => 'hero.jpg',
+            'storage_subdir' => '2026/05',
+            'storage_path' => '2026/05/hero.jpg',
+            'variants' => json_encode([]),
+        ]);
 
-        $parts = parse_url($url);
-        $this->assertSame('/images/serve/5', $parts['path'] ?? null);
-        parse_str($parts['query'] ?? '', $parsed);
-        $this->assertSame('60', (string)$parsed['w']);
-        $this->assertSame('60', (string)$parsed['h']);
-        $this->assertSame('cover', $parsed['fit']);
+        $this->assertSame(
+            '/img/storage/2026/05/hero.jpg',
+            $this->helper->urlForImage($image, ['profile' => 'blog_featured']),
+        );
     }
 
     /**
-     * Tests url for image builds without version.
+     * URL helper should support id lookup from generic objects.
+     *
+     * @return void
      */
-    public function testUrlForImageBuildsWithoutVersion(): void
+    public function testUrlForImageSupportsStdClassLookupById(): void
     {
-        $image = (object)[
-            'id' => 9,
-            'hash' => 'abc123',
-            'modified' => new DateTime('2025-01-15 10:30:00'),
-        ];
+        $image = (object)['id' => 1];
 
-        $url = $this->helper->urlForImage($image, ['w' => 100, 'h' => 100, 'fit' => 'cover']);
-        $parts = parse_url($url);
-        parse_str($parts['query'] ?? '', $parsed);
-
-        $this->assertSame('100', (string)$parsed['w']);
-        $this->assertArrayNotHasKey('v', $parsed);
+        $this->assertStringStartsWith('/img/storage/', $this->helper->urlForImage($image));
     }
 
     /**
-     * Tests url for image ignores explicit version.
+     * URL helper should append only cache-bust timestamp query values.
+     *
+     * @return void
      */
-    public function testUrlForImageIgnoresExplicitVersion(): void
+    public function testUrlAppendsOnlyCacheBustTimestamp(): void
     {
-        $image = (object)[
-            'id' => 9,
-            'hash' => 'abc123',
-        ];
+        $image = new Image([
+            'id' => 101,
+            'filename' => 'detail.jpg',
+            'storage_subdir' => '2026/05',
+            'storage_path' => '2026/05/detail.jpg',
+            'variants' => json_encode([]),
+        ]);
 
-        $url = $this->helper->urlForImage($image, ['v' => 'explicit', 'w' => 10]);
-        $parts = parse_url($url);
-        parse_str($parts['query'] ?? '', $parsed);
-
-        $this->assertArrayNotHasKey('v', $parsed);
-        $this->assertSame('10', (string)$parsed['w']);
-    }
-
-    // ==================== Picture Element Tests ====================
-
-    public function testPictureWithIntegerId(): void
-    {
-        $html = $this->helper->picture(42, ['w' => 800]);
-
-        $this->assertStringContainsString('<picture>', $html);
-        $this->assertStringContainsString('</picture>', $html);
-        $this->assertStringContainsString('<source', $html);
-        $this->assertStringContainsString('type="image/webp"', $html);
-        $this->assertStringContainsString('srcset="/images/serve/42?', $html);
-        $this->assertStringContainsString('fm=webp', $html);
-        $this->assertStringContainsString('<img src="/images/serve/42?', $html);
-        $this->assertStringContainsString('loading="lazy"', $html);
-        $this->assertStringContainsString('class="img-fluid"', $html);
+        $this->assertSame(
+            '/img/storage/2026/05/detail.jpg?_ts=123',
+            $this->helper->urlForImage($image, ['_ts' => 123, 'w' => 400]),
+        );
     }
 
     /**
-     * Tests picture with image object.
+     * Picture helper should render a single stored-image <img> without <source> tags.
+     *
+     * @return void
      */
-    public function testPictureWithImageObjectBuildsWithoutVersion(): void
+    public function testPictureRendersStoredImageWithoutGeneratedSources(): void
     {
-        $modified = new DateTime('2025-02-01 12:00:00');
-        $image = (object)[
-            'id' => 15,
-            'hash' => 'testhash123',
-            'modified' => $modified,
-        ];
+        $image = new Image([
+            'id' => 102,
+            'filename' => 'portrait.jpg',
+            'storage_subdir' => '2026/05',
+            'storage_path' => '2026/05/portrait.jpg',
+            'variants' => json_encode([
+                'thumb' => ['file' => 'portrait-thumb.webp'],
+            ]),
+        ]);
 
-        $html = $this->helper->picture($image, ['w' => 600, 'fit' => 'cover']);
-
-        $this->assertStringContainsString('<picture>', $html);
-        $this->assertStringNotContainsString('v=' . $modified->getTimestamp(), $html);
-        $this->assertStringNotContainsString('v=testhash123', $html);
-        $this->assertStringNotContainsString('v=', $html);
-        $this->assertStringContainsString('fm=webp', $html);
-        $this->assertStringContainsString('w=600', $html);
-        $this->assertStringContainsString('fit=cover', $html);
-    }
-
-    /**
-     * Tests picture with custom attributes.
-     */
-    public function testPictureWithCustomAttributes(): void
-    {
-        $html = $this->helper->picture(7, ['w' => 400], [
-            'alt' => 'Test Image',
+        $html = $this->helper->picture($image, ['variant' => 'thumb'], [
+            'alt' => 'Test <script> & "quotes"',
             'class' => 'custom-class rounded',
             'loading' => 'eager',
             'data-lightbox' => 'gallery',
         ]);
 
-        $this->assertStringContainsString('alt="Test Image"', $html);
+        $this->assertStringContainsString('<picture>', $html);
+        $this->assertStringContainsString('</picture>', $html);
+        $this->assertStringContainsString('src="/img/storage/2026/05/portrait-thumb.webp"', $html);
+        $this->assertStringContainsString('alt="Test &lt;script&gt; &amp; &quot;quotes&quot;"', $html);
         $this->assertStringContainsString('class="custom-class rounded"', $html);
         $this->assertStringContainsString('loading="eager"', $html);
         $this->assertStringContainsString('data-lightbox="gallery"', $html);
+        $this->assertSame(0, substr_count($html, '<source'));
     }
 
     /**
-     * Tests picture returns empty for invalid id.
+     * Picture helper should return empty output for invalid image identifiers.
+     *
+     * @return void
      */
     public function testPictureReturnsEmptyForInvalidId(): void
     {
@@ -195,215 +230,49 @@ class ImageServeHelperTest extends TestCase
     }
 
     /**
-     * Tests picture with date time modified.
+     * Responsive picture helper should reuse stored URL and include provided attrs.
+     *
+     * @return void
      */
-    public function testPictureWithDateTimeModifiedDoesNotAddVersion(): void
+    public function testResponsivePictureReusesStoredImageUrl(): void
     {
-        $modified = new DateTime('2025-01-15 10:30:00');
-        $image = (object)[
-            'id' => 20,
-            'modified' => $modified,
-        ];
-
-        $html = $this->helper->picture($image, ['w' => 300]);
-
-        $this->assertStringNotContainsString('v=' . $modified->getTimestamp(), $html);
-        $this->assertStringNotContainsString('v=', $html);
-    }
-
-    /**
-     * Tests picture keeps profile parameter for both source and fallback URLs.
-     */
-    public function testPictureWithProfileIncludesProfileInUrls(): void
-    {
-        $html = $this->helper->picture(42, ['profile' => 'roster_avatar']);
-
-        $this->assertStringContainsString('/images/serve/42?fm=webp&amp;profile=roster_avatar', $html);
-        $this->assertStringContainsString('/images/serve/42?profile=roster_avatar', $html);
-    }
-
-    /**
-     * Tests picture handles special characters in alt.
-     */
-    public function testPictureHandlesSpecialCharactersInAlt(): void
-    {
-        $html = $this->helper->picture(5, [], ['alt' => 'Test <script> & "quotes"']);
-
-        $this->assertStringContainsString('alt="Test &lt;script&gt; &amp; &quot;quotes&quot;"', $html);
-    }
-
-    /**
-     * Tests picture uses configured WebP variant and derives non-WebP fallback params.
-     */
-    public function testPictureWithWebpVariantBuildsDerivedFallback(): void
-    {
-        $previous = Configure::read('Images.variants');
-        Configure::write('Images.variants', [
-            'thumb' => ['fit' => [150, 150], 'format' => 'webp'],
+        $image = new Image([
+            'id' => 103,
+            'filename' => 'feature.jpg',
+            'storage_subdir' => '2026/05',
+            'storage_path' => '2026/05/feature.jpg',
+            'variants' => json_encode([]),
         ]);
 
-        try {
-            $html = $this->helper->picture(42, ['variant' => 'thumb']);
-
-            $this->assertStringContainsString('<source srcset="/images/serve/42?variant=thumb" type="image/webp">', $html);
-            $this->assertStringContainsString('<img src="/images/serve/42?w=150&amp;h=150&amp;fit=cover"', $html);
-        } finally {
-            Configure::write('Images.variants', $previous);
-        }
-    }
-
-    // ==================== Responsive Picture Tests ====================
-
-    public function testResponsivePictureGeneratesSrcset(): void
-    {
-        $html = $this->helper->responsivePicture(25, [400, 800, 1200]);
-
-        $this->assertStringContainsString('<picture>', $html);
-        $this->assertStringContainsString('</picture>', $html);
-
-        // Check for WebP srcset with all widths
-        $this->assertStringContainsString('type="image/webp"', $html);
-        $this->assertStringContainsString('400w', $html);
-        $this->assertStringContainsString('800w', $html);
-        $this->assertStringContainsString('1200w', $html);
-
-        // Check for sizes attribute
-        $this->assertStringContainsString('sizes="', $html);
-
-        // Check for fallback img
-        $this->assertStringContainsString('<img src="/images/serve/25?', $html);
-        $this->assertStringContainsString('class="img-fluid"', $html);
-    }
-
-    /**
-     * Tests responsive picture with custom sizes.
-     */
-    public function testResponsivePictureWithCustomSizes(): void
-    {
         $html = $this->helper->responsivePicture(
-            30,
-            [600, 1200],
-            [],
-            ['sizes' => '(max-width: 768px) 100vw, 50vw'],
+            $image,
+            [400, 800, 1200],
+            ['profile' => 'blog_featured'],
+            [
+                'alt' => 'Responsive Test',
+                'class' => 'hero-image',
+                'decoding' => 'sync',
+                'sizes' => '(max-width: 768px) 100vw, 50vw',
+            ],
         );
 
+        $this->assertStringContainsString('<picture>', $html);
+        $this->assertStringContainsString('src="/img/storage/2026/05/feature.jpg"', $html);
+        $this->assertStringContainsString('alt="Responsive Test"', $html);
+        $this->assertStringContainsString('class="hero-image"', $html);
+        $this->assertStringContainsString('decoding="sync"', $html);
         $this->assertStringContainsString('sizes="(max-width: 768px) 100vw, 50vw"', $html);
+        $this->assertSame(0, substr_count($html, '<source'));
     }
 
     /**
-     * Tests responsive picture with image object.
-     */
-    public function testResponsivePictureWithImageObjectBuildsWithoutVersion(): void
-    {
-        $modified = new DateTime('2025-03-01 08:15:00');
-        $image = (object)[
-            'id' => 18,
-            'hash' => 'responsive-hash',
-            'modified' => $modified,
-        ];
-
-        $html = $this->helper->responsivePicture($image, [300, 600, 900]);
-
-        $this->assertStringNotContainsString('v=' . $modified->getTimestamp(), $html);
-        $this->assertStringNotContainsString('v=responsive-hash', $html);
-        $this->assertStringNotContainsString('v=', $html);
-        $this->assertStringContainsString('w=300', $html);
-        $this->assertStringContainsString('w=600', $html);
-        $this->assertStringContainsString('w=900', $html);
-    }
-
-    /**
-     * Tests responsive picture returns empty for invalid id.
+     * Responsive picture helper should return empty output for invalid IDs.
+     *
+     * @return void
      */
     public function testResponsivePictureReturnsEmptyForInvalidId(): void
     {
         $this->assertSame('', $this->helper->responsivePicture(0));
         $this->assertSame('', $this->helper->responsivePicture(-5, [400, 800]));
-    }
-
-    /**
-     * Tests responsive picture with additional params.
-     */
-    public function testResponsivePictureWithAdditionalParams(): void
-    {
-        $html = $this->helper->responsivePicture(
-            12,
-            [400, 800],
-            ['fit' => 'cover', 'q' => 80],
-        );
-
-        $this->assertStringContainsString('fit=cover', $html);
-        $this->assertStringContainsString('q=80', $html);
-    }
-
-    /**
-     * Tests responsive picture retains profile parameter across generated srcset URLs.
-     */
-    public function testResponsivePictureWithProfileIncludesProfileAcrossSrcset(): void
-    {
-        $html = $this->helper->responsivePicture(
-            12,
-            [400, 800],
-            ['profile' => 'blog_featured'],
-        );
-
-        $this->assertStringContainsString('profile=blog_featured', $html);
-        $this->assertStringContainsString('fm=webp', $html);
-    }
-
-    /**
-     * Tests responsive picture with custom attributes.
-     */
-    public function testResponsivePictureWithCustomAttributes(): void
-    {
-        $html = $this->helper->responsivePicture(
-            8,
-            [500, 1000],
-            [],
-            [
-                'alt' => 'Responsive Test',
-                'class' => 'hero-image',
-                'decoding' => 'sync',
-            ],
-        );
-
-        $this->assertStringContainsString('alt="Responsive Test"', $html);
-        $this->assertStringContainsString('class="hero-image"', $html);
-        $this->assertStringContainsString('decoding="sync"', $html);
-    }
-
-    /**
-     * Tests responsive picture sorts widths.
-     */
-    public function testResponsivePictureSortsWidths(): void
-    {
-        $html = $this->helper->responsivePicture(99, [1200, 400, 800]);
-
-        // Widths should be sorted ascending in srcset
-        $pattern = '/400w.*800w.*1200w/s';
-        $this->assertMatchesRegularExpression($pattern, $html);
-    }
-
-    /**
-     * Tests responsive picture fallback uses middle width.
-     */
-    public function testResponsivePictureFallbackUsesMiddleWidth(): void
-    {
-        $html = $this->helper->responsivePicture(50, [300, 600, 900]);
-
-        // Fallback img should use middle width (600)
-        $this->assertStringContainsString('<img src="/images/serve/50?w=600', $html);
-    }
-
-    /**
-     * Tests responsive picture has both source types.
-     */
-    public function testResponsivePictureHasBothSourceTypes(): void
-    {
-        $html = $this->helper->responsivePicture(33, [400, 800]);
-
-        // Should have WebP source and non-WebP source
-        $this->assertSame(2, substr_count($html, '<source'), 'Should have exactly 2 source elements');
-        $this->assertStringContainsString('type="image/webp"', $html);
     }
 }

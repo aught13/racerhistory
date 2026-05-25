@@ -36,7 +36,7 @@ declare(strict_types=1);
         <figure class="mb-4 text-center">
             <?= $this->ImageServe->picture(
                 $post->hero_image_id,
-                ['w' => 1200, 'fit' => 'contain'],
+                ['profile' => 'blog_featured'],
                 [
                     'alt' => h($post->title),
                     'class' => 'img-fluid rounded',

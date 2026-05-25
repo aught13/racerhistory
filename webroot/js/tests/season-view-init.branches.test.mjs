@@ -168,23 +168,15 @@ test("blog click falls back to location when view frame missing", () => {
   `;
     document.body.appendChild(root);
 
-    const originalLocation = window.location;
-    // jsdom location is read-only; replace with a stub to observe href updates
-    Object.defineProperty(window, "location", {
-        value: { href: "http://localhost/" },
-        configurable: true,
-    });
+    const navigateSpy = jest.fn();
+    window.__RH_NAVIGATE__ = navigateSpy;
 
     initSeasonView({ root });
     const item = root.querySelector(".blog-list-item");
     item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(window.location.href).toContain("/blog/missing");
-
-    Object.defineProperty(window, "location", {
-        value: originalLocation,
-        configurable: true,
-    });
+    expect(navigateSpy).toHaveBeenCalledWith("/blog/missing");
+    delete window.__RH_NAVIGATE__;
 });
 
 test("advanced panel marks rendered when container missing", () => {
@@ -220,11 +212,8 @@ test("blog click falls back when Turbo missing but view frame exists", () => {
   `;
     document.body.appendChild(root);
 
-    const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-        value: { href: "http://localhost/" },
-        configurable: true,
-    });
+    const navigateSpy = jest.fn();
+    window.__RH_NAVIGATE__ = navigateSpy;
 
     delete window.Turbo;
 
@@ -232,12 +221,8 @@ test("blog click falls back when Turbo missing but view frame exists", () => {
     const item = root.querySelector(".blog-list-item");
     item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(window.location.href).toContain("/blog/alpha");
-
-    Object.defineProperty(window, "location", {
-        value: originalLocation,
-        configurable: true,
-    });
+    expect(navigateSpy).toHaveBeenCalledWith("/blog/alpha");
+    delete window.__RH_NAVIGATE__;
 });
 
 test("advanced table renders em dash for invalid percentages", () => {

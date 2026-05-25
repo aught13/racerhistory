@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\SiteOption;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
@@ -128,7 +129,10 @@ class UsersController extends AppController
         // Check registration setting
         $siteOptionsTable = $this->fetchTable('SiteOptions');
         $siteOption = $siteOptionsTable->find()->where(['option_key' => 'registration'])->first();
-        $registrationEnabled = !$siteOption || $siteOption->value === 'true';
+        $registrationEnabled = true;
+        if ($siteOption instanceof SiteOption) {
+            $registrationEnabled = $siteOption->value === 'true';
+        }
         if (!$registrationEnabled) {
             $this->Flash->error('Registration is currently disabled.');
         }

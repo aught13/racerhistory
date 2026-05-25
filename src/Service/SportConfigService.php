@@ -299,7 +299,7 @@ class SportConfigService
                 ->where(['id' => $sportId])
                 ->first();
 
-            $sportName = $sport ? strtolower($sport->sport_name) : 'unknown';
+            $sportName = $sport ? strtolower((string)$sport->get('sport_name')) : 'unknown';
 
             // Only cache successful lookups
             if ($sportName !== 'unknown') {
@@ -345,7 +345,7 @@ class SportConfigService
             }
 
             // Try to decode JSON values
-            $value = $config->config_value;
+            $value = $config->get('config_value');
             $decoded = json_decode($value, true);
             $value = $decoded ?? $value;
 

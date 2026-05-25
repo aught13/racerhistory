@@ -23,8 +23,9 @@ class SeasonService
     public function getSeasonById(int $seasonId): ?Season
     {
         $seasons = TableRegistry::getTableLocator()->get('Seasons');
+        $season = $seasons->find()->where(['Seasons.id' => $seasonId])->first();
 
-        return $seasons->find()->where(['Seasons.id' => $seasonId])->first();
+        return $season instanceof Season ? $season : null;
     }
 
     /**

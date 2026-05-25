@@ -22,8 +22,9 @@ class GameTypeService
     public function getGameTypeById(int $gameTypeId): ?GameType
     {
         $gameTypes = TableRegistry::getTableLocator()->get('GameTypes');
+        $gameType = $gameTypes->find()->where(['GameTypes.id' => $gameTypeId])->first();
 
-        return $gameTypes->find()->where(['GameTypes.id' => $gameTypeId])->first();
+        return $gameType instanceof GameType ? $gameType : null;
     }
 
     /**
@@ -51,10 +52,15 @@ class GameTypeService
     {
         $gameTypes = TableRegistry::getTableLocator()->get('GameTypes');
 
-        return $gameTypes->find()
+        $rows = $gameTypes->find()
             ->orderBy(['GameTypes.game_type_name' => 'ASC'])
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\GameType> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof GameType));
+
+        return $result;
     }
 
     /**
@@ -148,6 +154,9 @@ class GameTypeService
 
         $list = [];
         foreach ($rows as $gt) {
+            if (!($gt instanceof GameType)) {
+                continue;
+            }
             $list[(int)$gt->id] = (string)($gt->game_type_name ?? '');
         }
 

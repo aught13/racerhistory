@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Game;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Query\SelectQuery;
 use DateTimeInterface;
@@ -190,10 +191,10 @@ class GameSearchService
             // 'season' = first game of each team_season (no extra filter)
         }
 
-        $games = $query
+        $games = $this->normalizeGames($query
             ->orderByAsc('Games.game_date')
             ->all()
-            ->toArray();
+            ->toArray());
 
         $seenTeamSeasons = [];
         $results = [];
@@ -256,7 +257,7 @@ class GameSearchService
 
         $query->orderByAsc('Games.game_date');
 
-        $games = $query->all()->toArray();
+        $games = $this->normalizeGames($query->all()->toArray());
 
         // Walk through games to find consecutive streaks
         $streaks = [];
@@ -292,6 +293,9 @@ class GameSearchService
         // Don't forget a streak that extends to the last game
         if ($currentStreak > 0 && $streakStart) {
             $lastGame = end($games);
+            if (!($lastGame instanceof Game)) {
+                $lastGame = $streakStart;
+            }
             $streaks[] = [
                 'length' => $currentStreak,
                 'start_date' => $streakStart->game_date ? $streakStart->game_date->format('Y-m-d') : '',
@@ -411,7 +415,7 @@ class GameSearchService
                 });
         }
 
-        $games = $query->all()->toArray();
+        $games = $this->normalizeGames($query->all()->toArray());
 
         // Calculate margin and sort
         foreach ($games as $g) {
@@ -515,11 +519,11 @@ class GameSearchService
      */
     public function seriesHistory(int $opponentId): array
     {
-        $games = $this->baseQuery()
+        $games = $this->normalizeGames($this->baseQuery()
             ->where(['Games.opponent_id' => $opponentId])
             ->orderByDesc('Games.game_date')
             ->all()
-            ->toArray();
+            ->toArray());
 
         $record = [
             'wins' => 0,
@@ -672,11 +676,21 @@ class GameSearchService
             return [];
         }
 
-        return $opponentsTable->find('list', keyField: 'id', valueField: 'opponent_name')
+        $rawList = $opponentsTable->find('list', keyField: 'id', valueField: 'opponent_name')
             ->where(['id IN' => $opponentIds])
             ->orderByAsc('opponent_name')
             ->all()
             ->toArray();
+
+        $list = [];
+        foreach ($rawList as $id => $name) {
+            if (!is_numeric((string)$id) || !is_scalar($name)) {
+                continue;
+            }
+            $list[(int)$id] = (string)$name;
+        }
+
+        return $list;
     }
 
     /**
@@ -739,13 +753,27 @@ class GameSearchService
             });
         $total = count($totalQuery->all()->toList());
 
-        $rows = $baseQuery
+        $rawRows = $baseQuery
             ->orderByAsc('Opponents.opponent_name')
             ->offset($start)
             ->limit($length)
             ->enableHydration(false)
             ->all()
             ->toArray();
+
+        $rows = [];
+        foreach ($rawRows as $row) {
+            if (is_array($row)) {
+                $rows[] = $row;
+                continue;
+            }
+            $rows[] = [
+                'opponent_id' => $row->get('opponent_id'),
+                'opponent_name' => $row->get('opponent_name'),
+                'opponent_short' => $row->get('opponent_short'),
+                'games_count' => $row->get('games_count'),
+            ];
+        }
 
         return [
             'rows' => $rows,
@@ -799,5 +827,17 @@ class GameSearchService
             3 => 'N',
             default => '-',
         };
+    }
+
+    /**
+     * @param array<int|string,mixed> $rows
+     * @return array<int,\App\Model\Entity\Game>
+     */
+    private function normalizeGames(array $rows): array
+    {
+        /** @var array<int,\App\Model\Entity\Game> $games */
+        $games = array_values(array_filter($rows, static fn($row): bool => $row instanceof Game));
+
+        return $games;
     }
 }

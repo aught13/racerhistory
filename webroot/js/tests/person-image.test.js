@@ -25,9 +25,11 @@ describe("person-image module", () => {
         document.body.innerHTML =
             '<div id="preview"><img id="pimg" src=""/></div>';
         const img = document.getElementById("pimg");
-        personImage.setPreviewFromId(5, img, "thumb");
-        expect(img.src).toContain("/images/serve/5");
-        expect(img.src).toContain("variant=thumb");
+        personImage.setPreviewFromId(
+            "/img/storage/2026/05/profile-thumb.webp",
+            img,
+        );
+        expect(img.src).toContain("/img/storage/2026/05/profile-thumb.webp");
         expect(img.parentElement.style.display).toBe("block");
     });
 
@@ -38,7 +40,10 @@ describe("person-image module", () => {
                     Promise.resolve(
                         JSON.stringify({
                             success: true,
-                            image: { id: 10, url: "/images/serve/10" },
+                            image: {
+                                id: 10,
+                                url: "/img/storage/2026/05/10.jpg",
+                            },
                         }),
                     ),
             }),

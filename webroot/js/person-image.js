@@ -44,12 +44,24 @@
         }
     }
 
-    function setPreviewFromId(imageId, previewImgElem, variant = null) {
-        if (!imageId || !previewImgElem) return;
-        let url = "/images/serve/" + encodeURIComponent(imageId);
-        if (variant) {
-            url += "?variant=" + encodeURIComponent(variant);
+    function setPreviewFromId(imageSource, previewImgElem) {
+        if (!imageSource || !previewImgElem) return;
+
+        let url = "";
+        if (typeof imageSource === "string") {
+            url = imageSource.includes("/") ? imageSource : "";
+        } else if (typeof imageSource === "object") {
+            url =
+                imageSource.thumbnail_url ||
+                imageSource.url ||
+                imageSource.direct_url ||
+                "";
         }
+
+        if (!url) {
+            return;
+        }
+
         previewImgElem.src = url;
         // Ensure container visible if wrapped
         if (previewImgElem.parentElement) {
@@ -85,9 +97,10 @@
                         const img = preview.querySelector("img");
                         if (img) {
                             setPreviewFromId(
-                                json.image.id,
+                                json.image.thumbnail_url ||
+                                    json.image.url ||
+                                    json.image,
                                 img,
-                                opts.variant || null,
                             );
                         }
                     } else {

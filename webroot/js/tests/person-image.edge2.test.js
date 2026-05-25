@@ -16,8 +16,8 @@ describe("person-image edge behaviors", () => {
 
     test("setPreviewFromId sets src and makes parent visible", () => {
         const img = document.querySelector("#preview img");
-        PI.setPreviewFromId("abc123", img, "thumb");
-        expect(img.src).toContain("/images/serve/abc123");
+        PI.setPreviewFromId("/img/storage/abc123-thumb.webp", img);
+        expect(img.src).toContain("/img/storage/abc123-thumb.webp");
         expect(img.parentElement.style.display).toBe("block");
     });
 

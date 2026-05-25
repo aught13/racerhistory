@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Game;
+use App\Model\Entity\GameEav;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Date;
@@ -87,6 +88,9 @@ class GameService
 
         $values = [];
         foreach ($rows as $row) {
+            if (!($row instanceof GameEav)) {
+                continue;
+            }
             $values[$row->key] = $row->value;
         }
 
@@ -220,8 +224,8 @@ class GameService
                 ->where(['game_id' => $gameId, 'eav_key' => $key])
                 ->first();
 
-            if ($existing) {
-                $existing->eav_value = $value;
+            if ($existing instanceof GameEav) {
+                $existing->set('eav_value', $value);
                 $gameEavTable->save($existing);
             } else {
                 $newEav = $gameEavTable->newEntity([
@@ -1046,6 +1050,11 @@ class GameService
             $query->where(['Games.team_season_id' => $teamSeasonId]);
         }
 
-        return $query->all()->toArray();
+        $rows = $query->all()->toArray();
+
+        /** @var array<int,\App\Model\Entity\Game> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof Game));
+
+        return $result;
     }
 }

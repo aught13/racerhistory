@@ -353,13 +353,19 @@ describe("ImageSelector", () => {
         });
 
         test("should set target field value on selection", () => {
-            const images = [{ id: 42, url: "/img42.jpg" }];
+            const images = [
+                { id: 42, url: "/img42.jpg", hero_url: "/hero42.jpg" },
+            ];
+            imageSelector.loadedImages = images;
             imageSelector.renderGallery(images);
 
             imageSelector.gallery.querySelector('[data-image-id="42"]').click();
             imageSelector.onSelectImage();
 
             expect(imageSelector.targetField.value).toBe("42");
+            expect(imageSelector.targetField.dataset.selectedImageHeroUrl).toBe(
+                "/hero42.jpg",
+            );
         });
 
         test("should dispatch change event on target field", () => {
