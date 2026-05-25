@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Game;
+use App\Model\Entity\TeamSeason;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
@@ -385,7 +387,12 @@ class StatsService
             ->where(['Games.id' => $gameId])
             ->first();
 
-        if (!$game || !$game->team_season || !$game->team_season->team || !$game->team_season->team->sport) {
+        if (
+            !($game instanceof Game)
+            || !$game->team_season
+            || !$game->team_season->team
+            || !$game->team_season->team->sport
+        ) {
             return null;
         }
 
@@ -408,7 +415,7 @@ class StatsService
             ->where(['TeamSeasons.id' => $teamSeasonId])
             ->first();
 
-        if (!$teamSeason || !$teamSeason->team || !$teamSeason->team->sport) {
+        if (!($teamSeason instanceof TeamSeason) || !$teamSeason->team || !$teamSeason->team->sport) {
             return null;
         }
 
@@ -588,7 +595,7 @@ class StatsService
             ->where(['LOWER(sport_name)' => strtolower($sportName)])
             ->first();
 
-        return $sport ? (int)$sport->id : null;
+        return $sport ? (int)($sport->get('id') ?? 0) : null;
     }
 
     /**

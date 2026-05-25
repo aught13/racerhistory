@@ -36,8 +36,9 @@ class PlaceService
     public function getPlaceById(int $placeId): ?Place
     {
         $places = TableRegistry::getTableLocator()->get('Places');
+        $place = $places->find()->where(['Places.id' => $placeId])->first();
 
-        return $places->find()->where(['Places.id' => $placeId])->first();
+        return $place instanceof Place ? $place : null;
     }
 
     /**
@@ -104,11 +105,16 @@ class PlaceService
     {
         $places = TableRegistry::getTableLocator()->get('Places');
 
-        return $places->find()
+        $rows = $places->find()
             ->orderBy(['Places.place_city' => 'ASC'])
             ->limit($limit)
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\Place> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof Place));
+
+        return $result;
     }
 
     /**
@@ -128,13 +134,15 @@ class PlaceService
             'place_state' => $data['place_state'] ?? '',
         ];
         $existing = $places->find()->where($conditions)->first();
-        if ($existing) {
+        if ($existing instanceof Place) {
             return $existing;
         }
 
         $place = $places->newEntity($data);
 
-        return $places->save($place);
+        $saved = $places->save($place);
+
+        return $saved instanceof Place ? $saved : false;
     }
 
     /**
@@ -178,6 +186,9 @@ class PlaceService
         $results = [];
 
         foreach ($places as $place) {
+            if (!($place instanceof Place)) {
+                continue;
+            }
             $results[] = [
                 'id' => $place->id,
                 'label' => $place->place_city,

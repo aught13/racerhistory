@@ -72,9 +72,11 @@ class BlogPostService
      */
     public function getPublishedPosts(): array
     {
-        return $this->getPublishedPostsQuery()
+        $rows = $this->getPublishedPostsQuery()
             ->all()
             ->toArray();
+
+        return $this->normalizePosts($rows);
     }
 
     /**
@@ -88,7 +90,7 @@ class BlogPostService
     {
         $table = $this->posts();
 
-        return $table->find()
+        $rows = $table->find()
             ->contain(['BlogTags'])
             ->matching('BlogTags', function ($q) use ($tagSlug) {
                 return $q->where(['BlogTags.slug' => $tagSlug]);
@@ -98,6 +100,8 @@ class BlogPostService
             ->limit($limit)
             ->all()
             ->toArray();
+
+        return $this->normalizePosts($rows);
     }
 
     /**
@@ -111,7 +115,7 @@ class BlogPostService
     {
         $query = $this->getPublishedPostsQuery();
         $total = (clone $query)->count();
-        $posts = $query->limit($limit)->offset($offset)->all()->toArray();
+        $posts = $this->normalizePosts($query->limit($limit)->offset($offset)->all()->toArray());
 
         return ['posts' => $posts, 'total' => $total];
     }
@@ -148,11 +152,13 @@ class BlogPostService
     {
         $table = $this->posts();
 
-        return $table->find()
+        $rows = $table->find()
             ->contain(['BlogTags'])
             ->orderByDesc('BlogPosts.created')
             ->all()
             ->toArray();
+
+        return $this->normalizePosts($rows);
     }
 
     /**
@@ -227,7 +233,25 @@ class BlogPostService
     {
         $post = $this->posts()->find()->select(['id', 'title'])->where(['id' => $id])->first();
 
-        return $post ? (string)$post->title : 'Post #' . $id;
+        if (!$post) {
+            return 'Post #' . $id;
+        }
+
+        $title = $post->get('title');
+
+        return is_scalar($title) ? (string)$title : 'Post #' . $id;
+    }
+
+    /**
+     * @param array<int|string,mixed> $rows
+     * @return array<int,\App\Model\Entity\BlogPost>
+     */
+    private function normalizePosts(array $rows): array
+    {
+        /** @var array<int,\App\Model\Entity\BlogPost> $posts */
+        $posts = array_values(array_filter($rows, static fn($row): bool => $row instanceof BlogPost));
+
+        return $posts;
     }
 
     /**

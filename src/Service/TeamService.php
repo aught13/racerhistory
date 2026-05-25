@@ -45,10 +45,12 @@ class TeamService
     {
         $teams = TableRegistry::getTableLocator()->get('Teams');
 
-        return $teams->find()
+        $team = $teams->find()
             ->where(['Teams.id' => $teamId])
             ->contain(['Sports'])
             ->first();
+
+        return $team instanceof Team ? $team : null;
     }
 
     /**

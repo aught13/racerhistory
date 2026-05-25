@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\SiteOption;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -23,7 +24,7 @@ class SiteOptionService
         $table = TableRegistry::getTableLocator()->get('SiteOptions');
         $row = $table->find()->where(['option_key' => $key])->first();
 
-        return $row ? (string)$row->value : null;
+        return $row instanceof SiteOption ? (string)$row->value : null;
     }
 
     /**
@@ -38,7 +39,7 @@ class SiteOptionService
         $table = TableRegistry::getTableLocator()->get('SiteOptions');
         $row = $table->find()->where(['option_key' => $key])->first();
 
-        if ($row) {
+        if ($row instanceof SiteOption) {
             $row->value = $value;
         } else {
             $row = $table->newEntity([

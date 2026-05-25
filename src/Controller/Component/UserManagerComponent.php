@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Component;
 
+use App\Model\Entity\User;
 use Cake\Controller\Component;
 use Cake\Controller\Controller;
 use Cake\Core\Configure;
@@ -366,10 +367,10 @@ class UserManagerComponent extends Component
             if ($email !== '') {
                 $usersTable = $controller->fetchTable('Users');
                 $user = $usersTable->find()->where(['email' => $email])->first();
-                if ($user) {
+                if ($user instanceof User) {
                     // Generate a reset token (placeholder implementation)
-                    $user->reset_token = bin2hex(random_bytes(16));
-                    $user->reset_token_expires = new DateTime('+1 hour');
+                    $user->set('reset_token', bin2hex(random_bytes(16)));
+                    $user->set('reset_token_expires', new DateTime('+1 hour'));
                     $usersTable->save($user); // Ignore save failures silently for unified response
                 }
             }

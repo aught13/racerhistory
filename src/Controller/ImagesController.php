@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\Image;
 use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
@@ -67,10 +68,11 @@ class ImagesController extends AppController
         $request->allowMethod(['get', 'head']);
 
         try {
-            $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
-            if (!$image) {
+            $imageRecord = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
+            if (!($imageRecord instanceof Image)) {
                 return $this->placeholderTransparentWebp();
             }
+            $image = $imageRecord;
             $profileName = strtolower((string)$request->getQuery('profile'));
             $profileConfig = $this->getProfileConfig($profileName);
 

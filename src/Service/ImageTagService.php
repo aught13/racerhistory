@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Image;
+use App\Model\Entity\ImageTag;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 
@@ -56,8 +58,9 @@ class ImageTagService
             } else {
                 $shouldUpdateName = false;
                 if ($name !== '') {
-                    $existingName = (string)($existing->name ?? '');
-                    if ($existingName === $existing->slug || strcasecmp($existingName, $existing->slug) === 0) {
+                    $existingName = (string)($existing->get('name') ?? '');
+                    $existingSlug = (string)($existing->get('slug') ?? '');
+                    if ($existingName === $existingSlug || strcasecmp($existingName, $existingSlug) === 0) {
                         $shouldUpdateName = true;
                     } else {
                         if (
@@ -71,12 +74,13 @@ class ImageTagService
                     }
                 }
                 if ($shouldUpdateName) {
-                    $existing->name = $name;
+                    $existing->set('name', $name);
                     $tagsTable->save($existing);
                 }
             }
 
-            if (!in_array($existing->id, $existingTagIds, true)) {
+            $existingId = (int)($existing->get('id') ?? 0);
+            if ($existingId > 0 && !in_array($existingId, $existingTagIds, true)) {
                 $tagEntities[] = $existing;
             }
         }
@@ -112,7 +116,12 @@ class ImageTagService
             ->having("tag_count >= {$needed}")
             ->limit($limit);
 
-        return $query->all()->toList();
+        $rows = $query->all()->toList();
+
+        /** @var array<int,\App\Model\Entity\Image> $imagesList */
+        $imagesList = array_values(array_filter($rows, static fn($row): bool => $row instanceof Image));
+
+        return $imagesList;
     }
 
     /**
@@ -170,8 +179,7 @@ class ImageTagService
                 $existing = $tagsTable->newEntity(['name' => $slug, 'slug' => $slug]);
                 $tagsTable->save($existing);
             }
-            /** @phpstan-ignore if.alwaysTrue */
-            if ($existing) {
+            if ($existing instanceof ImageTag) {
                 $tags[] = $existing;
             }
         }
