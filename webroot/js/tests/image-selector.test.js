@@ -353,7 +353,9 @@ describe("ImageSelector", () => {
         });
 
         test("should set target field value on selection", () => {
-            const images = [{ id: 42, url: "/img42.jpg", hero_url: "/hero42.jpg" }];
+            const images = [
+                { id: 42, url: "/img42.jpg", hero_url: "/hero42.jpg" },
+            ];
             imageSelector.loadedImages = images;
             imageSelector.renderGallery(images);
 

@@ -74,9 +74,9 @@ $this->assign('title', 'Edit Image');
             ['class' => 'btn btn-warning btn-sm'],
         ) ?>
         <?= $this->Html->link(
-          'Crop Hero Variant',
-          ['action' => 'cropHero', $image->id],
-          ['class' => 'btn btn-warning btn-sm'],
+            'Crop Hero Variant',
+            ['action' => 'cropHero', $image->id],
+            ['class' => 'btn btn-warning btn-sm'],
         ) ?>
         <?= $this->Html->link(
             'Manipulate Image',

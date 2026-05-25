@@ -79,11 +79,13 @@ if ($imageId <= 0 && isset($person->image) && is_object($person->image) && is_nu
 
 $directImageUrl = '';
 if ($imageId <= 0) {
-    foreach ([
+    foreach (
+        [
         $person->person_image_url ?? null,
         $person->image_url ?? null,
         is_string($person->person_image ?? null) ? $person->person_image : null,
-    ] as $candidate) {
+        ] as $candidate
+    ) {
         if (!is_string($candidate) || trim($candidate) === '') {
             continue;
         }

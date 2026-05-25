@@ -53,7 +53,16 @@ class ImagesController extends AppController
         $this->imagesAdminService = new ImagesAdminService();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            foreach (['upload', 'bulkUpload', 'bulkUploadForm', 'manipulate', 'tags', 'cropThumb', 'cropHero'] as $action) {
+            $unlockedActions = [
+                'upload',
+                'bulkUpload',
+                'bulkUploadForm',
+                'manipulate',
+                'tags',
+                'cropThumb',
+                'cropHero',
+            ];
+            foreach ($unlockedActions as $action) {
                 if (!in_array($action, $current, true)) {
                     $current[] = $action;
                 }

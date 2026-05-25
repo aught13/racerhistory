@@ -68,11 +68,13 @@ foreach ([$teamSeason->team_season_image ?? null, $teamSeason->team_season_image
 
 $directImageUrl = '';
 if ($imageId <= 0) {
-    foreach ([
+    foreach (
+        [
         $teamSeason->team_season_image_url ?? null,
         $teamSeason->image_url ?? null,
         is_string($teamSeason->team_season_image ?? null) ? $teamSeason->team_season_image : null,
-    ] as $candidate) {
+        ] as $candidate
+    ) {
         if (!is_string($candidate) || trim($candidate) === '') {
             continue;
         }

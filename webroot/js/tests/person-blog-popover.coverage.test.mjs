@@ -232,7 +232,9 @@ describe("person-blog-popover.mjs", () => {
             new MouseEvent("click", { bubbles: true, button: 0 }),
         );
 
-        expect(navigateSpy).toHaveBeenCalledWith("http://localhost/blog/direct");
+        expect(navigateSpy).toHaveBeenCalledWith(
+            "http://localhost/blog/direct",
+        );
         delete window.__RH_NAVIGATE__;
     });
 

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-
 use App\Model\Entity\Image;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\TableRegistry;
@@ -15,7 +14,17 @@ class ImageBrowseService
      *
      * @param string|null $tag
      * @param int|null $limit
-    * @return array{success: bool, images: array<int, array{id: int, url: string, thumbnail_url: string, hero_url: string, original_name: string, tags: array<int, string>}>}
+     * @return array{
+     *     success: bool,
+     *     images: array<int, array{
+     *         id: int,
+     *         url: string,
+     *         thumbnail_url: string,
+     *         hero_url: string,
+     *         original_name: string,
+     *         tags: array<int, string>
+     *     }>
+     * }
      */
     public function browse(?string $tag = null, ?int $limit = null): array
     {

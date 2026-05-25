@@ -99,11 +99,13 @@ if (is_numeric((string)($teamSeason->team_season_image ?? null)) && (int)$teamSe
 }
 $heroImageUrl = '';
 if ($heroImageId === null) {
-    foreach ([
+    foreach (
+        [
         $teamSeason->team_season_image_url ?? null,
         $teamSeason->image_url ?? null,
         is_string($teamSeason->team_season_image ?? null) ? $teamSeason->team_season_image : null,
-    ] as $candidate) {
+        ] as $candidate
+    ) {
         if (!is_string($candidate) || trim($candidate) === '') {
             continue;
         }
