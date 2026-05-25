@@ -90,13 +90,10 @@ class Application extends BaseApplication implements
                 'fit' => 'cover',
             ],
             'season_billboard' => [
-                'w' => 1400,
-                'h' => 720,
-                'fit' => 'cover',
+                'sourceVariant' => 'hero',
             ],
             'blog_featured' => [
-                'h' => 720,
-                'fit' => 'cover',
+                'sourceVariant' => 'hero',
             ],
             'blog_index_card' => [
                 'w' => 200,

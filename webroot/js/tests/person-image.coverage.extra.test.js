@@ -27,9 +27,8 @@ describe("person-image extra coverage", () => {
         document.body.innerHTML =
             '<div id="preview"><img id="pimg" src=""/></div>';
         const img = document.getElementById("pimg");
-        setPreviewFromId(77, img, "thumb");
-        expect(img.src).toContain("/images/serve/77");
-        expect(img.src).toContain("variant=thumb");
+        setPreviewFromId({ thumbnail_url: "/img/storage/77-thumb.webp" }, img);
+        expect(img.src).toContain("/img/storage/77-thumb.webp");
         expect(img.parentElement.style.display).toBe("block");
     });
 });

@@ -151,18 +151,6 @@ parameters:
 			path: src/Service/GameTypeService.php
 
 		-
-			message: '#^Cannot access property \$id on array\|Cake\\Datasource\\EntityInterface\.$#'
-			identifier: property.nonObject
-			count: 3
-			path: src/Service/ImageBrowseService.php
-
-		-
-			message: '#^Cannot access property \$original_name on array\|Cake\\Datasource\\EntityInterface\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: src/Service/ImageBrowseService.php
-
-		-
 			message: '#^Method App\\Service\\ImageTagService\:\:getImagesByAllTags\(\) should return array\<int, App\\Model\\Entity\\Image\> but returns array\<int, array\|Cake\\Datasource\\EntityInterface\>\.$#'
 			identifier: return.type
 			count: 1

@@ -331,13 +331,12 @@
 <?php $this->append('script'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const imageId = <?= json_encode($teamSeason->team_season_image) ?>;
-    const previewQs = <?= json_encode($this->ImageServe->query(['w' => 1200, 'fit' => 'contain'])) ?>;
-    if (imageId) {
+    const imageUrl = <?= json_encode(!empty($teamSeason->team_season_image) ? $this->ImageServe->url((int)$teamSeason->team_season_image) : '') ?>;
+    if (imageUrl) {
         const card = document.getElementById('team-season-image-card');
         const img = document.getElementById('team-season-image-src');
         if (card && img) {
-            img.src = '<?= $this->Url->build('/images/serve/') ?>' + imageId + previewQs;
+            img.src = imageUrl;
             card.style.display = 'block';
         }
     }

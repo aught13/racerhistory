@@ -21,7 +21,11 @@ class CropSelector {
         this.isDragging = false;
         this.isResizing = false;
         this.resizeHandle = null;
-        this.aspectRatio = null; // null means free-form, otherwise width/height ratio
+        this.aspectRatio =
+            typeof this.options.aspectRatio === "number" &&
+            isFinite(this.options.aspectRatio)
+                ? this.options.aspectRatio
+                : null; // null means free-form, otherwise width/height ratio
         this.rotationDeg = 0; // rotation applied to preview (clockwise degrees)
 
         // Crop box: canvas display coordinates

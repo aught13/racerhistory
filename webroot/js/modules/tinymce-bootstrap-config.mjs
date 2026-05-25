@@ -69,13 +69,7 @@ function createImageUploadHandler(uploadUrl) {
                     return reject(json.error || "Upload failed");
                 }
 
-                // Return WebP URL with fallback for older browsers
-                const imageUrl = json.image.url;
-                const webpUrl = imageUrl.includes("?")
-                    ? imageUrl + "&fm=webp"
-                    : imageUrl + "?fm=webp";
-
-                resolve(webpUrl);
+                resolve(json.image.url);
             };
 
             xhr.onerror = function () {
@@ -502,16 +496,18 @@ export function createTinyMCEConfig(options = {}) {
 
             // Add custom image insertion command
             editor.addCommand("insertResponsiveImage", function (ui, value) {
-                const { imageId, alt = "", classes = "" } = value || {};
-                if (!imageId) return;
-
-                const webpUrl = `/images/serve/${imageId}?fm=webp&w=800`;
-                const fallbackUrl = `/images/serve/${imageId}?w=800`;
+                const {
+                    imageUrl = "",
+                    url = "",
+                    alt = "",
+                    classes = "",
+                } = value || {};
+                const resolvedUrl = imageUrl || url;
+                if (!resolvedUrl) return;
 
                 const html = `
                     <picture>
-                        <source srcset="${webpUrl}" type="image/webp">
-                        <img src="${fallbackUrl}" alt="${alt}" class="img-fluid ${classes}" loading="lazy">
+                        <img src="${resolvedUrl}" alt="${alt}" class="img-fluid ${classes}" loading="lazy">
                     </picture>
                 `;
                 editor.insertContent(html);
@@ -550,28 +546,19 @@ export function initTinyMCE(options = {}) {
 }
 
 /**
- * Insert a responsive image with WebP support at cursor position.
+ * Insert a stored image at cursor position.
  *
  * @param {Object} editor - TinyMCE editor instance
- * @param {number|string} imageId - Image ID to insert
+ * @param {string} imageUrl - Direct image URL to insert
  * @param {Object} options - Image options
  * @param {string} [options.alt=''] - Alt text
  * @param {string} [options.classes=''] - Additional CSS classes
  * @param {string} [options.position='inline'] - Position: 'inline', 'left', 'right', 'center'
- * @param {number} [options.width=800] - Max width for the image
  */
-export function insertResponsiveImage(editor, imageId, options = {}) {
-    const {
-        alt = "",
-        classes = "",
-        position = "inline",
-        width = 800,
-    } = options;
+export function insertResponsiveImage(editor, imageUrl, options = {}) {
+    const { alt = "", classes = "", position = "inline" } = options;
 
-    if (!editor || !imageId) return;
-
-    const webpUrl = `/images/serve/${imageId}?fm=webp&w=${width}`;
-    const fallbackUrl = `/images/serve/${imageId}?w=${width}`;
+    if (!editor || !imageUrl) return;
 
     let positionClass = "";
     switch (position) {
@@ -592,8 +579,7 @@ export function insertResponsiveImage(editor, imageId, options = {}) {
 
     const html = `
         <picture class="${position === "inline" ? "" : positionClass}">
-            <source srcset="${webpUrl}" type="image/webp">
-            <img src="${fallbackUrl}" alt="${alt}" class="${allClasses}" loading="lazy">
+            <img src="${imageUrl}" alt="${alt}" class="${allClasses}" loading="lazy">
         </picture>
     `;
 

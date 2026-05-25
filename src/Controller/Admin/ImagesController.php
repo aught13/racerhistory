@@ -7,6 +7,7 @@ use App\Model\Entity\Image;
 use App\Service\ImageBrowseService;
 use App\Service\ImagesAdminService;
 use App\Service\ImageStorageService;
+use App\Service\ImageUrlService;
 use App\Service\PersonService;
 use App\Service\TaggingService;
 use App\Service\TeamSeasonRosterService;
@@ -52,7 +53,7 @@ class ImagesController extends AppController
         $this->imagesAdminService = new ImagesAdminService();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            foreach (['upload', 'bulkUpload', 'bulkUploadForm', 'manipulate', 'tags', 'cropThumb'] as $action) {
+            foreach (['upload', 'bulkUpload', 'bulkUploadForm', 'manipulate', 'tags', 'cropThumb', 'cropHero'] as $action) {
                 if (!in_array($action, $current, true)) {
                     $current[] = $action;
                 }
@@ -559,6 +560,74 @@ class ImagesController extends AppController
     }
 
     /**
+     * Crop the hero variant with custom crop coordinates.
+     * Only regenerates the hero variant without touching the original or other variants.
+     * GET: Display crop editor form
+     * POST: Apply crop and regenerate hero variant
+     *
+     * @param int $id
+     */
+    public function cropHero(int $id): Response
+    {
+        $image = $this->imagesAdminService->getImageById($id);
+        /** @var \App\Model\Entity\Image $image */
+
+        $request = $this->getRequest();
+
+        $baseDir = WWW_ROOT . 'img' . DS . 'storage' . DS;
+        $originalPath = $baseDir . $image->storage_path;
+
+        if ($request->is('post')) {
+            if (!is_file($originalPath)) {
+                Log::error("Image file not found: {$originalPath}");
+                $this->Flash->error('Original image file not found');
+
+                return $this->redirect(['action' => 'edit', $id]);
+            }
+
+            $crop = $request->getData('crop');
+            if (!is_array($crop) || empty($crop['width']) || empty($crop['height'])) {
+                $this->Flash->warning('No valid crop area specified');
+
+                return $this->redirect(['action' => 'cropHero', $id]);
+            }
+
+            $cropX = (int)($crop['x'] ?? 0);
+            $cropY = (int)($crop['y'] ?? 0);
+            $cropWidth = (int)($crop['width'] ?? 0);
+            $cropHeight = (int)($crop['height'] ?? 0);
+
+            if ($cropWidth <= 0 || $cropHeight <= 0) {
+                $this->Flash->error('Invalid crop dimensions');
+
+                return $this->redirect(['action' => 'cropHero', $id]);
+            }
+
+            try {
+                $this->imagesAdminService->cropHero($id, [
+                    'x' => $cropX,
+                    'y' => $cropY,
+                    'width' => $cropWidth,
+                    'height' => $cropHeight,
+                ]);
+
+                $this->Flash->success('Hero crop updated successfully');
+
+                return $this->redirect(['action' => 'edit', $id]);
+            } catch (Throwable $e) {
+                Log::error('Failed to crop hero variant: ' . $e->getMessage());
+                $this->Flash->error('Failed to crop hero variant: ' . $e->getMessage());
+
+                return $this->redirect(['action' => 'cropHero', $id]);
+            }
+        }
+
+        $this->set(compact('image'));
+
+        return $this->render();
+    }
+
+    /**
      * Return roster entries for a given person as JSON (used by AJAX in tag UI).
      * Query param: person_id
      */
@@ -813,6 +882,7 @@ class ImagesController extends AppController
      */
     private function serializeImage(Image $image): array
     {
+        $imageUrlService = new ImageUrlService($this->Images);
         $variants = [];
         $raw = $image->variants;
         if (is_string($raw)) {
@@ -821,21 +891,19 @@ class ImagesController extends AppController
         if (is_array($raw)) {
             $variants = $raw;
         }
-        // `url` is the canonical public serving endpoint; keep admin_url for legacy callers.
-        $publicServeUrl = '/images/serve/' . $image->id;
-        $baseUrl = $publicServeUrl;
-        $adminServeUrl = '/admin/images/serve/' . $image->id;
-        $directUrl = '/img/storage/' .
-            ltrim($image->storage_path ?? ($image->storage_subdir . '/' . $image->filename), '/');
+        $baseUrl = $imageUrlService->urlForImage($image);
+        $thumbnailUrl = $imageUrlService->urlForImage($image, ['variant' => 'thumb']);
+        $heroUrl = $imageUrlService->urlForImage($image, ['variant' => 'hero']);
+        $directUrl = $baseUrl;
 
         return [
             'id' => $image->id,
             'filename' => $image->filename,
             'url' => $baseUrl,
-            'admin_url' => $adminServeUrl,
+            'thumbnail_url' => $thumbnailUrl,
+            'hero_url' => $heroUrl,
             'variants' => $variants,
             'direct_url' => $directUrl,
-            'public_url' => $publicServeUrl,
         ];
     }
 

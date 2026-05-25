@@ -94,8 +94,6 @@
     }
   },
   "overrides": {
-    "@mapbox/node-pre-gyp": {
-      "tar": "7.5.7"
-    }
+    "tar": "^7.5.11"
   }
 }

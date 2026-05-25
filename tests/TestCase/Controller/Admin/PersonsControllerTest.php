@@ -17,6 +17,7 @@ class PersonsControllerTest extends TestCase
 
     protected array $fixtures = [
         'app.Persons',
+        'app.Images',
         'app.Users',
         'app.Sports',
         'app.Teams',
@@ -173,7 +174,7 @@ class PersonsControllerTest extends TestCase
         $this->assertResponseOk();
         $body = (string)$this->_response->getBody();
         $this->assertStringContainsString('<img', $body);
-        $this->assertStringContainsString('/images/serve/1', $body);
+        $this->assertStringContainsString('/img/storage/', $body);
     }
 
     /**

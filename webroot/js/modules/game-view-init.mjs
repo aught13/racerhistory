@@ -55,6 +55,33 @@ function initTable(table, options = DEFAULT_TABLE_OPTIONS) {
     return $(table).DataTable(options);
 }
 
+function navigateTo(url) {
+    if (!url) {
+        return;
+    }
+
+    const testNavigate = window.__RH_NAVIGATE__;
+    if (typeof testNavigate === "function") {
+        testNavigate(url);
+        return;
+    }
+
+    try {
+        if (window.location && typeof window.location.assign === "function") {
+            window.location.assign(url);
+            return;
+        }
+    } catch {
+        // Fall back to href assignment below.
+    }
+
+    try {
+        window.location.href = url;
+    } catch {
+        // Ignore navigation errors in non-browser test environments.
+    }
+}
+
 function setupBlogClicks(root) {
     if (!root || root.dataset.blogRootBound === "true") {
         return;
@@ -75,13 +102,13 @@ function setupBlogClicks(root) {
             "turbo-frame[data-view-frame]",
         );
         if (!viewFrame) {
-            window.location.href = `/blog/${slug}`;
+            navigateTo(`/blog/${slug}`);
             return;
         }
         if (window.Turbo && typeof window.Turbo.visit === "function") {
             window.Turbo.visit(`/blog/${slug}`, { frame: viewFrame.id });
         } else {
-            window.location.href = `/blog/${slug}`;
+            navigateTo(`/blog/${slug}`);
         }
     });
 }
@@ -131,17 +158,17 @@ function setupImageGallery(root) {
             return;
         }
 
-        const imageId = img.dataset.imageId;
+        const imageUrl = img.dataset.imageUrl || img.currentSrc || img.src;
         const filename = img.dataset.imageFilename;
-        if (!imageId) {
+        if (!imageUrl) {
             return;
         }
 
         if (modalWebp) {
-            modalWebp.srcset = `/images/serve/${imageId}?format=webp`;
+            modalWebp.removeAttribute("srcset");
         }
 
-        modalImg.src = `/images/serve/${imageId}`;
+        modalImg.src = imageUrl;
         modalImg.alt = filename || "";
 
         modal.setAttribute("data-modal-open", "true");

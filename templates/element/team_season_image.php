@@ -32,8 +32,61 @@ $defaultClass = $sizeConfig['class'];
 $cssClass = trim($defaultClass . ' ' . $class);
 $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; " . $style;
 
-if (!empty($teamSeason->team_season_image) && is_numeric($teamSeason->team_season_image)) {
-    $thumbUrl = $this->ImageServe->url((int)$teamSeason->team_season_image, ['variant' => $variant]);
+$normalizeImageUrl = static function (?string $value): string {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+
+    if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, 'data:')) {
+        return $value;
+    }
+    if (str_starts_with($value, '/img/storage/')) {
+        return $value;
+    }
+    if (str_starts_with($value, 'img/storage/')) {
+        return '/' . $value;
+    }
+    if (str_starts_with($value, '/')) {
+        return $value;
+    }
+
+    if (str_contains($value, '/')) {
+        return '/img/storage/' . ltrim($value, '/');
+    }
+
+    return '/img/' . ltrim($value, '/');
+};
+
+$imageId = 0;
+foreach ([$teamSeason->team_season_image ?? null, $teamSeason->team_season_image_id ?? null, $teamSeason->image_id ?? null] as $candidate) {
+    if (is_numeric((string)$candidate) && (int)$candidate > 0) {
+        $imageId = (int)$candidate;
+        break;
+    }
+}
+
+$directImageUrl = '';
+if ($imageId <= 0) {
+    foreach ([
+        $teamSeason->team_season_image_url ?? null,
+        $teamSeason->image_url ?? null,
+        is_string($teamSeason->team_season_image ?? null) ? $teamSeason->team_season_image : null,
+    ] as $candidate) {
+        if (!is_string($candidate) || trim($candidate) === '') {
+            continue;
+        }
+        $directImageUrl = $normalizeImageUrl($candidate);
+        if ($directImageUrl !== '') {
+            break;
+        }
+    }
+}
+
+if ($imageId > 0 || $directImageUrl !== '') {
+    $thumbUrl = $imageId > 0
+        ? $this->ImageServe->url($imageId, ['variant' => $variant])
+        : $directImageUrl;
 
     echo $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
         'alt' => 'Season image',

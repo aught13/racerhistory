@@ -67,7 +67,52 @@ foreach ($recordSummary as $groupKey => $groupData) {
         'splits' => $splits,
     ];
 }
-$heroImageId = $teamSeason->team_season_image ?: null;
+$normalizeImageUrl = static function (?string $value): string {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+
+    if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, 'data:')) {
+        return $value;
+    }
+    if (str_starts_with($value, '/img/storage/')) {
+        return $value;
+    }
+    if (str_starts_with($value, 'img/storage/')) {
+        return '/' . $value;
+    }
+    if (str_starts_with($value, '/')) {
+        return $value;
+    }
+
+    if (str_contains($value, '/')) {
+        return '/img/storage/' . ltrim($value, '/');
+    }
+
+    return '/img/' . ltrim($value, '/');
+};
+
+$heroImageId = null;
+if (is_numeric((string)($teamSeason->team_season_image ?? null)) && (int)$teamSeason->team_season_image > 0) {
+    $heroImageId = (int)$teamSeason->team_season_image;
+}
+$heroImageUrl = '';
+if ($heroImageId === null) {
+    foreach ([
+        $teamSeason->team_season_image_url ?? null,
+        $teamSeason->image_url ?? null,
+        is_string($teamSeason->team_season_image ?? null) ? $teamSeason->team_season_image : null,
+    ] as $candidate) {
+        if (!is_string($candidate) || trim($candidate) === '') {
+            continue;
+        }
+        $heroImageUrl = $normalizeImageUrl($candidate);
+        if ($heroImageUrl !== '') {
+            break;
+        }
+    }
+}
 
 $this->assign('title', $teamName . ' ' . $seasonLabel . ' Season');
 
@@ -99,16 +144,25 @@ $this->start('css'); ?>
         </ol>
     </nav>
 
-    <?php if (!empty($heroImageId)) : ?>
+    <?php if ($heroImageId !== null || $heroImageUrl !== '') : ?>
         <div class="season-hero-media mb-4">
-            <?= $this->ImageServe->picture(
-                (int)$heroImageId,
-                ['profile' => 'season_billboard'],
-                [
+            <?php if ($heroImageId !== null) : ?>
+                <?= $this->ImageServe->picture(
+                    $heroImageId,
+                    ['profile' => 'season_billboard'],
+                    [
+                        'alt' => $teamName . ' ' . $seasonLabel . ' Season',
+                        'class' => 'img-fluid rounded season-hero-image',
+                    ],
+                ) ?>
+            <?php else : ?>
+                <?= $this->Html->image($heroImageUrl, [
                     'alt' => $teamName . ' ' . $seasonLabel . ' Season',
                     'class' => 'img-fluid rounded season-hero-image',
-                ],
-            ) ?>
+                    'loading' => 'lazy',
+                    'decoding' => 'async',
+                ]) ?>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
@@ -447,7 +501,8 @@ $this->start('css'); ?>
                         <div class="season-photos-grid" data-season-image-gallery>
                             <?php foreach ($images as $image) : ?>
                                 <div class="season-photo-thumb">
-                                    <?php $photoThumbUrl = $this->ImageServe->urlForImage($image, ['w' => 240, 'h' => 180, 'fit' => 'cover']); ?>
+                                    <?php $photoThumbUrl = $this->ImageServe->urlForImage($image, ['variant' => 'thumb']); ?>
+                                    <?php $photoUrl = $this->ImageServe->urlForImage($image); ?>
                                     <?= $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
                                         'alt' => (string)$image->filename,
                                         'class' => 'season-photo-thumb-img js-season-photo',
@@ -456,7 +511,7 @@ $this->start('css'); ?>
                                         'style' => 'object-fit: cover;',
                                         'loading' => 'lazy',
                                         'decoding' => 'async',
-                                        'data-image-id' => (string)$image->id,
+                                        'data-image-url' => $photoUrl,
                                         'data-image-filename' => (string)$image->filename,
                                         'data-thumb-src' => $photoThumbUrl,
                                         'data-rh-no-retry' => '1',

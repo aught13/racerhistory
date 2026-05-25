@@ -74,7 +74,8 @@ class ImagesController extends AppController
             $profileName = strtolower((string)$request->getQuery('profile'));
             $profileConfig = $this->getProfileConfig($profileName);
 
-            $variant = $this->resolveVariantForProfile((string)$request->getQuery('variant'), $profileConfig);
+            $requestedVariant = trim((string)$request->getQuery('variant'));
+            $variant = $this->resolveVariantForProfile($requestedVariant, $profileConfig);
 
             // Strict variant enforcement: if a named stored variant was requested but the image
             // record has no entry for it, return a placeholder immediately rather than falling
@@ -82,7 +83,7 @@ class ImagesController extends AppController
             // with many images that lack a stored thumb variant would otherwise trigger
             // simultaneous full-res Intervention/Image transforms, exhausting PHP-FPM workers
             // and causing Cloudflare to receive empty responses (→ 520).
-            if ($variant !== '') {
+            if ($requestedVariant !== '') {
                 $rawVariants = $image->variants;
                 if (is_string($rawVariants)) {
                     $rawVariants = json_decode($rawVariants, true);

@@ -23,7 +23,6 @@ declare(strict_types=1);
  */
 
 $this->assign('title', isset($post->id) ? 'Edit Blog Post' : 'Add Blog Post');
-$previewQsJson = json_encode($this->ImageServe->query(['w' => 300, 'h' => 300, 'fit' => 'cover'])) ?: '""';
 $heroModalId = 'hero-image-selector';
 $inlineModalId = 'inline-image-selector';
 $heroFieldId = 'hero-image-field';
@@ -168,6 +167,14 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
                         <button type="button" class="btn btn-secondary flex-grow-1" data-bs-toggle="modal" data-bs-target="#<?= h($heroModalId) ?>">Select/Upload Image</button>
                         <button type="button" id="unset-hero-btn" class="btn btn-outline-danger" title="Remove hero image" style="display: none;" data-action="unset-hero">&times; Remove</button>
                     </div>
+                    <a
+                        id="hero-variant-btn"
+                        class="btn btn-outline-primary w-100 mt-2"
+                        href="#"
+                        target="_blank"
+                        rel="noopener"
+                        style="display: none;"
+                    >Edit Hero Crop</a>
                     <div id="hero-image-preview" class="mt-2" style="display: none;">
                         <img src="" alt="Hero preview" class="img-fluid rounded border" style="max-height: 200px;">
                     </div>
@@ -230,17 +237,25 @@ echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1
 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
 echo $this->Html->script('/js/image-selector.js', ['block' => true]);
 
-$previewVar = $previewQsJson;
 $existingHeroId = (int)($post->hero_image_id ?? 0);
-$selectedRosterId = (int)($selectedRosterId ?? 0);
+$existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId, ['variant' => 'hero']) : '';
+$existingHeroUrlJson = json_encode($existingHeroUrl) ?: "''";
 ?>
 
 <?= $this->Html->scriptBlock(<<<JS
 (function() {
-    const previewQs = {$previewVar};
     const heroFieldId = '{$heroFieldId}';
     const inlineFieldId = '{$inlineFieldId}';
     const existingHeroId = {$existingHeroId};
+    const existingHeroUrl = {$existingHeroUrlJson};
+
+    function withCacheBust(url) {
+        if (!url) {
+            return '';
+        }
+
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
+    }
 
     // Destroy existing TinyMCE instances before reinitializing
     function destroyTinyMCE() {
@@ -257,14 +272,29 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
         const heroPreview = document.getElementById('hero-image-preview');
 
         const unsetHeroBtn = document.getElementById('unset-hero-btn');
+        const heroVariantBtn = document.getElementById('hero-variant-btn');
+
+        function updateHeroVariantButton() {
+            if (!heroField || !heroVariantBtn) return;
+
+            const imageId = parseInt(heroField.value.trim(), 10);
+            if (Number.isFinite(imageId) && imageId > 0) {
+                heroVariantBtn.href = '/admin/images/crop-hero/' + imageId;
+                heroVariantBtn.style.display = 'block';
+            } else {
+                heroVariantBtn.style.display = 'none';
+            }
+        }
 
         // Hero image preview handling
         function updateHeroPreview() {
             if (!heroField || !heroPreview) return;
             const val = (heroField.value || '').trim();
-            if (val && !isNaN(parseInt(val, 10))) {
+            const selectedUrl = heroField.dataset.selectedImageHeroUrl || heroField.dataset.selectedImageThumbnailUrl || heroField.dataset.selectedImageUrl || '';
+            const previewUrl = selectedUrl || (parseInt(val, 10) === existingHeroId ? existingHeroUrl : '');
+            if (val && !isNaN(parseInt(val, 10)) && previewUrl) {
                 const img = heroPreview.querySelector('img');
-                img.src = '/images/serve/' + val + previewQs + '&_ts=' + Date.now();
+                img.src = withCacheBust(previewUrl);
                 heroPreview.style.display = 'block';
                 if (unsetHeroBtn) unsetHeroBtn.style.display = 'inline-block';
             } else {
@@ -272,16 +302,21 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                 if (unsetHeroBtn) unsetHeroBtn.style.display = 'none';
             }
         }
-        heroField?.addEventListener('change', updateHeroPreview);
+        heroField?.addEventListener('change', function () {
+            updateHeroPreview();
+            updateHeroVariantButton();
+        });
         if (existingHeroId > 0 && heroField) {
             heroField.value = existingHeroId;
         }
         updateHeroPreview();
+        updateHeroVariantButton();
 
         // Unset hero image
         unsetHeroBtn?.addEventListener('click', function () {
             if (heroField) heroField.value = '';
             updateHeroPreview();
+            updateHeroVariantButton();
         });
 
         // Check if textarea exists before initializing
@@ -358,7 +393,6 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                 convert_urls: false,
                 relative_urls: false,
 
-                // Custom upload handler with WebP support
                 images_upload_handler: function (blobInfo, progress) {
                     return new Promise(function (resolve, reject) {
                         var xhr = new XMLHttpRequest();
@@ -379,10 +413,7 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
                                 console.error('TinyMCE upload server response (error path):', json);
                                 return reject(json.error || 'Upload failed');
                             }
-                            // Return WebP URL
-                            var url = json.image.url;
-                            var webpUrl = url.includes('?') ? url + '&fm=webp' : url + '?fm=webp';
-                            resolve(webpUrl);
+                            resolve(json.image.url);
                         };
                         xhr.onerror = function () { reject('Image upload failed'); };
                         var formData = new FormData();
@@ -413,22 +444,19 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
             });
         }
 
-        // Inline image insertion with picture/WebP support
+        // Inline image insertion with a direct stored image URL.
         const inlineField = document.getElementById(inlineFieldId);
         function insertInlineImage() {
             const val = inlineField?.value?.trim();
             if (!val || isNaN(parseInt(val, 10))) { return false; }
 
-            const imageId = parseInt(val, 10);
-            const webpUrl = '/images/serve/' + imageId + '?fm=webp&w=800';
-            const fallbackUrl = '/images/serve/' + imageId + '?w=800';
+            const imageUrl = inlineField.dataset.selectedImageUrl || '';
+            if (!imageUrl) { return false; }
 
             const editor = window.tinymce?.activeEditor;
             if (editor) {
-                // Insert picture element with WebP source and fallback
                 const html = '<picture>' +
-                    '<source srcset="' + webpUrl + '" type="image/webp">' +
-                    '<img src="' + fallbackUrl + '" alt="" class="img-fluid" loading="lazy">' +
+                    '<img src="' + imageUrl + '" alt="" class="img-fluid" loading="lazy">' +
                     '</picture><p></p>';
                 editor.insertContent(html);
                 return true;
@@ -438,6 +466,8 @@ $selectedRosterId = (int)($selectedRosterId ?? 0);
         inlineField?.addEventListener('change', () => {
             if (insertInlineImage()) {
                 inlineField.value = '';
+                delete inlineField.dataset.selectedImageUrl;
+                delete inlineField.dataset.selectedImageThumbnailUrl;
             }
         });
     }

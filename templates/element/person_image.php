@@ -39,8 +39,63 @@ $defaultClass = $sizeConfig['class'];
 $cssClass = trim($defaultClass . ' ' . $class);
 $cssStyle = "width: {$width}px; height: {$height}px; object-fit: cover; border-radius: 50%; " . $style;
 
+$normalizeImageUrl = static function (?string $value): string {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+
+    if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, 'data:')) {
+        return $value;
+    }
+    if (str_starts_with($value, '/img/storage/')) {
+        return $value;
+    }
+    if (str_starts_with($value, 'img/storage/')) {
+        return '/' . $value;
+    }
+    if (str_starts_with($value, '/')) {
+        return $value;
+    }
+
+    if (str_contains($value, '/')) {
+        return '/img/storage/' . ltrim($value, '/');
+    }
+
+    return '/img/' . ltrim($value, '/');
+};
+
+$imageId = 0;
+foreach ([$person->person_image ?? null, $person->person_image_id ?? null, $person->image_id ?? null] as $candidate) {
+    if (is_numeric((string)$candidate) && (int)$candidate > 0) {
+        $imageId = (int)$candidate;
+        break;
+    }
+}
+
+if ($imageId <= 0 && isset($person->image) && is_object($person->image) && is_numeric((string)($person->image->id ?? null))) {
+    $imageId = (int)$person->image->id;
+}
+
+$directImageUrl = '';
+if ($imageId <= 0) {
+    foreach ([
+        $person->person_image_url ?? null,
+        $person->image_url ?? null,
+        is_string($person->person_image ?? null) ? $person->person_image : null,
+    ] as $candidate) {
+        if (!is_string($candidate) || trim($candidate) === '') {
+            continue;
+        }
+        $directImageUrl = $normalizeImageUrl($candidate);
+        if ($directImageUrl !== '') {
+            break;
+        }
+    }
+}
+
 // Build image URL
-if (!empty($person->person_image) && is_numeric($person->person_image)) {
+if ($imageId > 0 || $directImageUrl !== '') {
     $imageParams = [];
     if (is_string($profile) && $profile !== '') {
         $imageParams['profile'] = $profile;
@@ -48,8 +103,10 @@ if (!empty($person->person_image) && is_numeric($person->person_image)) {
         $imageParams['variant'] = $variant;
     }
 
+    $resolvedImageUrl = $imageId > 0 ? $this->ImageServe->url($imageId, $imageParams) : $directImageUrl;
+
     if ($deferred) {
-        $thumbUrl = $this->ImageServe->url((int)$person->person_image, $imageParams);
+        $thumbUrl = $resolvedImageUrl;
         echo $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
             'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
             'class' => trim($cssClass . ' js-person-thumb'),
@@ -62,17 +119,29 @@ if (!empty($person->person_image) && is_numeric($person->person_image)) {
             'data-rh-no-retry' => '1',
         ]);
     } else {
-        echo $this->ImageServe->picture(
-            (int)$person->person_image,
-            $imageParams,
-            [
+        if ($imageId > 0) {
+            echo $this->ImageServe->picture(
+                $imageId,
+                $imageParams,
+                [
+                    'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
+                    'class' => $cssClass,
+                    'style' => $cssStyle,
+                    'loading' => 'lazy',
+                    'decoding' => 'async',
+                ],
+            );
+        } else {
+            echo $this->Html->image($resolvedImageUrl, [
                 'alt' => (string)($person->display ?? $person->first . ' ' . $person->last),
                 'class' => $cssClass,
                 'style' => $cssStyle,
                 'loading' => 'lazy',
                 'decoding' => 'async',
-            ],
-        );
+                'width' => $width,
+                'height' => $height,
+            ]);
+        }
     }
 } else {
     // Show placeholder if no image - perfect circle to match photo avatars

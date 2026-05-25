@@ -133,10 +133,8 @@ describe("game-view-init.mjs", () => {
         `;
         setupJQueryMock();
 
-        // Mock location
-        const originalLocation = window.location;
-        delete window.location;
-        window.location = { href: "" };
+        const navigateSpy = jest.fn();
+        window.__RH_NAVIGATE__ = navigateSpy;
 
         const mod = await import("../modules/game-view-init.mjs");
         mod.default({ root: document });
@@ -145,9 +143,8 @@ describe("game-view-init.mjs", () => {
         item.querySelector(".title").dispatchEvent(
             new MouseEvent("click", { bubbles: true }),
         );
-        expect(window.location.href).toBe("/blog/my-post");
-
-        window.location = originalLocation;
+        expect(navigateSpy).toHaveBeenCalledWith("/blog/my-post");
+        delete window.__RH_NAVIGATE__;
     });
 
     test("setupBlogClicks handles Turbo.visit when available", async () => {
@@ -201,7 +198,7 @@ describe("game-view-init.mjs", () => {
     test("setupImageGallery opens and closes modal", async () => {
         document.body.innerHTML = `
             <div data-game-image-gallery>
-                <img class="game-photo-thumb-img" data-image-id="42" data-image-filename="test.jpg" />
+                <img class="game-photo-thumb-img" data-image-id="42" data-image-url="/img/storage/game-42.webp" data-image-filename="test.jpg" />
             </div>
             <div data-game-image-modal>
                 <button data-modal-close>X</button>
@@ -220,7 +217,7 @@ describe("game-view-init.mjs", () => {
         expect(modal.getAttribute("data-modal-open")).toBe("true");
 
         const modalImg = document.querySelector("[data-modal-image-fallback]");
-        expect(modalImg.src).toContain("/images/serve/42");
+        expect(modalImg.src).toContain("/img/storage/game-42.webp");
 
         // Close via button
         const closeBtn = document.querySelector("[data-modal-close]");
@@ -231,7 +228,7 @@ describe("game-view-init.mjs", () => {
     test("setupImageGallery closes on Escape key", async () => {
         document.body.innerHTML = `
             <div data-game-image-gallery>
-                <img class="game-photo-thumb-img" data-image-id="1" />
+                <img class="game-photo-thumb-img" data-image-id="1" data-image-url="/img/storage/game-1.webp" />
             </div>
             <div data-game-image-modal>
                 <img data-modal-image-fallback />

@@ -6,6 +6,33 @@ const POPOVER_CLASS = "person-blog-popover";
 let activePopover = null;
 let docBound = false;
 
+function navigateTo(url) {
+    if (!url) {
+        return;
+    }
+
+    const testNavigate = window.__RH_NAVIGATE__;
+    if (typeof testNavigate === "function") {
+        testNavigate(url);
+        return;
+    }
+
+    try {
+        if (window.location && typeof window.location.assign === "function") {
+            window.location.assign(url);
+            return;
+        }
+    } catch {
+        // Fall back to href assignment below.
+    }
+
+    try {
+        window.location.href = url;
+    } catch {
+        // Ignore navigation errors in non-browser test environments.
+    }
+}
+
 function destroyPopover() {
     if (!activePopover) {
         return;
@@ -91,7 +118,7 @@ function openPopover(anchor) {
     const url = anchor.dataset?.personBlogPopoverUrl;
     if (!url) {
         if (anchor.href) {
-            window.location.href = anchor.href;
+            navigateTo(anchor.href);
         }
         return;
     }

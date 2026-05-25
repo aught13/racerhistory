@@ -162,11 +162,15 @@ echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1
 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
 echo $this->Html->script('/js/image-selector.js', ['block' => true]);
 
-$previewQsJson = json_encode($this->ImageServe->query(['w' => 200, 'h' => 200, 'fit' => 'cover'])) ?: '""';
+$initialImageId = !empty($person->person_image) ? (string)(int)$person->person_image : '';
+$initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initialImageId, ['variant' => 'thumb']) : '';
+$initialImageIdJson = json_encode($initialImageId) ?: '""';
+$initialPreviewUrlJson = json_encode($initialPreviewUrl) ?: '""';
 echo $this->Html->scriptBlock(<<<JS
 (function () {
     function initEditor() {
-    const previewQs = {$previewQsJson};
+    const initialImageId = {$initialImageIdJson};
+    const initialPreviewUrl = {$initialPreviewUrlJson};
     var el = document.getElementById('bio-editor');
     if (!el || typeof tinymce === 'undefined') { return; }
     if (tinymce.get('bio-editor')) { return; }
@@ -220,11 +224,37 @@ echo $this->Html->scriptBlock(<<<JS
     const imageField = document.getElementById('person-image-field');
     const imagePreview = document.getElementById('person-image-preview');
 
+    function previewUrlForField() {
+        if (!imageField) {
+            return '';
+        }
+
+        const imageId = imageField.value.trim();
+        const selectedUrl = imageField.dataset.selectedImageThumbnailUrl || imageField.dataset.selectedImageUrl || '';
+        if (selectedUrl !== '') {
+            return selectedUrl;
+        }
+        if (imageId === initialImageId) {
+            return initialPreviewUrl;
+        }
+
+        return '';
+    }
+
+    function withCacheBust(url) {
+        if (!url) {
+            return '';
+        }
+
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
+    }
+
     function updateImagePreview() {
         const imageId = imageField.value.trim();
-        if (imageId && !isNaN(parseInt(imageId, 10))) {
+        const previewUrl = previewUrlForField();
+        if (imageId && !isNaN(parseInt(imageId, 10)) && previewUrl !== '') {
             const previewImg = imagePreview.querySelector('img');
-            previewImg.src = '/images/serve/' + imageId + previewQs + '&_ts=' + Date.now();
+            previewImg.src = withCacheBust(previewUrl);
             imagePreview.style.display = 'block';
         } else {
             imagePreview.style.display = 'none';
