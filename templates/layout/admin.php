@@ -74,7 +74,8 @@
                 }
                 try {
                     const parsed = new URL(url, window.location.origin);
-                    return parsed.pathname.indexOf('/images/serve/') === 0;
+                    return parsed.pathname.indexOf('/images/serve/') === 0 ||
+                        parsed.pathname.indexOf('/img/storage/') === 0;
                 } catch (err) {
                     return false;
                 }

@@ -221,9 +221,8 @@ describe("person-blog-popover.mjs", () => {
                 <a data-person-blog-popover href="/blog/direct">Post</a>
             </div>
         `;
-        const originalLocation = window.location;
-        delete window.location;
-        window.location = { href: "" };
+        const navigateSpy = jest.fn();
+        window.__RH_NAVIGATE__ = navigateSpy;
 
         const mod = await import("../modules/person-blog-popover.mjs");
         mod.default();
@@ -233,8 +232,10 @@ describe("person-blog-popover.mjs", () => {
             new MouseEvent("click", { bubbles: true, button: 0 }),
         );
 
-        expect(window.location.href).toContain("/blog/direct");
-        window.location = originalLocation;
+        expect(navigateSpy).toHaveBeenCalledWith(
+            "http://localhost/blog/direct",
+        );
+        delete window.__RH_NAVIGATE__;
     });
 
     test("does not re-bind already bound links", async () => {

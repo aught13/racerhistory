@@ -321,7 +321,7 @@ describe("season-view-init additional branches", () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-id="42" data-image-filename="test.jpg" />
+                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/test.jpg" data-image-filename="test.jpg" />
             </div>
             <div data-season-image-modal>
                 <button data-modal-close></button>
@@ -336,6 +336,9 @@ describe("season-view-init additional branches", () => {
         document.querySelector(".season-photo-thumb-img").click();
         const modal = document.querySelector("[data-season-image-modal]");
         expect(modal.hasAttribute("data-modal-open")).toBe(true);
+        expect(
+            document.querySelector("[data-modal-image-fallback]")?.src,
+        ).toContain("/img/storage/2026/05/test.jpg");
 
         // Close via button
         document.querySelector("[data-modal-close]").click();
@@ -346,7 +349,7 @@ describe("season-view-init additional branches", () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-id="1" data-image-filename="f.jpg" />
+                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/f.jpg" data-image-filename="f.jpg" />
             </div>
             <div data-season-image-modal>
                 <img data-modal-image-fallback />
@@ -368,7 +371,7 @@ describe("season-view-init additional branches", () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-id="1" />
+                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/a.jpg" />
             </div>
             <div data-season-image-modal>
                 <img data-modal-image-fallback />
@@ -385,7 +388,7 @@ describe("season-view-init additional branches", () => {
         expect(modal.hasAttribute("data-modal-open")).toBe(false);
     });
 
-    test("image gallery click without imageId is ignored", async () => {
+    test("image gallery click without image URL is ignored", async () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
@@ -407,7 +410,7 @@ describe("season-view-init additional branches", () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-id="1" />
+                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/b.jpg" />
             </div>
             <div data-season-image-modal></div>`;
         setupDT();
@@ -419,7 +422,7 @@ describe("season-view-init additional branches", () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-id="1" />
+                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/c.jpg" />
             </div>
             <div data-season-image-modal>
                 <img data-modal-image-fallback />

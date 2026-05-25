@@ -17,6 +17,7 @@ class ImageSelector {
         this.config = window.imageSelectorConfig?.[modalId] || {};
         this.targetField = document.getElementById(this.config.targetFieldId);
         this.selectedImageId = null;
+        this.selectedImage = null;
         this.cropper = null;
         this.loadedImages = [];
         this.selectedFile = null;
@@ -169,6 +170,7 @@ class ImageSelector {
 
             const data = await response.json();
             this.loadedImages = data.images || [];
+            this.syncTargetFieldSelection();
             this.renderGallery(this.loadedImages);
         } catch (error) {
             console.error("Error loading images:", error);
@@ -231,6 +233,10 @@ class ImageSelector {
         // Add selection to clicked card
         card.classList.add("border", "border-primary", "border-3");
         this.selectedImageId = parseInt(card.dataset.imageId, 10);
+        this.selectedImage =
+            this.loadedImages.find(
+                (img) => Number(img.id) === this.selectedImageId,
+            ) || null;
     }
 
     onSelectImage() {
@@ -242,6 +248,7 @@ class ImageSelector {
         // Set the target field value
         if (this.targetField) {
             this.targetField.value = this.selectedImageId;
+            this.applySelectedImageData(this.selectedImage);
 
             // Trigger change event for any listeners
             this.targetField.dispatchEvent(
@@ -252,6 +259,47 @@ class ImageSelector {
         // Close modal
         const bsModal = bootstrap.Modal.getInstance(this.modal);
         bsModal?.hide();
+    }
+
+    syncTargetFieldSelection() {
+        if (!this.targetField) {
+            return;
+        }
+
+        const currentId = parseInt(this.targetField.value || "", 10);
+        if (!Number.isFinite(currentId) || currentId <= 0) {
+            return;
+        }
+
+        const selectedImage =
+            this.loadedImages.find((img) => Number(img.id) === currentId) ||
+            null;
+        this.applySelectedImageData(selectedImage);
+    }
+
+    applySelectedImageData(image) {
+        if (!this.targetField) {
+            return;
+        }
+
+        if (image && image.url) {
+            this.targetField.dataset.selectedImageUrl = image.url;
+        } else {
+            delete this.targetField.dataset.selectedImageUrl;
+        }
+
+        if (image && image.thumbnail_url) {
+            this.targetField.dataset.selectedImageThumbnailUrl =
+                image.thumbnail_url;
+        } else {
+            delete this.targetField.dataset.selectedImageThumbnailUrl;
+        }
+
+        if (image && image.hero_url) {
+            this.targetField.dataset.selectedImageHeroUrl = image.hero_url;
+        } else {
+            delete this.targetField.dataset.selectedImageHeroUrl;
+        }
     }
 
     onFileSelected(event) {

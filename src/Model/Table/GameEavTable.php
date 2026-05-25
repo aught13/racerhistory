@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\GameEav;
 use App\Model\Entity\SportStatRegistry;
 use App\Service\SportConfigService;
 use Cake\Datasource\EntityInterface;
@@ -104,6 +105,9 @@ class GameEavTable extends Table
             ->all();
         $attributes = [];
         foreach ($rows as $row) {
+            if (!($row instanceof GameEav)) {
+                continue;
+            }
             $attributes[$row->key] = $row->value;
         }
 
@@ -126,7 +130,7 @@ class GameEavTable extends Table
         $entity = $this->find()
             ->where(['game_id' => $gameId, 'key' => $key])
             ->first();
-        if ($entity) {
+        if ($entity instanceof GameEav) {
             $entity->value = $value;
         } else {
             $entity = $this->newEntity([
@@ -151,7 +155,7 @@ class GameEavTable extends Table
         $entity = $this->find()
             ->where(['game_id' => $gameId, 'key' => $key])
             ->first();
-        if ($entity) {
+        if ($entity instanceof GameEav) {
             return (bool)$this->delete($entity);
         }
 

@@ -147,11 +147,15 @@ describe("tinymce-bootstrap-config module", () => {
         const mod = await import("../modules/tinymce-bootstrap-config.mjs");
 
         // Should not throw
-        expect(() => mod.insertResponsiveImage(null, 123)).not.toThrow();
-        expect(() => mod.insertResponsiveImage(undefined, 123)).not.toThrow();
+        expect(() =>
+            mod.insertResponsiveImage(null, "/img/storage/test.jpg"),
+        ).not.toThrow();
+        expect(() =>
+            mod.insertResponsiveImage(undefined, "/img/storage/test.jpg"),
+        ).not.toThrow();
     });
 
-    test("insertResponsiveImage does nothing without imageId", async () => {
+    test("insertResponsiveImage does nothing without imageUrl", async () => {
         const mockEditor = {
             insertContent: jest.fn(),
         };
@@ -164,28 +168,28 @@ describe("tinymce-bootstrap-config module", () => {
         expect(mockEditor.insertContent).not.toHaveBeenCalled();
     });
 
-    test("insertResponsiveImage inserts picture element with WebP", async () => {
+    test("insertResponsiveImage inserts picture element with direct image URL", async () => {
         const mockEditor = {
             insertContent: jest.fn(),
         };
 
         const mod = await import("../modules/tinymce-bootstrap-config.mjs");
 
-        mod.insertResponsiveImage(mockEditor, 42, {
-            alt: "Test Image",
-            position: "center",
-            width: 600,
-        });
+        mod.insertResponsiveImage(
+            mockEditor,
+            "/img/storage/2026/05/inline.jpg",
+            {
+                alt: "Test Image",
+                position: "center",
+            },
+        );
 
         expect(mockEditor.insertContent).toHaveBeenCalledTimes(1);
         const insertedHtml = mockEditor.insertContent.mock.calls[0][0];
 
         expect(insertedHtml).toContain("<picture");
-        expect(insertedHtml).toContain("<source");
-        expect(insertedHtml).toContain('type="image/webp"');
-        expect(insertedHtml).toContain("fm=webp");
-        expect(insertedHtml).toContain("w=600");
-        expect(insertedHtml).toContain("/images/serve/42");
+        expect(insertedHtml).not.toContain("<source");
+        expect(insertedHtml).toContain("/img/storage/2026/05/inline.jpg");
         expect(insertedHtml).toContain('alt="Test Image"');
         expect(insertedHtml).toContain("img-center");
     });
@@ -198,28 +202,36 @@ describe("tinymce-bootstrap-config module", () => {
         const mod = await import("../modules/tinymce-bootstrap-config.mjs");
 
         // Test left position
-        mod.insertResponsiveImage(mockEditor, 1, { position: "left" });
+        mod.insertResponsiveImage(mockEditor, "/img/storage/left.jpg", {
+            position: "left",
+        });
         expect(mockEditor.insertContent.mock.calls[0][0]).toContain(
             "img-float-left",
         );
 
         // Test right position
         mockEditor.insertContent.mockClear();
-        mod.insertResponsiveImage(mockEditor, 1, { position: "right" });
+        mod.insertResponsiveImage(mockEditor, "/img/storage/right.jpg", {
+            position: "right",
+        });
         expect(mockEditor.insertContent.mock.calls[0][0]).toContain(
             "img-float-right",
         );
 
         // Test center position
         mockEditor.insertContent.mockClear();
-        mod.insertResponsiveImage(mockEditor, 1, { position: "center" });
+        mod.insertResponsiveImage(mockEditor, "/img/storage/center.jpg", {
+            position: "center",
+        });
         expect(mockEditor.insertContent.mock.calls[0][0]).toContain(
             "img-center",
         );
 
         // Test inline (default) position
         mockEditor.insertContent.mockClear();
-        mod.insertResponsiveImage(mockEditor, 1, { position: "inline" });
+        mod.insertResponsiveImage(mockEditor, "/img/storage/inline.jpg", {
+            position: "inline",
+        });
         const inlineHtml = mockEditor.insertContent.mock.calls[0][0];
         expect(inlineHtml).not.toContain("img-float-left");
         expect(inlineHtml).not.toContain("img-float-right");

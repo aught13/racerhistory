@@ -125,7 +125,7 @@ class SportStatsAdminService
     /**
      * Return the sports select-list for the index/add/edit forms.
      *
-     * @return \Cake\Datasource\ResultSetInterface<array<string,mixed>>
+     * @return \Cake\Datasource\ResultSetInterface
      */
     public function getSportsList(): ResultSetInterface
     {
@@ -136,7 +136,7 @@ class SportStatsAdminService
      * Return the static option arrays used by the add/edit forms.
      *
      * @return array{
-     *     sports:\Cake\Datasource\ResultSetInterface<array<string,mixed>>,
+     *     sports:\Cake\Datasource\ResultSetInterface,
      *     contexts:array<string,string>,
      *     entityTypes:array<string,string>
      * }

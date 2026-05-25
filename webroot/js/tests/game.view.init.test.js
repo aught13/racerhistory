@@ -32,7 +32,7 @@ describe("Game view init", () => {
                 </turbo-frame>
             </div>
             <div data-game-image-gallery>
-                <img class="game-photo-thumb-img" data-image-id="99" data-image-filename="sample.jpg" />
+                <img class="game-photo-thumb-img" data-image-url="/img/storage/2026/05/sample.jpg" data-image-filename="sample.jpg" />
             </div>
             <div data-game-image-modal>
                 <button data-modal-close></button>
@@ -78,6 +78,9 @@ describe("Game view init", () => {
 
         const modal = document.querySelector("[data-game-image-modal]");
         expect(modal?.getAttribute("data-modal-open")).toBe("true");
+        expect(
+            document.querySelector("[data-modal-image-fallback]")?.src,
+        ).toContain("/img/storage/2026/05/sample.jpg");
     });
 
     test("defers table initialization until headers exist", () => {

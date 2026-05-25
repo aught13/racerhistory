@@ -180,10 +180,18 @@
                                     'id' => 'team-season-image-field',
                                 ]) ?>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 d-grid gap-2">
                                 <button type="button" class="btn btn-secondary form-control" data-bs-toggle="modal" data-bs-target="#team-season-image-selector">
                                     Select/Upload Image
                                 </button>
+                                <a
+                                    id="team-season-hero-variant-btn"
+                                    class="btn btn-outline-primary form-control"
+                                    href="#"
+                                    target="_blank"
+                                    rel="noopener"
+                                    style="display: none;"
+                                >Edit Hero Crop</a>
                             </div>
                         </div>
                         <div class="row mt-2">
@@ -318,10 +326,14 @@
                 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
                 echo $this->Html->script('/js/image-selector.js', ['block' => true]);
 
-                $previewQsJson = json_encode($this->ImageServe->query(['w' => 200, 'h' => 200, 'fit' => 'cover'])) ?: '""';
+                $initialImageId = !empty($teamSeason->team_season_image) ? (string)(int)$teamSeason->team_season_image : '';
+                $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initialImageId, ['variant' => 'hero']) : '';
+                $initialImageIdJson = json_encode($initialImageId) ?: '""';
+                $initialPreviewUrlJson = json_encode($initialPreviewUrl) ?: '""';
                 echo $this->Html->scriptBlock(<<<JS
 document.addEventListener('DOMContentLoaded', function () {
-    const previewQs = {$previewQsJson};
+    const initialImageId = {$initialImageIdJson};
+    const initialPreviewUrl = {$initialPreviewUrlJson};
     function initEditor(id){
         if (!document.getElementById(id) || typeof tinymce === 'undefined') return;
         tinymce.init({
@@ -376,12 +388,53 @@ document.addEventListener('DOMContentLoaded', function () {
     // Team season image preview handler
     const imageField = document.getElementById('team-season-image-field');
     const imagePreview = document.getElementById('team-season-image-preview');
+    const heroVariantButton = document.getElementById('team-season-hero-variant-btn');
+
+    function updateHeroVariantButton() {
+        if (!heroVariantButton || !imageField) {
+            return;
+        }
+
+        const imageId = parseInt(imageField.value.trim(), 10);
+        if (Number.isFinite(imageId) && imageId > 0) {
+            heroVariantButton.href = '/admin/images/crop-hero/' + imageId;
+            heroVariantButton.style.display = 'block';
+        } else {
+            heroVariantButton.style.display = 'none';
+        }
+    }
+
+    function previewUrlForField() {
+        if (!imageField) {
+            return '';
+        }
+
+        const imageId = imageField.value.trim();
+        const selectedUrl = imageField.dataset.selectedImageHeroUrl || imageField.dataset.selectedImageThumbnailUrl || imageField.dataset.selectedImageUrl || '';
+        if (selectedUrl !== '') {
+            return selectedUrl;
+        }
+        if (imageId === initialImageId) {
+            return initialPreviewUrl;
+        }
+
+        return '';
+    }
+
+    function withCacheBust(url) {
+        if (!url) {
+            return '';
+        }
+
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
+    }
 
     function updateImagePreview() {
         const imageId = imageField.value.trim();
-        if (imageId && !isNaN(parseInt(imageId, 10))) {
+        const previewUrl = previewUrlForField();
+        if (imageId && !isNaN(parseInt(imageId, 10)) && previewUrl !== '') {
             const previewImg = imagePreview.querySelector('img');
-            previewImg.src = '/images/serve/' + imageId + previewQs + '&_ts=' + Date.now();
+            previewImg.src = withCacheBust(previewUrl);
             imagePreview.style.display = 'block';
         } else {
             imagePreview.style.display = 'none';
@@ -390,10 +443,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Listen for changes to the image field (from modal or manual entry)
     if (imageField) {
-        imageField.addEventListener('change', updateImagePreview);
+        imageField.addEventListener('change', function () {
+            updateImagePreview();
+            updateHeroVariantButton();
+        });
 
         // Show initial preview if image ID is set
         updateImagePreview();
+        updateHeroVariantButton();
     }
 });
 JS, ['block' => true]);

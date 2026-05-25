@@ -63,11 +63,18 @@ class ImageEditServiceTest extends TestCase
                     'height' => 150,
                     'mime' => 'image/webp',
                 ],
+                'hero' => [
+                    'file' => 'seed-hero.webp',
+                    'width' => 1400,
+                    'height' => 720,
+                    'mime' => 'image/webp',
+                ],
             ]),
         ], ['validate' => false]);
         $images->saveOrFail($image);
 
         file_put_contents($subdirPath . 'seed-thumb.webp', 'OLDTHUMB');
+        file_put_contents($subdirPath . 'seed-hero.webp', 'OLDHERO');
     }
 
     /**
@@ -153,6 +160,35 @@ class ImageEditServiceTest extends TestCase
 
         $this->assertSame('NEWVAR-thumb', (string)file_get_contents($subdirPath . 'seed-thumb.webp'));
         $this->assertSame(hash('sha256', 'NEWVAR-thumb'), (string)$reloaded->hash);
+    }
+
+    /**
+     * Tests crop hero variant updates hero file and hash.
+     */
+    public function testCropHeroVariantUpdatesHeroFileAndHash(): void
+    {
+        $images = TableRegistry::getTableLocator()->get('Images');
+        $image = $images->get(1);
+
+        $processor = $this->createFakeProcessor();
+        $service = new ImageEditService($processor, null);
+        $result = $service->cropHeroVariant($images, $image, [
+            'x' => 1,
+            'y' => 2,
+            'width' => 10,
+            'height' => 12,
+        ]);
+
+        $this->assertTrue((bool)($result['success'] ?? false));
+
+        $reloaded = $images->get(1);
+
+        $subdirPath = $this->storageRoot
+            . str_replace('/', DIRECTORY_SEPARATOR, (string)$reloaded->storage_subdir)
+            . DIRECTORY_SEPARATOR;
+
+        $this->assertSame('NEWVAR-hero', (string)file_get_contents($subdirPath . 'seed-hero.webp'));
+        $this->assertSame(hash('sha256', 'NEWVAR-hero'), (string)$reloaded->hash);
     }
 
     /**

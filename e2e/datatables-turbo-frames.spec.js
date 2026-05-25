@@ -53,7 +53,7 @@ test.describe("DataTables inside Turbo Frames", () => {
     test.describe("Seasons page – DataTable in turbo-frame", () => {
         test("initializes DataTable on first load", async ({ page }) => {
             await page.goto("/seasons");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // The seasons table is inside turbo-frame#seasons-table-frame
             const frame = page.locator("turbo-frame#seasons-table-frame");
@@ -70,7 +70,7 @@ test.describe("DataTables inside Turbo Frames", () => {
             page,
         }) => {
             await page.goto("/seasons");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const filterLink = page
                 .locator('a[data-turbo-frame="seasons-table-frame"]')
@@ -83,7 +83,7 @@ test.describe("DataTables inside Turbo Frames", () => {
             await filterLink.click();
 
             // Wait for frame to update
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
             await page.waitForTimeout(500); // extra settle time
 
             const frame = page.locator("turbo-frame#seasons-table-frame");
@@ -100,7 +100,7 @@ test.describe("DataTables inside Turbo Frames", () => {
             page,
         }) => {
             await page.goto("/seasons");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const filterLink = page
                 .locator('a[data-turbo-frame="seasons-table-frame"]')
@@ -112,7 +112,7 @@ test.describe("DataTables inside Turbo Frames", () => {
 
             // Click filter twice to trigger two frame loads
             await filterLink.click();
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
             await page.waitForTimeout(300);
 
             // Verify no duplicate wrappers inside the frame
@@ -130,7 +130,7 @@ test.describe("DataTables inside Turbo Frames", () => {
     test.describe("People page – DataTable with Scroller", () => {
         test("initializes DataTable on first load", async ({ page }) => {
             await page.goto("/people");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // People table should render
             const table = page.locator("#people-table");
@@ -153,7 +153,7 @@ test.describe("DataTables inside Turbo Frames", () => {
 
         test("SearchBuilder panel toggles correctly", async ({ page }) => {
             await page.goto("/people");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const filterBtn = page.locator("#people-filter-btn");
             if ((await filterBtn.count()) === 0) {
@@ -173,7 +173,7 @@ test.describe("DataTables inside Turbo Frames", () => {
 
         test("name search filters table rows", async ({ page }) => {
             await page.goto("/people");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const searchInput = page.locator("#people-name-search");
             if ((await searchInput.count()) === 0) {
@@ -208,7 +208,7 @@ test.describe("DataTables with Turbo Drive navigation", () => {
     test.describe("Games index page", () => {
         test("DataTable loads on games index", async ({ page }) => {
             await page.goto("/games");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // Games index has type cards, may or may not have a DataTable yet
             const cards = page.locator("#games-type-cards, .game-type-card");
@@ -223,7 +223,7 @@ test.describe("DataTables with Turbo Drive navigation", () => {
         }) => {
             // Navigate directly to a games search page that uses DataTable
             await page.goto("/games/ranked");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const table = page.locator("#games-results-table");
             if ((await table.count()) === 0) {
@@ -247,7 +247,7 @@ test.describe("DataTables with Turbo Drive navigation", () => {
     test.describe("Stats pages – DataTables with AJAX", () => {
         test("Stats player-season page loads DataTable", async ({ page }) => {
             await page.goto("/stats/player-season");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const table = page.locator("#stats-results-table");
             if ((await table.count()) === 0) {
@@ -307,24 +307,24 @@ test.describe("DataTables with Turbo Drive navigation", () => {
             page.on("pageerror", (err) => errors.push(err.message));
 
             await page.goto("/seasons");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
             await page.waitForTimeout(500);
 
             // Navigate to people
             await page.goto("/people");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
             await page.waitForTimeout(500);
 
             // Navigate to games
             await page.goto("/games");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
             await page.waitForTimeout(500);
 
             // Go back twice
             await page.goBack();
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
             await page.goBack();
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // Filter for DataTable-related errors only
             const dtErrors = errors.filter(
@@ -342,7 +342,7 @@ test.describe("DataTables with Turbo Drive navigation", () => {
     test.describe("Game view – stats turbo-frame with DataTable", () => {
         test("game stats frame loads content", async ({ page }) => {
             await page.goto("/games/view/1");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const frame = page.locator("turbo-frame#game-stats-frame");
             if ((await frame.count()) === 0) {
@@ -361,7 +361,7 @@ test.describe("DataTables with Turbo Drive navigation", () => {
             page,
         }) => {
             await page.goto("/games/view/1");
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             const frame = page.locator("turbo-frame#game-stats-frame");
             if ((await frame.count()) === 0) {
@@ -383,16 +383,16 @@ test.describe("DataTable cleanup lifecycle", () => {
     }) => {
         // Go to a page with DataTables
         await page.goto("/seasons");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(1000);
 
         // Navigate away (triggers turbo:before-cache)
         await page.goto("/people");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Go back (Turbo restores from cache)
         await page.goBack();
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(1000);
 
         // There should be at most one DataTable wrapper per table in the frame
@@ -415,7 +415,7 @@ test.describe("DataTable cleanup lifecycle", () => {
         await page.goto("/people"); // navigate before DataTable fully loads
         await page.goto("/games");
         await page.goto("/stats");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // No DataTable-related errors should occur
         const dtErrors = errors.filter(
@@ -433,7 +433,7 @@ test.describe("DataTable cleanup lifecycle", () => {
 test.describe("Season view with turbo-frame table toggle", () => {
     test("seasons splits page loads correctly", async ({ page }) => {
         await page.goto("/seasons/splits");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         const frame = page.locator("turbo-frame#seasons-table-frame");
         if ((await frame.count()) === 0) {
@@ -453,7 +453,7 @@ test.describe("Season view with turbo-frame table toggle", () => {
         page,
     }) => {
         await page.goto("/seasons");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Find a link to the splits view
         const splitsLink = page
@@ -467,7 +467,7 @@ test.describe("Season view with turbo-frame table toggle", () => {
         }
 
         await splitsLink.click();
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(500);
 
         // Frame should still be present
@@ -491,7 +491,7 @@ test.describe("Back-button navigation restores index pages", () => {
     }) => {
         // Visit the people index first so it gets cached by Turbo
         await page.goto("/people");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Verify the table element exists before navigating away
         const tableExists = await page.evaluate(
@@ -505,11 +505,11 @@ test.describe("Back-button navigation restores index pages", () => {
         // Navigate away to a person view page (triggers turbo:before-cache on people index)
         // Use page.goto to simulate Turbo Drive navigation away from /people
         await page.goto("/people/view/1");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Press back – Turbo should restore the cached people index
         await page.goBack();
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(1000);
 
         // The people table element must be in the DOM after restoration.
@@ -526,7 +526,7 @@ test.describe("Back-button navigation restores index pages", () => {
     }) => {
         // Visit the seasons index first so it gets cached by Turbo
         await page.goto("/seasons");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Verify the seasons frame exists before navigating away
         const frame = page.locator("turbo-frame#seasons-table-frame");
@@ -538,11 +538,11 @@ test.describe("Back-button navigation restores index pages", () => {
 
         // Navigate away to a season view page (triggers turbo:before-cache on seasons index)
         await page.goto("/seasons/view/1");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Press back – Turbo should restore the cached seasons index
         await page.goBack();
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(1000);
 
         // The seasons table must be in the DOM after restoration.
@@ -561,7 +561,7 @@ test.describe("Back-button navigation restores index pages", () => {
     }) => {
         // Visit the people index first
         await page.goto("/people");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         const tableExists = await page.evaluate(
             () => !!document.querySelector("#people-table"),
@@ -592,11 +592,11 @@ test.describe("Back-button navigation restores index pages", () => {
 
         // Navigate to person view (triggers turbo:before-cache on people index)
         await page.goto("/people/view/1");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Press back – Turbo restores people index from cache
         await page.goBack();
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
         await page.waitForTimeout(2000);
 
         // The table should still be in the DOM (not removed by destroy(true))

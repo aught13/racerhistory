@@ -7,6 +7,7 @@ use App\Model\Entity\Game;
 use App\Model\Entity\StatBasketGameBox;
 use App\Model\Entity\StatBasketGamePerson;
 use App\Model\Entity\StatBasketSeasonPerson;
+use App\Model\Entity\TeamSeason;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Collection\CollectionInterface;
 use Cake\ORM\Locator\LocatorAwareTrait;
@@ -136,6 +137,9 @@ class BasketballStatsService
             ->all();
 
         foreach ($periodStatsData as $periodStat) {
+            if (!($periodStat instanceof StatBasketGameBox)) {
+                continue;
+            }
             if ($periodStat->opponent_id == 0) {
                 $teamPeriodStats[$periodStat->period] = $periodStat->toArray();
             } elseif ($periodStat->opponent_id == $opponentId) {
@@ -212,7 +216,7 @@ class BasketballStatsService
             ->where(['TeamSeasons.id' => $teamSeasonId])
             ->first();
 
-        if (!$teamSeason || !$teamSeason->team || !$teamSeason->team->sport) {
+        if (!($teamSeason instanceof TeamSeason) || !$teamSeason->team || !$teamSeason->team->sport) {
             return null;
         }
 
@@ -422,6 +426,9 @@ class BasketballStatsService
 
         $grouped = [];
         foreach ($rows as $row) {
+            if (!($row instanceof StatBasketGamePerson)) {
+                continue;
+            }
             $gameId = (int)$row->game_id;
             if (!isset($grouped[$gameId])) {
                 $grouped[$gameId] = [
@@ -432,7 +439,10 @@ class BasketballStatsService
             $grouped[$gameId]['stats'][] = $row;
         }
 
-        return array_values($grouped);
+        /** @var array<int, array{game: object, stats: array<int, object>}> $result */
+        $result = array_values($grouped);
+
+        return $result;
     }
 
     /**
@@ -979,6 +989,9 @@ class BasketballStatsService
         // Group by person_id and aggregate
         $byPerson = [];
         foreach ($rows as $stat) {
+            if (!($stat instanceof StatBasketSeasonPerson)) {
+                continue;
+            }
             $roster = $stat->team_season_roster ?? null;
             if (!$roster || !$roster->person) {
                 continue;
@@ -1237,6 +1250,9 @@ class BasketballStatsService
             ->toArray();
 
         foreach ($stats as $stat) {
+            if (!($stat instanceof StatBasketSeasonPerson)) {
+                continue;
+            }
             if ($stat->team_season_roster) {
                 $stat->set('person', $stat->team_season_roster->person);
             }

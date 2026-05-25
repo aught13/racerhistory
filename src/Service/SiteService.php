@@ -23,10 +23,12 @@ class SiteService
     {
         $sites = TableRegistry::getTableLocator()->get('Sites');
 
-        return $sites->find()
+        $site = $sites->find()
             ->contain(['Places'])
             ->where(['Sites.id' => $siteId])
             ->first();
+
+        return $site instanceof Site ? $site : null;
     }
 
     /**
@@ -188,6 +190,9 @@ class SiteService
 
         $list = [];
         foreach ($query->all() as $site) {
+            if (!($site instanceof Site)) {
+                continue;
+            }
             $list[(int)$site->id] = $this->getDisplayLabel((int)$site->id);
         }
 
@@ -214,6 +219,9 @@ class SiteService
 
         $results = [];
         foreach ($query as $site) {
+            if (!($site instanceof Site)) {
+                continue;
+            }
             $results[] = [
                 'id' => (int)$site->id,
                 'name' => (string)($site->site_name ?? ''),

@@ -53,6 +53,33 @@ function initTable(table) {
     return $(table).DataTable(DEFAULT_TABLE_OPTIONS);
 }
 
+function navigateTo(url) {
+    if (!url) {
+        return;
+    }
+
+    const testNavigate = window.__RH_NAVIGATE__;
+    if (typeof testNavigate === "function") {
+        testNavigate(url);
+        return;
+    }
+
+    try {
+        if (window.location && typeof window.location.assign === "function") {
+            window.location.assign(url);
+            return;
+        }
+    } catch {
+        // Fall back to href assignment below.
+    }
+
+    try {
+        window.location.href = url;
+    } catch {
+        // Ignore navigation errors in non-browser test environments.
+    }
+}
+
 function setupBlogClicks(root) {
     if (!root || root.dataset.blogRootBound === "true") {
         return;
@@ -71,13 +98,13 @@ function setupBlogClicks(root) {
             "turbo-frame[data-view-frame]",
         );
         if (!viewFrame) {
-            window.location.href = `/blog/${slug}`;
+            navigateTo(`/blog/${slug}`);
             return;
         }
         if (window.Turbo && typeof window.Turbo.visit === "function") {
             window.Turbo.visit(`/blog/${slug}`, { frame: viewFrame.id });
         } else {
-            window.location.href = `/blog/${slug}`;
+            navigateTo(`/blog/${slug}`);
         }
     });
 }

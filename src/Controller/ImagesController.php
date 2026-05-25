@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\Image;
 use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
@@ -67,14 +68,16 @@ class ImagesController extends AppController
         $request->allowMethod(['get', 'head']);
 
         try {
-            $image = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
-            if (!$image) {
+            $imageRecord = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
+            if (!($imageRecord instanceof Image)) {
                 return $this->placeholderTransparentWebp();
             }
+            $image = $imageRecord;
             $profileName = strtolower((string)$request->getQuery('profile'));
             $profileConfig = $this->getProfileConfig($profileName);
 
-            $variant = $this->resolveVariantForProfile((string)$request->getQuery('variant'), $profileConfig);
+            $requestedVariant = trim((string)$request->getQuery('variant'));
+            $variant = $this->resolveVariantForProfile($requestedVariant, $profileConfig);
 
             // Strict variant enforcement: if a named stored variant was requested but the image
             // record has no entry for it, return a placeholder immediately rather than falling
@@ -82,7 +85,7 @@ class ImagesController extends AppController
             // with many images that lack a stored thumb variant would otherwise trigger
             // simultaneous full-res Intervention/Image transforms, exhausting PHP-FPM workers
             // and causing Cloudflare to receive empty responses (→ 520).
-            if ($variant !== '') {
+            if ($requestedVariant !== '') {
                 $rawVariants = $image->variants;
                 if (is_string($rawVariants)) {
                     $rawVariants = json_decode($rawVariants, true);

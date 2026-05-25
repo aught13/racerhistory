@@ -24,7 +24,7 @@ class PersonService
         $persons = TableRegistry::getTableLocator()->get('Persons');
         $person = $persons->find()->where(['Persons.id' => $personId])->first();
 
-        return $person;
+        return $person instanceof Person ? $person : null;
     }
 
     /**
@@ -87,6 +87,9 @@ class PersonService
             ->all();
 
         foreach ($personResults as $person) {
+            if (!($person instanceof Person)) {
+                continue;
+            }
             $label = (string)($person->display ?? '');
             if ($label === '') {
                 $label = trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? ''));
@@ -141,6 +144,9 @@ class PersonService
 
         $out = [];
         foreach ($rows as $person) {
+            if (!($person instanceof Person)) {
+                continue;
+            }
             $base = trim((string)($person->display ?? ''))
                 ?: trim((string)($person->full ?? ''))
                 ?: trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? ''));
@@ -191,10 +197,15 @@ class PersonService
     {
         $persons = TableRegistry::getTableLocator()->get('Persons');
 
-        return $persons->find()
+        $rows = $persons->find()
             ->orderBy(['Persons.last' => 'ASC', 'Persons.first' => 'ASC'])
             ->all()
             ->toArray();
+
+        /** @var array<int,\App\Model\Entity\Person> $result */
+        $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof Person));
+
+        return $result;
     }
 
     /**
@@ -253,6 +264,9 @@ class PersonService
         $results = [];
 
         foreach ($persons as $person) {
+            if (!($person instanceof Person)) {
+                continue;
+            }
             $results[] = [
                 'id' => $person->id,
                 'label' => $person->label ?? trim(($person->first ?? '') . ' ' . ($person->last ?? '')),

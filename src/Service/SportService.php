@@ -22,8 +22,9 @@ class SportService
     public function getSportById(int $sportId): ?Sport
     {
         $sports = TableRegistry::getTableLocator()->get('Sports');
+        $sport = $sports->find()->where(['Sports.id' => $sportId])->first();
 
-        return $sports->find()->where(['Sports.id' => $sportId])->first();
+        return $sport instanceof Sport ? $sport : null;
     }
 
     /**
@@ -112,6 +113,9 @@ class SportService
         $results = [];
 
         foreach ($sports as $sport) {
+            if (!($sport instanceof Sport)) {
+                continue;
+            }
             $results[] = [
                 'id' => $sport->id,
                 'label' => $sport->sport_name,
@@ -138,6 +142,9 @@ class SportService
 
         $list = [];
         foreach ($rows as $sport) {
+            if (!($sport instanceof Sport)) {
+                continue;
+            }
             $list[(int)$sport->id] = (string)($sport->sport_name ?? '');
         }
 

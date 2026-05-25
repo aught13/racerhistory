@@ -519,7 +519,7 @@ describe("season-view-init.mjs (coverage)", () => {
         test("opens modal on thumb click and sets sources", async () => {
             document.body.innerHTML = `
                 <div data-season-image-gallery>
-                    <img class="season-photo-thumb-img" data-image-id="42" data-image-filename="photo.jpg" />
+                    <img class="season-photo-thumb-img" data-image-id="42" data-image-url="/img/storage/season-42.webp" data-image-filename="photo.jpg" />
                 </div>
                 <div data-season-image-modal>
                     <button data-modal-close>X</button>
@@ -539,10 +539,10 @@ describe("season-view-init.mjs (coverage)", () => {
             expect(modal.getAttribute("data-modal-open")).toBe("true");
 
             const img = document.querySelector("[data-modal-image-fallback]");
-            expect(img.src).toContain("/images/serve/42");
+            expect(img.src).toContain("/img/storage/season-42.webp");
 
             const webp = document.querySelector("[data-modal-image-webp]");
-            expect(webp.srcset).toContain("/images/serve/42?format=webp");
+            expect(webp.hasAttribute("srcset")).toBe(false);
         });
 
         test("closes modal on close button click", async () => {
@@ -669,7 +669,7 @@ describe("season-view-init.mjs (coverage)", () => {
         test("handles thumb without webp source element", async () => {
             document.body.innerHTML = `
                 <div data-season-image-gallery>
-                    <img class="season-photo-thumb-img" data-image-id="5" data-image-filename="test.jpg" />
+                    <img class="season-photo-thumb-img" data-image-id="5" data-image-url="/img/storage/season-5.webp" data-image-filename="test.jpg" />
                 </div>
                 <div data-season-image-modal>
                     <img data-modal-image-fallback />

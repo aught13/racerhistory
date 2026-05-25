@@ -284,9 +284,9 @@ describe("person-image error branches", () => {
 
         // Should not throw when parentElement is null
         expect(() => {
-            personImage.setPreviewFromId(5, img);
+            personImage.setPreviewFromId("/img/storage/5.webp", img);
         }).not.toThrow();
 
-        expect(img.src).toContain("/images/serve/5");
+        expect(img.src).toContain("/img/storage/5.webp");
     });
 });

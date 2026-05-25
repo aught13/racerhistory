@@ -171,6 +171,19 @@ class ImageEditService
     }
 
     /**
+     * Regenerate the hero variant using a custom crop area.
+     *
+     * @param \App\Model\Table\ImagesTable $images
+     * @param \App\Model\Entity\Image      $image
+     * @param array<string,int>              $crop
+     * @return array<string,mixed>
+     */
+    public function cropHeroVariant(ImagesTable $images, Image $image, array $crop): array
+    {
+        return $this->cropStoredVariant($images, $image, 'hero', 1400, 720, $crop);
+    }
+
+    /**
      * Regenerate the thumb variant using a crop area.
      *
      * @param \App\Model\Table\ImagesTable $images
@@ -180,6 +193,28 @@ class ImageEditService
      */
     public function cropThumbVariant(ImagesTable $images, Image $image, array $crop): array
     {
+        return $this->cropStoredVariant($images, $image, 'thumb', 150, 150, $crop);
+    }
+
+    /**
+     * Crop and persist a named stored variant.
+     *
+     * @param \App\Model\Table\ImagesTable $images
+     * @param \App\Model\Entity\Image $image
+     * @param string $variantName
+     * @param int $targetWidth
+     * @param int $targetHeight
+     * @param array<string,int> $crop
+     * @return array<string,mixed>
+     */
+    private function cropStoredVariant(
+        ImagesTable $images,
+        Image $image,
+        string $variantName,
+        int $targetWidth,
+        int $targetHeight,
+        array $crop,
+    ): array {
         [$originalPath] = $this->storage->resolveImagePath($image, '');
         if (!is_file($originalPath)) {
             throw new RuntimeException('Original image file not found');
@@ -191,14 +226,14 @@ class ImageEditService
         }
 
         $variantConfig = [
-            'thumb' => [
+            $variantName => [
                 'crop' => [
                     'x' => (int)($crop['x'] ?? 0),
                     'y' => (int)($crop['y'] ?? 0),
                     'width' => (int)($crop['width'] ?? 0),
                     'height' => (int)($crop['height'] ?? 0),
                 ],
-                'fit' => [150, 150],
+                'fit' => [$targetWidth, $targetHeight],
                 'format' => 'webp',
             ],
         ];
@@ -210,8 +245,8 @@ class ImageEditService
             [],
         );
 
-        if (!isset($processed['variants']['thumb'])) {
-            throw new RuntimeException('Thumb variant not generated');
+        if (!isset($processed['variants'][$variantName])) {
+            throw new RuntimeException(ucfirst($variantName) . ' variant not generated');
         }
 
         $existingVariants = $image->variants;
@@ -221,31 +256,31 @@ class ImageEditService
         $existingVariants = is_array($existingVariants) ? $existingVariants : [];
 
         $dir = dirname($originalPath);
-        $meta = $processed['variants']['thumb'];
+        $meta = $processed['variants'][$variantName];
 
-        $existingFile = $existingVariants['thumb']['file'] ?? null;
+        $existingFile = $existingVariants[$variantName]['file'] ?? null;
         $baseName = pathinfo((string)$image->filename, PATHINFO_FILENAME);
         $ext = (string)($meta['ext'] ?? 'webp');
-        $targetFile = $existingFile ?: ($baseName . '-thumb.' . $ext);
+        $targetFile = $existingFile ?: ($baseName . '-' . $variantName . '.' . $ext);
         $variantPath = $dir . DS . $targetFile;
 
         $bytesWritten = file_put_contents($variantPath, (string)($meta['data'] ?? ''));
         if ($bytesWritten === false) {
-            throw new RuntimeException('Failed to write thumb variant file');
+            throw new RuntimeException('Failed to write ' . $variantName . ' variant file');
         }
 
-        $existingVariants['thumb'] = [
+        $existingVariants[$variantName] = [
             'file' => $targetFile,
-            'width' => (int)($meta['width'] ?? 150),
-            'height' => (int)($meta['height'] ?? 150),
+            'width' => (int)($meta['width'] ?? $targetWidth),
+            'height' => (int)($meta['height'] ?? $targetHeight),
             'mime' => (string)($meta['mime'] ?? 'image/webp'),
         ];
 
-        $thumbHash = hash('sha256', (string)($meta['data'] ?? ''));
+        $variantHash = hash('sha256', (string)($meta['data'] ?? ''));
 
         $image = $images->patchEntity($image, [
             'variants' => json_encode($existingVariants),
-            'hash' => $thumbHash,
+            'hash' => $variantHash,
             'modified' => new DateTime('now'),
         ], ['validate' => false]);
 
@@ -253,7 +288,7 @@ class ImageEditService
 
         return [
             'success' => true,
-            'hash' => $thumbHash,
+            'hash' => $variantHash,
             'bytes_written' => (int)$bytesWritten,
         ];
     }

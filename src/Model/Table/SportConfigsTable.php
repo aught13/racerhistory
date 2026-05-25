@@ -140,7 +140,7 @@ class SportConfigsTable extends Table
             ->where(['sport_id' => $sportId, 'config_key' => $key])
             ->first();
 
-        if (!$config) {
+        if (!($config instanceof SportConfig)) {
             $config = $this->newEmptyEntity();
             $config->sport_id = $sportId;
             $config->config_key = $key;

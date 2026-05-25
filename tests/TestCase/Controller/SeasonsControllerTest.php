@@ -225,7 +225,7 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
-     * Tests season view uses profile-based image URLs for billboards and roster avatars.
+     * Tests season view uses direct storage-backed image URLs for billboards and roster avatars.
      */
     public function testViewUsesProfileBasedImageUrls(): void
     {
@@ -234,7 +234,7 @@ class SeasonsControllerTest extends TestCase
 
         $teamSeason = $this->viewVariable('teamSeason');
         if (!empty($teamSeason?->team_season_image)) {
-            $this->assertResponseContains('profile=season_billboard');
+            $this->assertResponseContains('/img/storage/');
         }
 
         $roster = $this->viewVariable('roster');
@@ -246,7 +246,7 @@ class SeasonsControllerTest extends TestCase
             }
         }
         if ($hasRosterImage) {
-            $this->assertResponseContains('profile=roster_avatar');
+            $this->assertResponseContains('/img/storage/');
         }
     }
 }

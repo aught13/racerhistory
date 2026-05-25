@@ -256,6 +256,40 @@ class ImagesControllerMoreTest extends TestCase
     }
 
     /**
+     * Tests crop hero missing file redirects to edit.
+     */
+    public function testCropHeroMissingFileRedirectsToEdit(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $this->post('/admin/images/crop-hero/1', [
+            'crop' => ['x' => 0, 'y' => 0, 'width' => 10, 'height' => 10],
+        ]);
+
+        $this->assertRedirectContains('/admin/images/edit/1');
+    }
+
+    /**
+     * Tests crop hero invalid crop redirects back to crop.
+     */
+    public function testCropHeroInvalidCropRedirectsBackToCrop(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $fullPath = $this->writeFixtureImageFile(1, $this->tinyPngBytes());
+
+        $this->post('/admin/images/crop-hero/1', [
+            'crop' => ['x' => 0, 'y' => 0],
+        ]);
+
+        $this->assertRedirectContains('/admin/images/crop-hero/1');
+
+        $this->safeUnlink($fullPath);
+    }
+
+    /**
      * Tests tags post applies and redirects.
      */
     public function testTagsPostAppliesAndRedirects(): void

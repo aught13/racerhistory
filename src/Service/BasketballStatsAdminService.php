@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Game;
+use App\Model\Entity\StatBasketGameBox;
 use App\Model\Entity\StatBasketGameTeam;
 use App\Model\Entity\TeamSeason;
 
@@ -964,8 +965,14 @@ class BasketballStatsAdminService extends BasketballStatsService
             }
         }
 
-        if ($addToTotals && $teamBox && $opponentBox) {
-            $this->applyGameBoxToSeasonTotals($game, $teamBox, $opponentBox, $originalTeamBox, $originalOpponentBox);
+        if ($addToTotals && $teamBox instanceof StatBasketGameBox && $opponentBox instanceof StatBasketGameBox) {
+            $this->applyGameBoxToSeasonTotals(
+                $game,
+                $teamBox,
+                $opponentBox,
+                $originalTeamBox instanceof StatBasketGameBox ? $originalTeamBox : null,
+                $originalOpponentBox instanceof StatBasketGameBox ? $originalOpponentBox : null,
+            );
         }
 
         return [

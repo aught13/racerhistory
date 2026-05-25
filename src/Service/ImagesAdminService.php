@@ -114,7 +114,14 @@ class ImagesAdminService
         foreach ($rows as $row) {
             $rowData = is_array($row) ? $row : $row->toArray();
 
+            // 1. Decode the JSON string into a PHP array
+            $variantsArray = json_decode($rowData['variants'], true);
+
+            // 2. Extract the 'thumb' value
+            $thumbData = (string)($variantsArray['thumb']['file'] ?? '');
+
             $id = (int)($rowData['id'] ?? 0);
+            $path = (string)($rowData['storage_subdir'] ?? '');
             $originalName = (string)($rowData['original_name'] ?? '');
             $filename = (string)($rowData['filename'] ?? '');
             $name = $originalName !== '' ? $originalName : $filename;
@@ -127,7 +134,7 @@ class ImagesAdminService
             $status = (string)($rowData['status'] ?? 'unknown');
             $statusClass = strtolower($status) === 'active' ? 'bg-success' : 'bg-secondary';
 
-            $thumbUrl = '/images/serve/' . $id . '?variant=thumb';
+            $thumbUrl = '/img/storage/' . $path . '/' . $thumbData;
             $editUrl = '/admin/images/edit/' . $id;
 
             $data[] = [
@@ -497,6 +504,20 @@ class ImagesAdminService
         $image = $this->getImageById($id);
 
         return $this->imageEditService->cropThumbVariant($this->imagesTable, $image, $crop);
+    }
+
+    /**
+     * Apply a hero crop by image id.
+     *
+     * @param int $id
+     * @param array<string,int> $crop
+     * @return array<string,mixed>
+     */
+    public function cropHero(int $id, array $crop): array
+    {
+        $image = $this->getImageById($id);
+
+        return $this->imageEditService->cropHeroVariant($this->imagesTable, $image, $crop);
     }
 
     /**
