@@ -279,7 +279,7 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         if: ${{ matrix.coverage == true }}
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v4.6.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v4.6.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
           files: coverage.xml
@@ -358,7 +358,7 @@ jobs:
         run: npm run test:js -- --ci --coverage
 
       - name: Upload JS coverage to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v4.6.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v4.6.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
           files: coverage-js/clover.xml
