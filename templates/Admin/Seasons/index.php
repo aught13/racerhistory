@@ -5,7 +5,17 @@
  */
 ?>
 <?php $this->assign('title', 'Manage Seasons'); ?>
-<div class="container py-4">
+<div
+    class="container py-4"
+    data-controller="admin-bulk-table"
+    data-admin-bulk-table-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'bulkDelete'])) ?>"
+    data-admin-bulk-table-item-type-value="seasons (bulk)"
+    data-admin-bulk-table-ids-name-value="season_ids[]"
+    data-admin-bulk-table-form-id-value="delete-form-seasons-bulk"
+    data-admin-bulk-table-name-column-value="4"
+    data-admin-bulk-table-order-column-value="1"
+    data-admin-bulk-table-order-direction-value="desc"
+>
     <div class="row mb-3">
         <div class="col">
             <h1 class="mb-3">Seasons Management</h1>
@@ -24,20 +34,20 @@
         <div class="col">
             <h2 class="mb-3">All Seasons</h2>
             <?php if (!$seasons->isEmpty()) : ?>
-            <form id="bulk-action-form" method="post">
+            <form id="bulk-action-form" method="post" data-admin-bulk-table-target="bulkForm">
                 <div class="mb-2 d-flex align-items-center gap-2" id="seasons-bulk-action-bar">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
-                    <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto">
+                    <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto" data-admin-bulk-table-target="actionSelect">
                         <option value="">Choose...</option>
                         <option value="delete">Delete</option>
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled>Go</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-bulk-table-target="actionButton">Go</button>
                 </div>
 
-                <table class="table table-striped table-bordered" id="seasons-table">
+                <table class="table table-striped table-bordered" id="seasons-table" data-admin-bulk-table-target="table">
                     <thead class="table-dark">
                         <tr>
-                            <th><input type="checkbox" id="select-all-seasons"></th>
+                            <th><input type="checkbox" id="select-all-seasons" data-admin-bulk-table-target="selectAll"></th>
                             <th>Start Year</th>
                             <th>End Year</th>
                             <th>Season Display</th>
@@ -49,7 +59,7 @@
                     <tbody>
                         <?php foreach ($seasons as $season) : ?>
                         <tr>
-                            <td><input type="checkbox" name="season_ids[]" value="<?= $season->id ?>"
+                                <td><input type="checkbox" name="season_ids[]" value="<?= $season->id ?>" data-admin-bulk-table-role="row-checkbox"
                                     class="season-checkbox">
                             </td>
                             <td><?= h($season->start) ?></td>
@@ -105,60 +115,5 @@
         </div>
     </div>
 </div>
-
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('#seasons-table').DataTable({
-        "pagingType": "simple_numbers",
-        "order": [[ 1, "desc" ]], // Sort by start year descending
-        "drawCallback": function(settings) {
-            var api = this.api();
-            var pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
-            if (api.page.info().pages <= 1) {
-                pagination.hide();
-            } else {
-                pagination.show();
-            }
-        }
-    });
-
-    // Enable/disable bulk action button
-    $(document).on('change', '.season-checkbox, #select-all-seasons, #bulk-action-select', function() {
-        var checked = $('.season-checkbox:checked').length;
-        var action = $('#bulk-action-select').val();
-        $('#bulk-action-btn').prop('disabled', checked === 0 || !action);
-    });
-
-    // Select all checkboxes
-    $('#select-all-seasons').on('change', function() {
-        $('.season-checkbox').prop('checked', this.checked).trigger('change');
-    });
-
-    // Handle bulk action form submission -> open modal with selected item names
-    $('#bulk-action-form').on('submit', function(e) {
-        e.preventDefault();
-        var action = $('#bulk-action-select').val();
-        if (!action) return;
-        if (action === 'delete') {
-            var names = $('.season-checkbox:checked').map(function() {
-                return $(this).closest('tr').find('td:nth-child(4)').text().trim();
-            }).get();
-            var ids = $('.season-checkbox:checked').map(function() { return $(this).val(); }).get();
-            window.showConfirmDelete && window.showConfirmDelete({
-                deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'bulk']) ?>',
-                itemType: 'seasons (bulk)',
-                associated: names,
-                ids: ids,
-                idsName: 'season_ids[]',
-                formId: 'delete-form-seasons-bulk',
-                bulkAction: 'delete'
-            });
-        }
-    });
-});
-</script>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'season']) ?>

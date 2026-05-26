@@ -5,12 +5,22 @@
  */
 ?>
 <?php $this->assign('title', 'Game Types'); ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="admin-index-table">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">Game Types</h1>
         <a href="<?= $this->Url->build(['action' => 'add']) ?>" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add</a>
     </div>
-    <table class="table table-striped">
+    <div class="mb-3" style="max-width: 28rem;">
+        <label class="visually-hidden" for="game-types-search">Search Game Types</label>
+        <input
+            id="game-types-search"
+            type="search"
+            class="form-control"
+            placeholder="Search game types..."
+            data-admin-index-table-target="searchInput"
+        >
+    </div>
+    <table class="table table-striped" id="game-types-table" data-admin-index-table-target="table">
         <thead><tr><th>Name</th><th>Post</th><th>Conf</th><th>Abr</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($gameTypes as $gt) : ?>

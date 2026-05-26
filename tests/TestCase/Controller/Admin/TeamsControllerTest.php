@@ -43,6 +43,10 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-bulk-table"');
+        $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
+        $this->assertResponseContains('data-admin-bulk-table-target="table"');
+        $this->assertResponseContains('data-admin-bulk-table-role="row-checkbox"');
     }
 
     /**

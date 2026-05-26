@@ -30,7 +30,7 @@ $tagFormId = $modalId . '-tag-form';
 $skipCropId = $modalId . '-skip-crop';
 ?>
 
-<div class="modal fade" id="<?= h($modalId) ?>" tabindex="-1" aria-labelledby="<?= h($modalId) ?>Label" aria-hidden="true">
+<div class="modal fade" id="<?= h($modalId) ?>" tabindex="-1" aria-labelledby="<?= h($modalId) ?>Label" aria-hidden="true" data-controller="image-selector">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">

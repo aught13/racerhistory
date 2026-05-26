@@ -20,9 +20,13 @@
     "jsdom": "^24.0.0",
     "prettier": "^3.5.1",
     "stylelint": "^16.26.1",
-    "stylelint-config-standard": "^37.0.0"
+    "stylelint-config-standard": "^37.0.0",
+    "vite": "^5.4.21"
   },
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test:js": "cross-env jest --env=jsdom --colors",
     "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
     "test:js:watch": "jest --env=jsdom --watch",
@@ -31,11 +35,11 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "playwright:install": "playwright install --with-deps chromium",
-    "lint:js": "npx eslint 'webroot/js/**' --max-warnings=0",
-    "lint:js:fix": "npx eslint 'webroot/js/**' --fix",
+    "lint:js": "npx eslint 'webroot/js/**' 'js/**' --max-warnings=0",
+    "lint:js:fix": "npx eslint 'webroot/js/**' 'js/**' --fix",
     "lint:css": "npx stylelint 'webroot/css/**/*.css'",
-    "format:js": "npx prettier --write webroot/js",
-    "format:js:check": "npx prettier --check webroot/js"
+    "format:js": "npx prettier --write webroot/js js",
+    "format:js:check": "npx prettier --check webroot/js js"
   },
   "babel": {
     "presets": [
@@ -55,11 +59,16 @@
       "json"
     ],
     "testMatch": [
+      "**/js/tests/**/*.test.js",
+      "**/js/tests/**/*.test.mjs",
       "**/webroot/js/tests/**/*.test.js",
       "**/webroot/js/tests/**/*.test.mjs"
     ],
     "collectCoverage": true,
     "collectCoverageFrom": [
+      "js/**/*.js",
+      "js/**/*.mjs",
+      "!js/tests/**",
       "webroot/js/**/*.js",
       "webroot/js/**/*.mjs",
       "!webroot/js/tests/**",
@@ -81,6 +90,7 @@
     ],
     "coveragePathIgnorePatterns": [
       "/vendor/",
+      "/js/tests/",
       "/webroot/js/tinymce/",
       "/webroot/js/tests/",
       "/e2e/"
@@ -95,5 +105,8 @@
   },
   "overrides": {
     "tar": "^7.5.11"
+  },
+  "dependencies": {
+    "@hotwired/turbo": "^8.0.23"
   }
 }

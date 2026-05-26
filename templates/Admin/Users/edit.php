@@ -5,7 +5,7 @@
  */
 ?>
 <?php $this->assign('title', 'Edit User'); ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="password-toggle">
     <h1 class="mb-4">Edit User</h1>
     <?= $this->Form->create($user) ?>
     <div class="row">
@@ -51,24 +51,13 @@
                 'class' => 'form-control',
                 'label' => false,
                 'value' => '',
+                'data-password-toggle-target' => 'input',
             ]) ?>
-            <button type="button" class="btn btn-outline-secondary" id="toggle-admin-edit-password" tabindex="-1">
+            <button type="button" class="btn btn-outline-secondary" id="toggle-admin-edit-password" tabindex="-1" data-password-toggle-target="button" data-action="password-toggle#toggle">
                 <span class="bi bi-eye"></span>
             </button>
         </div>
     </div>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var btn = document.getElementById('toggle-admin-edit-password');
-        var input = document.getElementById('admin-edit-password');
-        if (btn && input) {
-            btn.addEventListener('click', function() {
-                input.type = input.type === 'password' ? 'text' : 'password';
-                btn.innerHTML = input.type === 'password' ? '<span class="bi bi-eye"></span>' : '<span class="bi bi-eye-slash"></span>';
-            });
-        }
-    });
-    </script>
     <?= $this->Form->button('Update User', ['class' => 'btn btn-primary']) ?>
     <?= $this->Html->link('Cancel', ['action' => 'index'], ['class' => 'btn btn-secondary']) ?>
     <?= $this->Form->end() ?>

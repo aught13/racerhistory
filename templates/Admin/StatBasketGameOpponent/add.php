@@ -11,7 +11,7 @@
  */
 $this->assign('title', 'Add Opponent Player');
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="stat-multi-add">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
@@ -49,7 +49,7 @@ $this->assign('title', 'Add Opponent Player');
         'url' => ['action' => 'bulkAdd', $game->id],
     ]) ?>
 
-    <div id="stat-rows" data-stat-type="opponent">
+    <div id="stat-rows" data-stat-type="opponent" data-stat-multi-add-target="rows">
         <!-- Initial row rendered server-side -->
         <div class="card mb-3 stat-row" data-row-index="0">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -169,7 +169,7 @@ $this->assign('title', 'Add Opponent Player');
     </div>
 
     <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
-        <button type="button" id="add-row-btn" class="btn btn-outline-success btn-sm">
+        <button type="button" id="add-row-btn" class="btn btn-outline-success btn-sm" data-stat-multi-add-target="addButton">
             <i class="bi bi-plus-circle"></i> Add Another
         </button>
     </div>
@@ -186,19 +186,4 @@ $this->assign('title', 'Add Opponent Player');
     </turbo-frame>
 </div>
 
-<?php $this->append('script'); ?>
-<script type="module">
-import { initStatMultiAdd } from '/js/modules/stat-multi-add.mjs';
-
-function boot() {
-    initStatMultiAdd();
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-} else {
-    boot();
-}
-document.addEventListener('turbo:load', boot);
-</script>
 <?php $this->end(); ?>

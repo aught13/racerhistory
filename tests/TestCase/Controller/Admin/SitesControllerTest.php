@@ -32,6 +32,8 @@ class SitesControllerTest extends TestCase
         $this->get('/admin/sites');
         $this->assertResponseOk();
         $this->assertResponseContains('Sites');
+        $this->assertResponseContains('data-controller="admin-index-table"');
+        $this->assertResponseContains('data-admin-index-table-target="searchInput"');
         $this->assertResponseContains('sites-table');
         $this->assertResponseContains('data-datatables-url');
         $this->assertResponseContains('total');

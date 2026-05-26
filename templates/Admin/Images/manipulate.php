@@ -35,6 +35,9 @@
                                 'id' => 'sourceImage',
                                 'alt' => (string)$image->filename,
                                 'style' => 'display:none;',
+                                'loading' => 'eager',
+                                'decoding' => 'sync',
+                                'fetchpriority' => 'high',
                                 'crossorigin' => 'anonymous',
                             ],
                         ) ?>
@@ -50,6 +53,9 @@
                                 [
                                     'alt' => (string)$image->filename,
                                     'style' => 'max-width: 100%; max-height: 500px; display: block; margin: 0 auto;',
+                                    'loading' => 'eager',
+                                    'decoding' => 'sync',
+                                    'fetchpriority' => 'high',
                                 ],
                             ) ?>
                         </noscript>

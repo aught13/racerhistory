@@ -5,7 +5,7 @@
  */
 
 $this->assign('title', 'Add Season'); ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="season-form">
     <div class="row mb-3">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -42,6 +42,7 @@ $this->assign('title', 'Add Season'); ?>
                             'required' => true,
                             'id' => 'start-year',
                             'placeholder' => 'e.g., 2023',
+                            'data-season-form-target' => 'startYear',
                         ]) ?>
                         <div class="form-text">The starting year of the season (e.g., 2023 for 2023-2024 season).</div>
                     </div>
@@ -55,6 +56,7 @@ $this->assign('title', 'Add Season'); ?>
                             'required' => true,
                             'id' => 'end-year',
                             'placeholder' => 'e.g., 2024',
+                            'data-season-form-target' => 'endYear',
                         ]) ?>
                         <div class="form-text">The ending year of the season (e.g., 2024 for 2023-2024 season).</div>
                     </div>
@@ -102,20 +104,6 @@ $this->assign('title', 'Add Season'); ?>
         </div>
     </div>
 </div>
-
-<script>
-$(document).ready(function() {
-    // Auto-populate end year when start year is entered
-    $('#start-year').on('blur', function() {
-    var startYear = parseInt($(this).val(), 10);
-        var endYearField = $('#end-year');
-
-        if (startYear && !endYearField.val()) {
-            endYearField.val(startYear + 1);
-        }
-    });
-});
-</script>
 
 <!-- Hidden form to generate FormProtection tokens for AJAX requests -->
 <div style="display: none;">

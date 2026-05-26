@@ -107,6 +107,35 @@ class ImagesControllerMoreTest extends TestCase
     }
 
     /**
+     * Tests upload form page renders the Stimulus upload controller.
+     */
+    public function testUploadFormPageRendersStimulusController(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/upload-form');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="image-upload"');
+        $this->assertResponseContains('data-image-upload-target="fileInput"');
+        $this->assertResponseContains('data-image-upload-target="previewContainer"');
+    }
+
+    /**
+     * Tests manipulate page eagerly loads its source image.
+     */
+    public function testManipulatePageEagerLoadsSourceImage(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/manipulate/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('loading="eager"');
+        $this->assertResponseContains('fetchpriority="high"');
+    }
+
+    /**
      * Tests bulk upload with invalid payload entry returns error result.
      */
     public function testBulkUploadWithInvalidPayloadEntryReturnsErrorResult(): void

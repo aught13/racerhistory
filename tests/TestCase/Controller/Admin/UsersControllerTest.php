@@ -51,6 +51,8 @@ class UsersControllerTest extends TestCase
         $this->get('/admin/users');
         $this->assertResponseOk();
         $this->assertResponseContains('Manage Users');
+        $this->assertResponseContains('data-controller="admin-users-index"');
+        $this->assertResponseContains('data-admin-users-index-target="searchTable"');
     }
 
     /**

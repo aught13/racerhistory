@@ -65,6 +65,9 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports');
         $this->assertResponseOk();
         $this->assertResponseContains('Sports Management');
+        $this->assertResponseContains('data-controller="admin-bulk-table"');
+        $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
+        $this->assertResponseContains('data-admin-bulk-table-role="row-checkbox"');
     }
 
     /**
@@ -155,6 +158,8 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/add');
         $this->assertResponseOk();
         $this->assertResponseContains('Add New Sport');
+        $this->assertResponseContains('data-controller="sports-form"');
+        $this->assertResponseContains('data-sports-form-target="form"');
     }
 
     /**
@@ -185,6 +190,8 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/edit/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Edit Sport');
+        $this->assertResponseContains('data-controller="sports-form"');
+        $this->assertResponseContains('data-sports-form-target="form"');
     }
 
     /**

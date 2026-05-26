@@ -8,13 +8,19 @@ import { startNativeBridge } from "./native_bridge.js";
 import { registerServiceWorker } from "./pwa.js";
 import { initTurboScrollBehavior } from "./turbo_scroll.js";
 
-// Expose for debugging in development.
-window.Turbo = Turbo;
+const runtimeAlreadyBooted =
+    typeof window !== "undefined" && window.__RH_RUNTIME_BOOTED__ === true;
 
-initThemeFromCookie();
-startNativeBridge();
-registerServiceWorker();
-initTurboScrollBehavior();
+if (!runtimeAlreadyBooted) {
+    window.__RH_RUNTIME_BOOTED__ = true;
+    // Expose for debugging in development.
+    window.Turbo = Turbo;
 
-const stimulus = Application.start();
-stimulus.register("theme-toggle", ThemeToggleController);
+    initThemeFromCookie();
+    startNativeBridge();
+    registerServiceWorker();
+    initTurboScrollBehavior();
+
+    const stimulus = Application.start();
+    stimulus.register("theme-toggle", ThemeToggleController);
+}

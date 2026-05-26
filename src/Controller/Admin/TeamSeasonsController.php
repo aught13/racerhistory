@@ -150,23 +150,7 @@ class TeamSeasonsController extends AppController
     public function bulkDelete(): Response
     {
         $this->request->allowMethod(['post']);
-        $teamSeasonIds = $this->teamSeasonAdminService->sanitizeIdentifierList(
-            (array)$this->request->getData('team_season_ids'),
-        );
-
-        if (empty($teamSeasonIds)) {
-            $this->Flash->error('No team seasons selected for deletion.');
-
-            return $this->redirect(['action' => 'index']);
-        }
-
-        $deletedCount = $this->teamSeasonAdminService->bulkDeleteTeamSeasons($teamSeasonIds);
-
-        if ($deletedCount > 0) {
-            $this->Flash->success(__('Deleted {0} team season(s).', $deletedCount));
-        } else {
-            $this->Flash->error('No team seasons could be deleted.');
-        }
+        $this->Flash->error('Bulk delete is no longer available for team seasons.');
 
         return $this->redirect(['action' => 'index']);
     }
@@ -178,13 +162,8 @@ class TeamSeasonsController extends AppController
      */
     public function bulk(): Response
     {
-        $action = $this->request->getData('bulk_action');
-        if ($action === 'delete') {
-            return $this->bulkDelete();
-        }
+        $this->request->allowMethod(['post']);
 
-        $this->Flash->error('Invalid bulk action.');
-
-        return $this->redirect(['action' => 'index']);
+        return $this->bulkDelete();
     }
 }

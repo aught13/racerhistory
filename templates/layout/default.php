@@ -68,9 +68,41 @@
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
 
-    <!-- Import maps + Hotwire (Turbo/Stimulus) -->
+    <!-- Import maps retained during transition; runtime now boots from Vite main entry. -->
     <?= $this->Html->importmap(require CONFIG . 'importmap.php') ?>
-    <?= $this->Html->script('hotwire/application', ['type' => 'module']) ?>
+    <?php if (class_exists('CakeVite\\View\\Helper\\ViteHelper') || class_exists('Josbeir\\Vite\\View\\Helper\\ViteHelper')) : ?>
+        <?php if (method_exists($this->Vite, 'element')) : ?>
+            <?= $this->Vite->element('js/main.js') ?>
+        <?php else : ?>
+            <?php $this->Vite->script(['files' => ['js/main.js']]); ?>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <script>
+        (function () {
+            function ensureRuntimeFallback() {
+                if (typeof window.Turbo !== 'undefined' || window.__RH_RUNTIME_BOOTED__) {
+                    return;
+                }
+
+                if (document.querySelector('script[data-rh-runtime-fallback="1"]')) {
+                    return;
+                }
+
+                const fallbackScript = document.createElement('script');
+                fallbackScript.type = 'module';
+                fallbackScript.src = <?= json_encode($this->Url->build('/js/hotwire/application.js')) ?>;
+                fallbackScript.setAttribute('data-rh-runtime-fallback', '1');
+                document.head.appendChild(fallbackScript);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', ensureRuntimeFallback, { once: true });
+            } else {
+                ensureRuntimeFallback();
+            }
+        })();
+    </script>
 
     <!-- jQuery (required for DataTables and many page scripts) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>

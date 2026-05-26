@@ -12,7 +12,7 @@
  */
 $this->assign('title', 'Add Team Season Roster');
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="roster-multi-add">
     <div class="row mb-3">
         <div class="col">
             <?php
@@ -59,7 +59,7 @@ $this->assign('title', 'Add Team Season Roster');
                 </div>
             </div>
 
-            <div id="roster-rows" data-person-search-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>">
+            <div id="roster-rows" data-roster-multi-add-target="rows" data-person-search-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>">
                 <!-- Initial row rendered server-side -->
                 <div class="card mb-2 roster-row" data-row-index="0">
                     <div class="card-body">
@@ -102,7 +102,7 @@ $this->assign('title', 'Add Team Season Roster');
             </div>
 
             <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
-                <button type="button" id="add-row-btn" class="btn btn-outline-success btn-sm">
+                <button type="button" id="add-row-btn" data-roster-multi-add-target="addButton" class="btn btn-outline-success btn-sm">
                     <i class="bi bi-plus-circle"></i> Add Another
                 </button>
                 <div>
@@ -136,7 +136,6 @@ $personFields = [
     ['name' => 'birth', 'label' => 'Birth Date', 'type' => 'date'],
     ['name' => 'death', 'label' => 'Death Date', 'type' => 'date'],
     ['name' => 'person_previous', 'label' => 'Previous School', 'type' => 'text'],
-    ['name' => 'birth_place_id', 'label' => 'Birth Place', 'type' => 'hidden'],
 ];
 ?>
 
@@ -166,7 +165,7 @@ echo $this->element('Admin/popup_form', [
     'successCallback' => 'onRosterPersonAdded',
     'fields' => $personFields,
     'hiddenFormId' => 'hidden-person-form',
-    'extraHtml' => '<div class="mb-3"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><div id="add-person-modal-birth-place-results" class="mt-1"></div><div id="add-person-modal-birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div></div>',
+    'extraHtml' => '<div class="mb-3" data-controller="place-search" data-place-search-search-url-value="' . h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) . '"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><input type="hidden" id="add-person-modal-birth-place-id" name="birth_place_id" data-place-search-target="hidden"><div id="add-person-modal-birth-place-results" class="mt-1" data-place-search-target="results"></div><div id="add-person-modal-birth-place-selected" class="small mt-1" data-place-search-target="selected"><span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
 
@@ -187,105 +186,10 @@ echo $this->element('Admin/popup_form', [
     'title' => 'Add New Place',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
     'hiddenFormId' => 'hidden-roster-place-form',
-    'successCallback' => 'handleRosterBirthPlaceAdded',
+    'successCallback' => 'handleBirthPlaceAdded',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
         ['name' => 'place_state', 'type' => 'text', 'label' => 'Subdivision (state, province, or region)'],
     ],
 ]) ?>
-
-<?php $this->append('script'); ?>
-<script type="module">
-import { initRosterMultiAdd } from '/js/modules/roster-multi-add.mjs';
-
-// Bridge: popup_form calls window.onRosterPersonAdded on success.
-// We dispatch a custom event so the module picks it up.
-window.onRosterPersonAdded = function(data) {
-    if (data && data.newOption) {
-        document.dispatchEvent(new CustomEvent('popupFormSuccess', {
-            detail: { id: data.newOption.value, label: data.newOption.text }
-        }));
-    }
-};
-
-function boot() {
-    initRosterMultiAdd();
-
-    // Birth place AJAX lookup in person popup
-    (function initBirthPlaceLookup() {
-        const searchInput = document.getElementById('add-person-modal-birth-place-search');
-        const resultsDiv = document.getElementById('add-person-modal-birth-place-results');
-        const selectedDiv = document.getElementById('add-person-modal-birth-place-selected');
-        const hiddenInput = document.getElementById('add-person-modal-birth_place_id');
-        if (!searchInput || !hiddenInput) return;
-
-        const searchUrl = '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']) ?>';
-        let debounce = null;
-
-        function setSelected(id, text) {
-            hiddenInput.value = id;
-            if (selectedDiv) {
-                selectedDiv.innerHTML = '<span class="badge bg-primary me-1">' + text +
-                    ' <button type="button" class="btn-close btn-close-white ms-1" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
-                selectedDiv.querySelector('.btn-close').addEventListener('click', function() {
-                    hiddenInput.value = '';
-                    selectedDiv.innerHTML = '<span class="text-muted fst-italic">None selected</span>';
-                });
-            }
-            if (resultsDiv) resultsDiv.innerHTML = '';
-            searchInput.value = '';
-        }
-
-        // Expose setSelected for the popup_form callback
-        window.handleRosterBirthPlaceAdded = function(data) {
-            if (data && data.place && data.place.id) {
-                var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
-                setSelected(data.place.id, label);
-            }
-        };
-
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounce);
-            const q = this.value.trim();
-            if (q.length < 2) { if (resultsDiv) resultsDiv.innerHTML = ''; return; }
-            debounce = setTimeout(function() {
-                fetch(searchUrl + '?q=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (!data.success || !data.results || !data.results.length) {
-                            resultsDiv.innerHTML = '<div class="text-muted small">No results</div>';
-                            return;
-                        }
-                        let html = '<div class="list-group list-group-flush" style="position:relative;z-index:1050;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
-                        data.results.forEach(function(r) {
-                            const label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
-                            html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
-                        });
-                        html += '</div>';
-                        resultsDiv.innerHTML = html;
-                        resultsDiv.querySelectorAll('button').forEach(function(btn) {
-                            btn.addEventListener('click', function() { setSelected(btn.dataset.id, btn.dataset.text); });
-                        });
-                    })
-                    .catch(function() { resultsDiv.innerHTML = '<div class="text-danger small">Error</div>'; });
-            }, 300);
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-                resultsDiv.innerHTML = '';
-            }
-        });
-    })();
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-} else {
-    boot();
-}
-document.addEventListener('turbo:load', boot);
-</script>
-<?php // end script block ?>
-<?php $this->end(); ?>

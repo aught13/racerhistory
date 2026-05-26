@@ -32,6 +32,8 @@ class PlacesControllerTest extends TestCase
         $this->get('/admin/places');
         $this->assertResponseOk();
         $this->assertResponseContains('Places');
+        $this->assertResponseContains('data-controller="admin-index-table"');
+        $this->assertResponseContains('data-admin-index-table-target="searchInput"');
         $this->assertResponseContains('places-table');
         $this->assertResponseContains('data-datatables-url');
         $this->assertResponseContains('total');
