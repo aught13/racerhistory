@@ -124,14 +124,16 @@ jobs:
           ini-values: zend.assertions=1
           coverage: ${{ matrix.coverage == true && 'xdebug' || 'none' }}
           dependency-versions: ${{ matrix.dependencies }}
-          composer-options: ${{ matrix.php-version == '8.1' && '--ignore-platform-req=php' || matrix.composer-options }}
+          composer-options: ${{ matrix.composer-options }}
 
       - name: Handle PHP 8.1 compatibility
         if: ${{ matrix.php-version == '8.1' && matrix.dependencies == 'lowest' }}
         run: |
-          # For PHP 8.1 with lowest dependencies, update to compatible versions
+          # For PHP 8.1 with lowest dependencies, enforce an 8.1 platform graph.
           composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer update --prefer-lowest --with-dependencies --no-progress --ignore-platform-req=php
+          composer config platform.php 8.1.0
+          composer update --prefer-lowest --with-dependencies --no-progress
+          composer check-platform-reqs
 
       - name: Validate Composer dependencies
         run: composer validate --strict --no-check-publish
@@ -423,6 +425,37 @@ jobs:
       - name: Install NPM deps
         run: npm ci --no-audit --no-fund
 
+      - name: Build frontend assets (Vite)
+        run: npm run build
+
+      - name: Verify built frontend runtime
+        run: |
+          test -f webroot/dist/manifest.json || { echo "::error::Missing webroot/dist/manifest.json"; exit 1; }
+
+          node -e '
+            const fs = require("fs");
+            const manifestPath = "webroot/dist/manifest.json";
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+            const entry = manifest["js/main.js"];
+
+            if (!entry || !entry.file) {
+              console.error("::error::Manifest is missing js/main.js entry");
+              process.exit(1);
+            }
+
+            const builtFile = "webroot/dist/" + entry.file;
+            if (!fs.existsSync(builtFile)) {
+              console.error(`::error::Built runtime file missing: ${builtFile}`);
+              process.exit(1);
+            }
+
+            console.log(`Verified manifest entry js/main.js -> ${entry.file}`);
+          '
+
+      - name: Configure e2e hostname
+        run: |
+          echo "127.0.0.1 ci-e2e.invalid" | sudo tee -a /etc/hosts
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
@@ -532,7 +565,7 @@ jobs:
       - name: Run Playwright E2E tests
         run: npm run test:e2e -- --shard=${{ matrix.shard_index }}/${{ matrix.shard_total }}
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:8765
+          PLAYWRIGHT_BASE_URL: http://ci-e2e.invalid:8765
           PLAYWRIGHT_E2E_USERNAME: e2e
           PLAYWRIGHT_E2E_PASSWORD: Racersbb1952!
           CI: true
