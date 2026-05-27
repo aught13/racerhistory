@@ -533,6 +533,8 @@ jobs:
         run: npm run test:e2e -- --shard=${{ matrix.shard_index }}/${{ matrix.shard_total }}
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8765
+          PLAYWRIGHT_E2E_USERNAME: e2e
+          PLAYWRIGHT_E2E_PASSWORD: Racersbb1952!
           CI: true
 
       - name: Stop CakePHP server

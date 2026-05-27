@@ -68,7 +68,7 @@ describe("admin-users-index controller", () => {
         bulkForm.submit = jest.fn();
         bulkForm.requestSubmit = undefined;
 
-        window.showConfirmDelete = jest.fn();
+        window.__rhStimulusShowConfirmDelete = jest.fn();
 
         dataTableApi = {
             destroy: jest.fn(),
@@ -101,7 +101,7 @@ describe("admin-users-index controller", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.showConfirmDelete;
+        delete window.__rhStimulusShowConfirmDelete;
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -158,8 +158,8 @@ describe("admin-users-index controller", () => {
             new Event("submit", { bubbles: true, cancelable: true }),
         );
 
-        expect(window.showConfirmDelete).toHaveBeenCalledTimes(1);
-        expect(window.showConfirmDelete).toHaveBeenCalledWith(
+        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledTimes(1);
+        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
             expect.objectContaining({
                 deleteUrl: "/admin/users/bulkDelete",
                 itemType: "users (bulk)",

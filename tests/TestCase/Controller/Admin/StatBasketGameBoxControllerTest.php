@@ -57,6 +57,9 @@ class StatBasketGameBoxControllerTest extends TestCase
     {
         $this->get('/admin/stat-basket-game-box/game-box/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="game-box-totals-toggle"');
+        $this->assertResponseContains('data-game-box-totals-toggle-target="checkbox"');
+        $this->assertResponseContains('data-game-box-totals-toggle-target="optionsPanel"');
     }
 
     /**

@@ -45,6 +45,7 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('data-controller="admin-index-table"');
         $this->assertResponseContains('data-admin-index-table-target="searchInput"');
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
         $this->assertResponseNotContains('team-seasons-bulk-action-bar');
         $this->assertResponseNotContains('team-season-checkbox');
     }
@@ -60,6 +61,8 @@ class TeamSeasonsControllerTest extends TestCase
         // Should include image element debug comment now that fixture sets team_season_image
         // Image presence now handled client-side; ensure basic page content loads instead
         $this->assertResponseContains('Basic Information');
+        $this->assertResponseContains('data-controller="team-season-image"');
+        $this->assertResponseContains('data-team-season-image-target="image"');
         // Should also contain games management section
         $this->assertResponseContains('Games for this Season');
         // Season statistics heading should appear for basketball

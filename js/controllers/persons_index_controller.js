@@ -332,7 +332,7 @@ export default class extends Controller {
             return;
         }
 
-        if (typeof window.showConfirmDelete !== "function") {
+        if (typeof window.__rhStimulusShowConfirmDelete !== "function") {
             return;
         }
 
@@ -340,7 +340,7 @@ export default class extends Controller {
             ? this.bulkFormTarget.id
             : "delete-form-persons-bulk";
 
-        window.showConfirmDelete({
+        window.__rhStimulusShowConfirmDelete({
             deleteUrl: this.bulkDeleteUrlValue,
             itemType: "persons (bulk)",
             ids: JSON.stringify(ids),

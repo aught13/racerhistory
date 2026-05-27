@@ -133,6 +133,38 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('loading="eager"');
         $this->assertResponseContains('fetchpriority="high"');
+        $this->assertResponseContains('data-controller="admin-image-manipulate"');
+        $this->assertResponseContains('data-action="click->admin-image-manipulate#setAspectRatio"');
+    }
+
+    /**
+     * Tests bulk upload form renders Stimulus bulk upload controller.
+     */
+    public function testBulkUploadFormPageRendersStimulusController(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/bulk-upload-form');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-image-bulk-upload"');
+        $this->assertResponseContains('data-admin-image-bulk-upload-target="uploadsInput"');
+        $this->assertResponseContains('data-action="click->admin-image-bulk-upload#uploadAll"');
+    }
+
+    /**
+     * Tests crop thumb page renders Stimulus crop controller.
+     */
+    public function testCropThumbPageRendersStimulusController(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/crop-thumb/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-image-crop-thumb"');
+        $this->assertResponseContains('data-admin-image-crop-thumb-target="container"');
+        $this->assertResponseContains('data-action="click->admin-image-crop-thumb#reset"');
     }
 
     /**

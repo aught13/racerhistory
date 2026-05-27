@@ -151,6 +151,8 @@ class PersonsControllerTest extends TestCase
         $this->get('/admin/persons/view/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Sample biography for John Doe.');
+        $this->assertResponseContains('data-controller="back-navigation"');
+        $this->assertResponseContains('data-action="click->back-navigation#goBack"');
     }
 
     /**

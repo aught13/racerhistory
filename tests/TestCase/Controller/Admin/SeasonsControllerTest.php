@@ -33,6 +33,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
         $this->assertResponseContains('data-admin-bulk-table-role="row-checkbox"');
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
     }
 
     /**

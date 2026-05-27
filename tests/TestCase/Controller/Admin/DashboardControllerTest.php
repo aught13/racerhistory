@@ -153,13 +153,14 @@ class DashboardControllerTest extends TestCase
     }
 
     /**
-     * Test admin layout includes admin-turbo.mjs module.
+     * Test admin layout uses main runtime entry and omits legacy admin-turbo module.
      */
-    public function testLayoutContainsAdminTurboScript(): void
+    public function testLayoutUsesMainRuntimeScript(): void
     {
         $this->get('/admin');
         $this->assertResponseOk();
-        $this->assertResponseContains('admin-turbo.mjs');
+        $this->assertResponseContains('js/main.js');
+        $this->assertResponseNotContains('admin-turbo.mjs');
     }
 
     /**

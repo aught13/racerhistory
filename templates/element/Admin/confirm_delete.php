@@ -16,7 +16,9 @@
 
 $modalId = $modalId ?? 'confirm-delete-modal';
 ?>
-<div class="modal fade" id="<?= h($modalId) ?>" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="<?= h($modalId) ?>" tabindex="-1" aria-hidden="true"
+    data-controller="admin-confirm-delete"
+    data-action="show.bs.modal->admin-confirm-delete#onShow">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
@@ -26,15 +28,17 @@ $modalId = $modalId ?? 'confirm-delete-modal';
             </div>
             <div class="modal-body">
                 <p class="text-warning"><strong>Warning:</strong> This action cannot be undone.</p>
-                <ul class="list-unstyled small mb-0" id="<?= h($modalId) ?>-assoc"></ul>
-                <?= $this->Form->create(null, ['id' => $modalId . '-hidden-form', 'style' => 'display:none', 'secure' => false]) ?>
+                <ul class="list-unstyled small mb-0" id="<?= h($modalId) ?>-assoc"
+                    data-admin-confirm-delete-target="associated"></ul>
+                <?= $this->Form->create(null, ['id' => $modalId . '-hidden-form', 'style' => 'display:none', 'secure' => false, 'data-admin-confirm-delete-target' => 'hiddenForm']) ?>
                 <?= $this->Form->end() ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="<?= h($modalId) ?>-delete-btn">Delete</button>
+                <button type="button" class="btn btn-danger" id="<?= h($modalId) ?>-delete-btn"
+                    data-action="admin-confirm-delete#confirmDelete">Delete</button>
             </div>
         </div>
     </div>
 </div>
-<!-- JS moved to webroot/js/admin.js -->
+<!-- Confirm-delete behavior is handled by the admin-confirm-delete Stimulus controller -->

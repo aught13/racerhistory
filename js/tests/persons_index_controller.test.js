@@ -42,7 +42,7 @@ describe("persons-index controller", () => {
             </div>
         `;
 
-        window.showConfirmDelete = jest.fn();
+        window.__rhStimulusShowConfirmDelete = jest.fn();
 
         drawMock = jest.fn();
         dataTableApi = {
@@ -78,7 +78,7 @@ describe("persons-index controller", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.showConfirmDelete;
+        delete window.__rhStimulusShowConfirmDelete;
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -131,8 +131,8 @@ describe("persons-index controller", () => {
 
         bulkButton.click();
 
-        expect(window.showConfirmDelete).toHaveBeenCalledTimes(1);
-        expect(window.showConfirmDelete).toHaveBeenCalledWith(
+        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledTimes(1);
+        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
             expect.objectContaining({
                 deleteUrl: "/admin/persons/bulk-delete",
                 itemType: "persons (bulk)",

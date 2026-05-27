@@ -193,7 +193,7 @@ export default class extends Controller {
         );
         if (
             checkedRows.length === 0 ||
-            typeof window.showConfirmDelete !== "function"
+            typeof window.__rhStimulusShowConfirmDelete !== "function"
         ) {
             return;
         }
@@ -205,7 +205,7 @@ export default class extends Controller {
             return cell ? cell.textContent.trim() : "";
         });
 
-        window.showConfirmDelete({
+        window.__rhStimulusShowConfirmDelete({
             deleteUrl: this.bulkDeleteUrlValue,
             itemType: "users (bulk)",
             associated: names,

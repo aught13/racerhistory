@@ -179,7 +179,7 @@ export default class extends Controller {
         );
         if (
             checkedRows.length === 0 ||
-            typeof window.showConfirmDelete !== "function"
+            typeof window.__rhStimulusShowConfirmDelete !== "function"
         ) {
             return;
         }
@@ -189,7 +189,7 @@ export default class extends Controller {
         );
         const ids = checkedRows.map((checkbox) => checkbox.value);
 
-        window.showConfirmDelete({
+        window.__rhStimulusShowConfirmDelete({
             deleteUrl: this.bulkDeleteUrlValue,
             itemType: this.itemTypeValue,
             associated: names,

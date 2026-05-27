@@ -140,7 +140,7 @@ $this->assign('title', 'Game Box Scores');
     $defaultMinutes = 200 + (50 * $numOT);
     ?>
 
-    <div class="card mt-4">
+    <div class="card mt-4" data-controller="game-box-totals-toggle">
         <div class="card-body border-bottom">
             <div class="row g-3">
                 <div class="col-md-6">
@@ -148,6 +148,8 @@ $this->assign('title', 'Game Box Scores');
                         <?= $this->Form->checkbox('add_to_totals', [
                             'id' => 'add-to-totals-check',
                             'class' => 'form-check-input',
+                            'data-game-box-totals-toggle-target' => 'checkbox',
+                            'data-action' => 'change->game-box-totals-toggle#toggle',
                         ]) ?>
                         <label class="form-check-label" for="add-to-totals-check">
                             <strong>Update Season Totals</strong>
@@ -156,7 +158,8 @@ $this->assign('title', 'Game Box Scores');
                     </div>
 
                     <!-- Season totals options (shown when Update Season Totals is checked) -->
-                    <div id="season-totals-options" class="mt-3 ps-4" style="display: none;">
+                    <div id="season-totals-options" class="mt-3 ps-4" style="display: none;"
+                        data-game-box-totals-toggle-target="optionsPanel">
                         <div class="card bg-light">
                             <div class="card-body py-2 px-3">
                                 <div class="mb-2">
@@ -227,28 +230,3 @@ $this->assign('title', 'Game Box Scores');
 
     <?= $this->Form->end() ?>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var checkbox = document.getElementById('add-to-totals-check');
-    var optionsPanel = document.getElementById('season-totals-options');
-    if (checkbox && optionsPanel) {
-        function togglePanel() {
-            optionsPanel.style.display = checkbox.checked ? 'block' : 'none';
-        }
-        checkbox.addEventListener('change', togglePanel);
-        togglePanel();
-    }
-});
-document.addEventListener('turbo:load', function() {
-    var checkbox = document.getElementById('add-to-totals-check');
-    var optionsPanel = document.getElementById('season-totals-options');
-    if (checkbox && optionsPanel) {
-        function togglePanel() {
-            optionsPanel.style.display = checkbox.checked ? 'block' : 'none';
-        }
-        checkbox.addEventListener('change', togglePanel);
-        togglePanel();
-    }
-});
-</script>

@@ -1,20 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-async function loginAsAdmin(page) {
-    try {
-        await page.goto("/login", { waitUntil: "networkidle", timeout: 15000 });
-        await page.fill('input[name="username"]', "admin");
-        await page.fill('input[name="password"]', "admin");
-        await page.click('button[type="submit"]');
-        await page.waitForURL((url) => !url.pathname.includes("login"), {
-            timeout: 15000,
-        });
-
-        return true;
-    } catch {
-        return false;
-    }
-}
+import { loginToAdmin } from "./support/auth.js";
 
 /**
  * Navigate to the admin images index and return the ID of the first image.
@@ -41,8 +26,8 @@ async function getFirstImageId(page) {
 
 test.describe("Admin image pages first-load behavior", () => {
     test.beforeEach(async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, "Could not authenticate as admin in test environment");
+        const loggedIn = await loginToAdmin(page, { timeout: 15000 });
+        test.skip(!loggedIn, "Could not authenticate as the e2e admin user");
     });
 
     test("bulk upload file selector initializes on first load", async ({ page }) => {

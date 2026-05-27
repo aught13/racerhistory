@@ -354,6 +354,7 @@ class TeamsControllerTest extends TestCase
         $this->get('/admin/teams');
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
     }
 
     /**

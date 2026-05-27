@@ -258,6 +258,7 @@ class UsersControllerTest extends TestCase
         $this->get('/admin/users');
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
     }
 
     /**

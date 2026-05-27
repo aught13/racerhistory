@@ -5,9 +5,24 @@
  * @var mixed $rostersBySport
  * @var \App\Model\Entity\Person $person
  */
+
+$personsIndexUrl = $this->Url->build([
+    'prefix' => 'Admin',
+    'controller' => 'Persons',
+    'action' => 'index',
+]);
+$personsViewBaseUrl = $this->Url->build([
+    'prefix' => 'Admin',
+    'controller' => 'Persons',
+    'action' => 'view',
+]);
 ?>
 <?php $this->assign('title', 'View Person'); ?>
-<div class="container-fluid py-3 py-md-4">
+<div class="container-fluid py-3 py-md-4"
+    data-controller="back-navigation"
+    data-back-navigation-index-url-value="<?= h($personsIndexUrl) ?>"
+    data-back-navigation-index-path-value="<?= h($personsIndexUrl) ?>"
+    data-back-navigation-view-path-value="<?= h($personsViewBaseUrl) ?>">
     <!-- Navigation Bar -->
     <div class="row mb-3">
         <div class="col-12">
@@ -17,7 +32,9 @@
                     align-items-start align-items-sm-center gap-2"
                 >
                     <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-outline-secondary btn-sm" id="back-button" onclick="handleBackButton()">
+                        <button class="btn btn-outline-secondary btn-sm" id="back-button"
+                            data-back-navigation-target="backButton"
+                            data-action="click->back-navigation#goBack">
                             <i class="bi bi-arrow-left"></i> Back
                         </button>
                         <a
@@ -293,40 +310,3 @@
 </div>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'person']) ?>
-
-<?php $this->append('script'); ?>
-<script>
-function handleBackButton() {
-    // Check if the previous page in history is from /admin/persons (index)
-    const referrer = document.referrer;
-    <?php $personsIndexUrl = $this->Url->build([
-        'prefix' => 'Admin',
-        'controller' => 'Persons',
-        'action' => 'index',
-    ]); ?>
-    const personsIndexUrl = '<?= h($personsIndexUrl) ?>';
-
-    // If referrer contains /admin/persons but not /admin/persons/view, hide the back button
-    if (referrer && referrer.includes('/admin/persons') && !referrer.includes('/admin/persons/view')) {
-        // Redirect to persons index instead of going back
-        window.location.href = personsIndexUrl;
-    } else if (window.history.length > 1) {
-        // Otherwise, go back in history
-        window.history.back();
-    } else {
-        // No history, go to persons index
-        window.location.href = personsIndexUrl;
-    }
-}
-
-// Hide back button if coming from persons index
-document.addEventListener('DOMContentLoaded', function() {
-    const referrer = document.referrer;
-    const backButton = document.getElementById('back-button');
-
-    if (backButton && referrer && referrer.includes('/admin/persons') && !referrer.includes('/admin/persons/view')) {
-        backButton.style.display = 'none';
-    }
-});
-</script>
-<?php $this->end(); ?>
