@@ -16,7 +16,9 @@ export default class extends Controller {
 
     disconnect() {
         if (typeof window !== "undefined") {
-            if (window.__rhStimulusShowConfirmDelete === this.globalShowHandler) {
+            if (
+                window.__rhStimulusShowConfirmDelete === this.globalShowHandler
+            ) {
                 delete window.__rhStimulusShowConfirmDelete;
             }
         }
@@ -31,7 +33,8 @@ export default class extends Controller {
         this.setContext({
             deleteUrl: trigger.dataset.deleteUrl,
             itemType: trigger.dataset.itemType,
-            associated: trigger.dataset.deleteAssociated || trigger.dataset.associated,
+            associated:
+                trigger.dataset.deleteAssociated || trigger.dataset.associated,
             ids: trigger.dataset.ids,
             idsName: trigger.dataset.idsName,
             formId: trigger.dataset.formId,
@@ -142,7 +145,9 @@ export default class extends Controller {
     }
 
     submitSourceForm(source, postAction, extraFields) {
-        source.querySelectorAll(".injected-delete").forEach((node) => node.remove());
+        source
+            .querySelectorAll(".injected-delete")
+            .forEach((node) => node.remove());
         source.action = postAction;
 
         extraFields.forEach((field) => {
@@ -206,14 +211,20 @@ export default class extends Controller {
 
         const ids = this.normalizeIds(this.modalContext.ids);
         const extra = ids
-            .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
+            .filter(
+                (id) =>
+                    id !== null && id !== undefined && String(id).trim() !== "",
+            )
             .map((id) => ({
                 name: this.modalContext.idsName,
                 value: String(id).trim(),
             }));
 
         if (this.modalContext.bulkAction) {
-            extra.push({ name: "bulk_action", value: this.modalContext.bulkAction });
+            extra.push({
+                name: "bulk_action",
+                value: this.modalContext.bulkAction,
+            });
         }
 
         return extra;

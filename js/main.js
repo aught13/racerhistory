@@ -63,7 +63,10 @@ if (!runtimeAlreadyBooted) {
     stimulus.register("admin-confirm-delete", AdminConfirmDeleteController);
     stimulus.register("admin-bulk-table", AdminBulkTableController);
     stimulus.register("admin-games-index", AdminGamesIndexController);
-    stimulus.register("admin-image-bulk-upload", AdminImageBulkUploadController);
+    stimulus.register(
+        "admin-image-bulk-upload",
+        AdminImageBulkUploadController,
+    );
     stimulus.register("admin-image-crop-thumb", AdminImageCropThumbController);
     stimulus.register("admin-image-manipulate", AdminImageManipulateController);
     stimulus.register("admin-index-table", AdminIndexTableController);

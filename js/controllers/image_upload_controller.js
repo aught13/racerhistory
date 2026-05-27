@@ -104,18 +104,12 @@ export default class extends Controller {
 
     handleBrightnessInput(event) {
         const value = event.target?.value ?? event.currentTarget?.value ?? 0;
-        this.updateAdjustmentBadge(
-            this.brightnessBadgeTarget,
-            value,
-        );
+        this.updateAdjustmentBadge(this.brightnessBadgeTarget, value);
     }
 
     handleContrastInput(event) {
         const value = event.target?.value ?? event.currentTarget?.value ?? 0;
-        this.updateAdjustmentBadge(
-            this.contrastBadgeTarget,
-            value,
-        );
+        this.updateAdjustmentBadge(this.contrastBadgeTarget, value);
     }
 
     setRotation(event) {
@@ -193,7 +187,9 @@ export default class extends Controller {
                     "Image uploaded successfully! Redirecting...",
                 );
                 window.setTimeout(() => {
-                    window.location.assign(`/admin/images/edit/${data.image.id}`);
+                    window.location.assign(
+                        `/admin/images/edit/${data.image.id}`,
+                    );
                 }, REDIRECT_DELAY_MS);
                 return;
             }
@@ -220,7 +216,10 @@ export default class extends Controller {
 
     togglePreviewSections(showPreview) {
         if (this.hasPreviewContainerTarget) {
-            this.previewContainerTarget.classList.toggle("d-none", !showPreview);
+            this.previewContainerTarget.classList.toggle(
+                "d-none",
+                !showPreview,
+            );
         }
         if (this.hasManipulationControlsTarget) {
             this.manipulationControlsTarget.classList.toggle(
@@ -244,8 +243,8 @@ export default class extends Controller {
             numericValue > 0
                 ? "bg-success"
                 : numericValue < 0
-                    ? "bg-danger"
-                    : "bg-secondary"
+                  ? "bg-danger"
+                  : "bg-secondary"
         }`;
     }
 
@@ -271,7 +270,8 @@ export default class extends Controller {
             return;
         }
 
-        const alertClass = type === "success" ? "alert-success" : "alert-danger";
+        const alertClass =
+            type === "success" ? "alert-success" : "alert-danger";
         this.statusTarget.innerHTML = `<div class="alert ${alertClass}" role="alert">${message}</div>`;
         this.statusTarget.classList.remove("d-none");
     }

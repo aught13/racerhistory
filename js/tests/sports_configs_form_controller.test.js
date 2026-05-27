@@ -23,7 +23,10 @@ describe("sports-configs-form controller", () => {
         `;
 
         application = Application.start();
-        application.register("sports-configs-form", SportsConfigsFormController);
+        application.register(
+            "sports-configs-form",
+            SportsConfigsFormController,
+        );
     });
 
     afterEach(() => {

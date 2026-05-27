@@ -32,7 +32,9 @@ describe("image-upload controller", () => {
         window.FileReader = class FileReaderMock {
             readAsDataURL() {
                 if (typeof this.onload === "function") {
-                    this.onload({ target: { result: "data:image/png;base64,abc" } });
+                    this.onload({
+                        target: { result: "data:image/png;base64,abc" },
+                    });
                 }
             }
         };
@@ -66,7 +68,9 @@ describe("image-upload controller", () => {
         const brightness = document.getElementById("brightness");
         const contrast = document.getElementById("contrast");
 
-        const file = new window.File(["abc"], "photo.png", { type: "image/png" });
+        const file = new window.File(["abc"], "photo.png", {
+            type: "image/png",
+        });
         Object.defineProperty(fileInput, "files", {
             value: [file],
             configurable: true,
@@ -78,11 +82,25 @@ describe("image-upload controller", () => {
         contrast.value = "15";
         contrast.dispatchEvent(new Event("input", { bubbles: true }));
 
-        expect(document.getElementById("previewContainer").classList.contains("d-none")).toBe(false);
-        expect(document.getElementById("manipulationControls").classList.contains("d-none")).toBe(false);
-        expect(document.getElementById("noFileText").classList.contains("d-none")).toBe(true);
-        expect(document.getElementById("previewImage").src).toContain("data:image/png;base64,abc");
-        expect(document.getElementById("brightnessBadge").textContent).toBe("25");
+        expect(
+            document
+                .getElementById("previewContainer")
+                .classList.contains("d-none"),
+        ).toBe(false);
+        expect(
+            document
+                .getElementById("manipulationControls")
+                .classList.contains("d-none"),
+        ).toBe(false);
+        expect(
+            document.getElementById("noFileText").classList.contains("d-none"),
+        ).toBe(true);
+        expect(document.getElementById("previewImage").src).toContain(
+            "data:image/png;base64,abc",
+        );
+        expect(document.getElementById("brightnessBadge").textContent).toBe(
+            "25",
+        );
         expect(document.getElementById("contrastBadge").textContent).toBe("15");
     });
 
@@ -95,7 +113,9 @@ describe("image-upload controller", () => {
         const rotate = document.getElementById("rotate");
         const brightness = document.getElementById("brightness");
 
-        const file = new window.File(["abc"], "photo.png", { type: "image/png" });
+        const file = new window.File(["abc"], "photo.png", {
+            type: "image/png",
+        });
         Object.defineProperty(fileInput, "files", {
             value: [file],
             configurable: true,
@@ -106,7 +126,9 @@ describe("image-upload controller", () => {
         rotate.value = "90";
         brightness.value = "10";
 
-        form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        form.dispatchEvent(
+            new Event("submit", { bubbles: true, cancelable: true }),
+        );
 
         await Promise.resolve();
         await Promise.resolve();
@@ -120,6 +142,8 @@ describe("image-upload controller", () => {
         expect(options.body.get("rotate")).toBe("90");
         expect(options.body.get("brightness")).toBe("10");
 
-        expect(document.getElementById("uploadStatus").textContent).toContain("Image uploaded successfully");
+        expect(document.getElementById("uploadStatus").textContent).toContain(
+            "Image uploaded successfully",
+        );
     });
 });

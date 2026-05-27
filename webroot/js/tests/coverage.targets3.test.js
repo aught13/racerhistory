@@ -33,7 +33,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
       </div>
     `;
 
-                await Promise.resolve();
+        await Promise.resolve();
 
         const src = document.createElement("form");
         src.id = "srcRS";
@@ -62,7 +62,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
       </div>
     `;
 
-                await Promise.resolve();
+        await Promise.resolve();
 
         // monkeypatch HTMLFormElement.prototype.requestSubmit to simulate availability for temp form
         const orig = HTMLFormElement.prototype.requestSubmit;

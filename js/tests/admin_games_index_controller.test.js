@@ -169,5 +169,4 @@ describe("admin-games-index controller", () => {
 
         expect(dataTableApi.destroy).not.toHaveBeenCalled();
     });
-
 });

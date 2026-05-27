@@ -30,7 +30,7 @@ describe("team-season-image controller", () => {
 
         application = Application.start();
         application.register("team-season-image", TeamSeasonImageController);
-    await Promise.resolve();
+        await Promise.resolve();
 
         const card = document.getElementById("team-season-image-card");
         const image = card.querySelector("img");

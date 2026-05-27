@@ -38,7 +38,8 @@
                 }
 
                 const splitAt = trimmed.search(/\s/);
-                const url = splitAt === -1 ? trimmed : trimmed.slice(0, splitAt);
+                const url =
+                    splitAt === -1 ? trimmed : trimmed.slice(0, splitAt);
                 const descriptor = splitAt === -1 ? "" : trimmed.slice(splitAt);
 
                 if (!isServeUrl(url)) {

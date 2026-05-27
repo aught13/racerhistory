@@ -48,7 +48,8 @@ export default class extends Controller {
     }
 
     addRow() {
-        const rows = this.containerTarget.querySelectorAll(".field-mapping-row");
+        const rows =
+            this.containerTarget.querySelectorAll(".field-mapping-row");
         const template = rows[0];
         if (!template) {
             return;
@@ -73,7 +74,8 @@ export default class extends Controller {
     }
 
     updateRemoveButtons() {
-        const rows = this.containerTarget.querySelectorAll(".field-mapping-row");
+        const rows =
+            this.containerTarget.querySelectorAll(".field-mapping-row");
         const onlyOne = rows.length <= 1;
 
         rows.forEach((row) => {

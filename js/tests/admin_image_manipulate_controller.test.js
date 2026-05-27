@@ -87,7 +87,10 @@ describe("admin-image-manipulate controller", () => {
         });
 
         application = Application.start();
-        application.register("admin-image-manipulate", AdminImageManipulateController);
+        application.register(
+            "admin-image-manipulate",
+            AdminImageManipulateController,
+        );
     });
 
     afterEach(() => {
@@ -125,6 +128,8 @@ describe("admin-image-manipulate controller", () => {
 
         expect(document.getElementById("rotate").value).toBe("0");
         expect(document.getElementById("rotate-range").value).toBe("0");
-        expect(document.getElementById("ratio-free").classList.contains("active")).toBe(true);
+        expect(
+            document.getElementById("ratio-free").classList.contains("active"),
+        ).toBe(true);
     });
 });

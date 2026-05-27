@@ -223,11 +223,13 @@ export default class extends Controller {
         ].join("");
 
         container.innerHTML = html;
-        container.querySelectorAll(".roster-search-result").forEach((button) => {
-            button.addEventListener("click", () => {
-                onSelect(button.dataset.id, button.dataset.text);
+        container
+            .querySelectorAll(".roster-search-result")
+            .forEach((button) => {
+                button.addEventListener("click", () => {
+                    onSelect(button.dataset.id, button.dataset.text);
+                });
             });
-        });
     }
 
     addRow() {
@@ -286,14 +288,19 @@ export default class extends Controller {
     }
 
     reindexRows() {
-        this.rowsElement().querySelectorAll(".roster-row").forEach((row, idx) => {
-            row.setAttribute("data-row-index", String(idx));
-            row.querySelectorAll("input").forEach((field) => {
-                if (field.name) {
-                    field.name = field.name.replace(/rows\[\d+\]/, `rows[${idx}]`);
-                }
+        this.rowsElement()
+            .querySelectorAll(".roster-row")
+            .forEach((row, idx) => {
+                row.setAttribute("data-row-index", String(idx));
+                row.querySelectorAll("input").forEach((field) => {
+                    if (field.name) {
+                        field.name = field.name.replace(
+                            /rows\[\d+\]/,
+                            `rows[${idx}]`,
+                        );
+                    }
+                });
             });
-        });
     }
 
     updateRemoveButtons() {
@@ -305,14 +312,16 @@ export default class extends Controller {
     }
 
     autoSelectNewPerson(id, label) {
-        this.rowsElement().querySelectorAll(".roster-row").forEach((row) => {
-            if (row._rosterSetSelected) {
-                const hidden = row.querySelector(".roster-person-id");
-                if (hidden && !hidden.value) {
-                    row._rosterSetSelected(id, label);
+        this.rowsElement()
+            .querySelectorAll(".roster-row")
+            .forEach((row) => {
+                if (row._rosterSetSelected) {
+                    const hidden = row.querySelector(".roster-person-id");
+                    if (hidden && !hidden.value) {
+                        row._rosterSetSelected(id, label);
+                    }
                 }
-            }
-        });
+            });
     }
 
     escapeHtml(value) {

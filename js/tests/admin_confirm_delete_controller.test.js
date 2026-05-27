@@ -40,7 +40,10 @@ describe("admin-confirm-delete controller", () => {
         });
 
         application = Application.start();
-        application.register("admin-confirm-delete", AdminConfirmDeleteController);
+        application.register(
+            "admin-confirm-delete",
+            AdminConfirmDeleteController,
+        );
     });
 
     afterEach(() => {
@@ -129,9 +132,9 @@ describe("admin-confirm-delete controller", () => {
         expect(tempForm.querySelector('input[name="_csrfToken"]').value).toBe(
             "test-token",
         );
-        expect(tempForm.querySelectorAll('input[name="user_ids[]"]').length).toBe(
-            2,
-        );
+        expect(
+            tempForm.querySelectorAll('input[name="user_ids[]"]').length,
+        ).toBe(2);
         expect(tempForm.querySelector('input[name="bulk_action"]').value).toBe(
             "delete",
         );

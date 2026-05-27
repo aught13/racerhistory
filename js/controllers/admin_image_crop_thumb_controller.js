@@ -50,7 +50,10 @@ export default class extends Controller {
 
     disconnect() {
         if (this.boundMouseDown) {
-            this.containerTarget.removeEventListener("mousedown", this.boundMouseDown);
+            this.containerTarget.removeEventListener(
+                "mousedown",
+                this.boundMouseDown,
+            );
         }
         if (this.boundMouseMove) {
             document.removeEventListener("mousemove", this.boundMouseMove);
@@ -94,7 +97,10 @@ export default class extends Controller {
         const mouseX = event.clientX - containerRect.left;
         const mouseY = event.clientY - containerRect.top;
 
-        if (this.hasResizeHandleTarget && event.target === this.resizeHandleTarget) {
+        if (
+            this.hasResizeHandleTarget &&
+            event.target === this.resizeHandleTarget
+        ) {
             this.isResizing = true;
             this.dragStart = { x: mouseX, y: mouseY };
             return;
@@ -140,21 +146,41 @@ export default class extends Controller {
             if (this.cropData.width === 1 && this.cropData.height === 1) {
                 const dx = mouseX - this.dragStart.x;
                 const dy = mouseY - this.dragStart.y;
-                const size = Math.max(MIN_CROP_SIZE, Math.min(Math.abs(dx), Math.abs(dy)));
+                const size = Math.max(
+                    MIN_CROP_SIZE,
+                    Math.min(Math.abs(dx), Math.abs(dy)),
+                );
 
-                this.cropData.x = dx < 0 ? this.dragStart.x - size : this.dragStart.x;
-                this.cropData.y = dy < 0 ? this.dragStart.y - size : this.dragStart.y;
+                this.cropData.x =
+                    dx < 0 ? this.dragStart.x - size : this.dragStart.x;
+                this.cropData.y =
+                    dy < 0 ? this.dragStart.y - size : this.dragStart.y;
 
-                this.cropData.x = Math.max(0, Math.min(this.cropData.x, this.imgDisplayWidth - size));
-                this.cropData.y = Math.max(0, Math.min(this.cropData.y, this.imgDisplayHeight - size));
+                this.cropData.x = Math.max(
+                    0,
+                    Math.min(this.cropData.x, this.imgDisplayWidth - size),
+                );
+                this.cropData.y = Math.max(
+                    0,
+                    Math.min(this.cropData.y, this.imgDisplayHeight - size),
+                );
                 this.cropData.width = size;
                 this.cropData.height = size;
             } else {
                 let newX = mouseX - this.dragStart.x;
                 let newY = mouseY - this.dragStart.y;
 
-                newX = Math.max(0, Math.min(newX, this.imgDisplayWidth - this.cropData.width));
-                newY = Math.max(0, Math.min(newY, this.imgDisplayHeight - this.cropData.height));
+                newX = Math.max(
+                    0,
+                    Math.min(newX, this.imgDisplayWidth - this.cropData.width),
+                );
+                newY = Math.max(
+                    0,
+                    Math.min(
+                        newY,
+                        this.imgDisplayHeight - this.cropData.height,
+                    ),
+                );
 
                 this.cropData.x = newX;
                 this.cropData.y = newY;
@@ -189,7 +215,9 @@ export default class extends Controller {
         this.overlayTarget.style.width = `${this.cropData.width}px`;
         this.overlayTarget.style.height = `${this.cropData.height}px`;
         this.overlayTarget.style.display =
-            this.cropData.width > 0 && this.cropData.height > 0 ? "block" : "none";
+            this.cropData.width > 0 && this.cropData.height > 0
+                ? "block"
+                : "none";
 
         this.updatePreview();
         this.updateFormFields();
@@ -212,23 +240,41 @@ export default class extends Controller {
         }
 
         ctx.clearRect(0, 0, 150, 150);
-        ctx.drawImage(this.imageTarget, srcX, srcY, srcWidth, srcHeight, 0, 0, 150, 150);
+        ctx.drawImage(
+            this.imageTarget,
+            srcX,
+            srcY,
+            srcWidth,
+            srcHeight,
+            0,
+            0,
+            150,
+            150,
+        );
     }
 
     updateFormFields() {
         const scale = this.getScale();
 
         if (this.hasCropXTarget) {
-            this.cropXTarget.value = String(Math.round(this.cropData.x * scale));
+            this.cropXTarget.value = String(
+                Math.round(this.cropData.x * scale),
+            );
         }
         if (this.hasCropYTarget) {
-            this.cropYTarget.value = String(Math.round(this.cropData.y * scale));
+            this.cropYTarget.value = String(
+                Math.round(this.cropData.y * scale),
+            );
         }
         if (this.hasCropWidthTarget) {
-            this.cropWidthTarget.value = String(Math.round(this.cropData.width * scale));
+            this.cropWidthTarget.value = String(
+                Math.round(this.cropData.width * scale),
+            );
         }
         if (this.hasCropHeightTarget) {
-            this.cropHeightTarget.value = String(Math.round(this.cropData.height * scale));
+            this.cropHeightTarget.value = String(
+                Math.round(this.cropData.height * scale),
+            );
         }
     }
 

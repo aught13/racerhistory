@@ -67,7 +67,10 @@ export default class extends Controller {
             }
 
             if (input.name) {
-                input.name = input.name.replace(/rows\[\d+\]/, `rows[${newIndex}]`);
+                input.name = input.name.replace(
+                    /rows\[\d+\]/,
+                    `rows[${newIndex}]`,
+                );
             }
         });
 
@@ -103,7 +106,10 @@ export default class extends Controller {
             row.setAttribute("data-row-index", String(idx));
             row.querySelectorAll("input, select").forEach((field) => {
                 if (field.name) {
-                    field.name = field.name.replace(/rows\[\d+\]/, `rows[${idx}]`);
+                    field.name = field.name.replace(
+                        /rows\[\d+\]/,
+                        `rows[${idx}]`,
+                    );
                 }
             });
 
@@ -118,8 +124,10 @@ export default class extends Controller {
         const rows = this.rowsTarget.querySelectorAll(".stat-row");
         const onlyOne = rows.length <= 1;
 
-        this.rowsTarget.querySelectorAll(".remove-row-btn").forEach((button) => {
-            button.disabled = onlyOne;
-        });
+        this.rowsTarget
+            .querySelectorAll(".remove-row-btn")
+            .forEach((button) => {
+                button.disabled = onlyOne;
+            });
     }
 }

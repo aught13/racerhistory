@@ -25,11 +25,17 @@ export default class extends Controller {
             return;
         }
 
-        this.selector = new CropSelector(this.canvasTarget.id, this.imageTarget.id, {
-            onCropChange: (crop) => this.updateCropInputs(crop),
-        });
+        this.selector = new CropSelector(
+            this.canvasTarget.id,
+            this.imageTarget.id,
+            {
+                onCropChange: (crop) => this.updateCropInputs(crop),
+            },
+        );
 
-        this.markActiveRatioButton(this.hasRatioFreeTarget ? this.ratioFreeTarget : null);
+        this.markActiveRatioButton(
+            this.hasRatioFreeTarget ? this.ratioFreeTarget : null,
+        );
     }
 
     disconnect() {
@@ -40,7 +46,10 @@ export default class extends Controller {
         event.preventDefault();
 
         const raw = event.params.ratio;
-        const ratio = raw === "free" || raw === "" || raw === undefined ? null : Number(raw);
+        const ratio =
+            raw === "free" || raw === "" || raw === undefined
+                ? null
+                : Number(raw);
         const nextRatio = Number.isFinite(ratio) ? ratio : null;
 
         if (this.selector) {
@@ -88,7 +97,9 @@ export default class extends Controller {
             }
         }
 
-        this.markActiveRatioButton(this.hasRatioFreeTarget ? this.ratioFreeTarget : null);
+        this.markActiveRatioButton(
+            this.hasRatioFreeTarget ? this.ratioFreeTarget : null,
+        );
     }
 
     applyRotation(degrees, source) {
@@ -107,7 +118,9 @@ export default class extends Controller {
     }
 
     markActiveRatioButton(activeButton) {
-        this.aspectButtonTargets.forEach((button) => button.classList.remove("active"));
+        this.aspectButtonTargets.forEach((button) =>
+            button.classList.remove("active"),
+        );
         if (activeButton) {
             activeButton.classList.add("active");
         }

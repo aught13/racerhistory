@@ -80,18 +80,24 @@ describe("admin-image-crop-thumb controller", () => {
 
     test("initializes crop fields on connect", () => {
         const width = Number(document.getElementById("crop_width").value || 0);
-        const height = Number(document.getElementById("crop_height").value || 0);
+        const height = Number(
+            document.getElementById("crop_height").value || 0,
+        );
 
         expect(width).toBeGreaterThan(0);
         expect(height).toBeGreaterThan(0);
-        expect(document.getElementById("crop-overlay").style.display).toBe("block");
+        expect(document.getElementById("crop-overlay").style.display).toBe(
+            "block",
+        );
     });
 
     test("reset action re-applies a valid crop", () => {
         document.getElementById("reset").click();
 
         const width = Number(document.getElementById("crop_width").value || 0);
-        const height = Number(document.getElementById("crop_height").value || 0);
+        const height = Number(
+            document.getElementById("crop_height").value || 0,
+        );
         expect(width).toBeGreaterThan(0);
         expect(height).toBeGreaterThan(0);
     });

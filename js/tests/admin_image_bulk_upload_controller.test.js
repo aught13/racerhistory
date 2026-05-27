@@ -47,7 +47,10 @@ describe("admin-image-bulk-upload controller", () => {
         global.fetch = jest.fn();
 
         application = Application.start();
-        application.register("admin-image-bulk-upload", AdminImageBulkUploadController);
+        application.register(
+            "admin-image-bulk-upload",
+            AdminImageBulkUploadController,
+        );
     });
 
     afterEach(() => {

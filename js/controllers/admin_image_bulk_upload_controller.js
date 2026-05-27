@@ -54,14 +54,26 @@ export default class extends Controller {
                 }
             }
 
-            const successes = allResults.filter((result) => result && result.success);
-            const failures = allResults.filter((result) => !result || !result.success);
+            const successes = allResults.filter(
+                (result) => result && result.success,
+            );
+            const failures = allResults.filter(
+                (result) => !result || !result.success,
+            );
             const details = this.buildDetails(allResults);
 
             if (successes.length && failures.length === 0) {
-                this.showStatus("success", "All images uploaded successfully.", details);
+                this.showStatus(
+                    "success",
+                    "All images uploaded successfully.",
+                    details,
+                );
             } else if (successes.length && failures.length) {
-                this.showStatus("warning", "Some images uploaded; some failed.", details);
+                this.showStatus(
+                    "warning",
+                    "Some images uploaded; some failed.",
+                    details,
+                );
             } else {
                 this.showStatus("danger", "Upload failed.", details);
             }
@@ -161,7 +173,10 @@ export default class extends Controller {
             return;
         }
 
-        this.uploadButtonTarget.toggleAttribute("disabled", !this.currentFiles().length);
+        this.uploadButtonTarget.toggleAttribute(
+            "disabled",
+            !this.currentFiles().length,
+        );
     }
 
     showStatus(type, message, detailsHtml = "") {
@@ -172,7 +187,8 @@ export default class extends Controller {
         const alert = document.createElement("div");
         alert.className = `alert alert-${type}`;
         alert.innerHTML =
-            `<div class="fw-semibold mb-1">${this.escapeHtml(message)}</div>` + detailsHtml;
+            `<div class="fw-semibold mb-1">${this.escapeHtml(message)}</div>` +
+            detailsHtml;
         this.uploadStatusTarget.innerHTML = "";
         this.uploadStatusTarget.appendChild(alert);
     }
@@ -187,9 +203,13 @@ export default class extends Controller {
                 const ok = Boolean(result && result.success);
                 const statusClass = ok ? "text-success" : "text-danger";
                 const icon = ok ? "bi-check-circle" : "bi-exclamation-circle";
-                const fileName = result?.name ? this.escapeHtml(result.name) : "unnamed";
+                const fileName = result?.name
+                    ? this.escapeHtml(result.name)
+                    : "unnamed";
                 const duplicate = result?.existing ? " (duplicate)" : "";
-                const error = result?.error ? `: ${this.escapeHtml(result.error)}` : "";
+                const error = result?.error
+                    ? `: ${this.escapeHtml(result.error)}`
+                    : "";
                 return `<li class="${statusClass}"><i class="bi ${icon}"></i> ${fileName}${duplicate}${error}</li>`;
             })
             .join("");
@@ -198,7 +218,9 @@ export default class extends Controller {
     }
 
     async uploadChunk(chunkFiles, chunkIndex) {
-        const formData = new FormData(this.hasFormTarget ? this.formTarget : this.element);
+        const formData = new FormData(
+            this.hasFormTarget ? this.formTarget : this.element,
+        );
         formData.delete("uploads[]");
         formData.delete("uploads");
 
@@ -218,7 +240,9 @@ export default class extends Controller {
             },
         );
 
-        const contentType = (response.headers.get("content-type") || "").toLowerCase();
+        const contentType = (
+            response.headers.get("content-type") || ""
+        ).toLowerCase();
         if (!contentType.includes("application/json")) {
             const text = await response.text();
             const err = new Error("non-json");
