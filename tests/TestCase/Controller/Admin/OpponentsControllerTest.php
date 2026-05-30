@@ -32,6 +32,8 @@ class OpponentsControllerTest extends TestCase
         $this->get('/admin/opponents');
         $this->assertResponseOk();
         $this->assertResponseContains('Opponents');
+        $this->assertResponseContains('data-controller="admin-index-table"');
+        $this->assertResponseContains('data-admin-index-table-target="searchInput"');
         $this->assertResponseContains('opponents-table');
         $this->assertResponseContains('data-datatables-url');
         $this->assertResponseContains('total');

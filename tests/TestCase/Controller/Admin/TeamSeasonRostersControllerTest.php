@@ -53,8 +53,11 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-season-rosters/add?team_season_id=1');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="roster-multi-add"');
         $this->assertResponseContains('id="roster-rows"');
+        $this->assertResponseContains('data-roster-multi-add-target="rows"');
         $this->assertResponseContains('id="add-row-btn"');
+        $this->assertResponseContains('data-roster-multi-add-target="addButton"');
         $this->assertResponseContains('Add Another');
         $this->assertResponseContains('Save All');
         $this->assertResponseContains('roster-row');
@@ -161,6 +164,21 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-season-rosters/edit/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="roster-edit-person"');
+        $this->assertResponseContains('data-roster-edit-person-target="select"');
+    }
+
+    /**
+     * Tests bulk edit get uses Stimulus multi-add wiring.
+     */
+    public function testBulkEditGetUsesStimulusWiring(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="roster-multi-add"');
+        $this->assertResponseContains('data-roster-multi-add-target="rows"');
+        $this->assertResponseContains('data-roster-multi-add-target="addButton"');
     }
 
     /**
@@ -554,7 +572,8 @@ class TeamSeasonRostersControllerTest extends TestCase
         $body = (string)$this->_response->getBody();
         $this->assertStringContainsString('data-person-search-url', $body);
         $this->assertStringContainsString('hidden-person-form', $body);
-        $this->assertStringContainsString('roster-multi-add.mjs', $body);
+        $this->assertStringContainsString('data-controller="roster-multi-add"', $body);
+        $this->assertStringContainsString('data-roster-multi-add-target="rows"', $body);
     }
 
     /**

@@ -19,7 +19,7 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Team Roster</h3>
         <div class="d-flex gap-2">
-            <?php if (!$teamSeasonRosters->isEmpty()) : ?>
+            <?php if (count($teamSeasonRosters) > 0) : ?>
             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'bulkEdit', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
                 class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-pencil-square"></i> Edit All
@@ -32,7 +32,7 @@
         </div>
     </div>
     <div class="card-body">
-        <?php if (!$teamSeasonRosters->isEmpty()) : ?>
+        <?php if (count($teamSeasonRosters) > 0) : ?>
         <form id="bulk-action-form-rosters"
             action="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'bulk']) ?>"
             method="post">
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const ids = Array.from(document.querySelectorAll('.roster-checkbox:checked')).map(cb => cb
                     .value);
-                window.showConfirmDelete({
+                window.__rhStimulusShowConfirmDelete({
                     deleteUrl: this.action,
                     itemType: 'roster entries (bulk)',
                     ids: JSON.stringify(ids),

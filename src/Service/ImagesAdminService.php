@@ -140,8 +140,7 @@ class ImagesAdminService
             $data[] = [
                 'id' => $id,
                 'preview' => sprintf(
-                    '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-thumb-src="%s" alt="" ' .
-                    'data-rh-no-retry="1" ' .
+                    '<img src="%s" alt="" ' .
                     'class="img-thumbnail js-admin-image-thumb" width="60" height="60" ' .
                     'style="width:60px; height:60px; object-fit:cover;" ' .
                     'loading="lazy" decoding="async">',

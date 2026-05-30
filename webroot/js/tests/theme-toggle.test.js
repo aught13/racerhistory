@@ -17,7 +17,7 @@ function mockMatchMedia(matches) {
 beforeAll(async () => {
     try {
         // Use dynamic import so Jest can load ESM when configured
-        const mod = await import("../hotwire/theme.js");
+        const mod = await import("../../../js/lib/theme.js");
         theme = mod;
     } catch {
         // Fall back to the local CommonJS helper

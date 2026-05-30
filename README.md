@@ -1,7 +1,7 @@
 # RacerHistory Web Application
 
 [![Version](https://img.shields.io/badge/Version-0.2.0--beta-blue.svg)](CHANGELOG.md)
-[![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://php.net)
+[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/v-1.0.dev/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](composer.json)
@@ -110,7 +110,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 ## Requirements
 
-- **PHP 8.1+** with required extensions
+- **PHP 8.2+** with required extensions
 - **Composer** for PHP dependencies
 - **MySQL/MariaDB** for production (tests typically use SQLite unless configured otherwise)
 - **Node.js 20+** (recommended) for JS linting/tests

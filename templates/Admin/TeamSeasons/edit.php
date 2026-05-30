@@ -6,8 +6,12 @@
  * @var \App\Model\Entity\TeamSeason $teamSeason
  */
 ?>
+<?php
+$initialImageId = !empty($teamSeason->team_season_image) ? (string)(int)$teamSeason->team_season_image : '';
+$initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initialImageId, ['variant' => 'hero']) : '';
+?>
 <?php $this->assign('title', 'Edit Team Season'); ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="team-season-form" data-team-season-form-existing-image-id-value="<?= h($initialImageId) ?>" data-team-season-form-existing-preview-url-value="<?= h($initialPreviewUrl) ?>" data-team-season-form-upload-url-value="/admin/images/upload">
     <div class="row mb-3">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -178,6 +182,7 @@
                                     'label' => false,
                                     'placeholder' => 'Image ID',
                                     'id' => 'team-season-image-field',
+                                    'data-team-season-form-target' => 'imageField',
                                 ]) ?>
                             </div>
                             <div class="col-md-4 d-grid gap-2">
@@ -186,6 +191,7 @@
                                 </button>
                                 <a
                                     id="team-season-hero-variant-btn"
+                                    data-team-season-form-target="heroVariantButton"
                                     class="btn btn-outline-primary form-control"
                                     href="#"
                                     target="_blank"
@@ -196,7 +202,7 @@
                         </div>
                         <div class="row mt-2">
                             <div class="col-12">
-                                <div id="team-season-image-preview" class="mt-2" style="display: none;">
+                                <div id="team-season-image-preview" class="mt-2" style="display: none;" data-team-season-form-target="imagePreview">
                                     <img src="" alt="Season Image Preview" class="img-thumbnail" style="max-height: 200px;">
                                 </div>
                             </div>
@@ -211,6 +217,7 @@
                             'label' => false,
                             'id' => 'team-season-preview',
                             'rows' => 8,
+                            'data-team-season-form-target' => 'previewEditor',
                             'templates' => [
                                 'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
                             ],
@@ -226,6 +233,7 @@
                             'label' => false,
                             'id' => 'team-season-recap',
                             'rows' => 8,
+                            'data-team-season-form-target' => 'recapEditor',
                             'templates' => [
                                 'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
                             ],
@@ -324,134 +332,4 @@
                 echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
                 echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js', ['block' => true]);
                 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
-                echo $this->Html->script('/js/image-selector.js', ['block' => true]);
-
-                $initialImageId = !empty($teamSeason->team_season_image) ? (string)(int)$teamSeason->team_season_image : '';
-                $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initialImageId, ['variant' => 'hero']) : '';
-                $initialImageIdJson = json_encode($initialImageId) ?: '""';
-                $initialPreviewUrlJson = json_encode($initialPreviewUrl) ?: '""';
-                echo $this->Html->scriptBlock(<<<JS
-document.addEventListener('DOMContentLoaded', function () {
-    const initialImageId = {$initialImageIdJson};
-    const initialPreviewUrl = {$initialPreviewUrlJson};
-    function initEditor(id){
-        if (!document.getElementById(id) || typeof tinymce === 'undefined') return;
-        tinymce.init({
-            license_key: 'gpl',
-            selector: '#' + id,
-            menubar: false,
-            plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars',
-            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview | save',
-            quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
-            image_title: true,
-            automatic_uploads: true,
-            images_upload_url: '/admin/images/upload',
-            images_upload_credentials: true,
-            convert_urls: false,
-            images_upload_handler: function (blobInfo, progress) {
-                return new Promise(function (resolve, reject) {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/admin/images/upload');
-                    xhr.withCredentials = true;
-                    xhr.upload.onprogress = function (e) {
-                        if (e.lengthComputable) {
-                            progress(e.loaded / e.total * 100);
-                        }
-                    };
-                    xhr.onload = function () {
-                        if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
-                        var raw = xhr.responseText;
-                        var json;
-                        try { json = JSON.parse(raw); } catch (err) {
-                            console.error('TinyMCE upload invalid JSON response:', raw);
-                            return reject('Invalid JSON');
-                        }
-                        if (!json.success || !json.image || !json.image.url) {
-                            console.error('TinyMCE upload server response (error path):', json);
-                            return reject(json.error || 'Upload failed');
-                        }
-                        resolve(json.image.url);
-                    };
-                    xhr.onerror = function () { reject('Image upload failed'); };
-                    var formData = new FormData();
-                    formData.append('upload', blobInfo.blob(), blobInfo.filename());
-                    var csrf = document.querySelector('meta[name="csrfToken"]');
-                    if (csrf) { xhr.setRequestHeader('X-CSRF-Token', csrf.getAttribute('content')); }
-                    xhr.send(formData);
-                });
-            }
-        });
-    }
-    initEditor('team-season-preview');
-    initEditor('team-season-recap');
-
-    // Team season image preview handler
-    const imageField = document.getElementById('team-season-image-field');
-    const imagePreview = document.getElementById('team-season-image-preview');
-    const heroVariantButton = document.getElementById('team-season-hero-variant-btn');
-
-    function updateHeroVariantButton() {
-        if (!heroVariantButton || !imageField) {
-            return;
-        }
-
-        const imageId = parseInt(imageField.value.trim(), 10);
-        if (Number.isFinite(imageId) && imageId > 0) {
-            heroVariantButton.href = '/admin/images/crop-hero/' + imageId;
-            heroVariantButton.style.display = 'block';
-        } else {
-            heroVariantButton.style.display = 'none';
-        }
-    }
-
-    function previewUrlForField() {
-        if (!imageField) {
-            return '';
-        }
-
-        const imageId = imageField.value.trim();
-        const selectedUrl = imageField.dataset.selectedImageHeroUrl || imageField.dataset.selectedImageThumbnailUrl || imageField.dataset.selectedImageUrl || '';
-        if (selectedUrl !== '') {
-            return selectedUrl;
-        }
-        if (imageId === initialImageId) {
-            return initialPreviewUrl;
-        }
-
-        return '';
-    }
-
-    function withCacheBust(url) {
-        if (!url) {
-            return '';
-        }
-
-        return url + (url.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
-    }
-
-    function updateImagePreview() {
-        const imageId = imageField.value.trim();
-        const previewUrl = previewUrlForField();
-        if (imageId && !isNaN(parseInt(imageId, 10)) && previewUrl !== '') {
-            const previewImg = imagePreview.querySelector('img');
-            previewImg.src = withCacheBust(previewUrl);
-            imagePreview.style.display = 'block';
-        } else {
-            imagePreview.style.display = 'none';
-        }
-    }
-
-    // Listen for changes to the image field (from modal or manual entry)
-    if (imageField) {
-        imageField.addEventListener('change', function () {
-            updateImagePreview();
-            updateHeroVariantButton();
-        });
-
-        // Show initial preview if image ID is set
-        updateImagePreview();
-        updateHeroVariantButton();
-    }
-});
-JS, ['block' => true]);
                 ?>

@@ -10,6 +10,7 @@
  * - $variant: Optional image variant query param
  * - $class: Optional CSS classes
  * - $style: Optional inline styles
+ * - $deferred: Optional bool (default true) to render with data-thumb-src for deferred hydration
  *
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\TeamSeason $teamSeason
@@ -19,6 +20,7 @@ $size = $size ?? 'medium';
 $variant = $variant ?? 'thumb';
 $class = $class ?? '';
 $style = $style ?? '';
+$deferred = $deferred ?? true;
 
 $sizeMap = [
     'small' => ['width' => 48, 'height' => 48, 'class' => 'rounded'],
@@ -90,17 +92,29 @@ if ($imageId > 0 || $directImageUrl !== '') {
         ? $this->ImageServe->url($imageId, ['variant' => $variant])
         : $directImageUrl;
 
-    echo $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
-        'alt' => 'Season image',
-        'class' => trim($cssClass . ' js-team-season-thumb'),
-        'style' => $cssStyle,
-        'loading' => 'lazy',
-        'decoding' => 'async',
-        'width' => $width,
-        'height' => $height,
-        'data-thumb-src' => $thumbUrl,
-        'data-rh-no-retry' => '1',
-    ]);
+    if ($deferred) {
+        echo $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
+            'alt' => 'Season image',
+            'class' => trim($cssClass . ' js-team-season-thumb'),
+            'style' => $cssStyle,
+            'loading' => 'lazy',
+            'decoding' => 'async',
+            'width' => $width,
+            'height' => $height,
+            'data-thumb-src' => $thumbUrl,
+            'data-rh-no-retry' => '1',
+        ]);
+    } else {
+        echo $this->Html->image($thumbUrl, [
+            'alt' => 'Season image',
+            'class' => $cssClass,
+            'style' => $cssStyle,
+            'loading' => 'lazy',
+            'decoding' => 'async',
+            'width' => $width,
+            'height' => $height,
+        ]);
+    }
 } else {
     echo $this->Html->div(
         'placeholder-image ' . $cssClass,

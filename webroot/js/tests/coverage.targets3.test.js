@@ -1,19 +1,39 @@
+import { Application } from "@hotwired/stimulus";
 import { jest } from "@jest/globals";
 
+import AdminConfirmDeleteController from "../../../js/controllers/admin_confirm_delete_controller.js";
+
 describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () => {
+    let application;
+
     beforeEach(() => {
         document.body.innerHTML = "";
         jest.resetModules();
+        application = Application.start();
+        application.register(
+            "admin-confirm-delete",
+            AdminConfirmDeleteController,
+        );
+    });
+
+    afterEach(() => {
+        if (application) {
+            application.stop();
+            application = null;
+        }
+        delete window.__rhStimulusShowConfirmDelete;
     });
 
     test("admin uses source.requestSubmit when available", async () => {
         document.body.innerHTML = `
-      <div id="confirm-delete-modal">
+      <div id="confirm-delete-modal" data-controller="admin-confirm-delete">
         <ul id="confirm-delete-modal-assoc"></ul>
-        <button id="confirm-delete-modal-delete-btn">Delete</button>
+        <button id="confirm-delete-modal-delete-btn" data-action="admin-confirm-delete#confirmDelete">Delete</button>
         <form id="confirm-delete-modal-hidden-form"></form>
       </div>
     `;
+
+        await Promise.resolve();
 
         const src = document.createElement("form");
         src.id = "srcRS";
@@ -22,10 +42,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
         src.requestSubmit = jest.fn();
         document.body.appendChild(src);
 
-        const { __internals } = await import("../admin");
-        const internals = __internals || {};
-
-        internals.setContext({
+        window.__rhStimulusShowConfirmDelete({
             formId: "srcRS",
             deleteUrl: "/rs",
             ids: "[5]",
@@ -39,11 +56,13 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
 
     test("admin falls back to temp.requestSubmit when source missing but temp supports requestSubmit", async () => {
         document.body.innerHTML = `
-      <div id="confirm-delete-modal">
+            <div id="confirm-delete-modal" data-controller="admin-confirm-delete">
         <ul id="confirm-delete-modal-assoc"></ul>
-        <button id="confirm-delete-modal-delete-btn">Delete</button>
+                <button id="confirm-delete-modal-delete-btn" data-action="admin-confirm-delete#confirmDelete">Delete</button>
       </div>
     `;
+
+        await Promise.resolve();
 
         // monkeypatch HTMLFormElement.prototype.requestSubmit to simulate availability for temp form
         const orig = HTMLFormElement.prototype.requestSubmit;
@@ -51,9 +70,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
             /* noop */
         };
 
-        const { __internals } = await import("../admin");
-        const internals = __internals || {};
-        internals.setContext({
+        window.__rhStimulusShowConfirmDelete({
             deleteUrl: "/tmpRS",
             ids: "[9]",
             idsName: "ids[]",

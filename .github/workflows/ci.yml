@@ -79,6 +79,15 @@ jobs:
             echo "- run_e2e: $run_e2e"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  legacy-runtime-guard:
+    name: Legacy Runtime Guard
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Fail on deprecated runtime compatibility markers
+        run: bash scripts/ci/check-legacy-runtime-guards.sh
+
   testsuite:
     needs: preflight
     if: ${{ needs.preflight.outputs.run_php == 'true' }}
@@ -100,14 +109,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - php-version: "8.1"
-            dependencies: "lowest"
-            composer-options: "--prefer-lowest"
-            coverage: true
           - php-version: "8.2"
             dependencies: "highest"
             composer-options: ""
-            coverage: false
+            coverage: true
           - php-version: "8.3"
             dependencies: "highest"
             composer-options: ""
@@ -115,6 +120,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install NPM deps
+        run: npm ci
+
+      - name: Build frontend assets (Vite)
+        run: npm run build
+
+      - name: Verify built frontend runtime
+        run: |
+          test -f webroot/dist/manifest.json
+          grep -q '"js/main.js"' webroot/dist/manifest.json
 
       - name: Setup PHP + Composer
         uses: ./.github/actions/setup-php-composer
@@ -124,14 +146,7 @@ jobs:
           ini-values: zend.assertions=1
           coverage: ${{ matrix.coverage == true && 'xdebug' || 'none' }}
           dependency-versions: ${{ matrix.dependencies }}
-          composer-options: ${{ matrix.php-version == '8.1' && '--ignore-platform-req=php' || matrix.composer-options }}
-
-      - name: Handle PHP 8.1 compatibility
-        if: ${{ matrix.php-version == '8.1' && matrix.dependencies == 'lowest' }}
-        run: |
-          # For PHP 8.1 with lowest dependencies, update to compatible versions
-          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer update --prefer-lowest --with-dependencies --no-progress --ignore-platform-req=php
+          composer-options: ${{ matrix.composer-options }}
 
       - name: Validate Composer dependencies
         run: composer validate --strict --no-check-publish
@@ -423,6 +438,37 @@ jobs:
       - name: Install NPM deps
         run: npm ci --no-audit --no-fund
 
+      - name: Build frontend assets (Vite)
+        run: npm run build
+
+      - name: Verify built frontend runtime
+        run: |
+          test -f webroot/dist/manifest.json || { echo "::error::Missing webroot/dist/manifest.json"; exit 1; }
+
+          node -e '
+            const fs = require("fs");
+            const manifestPath = "webroot/dist/manifest.json";
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+            const entry = manifest["js/main.js"];
+
+            if (!entry || !entry.file) {
+              console.error("::error::Manifest is missing js/main.js entry");
+              process.exit(1);
+            }
+
+            const builtFile = "webroot/dist/" + entry.file;
+            if (!fs.existsSync(builtFile)) {
+              console.error(`::error::Built runtime file missing: ${builtFile}`);
+              process.exit(1);
+            }
+
+            console.log(`Verified manifest entry js/main.js -> ${entry.file}`);
+          '
+
+      - name: Configure e2e hostname
+        run: |
+          echo "127.0.0.1 ci-e2e.invalid" | sudo tee -a /etc/hosts
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
@@ -497,14 +543,14 @@ jobs:
 
       - name: Start CakePHP development server
         run: |
-          php bin/cake.php server -p 8765 -H localhost > /tmp/cake-server.log 2>&1 &
+          php bin/cake.php server -p 8765 -H 127.0.0.1 > /tmp/cake-server.log 2>&1 &
           echo $! > server.pid
           SERVER_PID=$(cat server.pid)
           echo "Server started with PID $SERVER_PID"
 
           # Wait for server to be ready (check for any HTTP response, even errors)
           for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w '' http://localhost:8765/ 2>/dev/null; then
+            if curl -s -o /dev/null -w '' http://ci-e2e.invalid:8765/ 2>/dev/null; then
               echo "Server is responding!"
               break
             fi
@@ -519,7 +565,7 @@ jobs:
           done
 
           # Final check: verify server is actually responding
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8765/ 2>/dev/null || echo "000")
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://ci-e2e.invalid:8765/ 2>/dev/null || echo "000")
           echo "Server responded with HTTP $HTTP_CODE"
           if [ "$HTTP_CODE" = "000" ]; then
             echo "::error::Server failed to start after 60 seconds"
@@ -532,7 +578,9 @@ jobs:
       - name: Run Playwright E2E tests
         run: npm run test:e2e -- --shard=${{ matrix.shard_index }}/${{ matrix.shard_total }}
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:8765
+          PLAYWRIGHT_BASE_URL: http://ci-e2e.invalid:8765
+          PLAYWRIGHT_E2E_USERNAME: e2e
+          PLAYWRIGHT_E2E_PASSWORD: Racersbb1952!
           CI: true
 
       - name: Stop CakePHP server

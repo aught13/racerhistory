@@ -42,9 +42,12 @@ class TeamSeasonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-seasons');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-index-table"');
+        $this->assertResponseContains('data-admin-index-table-target="searchInput"');
         $this->assertResponseContains('id="confirm-delete-modal"');
-        $this->assertResponseContains('data-thumb-src=');
-        $this->assertResponseContains('data-rh-no-retry="1"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
+        $this->assertResponseNotContains('team-seasons-bulk-action-bar');
+        $this->assertResponseNotContains('team-season-checkbox');
     }
 
     /**
@@ -58,6 +61,8 @@ class TeamSeasonsControllerTest extends TestCase
         // Should include image element debug comment now that fixture sets team_season_image
         // Image presence now handled client-side; ensure basic page content loads instead
         $this->assertResponseContains('Basic Information');
+        $this->assertResponseContains('data-controller="team-season-image"');
+        $this->assertResponseContains('data-team-season-image-target="image"');
         // Should also contain games management section
         $this->assertResponseContains('Games for this Season');
         // Season statistics heading should appear for basketball
@@ -143,11 +148,25 @@ class TeamSeasonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/team-seasons/add');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="team-season-form"');
         $this->assertResponseContains('hidden-team-form');
         $this->assertResponseContains('hidden-season-form');
-    // Rich text editors textareas present
+        // Rich text editors textareas present
         $this->assertResponseContains('team-season-preview');
         $this->assertResponseContains('team-season-recap');
+    }
+
+    /**
+     * Tests edit get.
+     */
+    public function testEditGet(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/team-seasons/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="team-season-form"');
+        $this->assertResponseContains('data-team-season-form-target="heroVariantButton"');
+        $this->assertResponseContains('team-season-image-selector');
     }
 
     /**
@@ -204,9 +223,11 @@ class TeamSeasonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->enableCsrfToken();
         $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
 
         $this->post('/admin/team-seasons/bulk', ['bulk_action' => 'delete', 'team_season_ids' => [1]]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
+        $this->assertFlashMessage('Bulk delete is no longer available for team seasons.');
     }
 
     /**
@@ -221,7 +242,7 @@ class TeamSeasonsControllerTest extends TestCase
 
         $this->post('/admin/team-seasons/bulk', ['bulk_action' => 'delete', 'team_season_ids' => ['']]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
-        $this->assertFlashMessage('No team seasons selected for deletion.');
+        $this->assertFlashMessage('Bulk delete is no longer available for team seasons.');
     }
 
     /**
@@ -236,7 +257,7 @@ class TeamSeasonsControllerTest extends TestCase
 
         $this->post('/admin/team-seasons/bulk', ['bulk_action' => 'nope', 'team_season_ids' => [1]]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
-        $this->assertFlashMessage('Invalid bulk action.');
+        $this->assertFlashMessage('Bulk delete is no longer available for team seasons.');
     }
 
     /**

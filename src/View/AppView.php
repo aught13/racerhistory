@@ -25,6 +25,7 @@ use Cake\View\View;
  *
  * @link https://book.cakephp.org/5/en/views.html#the-app-view
  * @property \App\View\Helper\ImageServeHelper $ImageServe
+ * @property \CakeVite\View\Helper\ViteHelper $Vite
  * @property \Cake\View\Helper\FormHelper $Form
  * @property \Cake\View\Helper\UrlHelper $Url
  * @property \Cake\View\Helper\HtmlHelper $Html
@@ -45,5 +46,12 @@ class AppView extends View
         parent::initialize();
 
         $this->loadHelper('ImageServe');
+
+        if (class_exists('CakeVite\\View\\Helper\\ViteHelper')) {
+            $this->loadHelper('CakeVite.Vite');
+        } elseif (class_exists('Josbeir\\Vite\\View\\Helper\\ViteHelper')) {
+            // Backward-compatible fallback if an older namespace is present.
+            $this->loadHelper('Josbeir/Vite.Vite');
+        }
     }
 }

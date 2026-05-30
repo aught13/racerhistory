@@ -5,7 +5,15 @@
  */
 ?>
 <?php $this->assign('title', 'Manage Sports'); ?>
-<div class="container py-4">
+<div
+    class="container py-4"
+    data-controller="admin-bulk-table"
+    data-admin-bulk-table-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete'])) ?>"
+    data-admin-bulk-table-item-type-value="sports (bulk)"
+    data-admin-bulk-table-ids-name-value="sport_ids[]"
+    data-admin-bulk-table-form-id-value="delete-form-sports-bulk"
+    data-admin-bulk-table-name-column-value="2"
+>
     <div class="row mb-3">
         <div class="col">
             <h1 class="mb-3">Sports Management</h1>
@@ -25,20 +33,20 @@
         <div class="col">
             <h2 class="mb-3">All Sports</h2>
             <?php if (!$sports->isEmpty()) : ?>
-            <form id="bulk-action-form" method="post">
+            <form id="bulk-action-form" method="post" data-admin-bulk-table-target="bulkForm">
                 <div class="mb-2 d-flex align-items-center gap-2" id="sports-bulk-action-bar">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
-                    <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto">
+                    <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto" data-admin-bulk-table-target="actionSelect">
                         <option value="">Choose...</option>
                         <option value="delete">Delete</option>
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled>Go</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-bulk-table-target="actionButton">Go</button>
                 </div>
 
-                <table class="table table-striped table-bordered" id="sports-table">
+                <table class="table table-striped table-bordered" id="sports-table" data-admin-bulk-table-target="table">
                     <thead class="table-dark">
                         <tr>
-                            <th><input type="checkbox" id="select-all-sports"></th>
+                            <th><input type="checkbox" id="select-all-sports" data-admin-bulk-table-target="selectAll"></th>
                             <th>Sport Name <small class="text-light">(Unique, 162 chars max)</small></th>
                             <th>Actions</th>
                         </tr>
@@ -46,7 +54,7 @@
                     <tbody>
                         <?php foreach ($sports as $sport) : ?>
                         <tr>
-                            <td><input type="checkbox" name="sport_ids[]" value="<?= $sport->id ?>"
+                                <td><input type="checkbox" name="sport_ids[]" value="<?= $sport->id ?>" data-admin-bulk-table-role="row-checkbox"
                                     class="sport-checkbox">
                             </td>
                             <td><?= h($sport->sport_name) ?></td>
@@ -94,59 +102,5 @@
     </div>
 </div>
 </div>
-
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('#sports-table').DataTable({
-        "pagingType": "simple_numbers",
-        "drawCallback": function(settings) {
-            var api = this.api();
-            var pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
-            if (api.page.info().pages <= 1) {
-                pagination.hide();
-            } else {
-                pagination.show();
-            }
-        }
-    });
-
-    // Enable/disable bulk action button
-    $(document).on('change', '.sport-checkbox, #select-all-sports, #bulk-action-select', function() {
-        var checked = $('.sport-checkbox:checked').length;
-        var action = $('#bulk-action-select').val();
-        $('#bulk-action-btn').prop('disabled', checked === 0 || !action);
-    });
-
-    // Select all checkboxes
-    $('#select-all-sports').on('change', function() {
-        $('.sport-checkbox').prop('checked', this.checked).trigger('change');
-    });
-
-    // Handle bulk action form submission -> open modal with selected item names
-    $('#bulk-action-form').on('submit', function(e) {
-        e.preventDefault();
-        var action = $('#bulk-action-select').val();
-        if (!action) return;
-        if (action === 'delete') {
-            var names = $('.sport-checkbox:checked').map(function() {
-                return $(this).closest('tr').find('td:nth-child(2)').text().trim();
-            }).get();
-            var ids = $('.sport-checkbox:checked').map(function() { return $(this).val(); }).get();
-                        window.showConfirmDelete && window.showConfirmDelete({
-                            deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete']) ?>',
-                            itemType: 'sports (bulk)',
-                            associated: JSON.stringify(names),
-                            ids: JSON.stringify(ids),
-                            idsName: 'sport_ids[]',
-                            formId: 'delete-form-sports-bulk',
-                            bulkAction: 'delete'
-                        });
-        }
-    });
-});
-</script>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'sport']) ?>

@@ -18,6 +18,8 @@
     <?= $this->Form->create(null, [
         'type' => 'file',
         'id' => 'bulkUploadForm',
+        'data-controller' => 'admin-image-bulk-upload',
+        'data-admin-image-bulk-upload-target' => 'form',
         'url' => ['action' => 'bulkUpload'],
     ]) ?>
     <div class="card shadow-sm">
@@ -27,21 +29,26 @@
         <div class="card-body">
             <div class="mb-3">
                 <label for="uploads" class="form-label">Image files</label>
-                <input type="file" class="form-control" id="uploads" name="uploads[]" accept="image/*" multiple aria-describedby="uploadsHelp">
+                <input type="file" class="form-control" id="uploads" name="uploads[]" accept="image/*" multiple aria-describedby="uploadsHelp"
+                    data-admin-image-bulk-upload-target="uploadsInput"
+                    data-action="change->admin-image-bulk-upload#fileSelectionChanged">
                 <div id="uploadsHelp" class="form-text">You can pick multiple files; supported types: JPG, PNG, GIF, WebP.</div>
             </div>
 
-            <div id="fileList" class="row g-3"></div>
+            <div id="fileList" class="row g-3" data-admin-image-bulk-upload-target="fileList"></div>
 
             <div class="d-flex gap-2 mt-3">
-                <button id="uploadAll" class="btn btn-primary" type="button" disabled>
-                    <span class="label">Upload Selected</span>
-                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                <button id="uploadAll" class="btn btn-primary" type="button" disabled
+                    data-admin-image-bulk-upload-target="uploadButton"
+                    data-action="click->admin-image-bulk-upload#uploadAll">
+                    <span class="label" data-admin-image-bulk-upload-target="buttonLabel">Upload Selected</span>
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"
+                        data-admin-image-bulk-upload-target="buttonSpinner"></span>
                 </button>
                 <a class="btn btn-outline-secondary" href="<?= $this->Url->build(['action' => 'index']) ?>">Back to Images</a>
             </div>
 
-            <div id="uploadStatus" class="mt-3"></div>
+            <div id="uploadStatus" class="mt-3" data-admin-image-bulk-upload-target="uploadStatus"></div>
         </div>
     </div>
 
