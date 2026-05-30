@@ -543,14 +543,14 @@ jobs:
 
       - name: Start CakePHP development server
         run: |
-          php bin/cake.php server -p 8765 -H localhost > /tmp/cake-server.log 2>&1 &
+          php bin/cake.php server -p 8765 -H 127.0.0.1 > /tmp/cake-server.log 2>&1 &
           echo $! > server.pid
           SERVER_PID=$(cat server.pid)
           echo "Server started with PID $SERVER_PID"
 
           # Wait for server to be ready (check for any HTTP response, even errors)
           for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w '' http://localhost:8765/ 2>/dev/null; then
+            if curl -s -o /dev/null -w '' http://ci-e2e.invalid:8765/ 2>/dev/null; then
               echo "Server is responding!"
               break
             fi
@@ -565,7 +565,7 @@ jobs:
           done
 
           # Final check: verify server is actually responding
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8765/ 2>/dev/null || echo "000")
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://ci-e2e.invalid:8765/ 2>/dev/null || echo "000")
           echo "Server responded with HTTP $HTTP_CODE"
           if [ "$HTTP_CODE" = "000" ]; then
             echo "::error::Server failed to start after 60 seconds"
