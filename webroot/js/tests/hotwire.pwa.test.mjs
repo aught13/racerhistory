@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { registerServiceWorker } from "../hotwire/pwa.js";
+import { registerServiceWorker } from "../../../js/lib/pwa.js";
 
 describe("hotwire/pwa", () => {
     let originalServiceWorker;

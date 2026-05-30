@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { initTurboScrollBehavior } from "../hotwire/turbo_scroll.js";
+import { initTurboScrollBehavior } from "../../../js/lib/turbo_scroll.js";
 
 describe("hotwire/turbo_scroll", () => {
     beforeEach(() => {

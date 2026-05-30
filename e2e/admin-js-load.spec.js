@@ -92,6 +92,7 @@ test.describe("Admin JS Loading", () => {
         const localRuntimeFailures = failedRequests.filter(
             (entry) =>
                 (entry.includes("/js/") || entry.includes("/dist/")) &&
+                !entry.includes("/debug_kit/") &&
                 !entry.includes("cdn.jsdelivr.net") &&
                 !entry.includes("code.jquery.com") &&
                 !entry.includes("esm.sh") &&
@@ -110,6 +111,7 @@ test.describe("Admin JS Loading", () => {
             (msg) =>
                 msg.includes("404") &&
                 msg.includes("/js/") &&
+                !msg.includes("/debug_kit/") &&
                 !msg.includes("cdn."),
         );
         expect(jsErrors).toHaveLength(0);

@@ -8,7 +8,7 @@ let ThemeToggleController;
 
 beforeAll(async () => {
     const mod =
-        await import("../hotwire/controllers/theme_toggle_controller.js");
+        await import("../../../js/controllers/theme_toggle_controller.js");
     ThemeToggleController = mod.ThemeToggleController || mod.default;
 });
 
