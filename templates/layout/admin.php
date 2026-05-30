@@ -54,8 +54,6 @@
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
 
-    <!-- Import maps + Hotwire Turbo for SPA-like admin navigation -->
-    <?= $this->Html->importmap(require CONFIG . 'importmap.php') ?>
     <?php if (class_exists('CakeVite\\View\\Helper\\ViteHelper') || class_exists('Josbeir\\Vite\\View\\Helper\\ViteHelper')) : ?>
         <?php if (method_exists($this->Vite, 'element')) : ?>
             <?= $this->Vite->element('js/main.js') ?>

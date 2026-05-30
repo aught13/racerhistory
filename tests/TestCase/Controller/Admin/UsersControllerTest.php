@@ -94,6 +94,63 @@ class UsersControllerTest extends TestCase
     }
 
     /**
+     * Tests add post creates user.
+     */
+    public function testAddPostCreatesUser(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/users/add', [
+            'username' => 'newadminuser',
+            'email' => 'newadminuser@example.com',
+            'first_name' => 'New',
+            'last_name' => 'AdminUser',
+            'password' => 'StrongPass123!',
+            'role' => 'admin',
+            'active' => '1',
+        ]);
+
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('User has been created successfully.', 'Flash.flash.0.message');
+
+        $created = $this->getTableLocator()->get('Users')
+            ->find()
+            ->where(['username' => 'newadminuser'])
+            ->first();
+
+        $this->assertNotEmpty($created);
+        $this->assertSame('newadminuser@example.com', $created->email);
+        $this->assertSame('admin', $created->role);
+        $this->assertTrue((bool)$created->active);
+        $this->assertSame('active', $created->status);
+    }
+
+    /**
+     * Tests add post validation errors stay on form.
+     */
+    public function testAddPostInvalidStaysOnForm(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/users/add', [
+            'username' => 'ab',
+            'email' => 'not-an-email',
+            'password' => 'short',
+            'role' => 'user',
+            'active' => '1',
+        ]);
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Unable to create user. Please check the form and try again.');
+        $this->assertResponseContains('Username must be at least 3 characters');
+        $this->assertResponseContains('Password must be at least 8 characters');
+    }
+
+    /**
      * Tests edit get.
      */
     public function testEditGet(): void

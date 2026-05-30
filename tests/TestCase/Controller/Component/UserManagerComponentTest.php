@@ -126,7 +126,10 @@ class UserManagerComponentTest extends TestCase
      */
     public function testUpdateUser(): void
     {
-        $result = $this->component->updateUser($this->controller, 1, ['username' => 'updated', 'password' => 'updated']);
+        $result = $this->component->updateUser($this->controller, 1, [
+            'username' => 'updated',
+            'password' => 'updated123',
+        ]);
         $this->assertInstanceOf(Response::class, $result);
     }
 
