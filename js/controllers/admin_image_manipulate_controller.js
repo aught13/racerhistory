@@ -36,86 +36,10 @@ export default class extends Controller {
         this.markActiveRatioButton(
             this.hasRatioFreeTarget ? this.ratioFreeTarget : null,
         );
-
-        // Backward compatibility for legacy pages/tests expecting globals.
-        this.previousSetRotation = window.setRotation;
-        this.previousSetAspectRatio = window.setAspectRatio;
-        this.previousResetAll = window.resetAll;
-
-        this.boundGlobalSetRotation = (degrees = 0) =>
-            this.applyRotation(Number(degrees) || 0);
-        this.boundGlobalSetAspectRatio = (ratio = null) => {
-            const parsed =
-                ratio === null || ratio === "" || ratio === "free"
-                    ? null
-                    : Number(ratio);
-            const nextRatio = Number.isFinite(parsed) ? parsed : null;
-
-            if (this.selector) {
-                this.selector.setAspectRatio(nextRatio);
-            }
-        };
-        this.boundGlobalResetAll = () => {
-            if (this.hasRotateRangeTarget) {
-                this.rotateRangeTarget.value = "0";
-            }
-            if (this.hasRotateInputTarget) {
-                this.rotateInputTarget.value = "0";
-            }
-
-            if (this.selector) {
-                this.selector.setAspectRatio(null);
-                this.selector.setRotation(0);
-
-                if (
-                    this.imageTarget.complete &&
-                    this.imageTarget.naturalWidth
-                ) {
-                    this.selector.setCropBox(
-                        0,
-                        0,
-                        this.imageTarget.naturalWidth,
-                        this.imageTarget.naturalHeight,
-                    );
-                }
-            }
-
-            this.markActiveRatioButton(
-                this.hasRatioFreeTarget ? this.ratioFreeTarget : null,
-            );
-        };
-
-        window.setRotation = this.boundGlobalSetRotation;
-        window.setAspectRatio = this.boundGlobalSetAspectRatio;
-        window.resetAll = this.boundGlobalResetAll;
     }
 
     disconnect() {
         this.selector = null;
-
-        if (window.setRotation === this.boundGlobalSetRotation) {
-            if (typeof this.previousSetRotation === "function") {
-                window.setRotation = this.previousSetRotation;
-            } else {
-                delete window.setRotation;
-            }
-        }
-
-        if (window.setAspectRatio === this.boundGlobalSetAspectRatio) {
-            if (typeof this.previousSetAspectRatio === "function") {
-                window.setAspectRatio = this.previousSetAspectRatio;
-            } else {
-                delete window.setAspectRatio;
-            }
-        }
-
-        if (window.resetAll === this.boundGlobalResetAll) {
-            if (typeof this.previousResetAll === "function") {
-                window.resetAll = this.previousResetAll;
-            } else {
-                delete window.resetAll;
-            }
-        }
     }
 
     setAspectRatio(event) {

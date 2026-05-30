@@ -350,14 +350,30 @@ class DeployAuditService
             'webroot/js/image-selector.js',
             'webroot/js/games_sport_dynamic.js',
             'webroot/js/sport-aware-game-form.js',
-            'webroot/js/hotwire/application.js',
             'webroot/css/cake.css',
+            'webroot/dist/manifest.json',
         ];
         foreach ($assets as $asset) {
             if (file_exists(ROOT . DS . $asset)) {
                 $this->ok($cat, $asset);
             } else {
                 $this->fail($cat, "Missing: {$asset}");
+            }
+        }
+
+        $manifestPath = ROOT . DS . 'webroot' . DS . 'dist' . DS . 'manifest.json';
+        if (file_exists($manifestPath)) {
+            $manifestRaw = file_get_contents($manifestPath);
+            if ($manifestRaw === false) {
+                $this->fail($cat, 'Could not read webroot/dist/manifest.json');
+            } else {
+                /** @var mixed $manifest */
+                $manifest = json_decode($manifestRaw, true);
+                if (is_array($manifest) && array_key_exists('js/main.js', $manifest)) {
+                    $this->ok($cat, 'Vite manifest contains js/main.js entry');
+                } else {
+                    $this->fail($cat, 'Vite manifest missing js/main.js entry');
+                }
             }
         }
 

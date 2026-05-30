@@ -46,11 +46,6 @@ export default class extends Controller {
         if (this.imageTarget.complete) {
             this.initCrop();
         }
-
-        // Backward compatibility for legacy pages/tests expecting a global helper.
-        this.previousResetCrop = window.resetCrop;
-        this.boundGlobalResetCrop = () => this.initCrop();
-        window.resetCrop = this.boundGlobalResetCrop;
     }
 
     disconnect() {
@@ -68,14 +63,6 @@ export default class extends Controller {
         }
         if (this.boundImageLoad) {
             this.imageTarget.removeEventListener("load", this.boundImageLoad);
-        }
-
-        if (window.resetCrop === this.boundGlobalResetCrop) {
-            if (typeof this.previousResetCrop === "function") {
-                window.resetCrop = this.previousResetCrop;
-            } else {
-                delete window.resetCrop;
-            }
         }
     }
 

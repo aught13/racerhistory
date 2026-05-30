@@ -77,8 +77,17 @@ test.describe("Admin image pages first-load behavior", () => {
         await expect(page.locator("#crop-image")).toBeVisible();
         await expect(page.locator("#preview-canvas")).toBeVisible();
 
-        // Verify JS initializer ran and registered the resetCrop handler
-        await page.waitForFunction(() => typeof window.resetCrop === "function", {
+        // Verify Stimulus initialization populated crop inputs.
+        await expect(page.locator("#crop_width")).not.toHaveValue("0", {
+            timeout: 5000,
+        });
+        await expect(page.locator("#crop_height")).not.toHaveValue("0", {
+            timeout: 5000,
+        });
+
+        // Verify the reset action remains wired through Stimulus.
+        await page.click('button:has-text("Reset")');
+        await expect(page.locator("#crop_width")).not.toHaveValue("0", {
             timeout: 5000,
         });
     });
@@ -98,13 +107,12 @@ test.describe("Admin image pages first-load behavior", () => {
         await expect(page.locator("#previewCanvas")).toBeVisible();
         await expect(page.locator("#sourceImage")).toBeAttached();
 
-        // Verify JS initializer ran and registered the manipulation handlers
-        await page.waitForFunction(
-            () =>
-                typeof window.setRotation === "function" &&
-                typeof window.setAspectRatio === "function" &&
-                typeof window.resetAll === "function",
-            { timeout: 8000 },
-        );
+        // Verify manipulation controls are wired via Stimulus actions.
+        await expect(page.locator("#rotate")).toHaveValue("0");
+        await page.click('button[data-admin-image-manipulate-degrees-param="90"]');
+        await expect(page.locator("#rotate")).toHaveValue("90");
+        await page.fill("#rotate", "12");
+        await page.dispatchEvent("#rotate", "input");
+        await expect(page.locator("#rotate-range")).toHaveValue("12");
     });
 });

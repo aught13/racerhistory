@@ -311,8 +311,8 @@ CRITICAL_ASSETS=(
     webroot/js/image-selector.js
     webroot/js/games_sport_dynamic.js
     webroot/js/sport-aware-game-form.js
-    webroot/js/hotwire/application.js
     webroot/css/cake.css
+    webroot/dist/manifest.json
 )
 for asset in "${CRITICAL_ASSETS[@]}"; do
     if [ -f "$asset" ]; then
@@ -321,6 +321,13 @@ for asset in "${CRITICAL_ASSETS[@]}"; do
         fail "Missing critical asset: $asset"
     fi
 done
+
+# Ensure the Vite runtime entry exists in the build manifest.
+if grep -q '"js/main.js"' webroot/dist/manifest.json 2>/dev/null; then
+    ok "Vite manifest contains js/main.js entry"
+else
+    fail "Vite manifest missing js/main.js entry"
+fi
 
 # Check TinyMCE is present
 if [ -d webroot/js/tinymce ]; then
