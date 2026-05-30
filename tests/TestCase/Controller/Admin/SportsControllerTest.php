@@ -65,6 +65,9 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports');
         $this->assertResponseOk();
         $this->assertResponseContains('Sports Management');
+        $this->assertResponseContains('data-controller="admin-bulk-table"');
+        $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
+        $this->assertResponseContains('data-admin-bulk-table-role="row-checkbox"');
     }
 
     /**
@@ -155,6 +158,8 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/add');
         $this->assertResponseOk();
         $this->assertResponseContains('Add New Sport');
+        $this->assertResponseContains('data-controller="sports-form"');
+        $this->assertResponseContains('data-sports-form-target="form"');
     }
 
     /**
@@ -185,6 +190,8 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/edit/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Edit Sport');
+        $this->assertResponseContains('data-controller="sports-form"');
+        $this->assertResponseContains('data-sports-form-target="form"');
     }
 
     /**
@@ -395,6 +402,7 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports');
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
     }
 
     /**
@@ -408,6 +416,9 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/edit-configs/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Edit Sport Configurations');
+        $this->assertResponseContains('data-controller="sports-configs-form"');
+        $this->assertResponseContains('data-sports-configs-form-target="periodNamesContainer"');
+        $this->assertResponseContains('data-sports-configs-form-target="settingsContainer"');
     }
 
     /**
@@ -569,11 +580,11 @@ class SportsControllerTest extends TestCase
         $this->get('/admin/sports/edit-configs/1');
         $this->assertResponseOk();
         // Should NOT contain default period counts
-        $this->assertResponseNotContains('value="2"'); // Should not show default 2 periods
-        $this->assertResponseNotContains('value="4"'); // Should not show default 4 periods
+        $this->assertResponseNotContains('configs[period_name_2][periods]');
+        $this->assertResponseNotContains('configs[period_name_4][periods]');
         // Should contain our custom period counts
-        $this->assertResponseContains('value="7"'); // Should show our 7 periods
-        $this->assertResponseContains('value="9"'); // Should show our 9 periods
+        $this->assertResponseContains('configs[period_name_7][periods]');
+        $this->assertResponseContains('configs[period_name_9][periods]');
     }
 
     /**

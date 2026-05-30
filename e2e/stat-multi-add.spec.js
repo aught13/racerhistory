@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { loginToAdmin } from "./support/auth.js";
 
 /**
  * E2E tests for the stat multi-add forms.
@@ -17,29 +18,12 @@ import { test, expect } from "@playwright/test";
  * NOTE: These tests require admin authentication and a running server.
  */
 
-/* ────────── helpers ────────── */
-
-async function loginAsAdmin(page) {
-    try {
-        await page.goto("/login", { waitUntil: "networkidle", timeout: 5000 });
-        await page.fill('input[name="username"]', "admin");
-        await page.fill('input[name="password"]', "admin");
-        await page.click('button[type="submit"]');
-        await page.waitForURL((url) => !url.pathname.includes("login"), {
-            timeout: 5000,
-        });
-        return true;
-    } catch {
-        return false;
-    }
-}
-
 /* ────────── Player Stat (Person) tests ────────── */
 
 test.describe("Stat Multi-Add: Player (Person)", () => {
     test.beforeEach(async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, "Could not log in — server may not be running");
+        const loggedIn = await loginToAdmin(page);
+        test.skip(!loggedIn, "Could not log in to the e2e admin account");
     });
 
     test("form loads with turbo-frame and initial stat row", async ({
@@ -178,8 +162,8 @@ test.describe("Stat Multi-Add: Player (Person)", () => {
 
 test.describe("Stat Multi-Add: Opponent", () => {
     test.beforeEach(async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, "Could not log in — server may not be running");
+        const loggedIn = await loginToAdmin(page);
+        test.skip(!loggedIn, "Could not log in to the e2e admin account");
     });
 
     test("form loads with turbo-frame and initial stat row", async ({

@@ -5,7 +5,7 @@
  */
 
 $this->assign('title', 'Edit Sport'); ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="sports-form">
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card">
@@ -20,6 +20,7 @@ $this->assign('title', 'Edit Sport'); ?>
                         'url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id],
                         'class' => 'needs-validation',
                         'novalidate' => true,
+                        'data-sports-form-target' => 'form',
                     ]) ?>
 
                     <div class="mb-3">
@@ -66,22 +67,3 @@ $this->assign('title', 'Edit Sport'); ?>
 </div>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'sport']) ?>
-
-<script>
-// Bootstrap form validation
-(function() {
-    'use strict';
-    window.addEventListener('load', function() {
-        var forms = document.getElementsByClassName('needs-validation');
-        var validation = Array.prototype.filter.call(forms, function(form) {
-            form.addEventListener('submit', function(event) {
-                if (form.checkValidity() === false) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
-    }, false);
-})();
-</script>

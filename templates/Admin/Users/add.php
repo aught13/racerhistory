@@ -6,7 +6,7 @@
 
 // templates/Admin/Users/add.php
 ?>
-<div class="container mt-4">
+<div class="container mt-4" data-controller="password-toggle">
     <h2>Add New User</h2>
     <?= $this->Form->create($user) ?>
     <fieldset>
@@ -35,22 +35,13 @@
                     'id' => 'admin-add-password',
                     'class' => 'form-control',
                     'label' => false,
+                    'data-password-toggle-target' => 'input',
                 ]) ?>
-                <button type="button" class="btn btn-outline-secondary" id="toggle-admin-add-password" tabindex="-1">
+                <button type="button" class="btn btn-outline-secondary" id="toggle-admin-add-password" tabindex="-1" data-password-toggle-target="button" data-action="password-toggle#toggle">
                     <span class="bi bi-eye"></span>
                 </button>
             </div>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var btn = document.getElementById('toggle-admin-add-password');
-            var input = document.getElementById('admin-add-password');
-            btn.addEventListener('click', function() {
-                input.type = input.type === 'password' ? 'text' : 'password';
-                btn.innerHTML = input.type === 'password' ? '<span class="bi bi-eye"></span>' : '<span class="bi bi-eye-slash"></span>';
-            });
-        });
-        </script>
         <div class="row">
             <div class="col-md-6">
                 <?= $this->Form->control('role', [

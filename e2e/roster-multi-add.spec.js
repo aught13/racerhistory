@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { loginToAdmin } from "./support/auth.js";
 
 /**
  * E2E tests for the roster multi-add form.
@@ -15,37 +16,12 @@ import { test, expect } from "@playwright/test";
  * tests will be skipped gracefully.
  */
 
-/* ────────── helpers ────────── */
-
-/**
- * Attempt to log in as admin. Returns true on success.
- * Uses the app's CakeDC/Users login form.
- */
-async function loginAsAdmin(page) {
-  try {
-    await page.goto("/login", { waitUntil: "networkidle", timeout: 5000 });
-
-    // Fill login form
-    await page.fill('input[name="username"]', "admin");
-    await page.fill('input[name="password"]', "admin");
-    await page.click('button[type="submit"]');
-
-    // Wait for redirect after login
-    await page.waitForURL((url) => !url.pathname.includes("login"), {
-      timeout: 5000,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /* ────────── tests ────────── */
 
 test.describe("Roster Multi-Add Form", () => {
   test.beforeEach(async ({ page }) => {
-    const loggedIn = await loginAsAdmin(page);
-    test.skip(!loggedIn, "Could not log in — server may not be running");
+    const loggedIn = await loginToAdmin(page);
+    test.skip(!loggedIn, "Could not log in to the e2e admin account");
   });
 
   test("form loads with turbo-frame and initial roster row", async ({

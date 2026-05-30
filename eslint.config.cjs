@@ -23,6 +23,28 @@ module.exports = [
         ],
     },
     {
+        files: ["js/**/*.js", "js/**/*.mjs"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "module",
+            globals: {
+                window: "readonly",
+                document: "readonly",
+                console: "readonly",
+                navigator: "readonly",
+                fetch: "readonly",
+                alert: "readonly",
+                URL: "readonly",
+                URLSearchParams: "readonly",
+                Event: "readonly",
+                FileReader: "readonly",
+                FormData: "readonly",
+                setTimeout: "readonly",
+                clearTimeout: "readonly",
+            },
+        },
+    },
+    {
         files: ["webroot/js/**/*.js"],
         languageOptions: {
             ecmaVersion: 2022,

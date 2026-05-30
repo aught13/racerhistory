@@ -134,7 +134,7 @@ class BlogPostsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/blog-posts/edit/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('data-action="unset-hero"');
+        $this->assertResponseContains('data-blog-post-form-target="unsetHeroButton"');
         $this->assertResponseContains('unset-hero-btn');
     }
 

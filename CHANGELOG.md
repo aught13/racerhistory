@@ -7,10 +7,23 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ## [Unreleased]
 
-### Planned
+### Changed
 
-- (placeholder) Additional domain models and admin features.
-- (placeholder) Extended test coverage and performance improvements.
+- **Minimum PHP version raised to 8.2+** across project requirements and docs to match the current dependency graph.
+- **CI testsuite matrix updated** to remove the incompatible PHP 8.1/lowest-dependencies lane and run coverage on PHP 8.2.
+- **Deployment asset audits modernized** to require Vite build artifacts (`webroot/dist/manifest.json`) and validate the `js/main.js` manifest entry.
+
+### Fixed
+
+- **Admin users add/edit failure handling** now preserves validation context and avoids invalid redirects on save failures.
+- **Dashboard layout tests** updated for the Vite runtime contract (hashed dist asset or dev entry) and legacy importmap removal.
+- **Playwright stabilization for image/admin dynamic pages** by asserting runtime behavior instead of legacy global helper existence.
+
+### Removed
+
+- Legacy image-page JavaScript compatibility globals (`window.resetCrop`, `window.setRotation`, `window.setAspectRatio`, `window.resetAll`).
+- Legacy `webroot/js/hotwire/application.js` fallback runtime entry from deployment-critical paths.
+- Obsolete JavaScript coverage/debug tests that targeted removed runtime paths.
 
 ## [0.2.0-beta] - 2026-03-14
 

@@ -223,7 +223,8 @@ class ImagesController extends AppController
     public function uploadForm(): void
     {
         $this->getRequest()->allowMethod(['get']);
-        // Template: templates/Admin/Images/upload.php
+
+        $this->viewBuilder()->setTemplate('upload');
     }
 
     /**

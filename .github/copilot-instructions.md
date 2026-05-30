@@ -35,7 +35,7 @@
 - PHP coverage run: `php vendor/bin/phpunit --configuration phpunit.ci.xml` (produces `coverage.xml`).
 - JS coverage run: `npx jest --coverage` (or `npm run test:js`).
 - Note: CI/Codecov enforces stricter targets from `codecov.yml` (currently: PHP **98%**, JS **88%**, branches **80%**). Prefer meeting those when practical.
-- Keep tests compatible with **PHP 8.1–8.5+** and the CI’s PHPUnit range (write to PHPUnit 10-era APIs; avoid relying on newer-only features).
+- Keep tests compatible with **PHP 8.2–8.5+** and the CI’s PHPUnit range (write to PHPUnit 10-era APIs; avoid relying on newer-only features).
 
 ## Test gotchas (this repo)
 

@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'CakeVite' => [],
     'DebugKit' => [
         'onlyDebug' => true,
     ],

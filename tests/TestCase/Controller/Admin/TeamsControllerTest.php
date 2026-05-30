@@ -43,6 +43,10 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-bulk-table"');
+        $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
+        $this->assertResponseContains('data-admin-bulk-table-target="table"');
+        $this->assertResponseContains('data-admin-bulk-table-role="row-checkbox"');
     }
 
     /**
@@ -350,6 +354,7 @@ class TeamsControllerTest extends TestCase
         $this->get('/admin/teams');
         $this->assertResponseOk();
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
     }
 
     /**

@@ -20,7 +20,7 @@
                     ]) ?>
                     <?php $this->Form->unlockField('birth_place_id'); ?>
 
-                    <div class="row g-3">
+                    <div class="row g-3" data-controller="person-form" data-person-form-initial-image-id-value="" data-person-form-initial-preview-url-value="" data-person-form-images-upload-url-value="/admin/images/upload">
                         <div class="col-md-6">
                             <?= $this->Form->control('first', ['class' => 'form-control', 'label' => ['text' => 'First Name', 'class' => 'form-label'], 'maxlength' => 30]); ?>
                         </div>
@@ -39,15 +39,15 @@
                         <div class="col-md-6">
                             <?= $this->Form->control('death', ['type' => 'date', 'class' => 'form-control', 'label' => ['text' => 'Death Date', 'class' => 'form-label']]); ?>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6" data-controller="place-search" data-place-search-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) ?>">
                             <label class="form-label">Birth Place</label>
                             <div class="input-group">
-                                <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off">
+                                <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button>
                             </div>
-                            <?= $this->Form->control('birth_place_id', ['type' => 'hidden', 'id' => 'birth-place-id-field']); ?>
-                            <div id="birth-place-results" class="mt-1"></div>
-                            <div id="birth-place-selected" class="small mt-1"><span class="text-muted fst-italic">None selected</span></div>
+                            <?= $this->Form->control('birth_place_id', ['type' => 'hidden', 'id' => 'birth-place-id-field', 'data-place-search-target' => 'hidden']); ?>
+                            <div id="birth-place-results" class="mt-1" data-place-search-target="results"></div>
+                            <div id="birth-place-selected" class="small mt-1" data-place-search-target="selected"><span class="text-muted fst-italic">None selected</span></div>
                         </div>
                         <div class="col-md-6">
                             <?= $this->Form->control('person_previous', ['class' => 'form-control', 'label' => ['text' => 'Previous School', 'class' => 'form-label'], 'maxlength' => 162]); ?>
@@ -61,6 +61,7 @@
                                         'label' => false,
                                         'placeholder' => 'Image ID',
                                         'id' => 'person-image-field',
+                                        'data-person-form-target' => 'imageField',
                                     ]); ?>
                                 </div>
                                 <div class="col-md-4">
@@ -71,7 +72,7 @@
                             </div>
                             <div class="row mt-2">
                                 <div class="col-12">
-                                    <div id="person-image-preview" class="mt-2" style="display: none;">
+                                    <div id="person-image-preview" class="mt-2" style="display: none;" data-person-form-target="imagePreview">
                                         <img src="" alt="Profile Image Preview" class="img-thumbnail" style="max-height: 200px;">
                                     </div>
                                 </div>
@@ -82,6 +83,7 @@
                                 'rows' => 8,
                                 'class' => 'form-control',
                                 'id' => 'bio-editor',
+                                'data-person-form-target' => 'bioEditor',
                                 'label' => ['text' => 'Biography', 'class' => 'form-label'],
                                 'templates' => [
                                     // Ensure we keep the textarea markup simple for JS replacement
@@ -133,7 +135,6 @@
 echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
 echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js', ['block' => true]);
 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
-echo $this->Html->script('/js/image-selector.js', ['block' => true]);
 
 // Note: For add action, we can't use person-specific tagging since the person doesn't exist yet
 // Modal for general image selection (no auto-tagging on add)
@@ -143,186 +144,5 @@ $tagFilter = null; // No filter since person doesn't exist yet
 $uploadContext = null; // No auto-tagging on add
 $aspectRatio = 1; // Square aspect ratio for profile images
 echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
-
-$initialPreviewUrlJson = '""';
-echo $this->Html->scriptBlock(<<<JS
-(function () {
-    function initEditor() {
-    const initialImageId = '';
-    const initialPreviewUrl = {$initialPreviewUrlJson};
-    var el = document.getElementById('bio-editor');
-    if (!el || typeof tinymce === 'undefined') { return; }
-    if (tinymce.get('bio-editor')) { return; }
-    tinymce.init({
-        license_key: 'gpl',
-        selector: '#bio-editor',
-        menubar: false,
-        plugins: 'image code lists advlist media preview quickbars save visualblocks visualchars',
-        toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | image media | code preview | save',
-        quickbars_selection_toolbar: 'bold italic underline | quicklink blockquote | bullist numlist',
-        image_title: true,
-        automatic_uploads: true,
-        images_upload_url: '/admin/images/upload',
-        images_upload_credentials: true,
-        convert_urls: false,
-        setup: function (editor) {
-            editor.on('BeforeUpload', function(e){ /* hook if needed */ });
-        },
-        images_upload_handler: function (blobInfo, progress) {
-            return new Promise(function (resolve, reject) {
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/admin/images/upload');
-                xhr.withCredentials = true;
-                xhr.upload.onprogress = function (e) {
-                    if (e.lengthComputable) {
-                        progress(e.loaded / e.total * 100);
-                    }
-                };
-                xhr.onload = function () {
-                    if (xhr.status < 200 || xhr.status >= 300) { return reject('HTTP Error: ' + xhr.status); }
-                    var raw = xhr.responseText;
-                    var json;
-                    try { json = JSON.parse(raw); } catch (err) {
-                        console.error('TinyMCE upload invalid JSON response:', raw);
-                        return reject('Invalid JSON');
-                    }
-                    if (!json.success || !json.image || !json.image.url) {
-                        console.error('TinyMCE upload server response (error path):', json);
-                        return reject(json.error || 'Upload failed');
-                    }
-                    resolve(json.image.url);
-                };
-                xhr.onerror = function () { reject('Image upload failed'); };
-                var formData = new FormData();
-                formData.append('upload', blobInfo.blob(), blobInfo.filename());
-                xhr.setRequestHeader('X-CSRF-Token', document.querySelector('meta[name="csrfToken"]').getAttribute('content'));
-                xhr.send(formData);
-            });
-        }
-    });
-
-    // Person image preview handler
-    const imageField = document.getElementById('person-image-field');
-    const imagePreview = document.getElementById('person-image-preview');
-
-    function previewUrlForField() {
-        if (!imageField) {
-            return '';
-        }
-
-        const imageId = imageField.value.trim();
-        const selectedUrl = imageField.dataset.selectedImageThumbnailUrl || imageField.dataset.selectedImageUrl || '';
-        if (selectedUrl !== '') {
-            return selectedUrl;
-        }
-        if (imageId === initialImageId) {
-            return initialPreviewUrl;
-        }
-
-        return '';
-    }
-
-    function withCacheBust(url) {
-        if (!url) {
-            return '';
-        }
-
-        return url + (url.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
-    }
-
-    function updateImagePreview() {
-        const imageId = imageField.value.trim();
-        const previewUrl = previewUrlForField();
-        if (imageId && !isNaN(parseInt(imageId, 10)) && previewUrl !== '') {
-            const previewImg = imagePreview.querySelector('img');
-            previewImg.src = withCacheBust(previewUrl);
-            imagePreview.style.display = 'block';
-        } else {
-            imagePreview.style.display = 'none';
-        }
-    }
-
-    // Listen for changes to the image field (from modal or manual entry)
-    if (imageField) {
-        imageField.addEventListener('change', updateImagePreview);
-
-        // Show initial preview if image ID is set
-        updateImagePreview();
-    }
-    } // end initEditor
-
-    // Remove TinyMCE before Turbo caches the page to avoid stale editor state
-    document.addEventListener('turbo:before-cache', function () {
-        if (typeof tinymce !== 'undefined') { tinymce.remove('#bio-editor'); }
-    });
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initEditor);
-    } else {
-        initEditor();
-    }
-    document.addEventListener('turbo:load', initEditor);
-}());
-JS, ['block' => true]);
-
-$placeSearchUrl = json_encode($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch']));
-echo $this->Html->scriptBlock(<<<JS
-(function () {
-    function initPlaceSearch() {
-    var searchInput = document.getElementById('birth-place-search');
-    var resultsDiv = document.getElementById('birth-place-results');
-    var selectedDiv = document.getElementById('birth-place-selected');
-    var hiddenInput = document.getElementById('birth-place-id-field');
-    if (!searchInput || !hiddenInput) return;
-    var placeSearchUrl = {$placeSearchUrl};
-    var debounce = null;
-    function setSelected(id, text) {
-        hiddenInput.value = id;
-        if (selectedDiv) {
-            selectedDiv.innerHTML = '<span class="badge bg-primary me-1">' + text + ' <button type="button" class="btn-close btn-close-white ms-1 clear-birth-place" aria-label="Clear" style="font-size:.5em;vertical-align:middle"></button></span>';
-            selectedDiv.querySelector('.clear-birth-place').addEventListener('click', function() { hiddenInput.value = ''; selectedDiv.innerHTML = '<span class="text-muted fst-italic">None selected</span>'; });
-        }
-        if (resultsDiv) resultsDiv.innerHTML = '';
-        searchInput.value = '';
-    }
-    searchInput.addEventListener('input', function() {
-        clearTimeout(debounce);
-        var q = this.value.trim();
-        if (q.length < 2) { if (resultsDiv) resultsDiv.innerHTML = ''; return; }
-        debounce = setTimeout(function() {
-            fetch(placeSearchUrl + '?q=' + encodeURIComponent(q), {headers:{'X-Requested-With':'XMLHttpRequest'}})
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (!data.success || !data.results || !data.results.length) { resultsDiv.innerHTML = '<div class="text-muted small">No results</div>'; return; }
-                    var html = '<div class="list-group list-group-flush" style="max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,.15)">';
-                    data.results.forEach(function(r) {
-                        var label = r.place_city + (r.place_state ? ', ' + r.place_state : '');
-                        html += '<button type="button" class="list-group-item list-group-item-action py-1 small" data-id="' + r.id + '" data-text="' + label.replace(/"/g,'&quot;') + '">' + label + '</button>';
-                    });
-                    html += '</div>';
-                    resultsDiv.innerHTML = html;
-                    resultsDiv.querySelectorAll('button').forEach(function(btn) { btn.addEventListener('click', function() { setSelected(btn.dataset.id, btn.dataset.text); }); });
-                })
-                .catch(function() { resultsDiv.innerHTML = '<div class="text-danger small">Error</div>'; });
-        }, 300);
-    });
-    document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) { resultsDiv.innerHTML = ''; } });
-
-    // Callback for popup_form after a new place is added
-    window.handleBirthPlaceAdded = function(data) {
-        if (data && data.place && data.place.id) {
-            var label = (data.place.place_city || '') + (data.place.place_state ? ', ' + data.place.place_state : '');
-            setSelected(data.place.id, label);
-        }
-    };
-    } // end initPlaceSearch
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPlaceSearch);
-    } else {
-        initPlaceSearch();
-    }
-    document.addEventListener('turbo:load', initPlaceSearch);
-}());
-JS, ['block' => true]);
 ?>
 

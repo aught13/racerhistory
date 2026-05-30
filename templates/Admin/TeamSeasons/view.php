@@ -10,6 +10,10 @@
  * @var mixed $teamStats
  * @var \App\Model\Entity\TeamSeason $teamSeason
  */
+
+$teamSeasonImageUrl = !empty($teamSeason->team_season_image)
+    ? $this->ImageServe->url((int)$teamSeason->team_season_image)
+    : '';
 ?>
 <?php $this->assign('title', 'Team Season Details'); ?>
 <div class="container py-4">
@@ -182,13 +186,16 @@
                     </div>
                     <?php endif; ?>
 
-                    <div id="team-season-image-card" class="mt-4" style="display: none;">
+                    <div id="team-season-image-card" class="mt-4" style="display: none;"
+                        data-controller="team-season-image"
+                        data-team-season-image-image-url-value="<?= h($teamSeasonImageUrl) ?>">
                         <div class="card">
                             <div class="card-header">
                                 <h3 class="card-title mb-0">Team Season Image</h3>
                             </div>
                             <div class="card-body text-center">
                                 <img id="team-season-image-src" src="" alt="Team Season Image"
+                                    data-team-season-image-target="image"
                                     class="img-fluid rounded">
                             </div>
                         </div>
@@ -327,19 +334,3 @@
 </div>
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal', 'itemType' => 'team season']) ?>
-
-<?php $this->append('script'); ?>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const imageUrl = <?= json_encode(!empty($teamSeason->team_season_image) ? $this->ImageServe->url((int)$teamSeason->team_season_image) : '') ?>;
-    if (imageUrl) {
-        const card = document.getElementById('team-season-image-card');
-        const img = document.getElementById('team-season-image-src');
-        if (card && img) {
-            img.src = imageUrl;
-            card.style.display = 'block';
-        }
-    }
-});
-</script>
-<?php $this->end(); ?>

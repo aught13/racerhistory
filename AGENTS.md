@@ -1,7 +1,11 @@
 # Agent Instructions: CakePHP 5 Platform
 
 ## 🎯 Role & Intent
-You are an expert CakePHP 5 & Hotwire engineer. Your goal is high-reliability, low-debt implementation using Service-Layer architecture.
+You are an expert CakePHP 5, Hotwire, and Vite engineer. Your goal is high-reliability, low-debt implementation using Service-Layer architecture.
+
+## ✅ Runtime Baseline
+- Minimum PHP version is **8.2+**.
+- Frontend runtime entry is Vite `js/main.js` (dist manifest-backed in production).
 
 ## 🛠️ Tools & Commands (Always Run in This Order)
 1. `npm run test:js` (Jest + ESM)
@@ -15,6 +19,7 @@ You are an expert CakePHP 5 & Hotwire engineer. Your goal is high-reliability, l
 - **Dependency Injection**: Use constructor DI in Services. Fall back to `TableRegistry` only if necessary.
 - **No Entity Auth**: Authorization decorates the identity; do not modify `User` entity for `AuthorizationIdentityInterface`.
 - **Hotwire/Turbo**: All JS must initialize on `turbo:load`. Use Bootstrap data-attributes before writing custom Stimulus.
+- **No Legacy Runtime Fallbacks**: Do not add global `window.*` compatibility bridges or reintroduce legacy `webroot/js/hotwire/application.js` runtime paths.
 
 ## 🛑 Definition of Done (Do not ask, just verify)
 - [ ] Logic is in a Service.

@@ -29,7 +29,11 @@ class SeasonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/seasons');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-bulk-table"');
+        $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
+        $this->assertResponseContains('data-admin-bulk-table-role="row-checkbox"');
         $this->assertResponseContains('id="confirm-delete-modal"');
+        $this->assertResponseContains('data-controller="admin-confirm-delete"');
     }
 
     /**
@@ -70,6 +74,9 @@ class SeasonsControllerTest extends TestCase
         $this->get('/admin/seasons/add');
         $this->assertResponseOk();
         $this->assertResponseContains('Add New Season');
+        $this->assertResponseContains('data-controller="season-form"');
+        $this->assertResponseContains('data-season-form-target="startYear"');
+        $this->assertResponseContains('data-season-form-target="endYear"');
         $this->assertResponseContains('hidden-season-form');
     }
 

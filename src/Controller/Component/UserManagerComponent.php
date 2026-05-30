@@ -227,8 +227,8 @@ class UserManagerComponent extends Component
 
         $controller->Flash->error('Unable to create user. Please check the form and try again.');
         $controller->set(compact('user'));
-        // Return a response even on failure for consistency
-        return $controller->redirect(['action' => 'add']);
+
+        return null;
     }
 
     /**
@@ -239,7 +239,7 @@ class UserManagerComponent extends Component
      * @param array $data Data to patch
      * @return \Cake\Http\Response Redirect response
      */
-    public function updateUser(Controller $controller, string|int $id, array $data): Response
+    public function updateUser(Controller $controller, string|int $id, array $data): ?Response
     {
         $usersTable = $controller->fetchTable('Users');
         $user = $usersTable->get($id);
@@ -253,8 +253,8 @@ class UserManagerComponent extends Component
 
         $controller->Flash->error('Unable to update user. Please check the form and try again.');
         $controller->set(compact('user'));
-        // Return a response even on failure for consistency
-        return $controller->redirect(['action' => 'edit', $id]);
+
+        return null;
     }
 
     /**

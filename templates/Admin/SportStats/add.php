@@ -6,7 +6,7 @@
  */
 ?>
 <?php $this->assign('title', 'Add Sport Stat Configuration'); ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="field-mapping">
     <div class="row mb-3">
         <div class="col">
             <h1 class="mb-3">Add Sport Stat Configuration</h1>
@@ -118,7 +118,7 @@
                                 <div class="form-text">Define what each column in the table represents</div>
                             </div>
                             <div class="card-body">
-                                <div id="field-mapping-container" class="mb-3">
+                                <div id="field-mapping-container" class="mb-3" data-field-mapping-target="container">
                                     <div class="row g-3 mb-3 field-mapping-row">
                                         <div class="col-md-4">
                                             <input type="text" name="field_keys[]" class="form-control" placeholder="Database Column" required>
@@ -144,7 +144,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button type="button" id="add-field" class="btn btn-secondary"><i class="bi bi-plus-circle"></i> Add Field</button>
+                                <button type="button" id="add-field" class="btn btn-secondary" data-field-mapping-target="addButton"><i class="bi bi-plus-circle"></i> Add Field</button>
                             </div>
                         </div>
                     </div>
@@ -167,59 +167,3 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('field-mapping-container');
-    const addButton = document.getElementById('add-field');
-
-    // Add new field mapping row
-    addButton.addEventListener('click', function() {
-        const row = document.createElement('div');
-        row.className = 'row g-3 mb-3 field-mapping-row';
-        row.innerHTML = `
-            <div class="col-md-4">
-                <input type="text" name="field_keys[]" class="form-control" placeholder="Database Column" required>
-            </div>
-            <div class="col-md-4">
-                <input type="text" name="field_labels[]" class="form-control" placeholder="Display Label" required>
-            </div>
-            <div class="col-md-3">
-                <select name="field_types[]" class="form-select">
-                    <option value="numeric">Numeric</option>
-                    <option value="percentage">Percentage</option>
-                    <option value="text">Text</option>
-                    <option value="boolean">Boolean</option>
-                    <option value="date">Date</option>
-                </select>
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-danger remove-field"><i class="bi bi-dash-circle"></i></button>
-            </div>
-        `;
-        container.appendChild(row);
-
-        // Enable removal for all buttons except the first one
-        updateRemoveButtons();
-    });
-
-    // Handle removal of field mapping row
-    container.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-field') || e.target.parentElement.classList.contains('remove-field')) {
-            const row = e.target.closest('.field-mapping-row');
-            row.remove();
-            updateRemoveButtons();
-        }
-    });
-
-    function updateRemoveButtons() {
-        const rows = container.querySelectorAll('.field-mapping-row');
-        if (rows.length === 1) {
-            rows[0].querySelector('.remove-field').disabled = true;
-        } else {
-            rows.forEach(row => {
-                row.querySelector('.remove-field').disabled = false;
-            });
-        }
-    }
-});
-</script>

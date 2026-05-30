@@ -55,12 +55,12 @@ class E2eSeedData extends BaseSeed
     {
         $now = date('Y-m-d H:i:s');
 
-        // 0. Admin user (required for E2E tests that authenticate)
+        // 0. E2E admin user (required for Playwright tests that authenticate)
         $this->upsert('users', [
             'id' => 1,
-            'username' => 'admin',
-            'email' => 'admin@example.com',
-            'password' => '$2y$12$eErrKp8GXjaFg85RmbLJvu1uskdHXgXr55PViRrf7QopX.g5pT4l2',
+            'username' => 'e2e',
+            'email' => 'e2e@example.com',
+            'password' => '$2y$12$mkoyJKr/PZpRr0Mua8HKHuGyAj6QA3TQrwF8VvtdCOi/vme55jITy',
             'role' => 'admin',
             'status' => 'active',
             'active' => 1,
@@ -75,6 +75,9 @@ class E2eSeedData extends BaseSeed
             'place_country' => 'USA',
             'place_state' => 'TX',
         ];
+        if ($this->hasColumn('places', 'place_city')) {
+            $place['place_city'] = 'Murray';
+        }
         $this->upsert('places', $place);
 
         // 2. Sport

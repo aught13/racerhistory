@@ -183,8 +183,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return date + ' vs ' + opp;
             });
 
-            if (window.showConfirmDelete) {
-                window.showConfirmDelete({
+            if (window.__rhStimulusShowConfirmDelete) {
+                window.__rhStimulusShowConfirmDelete({
                     deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk']) ?>',
                     itemType: 'games (bulk)',
                     associated: assoc,

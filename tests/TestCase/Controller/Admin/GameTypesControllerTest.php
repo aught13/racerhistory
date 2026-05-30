@@ -39,6 +39,10 @@ class GameTypesControllerTest extends TestCase
         $this->get('/admin/game-types');
         $this->assertResponseOk();
         $this->assertResponseContains('Game Types');
+        $this->assertResponseContains('data-controller="admin-index-table"');
+        $this->assertResponseContains('data-admin-index-table-target="searchInput"');
+        $this->assertResponseContains('id="game-types-table"');
+        $this->assertResponseContains('data-admin-index-table-target="table"');
     }
 
     /**

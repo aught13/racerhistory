@@ -192,7 +192,6 @@ echo $this->element('Admin/popup_form', [
     'title' => 'Add New Sport',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd']),
     'targetSelectId' => 'sport-id',
-    'successCallback' => 'handleSportAdded',
     'fields' => [
         [
             'name' => 'sport_name',
@@ -207,13 +206,3 @@ echo $this->element('Admin/popup_form', [
     ],
 ]);
 ?>
-
-<script>
-function handleSportAdded(data) {
-    // Custom callback for when a sport is successfully added
-    console.log('Sport added successfully:', data);
-
-    // You can add additional logic here if needed
-    // For example, updating other UI elements or analytics tracking
-}
-</script>

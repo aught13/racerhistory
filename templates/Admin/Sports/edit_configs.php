@@ -4,7 +4,15 @@
  * @var \App\Model\Entity\Sport $sport
  * @var array $configs
  */
+
+$periodIndex = count($configs['period_names']);
+$settingIndex = count($configs['settings']);
+$periodRowIndex = 0;
 ?>
+
+<div data-controller="sports-configs-form"
+    data-sports-configs-form-period-name-index-value="<?= $periodIndex ?>"
+    data-sports-configs-form-setting-index-value="<?= $settingIndex ?>">
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -28,15 +36,15 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0"><?= __('Period Names') ?></h5>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addPeriodName()">
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                    data-action="click->sports-configs-form#addPeriodName">
                     <i class="fas fa-plus me-1"></i><?= __('Add') ?>
                 </button>
             </div>
             <div class="card-body">
-                <div id="period-names-container">
-                    <?php $periodIndex = 0; ?>
+                <div id="period-names-container" data-sports-configs-form-target="periodNamesContainer">
                     <?php foreach ($configs['period_names'] as $periods => $config) : ?>
-                    <div class="period-name-row mb-3" data-index="<?= $periodIndex ?>">
+                    <div class="period-name-row mb-3" data-index="<?= $periodRowIndex ?>">
                         <div class="row">
                             <div class="col-3">
                                 <?= $this->Form->control("configs.period_name_{$periods}.periods", [
@@ -58,7 +66,8 @@
                                 ]) ?>
                             </div>
                             <div class="col-2">
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeriodName(this)">
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-action="click->sports-configs-form#removePeriodName">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -74,7 +83,7 @@
                             </div>
                         </div>
                     </div>
-                        <?php $periodIndex++; ?>
+                        <?php $periodRowIndex++; ?>
                     <?php endforeach; ?>
                 </div>
                 <small class="text-muted">
@@ -116,12 +125,13 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0"><?= __('Other Settings') ?></h5>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSetting()">
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                    data-action="click->sports-configs-form#addSetting">
                     <i class="fas fa-plus me-1"></i><?= __('Add Setting') ?>
                 </button>
             </div>
             <div class="card-body">
-                <div id="settings-container">
+                <div id="settings-container" data-sports-configs-form-target="settingsContainer">
                     <?php foreach ($configs['settings'] as $key => $config) : ?>
                     <div class="setting-row mb-3">
                         <div class="row">
@@ -153,7 +163,8 @@
                             </div>
                             <div class="col-2">
                                 <?php if (!in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type'])) : ?>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSetting(this)">
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-action="click->sports-configs-form#removeSetting">
                                     <i class="fas fa-trash"></i>
                                 </button>
                                 <?php endif; ?>
@@ -196,78 +207,4 @@
 </div>
 
 <?= $this->Form->end() ?>
-
-<script>
-let periodNameIndex = <?= $periodIndex ?>;
-let settingIndex = <?= count($configs['settings']) ?>;
-
-function addPeriodName() {
-    const container = document.getElementById('period-names-container');
-    const newRow = document.createElement('div');
-    newRow.className = 'period-name-row mb-3';
-    newRow.innerHTML = `
-        <div class="row">
-            <div class="col-3">
-                <input type="number" name="configs[period_name_new_${periodNameIndex}][periods]"
-                       class="form-control form-control-sm" placeholder="# periods" min="1" max="20">
-            </div>
-            <div class="col-6">
-                <input type="text" name="configs[period_name_new_${periodNameIndex}][value]"
-                       class="form-control form-control-sm" placeholder="Period name (Half, Quarter, etc.)">
-            </div>
-            <div class="col-2">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePeriodName(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-        <div class="row mt-1">
-            <div class="col-12">
-                <input type="text" name="configs[period_name_new_${periodNameIndex}][description]"
-                       class="form-control form-control-sm text-muted" placeholder="Description (optional)">
-            </div>
-        </div>
-    `;
-    container.appendChild(newRow);
-    periodNameIndex++;
-}
-
-function removePeriodName(button) {
-    button.closest('.period-name-row').remove();
-}
-
-function addSetting() {
-    const container = document.getElementById('settings-container');
-    const newRow = document.createElement('div');
-    newRow.className = 'setting-row mb-3';
-    newRow.innerHTML = `
-        <div class="row">
-            <div class="col-3">
-                <input type="text" name="configs[new_setting_${settingIndex}][key]"
-                       class="form-control form-control-sm" placeholder="Setting key">
-            </div>
-            <div class="col-6">
-                <input type="text" name="configs[new_setting_${settingIndex}][value]"
-                       class="form-control form-control-sm" placeholder="Setting value">
-            </div>
-            <div class="col-2">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSetting(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-        <div class="row mt-1">
-            <div class="col-12">
-                <input type="text" name="configs[new_setting_${settingIndex}][description]"
-                       class="form-control form-control-sm text-muted" placeholder="Description (optional)">
-            </div>
-        </div>
-    `;
-    container.appendChild(newRow);
-    settingIndex++;
-}
-
-function removeSetting(button) {
-    button.closest('.setting-row').remove();
-}
-</script>
+</div>

@@ -72,5 +72,6 @@ jsdoc.json
 
 phpDocumentor.phar
 /build/
+/webroot/dist/
 /.phpdoc/
 phpdoc.dist.xml

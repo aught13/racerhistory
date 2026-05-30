@@ -143,23 +143,30 @@ class DashboardControllerTest extends TestCase
     }
 
     /**
-     * Test admin layout includes importmap for Hotwire Turbo.
+     * Test admin layout no longer emits legacy importmap markers.
      */
-    public function testLayoutContainsImportmap(): void
+    public function testLayoutOmitsLegacyImportmapMarkers(): void
     {
         $this->get('/admin');
         $this->assertResponseOk();
-        $this->assertResponseContains('@hotwired/turbo');
+        $this->assertResponseNotContains('@hotwired/turbo');
     }
 
     /**
-     * Test admin layout includes admin-turbo.mjs module.
+     * Test admin layout uses main runtime entry and omits legacy admin-turbo module.
      */
-    public function testLayoutContainsAdminTurboScript(): void
+    public function testLayoutUsesMainRuntimeScript(): void
     {
         $this->get('/admin');
         $this->assertResponseOk();
-        $this->assertResponseContains('admin-turbo.mjs');
+
+        $body = (string)$this->_response->getBody();
+        $this->assertMatchesRegularExpression(
+            '/(?:\/dist\/assets\/main-[^"\']+\.js|\/js\/main\.js)/',
+            $body,
+        );
+
+        $this->assertResponseNotContains('admin-turbo.mjs');
     }
 
     /**

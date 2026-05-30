@@ -15,6 +15,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Build Vite Assets
+        run: |
+          npm run build
+          test -f webroot/dist/manifest.json
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:

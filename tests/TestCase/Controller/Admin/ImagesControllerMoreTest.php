@@ -107,6 +107,67 @@ class ImagesControllerMoreTest extends TestCase
     }
 
     /**
+     * Tests upload form page renders the Stimulus upload controller.
+     */
+    public function testUploadFormPageRendersStimulusController(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/upload-form');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="image-upload"');
+        $this->assertResponseContains('data-image-upload-target="fileInput"');
+        $this->assertResponseContains('data-image-upload-target="previewContainer"');
+    }
+
+    /**
+     * Tests manipulate page eagerly loads its source image.
+     */
+    public function testManipulatePageEagerLoadsSourceImage(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/manipulate/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('loading="eager"');
+        $this->assertResponseContains('fetchpriority="high"');
+        $this->assertResponseContains('data-controller="admin-image-manipulate"');
+        $this->assertResponseContains('data-action="click->admin-image-manipulate#setAspectRatio"');
+    }
+
+    /**
+     * Tests bulk upload form renders Stimulus bulk upload controller.
+     */
+    public function testBulkUploadFormPageRendersStimulusController(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/bulk-upload-form');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-image-bulk-upload"');
+        $this->assertResponseContains('data-admin-image-bulk-upload-target="uploadsInput"');
+        $this->assertResponseContains('data-action="click->admin-image-bulk-upload#uploadAll"');
+    }
+
+    /**
+     * Tests crop thumb page renders Stimulus crop controller.
+     */
+    public function testCropThumbPageRendersStimulusController(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/images/crop-thumb/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="admin-image-crop-thumb"');
+        $this->assertResponseContains('data-admin-image-crop-thumb-target="container"');
+        $this->assertResponseContains('data-action="click->admin-image-crop-thumb#reset"');
+    }
+
+    /**
      * Tests bulk upload with invalid payload entry returns error result.
      */
     public function testBulkUploadWithInvalidPayloadEntryReturnsErrorResult(): void
