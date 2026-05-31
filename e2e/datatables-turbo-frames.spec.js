@@ -51,6 +51,32 @@ async function assertSingleDataTableInstance(page, tableId) {
 
 test.describe("DataTables inside Turbo Frames", () => {
     test.describe("Seasons page – DataTable in turbo-frame", () => {
+        async function clickSeasonFrameLink(page, hrefPart) {
+            const link = page
+                .locator(
+                    `a[data-turbo-frame="seasons-table-frame"][href*="${hrefPart}"]`,
+                )
+                .first();
+            if ((await link.count()) === 0) {
+                return false;
+            }
+
+            await link.click({ noWaitAfter: true });
+            await page.waitForFunction(() => {
+                const frame = document.getElementById("seasons-table-frame");
+                if (!frame) {
+                    return false;
+                }
+                return (
+                    frame.querySelector("#seasons-table") ||
+                    frame.querySelector("#season-splits-table") ||
+                    frame.querySelector(".dataTables_wrapper")
+                );
+            });
+
+            return true;
+        }
+
         test("initializes DataTable on first load", async ({ page }) => {
             await page.goto("/seasons");
             await page.waitForLoadState("domcontentloaded");
@@ -72,19 +98,11 @@ test.describe("DataTables inside Turbo Frames", () => {
             await page.goto("/seasons");
             await page.waitForLoadState("domcontentloaded");
 
-            const filterLink = page
-                .locator('a[data-turbo-frame="seasons-table-frame"]')
-                .first();
-            if ((await filterLink.count()) === 0) {
+            const clicked = await clickSeasonFrameLink(page, "splits");
+            if (!clicked) {
                 test.skip();
                 return;
             }
-
-            await filterLink.click();
-
-            // Wait for frame to update
-            await page.waitForLoadState("domcontentloaded");
-            await page.waitForTimeout(500); // extra settle time
 
             const frame = page.locator("turbo-frame#seasons-table-frame");
             await expect(frame).toBeVisible();
@@ -102,18 +120,12 @@ test.describe("DataTables inside Turbo Frames", () => {
             await page.goto("/seasons");
             await page.waitForLoadState("domcontentloaded");
 
-            const filterLink = page
-                .locator('a[data-turbo-frame="seasons-table-frame"]')
-                .first();
-            if ((await filterLink.count()) === 0) {
+            const clickedSplits = await clickSeasonFrameLink(page, "splits");
+            const clickedStandard = await clickSeasonFrameLink(page, "team=all");
+            if (!clickedSplits && !clickedStandard) {
                 test.skip();
                 return;
             }
-
-            // Click filter twice to trigger two frame loads
-            await filterLink.click();
-            await page.waitForLoadState("domcontentloaded");
-            await page.waitForTimeout(300);
 
             // Verify no duplicate wrappers inside the frame
             const dupCount = await page.evaluate(() => {
@@ -634,5 +646,76 @@ test.describe("Back-button navigation restores index pages", () => {
             );
             expect(tableStillPresent).toBe(true);
         }
+    });
+
+    test("games all DataTable re-initializes after back navigation from game view", async ({
+        page,
+    }) => {
+        await page.goto("/games/all");
+        await page.waitForLoadState("domcontentloaded");
+
+        const hasGamesTable =
+            (await page.locator("#games-results-table").count()) > 0;
+        if (!hasGamesTable) {
+            test.skip();
+            return;
+        }
+
+        // Initial load should create DataTables wrapper for the games table.
+        await page.waitForFunction(
+            () => {
+                const table = document.querySelector("#games-results-table");
+                return (
+                    !!table &&
+                    (table.classList.contains("dataTable") ||
+                        !!table.closest(".dataTables_wrapper"))
+                );
+            },
+            { timeout: 20000 },
+        );
+
+        const firstGameLink = page
+            .locator("#games-results-table tbody tr:first-child a")
+            .first();
+        await expect(firstGameLink).toHaveCount(1);
+
+        await Promise.all([
+            page.waitForURL((url) => /^\/games\/\d+/.test(url.pathname), {
+                timeout: 20000,
+            }),
+            firstGameLink.click(),
+        ]);
+
+        await Promise.all([
+            page.waitForURL(/\/games\/all/, { timeout: 20000 }),
+            page.goBack(),
+        ]);
+
+        // Ensure DataTables rehydrates after Turbo restoration.
+        await page.waitForFunction(
+            () => {
+                const table = document.querySelector("#games-results-table");
+                return (
+                    !!table &&
+                    (table.classList.contains("dataTable") ||
+                        !!table.closest(".dataTables_wrapper")) &&
+                    !!document.getElementById("games-filter-btn")
+                );
+            },
+            { timeout: 20000 },
+        );
+
+        const afterBack = await page.evaluate(() => {
+            const table = document.querySelector("#games-results-table");
+            return {
+                hasTable: !!table,
+                hasWrapper: !!table?.closest(".dataTables_wrapper"),
+                hasFilterButton: !!document.getElementById("games-filter-btn"),
+            };
+        });
+
+        expect(afterBack.hasTable).toBe(true);
+        expect(afterBack.hasWrapper).toBe(true);
+        expect(afterBack.hasFilterButton).toBe(true);
     });
 });

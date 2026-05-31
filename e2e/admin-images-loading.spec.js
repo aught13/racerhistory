@@ -27,7 +27,28 @@ async function getFirstImageId(page) {
 test.describe("Admin image pages first-load behavior", () => {
     test.beforeEach(async ({ page }) => {
         const loggedIn = await loginToAdmin(page, { timeout: 15000 });
-        test.skip(!loggedIn, "Could not authenticate as the e2e admin user");
+        let blockedFromAdmin = !loggedIn;
+
+        if (loggedIn) {
+            try {
+                await page.goto("/admin/", {
+                    waitUntil: "domcontentloaded",
+                    timeout: 10000,
+                });
+            } catch {
+                blockedFromAdmin = true;
+            }
+        }
+
+        if (!blockedFromAdmin) {
+            const loginNotice = page
+                .locator("text=You must be logged in to access the admin area.")
+                .first();
+            blockedFromAdmin =
+                (await loginNotice.count()) > 0 || page.url().includes("/login");
+        }
+
+        test.skip(blockedFromAdmin, "Could not authenticate as the e2e admin user");
     });
 
     test("bulk upload file selector initializes on first load", async ({ page }) => {

@@ -308,9 +308,11 @@ log "Checking frontend assets..."
 CRITICAL_ASSETS=(
     webroot/js/admin.js
     webroot/js/admin.mjs
-    webroot/js/image-selector.js
-    webroot/js/games_sport_dynamic.js
-    webroot/js/sport-aware-game-form.js
+    js/legacy/crop-selector.js
+    js/legacy/games_sport_dynamic.js
+    js/legacy/image-selector.js
+    js/legacy/person-image.js
+    js/legacy/sport-aware-game-form.js
     webroot/css/cake.css
     webroot/dist/manifest.json
 )

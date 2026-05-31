@@ -136,5 +136,3 @@
         <button type="submit" class="btn btn-primary">Save</button>
     </div>
 </div>
-
-<?php $this->Html->script('games_sport_dynamic.js', ['block' => true]); ?>

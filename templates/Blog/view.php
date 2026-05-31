@@ -24,7 +24,3 @@ $this->assign('title', h($post->title));
         </div>
     </div>
 </div>
-
-<?php $this->start('script'); ?>
-<?= $this->Html->script('blog-view-init-loader', ['type' => 'module']) ?>
-<?php $this->end(); ?>

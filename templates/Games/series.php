@@ -253,7 +253,6 @@ if ($selectedOpponent) {
                     </div>
                 </div>
             </div>
-            <?= $this->Html->script('games-search-init', ['type' => 'module', 'ext' => '.mjs']) ?>
         <?php endif; ?>
     <?php elseif (!$selectedOpponent) : ?>
         <div class="alert alert-info">
@@ -262,4 +261,3 @@ if ($selectedOpponent) {
         </div>
     <?php endif; ?>
 </div>
-<?= $this->Html->script('games-series-opponents-init', ['type' => 'module', 'ext' => '.mjs']) ?>

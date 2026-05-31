@@ -60,4 +60,3 @@ $filterLabels = [
         </div>
     </div>
 </div>
-<?= $this->Html->script('games-search-init', ['type' => 'module', 'ext' => '.mjs']) ?>

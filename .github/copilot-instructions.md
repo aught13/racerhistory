@@ -20,14 +20,14 @@
 
 ## Domain-specific hotspots
 
-- **Sport-aware Games**: EAV metadata + validation live in services (`GameService`, `SportConfigService`, `GameEavUiService`). Admin forms are dynamic via `webroot/js/sport-aware-game-form.js` + `webroot/js/games_sport_dynamic.js`.
+- **Sport-aware Games**: EAV metadata + validation live in services (`GameService`, `SportConfigService`, `GameEavUiService`). Admin forms are dynamic via `js/legacy/sport-aware-game-form.js` + `js/legacy/games_sport_dynamic.js`.
 - **Images**: upload/variants/tagging pipeline is centralized (`ImageStorageService` → `ImageProcessor` → `TaggingService`); variants configured in `src/Application.php` (`Images.variants`). More detail: `README_IMAGE_STORAGE.md`.
 
 ## Dev workflow (preferred commands)
 
 - PHP tests: `php vendor/bin/phpunit; echo EXIT:$?` (CI spans PHPUnit 10–12; keep tests compatible with PHPUnit 10).
 - PHP quality: `php vendor/bin/phpcs --standard=phpcs.xml src/ tests/; echo EXIT:$?` and `php vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G`.
-- JS quality: ESLint/Prettier/Jest apply to `webroot/js/` (excluding `webroot/js/tinymce/`); tests live in `webroot/js/tests/`; coverage thresholds enforced via `codecov.yml`.
+- JS quality: ESLint/Prettier/Jest apply to `js/` (legacy runtime lives under `js/legacy/`); tests live in `js/tests/`; coverage thresholds enforced via `codecov.yml`.
 
 ## Coverage & compatibility
 

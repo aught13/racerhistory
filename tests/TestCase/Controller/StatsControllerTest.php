@@ -396,7 +396,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-init-loader');
+        $this->assertResponseContains('dist/assets/main-');
     }
 
     /**
@@ -406,7 +406,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/player-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('stats-init-loader');
+        $this->assertResponseContains('dist/assets/main-');
     }
 
     // ——— Sub-nav presence ——————————————————

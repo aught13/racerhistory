@@ -37,6 +37,7 @@ module.exports = [
                 URL: "readonly",
                 URLSearchParams: "readonly",
                 Event: "readonly",
+                HTMLImageElement: "readonly",
                 FileReader: "readonly",
                 FormData: "readonly",
                 setTimeout: "readonly",
@@ -45,7 +46,7 @@ module.exports = [
         },
     },
     {
-        files: ["webroot/js/**/*.js"],
+        files: ["js/legacy/**/*.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
@@ -68,19 +69,19 @@ module.exports = [
                 URLSearchParams: "readonly",
                 FileReader: "readonly",
                 Cropper: "readonly",
+                module: "readonly",
             },
         },
     },
     {
         // Module files (ESM)
         files: [
-            "webroot/js/modules/**/*.js",
-            "webroot/js/modules/**/*.mjs",
-            "webroot/js/*-loader.js",
-            "webroot/js/*-loader.mjs",
-            "webroot/js/*-init.mjs",
-            "webroot/js/admin-turbo.mjs",
-            "webroot/js/game-form-lookups.js",
+            "js/legacy/modules/**/*.js",
+            "js/legacy/modules/**/*.mjs",
+            "js/legacy/*-loader.js",
+            "js/legacy/*-loader.mjs",
+            "js/legacy/*-init.mjs",
+            "js/legacy/game-form-lookups.js",
         ],
         languageOptions: {
             ecmaVersion: 2022,
@@ -109,7 +110,7 @@ module.exports = [
     },
     {
         // CommonJS and other script-like module files
-        files: ["webroot/js/modules/**/*.cjs", "webroot/js/**/*.cjs"],
+        files: ["js/legacy/modules/**/*.cjs", "js/legacy/**/*.cjs"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
@@ -125,24 +126,7 @@ module.exports = [
         },
     },
     {
-        files: ["webroot/js/hotwire/**/*.js"],
-        languageOptions: {
-            ecmaVersion: 2022,
-            sourceType: "module",
-            globals: {
-                window: "readonly",
-                document: "readonly",
-                console: "readonly",
-                navigator: "readonly",
-                fetch: "readonly",
-                URL: "readonly",
-                caches: "readonly",
-                self: "readonly",
-            },
-        },
-    },
-    {
-        files: ["webroot/js/tests/**/*.js", "webroot/js/tests/**/*.mjs"],
+        files: ["js/tests/**/*.js", "js/tests/**/*.mjs"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "module",
@@ -185,6 +169,8 @@ module.exports = [
                 URLSearchParams: "readonly",
                 fetch: "readonly",
                 FormData: "readonly",
+                Blob: "readonly",
+                File: "readonly",
                 MutationObserver: "readonly",
                 navigator: "readonly",
                 Node: "readonly",
@@ -193,6 +179,7 @@ module.exports = [
             },
         },
         rules: {
+            "no-redeclare": "off",
             "no-unused-vars": [
                 "error",
                 { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
