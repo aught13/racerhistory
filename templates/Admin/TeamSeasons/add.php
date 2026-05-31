@@ -366,7 +366,6 @@ $this->assign('title', 'Add Team Season'); ?>
 ]) ?>
 
 <?php
-echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
 ?>
 
 <?= $this->element('Admin/popup_form', [

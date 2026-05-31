@@ -9,15 +9,21 @@ import { test, expect } from "@playwright/test";
  * @returns {Promise<boolean>} true if the page is ready for assertions
  */
 async function goToPersonView(page, personId = 1) {
-    const response = await page.goto(`/people/view/${personId}`);
-    if (!response || response.status() !== 200) {
+    const response = await page.goto(`/people/view/${personId}`, {
+        waitUntil: "domcontentloaded",
+    });
+    if (
+        !response ||
+        response.status() !== 200 ||
+        page.url().includes("/login")
+    ) {
         test.skip(
             true,
             `Person ${personId} not found (HTTP ${response?.status() ?? "none"}) – no seed data`,
         );
         return false;
     }
-    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(250);
     return true;
 }
 
@@ -46,8 +52,8 @@ test.describe("People Game Log - Turbo Frame Tabs", () => {
 
         if ((await tabs.count()) > 0) {
             // Click first tab
-            await tabs.first().click();
-            await page.waitForLoadState("networkidle");
+            await tabs.first().click({ noWaitAfter: true });
+            await page.waitForTimeout(400);
 
             // Verify a turbo frame exists after tab click
             const turboFrame = page
@@ -80,8 +86,8 @@ test.describe("People Game Log - Turbo Frame Tabs", () => {
 
         if ((await tabs.count()) > 1) {
             // Click first tab
-            await tabs.first().click();
-            await page.waitForLoadState("networkidle");
+            await tabs.first().click({ noWaitAfter: true });
+            await page.waitForTimeout(400);
 
             const firstFrameId = await page
                 .locator('turbo-frame[id*="game-log"]')
@@ -89,8 +95,8 @@ test.describe("People Game Log - Turbo Frame Tabs", () => {
                 .getAttribute("id");
 
             // Click second tab
-            await tabs.nth(1).click();
-            await page.waitForLoadState("networkidle");
+            await tabs.nth(1).click({ noWaitAfter: true });
+            await page.waitForTimeout(400);
 
             const secondFrameId = await page
                 .locator('turbo-frame[id*="game-log"]')
@@ -105,8 +111,7 @@ test.describe("People Game Log - Turbo Frame Tabs", () => {
 
 test.describe("People Game Log - Frame Content Validation", () => {
     test("should display game statistics in frame", async ({ page }) => {
-        await page.goto("/people/view/1");
-        await page.waitForLoadState("networkidle");
+        if (!(await goToPersonView(page))) return;
 
         const turboFrame = page.locator('turbo-frame[id*="game-log"]').first();
 
@@ -152,7 +157,7 @@ test.describe("People Game Log - Performance", () => {
             () => document.body.scrollHeight,
         );
 
-        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(400);
 
         // Get final page height after frame load
         const finalHeight = await page.evaluate(

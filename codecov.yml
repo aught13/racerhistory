@@ -15,6 +15,7 @@ comment:
 
 ignore:
   - 'tests/'
+  - 'js/tests/'
   - 'vendor/'
   - 'tmp/'
   - 'logs/'
@@ -31,5 +32,5 @@ flags:
     carryforward: true
   jstests:
     paths:
-      - webroot/js/
+      - js/
     carryforward: true

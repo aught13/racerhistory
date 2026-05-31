@@ -161,7 +161,6 @@ echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFiel
 ?>
 
 <?php
-echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
 echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js', ['block' => true]);
 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
 ?>

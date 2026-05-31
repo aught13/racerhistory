@@ -139,7 +139,6 @@
         document.addEventListener('DOMContentLoaded', initNavBehavior);
         document.addEventListener('turbo:load', initNavBehavior);
     </script>
-    <?= $this->Html->script('image-retry', ['type' => 'module', 'ext' => '.mjs']) ?>
 </head>
 
 <?php

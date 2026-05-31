@@ -35,6 +35,22 @@ import { initAdminRuntimeLifecycle } from "./lib/admin_runtime.js";
 import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
+import { initTinyMceLoader } from "./lib/tinymce_loader.js";
+
+import "./legacy/admin-dashboard.js";
+import "./legacy/blog-view-init-loader.js";
+import "./legacy/game-form-lookups.js";
+import "./legacy/game-view-init-loader.mjs";
+import "./legacy/games-search-init.mjs";
+import "./legacy/games-series-opponents-init.mjs";
+import "./legacy/image-retry.mjs";
+import "./legacy/people-index-init-loader.mjs";
+import "./legacy/person-blog-popover-loader.mjs";
+import "./legacy/person-game-log-tabs-loader.mjs";
+import "./legacy/season-view-init-loader.mjs";
+import "./legacy/seasons-init-loader.mjs";
+import "./legacy/stats-init-loader.mjs";
+import "./legacy/games_sport_dynamic.js";
 
 const isAdminPath =
     typeof window !== "undefined" &&
@@ -58,6 +74,7 @@ if (!runtimeAlreadyBooted) {
     startNativeBridge();
     registerServiceWorker();
     initTurboScrollBehavior();
+    initTinyMceLoader();
 
     const stimulus = Application.start();
     stimulus.register("admin-confirm-delete", AdminConfirmDeleteController);
