@@ -154,7 +154,7 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
 // Image selector modal for person images
 $modalId = 'person-image-selector';
 $targetFieldId = 'person-image-field';
-$tagFilter = 'person-' . $person->id;
+$tagFilter = null; // Show full library; many legacy person images are not person-tagged.
 $uploadContext = ['type' => 'person', 'id' => $person->id];
 $aspectRatio = 1; // Square aspect ratio for profile images
 echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));

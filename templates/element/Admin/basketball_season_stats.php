@@ -101,7 +101,7 @@ $hasStats = $playerStats && $playerStats->count() > 0;
                     <p class="text-muted text-center py-4">No stats available</p>
                 <?php else : ?>
                     <div class="table-responsive">
-                        <table id="season-stats-table" class="table table-striped table-bordered table-sm">
+                        <table id="admin-season-stats-table" class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -175,7 +175,8 @@ $hasStats = $playerStats && $playerStats->count() > 0;
     <?php $this->append('script'); ?>
 <script>
 $(document).ready(function() {
-    $('#season-stats-table').DataTable({
+    if (!$.fn.DataTable.isDataTable('#admin-season-stats-table')) {
+        $('#admin-season-stats-table').DataTable({
         "paging": false,
         "searching": true,
         "ordering": true,
@@ -184,7 +185,8 @@ $(document).ready(function() {
         "columnDefs": [
             { "orderable": false, "targets": -1 } // Disable sorting on actions column
         ]
-    });
+        });
+    }
 });
 </script>
     <?php $this->end(); ?>

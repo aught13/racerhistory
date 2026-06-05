@@ -311,12 +311,6 @@
                                         <td><?= h($stat->PTS ?? '') ?></td>
                                     </tr>
                                 <?php endforeach; ?>
-                            <?php else : ?>
-                                <tr>
-                                    <td colspan="19" class="text-center text-muted">
-                                        <em>No player statistics entered yet</em>
-                                    </td>
-                                </tr>
                             <?php endif; ?>
                         </tbody>
                         <?php if (!empty($teamBoxStats)) : ?>
@@ -551,12 +545,6 @@
                                             <td><?= h($stat->PTS ?? '') ?></td>
                                         </tr>
                                     <?php endforeach; ?>
-                                <?php else : ?>
-                                    <tr>
-                                        <td colspan="19" class="text-center text-muted">
-                                            <em>No opponent player statistics entered yet</em>
-                                        </td>
-                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                             <?php if (!empty($opponentBoxStats)) : ?>

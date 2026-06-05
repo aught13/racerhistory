@@ -322,7 +322,7 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
                 // Image selector modal for team season images
                 $modalId = 'team-season-image-selector';
                 $targetFieldId = 'team-season-image-field';
-                $tagFilter = 'teamseason-' . $teamSeason->id;
+                $tagFilter = null; // Show full library; legacy season images may not be teamseason-tagged.
                 $uploadContext = ['type' => 'teamseason', 'id' => $teamSeason->id];
                 $aspectRatio = 16 / 9; // Widescreen aspect ratio (16:9, covers 4:3, 5:4 formats)
                 echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
