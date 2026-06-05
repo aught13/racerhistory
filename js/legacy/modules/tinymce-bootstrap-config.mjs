@@ -454,7 +454,6 @@ export function createTinyMCEConfig(options = {}) {
             { title: "Hover", value: "table table-hover" },
             { title: "Small", value: "table table-sm" },
         ],
-        table_responsive_width: true,
 
         // Link configuration
         link_assume_external_targets: true,

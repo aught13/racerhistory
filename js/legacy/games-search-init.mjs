@@ -66,7 +66,17 @@ function loadScript(src, options = {}) {
         const existing = document.querySelector(`script[src="${src}"]`);
 
         if (existing && !forceReload) {
-            // If a script tag exists but is still loading, wait for completion.
+            // Parser-inserted scripts (Turbo head merge/full page render) do not
+            // carry our dataset flag. Treat those as already loaded.
+            if (existing.dataset.loaded !== "pending") {
+                if (existing.dataset.loaded !== "true") {
+                    existing.dataset.loaded = "true";
+                }
+                resolve();
+                return;
+            }
+
+            // If a dynamically inserted script is still pending, wait for completion.
             if (existing.dataset.loaded === "true") {
                 resolve();
                 return;
@@ -93,6 +103,7 @@ function loadScript(src, options = {}) {
         const script = document.createElement("script");
         script.src = src;
         script.async = true;
+        script.dataset.loaded = "pending";
         script.addEventListener("load", () => {
             script.dataset.loaded = "true";
             resolve();

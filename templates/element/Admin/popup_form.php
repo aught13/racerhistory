@@ -14,6 +14,32 @@ $successCallback = $successCallback ?? 'handlePopupSuccess';
 $targetSelectId = $targetSelectId ?? '';
 $hiddenFormId = $hiddenFormId ?? '';
 $extraHtml = $extraHtml ?? '';
+
+$hasPlaceCountryField = false;
+$hasPlaceCityField = false;
+$hasPlaceStateField = false;
+foreach ($fields as $fieldConfig) {
+    $fieldName = $fieldConfig['name'] ?? '';
+    $fieldType = $fieldConfig['type'] ?? 'text';
+    if ($fieldType === 'hidden') {
+        continue;
+    }
+
+    if ($fieldName === 'place_country') {
+        $hasPlaceCountryField = true;
+    }
+    if ($fieldName === 'place_city') {
+        $hasPlaceCityField = true;
+    }
+    if ($fieldName === 'place_state') {
+        $hasPlaceStateField = true;
+    }
+}
+
+$hasPlaceLocationBehavior =
+    $hasPlaceCountryField &&
+    $hasPlaceCityField &&
+    $hasPlaceStateField;
 ?>
 <div class="modal fade"
      id="<?= h($popupId) ?>"
@@ -33,7 +59,24 @@ $extraHtml = $extraHtml ?? '';
                     id="<?= h($popupId) ?>-form"
                     data-url="<?= h($formUrl) ?>"
                     data-target-select="<?= h($targetSelectId) ?>"
-                    data-success-callback="<?= h($successCallback) ?>">
+                    data-success-callback="<?= h($successCallback) ?>"
+                    <?= $hasPlaceLocationBehavior ? 'data-controller="place-location"' : '' ?>>
+
+                    <?php if ($hasPlaceLocationBehavior) : ?>
+                    <div class="mb-3">
+                        <label class="form-label" for="<?= h($popupId) ?>-country-search">Country Search (common name)</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="<?= h($popupId) ?>-country-search"
+                            autocomplete="off"
+                            placeholder="Type a country name (e.g., United States)"
+                            data-place-location-target="countrySearch"
+                            data-action="input->place-location#onCountryQuery blur->place-location#onCountryBlur" />
+                        <div class="mt-1 position-relative" data-place-location-target="countryResults"></div>
+                        <small class="text-muted d-block mt-1" data-place-location-target="countryMeta">Select a country to store its ISO3 code and load subdivisions/localities.</small>
+                    </div>
+                    <?php endif; ?>
 
                     <?php foreach ($fields as $f) :
                         $name = $f['name'] ?? '';
@@ -79,18 +122,53 @@ $extraHtml = $extraHtml ?? '';
                             </select>
 
                             <?php else : ?>
+                                <?php
+                                $inputClass = 'form-control';
+                                $inputAttrs = [];
+
+                                if ($hasPlaceLocationBehavior && $name === 'place_country') {
+                                    $inputClass .= ' mt-2';
+                                    $inputAttrs[] = 'readonly';
+                                    $inputAttrs[] = 'data-place-location-target="countryCode"';
+                                }
+
+                                if ($hasPlaceLocationBehavior && $name === 'place_city') {
+                                    $inputAttrs[] = 'list="' . h($popupId . '-place-city-options') . '"';
+                                    $inputAttrs[] = 'data-place-location-target="city"';
+                                    $inputAttrs[] = 'data-action="input->place-location#onCityInput blur->place-location#onCityBlur"';
+                                }
+
+                                if ($hasPlaceLocationBehavior && $name === 'place_state') {
+                                    $inputAttrs[] = 'list="' . h($popupId . '-place-state-options') . '"';
+                                    $inputAttrs[] = 'data-place-location-target="state"';
+                                    $inputAttrs[] = 'data-action="input->place-location#onStateInput blur->place-location#onStateBlur"';
+                                }
+                                ?>
                             <input
                                 type="<?= h($type) ?>"
-                                class="form-control"
+                                class="<?= h($inputClass) ?>"
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
-                                <?= $req ? 'required' : '' ?> />
+                                <?= $req ? 'required' : '' ?>
+                                <?= implode(' ', $inputAttrs) ?> />
+
+                                <?php if ($hasPlaceLocationBehavior && $name === 'place_city') : ?>
+                            <datalist id="<?= h($popupId) ?>-place-city-options" data-place-location-target="cityList"></datalist>
+                                <?php endif; ?>
+
+                                <?php if ($hasPlaceLocationBehavior && $name === 'place_state') : ?>
+                            <datalist id="<?= h($popupId) ?>-place-state-options" data-place-location-target="stateList"></datalist>
+                                <?php endif; ?>
 
                             <?php endif; ?>
                     </div>
                         <?php endif; ?>
 
                     <?php endforeach; ?>
+
+                    <?php if ($hasPlaceLocationBehavior) : ?>
+                        <small class="text-muted d-block mt-1" data-place-location-target="locationMeta">Select a country to load subdivisions and localities.</small>
+                    <?php endif; ?>
 
                     <?php if ($extraHtml) : ?>
                         <?= $extraHtml ?>
@@ -129,6 +207,20 @@ $extraHtml = $extraHtml ?? '';
         n.textContent = msg;
         document.body.appendChild(n);
         setTimeout(function () { n.remove(); }, 4000);
+    }
+
+    function cleanupModalArtifacts() {
+        if (document.querySelector('.modal.show')) {
+            return;
+        }
+
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+
+        document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+            backdrop.remove();
+        });
     }
 
     submitBtn.addEventListener('click', function () {
@@ -223,6 +315,7 @@ $extraHtml = $extraHtml ?? '';
                     }
 
                     bootstrap.Modal.getOrCreateInstance(modal).hide();
+                    setTimeout(cleanupModalArtifacts, 350);
                     toast(data.message || 'Saved', 'success');
                     form.reset();
                 } else {
@@ -235,6 +328,7 @@ $extraHtml = $extraHtml ?? '';
 
     modal.addEventListener('hidden.bs.modal', function () {
         alerts.innerHTML = '';
+        setTimeout(cleanupModalArtifacts, 0);
     });
 })();
 </script>

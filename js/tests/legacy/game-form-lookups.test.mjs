@@ -871,6 +871,19 @@ describe("game-form-lookups", () => {
             ).toHaveBeenCalled();
         });
 
+        test("calling initGameFormLookups twice does not double-bind nested modal handlers", () => {
+            setupFullFormDom();
+            initGameFormLookups();
+            initGameFormLookups();
+
+            const btn = document.getElementById("opponent-add-place-btn");
+            btn.click();
+
+            expect(
+                global.bootstrap.Modal._mockInstance.hide,
+            ).toHaveBeenCalledTimes(1);
+        });
+
         test("opponent modal hidden event after place toggle shows place modal", () => {
             setupFullFormDom();
             initGameFormLookups();

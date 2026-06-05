@@ -20,6 +20,7 @@ import ImageUploadController from "./controllers/image_upload_controller.js";
 import PersonFormController from "./controllers/person_form_controller.js";
 import PersonsIndexController from "./controllers/persons_index_controller.js";
 import PlaceSearchController from "./controllers/place_search_controller.js";
+import PlaceLocationController from "./controllers/place_location_controller.js";
 import PasswordToggleController from "./controllers/password_toggle_controller.js";
 import RosterMultiAddController from "./controllers/roster_multi_add_controller.js";
 import SeasonFormController from "./controllers/season_form_controller.js";
@@ -97,6 +98,7 @@ if (!runtimeAlreadyBooted) {
     stimulus.register("image-upload", ImageUploadController);
     stimulus.register("person-form", PersonFormController);
     stimulus.register("persons-index", PersonsIndexController);
+    stimulus.register("place-location", PlaceLocationController);
     stimulus.register("password-toggle", PasswordToggleController);
     stimulus.register("roster-edit-person", RosterEditPersonController);
     stimulus.register("roster-multi-add", RosterMultiAddController);

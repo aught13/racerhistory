@@ -1,4 +1,4 @@
-const TINYMCE_SRC = "/js/tinymce/tinymce.min.js?v=1";
+const TINYMCE_SRC = "https://cdn.jsdelivr.net/npm/tinymce@6.8.6/tinymce.min.js";
 const TINYMCE_REQUIRED_SELECTOR =
     '[data-controller~="blog-post-form"], [data-controller~="person-form"], [data-controller~="team-season-form"]';
 
@@ -14,7 +14,7 @@ function ensureTinyMceScript() {
     }
 
     const existingScript = document.querySelector(
-        'script[data-rh-tinymce="true"], script[src*="/js/tinymce/tinymce.min.js"]',
+        'script[data-rh-tinymce="true"], script[src*="tinymce.min.js"]',
     );
     if (existingScript) {
         return;

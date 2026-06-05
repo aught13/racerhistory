@@ -451,6 +451,41 @@ describe("image-selector controller", () => {
         expect(controller.cropper).toBeNull();
     });
 
+    test("refreshes config and target field when config appears after connect", async () => {
+        application.stop();
+        delete window.imageSelectorConfig["image-modal"];
+
+        application = Application.start();
+        application.register("image-selector", ImageSelectorController);
+        await flush();
+
+        const controller = getController(application);
+        expect(controller.targetField).toBeNull();
+        expect(controller.aspectRatio).toBeNull();
+
+        window.imageSelectorConfig["image-modal"] = {
+            targetFieldId: "image-target",
+            aspectRatio: 1,
+        };
+
+        fetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+                images: [],
+            }),
+        });
+
+        document
+            .getElementById("image-modal")
+            .dispatchEvent(new Event("shown.bs.modal"));
+        await flush();
+
+        expect(controller.targetField).toBe(
+            document.getElementById("image-target"),
+        );
+        expect(controller.aspectRatio).toBe(1);
+    });
+
     test("covers modal-hidden optional paths and select-tab no-reload branch", () => {
         const controller = getController(application);
 

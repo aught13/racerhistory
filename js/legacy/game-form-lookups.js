@@ -222,6 +222,13 @@ export function initGameFormLookups() {
     const formContainer = document.getElementById("game-form-card");
     if (!formContainer) return;
 
+    // initGameFormLookups is wired to both DOMContentLoaded and turbo:load.
+    // Guard against duplicate listeners on the same DOM instance.
+    if (formContainer.dataset.lookupsInitialized === "true") {
+        return;
+    }
+    formContainer.dataset.lookupsInitialized = "true";
+
     // URLs are stored as data attributes on the form container
     const opponentSearchUrl = formContainer.dataset.opponentSearchUrl;
     const placeSearchUrl = formContainer.dataset.placeSearchUrl;

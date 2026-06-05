@@ -201,14 +201,13 @@ export default class extends Controller {
     }
 
     hasRequiredExtensions(config) {
-        const jq = this.jQueryHandle();
-        const namespace = jq?.fn?.dataTable;
-
-        if (config.scroller && !namespace?.Scroller) {
-            return false;
+        if (!config?.scroller) {
+            return true;
         }
 
-        return true;
+        const jq = this.jQueryHandle();
+        const namespace = jq?.fn?.dataTable;
+        return Boolean(namespace?.Scroller);
     }
 
     initWhenReady() {
@@ -217,10 +216,7 @@ export default class extends Controller {
             return;
         }
 
-        if (
-            !this.isDataTablesAvailable() ||
-            !this.hasRequiredExtensions(config)
-        ) {
+        if (!this.isDataTablesAvailable()) {
             if (this.retryCount >= MAX_RETRIES) {
                 return;
             }
@@ -264,11 +260,20 @@ export default class extends Controller {
         const jq = this.jQueryHandle();
         const config = this.pageConfig;
 
-        if (!jq || !this.hasTableTarget || !config) {
+        if (
+            !jq ||
+            typeof jq !== "function" ||
+            !this.hasTableTarget ||
+            !config
+        ) {
             return;
         }
 
-        if (jq.fn.DataTable.isDataTable(this.tableTarget)) {
+        const isDataTableFn = jq.fn?.DataTable?.isDataTable;
+        if (
+            typeof isDataTableFn === "function" &&
+            isDataTableFn(this.tableTarget)
+        ) {
             this.dtInstance = jq(this.tableTarget).DataTable();
             return;
         }
@@ -304,7 +309,9 @@ export default class extends Controller {
             options.scrollX = true;
         }
         if (config.scroller) {
-            options.scroller = config.scroller;
+            if (this.hasRequiredExtensions(config)) {
+                options.scroller = config.scroller;
+            }
         }
 
         if (supportsServerSide) {

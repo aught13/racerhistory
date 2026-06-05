@@ -295,7 +295,6 @@ export default class extends Controller {
                 { title: "Hover", value: "table table-hover" },
                 { title: "Responsive", value: "table-responsive" },
             ],
-            table_responsive_width: true,
             link_assume_external_targets: true,
             link_default_target: "_blank",
             extended_valid_elements:

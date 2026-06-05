@@ -99,8 +99,57 @@ describe("games-series-opponents-init", () => {
         expect(dt.draw).toHaveBeenCalled();
     });
 
+    test("initSeriesOpponentsTable defers DataTable setup until the picker is opened", async () => {
+        document.body.innerHTML = `
+            <button
+                id="series-opponents-picker-toggle"
+                type="button"
+                aria-controls="series-opponents-picker-panel"
+                aria-expanded="false"
+            >
+                Change opponent
+            </button>
+            <div id="series-opponents-picker-panel" class="d-none">
+                <input id="series-opponents-search" type="text" />
+                <table id="series-opponents-table" data-opponents-url="/games/series-opponents?format=json">
+                    <thead>
+                        <tr>
+                            <th>Opponent</th>
+                            <th>Short</th>
+                            <th>Games</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        `;
+
+        const { DataTableFn } = setupDataTablesMock();
+        const { initSeriesOpponentsTable } =
+            await import("../../legacy/games-series-opponents-init.mjs");
+
+        initSeriesOpponentsTable();
+        await Promise.resolve();
+
+        expect(DataTableFn).not.toHaveBeenCalled();
+
+        document
+            .getElementById("series-opponents-picker-toggle")
+            .dispatchEvent(new Event("click", { bubbles: true }));
+        await Promise.resolve();
+
+        expect(
+            document
+                .getElementById("series-opponents-picker-panel")
+                .classList.contains("d-none"),
+        ).toBe(false);
+        expect(DataTableFn).toHaveBeenCalled();
+    });
+
     test("cleanupSeriesOpponentsTable destroys DataTable and unbinds input handler", async () => {
         document.body.innerHTML = `
+            <button id="series-opponents-picker-toggle" type="button">Change opponent</button>
             <input id="series-opponents-search" type="text" />
             <table id="series-opponents-table" data-opponents-url="/games/series-opponents?format=json">
                 <thead><tr><th>Opponent</th><th>Short</th><th>Games</th><th></th></tr></thead>
@@ -119,10 +168,19 @@ describe("games-series-opponents-init", () => {
         searchInput._seriesOpponentsSearchHandler = handler;
         searchInput.addEventListener("input", handler);
 
+        const toggle = document.getElementById(
+            "series-opponents-picker-toggle",
+        );
+        const toggleHandler = jest.fn();
+        toggle._seriesOpponentsToggleHandler = toggleHandler;
+        toggle.addEventListener("click", toggleHandler);
+
         cleanupSeriesOpponentsTable();
 
         searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+        toggle.dispatchEvent(new Event("click", { bubbles: true }));
         expect(handler).not.toHaveBeenCalled();
+        expect(toggleHandler).not.toHaveBeenCalled();
         expect(dt.destroy).toHaveBeenCalledWith(false);
     });
 });

@@ -105,9 +105,58 @@ function bindOpponentSearchInput(dtApi) {
     input._seriesOpponentsSearchHandler = handler;
 }
 
+function bindOpponentPickerToggle() {
+    const panel = document.getElementById("series-opponents-picker-panel");
+    const toggle = document.getElementById("series-opponents-picker-toggle");
+    if (!panel || !toggle) {
+        return;
+    }
+
+    if (typeof toggle._seriesOpponentsToggleHandler === "function") {
+        toggle.removeEventListener(
+            "click",
+            toggle._seriesOpponentsToggleHandler,
+        );
+    }
+
+    const setExpandedState = (expanded) => {
+        toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+        toggle.textContent = expanded
+            ? "Hide opponent picker"
+            : "Change opponent";
+    };
+
+    setExpandedState(!panel.classList.contains("d-none"));
+
+    const handler = () => {
+        const isHidden = panel.classList.contains("d-none");
+        if (isHidden) {
+            panel.classList.remove("d-none");
+            setExpandedState(true);
+            initSeriesOpponentsTable();
+            document.getElementById("series-opponents-search")?.focus();
+
+            return;
+        }
+
+        panel.classList.add("d-none");
+        setExpandedState(false);
+    };
+
+    toggle.addEventListener("click", handler);
+    toggle._seriesOpponentsToggleHandler = handler;
+}
+
 function initSeriesOpponentsTable() {
+    bindOpponentPickerToggle();
+
     const table = document.getElementById("series-opponents-table");
     if (!table) {
+        return;
+    }
+
+    const panel = document.getElementById("series-opponents-picker-panel");
+    if (panel && panel.classList.contains("d-none")) {
         return;
     }
 
@@ -121,7 +170,11 @@ function initSeriesOpponentsTable() {
             const $table = window.$(table);
             if (window.$.fn.dataTable.isDataTable(table)) {
                 const existing = $table.DataTable();
+                if (typeof existing.columns?.adjust === "function") {
+                    existing.columns.adjust();
+                }
                 bindOpponentSearchInput(existing);
+
                 return;
             }
 
@@ -203,6 +256,15 @@ function cleanupSeriesOpponentsTable() {
     if (typeof input._seriesOpponentsSearchHandler === "function") {
         input.removeEventListener("input", input._seriesOpponentsSearchHandler);
         input._seriesOpponentsSearchHandler = null;
+    }
+
+    const toggle = document.getElementById("series-opponents-picker-toggle");
+    if (typeof toggle?._seriesOpponentsToggleHandler === "function") {
+        toggle.removeEventListener(
+            "click",
+            toggle._seriesOpponentsToggleHandler,
+        );
+        toggle._seriesOpponentsToggleHandler = null;
     }
 }
 
