@@ -308,8 +308,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-<script type="module">
-import { initGameFormLookups } from '/js/game-form-lookups.js';
-// Re-initialize on turbo:load for Hotwire compatibility
-initGameFormLookups();
-</script>

@@ -15,13 +15,7 @@ declare(strict_types=1);
  */
 
 $this->assign('title', 'Blog');
-?>
-<?php $this->start('css'); ?>
-<?= $this->Html->css('blog-content') ?>
-<?php $this->end(); ?>
-
-<?= $this->element('blog/index_frame') ?>
-
-<?php $this->start('script'); ?>
-<?= $this->Html->script('blog-view-init-loader', ['type' => 'module']) ?>
-<?php $this->end();
+$this->start('css');
+echo $this->Html->css('blog-content');
+$this->end();
+echo $this->element('blog/index_frame');

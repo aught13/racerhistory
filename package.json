@@ -35,11 +35,11 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "playwright:install": "playwright install --with-deps chromium",
-    "lint:js": "npx eslint 'webroot/js/**' 'js/**' --max-warnings=0",
-    "lint:js:fix": "npx eslint 'webroot/js/**' 'js/**' --fix",
+    "lint:js": "npx eslint 'js/**' --max-warnings=0",
+    "lint:js:fix": "npx eslint 'js/**' --fix",
     "lint:css": "npx stylelint 'webroot/css/**/*.css'",
-    "format:js": "npx prettier --write webroot/js js",
-    "format:js:check": "npx prettier --check webroot/js js"
+    "format:js": "npx prettier --write js",
+    "format:js:check": "npx prettier --check js"
   },
   "babel": {
     "presets": [
@@ -60,18 +60,13 @@
     ],
     "testMatch": [
       "**/js/tests/**/*.test.js",
-      "**/js/tests/**/*.test.mjs",
-      "**/webroot/js/tests/**/*.test.js",
-      "**/webroot/js/tests/**/*.test.mjs"
+      "**/js/tests/**/*.test.mjs"
     ],
     "collectCoverage": true,
     "collectCoverageFrom": [
       "js/**/*.js",
       "js/**/*.mjs",
       "!js/tests/**",
-      "webroot/js/**/*.js",
-      "webroot/js/**/*.mjs",
-      "!webroot/js/tests/**",
       "!webroot/js/tinymce/**",
       "!vendor/**"
     ],
@@ -92,7 +87,6 @@
       "/vendor/",
       "/js/tests/",
       "/webroot/js/tinymce/",
-      "/webroot/js/tests/",
       "/e2e/"
     ],
     "setupFilesAfterEnv": [

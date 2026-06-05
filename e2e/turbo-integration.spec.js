@@ -49,7 +49,7 @@ test.describe("Turbo Drive - Navigation", () => {
         page,
     }) => {
         await page.goto("/");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         // Scroll down
         await page.evaluate(() => window.scrollTo(0, 500));
@@ -62,11 +62,12 @@ test.describe("Turbo Drive - Navigation", () => {
                 page.waitForURL(/\/blog(?:\/|$|\?)/, { timeout: 15000 }),
                 link.click(),
             ]);
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // Go back
             await page.goBack();
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
+            await page.waitForTimeout(300);
 
             // Check scroll position was restored (Turbo should restore it)
             const scrollY = await page.evaluate(() => window.scrollY);
@@ -100,11 +101,11 @@ test.describe("Turbo Drive - Caching", () => {
                 page.waitForURL(/\/blog(?:\/|$|\?)/, { timeout: 15000 }),
                 link.click(),
             ]);
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // Navigate back
             await page.goBack();
-            await page.waitForLoadState("networkidle");
+            await page.waitForLoadState("domcontentloaded");
 
             // Should restore from cache (fast load)
             const url = page.url();
@@ -116,7 +117,7 @@ test.describe("Turbo Drive - Caching", () => {
 test.describe("Turbo Frames - General Behavior", () => {
     test("should isolate frame navigation from page", async ({ page }) => {
         await page.goto("/games/view/1");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("domcontentloaded");
 
         const frame = page.locator("turbo-frame#game-stats-frame");
         if ((await frame.count()) > 0) {

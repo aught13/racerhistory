@@ -144,11 +144,11 @@ Tests cover UI components for all public sections:
 
 ```bash
 # Run all JS tests
-npx jest webroot/js/tests/
+npx jest js/tests/
 
 # Run specific test files
-npx jest webroot/js/tests/turbo-navigation.test.js
-npx jest webroot/js/tests/public-pages.test.js
+npx jest js/tests/legacy/turbo-navigation.test.js
+npx jest js/tests/legacy/public-pages.test.js
 
 # Run with coverage
 npx jest --coverage

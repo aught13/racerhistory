@@ -104,15 +104,22 @@
 
 <?= $this->element('Admin/confirm_delete', ['modalId' => 'confirm-delete-modal']) ?>
 
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
     'use strict';
-    if (window.jQuery && $('#rosters-table').length) {
-        $('#rosters-table').DataTable({
+
+    function initRostersTable() {
+        const table = document.getElementById('rosters-table');
+        const $ = window.jQuery;
+        if (!table || !$ || !$.fn || !$.fn.DataTable) {
+            return;
+        }
+
+        if ($.fn.DataTable.isDataTable(table)) {
+            return;
+        }
+
+        $(table).DataTable({
             pagingType: 'simple_numbers',
             order: [
                 [3, 'asc']
@@ -124,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
             language: {
                 search: 'Search roster:'
             },
-            drawCallback: function(settings) {
+            drawCallback: function() {
                 const api = this.api();
                 const pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
                 pagination.toggle(api.page.info().pages > 1);
@@ -132,39 +139,53 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    const selectAll = document.getElementById('select-all-rosters');
-    const checkboxes = document.querySelectorAll('.roster-checkbox');
-    const actionSelect = document.getElementById('bulk-action-select-rosters');
-    const btn = document.getElementById('bulk-action-btn-rosters');
+    function initBulkActions() {
+        const bulkForm = document.getElementById('bulk-action-form-rosters');
+        if (!bulkForm || bulkForm.dataset.rhBulkBound === 'true') {
+            return;
+        }
+        bulkForm.dataset.rhBulkBound = 'true';
 
-    function updateBulkActionButton() {
-        const checked = document.querySelectorAll('.roster-checkbox:checked').length;
-        btn.disabled = checked === 0 || !actionSelect.value;
-    }
+        const selectAll = bulkForm.querySelector('#select-all-rosters');
+        const actionSelect = bulkForm.querySelector('#bulk-action-select-rosters');
+        const btn = bulkForm.querySelector('#bulk-action-btn-rosters');
 
-    if (selectAll) {
-        selectAll.addEventListener('change', function() {
-            checkboxes.forEach(cb => {
-                cb.checked = selectAll.checked;
+        if (!actionSelect || !btn) {
+            return;
+        }
+
+        function updateBulkActionButton() {
+            const checked = bulkForm.querySelectorAll('.roster-checkbox:checked').length;
+            btn.disabled = checked === 0 || !actionSelect.value;
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                bulkForm.querySelectorAll('.roster-checkbox').forEach((checkbox) => {
+                    checkbox.checked = selectAll.checked;
+                });
+                updateBulkActionButton();
             });
-            updateBulkActionButton();
+        }
+
+        bulkForm.querySelectorAll('.roster-checkbox').forEach((checkbox) => {
+            checkbox.addEventListener('change', updateBulkActionButton);
         });
-    }
-
-    checkboxes.forEach(cb => cb.addEventListener('change', updateBulkActionButton));
-    if (actionSelect) {
         actionSelect.addEventListener('change', updateBulkActionButton);
-    }
 
-    const bulkForm = document.getElementById('bulk-action-form-rosters');
-    if (bulkForm) {
-        bulkForm.addEventListener('submit', function(e) {
-            if (actionSelect.value === 'delete') {
-                e.preventDefault();
-                const ids = Array.from(document.querySelectorAll('.roster-checkbox:checked')).map(cb => cb
-                    .value);
+        bulkForm.addEventListener('submit', function(event) {
+            if (actionSelect.value !== 'delete') {
+                return;
+            }
+
+            event.preventDefault();
+            const ids = Array.from(
+                bulkForm.querySelectorAll('.roster-checkbox:checked'),
+            ).map((checkbox) => checkbox.value);
+
+            if (window.__rhStimulusShowConfirmDelete) {
                 window.__rhStimulusShowConfirmDelete({
-                    deleteUrl: this.action,
+                    deleteUrl: bulkForm.action,
                     itemType: 'roster entries (bulk)',
                     ids: JSON.stringify(ids),
                     idsName: 'team_season_roster_ids[]',
@@ -173,5 +194,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+
+    function initRosterManagement() {
+        initRostersTable();
+        initBulkActions();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRosterManagement, {
+            once: true
+        });
+    } else {
+        initRosterManagement();
+    }
+
+    document.addEventListener('turbo:load', initRosterManagement);
+    document.addEventListener('turbo:frame-load', initRosterManagement);
+})();
 </script>

@@ -47,7 +47,7 @@ Highlights:
 Key files:
 - `src/Service/GameService.php`, `src/Service/SportConfigService.php`
 - `src/Controller/Admin/GamesController.php`
-- `webroot/js/sport-aware-game-form.js`, `webroot/js/games_sport_dynamic.js`
+- `js/legacy/sport-aware-game-form.js`, `js/legacy/games_sport_dynamic.js`
 
 ## 4) Basketball statistics
 

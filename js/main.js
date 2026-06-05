@@ -20,6 +20,7 @@ import ImageUploadController from "./controllers/image_upload_controller.js";
 import PersonFormController from "./controllers/person_form_controller.js";
 import PersonsIndexController from "./controllers/persons_index_controller.js";
 import PlaceSearchController from "./controllers/place_search_controller.js";
+import PlaceLocationController from "./controllers/place_location_controller.js";
 import PasswordToggleController from "./controllers/password_toggle_controller.js";
 import RosterMultiAddController from "./controllers/roster_multi_add_controller.js";
 import SeasonFormController from "./controllers/season_form_controller.js";
@@ -35,6 +36,22 @@ import { initAdminRuntimeLifecycle } from "./lib/admin_runtime.js";
 import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
+import { initTinyMceLoader } from "./lib/tinymce_loader.js";
+
+import "./legacy/admin-dashboard.js";
+import "./legacy/blog-view-init-loader.js";
+import "./legacy/game-form-lookups.js";
+import "./legacy/game-view-init-loader.mjs";
+import "./legacy/games-search-init.mjs";
+import "./legacy/games-series-opponents-init.mjs";
+import "./legacy/image-retry.mjs";
+import "./legacy/people-index-init-loader.mjs";
+import "./legacy/person-blog-popover-loader.mjs";
+import "./legacy/person-game-log-tabs-loader.mjs";
+import "./legacy/season-view-init-loader.mjs";
+import "./legacy/seasons-init-loader.mjs";
+import "./legacy/stats-init-loader.mjs";
+import "./legacy/games_sport_dynamic.js";
 
 const isAdminPath =
     typeof window !== "undefined" &&
@@ -58,6 +75,7 @@ if (!runtimeAlreadyBooted) {
     startNativeBridge();
     registerServiceWorker();
     initTurboScrollBehavior();
+    initTinyMceLoader();
 
     const stimulus = Application.start();
     stimulus.register("admin-confirm-delete", AdminConfirmDeleteController);
@@ -80,6 +98,7 @@ if (!runtimeAlreadyBooted) {
     stimulus.register("image-upload", ImageUploadController);
     stimulus.register("person-form", PersonFormController);
     stimulus.register("persons-index", PersonsIndexController);
+    stimulus.register("place-location", PlaceLocationController);
     stimulus.register("password-toggle", PasswordToggleController);
     stimulus.register("roster-edit-person", RosterEditPersonController);
     stimulus.register("roster-multi-add", RosterMultiAddController);

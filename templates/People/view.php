@@ -54,11 +54,6 @@ $formatSeasonLabel = static function ($season): string {
     return trim($seasonStart . '-' . $suffix, '-');
 };
 
-$this->start('script');
-echo $this->Html->script('person-game-log-tabs-loader', ['type' => 'module', 'ext' => '.mjs']);
-echo $this->Html->script('person-blog-popover-loader', ['type' => 'module', 'ext' => '.mjs']);
-$this->end();
-
 ?>
 <div class="container py-4 person-view" data-person-view>
     <nav aria-label="breadcrumb" class="mb-3">

@@ -71,13 +71,48 @@
         <div class="row g-3 mt-1">
             <div class="col-md-6"><?= $this->Form->control('place_id', ['label' => 'Place (City, State)', 'type' => 'select', 'options' => $places, 'empty' => 'Choose...', 'class' => 'form-select']) ?></div>
             <div class="col-md-6">
-                <fieldset class="border rounded p-2">
+                <fieldset class="border rounded p-2" data-controller="place-location">
                     <legend class="float-none w-auto fs-6">New Place</legend>
-                    <div class="row g-2">
-                        <div class="col-md-6"><?= $this->Form->control('new_place.place_country', ['label' => 'Country (ISO 3166 alpha-3)', 'placeholder' => 'USA', 'class' => 'form-control']) ?></div>
-                        <div class="col-md-3"><?= $this->Form->control('new_place.place_city', ['label' => 'City', 'class' => 'form-control']) ?></div>
-                        <div class="col-md-3"><?= $this->Form->control('new_place.place_state', ['label' => 'State', 'class' => 'form-control']) ?></div>
+                    <div class="mb-2">
+                        <label class="form-label" for="new-place-country-search">Country Search (common name)</label>
+                        <input
+                            id="new-place-country-search"
+                            type="text"
+                            class="form-control"
+                            placeholder="Type a country name (e.g., United States)"
+                            autocomplete="off"
+                            data-place-location-target="countrySearch"
+                            data-action="input->place-location#onCountryQuery blur->place-location#onCountryBlur">
+                        <div class="mt-1 position-relative" data-place-location-target="countryResults"></div>
+                        <small class="text-muted d-block mt-1" data-place-location-target="countryMeta">Select a country to store its ISO3 code and load subdivisions/localities.</small>
                     </div>
+                    <div class="row g-2">
+                        <div class="col-md-6"><?= $this->Form->control('new_place.place_country', [
+                            'id' => 'new-place-country-code',
+                            'label' => 'Country (ISO 3166 alpha-3)',
+                            'placeholder' => 'USA',
+                            'class' => 'form-control',
+                            'readonly' => true,
+                            'data-place-location-target' => 'countryCode',
+                        ]) ?></div>
+                        <div class="col-md-3"><?= $this->Form->control('new_place.place_city', [
+                            'id' => 'new-place-city',
+                            'label' => 'City',
+                            'class' => 'form-control',
+                            'list' => 'new-place-city-options',
+                            'data-place-location-target' => 'city',
+                            'data-action' => 'input->place-location#onCityInput blur->place-location#onCityBlur',
+                        ]) ?><datalist id="new-place-city-options" data-place-location-target="cityList"></datalist></div>
+                        <div class="col-md-3"><?= $this->Form->control('new_place.place_state', [
+                            'id' => 'new-place-state',
+                            'label' => 'State',
+                            'class' => 'form-control',
+                            'list' => 'new-place-state-options',
+                            'data-place-location-target' => 'state',
+                            'data-action' => 'input->place-location#onStateInput blur->place-location#onStateBlur',
+                        ]) ?><datalist id="new-place-state-options" data-place-location-target="stateList"></datalist></div>
+                    </div>
+                    <small class="text-muted d-block mt-2" data-place-location-target="locationMeta">Select a country to load subdivisions and localities.</small>
                 </fieldset>
             </div>
         </div>
@@ -136,5 +171,3 @@
         <button type="submit" class="btn btn-primary">Save</button>
     </div>
 </div>
-
-<?php $this->Html->script('games_sport_dynamic.js', ['block' => true]); ?>

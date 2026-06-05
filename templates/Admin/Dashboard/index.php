@@ -10,7 +10,6 @@
  */
 
 $this->assign('title', 'Admin Dashboard');
-$this->Html->script('admin-dashboard.js', ['block' => true]);
 
 $statusIcon = [
     'ok' => '<i class="bi bi-check-circle-fill text-success"></i>',

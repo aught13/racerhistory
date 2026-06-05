@@ -4,18 +4,16 @@ export default class extends Controller {
     connect() {
         this.modalId = this.element.id;
         this.modal = this.element;
-        this.config = window.imageSelectorConfig?.[this.modalId] || {};
-        this.targetField = document.getElementById(this.config.targetFieldId);
+        this.config = {};
+        this.targetField = null;
         this.selectedImageId = null;
         this.selectedImage = null;
         this.cropper = null;
         this.loadedImages = [];
         this.selectedFile = null;
-        this.aspectRatio =
-            typeof this.config.aspectRatio === "number" &&
-            isFinite(this.config.aspectRatio)
-                ? this.config.aspectRatio
-                : null;
+        this.aspectRatio = null;
+
+        this.refreshConfigAndTargetField();
 
         this.initElements();
         this.bindEvents();
@@ -168,7 +166,25 @@ export default class extends Controller {
         }
     }
 
+    refreshConfigAndTargetField() {
+        this.config =
+            window.imageSelectorConfig?.[this.modalId] || this.config || {};
+
+        if (this.config?.targetFieldId) {
+            this.targetField = document.getElementById(
+                this.config.targetFieldId,
+            );
+        }
+
+        this.aspectRatio =
+            typeof this.config?.aspectRatio === "number" &&
+            isFinite(this.config.aspectRatio)
+                ? this.config.aspectRatio
+                : null;
+    }
+
     onModalShown() {
+        this.refreshConfigAndTargetField();
         this.loadImages();
         this.toggleActionButtons(true);
     }
@@ -339,9 +355,14 @@ export default class extends Controller {
             return;
         }
 
+        this.refreshConfigAndTargetField();
+
         if (this.targetField) {
             this.targetField.value = this.selectedImageId;
             this.applySelectedImageData(this.selectedImage);
+            this.targetField.dispatchEvent(
+                new Event("input", { bubbles: true }),
+            );
             this.targetField.dispatchEvent(
                 new Event("change", { bubbles: true }),
             );
@@ -352,6 +373,8 @@ export default class extends Controller {
     }
 
     syncTargetFieldSelection() {
+        this.refreshConfigAndTargetField();
+
         if (!this.targetField) {
             return;
         }
@@ -541,9 +564,14 @@ export default class extends Controller {
                 throw new Error(data.error || "Upload failed");
             }
 
+            this.refreshConfigAndTargetField();
+
             if (this.targetField) {
                 this.targetField.value = data.image.id;
                 this.applySelectedImageData(data.image || null);
+                this.targetField.dispatchEvent(
+                    new Event("input", { bubbles: true }),
+                );
                 this.targetField.dispatchEvent(
                     new Event("change", { bubbles: true }),
                 );

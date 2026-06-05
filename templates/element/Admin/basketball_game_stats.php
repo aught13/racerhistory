@@ -230,12 +230,6 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                                     <?php endforeach; ?>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php else : ?>
-                            <tr>
-                                <td colspan="<?= count($teamColumnsWithData) + 3 ?>" class="text-center text-muted">
-                                    <em>No player statistics entered yet</em>
-                                </td>
-                            </tr>
                         <?php endif; ?>
                     </tbody>
                     <?php if (!empty($teamBoxStats)) : ?>
@@ -438,12 +432,6 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                                     <?php endforeach; ?>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php else : ?>
-                            <tr>
-                                <td colspan="<?= count($opponentColumnsWithData) + 3 ?>" class="text-center text-muted">
-                                    <em>No opponent player statistics entered yet</em>
-                                </td>
-                            </tr>
                         <?php endif; ?>
                     </tbody>
                     <?php if (!empty($opponentBoxStats)) : ?>
@@ -669,23 +657,18 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
     <?php endif; ?>
     <hr>
 
-    <!-- Initialize DataTables -->
-    <?php $this->Html->script(
-        'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js',
-        ['block' => true],
-    ); ?>
-    <?php $this->Html->css(
-        'https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css',
-        ['block' => true],
-    ); ?>
+    <!-- Initialize DataTables (assets provided by admin layout) -->
     <script>
         $(document).ready(function() {
             // Initialize DataTables for player stats tables
-            if ($('#team-player-stats').length) {
+            if ($('#team-player-stats').length && !$.fn.DataTable.isDataTable('#team-player-stats')) {
                 $('#team-player-stats').DataTable({
                     paging: false,
                     searching: false,
                     info: false,
+                    language: {
+                        emptyTable: 'No player statistics entered yet'
+                    },
                     order: [[<?= count($teamColumnsWithData) + 2 ?>, 'desc']], // Sort by last column (PTS) descending
                     columnDefs: [
                         { targets: [0, 1, 2], orderable: true },
@@ -694,11 +677,14 @@ $hasTeamTeamStats = $teamTeamStats !== null || $opponentTeamStats !== null;
                 });
             }
 
-            if ($('#opponent-player-stats').length) {
+            if ($('#opponent-player-stats').length && !$.fn.DataTable.isDataTable('#opponent-player-stats')) {
                 $('#opponent-player-stats').DataTable({
                     paging: false,
                     searching: false,
                     info: false,
+                    language: {
+                        emptyTable: 'No opponent player statistics entered yet'
+                    },
                     order: [[<?= count($opponentColumnsWithData) + 2 ?>, 'desc']], // Sort by last column (PTS) descending
                     columnDefs: [
                         { targets: [0, 1, 2], orderable: true },

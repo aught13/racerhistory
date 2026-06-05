@@ -322,14 +322,13 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
                 // Image selector modal for team season images
                 $modalId = 'team-season-image-selector';
                 $targetFieldId = 'team-season-image-field';
-                $tagFilter = 'teamseason-' . $teamSeason->id;
+                $tagFilter = null; // Show full library; legacy season images may not be teamseason-tagged.
                 $uploadContext = ['type' => 'teamseason', 'id' => $teamSeason->id];
                 $aspectRatio = 16 / 9; // Widescreen aspect ratio (16:9, covers 4:3, 5:4 formats)
                 echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
                 ?>
 
                 <?php
-                echo $this->Html->script('/js/tinymce/tinymce.min.js?v=1', ['block' => true]);
                 echo $this->Html->script('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js', ['block' => true]);
                 echo $this->Html->css('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css', ['block' => true]);
                 ?>

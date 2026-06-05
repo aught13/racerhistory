@@ -418,6 +418,7 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Select an opponent');
         $this->assertResponseContains('series-opponents-search');
         $this->assertResponseContains('series-opponents-table');
+        $this->assertResponseContains('series-opponents-picker-panel');
     }
 
     /**
@@ -428,6 +429,9 @@ class GamesControllerTest extends TestCase
         $this->get('/games/series?opponent_id=1');
         $this->assertResponseOk();
         $this->assertResponseContains('Series History');
+        $this->assertResponseContains('Change opponent');
+        $this->assertResponseContains('series-opponents-picker-panel');
+        $this->assertResponseContains('d-none');
     }
 
     /**

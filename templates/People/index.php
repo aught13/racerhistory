@@ -45,7 +45,3 @@ echo $this->element('People/table_assets');
         </div>
     <?php endif; ?>
 </div>
-
-<?php $this->start('script'); ?>
-<?= $this->Html->script('people-index-init-loader', ['type' => 'module', 'ext' => '.mjs']) ?>
-<?php $this->end(); ?>

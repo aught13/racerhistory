@@ -25,6 +25,8 @@ if ($selectedOpponent) {
         '?' => ['opponent_id' => $selectedOpponent, 'format' => 'json'],
     ]);
 }
+
+$showOpponentPicker = !$selectedOpponent;
 ?>
 <div class="container py-4">
 
@@ -32,44 +34,63 @@ if ($selectedOpponent) {
 
     <h1 class="h3 mb-3">Series History</h1>
 
-    <div class="mb-4">
-        <label for="series-opponents-search" class="form-label">Search Opponents</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input
-                type="text"
-                id="series-opponents-search"
-                class="form-control"
-                placeholder="Search by opponent name or abbreviation..."
-                autocomplete="off"
-            />
+    <?php if ($selectedOpponent && $opponentName) : ?>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <p class="text-muted mb-0">
+                Viewing series history for <strong><?= h($opponentName) ?></strong>.
+            </p>
+            <button
+                type="button"
+                id="series-opponents-picker-toggle"
+                class="btn btn-outline-secondary btn-sm"
+                aria-controls="series-opponents-picker-panel"
+                aria-expanded="false"
+            >
+                Change opponent
+            </button>
         </div>
-        <div class="form-text">Select an opponent from the list to view series history.</div>
-    </div>
+    <?php endif; ?>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>Opponents List</strong>
+    <div id="series-opponents-picker-panel" class="mb-4<?= $showOpponentPicker ? '' : ' d-none' ?>">
+        <div class="mb-4">
+            <label for="series-opponents-search" class="form-label">Search Opponents</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                    type="text"
+                    id="series-opponents-search"
+                    class="form-control"
+                    placeholder="Search by opponent name or abbreviation..."
+                    autocomplete="off"
+                />
+            </div>
+            <div class="form-text">Select an opponent from the list to view series history.</div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive" id="series-opponents-table-wrap">
-                <table class="table table-striped table-hover table-sm mb-0" id="series-opponents-table"
-                       style="width:100%"
-                       data-opponents-url="<?= h($this->Url->build([
-                           'controller' => 'Games',
-                           'action' => 'seriesOpponents',
-                           '?' => ['format' => 'json'],
-                       ])) ?>">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Opponent</th>
-                            <th>Short</th>
-                            <th>Games</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+
+        <div class="card mb-0">
+            <div class="card-header">
+                <strong>Opponents List</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" id="series-opponents-table-wrap">
+                    <table class="table table-striped table-hover table-sm mb-0" id="series-opponents-table"
+                           style="width:100%"
+                           data-opponents-url="<?= h($this->Url->build([
+                               'controller' => 'Games',
+                               'action' => 'seriesOpponents',
+                               '?' => ['format' => 'json'],
+                           ])) ?>">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Opponent</th>
+                                <th>Short</th>
+                                <th>Games</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -253,7 +274,6 @@ if ($selectedOpponent) {
                     </div>
                 </div>
             </div>
-            <?= $this->Html->script('games-search-init', ['type' => 'module', 'ext' => '.mjs']) ?>
         <?php endif; ?>
     <?php elseif (!$selectedOpponent) : ?>
         <div class="alert alert-info">
@@ -262,4 +282,3 @@ if ($selectedOpponent) {
         </div>
     <?php endif; ?>
 </div>
-<?= $this->Html->script('games-series-opponents-init', ['type' => 'module', 'ext' => '.mjs']) ?>
