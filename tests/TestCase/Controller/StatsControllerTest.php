@@ -415,7 +415,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats');
         $this->assertResponseOk();
-        $this->assertResponseContains('rh-stats-subnav-wrap');
+        $this->assertResponseContains('data-controller="nav-accordion"');
         $this->assertResponseContains('Player Season');
         $this->assertResponseContains('Team Season');
     }
@@ -427,7 +427,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/player-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('rh-stats-subnav-wrap');
+        $this->assertResponseContains('data-controller="nav-accordion"');
     }
 
     /**
@@ -437,7 +437,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/team-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('rh-stats-subnav-wrap');
+        $this->assertResponseContains('data-controller="nav-accordion"');
     }
 
     /**
@@ -447,7 +447,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/player-career');
         $this->assertResponseOk();
-        $this->assertResponseContains('rh-stats-subnav-wrap');
+        $this->assertResponseContains('data-controller="nav-accordion"');
     }
 
     /**
@@ -457,7 +457,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/opponent-player-game');
         $this->assertResponseOk();
-        $this->assertResponseContains('rh-stats-subnav-wrap');
+        $this->assertResponseContains('data-controller="nav-accordion"');
     }
 
     /**
@@ -467,7 +467,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/team-game');
         $this->assertResponseOk();
-        $this->assertResponseContains('rh-stats-subnav-wrap');
+        $this->assertResponseContains('data-controller="nav-accordion"');
     }
 
     // ——— Stat types available on all pages ——

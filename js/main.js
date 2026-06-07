@@ -29,6 +29,7 @@ import SportsFormController from "./controllers/sports_form_controller.js";
 import TeamSeasonFormController from "./controllers/team_season_form_controller.js";
 import TeamSeasonImageController from "./controllers/team_season_image_controller.js";
 import StatMultiAddController from "./controllers/stat_multi_add_controller.js";
+import NavAccordionController from "./controllers/nav_accordion_controller.js";
 import ThemeToggleController from "./controllers/theme_toggle_controller.js";
 
 import { initThemeFromCookie } from "./lib/theme.js";
@@ -103,6 +104,7 @@ if (!runtimeAlreadyBooted) {
     stimulus.register("roster-edit-person", RosterEditPersonController);
     stimulus.register("roster-multi-add", RosterMultiAddController);
     stimulus.register("season-form", SeasonFormController);
+    stimulus.register("nav-accordion", NavAccordionController);
     stimulus.register("sports-configs-form", SportsConfigsFormController);
     stimulus.register("sports-form", SportsFormController);
     stimulus.register("team-season-form", TeamSeasonFormController);
