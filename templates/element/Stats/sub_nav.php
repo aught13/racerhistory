@@ -18,6 +18,7 @@ $actionMap = [
     'player-career' => 'playerCareer',
     'player-game' => 'playerGame',
     'team-game' => 'teamGame',
+    'opponent-team-game' => 'opponentTeamGame',
     'opponent-player-game' => 'opponentPlayerGame',
 ];
 $currentLabel = $statType && isset($statTypes[$statType]) ? $statTypes[$statType] : 'Stats';

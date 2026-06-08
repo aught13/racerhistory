@@ -151,8 +151,6 @@ $isAdmin = $identity && (
 $controller = (string)$this->request->getParam('controller');
 $action = (string)$this->request->getParam('action');
 $isMainPage = $action === 'index' && in_array($controller, ['Blog', 'Seasons', 'People', 'Stats', 'Games'], true);
-$isStatsSection = $controller === 'Stats';
-$isGamesSection = $controller === 'Games';
 $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-head' : ''));
 ?>
 <body class="<?= h($bodyClass) ?>" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">

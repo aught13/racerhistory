@@ -121,7 +121,10 @@ test.describe("DataTables inside Turbo Frames", () => {
             await page.waitForLoadState("domcontentloaded");
 
             const clickedSplits = await clickSeasonFrameLink(page, "splits");
-            const clickedStandard = await clickSeasonFrameLink(page, "team=all");
+            const clickedStandard = await clickSeasonFrameLink(
+                page,
+                "team=all",
+            );
             if (!clickedSplits && !clickedStandard) {
                 test.skip();
                 return;
@@ -259,6 +262,28 @@ test.describe("DataTables with Turbo Drive navigation", () => {
     test.describe("Stats pages – DataTables with AJAX", () => {
         test("Stats player-season page loads DataTable", async ({ page }) => {
             await page.goto("/stats/player-season");
+            await page.waitForLoadState("domcontentloaded");
+
+            const table = page.locator("#stats-results-table");
+            if ((await table.count()) === 0) {
+                test.skip();
+                return;
+            }
+
+            try {
+                await waitForDataTable(page, "#stats-results-table", 20000);
+            } catch {
+                test.skip();
+                return;
+            }
+
+            await assertSingleDataTableInstance(page, "stats-results-table");
+        });
+
+        test("Stats opponent-team-game page loads DataTable", async ({
+            page,
+        }) => {
+            await page.goto("/stats/opponent-team-game");
             await page.waitForLoadState("domcontentloaded");
 
             const table = page.locator("#stats-results-table");

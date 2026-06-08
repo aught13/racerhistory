@@ -59,6 +59,7 @@ class StatsControllerTest extends TestCase
         $this->assertArrayHasKey('player-season', $statTypes);
         $this->assertArrayHasKey('team-season', $statTypes);
         $this->assertArrayHasKey('player-career', $statTypes);
+        $this->assertArrayHasKey('opponent-team-game', $statTypes);
     }
 
     /**
@@ -271,6 +272,21 @@ class StatsControllerTest extends TestCase
     }
 
     /**
+     * Tests team game json uses team final points.
+     */
+    public function testTeamGameJsonUsesTeamFinalPoints(): void
+    {
+        $this->get('/stats/team-game?format=json');
+        $this->assertResponseOk();
+
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($json);
+        $this->assertArrayHasKey('data', $json);
+        $this->assertNotEmpty($json['data']);
+        $this->assertSame(78, $json['data'][0][16]);
+    }
+
+    /**
      * Tests team game contains ajax url.
      */
     public function testTeamGameContainsAjaxUrl(): void
@@ -278,6 +294,57 @@ class StatsControllerTest extends TestCase
         $this->get('/stats/team-game');
         $this->assertResponseOk();
         $this->assertResponseContains('data-ajax-url=');
+    }
+
+    // ——— Opponent Team Game —————————————
+
+    public function testOpponentTeamGame(): void
+    {
+        $this->get('/stats/opponent-team-game');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Opponent Team Game');
+        $this->assertResponseContains('stats-results-table');
+    }
+
+    /**
+     * Tests opponent team game json response.
+     */
+    public function testOpponentTeamGameJsonResponse(): void
+    {
+        $this->get('/stats/opponent-team-game?format=json');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
+
+        $body = (string)$this->_response->getBody();
+        $json = json_decode($body, true);
+        $this->assertArrayHasKey('data', $json);
+    }
+
+    /**
+     * Tests opponent team game json uses opponent final points.
+     */
+    public function testOpponentTeamGameJsonUsesOpponentFinalPoints(): void
+    {
+        $this->get('/stats/opponent-team-game?format=json');
+        $this->assertResponseOk();
+
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($json);
+        $this->assertArrayHasKey('data', $json);
+        $this->assertNotEmpty($json['data']);
+        $this->assertSame(70, $json['data'][0][16]);
+    }
+
+    /**
+     * Tests opponent team game contains ajax url.
+     */
+    public function testOpponentTeamGameContainsAjaxUrl(): void
+    {
+        $this->get('/stats/opponent-team-game');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-ajax-url=');
+        $this->assertResponseContains('/stats/opponent-team-game');
+        $this->assertResponseContains('format=json');
     }
 
     // ——— Legacy Season ————————————————————
@@ -334,6 +401,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseOk();
 
         $this->get('/stats/opponent-player-game');
+        $this->assertResponseOk();
+
+        $this->get('/stats/opponent-team-game');
         $this->assertResponseOk();
 
         $this->get('/stats/team-season-opponent');
@@ -470,6 +540,16 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('data-controller="nav-accordion"');
     }
 
+    /**
+     * Tests opponent team game contains sub nav.
+     */
+    public function testOpponentTeamGameContainsSubNav(): void
+    {
+        $this->get('/stats/opponent-team-game');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="nav-accordion"');
+    }
+
     // ——— Stat types available on all pages ——
 
     public function testStatTypesSetOnAllActions(): void
@@ -481,6 +561,7 @@ class StatsControllerTest extends TestCase
             '/stats/team-season-opponent',
             '/stats/player-career',
             '/stats/player-game',
+            '/stats/opponent-team-game',
             '/stats/opponent-player-game',
         ];
 

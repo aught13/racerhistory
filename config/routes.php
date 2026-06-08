@@ -169,6 +169,7 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/stats/player-career', ['controller' => 'Stats', 'action' => 'playerCareer']);
         $builder->connect('/stats/player-game', ['controller' => 'Stats', 'action' => 'playerGame']);
         $builder->connect('/stats/team-game', ['controller' => 'Stats', 'action' => 'teamGame']);
+        $builder->connect('/stats/opponent-team-game', ['controller' => 'Stats', 'action' => 'opponentTeamGame']);
         $builder->connect('/stats/opponent-player-game', ['controller' => 'Stats', 'action' => 'opponentPlayerGame']);
         $builder->connect('/stats/season/{teamSeasonId}', ['controller' => 'Stats', 'action' => 'season'])
             ->setPass(['teamSeasonId'])

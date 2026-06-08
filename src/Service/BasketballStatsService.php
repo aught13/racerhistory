@@ -961,6 +961,65 @@ class BasketballStatsService
     }
 
     /**
+     * Search opponent team game box score stats (final totals per game).
+     *
+     * Returns the opponent's final box score rows (period in Z/F/FINAL, opponent_id > 0)
+     * along with game and opponent info.
+     *
+     * @param array $filters Optional filters: season_id, team_id, game_id, sort, direction, limit
+     * @return array<int, array{stat: object, game: object}>
+     */
+    public function searchOpponentTeamGameStats(array $filters = []): array
+    {
+        /** @var \App\Model\Table\StatBasketGameBoxTable $table */
+        $table = $this->fetchTable('StatBasketGameBox');
+
+        $query = $table->find()
+            ->contain(['Games' => ['Opponents', 'TeamSeason' => ['Teams', 'Seasons']]])
+            ->where([
+                'StatBasketGameBox.opponent_id >' => 0,
+                'StatBasketGameBox.period IN' => ['Z', 'F', 'FINAL'],
+            ]);
+
+        if (!empty($filters['season_id'])) {
+            $query->where(['Seasons.id' => (int)$filters['season_id']]);
+        }
+        if (!empty($filters['team_id'])) {
+            $query->where(['Teams.id' => (int)$filters['team_id']]);
+        }
+        if (!empty($filters['game_id'])) {
+            $query->where(['StatBasketGameBox.game_id' => (int)$filters['game_id']]);
+        }
+
+        $sort = $filters['sort'] ?? 'PTS';
+        $direction = strtoupper($filters['direction'] ?? 'DESC');
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
+            $direction = 'DESC';
+        }
+        $allowedSorts = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'PTS'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'PTS';
+        }
+        $query->orderBy(["StatBasketGameBox.{$sort}" => $direction]);
+
+        $limit = (int)($filters['limit'] ?? 50);
+        if ($limit > 0) {
+            $query->limit(min($limit, 5000));
+        }
+
+        $results = [];
+        foreach ($query->all() as $stat) {
+            $results[] = [
+                'stat' => $stat,
+                'game' => $stat->game ?? null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
      * Build player career stats by aggregating all season records for a person.
      *
      * @param array $filters Optional filters: person_id (required for meaningful results), limit

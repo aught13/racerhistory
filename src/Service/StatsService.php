@@ -548,6 +548,23 @@ class StatsService
     }
 
     /**
+     * Search opponent team game box score stats.
+     *
+     * @param int $sportId Sport ID
+     * @param array $filters Search filters
+     * @return array
+     */
+    public function searchOpponentTeamGameStats(int $sportId, array $filters = []): array
+    {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'searchOpponentTeamGameStats')) {
+            return [];
+        }
+
+        return $service->searchOpponentTeamGameStats($filters);
+    }
+
+    /**
      * Search player career stats.
      *
      * @param int $sportId Sport ID
