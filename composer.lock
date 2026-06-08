@@ -2807,16 +2807,16 @@
         },
         {
             "name": "cakephp/bake",
-            "version": "3.6.4",
+            "version": "3.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cakephp/bake.git",
-                "reference": "45139a702f039b64dcfb758bff60910861486060"
+                "reference": "267c843681d28c4aba9b531369f21bcf13e475ea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cakephp/bake/zipball/45139a702f039b64dcfb758bff60910861486060",
-                "reference": "45139a702f039b64dcfb758bff60910861486060",
+                "url": "https://api.github.com/repos/cakephp/bake/zipball/267c843681d28c4aba9b531369f21bcf13e475ea",
+                "reference": "267c843681d28c4aba9b531369f21bcf13e475ea",
                 "shasum": ""
             },
             "require": {
@@ -2860,7 +2860,7 @@
                 "issues": "https://github.com/cakephp/bake/issues",
                 "source": "https://github.com/cakephp/bake"
             },
-            "time": "2026-05-08T13:56:13+00:00"
+            "time": "2026-05-31T17:37:41+00:00"
         },
         {
             "name": "cakephp/cakephp-codesniffer",
@@ -3690,16 +3690,16 @@
         },
         {
             "name": "dereuromark/cakephp-ide-helper",
-            "version": "2.19.1",
+            "version": "2.20.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dereuromark/cakephp-ide-helper.git",
-                "reference": "1462c4dc3b171d994b83555fa1fbb8211e255b2e"
+                "reference": "2dac0840c4c06026501205b41f50bb9ecc668bee"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dereuromark/cakephp-ide-helper/zipball/1462c4dc3b171d994b83555fa1fbb8211e255b2e",
-                "reference": "1462c4dc3b171d994b83555fa1fbb8211e255b2e",
+                "url": "https://api.github.com/repos/dereuromark/cakephp-ide-helper/zipball/2dac0840c4c06026501205b41f50bb9ecc668bee",
+                "reference": "2dac0840c4c06026501205b41f50bb9ecc668bee",
                 "shasum": ""
             },
             "require": {
@@ -3764,7 +3764,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-05-24T16:23:40+00:00"
+            "time": "2026-06-07T13:25:48+00:00"
         },
         {
             "name": "doctrine/sql-formatter",
