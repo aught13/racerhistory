@@ -962,10 +962,9 @@ button.season-roster-link:active {
 
   .rh-navbar .rh-nav-list {
     display: flex;
-    flex-direction: row;
+    flex-flow: row nowrap;
     align-items: center;
     gap: 0.25rem 1rem;
-    flex-wrap: nowrap;
   }
 
   .rh-navbar .rh-nav-list > .nav-item {
