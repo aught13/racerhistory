@@ -21,6 +21,7 @@ use Cake\Routing\Router;
  *   - teamSeasonOpponent: opponent season totals search
  *   - playerCareer: career aggregated stats
  *   - playerGame: individual player game stats
+ *   - opponentTeamGame: opponent team game box score stats
  *   - opponentPlayerGame: opponent player game stats
  *   - season: legacy single-season player stats view
  * All search actions support JSON responses for DataTables integration, as well as standard HTML views.
@@ -60,6 +61,7 @@ class StatsController extends AppController
         'team-season' => 'Team Season',
         'team-season-opponent' => 'Team Season Opponent',
         'team-game' => 'Team Game',
+        'opponent-team-game' => 'Opponent Team Game',
         'player-game' => 'Player Game',
         'opponent-player-game' => 'Opponent Player Game',
     ];
@@ -309,7 +311,7 @@ class StatsController extends AppController
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamGameStats($sportId, ['limit' => 0]);
 
-            return $this->jsonResponse($this->formatTeamGameRows($results, $sportId));
+            return $this->jsonResponse($this->formatTeamGameRows($results, $sportId, 'team-game'));
         }
 
         $this->set('statType', 'team-game');
@@ -317,6 +319,29 @@ class StatsController extends AppController
         $this->set('currentSport', $currentSport);
 
         return null;
+    }
+
+    /**
+     * Opponent team game box score stats search.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function opponentTeamGame(): ?Response
+    {
+        $sportId = $this->resolveSportId();
+        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+
+        if ($this->isJsonRequest()) {
+            $results = $this->statsService->searchOpponentTeamGameStats($sportId, ['limit' => 0]);
+
+            return $this->jsonResponse($this->formatTeamGameRows($results, $sportId, 'opponent-team-game'));
+        }
+
+        $this->set('statType', 'opponent-team-game');
+        $this->set('statTypeLabel', $this->statTypes['opponent-team-game']);
+        $this->set('currentSport', $currentSport);
+
+        return $this->render('team_game');
     }
 
     /**
@@ -515,21 +540,28 @@ class StatsController extends AppController
      *
      * @param array $results
      * @param int $sportId
+     * @param string $statType
      * @return array<int, array>
      */
-    protected function formatTeamGameRows(array $results, int $sportId): array
+    protected function formatTeamGameRows(array $results, int $sportId, string $statType): array
     {
         $rows = [];
         foreach ($results as $row) {
             $stat = $row['stat'];
             $game = $row['game'] ?? null;
 
-            $opponentCell = $game
-                ? $this->link(
-                    $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
-                    ['controller' => 'Games', 'action' => 'view', $game->id],
-                )
-                : '-';
+            if ($statType === 'team-game') {
+                $opponentText = ($game->team_season->team->abbr ?? '???') . ' Vs ' .
+                    ($game->opponent->opponent_short ?? $game->opponent->opponent_name ?? '???');
+            } else {
+                $opponentText = ($game->opponent->opponent_short ?? $game->opponent->opponent_name ?? '???') . ' Vs ' .
+                    ($game->team_season->team->abbr ?? '???');
+            }
+
+            $opponentCell = $game ? $this->link(
+                $opponentText,
+                ['controller' => 'Games', 'action' => 'view', $game->id],
+            ) : '-';
 
             $rows[] = array_merge(
                 [

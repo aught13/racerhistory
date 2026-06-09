@@ -169,19 +169,31 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/stats/player-career', ['controller' => 'Stats', 'action' => 'playerCareer']);
         $builder->connect('/stats/player-game', ['controller' => 'Stats', 'action' => 'playerGame']);
         $builder->connect('/stats/team-game', ['controller' => 'Stats', 'action' => 'teamGame']);
+        $builder->connect('/stats/opponent-team-game', ['controller' => 'Stats', 'action' => 'opponentTeamGame']);
         $builder->connect('/stats/opponent-player-game', ['controller' => 'Stats', 'action' => 'opponentPlayerGame']);
         $builder->connect('/stats/season/{teamSeasonId}', ['controller' => 'Stats', 'action' => 'season'])
             ->setPass(['teamSeasonId'])
             ->setPatterns(['teamSeasonId' => '\\d+']);
 
         $builder->connect('/games', ['controller' => 'Games', 'action' => 'index']);
+        $builder->connect('/games/all-games', ['controller' => 'Games', 'action' => 'all']);
         $builder->connect('/games/all', ['controller' => 'Games', 'action' => 'all']);
+        $builder->connect('/games/ranked/:filter', ['controller' => 'Games', 'action' => 'ranked'])
+            ->setPass(['filter'])
+            ->setPatterns(['filter' => 'all|team|opponent']);
         $builder->connect('/games/ranked', ['controller' => 'Games', 'action' => 'ranked']);
         $builder->connect('/games/overtime', ['controller' => 'Games', 'action' => 'overtime']);
+        $builder->connect('/games/hundred-point/:filter', ['controller' => 'Games', 'action' => 'hundredPoint'])
+            ->setPass(['filter'])
+            ->setPatterns(['filter' => 'all|team|opponent']);
         $builder->connect('/games/hundred-point', ['controller' => 'Games', 'action' => 'hundredPoint']);
+        $builder->connect('/games/openers/:type', ['controller' => 'Games', 'action' => 'openers'])
+            ->setPass(['type'])
+            ->setPatterns(['type' => 'season|home|conference|conference-home']);
         $builder->connect('/games/openers', ['controller' => 'Games', 'action' => 'openers']);
         $builder->connect('/games/streaks', ['controller' => 'Games', 'action' => 'streaks']);
         $builder->connect('/games/margins', ['controller' => 'Games', 'action' => 'margins']);
+        $builder->connect('/games/series-history', ['controller' => 'Games', 'action' => 'series']);
         $builder->connect('/games/series', ['controller' => 'Games', 'action' => 'series']);
         $builder->connect('/games/series-opponents', ['controller' => 'Games', 'action' => 'seriesOpponents']);
         $builder->connect('/games/stats/{id}', ['controller' => 'Games', 'action' => 'stats'])

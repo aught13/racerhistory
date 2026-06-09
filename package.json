@@ -94,7 +94,7 @@
     ],
     "moduleNameMapper": {
       "canvas": "<rootDir>/__mocks__/canvas.js",
-      "^@hotwired/turbo$": "<rootDir>/__mocks__/@hotwired/turbo.js"
+      "^@hotwired/turbo$": "<rootDir>/js/__mocks__/@hotwired/turbo.js"
     }
   },
   "overrides": {

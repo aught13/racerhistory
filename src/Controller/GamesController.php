@@ -135,6 +135,24 @@ class GamesController extends AppController
     }
 
     /**
+     * Resolve a route parameter first, then a query parameter, then a default.
+     *
+     * @param string $name
+     * @param string $default
+     * @return string
+     */
+    protected function resolveMenuParam(string $name, string $default): string
+    {
+        $value = $this->getRequest()->getParam($name);
+
+        if ($value === null || $value === '') {
+            $value = $this->getRequest()->getQuery($name, $default);
+        }
+
+        return (string)$value;
+    }
+
+    /**
      * Games landing page with search type cards.
      */
     public function index(): void
@@ -149,7 +167,7 @@ class GamesController extends AppController
      */
     public function ranked(): ?Response
     {
-        $filter = (string)$this->getRequest()->getQuery('filter', 'all');
+        $filter = $this->resolveMenuParam('filter', 'all');
         $allowed = ['all', 'team', 'opponent'];
         if (!in_array($filter, $allowed, true)) {
             $filter = 'all';
@@ -223,7 +241,7 @@ class GamesController extends AppController
      */
     public function hundredPoint(): ?Response
     {
-        $filter = (string)$this->getRequest()->getQuery('filter', 'all');
+        $filter = $this->resolveMenuParam('filter', 'all');
         $allowed = ['all', 'team', 'opponent'];
         if (!in_array($filter, $allowed, true)) {
             $filter = 'all';
@@ -248,7 +266,12 @@ class GamesController extends AppController
      */
     public function openers(): ?Response
     {
-        $type = (string)$this->getRequest()->getQuery('type', 'season');
+        $type = $this->resolveMenuParam('type', 'season');
+        $typeAliases = [
+            'conference' => 'conf',
+            'conference-home' => 'conf_home',
+        ];
+        $type = $typeAliases[$type] ?? $type;
         $allowed = ['season', 'home', 'conf', 'conf_home'];
         if (!in_array($type, $allowed, true)) {
             $type = 'season';
@@ -403,7 +426,7 @@ class GamesController extends AppController
             $opponentId = (int)($row['opponent_id'] ?? 0);
             $selectLink = $this->link(
                 'View Series',
-                ['controller' => 'Games', 'action' => 'series', '?' => ['opponent_id' => $opponentId]],
+                ['controller' => 'Games', 'action' => 'series-history', '?' => ['opponent_id' => $opponentId]],
                 ['escape' => true],
             );
 

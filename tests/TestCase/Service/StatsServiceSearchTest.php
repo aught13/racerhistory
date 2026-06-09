@@ -140,6 +140,26 @@ class StatsServiceSearchTest extends TestCase
     }
 
     /**
+     * Tests search team game stats delegates.
+     */
+    public function testSearchTeamGameStatsDelegates(): void
+    {
+        $results = $this->service->searchTeamGameStats(1);
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+    }
+
+    /**
+     * Tests search opponent team game stats delegates.
+     */
+    public function testSearchOpponentTeamGameStatsDelegates(): void
+    {
+        $results = $this->service->searchOpponentTeamGameStats(1);
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+    }
+
+    /**
      * Tests search player career stats delegates.
      */
     public function testSearchPlayerCareerStatsDelegates(): void
@@ -196,6 +216,16 @@ class StatsServiceSearchTest extends TestCase
     public function testSearchPlayerCareerStatsInvalidSportId(): void
     {
         $results = $this->service->searchPlayerCareerStats(999);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    /**
+     * Tests search opponent team game stats invalid sport id.
+     */
+    public function testSearchOpponentTeamGameStatsInvalidSportId(): void
+    {
+        $results = $this->service->searchOpponentTeamGameStats(999);
         $this->assertIsArray($results);
         $this->assertEmpty($results);
     }
