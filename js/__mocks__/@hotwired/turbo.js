@@ -4,12 +4,12 @@
  * Provides a minimal stub so that modules importing from @hotwired/turbo
  * can be tested under Jest without installing the full package.
  */
-module.exports = {
-  start: function () {},
-  visit: function () {},
-  clearCache: function () {},
+export default {
+  start() {},
+  visit() {},
+  clearCache() {},
   navigator: {},
   session: {},
-  connectStreamSource: function () {},
-  disconnectStreamSource: function () {},
+  connectStreamSource() {},
+  disconnectStreamSource() {},
 };
