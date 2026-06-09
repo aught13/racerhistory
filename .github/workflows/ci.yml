@@ -59,11 +59,11 @@ jobs:
               run_php=true
             fi
 
-            if grep -Eq '^(webroot/js/|__mocks__/|package\.json|package-lock\.json|jest\.setup\.js|eslint\.config\.cjs|stylelint\.config\.cjs)' <<< "$changed_files"; then
+            if grep -Eq '^(webroot/js/|js/|__mocks__/|package\.json|package-lock\.json|jest\.setup\.js|eslint\.config\.cjs|stylelint\.config\.cjs)' <<< "$changed_files"; then
               run_js=true
             fi
 
-            if grep -Eq '^(e2e/|src/|config/|templates/|tests/|webroot/js/|playwright\.config\.js|package\.json|package-lock\.json|composer\.json|composer\.lock|phpunit\.xml|phpunit\.xml\.dist|phpunit\.ci\.xml)' <<< "$changed_files"; then
+            if grep -Eq '^(e2e/|src/|config/|templates/|tests/|webroot/js/|js/|playwright\.config\.js|package\.json|package-lock\.json|composer\.json|composer\.lock|phpunit\.xml|phpunit\.xml\.dist|phpunit\.ci\.xml)' <<< "$changed_files"; then
               run_e2e=true
             fi
           fi

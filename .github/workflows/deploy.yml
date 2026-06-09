@@ -76,6 +76,7 @@ jobs:
             --exclude='.gitignore' \
             --exclude='.gitattributes' \
             --exclude='__mocks__/' \
+            --exclude='js/__mocks__/' \
             --exclude='build/'
 
           # Gather local files linked from README.md and keep them in the package.
@@ -172,3 +173,4 @@ jobs:
             storage/**
             webroot/img/storage
             webroot/img/storage/**
+            js/__mocks__/**
