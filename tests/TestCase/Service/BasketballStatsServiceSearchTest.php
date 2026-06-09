@@ -275,6 +275,52 @@ class BasketballStatsServiceSearchTest extends TestCase
         $this->assertEmpty($results);
     }
 
+    // ——— searchTeamGameStats ———————————————
+
+    public function testSearchTeamGameStatsReturnsTeamFinalRows(): void
+    {
+        $results = $this->service->searchTeamGameStats();
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+        $this->assertArrayHasKey('stat', $results[0]);
+        $this->assertArrayHasKey('game', $results[0]);
+        $this->assertSame(0, (int)($results[0]['stat']->opponent_id ?? -1));
+        $this->assertSame(78, (int)($results[0]['stat']->PTS ?? 0));
+    }
+
+    /**
+     * Tests search team game stats filter by game.
+     */
+    public function testSearchTeamGameStatsFilterByGame(): void
+    {
+        $results = $this->service->searchTeamGameStats(['game_id' => 1]);
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+    }
+
+    // ——— searchOpponentTeamGameStats —————————
+
+    public function testSearchOpponentTeamGameStatsReturnsOpponentFinalRows(): void
+    {
+        $results = $this->service->searchOpponentTeamGameStats();
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+        $this->assertArrayHasKey('stat', $results[0]);
+        $this->assertArrayHasKey('game', $results[0]);
+        $this->assertGreaterThan(0, (int)($results[0]['stat']->opponent_id ?? 0));
+        $this->assertSame(70, (int)($results[0]['stat']->PTS ?? 0));
+    }
+
+    /**
+     * Tests search opponent team game stats no results.
+     */
+    public function testSearchOpponentTeamGameStatsNoResults(): void
+    {
+        $results = $this->service->searchOpponentTeamGameStats(['game_id' => 999]);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
     // ——— searchPlayerCareerStats ——————————
 
     public function testSearchPlayerCareerStatsReturnsResults(): void

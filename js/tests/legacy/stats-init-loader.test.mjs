@@ -162,6 +162,19 @@ describe("initStatsDataTable", () => {
             await import("../../legacy/stats-init-loader.mjs");
         expect(SCROLLER_THRESHOLD).toBe(75);
     });
+
+    test("supports opponent-team-game ajax endpoint", async () => {
+        document.body.innerHTML = `<table id="stats-results-table"
+            data-ajax-url="/stats/opponent-team-game?format=json">
+            <thead><tr><th>Opponent</th><th>Date</th><th>PTS</th></tr></thead>
+            <tbody></tbody>
+        </table>`;
+
+        const table = document.getElementById("stats-results-table");
+        const { initStatsDataTable } =
+            await import("../../legacy/stats-init-loader.mjs");
+        expect(() => initStatsDataTable(table)).not.toThrow();
+    });
 });
 
 /* ——— initDragScroll ——————————————————————————————————————————— */

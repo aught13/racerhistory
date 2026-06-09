@@ -48,6 +48,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Games');
         $this->assertResponseContains('Explore Men\'s Basketball game history');
+        $this->assertResponseContains('data-controller="nav-accordion"');
+        $this->assertResponseContains('/games/series-history');
     }
 
     /**
@@ -169,6 +171,16 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * Tests all games alias page.
+     */
+    public function testAllGamesAliasPage(): void
+    {
+        $this->get('/games/all-games');
+        $this->assertResponseOk();
+        $this->assertResponseContains('All Games');
+    }
+
+    /**
      * Tests all json.
      */
     public function testAllJson(): void
@@ -244,7 +256,7 @@ class GamesControllerTest extends TestCase
         $this->assertSame('98', (string)$row[5]);
         $this->assertSame('2', strip_tags((string)$row[6]));
         $this->assertSame('H', strip_tags((string)$row[7]));
-        $this->assertStringContainsString('/games/series?opponent_id=1', (string)$row[1]);
+        $this->assertStringContainsString('/games/series-history?opponent_id=1', (string)$row[1]);
     }
 
     /**
@@ -306,6 +318,16 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * Tests openers alias page.
+     */
+    public function testOpenersAliasPage(): void
+    {
+        $this->get('/games/openers/conference-home');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Conference Home Opener');
+    }
+
+    /**
      * Tests openers json.
      */
     public function testOpenersJson(): void
@@ -324,7 +346,7 @@ class GamesControllerTest extends TestCase
         if (!empty($payload['data'])) {
             $row = $payload['data'][0];
             $this->assertCount(11, $row);
-            $this->assertStringContainsString('/games/series?opponent_id=', (string)$row[1]);
+            $this->assertStringContainsString('/games/series-history?opponent_id=', (string)$row[1]);
             $this->assertContains(strip_tags((string)$row[8]), ['Y', 'N']);
         }
     }
@@ -377,6 +399,36 @@ class GamesControllerTest extends TestCase
         $this->get('/games/margins?type=loss&filter=road');
         $this->assertResponseOk();
         $this->assertResponseContains('Largest Losses');
+    }
+
+    /**
+     * Tests ranked alias page.
+     */
+    public function testRankedAliasPage(): void
+    {
+        $this->get('/games/ranked/team');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Team Ranked');
+    }
+
+    /**
+     * Tests hundred point alias page.
+     */
+    public function testHundredPointAliasPage(): void
+    {
+        $this->get('/games/hundred-point/opponent');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Opponent 100+ (Pts Against)');
+    }
+
+    /**
+     * Tests series history alias page.
+     */
+    public function testSeriesHistoryAliasPage(): void
+    {
+        $this->get('/games/series-history');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Series History');
     }
 
     /**
@@ -503,8 +555,8 @@ class GamesControllerTest extends TestCase
         foreach ($pages as $url) {
             $this->get($url);
             $this->assertResponseOk();
-            $this->assertResponseContains('rh-games-subnav-wrap');
-            $this->assertResponseContains('rh-games-navbar');
+            $this->assertResponseContains('data-controller="nav-accordion"');
+            $this->assertResponseContains('rh-navbar');
         }
     }
 }
