@@ -21,6 +21,10 @@ Key files:
 
 The admin area is served under the `/admin` prefix and provides CRUD + bulk operations for the core domain.
 
+Admin UI notes:
+- Admin pages now use an AdminLTE 4-style shell layout.
+- Sidebar behavior is managed with Stimulus (`admin_layout_controller` + `nav_accordion_controller`) for desktop collapse persistence, mobile open/close, and grouped treeview expansion.
+
 ### Core entities managed in admin
 
 - Sports, Teams
@@ -35,6 +39,7 @@ The admin area is served under the `/admin` prefix and provides CRUD + bulk oper
 Patterns used:
 - Controllers orchestrate HTTP requests and delegate business rules to services.
 - Service-layer classes (under `src/Service/`) encapsulate non-trivial domain logic and labeling for UI.
+- Frontend admin behavior is progressively enhanced through Turbo + Stimulus controllers rather than monolithic theme JS.
 
 ## 3) Sport-aware Games + EAV metadata
 
@@ -112,5 +117,6 @@ Common commands:
 - PHPCS: `php vendor/bin/phpcs --standard=phpcs.xml src/ tests/`
 - JS lint: `npm run lint:js`
 - JS tests: `npm run test:js`
+- E2E tests: `npx playwright test`
 
 VS Code tasks are provided for the above workflows.
