@@ -1,6 +1,10 @@
 import * as Turbo from "@hotwired/turbo";
 import { Application } from "@hotwired/stimulus";
 
+// AdminLTE 4 layout CSS (supplements Bootstrap 5; structural classes only, no JS)
+import "admin-lte/dist/css/adminlte.min.css";
+
+import AdminLayoutController from "./controllers/admin_layout_controller.js";
 import HeroCropController from "./controllers/hero_crop_controller.js";
 import AdminConfirmDeleteController from "./controllers/admin_confirm_delete_controller.js";
 import AdminBulkTableController from "./controllers/admin_bulk_table_controller.js";
@@ -79,6 +83,7 @@ if (!runtimeAlreadyBooted) {
     initTinyMceLoader();
 
     const stimulus = Application.start();
+    stimulus.register("admin-layout", AdminLayoutController);
     stimulus.register("admin-confirm-delete", AdminConfirmDeleteController);
     stimulus.register("admin-bulk-table", AdminBulkTableController);
     stimulus.register("admin-games-index", AdminGamesIndexController);

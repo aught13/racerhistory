@@ -94,13 +94,15 @@
     ],
     "moduleNameMapper": {
       "canvas": "<rootDir>/__mocks__/canvas.js",
-      "^@hotwired/turbo$": "<rootDir>/js/__mocks__/@hotwired/turbo.js"
+      "^@hotwired/turbo$": "<rootDir>/js/__mocks__/@hotwired/turbo.js",
+      "\\.css$": "<rootDir>/js/__mocks__/styleMock.js"
     }
   },
   "overrides": {
     "tar": "^7.5.11"
   },
   "dependencies": {
-    "@hotwired/turbo": "^8.0.23"
+    "@hotwired/turbo": "^8.0.23",
+    "admin-lte": "^4.0.2"
   }
 }

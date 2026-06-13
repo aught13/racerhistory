@@ -4,7 +4,7 @@
  * Provides a minimal stub so that modules importing from @hotwired/turbo
  * can be tested under Jest without installing the full package.
  */
-export default {
+const turboMock = {
     start() {},
     visit() {},
     clearCache() {},
@@ -13,3 +13,6 @@ export default {
     connectStreamSource() {},
     disconnectStreamSource() {},
 };
+
+module.exports = turboMock;
+module.exports.default = turboMock;
