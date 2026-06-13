@@ -618,3 +618,140 @@ jobs:
           name: playwright-traces-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
           path: test-results/
           retention-days: 30
+
+  test-presence-guard:
+    name: Test Presence Guard
+    needs: preflight
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Ensure test changes are present for code changes
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: |
+          set -euo pipefail
+
+          if grep -Eqi '\[skip-test-presence\]' <<< "${PR_TITLE}\n${PR_BODY}"; then
+            echo "Bypassing test-presence guard due to [skip-test-presence] marker in PR title/body."
+            exit 0
+          fi
+
+          changed_files="$(git diff --name-only "$PR_BASE_SHA" "$PR_HEAD_SHA" || true)"
+
+          if [[ -z "$changed_files" ]]; then
+            echo "No changed files detected."
+            exit 0
+          fi
+
+          code_changes="$(grep -E '^(src/.*\.php|js/.*\.(js|mjs|cjs|ts|tsx)|webroot/js/.*\.(js|mjs|cjs|ts|tsx))$' <<< "$changed_files" || true)"
+          if [[ -z "$code_changes" ]]; then
+            echo "No PHP/JS code changes requiring test-presence validation."
+            exit 0
+          fi
+
+          test_changes="$(grep -E '^(tests/|js/tests/|e2e/)' <<< "$changed_files" || true)"
+          if [[ -z "$test_changes" ]]; then
+            echo "::error::Code files changed but no test files were updated. Add tests under tests/, js/tests/, or e2e/, or add [skip-test-presence] to PR title/body with rationale."
+            echo "Changed code files:"
+            echo "$code_changes"
+            exit 1
+          fi
+
+          echo "Detected matching test changes:"
+          echo "$test_changes"
+
+  test-gate:
+    name: Test Gate (Preflight-aware)
+    if: ${{ always() }}
+    needs:
+      - preflight
+      - testsuite
+      - js-tests
+      - e2e-tests
+      - test-presence-guard
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Evaluate gated test outcomes
+        shell: bash
+        env:
+          PREFLIGHT_RESULT: ${{ needs.preflight.result }}
+          RUN_PHP: ${{ needs.preflight.outputs.run_php }}
+          RUN_JS: ${{ needs.preflight.outputs.run_js }}
+          RUN_E2E: ${{ needs.preflight.outputs.run_e2e }}
+          TESTSUITE_RESULT: ${{ needs.testsuite.result }}
+          JS_TESTS_RESULT: ${{ needs['js-tests'].result }}
+          E2E_TESTS_RESULT: ${{ needs['e2e-tests'].result }}
+          TEST_PRESENCE_RESULT: ${{ needs['test-presence-guard'].result }}
+        run: |
+          set -euo pipefail
+
+          failures=0
+
+          mark_failure() {
+            echo "::error::$1"
+            failures=$((failures + 1))
+          }
+
+          ensure_success() {
+            local name="$1"
+            local result="$2"
+            if [[ "$result" != "success" ]]; then
+              mark_failure "$name must be success but is '$result'"
+            fi
+          }
+
+          ensure_success_or_skipped() {
+            local name="$1"
+            local result="$2"
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              mark_failure "$name must be success or skipped but is '$result'"
+            fi
+          }
+
+          ensure_success "preflight" "$PREFLIGHT_RESULT"
+
+          if [[ "$RUN_PHP" == "true" ]]; then
+            ensure_success "testsuite" "$TESTSUITE_RESULT"
+          else
+            ensure_success_or_skipped "testsuite" "$TESTSUITE_RESULT"
+          fi
+
+          if [[ "$RUN_JS" == "true" ]]; then
+            ensure_success "js-tests" "$JS_TESTS_RESULT"
+          else
+            ensure_success_or_skipped "js-tests" "$JS_TESTS_RESULT"
+          fi
+
+          if [[ "$RUN_E2E" == "true" ]]; then
+            ensure_success "e2e-tests" "$E2E_TESTS_RESULT"
+          else
+            ensure_success_or_skipped "e2e-tests" "$E2E_TESTS_RESULT"
+          fi
+
+          ensure_success_or_skipped "test-presence-guard" "$TEST_PRESENCE_RESULT"
+
+          {
+            echo "### Test Gate Summary"
+            echo "- preflight: $PREFLIGHT_RESULT"
+            echo "- run_php: ${RUN_PHP:-unset} -> testsuite: $TESTSUITE_RESULT"
+            echo "- run_js: ${RUN_JS:-unset} -> js-tests: $JS_TESTS_RESULT"
+            echo "- run_e2e: ${RUN_E2E:-unset} -> e2e-tests: $E2E_TESTS_RESULT"
+            echo "- test-presence-guard: $TEST_PRESENCE_RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$failures" -gt 0 ]]; then
+            echo "Test gate failed with $failures issue(s)."
+            exit 1
+          fi
+
+          echo "Test gate passed."
