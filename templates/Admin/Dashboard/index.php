@@ -1,12 +1,14 @@
 <?php
 /**
- * Admin Dashboard Index Template
+ * Admin Dashboard Index Template — AdminLTE 4
  *
- * Main landing page for the administrative interface. Provides system health
- * checks (deployment audit) and quick action buttons for common tasks.
+ * Landing page for the administrative interface.
+ * Shows entity count "small boxes" at the top for a quick data overview,
+ * followed by the deployment-audit health accordion and quick-action buttons.
  *
  * @var \App\View\AppView $this
  * @var array{results: array<array{category: string, label: string, status: string, detail: string}>, errors: int, warnings: int, overall: string} $audit
+ * @var array{sports: int, teams: int, games: int, images: int} $counts
  */
 
 $this->assign('title', 'Admin Dashboard');
@@ -29,17 +31,91 @@ $overallLabel = match ($audit['overall']) {
     default => 'Errors found — action required',
 };
 
-// Group results by category
+// Group audit results by category
 $grouped = [];
 foreach ($audit['results'] as $r) {
     $grouped[$r['category']][] = $r;
 }
 ?>
 <div class="admin dashboard">
-    <h1 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h1>
 
+    <!-- ══════════════════════════════════════════════════════════════
+         ENTITY COUNT SMALL BOXES
+         ══════════════════════════════════════════════════════════════ -->
+    <div class="row" id="admin-small-boxes">
+
+        <!-- Sports -->
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+            <div class="small-box bg-info text-white">
+                <div class="inner">
+                    <h3><?= $counts['sports'] ?></h3>
+                    <p>Sports</p>
+                </div>
+                <i class="small-box-icon bi bi-trophy-fill"></i>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>"
+                   class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover"
+                   data-turbo-frame="admin-content">
+                    Manage Sports <i class="bi bi-arrow-right-circle ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Teams -->
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+            <div class="small-box bg-success text-white">
+                <div class="inner">
+                    <h3><?= $counts['teams'] ?></h3>
+                    <p>Teams</p>
+                </div>
+                <i class="small-box-icon bi bi-people-fill"></i>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>"
+                   class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover"
+                   data-turbo-frame="admin-content">
+                    Manage Teams <i class="bi bi-arrow-right-circle ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Games -->
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+            <div class="small-box bg-warning text-white">
+                <div class="inner">
+                    <h3><?= $counts['games'] ?></h3>
+                    <p>Games</p>
+                </div>
+                <i class="small-box-icon bi bi-calendar-event-fill"></i>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>"
+                   class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover"
+                   data-turbo-frame="admin-content">
+                    Manage Games <i class="bi bi-arrow-right-circle ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Images -->
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12 mb-3">
+            <div class="small-box bg-danger text-white">
+                <div class="inner">
+                    <h3><?= $counts['images'] ?></h3>
+                    <p>Images</p>
+                </div>
+                <i class="small-box-icon bi bi-images"></i>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Images', 'action' => 'index']) ?>"
+                   class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover"
+                   data-turbo-frame="admin-content">
+                    Manage Images <i class="bi bi-arrow-right-circle ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+    </div><!-- /.row #admin-small-boxes -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         QUICK ACTIONS + SYSTEM HEALTH
+         ══════════════════════════════════════════════════════════════ -->
     <div class="row">
-        <!-- Quick Actions -->
+
+        <!-- Quick Actions card -->
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
@@ -62,12 +138,12 @@ foreach ($audit['results'] as $r) {
                         </a>
 
                         <a href="<?= $this->Url->build(['controller' => 'Images', 'action' => 'bulkUploadForm', 'prefix' => 'Admin']) ?>"
-                           class="btn btn-outline-primary">
+                           class="btn btn-outline-secondary">
                             <i class="bi bi-upload me-2"></i>Upload Images
                         </a>
 
-                        <a href="<?= $this->Url->build(['controller' => 'Blog', 'action' => 'index', 'prefix' => 'Admin']) ?>"
-                           class="btn btn-outline-primary">
+                        <a href="<?= $this->Url->build(['controller' => 'BlogPosts', 'action' => 'index', 'prefix' => 'Admin']) ?>"
+                           class="btn btn-outline-secondary">
                             <i class="bi bi-pencil-square me-2"></i>Manage Blog
                         </a>
                     </div>
@@ -75,7 +151,7 @@ foreach ($audit['results'] as $r) {
             </div>
         </div>
 
-        <!-- System Health -->
+        <!-- System Health card -->
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -94,8 +170,7 @@ foreach ($audit['results'] as $r) {
                     <div class="accordion accordion-flush" id="healthAccordion">
                         <?php $i = 0;
                         foreach ($grouped as $category => $items) :
-                            $i++; ?>
-                            <?php
+                            $i++;
                             $catHasError = false;
                             $catHasWarn = false;
                             foreach ($items as $item) {
@@ -149,5 +224,7 @@ foreach ($audit['results'] as $r) {
                 </div>
             </div>
         </div>
-    </div>
-</div>
+
+    </div><!-- /.row -->
+</div><!-- /.admin.dashboard -->
+

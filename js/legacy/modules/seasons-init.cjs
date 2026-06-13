@@ -1,3 +1,4 @@
+/* global document, console, window */
 /* eslint-disable no-empty */ /* CommonJS seasons init wrapper for Jest tests */
 (function (global) {
     function initSeasons(opts = {}) {

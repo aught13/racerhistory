@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 use App\Service\DeployAuditService;
 use Cake\Cache\Cache;
 use Cake\Http\Response;
+use Cake\ORM\TableRegistry;
 
 /**
  * Admin Dashboard Controller
@@ -58,8 +59,17 @@ class DashboardController extends AppController
         $service = new DeployAuditService();
         $audit = $service->run();
 
+        $locator = TableRegistry::getTableLocator();
+        $counts = [
+            'sports' => $locator->get('Sports')->find()->count(),
+            'teams' => $locator->get('Teams')->find()->count(),
+            'games' => $locator->get('Games')->find()->count(),
+            'images' => $locator->get('Images')->find()->count(),
+        ];
+
         $this->set('title', 'Admin Dashboard');
         $this->set('audit', $audit);
+        $this->set('counts', $counts);
     }
 
     /**
