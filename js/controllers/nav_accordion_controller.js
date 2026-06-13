@@ -1,5 +1,8 @@
 import { Controller } from "@hotwired/stimulus";
 
+const DESKTOP_BREAKPOINT = 992;
+const SIDEBAR_COLLAPSE_STORAGE_KEY = "rh_admin_sidebar_collapsed";
+
 export default class extends Controller {
     static targets = ["toggle", "panel"];
 
@@ -8,6 +11,8 @@ export default class extends Controller {
     }
 
     toggle(event) {
+        event.preventDefault();
+
         const button = event.currentTarget;
         const panel = this.findPanel(button);
 
@@ -15,8 +20,46 @@ export default class extends Controller {
             return;
         }
 
+        const desktopCollapsed =
+            window.innerWidth >= DESKTOP_BREAKPOINT &&
+            document.body.classList.contains("sidebar-collapse");
+
+        // In AdminLTE mini mode, first click should expand sidebar and reveal
+        // the clicked group instead of "toggling" it invisibly in a narrow rail.
+        if (desktopCollapsed) {
+            document.body.classList.remove("sidebar-collapse");
+
+            try {
+                localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, "0");
+            } catch {
+                // Ignore storage failures.
+            }
+
+            this.setExpanded(button, panel, true);
+            this.toggleTargets.forEach((candidate) => {
+                if (candidate === button) {
+                    return;
+                }
+
+                this.setExpanded(candidate, this.findPanel(candidate), false);
+            });
+
+            return;
+        }
+
         const nextState = button.getAttribute("aria-expanded") !== "true";
         this.setExpanded(button, panel, nextState);
+
+        // Keep accordion interaction predictable: opening one group closes siblings.
+        if (nextState) {
+            this.toggleTargets.forEach((candidate) => {
+                if (candidate === button) {
+                    return;
+                }
+
+                this.setExpanded(candidate, this.findPanel(candidate), false);
+            });
+        }
     }
 
     syncToLocation() {
@@ -59,8 +102,12 @@ export default class extends Controller {
             return;
         }
 
+        const parentItem = button.closest(".nav-item");
+        if (parentItem) {
+            parentItem.classList.toggle("menu-open", expanded);
+        }
+
         panel.hidden = !expanded;
-        panel.classList.toggle("d-none", !expanded);
         panel.dataset.navOpen = expanded ? "true" : "false";
     }
 }

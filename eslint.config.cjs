@@ -42,6 +42,8 @@ module.exports = [
                 FormData: "readonly",
                 setTimeout: "readonly",
                 clearTimeout: "readonly",
+                localStorage: "readonly",
+                MouseEvent: "readonly",
             },
         },
     },
@@ -111,6 +113,10 @@ module.exports = [
     {
         // CommonJS and other script-like module files
         files: ["js/legacy/modules/**/*.cjs", "js/legacy/**/*.cjs"],
+    },
+    {
+        // Jest mock files (CommonJS)
+        files: ["js/__mocks__/**/*.js", "js/__mocks__/**/*.cjs"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
@@ -120,8 +126,6 @@ module.exports = [
                 console: "readonly",
                 module: "readonly",
                 global: "readonly",
-                $: "readonly",
-                jQuery: "readonly",
             },
         },
     },
@@ -168,6 +172,7 @@ module.exports = [
                 URL: "readonly",
                 URLSearchParams: "readonly",
                 fetch: "readonly",
+                localStorage: "readonly",
                 FormData: "readonly",
                 Blob: "readonly",
                 File: "readonly",
