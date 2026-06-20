@@ -240,8 +240,6 @@ export default function initSeasons(opts = {}) {
         });
     }
 
-
-
     destroyExisting();
 
     // Create the DataTable and wire initComplete
