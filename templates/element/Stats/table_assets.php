@@ -24,14 +24,14 @@ declare(strict_types=1);
 .dataTables_scrollHead th,.dataTables_scrollBody td{white-space:nowrap}
 .dataTables_wrapper .dataTables_info{padding:0.5rem 1rem;font-size:0.75rem}
 .dataTables_wrapper .dataTables_filter{padding:0.5rem 1rem;font-size:0.8125rem}
-/* Freeze first stats column while horizontally scrolling */
-#stats-results-table_wrapper .dataTables_scrollHead thead th:first-child{position:sticky;left:0;z-index:5;background:var(--rh-surface,var(--bs-body-bg,#fff));box-shadow:2px 0 0 rgba(0,0,0,0.08);background-clip:padding-box}
-#stats-results-table_wrapper .dataTables_scrollBody tbody td:first-child{position:sticky;left:0;z-index:4;background:var(--rh-surface,var(--bs-body-bg,#fff));box-shadow:2px 0 0 rgba(0,0,0,0.08);background-clip:padding-box;overflow:hidden}
-#stats-results-table_wrapper .dataTables_scrollBody tbody tr.table-active td:first-child,#stats-results-table_wrapper .dataTables_scrollBody tbody tr:hover td:first-child{background:var(--rh-surface,var(--bs-body-bg,#fff))}
-#stats-results-table_wrapper .dataTables_scrollBody tbody tr:nth-of-type(odd) td:first-child{background:var(--rh-surface,var(--bs-body-bg,#fff))}
-/* Mobile: prevent desktop-sized first column on narrow screens */
+/* Freeze first column while horizontally scrolling (stats + games) */
+#stats-results-table_wrapper .dataTables_scrollHead thead th:first-child,#games-results-table_wrapper .dataTables_scrollHead thead th:first-child{position:sticky;left:0;z-index:5;background:var(--rh-surface,var(--bs-body-bg,#fff));box-shadow:2px 0 0 rgba(0,0,0,0.08);background-clip:padding-box}
+#stats-results-table_wrapper .dataTables_scrollBody tbody td:first-child,#games-results-table_wrapper .dataTables_scrollBody tbody td:first-child{position:sticky;left:0;z-index:4;background:var(--rh-surface,var(--bs-body-bg,#fff));box-shadow:2px 0 0 rgba(0,0,0,0.08);background-clip:padding-box;overflow:hidden}
+#stats-results-table_wrapper .dataTables_scrollBody tbody tr.table-active td:first-child,#stats-results-table_wrapper .dataTables_scrollBody tbody tr:hover td:first-child,#games-results-table_wrapper .dataTables_scrollBody tbody tr.table-active td:first-child,#games-results-table_wrapper .dataTables_scrollBody tbody tr:hover td:first-child{background:var(--rh-surface,var(--bs-body-bg,#fff))}
+#stats-results-table_wrapper .dataTables_scrollBody tbody tr:nth-of-type(odd) td:first-child,#games-results-table_wrapper .dataTables_scrollBody tbody tr:nth-of-type(odd) td:first-child{background:var(--rh-surface,var(--bs-body-bg,#fff))}
+/* Mobile: prevent desktop-sized first column on narrow screens (stats + games) */
 @media (max-width: 767.98px){
- #stats-results-table_wrapper .dataTables_scrollHead thead th:first-child,#stats-results-table_wrapper .dataTables_scrollBody tbody td:first-child{width:clamp(6.5rem,34vw,10rem);min-width:clamp(6.5rem,34vw,10rem);max-width:10rem;white-space:normal;overflow-wrap:anywhere;line-height:1.2}
+ #stats-results-table_wrapper .dataTables_scrollHead thead th:first-child,#stats-results-table_wrapper .dataTables_scrollBody tbody td:first-child,#games-results-table_wrapper .dataTables_scrollHead thead th:first-child,#games-results-table_wrapper .dataTables_scrollBody tbody td:first-child{width:clamp(6.5rem,34vw,10rem);min-width:clamp(6.5rem,34vw,10rem);max-width:10rem;white-space:normal;overflow-wrap:anywhere;line-height:1.2}
 }
 /* SearchBuilder — positioned above the table card */
 #stats-searchbuilder-slot{margin-bottom:1rem}
