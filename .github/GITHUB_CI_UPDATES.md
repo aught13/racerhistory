@@ -4,7 +4,7 @@ This document tracks the current behavior of `.github/workflows/ci.yml`.
 
 ## Triggers
 
-- Push and pull request events on `v-0.2.0.beta` and `v-1.0.dev`
+- Pull request events on `main` and `dev`
 - Manual dispatch (`workflow_dispatch`)
 
 ## Concurrency
@@ -34,20 +34,34 @@ Downstream jobs use those outputs with `needs: preflight` and job-level `if:` co
 1. `preflight`
 - Calculates changed-file impact and sets output flags.
 
-2. `testsuite`
-- PHP matrix tests (PHP 8.1/8.2/8.3) with MySQL service.
+2. `legacy-runtime-guard`
+- Fails the workflow when deprecated runtime compatibility markers are reintroduced.
+
+3. `testsuite`
+- PHP matrix tests (PHP 8.2/8.3) with MySQL service.
 - Uploads PHP coverage for the coverage-enabled matrix leg.
 
-3. `coding-standard`
+4. `coding-standard`
 - Runs PHPCS and PHPStan.
 
-4. `js-tests`
+5. `js-tests`
 - Runs ESLint, Prettier check, Jest coverage, and CSS lint.
 - Uploads JS coverage artifact and reports to Codecov.
 
-5. `e2e-tests`
+6. `e2e-tests`
 - Runs Playwright end-to-end tests against a live CakePHP server.
 - Uses native Playwright sharding via matrix strategy.
+
+7. `test-presence-guard`
+- Pull-request-only heuristic check.
+- Fails when PHP/JS code changes are present but no test files were changed under `tests/`, `js/tests/`, or `e2e/`.
+- Supports explicit bypass by adding `[skip-test-presence]` to the PR title or body.
+
+8. `test-gate`
+- Always runs (`if: always()`) and aggregates preflight-gated outcomes.
+- Verifies that jobs expected to run (per `preflight` outputs) completed successfully.
+- Treats skipped jobs as acceptable when preflight marked them unnecessary.
+- This is the recommended single required status check for GitHub branch protection.
 
 ## Playwright Sharding
 
@@ -88,10 +102,10 @@ PLAYWRIGHT_BASE_URL=http://localhost:8765 npm run test:e2e
 ## Notes
 
 - Coverage thresholds are controlled in `codecov.yml`.
+- For branch protection, require `Test Gate (Preflight-aware)` instead of requiring every conditional test job individually.
 - If CI behavior changes, update this file together with `.github/workflows/ci.yml`.
-```
 
 ---
 
-**Last Updated**: 2026-03-01
+**Last Updated**: 2026-06-13
 **Status**: ✅ Ready for production use

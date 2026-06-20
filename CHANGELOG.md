@@ -12,12 +12,16 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - **Minimum PHP version raised to 8.2+** across project requirements and docs to match the current dependency graph.
 - **CI testsuite matrix updated** to remove the incompatible PHP 8.1/lowest-dependencies lane and run coverage on PHP 8.2.
 - **Deployment asset audits modernized** to require Vite build artifacts (`webroot/dist/manifest.json`) and validate the `js/main.js` manifest entry.
+- **Admin interface migrated to AdminLTE 4 layout patterns** with a dedicated admin shell, desktop collapse persistence, mobile overlay behavior, and Stimulus-powered sidebar controls.
+- **Admin navigation wording refreshed** to use neutral sports terminology across grouped menus and dashboard visuals.
 
 ### Fixed
 
 - **Admin users add/edit failure handling** now preserves validation context and avoids invalid redirects on save failures.
 - **Dashboard layout tests** updated for the Vite runtime contract (hashed dist asset or dev entry) and legacy importmap removal.
 - **Playwright stabilization for image/admin dynamic pages** by asserting runtime behavior instead of legacy global helper existence.
+- **Admin sidebar treeview expansion reliability** by aligning grouped menu markup and `menu-open` state handling with AdminLTE expectations.
+- **Regression coverage for admin shell behavior** with expanded Dashboard integration assertions, Stimulus unit tests for sidebar/layout controllers, and Playwright coverage for Sports/Content expansion.
 
 ### Removed
 

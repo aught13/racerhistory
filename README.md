@@ -11,8 +11,8 @@
 
 [![Build Status](https://github.com/aught13/racerhistory/workflows/CI/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/aught13/racerhistory/workflows/Security/badge.svg)](https://github.com/aught13/racerhistory/actions/workflows/security.yml)
-<a href="https://phpstan.org/" target="_blank"><img alt="PHPStan" src="https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/aught13/racerhistory/master/phpstan.neon&query=$.parameters.level&label=PHPStan&prefix=level%20&color=brightgreen&style=flat"></a>
-<a href="https://github.com/squizlabs/PHP_CodeSniffer" target="_blank"><img alt="Code Consistency" src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/master/phpcs-status.json&query=$.status&label=PHPCS&color=blue&style=flat"></a>
+<a href="https://phpstan.org/" target="_blank"><img alt="PHPStan" src="https://img.shields.io/badge/PHPStan-level%205-brightgreen?style=flat"></a>
+<a href="https://github.com/squizlabs/PHP_CodeSniffer" target="_blank"><img alt="Code Consistency" src="https://img.shields.io/badge/PHPCS-passing-blue?style=flat"></a>
 [![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/v-1.0.dev/graph/badge.svg?token=)](https://app.codecov.io/gh/aught13/racerhistory)
 [![Documentation](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/v-1.0.dev/docs-status.json&query=$.documentationPercent&label=Documentation&color=brightgreen)](templates/README.md)
 
@@ -21,7 +21,7 @@
 
 
 
-A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2 and modern web tooling.
+A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2, an AdminLTE 4-based admin experience, and modern web tooling.
 
 - Start here: [APPLICATION_SUMMARY.md](APPLICATION_SUMMARY.md)
 
@@ -33,7 +33,7 @@ This project powers the racerhistory.com website, providing features for:
 - **Admin Dashboard** - Administrative interface for site data management
 - **Historical Game Data** - Sports/team/season/game management with sport-aware configuration
 - **Blog Engine** - Public blog with an admin editor, tagging, and hero images
-- **Responsive Design** - Mobile-first Bootstrap 5.3.2 interface
+- **Responsive Design** - Mobile-first Bootstrap 5.3.2 public interface with an AdminLTE 4 admin shell
 
 Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web development.
 
@@ -59,7 +59,8 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Games Management** (add/edit/delete, bulk operations, sport-aware period/official tracking)
 - **Basketball Statistics** (player, opponent, and team stats with comprehensive tracking)
 - Dynamic Person AJAX search & inline person creation modal (roster forms)
-- Responsive admin navigation with Bootstrap styling
+- AdminLTE 4 sidebar navigation with grouped treeview sections (Sports, Content)
+- Persistent desktop sidebar collapse and mobile sidebar overlay behavior
 - Comprehensive CRUD and bulk operations for all admin entities
 
 ### Game Management System
@@ -95,6 +96,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 ### UI/UX
 
 - **Bootstrap 5.3.2** responsive framework
+- **AdminLTE 4.0.2** admin dashboard/theme framework (built on Bootstrap)
 - **Bootstrap Icons 1.11.3** for consistent iconography
 - **jQuery 3.7.1** for enhanced interactions
 - Mobile-first responsive design
@@ -180,7 +182,7 @@ racerhistory/
 │   ├── Admin/              # Admin interface views
 │   ├── Blog/               # Public blog views
 │   └── Games/, People/...  # Public domain views
-├── tests/                  # PHPUnit tests (983 tests)
+├── tests/                  # PHPUnit tests (1235 tests)
 └── webroot/                # Public web assets
     ├── js/                 # JavaScript (ES modules + tests)
     └── css/                # Stylesheets
@@ -197,8 +199,9 @@ racerhistory/
 
 ### Testing & Quality
 
-- **PHP**: PHPUnit (983 tests), PHPStan (0 errors), PHPCS (clean)
-- **JavaScript**: Jest (789 tests, 91% statements, 84% branches), ESLint, Prettier
+- **PHP**: PHPUnit (1235 tests / 4056 assertions), PHPStan (0 errors), PHPCS (clean)
+- **JavaScript**: Jest (1112 tests across 125 suites; latest local coverage about 89.73% statements, 81.97% branches), ESLint, Prettier
+- **E2E**: Playwright coverage for Turbo/admin flows including sidebar group expansion behavior
 - **Coverage Targets**: PHP 98%, JS 88%, branches 80% (enforced via Codecov)
 - VS Code tasks exist for common workflows (PHPUnit/PHPCS/PHPStan/Jest)
 
@@ -214,10 +217,10 @@ racerhistory/
 ### Run Test Suites
 
 ```bash
-# PHP tests (983 tests, 2799 assertions)
+# PHP tests (1235 tests, 4056 assertions)
 vendor/bin/phpunit
 
-# JavaScript tests with coverage (789 tests, 110 suites)
+# JavaScript tests with coverage (1112 tests, 125 suites)
 npm run test:js
 
 # PHP coverage report (CI-style)

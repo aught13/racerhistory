@@ -36,13 +36,7 @@ export default class extends Controller {
             }
 
             this.setExpanded(button, panel, true);
-            this.toggleTargets.forEach((candidate) => {
-                if (candidate === button) {
-                    return;
-                }
-
-                this.setExpanded(candidate, this.findPanel(candidate), false);
-            });
+            this.closeSiblingGroups(button);
 
             return;
         }
@@ -52,14 +46,37 @@ export default class extends Controller {
 
         // Keep accordion interaction predictable: opening one group closes siblings.
         if (nextState) {
-            this.toggleTargets.forEach((candidate) => {
-                if (candidate === button) {
-                    return;
-                }
-
-                this.setExpanded(candidate, this.findPanel(candidate), false);
-            });
+            this.closeSiblingGroups(button);
         }
+    }
+
+    closeSiblingGroups(button) {
+        const levelContainer = this.findLevelContainer(button);
+
+        this.toggleTargets.forEach((candidate) => {
+            if (candidate === button) {
+                return;
+            }
+
+            if (
+                levelContainer &&
+                this.findLevelContainer(candidate) !== levelContainer
+            ) {
+                return;
+            }
+
+            this.setExpanded(candidate, this.findPanel(candidate), false);
+        });
+    }
+
+    findLevelContainer(button) {
+        const group = button.closest(".nav-item, .rh-nav-subgroup");
+
+        if (!group) {
+            return null;
+        }
+
+        return group.parentElement;
     }
 
     syncToLocation() {
@@ -108,6 +125,7 @@ export default class extends Controller {
         }
 
         panel.hidden = !expanded;
+        panel.classList.toggle("d-none", !expanded);
         panel.dataset.navOpen = expanded ? "true" : "false";
     }
 }
