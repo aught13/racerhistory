@@ -117,18 +117,21 @@ describe("nav-accordion controller", () => {
 
         expect(gamesToggle.getAttribute("aria-expanded")).toBe("false");
         expect(gamesPanel.hidden).toBe(true);
+        expect(gamesPanel.classList.contains("d-none")).toBe(true);
         expect(gamesItem.classList.contains("menu-open")).toBe(false);
 
         gamesToggle.click();
 
         expect(gamesToggle.getAttribute("aria-expanded")).toBe("true");
         expect(gamesPanel.hidden).toBe(false);
+        expect(gamesPanel.classList.contains("d-none")).toBe(false);
         expect(gamesItem.classList.contains("menu-open")).toBe(true);
 
         gamesToggle.click();
 
         expect(gamesToggle.getAttribute("aria-expanded")).toBe("false");
         expect(gamesPanel.hidden).toBe(true);
+        expect(gamesPanel.classList.contains("d-none")).toBe(true);
         expect(gamesItem.classList.contains("menu-open")).toBe(false);
     });
 
@@ -213,5 +216,96 @@ describe("nav-accordion controller", () => {
             writable: true,
             value: originalInnerWidth,
         });
+    });
+
+    test("opens nested submenu without collapsing parent and closes same-level siblings", async () => {
+        window.history.pushState({}, "", "/seasons");
+        document.body.innerHTML = `
+            <nav data-controller="nav-accordion">
+                <ul class="nav sidebar-menu flex-column">
+                    <li id="games-item" class="nav-item">
+                        <button
+                            id="games-toggle"
+                            type="button"
+                            class="nav-link"
+                            data-nav-accordion-target="toggle"
+                            data-nav-accordion-prefix="/games"
+                            data-action="click->nav-accordion#toggle"
+                            aria-controls="games-panel"
+                            aria-expanded="false"
+                        >
+                            Games
+                        </button>
+                        <div id="games-panel" class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
+                            <div class="rh-nav-subgroup" id="ranked-group">
+                                <button
+                                    id="ranked-toggle"
+                                    type="button"
+                                    class="nav-link"
+                                    data-nav-accordion-target="toggle"
+                                    data-nav-accordion-prefix="/games/ranked"
+                                    data-action="click->nav-accordion#toggle"
+                                    aria-controls="ranked-panel"
+                                    aria-expanded="false"
+                                >
+                                    Ranked Games
+                                </button>
+                                <div id="ranked-panel" class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
+                                    <a href="/games/ranked/:filter?filter=all">All Ranked</a>
+                                </div>
+                            </div>
+                            <div class="rh-nav-subgroup" id="hundred-group">
+                                <button
+                                    id="hundred-toggle"
+                                    type="button"
+                                    class="nav-link"
+                                    data-nav-accordion-target="toggle"
+                                    data-nav-accordion-prefix="/games/hundred-point"
+                                    data-action="click->nav-accordion#toggle"
+                                    aria-controls="hundred-panel"
+                                    aria-expanded="false"
+                                >
+                                    100 Point Games
+                                </button>
+                                <div id="hundred-panel" class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
+                                    <a href="/games/hundred-point/">All 100+ Games</a>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        `;
+
+        application.stop();
+        application = Application.start();
+        application.register("nav-accordion", NavAccordionController);
+        await Promise.resolve();
+
+        const gamesToggle = document.getElementById("games-toggle");
+        const gamesPanel = document.getElementById("games-panel");
+        const rankedToggle = document.getElementById("ranked-toggle");
+        const rankedPanel = document.getElementById("ranked-panel");
+        const hundredToggle = document.getElementById("hundred-toggle");
+        const hundredPanel = document.getElementById("hundred-panel");
+
+        gamesToggle.click();
+        rankedToggle.click();
+
+        expect(gamesToggle.getAttribute("aria-expanded")).toBe("true");
+        expect(gamesPanel.hidden).toBe(false);
+        expect(rankedToggle.getAttribute("aria-expanded")).toBe("true");
+        expect(rankedPanel.hidden).toBe(false);
+        expect(hundredToggle.getAttribute("aria-expanded")).toBe("false");
+        expect(hundredPanel.hidden).toBe(true);
+
+        hundredToggle.click();
+
+        expect(gamesToggle.getAttribute("aria-expanded")).toBe("true");
+        expect(gamesPanel.hidden).toBe(false);
+        expect(rankedToggle.getAttribute("aria-expanded")).toBe("false");
+        expect(rankedPanel.hidden).toBe(true);
+        expect(hundredToggle.getAttribute("aria-expanded")).toBe("true");
+        expect(hundredPanel.hidden).toBe(false);
     });
 });

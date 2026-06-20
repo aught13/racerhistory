@@ -5,7 +5,7 @@ export default defineConfig({
     build: {
         manifest: "manifest.json",
         outDir: "webroot/dist",
-        emptyOutDir: false,
+        emptyOutDir: true,
         rollupOptions: {
             input: {
                 main: "js/main.js",
