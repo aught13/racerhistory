@@ -146,7 +146,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                 <tr>
                                     <th rowspan="2">#</th>
                                     <th rowspan="2">Team</th>
-                                    <th rowspan="2">Season</th>
+                                    <th rowspan="2" class="season-freeze-col-3">Season</th>
                                     <th colspan="<?= $splitColspan ?>" class="text-center">Home</th>
                                     <th colspan="<?= $splitColspan ?>" class="text-center">Road</th>
                                     <th colspan="<?= $splitColspan ?>" class="text-center">Neutral</th>
@@ -171,7 +171,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                     <tr>
                                         <td class="text-muted seasons-row-number"><?= $splitRow['index'] ?></td>
                                         <td><?= h($splitRow['team']) ?></td>
-                                        <td><?= h($splitRow['seasonLabel']) ?></td>
+                                        <td class="season-freeze-col-3"><?= h($splitRow['seasonLabel']) ?></td>
                                         <?php foreach ($splitRow['overall_home_cells'] as $cell) : ?>
                                             <td class="text-end"><?= h($cell) ?></td>
                                         <?php endforeach; ?>
@@ -204,7 +204,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                 <tr>
                                     <th rowspan="2">#</th>
                                     <th rowspan="2">Team</th>
-                                    <th rowspan="2">Season</th>
+                                    <th rowspan="2" class="season-freeze-col-3">Season</th>
                                     <th rowspan="2">Conf</th>
                                     <th rowspan="2">Conf finish</th>
                                     <th colspan="3" class="text-center">Overall</th>
@@ -240,7 +240,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                     <tr>
                                         <td class="text-muted seasons-row-number"><?= $index + 1 ?></td>
                                         <td><?= h($teamLabel) ?></td>
-                                        <td data-order="<?= h($seasonStart) ?>">
+                                        <td class="season-freeze-col-3" data-order="<?= h($seasonStart) ?>">
                                             <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $teamSeason->id]) ?>"
                                                class="text-decoration-none"
                                                data-turbo-frame="_top">
