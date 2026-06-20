@@ -25,7 +25,11 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:clean": "npm run clean:vite-cache && vite --force",
     "build": "vite build",
+    "build:clean": "npm run clean:dist && vite build",
+    "clean:dist": "node -e \"const fs=require('fs');['webroot/dist/assets','webroot/dist/manifest.json'].forEach((p)=>fs.rmSync(p,{recursive:true,force:true}));\"",
+    "clean:vite-cache": "node -e \"const fs=require('fs');fs.rmSync('node_modules/.vite',{recursive:true,force:true});\"",
     "preview": "vite preview",
     "test:js": "cross-env jest --env=jsdom --colors",
     "test:js:esm": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --env=jsdom --colors",
