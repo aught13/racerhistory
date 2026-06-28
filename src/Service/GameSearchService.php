@@ -138,6 +138,8 @@ class GameSearchService
 
     /**
      * Build the ranked-games query without executing it.
+     *
+     * @param string $filter
      */
     protected function rankedGamesQuery(string $filter = 'all'): SelectQuery
     {
@@ -201,6 +203,8 @@ class GameSearchService
 
     /**
      * Build the 100-point-games query without executing it.
+     *
+     * @param string $filter
      */
     protected function hundredPointGamesQuery(string $filter = 'all'): SelectQuery
     {
@@ -275,6 +279,9 @@ class GameSearchService
 
     /**
      * Normalize various date values to ISO `Y-m-d` strings.
+     *
+     * @param mixed $date
+     * @return string|null
      */
     protected function normalizeBoundDate(mixed $date): ?string
     {

@@ -665,6 +665,7 @@ class GamesController extends AppController
      * @param array $games
      * @param string $dateFormat
      * @param bool $showConferenceTypeAbr
+     * @param bool $includeWeekdayColumn
      * @return array
      */
     protected function formatOvertimeRows(
