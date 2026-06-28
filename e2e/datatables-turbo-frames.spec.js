@@ -743,4 +743,37 @@ test.describe("Back-button navigation restores index pages", () => {
         expect(afterBack.hasWrapper).toBe(true);
         expect(afterBack.hasFilterButton).toBe(true);
     });
+
+    test("games all SearchBuilder shows date conditions for the date column", async ({
+        page,
+    }) => {
+        await page.goto("/games/all");
+        await page.waitForLoadState("domcontentloaded");
+
+        const filterBtn = page.locator("#games-filter-btn");
+        await expect(filterBtn).toHaveCount(1, { timeout: 20000 });
+
+        await filterBtn.click();
+
+        const slot = page.locator("#games-searchbuilder-slot");
+        await expect(slot).not.toHaveClass(/d-none/);
+
+        const addButton = slot.locator(".dtsb-add").first();
+        await expect(addButton).toHaveCount(1, { timeout: 20000 });
+
+        await addButton.click();
+
+        const dataSelect = slot.locator("select.dtsb-data").first();
+        await expect(dataSelect).toHaveCount(1, { timeout: 20000 });
+
+        await dataSelect.selectOption({ label: "Date" });
+
+        const conditionSelect = slot.locator("select.dtsb-condition").first();
+        const conditionLabels = await conditionSelect.locator("option").allTextContents();
+
+        expect(conditionLabels).toContain("Before");
+        expect(conditionLabels).toContain("After");
+        expect(conditionLabels).toContain("Between");
+        expect(conditionLabels).not.toContain("Contains");
+    });
 });

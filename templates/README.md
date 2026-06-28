@@ -38,10 +38,12 @@ templates/
 - **Purpose**: Main application layout with Bootstrap 5.3.2 framework
 - **Features**:
   - Responsive navigation with authentication status
-  - CDN-loaded Bootstrap CSS/JS with integrity verification
-  - jQuery 3.7.1 for enhanced functionality
+  - Vite-managed JavaScript bundles for public runtime behavior
+  - CDN-loaded CSS assets with integrity verification where applicable
   - Flash message display area
   - Footer with copyright information
+- **Notes**:
+  - Public DataTables, jQuery, Bootstrap JS, and Luxon now load from the Vite manifest-backed bundle rather than per-page CDN script tags
 - **Variables**: `$this` (AppView instance)
 
 ### admin.php
@@ -234,7 +236,7 @@ Flash message templates for different message types:
 ## Maintenance Notes
 
 ### Regular Updates Required
-1. **CDN Integrity Hashes**: Verify hashes when updating Bootstrap versions
+1. **Vite Asset Output**: Verify `webroot/dist/manifest.json` and generated bundle paths after frontend dependency upgrades
 2. **Security Headers**: Review CSP and integrity attributes
 3. **Responsive Testing**: Test layouts on various screen sizes
 4. **Accessibility**: Ensure WCAG compliance for forms and navigation
@@ -242,7 +244,7 @@ Flash message templates for different message types:
 ### Version Dependencies
 - **CakePHP**: 5.x framework compatibility
 - **Bootstrap**: 5.3.2 (CSS framework)
-- **jQuery**: 3.7.1 (JavaScript library)
+- **jQuery**: 3.7.1 (Vite-managed JavaScript dependency)
 - **Bootstrap Icons**: 1.11.3 (icon library)
 
 ### File Naming Conventions

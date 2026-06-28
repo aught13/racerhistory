@@ -193,6 +193,7 @@ class GamesControllerTest extends TestCase
         $this->assertArrayHasKey('data', $data);
         $this->assertNotEmpty($data['data']);
         $this->assertSame('Conf', (string)$data['data'][0][9]);
+        $this->assertStringContainsString('Monday, January 20, 2025', $body);
     }
 
     /**

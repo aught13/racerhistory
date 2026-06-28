@@ -3,11 +3,6 @@
  */
 import { ensureSearchBuilderLoaded } from "./modules/searchbuilder-loader.mjs";
 
-const DATATABLES_CORE_SRC =
-    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-const DATATABLES_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
-
 let initSeasonsPromise;
 
 function getInitSeasons() {
@@ -206,41 +201,6 @@ function hasJquery() {
     return typeof window.$ === "function" && typeof window.$.fn === "object";
 }
 
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-            // Script tag already in DOM (static HTML, Turbo head-merge, or
-            // previous dynamic injection). If it already executed, resolve.
-            // Otherwise wait for its load event.
-            if (existing.dataset.loaded === "true") {
-                resolve();
-                return;
-            }
-            existing.addEventListener("load", () => resolve());
-            existing.addEventListener("error", () =>
-                reject(new Error("Failed to load " + src)),
-            );
-            // If the script already fired load before we attached, resolve
-            // on next tick so waitForCondition can confirm the global.
-            setTimeout(resolve, 0);
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.addEventListener("load", () => {
-            script.dataset.loaded = "true";
-            resolve();
-        });
-        script.addEventListener("error", () =>
-            reject(new Error("Failed to load " + src)),
-        );
-        document.head.appendChild(script);
-    });
-}
-
 function waitForCondition(checkFn, timeoutMs, intervalMs) {
     if (checkFn()) {
         return Promise.resolve();
@@ -267,8 +227,6 @@ async function ensureDataTablesLoaded() {
         await waitForCondition(hasJquery, 10000, 50);
     }
     if (!isDataTablesAvailable()) {
-        await loadScript(DATATABLES_CORE_SRC);
-        await loadScript(DATATABLES_BOOTSTRAP_SRC);
         await waitForCondition(isDataTablesAvailable, 5000, 50);
     }
 }

@@ -1,5 +1,6 @@
 import * as Turbo from "@hotwired/turbo";
 import { Application } from "@hotwired/stimulus";
+import "./lib/public_vite_datatables.mjs";
 
 // AdminLTE 4 layout CSS (supplements Bootstrap 5; structural classes only, no JS)
 import "admin-lte/dist/css/adminlte.min.css";

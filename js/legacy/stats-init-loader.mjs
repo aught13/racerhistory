@@ -6,18 +6,6 @@
  * drag-to-scroll on wide tables. Initializes on DOMContentLoaded and turbo:load.
  */
 
-/* CDN URLs for DataTables assets loaded dynamically */
-const DATATABLES_CORE_SRC =
-    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-const DATATABLES_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
-const DATATABLES_SCROLLER_SRC =
-    "https://cdn.datatables.net/scroller/2.3.0/js/dataTables.scroller.min.js";
-const SEARCHBUILDER_SRC =
-    "https://cdn.datatables.net/searchbuilder/1.4.2/js/dataTables.searchBuilder.min.js";
-const SEARCHBUILDER_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/searchbuilder/1.4.2/js/searchBuilder.bootstrap5.min.js";
-
 /** Stat column header labels that contain numeric data. */
 const NUMERIC_COLUMNS = [
     "GP",
@@ -62,28 +50,6 @@ function hasSearchBuilder() {
     return typeof window.$?.fn?.dataTable?.SearchBuilder === "function";
 }
 
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-            resolve();
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.addEventListener("load", () => {
-            script.dataset.loaded = "true";
-            resolve();
-        });
-        script.addEventListener("error", () =>
-            reject(new Error("Failed to load " + src)),
-        );
-        document.head.appendChild(script);
-    });
-}
-
 function waitForCondition(checkFn, timeoutMs, intervalMs) {
     if (checkFn()) {
         return Promise.resolve();
@@ -116,13 +82,8 @@ async function ensureDataTablesLoaded() {
         await waitForCondition(hasJquery, 10000, 50); // Increased from 5000ms to 10000ms
     }
     if (!hasDataTables()) {
-        await loadScript(DATATABLES_CORE_SRC);
         await waitForCondition(hasDataTables, 5000, 50); // Increased from 3000ms to 5000ms
     }
-    await loadScript(DATATABLES_BOOTSTRAP_SRC);
-    await loadScript(DATATABLES_SCROLLER_SRC);
-    await loadScript(SEARCHBUILDER_SRC);
-    await loadScript(SEARCHBUILDER_BOOTSTRAP_SRC);
     await waitForCondition(hasSearchBuilder, 5000, 50); // Increased from 3000ms to 5000ms
 }
 

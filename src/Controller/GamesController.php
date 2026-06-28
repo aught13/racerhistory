@@ -570,7 +570,7 @@ class GamesController extends AppController
     }
 
     /**
-     * Format a game date with a hidden ISO prefix for DataTables sorting.
+     * Format a game date with semantic ISO metadata for DataTables display.
      *
      * @param mixed $date
      * @param string $displayFormat
@@ -590,7 +590,7 @@ class GamesController extends AppController
             $display = $ts ? date($displayFormat, $ts) : $iso;
         }
 
-        return '<span class="d-none">' . h($iso) . '</span>' . h($display);
+        return '<time class="rh-game-date" datetime="' . h($iso) . '">' . h($display) . '</time>';
     }
 
     /**
