@@ -23,6 +23,13 @@ const NUMERIC_COLUMNS = [
 const SCROLLER_THRESHOLD = 75;
 const GAMES_DATE_FORMATS = ["MM/dd/yyyy", "cccc, LLLL d, yyyy"];
 
+function parseCsvNumbers(value) {
+    return String(value ?? "")
+        .split(",")
+        .map((part) => parseInt(part.trim(), 10))
+        .filter((part) => !Number.isNaN(part));
+}
+
 function extractIsoDate(data) {
     const value = String(data ?? "");
     const datetimeMatch = value.match(/datetime="([^"]+)"/i);
@@ -117,6 +124,34 @@ function registerGamesDateFormat() {
             datetime.call(dataTableNamespace, format);
         });
     }
+}
+
+function applyGamesDateBounds(table) {
+    if (typeof window.DateTime !== "function") {
+        return;
+    }
+
+    const luxonDateTime = window.luxon?.DateTime;
+    if (!luxonDateTime) {
+        return;
+    }
+
+    const minIso = table?.dataset?.minDate || "";
+    const maxIso = table?.dataset?.maxDate || "";
+    const today = luxonDateTime.now().startOf("day");
+    const minDate = minIso
+        ? luxonDateTime.fromISO(minIso).startOf("day")
+        : null;
+    const maxDate = maxIso
+        ? luxonDateTime.fromISO(maxIso).startOf("day")
+        : null;
+
+    window.DateTime.defaults.minDate = minDate?.isValid
+        ? minDate.toISODate()
+        : null;
+    window.DateTime.defaults.maxDate = maxDate?.isValid
+        ? (maxDate > today ? today : maxDate).toISODate()
+        : today.toISODate();
 }
 
 /**
@@ -297,6 +332,7 @@ function initGamesDataTable(table) {
 
     const headers = table.querySelectorAll("thead th");
     const numericTargets = [];
+    const weekdayTargets = parseCsvNumbers(table.dataset.weekdayColumn);
     headers.forEach((th, idx) => {
         if (NUMERIC_COLUMNS.includes(th.textContent.trim())) {
             numericTargets.push(idx);
@@ -354,6 +390,12 @@ function initGamesDataTable(table) {
                     return data;
                 },
             },
+            {
+                visible: false,
+                searchable: true,
+                targets: weekdayTargets,
+                searchBuilderTitle: "Day of Week",
+            },
             { type: "num", targets: numericTargets },
             { orderSequence: ["desc", "asc"], targets: "_all" },
         ],
@@ -369,6 +411,9 @@ function initGamesDataTable(table) {
 
     ensureDataTablesLoaded()
         .then(() => {
+            if (table) {
+                applyGamesDateBounds(table);
+            }
             // Get fresh reference to the table element to handle Turbo navigation
             const freshTable = document.getElementById("games-results-table");
             if (!freshTable) {
@@ -475,7 +520,15 @@ function setupGamesSearchBuilderUi(dt, table) {
         filterBtn.dataset.sbToggleBound = "true";
     }
 
-    new window.$.fn.dataTable.SearchBuilder(dt, {});
+    const searchBuilderColumns = parseCsvNumbers(
+        table.dataset.searchbuilderColumns,
+    );
+    const searchBuilderOptions = {};
+    if (searchBuilderColumns.length > 0) {
+        searchBuilderOptions.columns = searchBuilderColumns;
+    }
+
+    new window.$.fn.dataTable.SearchBuilder(dt, searchBuilderOptions);
     dt.searchBuilder.container().appendTo(window.$(slot));
     dt.searchBuilder.rebuild();
 }

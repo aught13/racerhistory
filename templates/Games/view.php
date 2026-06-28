@@ -77,9 +77,7 @@ if (!empty($game->game_time)) {
 $this->assign('title', sprintf('%s vs %s', $teamNickname, $opponentName));
 
 $this->start('css'); ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <?php $this->end(); ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
 
 <div class="container py-4 game-view" data-game-view>
     <nav aria-label="breadcrumb" class="mb-3">

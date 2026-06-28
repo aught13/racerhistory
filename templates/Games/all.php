@@ -29,7 +29,11 @@ $ajaxUrl = $this->Url->build([
                 <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
                        style="width:100%"
                        data-ajax-url="<?= h($ajaxUrl) ?>"
-                       data-result-column="2">
+                       data-result-column="2"
+                       data-min-date="<?= h((string)($gamesDateBounds['min'] ?? '')) ?>"
+                       data-max-date="<?= h((string)($gamesDateBounds['max'] ?? '')) ?>"
+                       data-weekday-column="11"
+                       data-searchbuilder-columns="0,1,2,3,4,5,6,7,8,9,10,11">
                     <thead class="table-dark">
                         <tr>
                             <th>Date</th>
@@ -43,6 +47,7 @@ $ajaxUrl = $this->Url->build([
                             <th>Conf</th>
                             <th>Game Type</th>
                             <th>Season</th>
+                            <th>Day of Week</th>
                         </tr>
                     </thead>
                     <tbody></tbody>

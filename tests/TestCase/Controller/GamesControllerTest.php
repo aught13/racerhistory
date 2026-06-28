@@ -168,6 +168,12 @@ class GamesControllerTest extends TestCase
         $this->get('/games/all');
         $this->assertResponseOk();
         $this->assertResponseContains('All Games');
+        $this->assertResponseContains('data-weekday-column="11"');
+
+        $bounds = $this->viewVariable('gamesDateBounds');
+        $this->assertIsArray($bounds);
+        $this->assertNotEmpty($bounds['min'] ?? null);
+        $this->assertNotEmpty($bounds['max'] ?? null);
     }
 
     /**
@@ -194,6 +200,7 @@ class GamesControllerTest extends TestCase
         $this->assertNotEmpty($data['data']);
         $this->assertSame('Conf', (string)$data['data'][0][9]);
         $this->assertStringContainsString('Monday, January 20, 2025', $body);
+        $this->assertSame('Monday', (string)$data['data'][0][11]);
     }
 
     /**

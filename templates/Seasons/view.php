@@ -119,10 +119,7 @@ if ($heroImageId === null) {
 $this->assign('title', $teamName . ' ' . $seasonLabel . ' Season');
 
 $this->start('css'); ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <?php $this->end(); ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
 
 <div class="container py-4 season-view" data-season-view>
     <nav aria-label="breadcrumb" class="mb-3">

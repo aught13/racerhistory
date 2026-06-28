@@ -254,7 +254,9 @@ $showOpponentPicker = !$selectedOpponent;
                     <div class="table-responsive" id="games-table-wrap">
                         <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
                                <?php if ($ajaxUrl) :
-                                    ?>data-ajax-url="<?= h($ajaxUrl) ?>"<?php
+                                    ?>data-ajax-url="<?= h($ajaxUrl) ?>"
+                                     data-min-date="<?= h((string)($gamesDateBounds['min'] ?? '')) ?>"
+                                     data-max-date="<?= h((string)($gamesDateBounds['max'] ?? '')) ?>"<?php
                                endif; ?>>
                             <thead class="table-dark">
                                 <tr>

@@ -1,3 +1,10 @@
+import "datatables.net-bs5/css/dataTables.bootstrap5.css";
+import "datatables.net-buttons-bs5/css/buttons.bootstrap5.css";
+import "datatables.net-searchbuilder-bs5/css/searchBuilder.bootstrap5.css";
+import "datatables.net-scroller-bs5/css/scroller.bootstrap5.css";
+import "datatables.net-responsive-bs5/css/responsive.bootstrap5.css";
+import "datatables.net-datetime/dist/dataTables.dateTime.css";
+
 export const publicDataTablesReady = (async () => {
     if (
         typeof window === "undefined" ||

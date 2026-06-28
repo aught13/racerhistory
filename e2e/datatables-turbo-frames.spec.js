@@ -776,4 +776,37 @@ test.describe("Back-button navigation restores index pages", () => {
         expect(conditionLabels).toContain("Between");
         expect(conditionLabels).not.toContain("Contains");
     });
+
+    test("games all SearchBuilder can filter by day of week", async ({
+        page,
+    }) => {
+        await page.goto("/games/all");
+        await page.waitForLoadState("domcontentloaded");
+
+        const filterBtn = page.locator("#games-filter-btn");
+        await expect(filterBtn).toHaveCount(1, { timeout: 20000 });
+        await filterBtn.click();
+
+        const slot = page.locator("#games-searchbuilder-slot");
+        await expect(slot).not.toHaveClass(/d-none/);
+
+        const addButton = slot.locator(".dtsb-add").first();
+        await addButton.click();
+
+        const dataSelect = slot.locator("select.dtsb-data").first();
+        await dataSelect.selectOption({ label: "Day of Week" });
+
+        const conditionSelect = slot.locator("select.dtsb-condition").first();
+        await conditionSelect.selectOption({ label: "Contains" });
+
+        const input = slot.locator("input.dtsb-input").first();
+        await input.fill("Sunday");
+        await input.press("Enter");
+        await page.waitForTimeout(1500);
+
+        const firstCell = page.locator(
+            "#games-results-table_wrapper .dataTables_scrollBody tbody tr:first-child td:first-child",
+        );
+        await expect(firstCell).toContainText("Sunday");
+    });
 });

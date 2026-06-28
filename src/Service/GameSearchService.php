@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Game;
+use Cake\I18n\Date;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Query\SelectQuery;
 use DateTimeInterface;
@@ -58,10 +59,91 @@ class GameSearchService
      */
     public function rankedGames(string $filter = 'all'): array
     {
+        return $this->rankedGamesQuery($filter)
+            ->orderByDesc('Games.game_date')
+            ->all()
+            ->toArray();
+    }
+
+    /**
+     * All games (no additional filters beyond base query).
+     *
+     * @return array
+     */
+    public function allGames(): array
+    {
+        return $this->allGamesQuery()
+            ->orderByDesc('Games.game_date')
+            ->all()
+            ->toArray();
+    }
+
+    /**
+     * Overtime games.
+     *
+     * @return array
+     */
+    public function overtimeGames(): array
+    {
+        return $this->overtimeGamesQuery()
+            ->orderByDesc('Games.game_date')
+            ->all()
+            ->toArray();
+    }
+
+    /**
+     * 100-point games (team or opponent scored 100+).
+     *
+     * @param string $filter
+     * @return array
+     */
+    public function hundredPointGames(string $filter = 'all'): array
+    {
+        return $this->hundredPointGamesQuery($filter)
+            ->bind(':min_points', 100, 'integer')
+            ->orderByDesc('Games.game_date')
+            ->all()
+            ->toArray();
+    }
+
+    /**
+     * Return public games date bounds for a SearchBuilder-enabled page.
+     *
+     * @param string $searchType
+     * @param array<string, mixed> $options
+     * @return array{min:?string,max:?string}
+     */
+    public function publicGameDateBounds(string $searchType, array $options = []): array
+    {
+        return match ($searchType) {
+            'all' => $this->queryDateBounds($this->allGamesQuery()),
+            'ranked' => $this->queryDateBounds(
+                $this->rankedGamesQuery((string)($options['filter'] ?? 'all')),
+            ),
+            'overtime' => $this->queryDateBounds($this->overtimeGamesQuery()),
+            'hundred-point' => $this->queryDateBounds(
+                $this->hundredPointGamesQuery((string)($options['filter'] ?? 'all')),
+            ),
+            'openers' => $this->arrayDateBounds(
+                $this->openers((string)($options['type'] ?? 'season')),
+            ),
+            'series' => isset($options['opponentId'])
+                ? $this->arrayDateBounds(
+                    $this->seriesHistory((int)$options['opponentId'])['games'] ?? [],
+                )
+                : ['min' => null, 'max' => null],
+            default => ['min' => null, 'max' => null],
+        };
+    }
+
+    /**
+     * Build the ranked-games query without executing it.
+     */
+    protected function rankedGamesQuery(string $filter = 'all'): SelectQuery
+    {
         $query = $this->baseQuery();
 
         if ($filter === 'team') {
-            // Only games where Murray State is ranked
             $query->where(function ($exp) {
                 return $exp->and([
                     $exp->isNotNull('Games.mur_rk'),
@@ -69,7 +151,6 @@ class GameSearchService
                 ]);
             });
         } elseif ($filter === 'opponent') {
-            // Only games where opponent is ranked
             $query->where(function ($exp) {
                 return $exp->and([
                     $exp->isNotNull('Games.opp_rk'),
@@ -77,7 +158,6 @@ class GameSearchService
                 ]);
             });
         } else {
-            // Games where either team or opponent is ranked
             $query->where(function ($exp) {
                 return $exp->or([
                     function ($and) {
@@ -96,50 +176,33 @@ class GameSearchService
             });
         }
 
-        return $query
-            ->orderByDesc('Games.game_date')
-            ->all()
-            ->toArray();
+        return $query;
     }
 
     /**
-     * All games (no additional filters beyond base query).
-     *
-     * @return array
+     * Build the all-games query without executing it.
      */
-    public function allGames(): array
+    protected function allGamesQuery(): SelectQuery
     {
-        return $this->baseQuery()
-            ->orderByDesc('Games.game_date')
-            ->all()
-            ->toArray();
+        return $this->baseQuery();
     }
 
     /**
-     * Overtime games.
-     *
-     * @return array
+     * Build the overtime-games query without executing it.
      */
-    public function overtimeGames(): array
+    protected function overtimeGamesQuery(): SelectQuery
     {
-        return $this->baseQuery()
-            ->where(function ($exp) {
-                return $exp->isNotNull('Games.ot')
-                    ->notEq('Games.ot', '')
-                    ->notEq('Games.ot', '0');
-            })
-            ->orderByDesc('Games.game_date')
-            ->all()
-            ->toArray();
+        return $this->baseQuery()->where(function ($exp) {
+            return $exp->isNotNull('Games.ot')
+                ->notEq('Games.ot', '')
+                ->notEq('Games.ot', '0');
+        });
     }
 
     /**
-     * 100-point games (team or opponent scored 100+).
-     *
-     * @param string $filter
-     * @return array
+     * Build the 100-point-games query without executing it.
      */
-    public function hundredPointGames(string $filter = 'all'): array
+    protected function hundredPointGamesQuery(string $filter = 'all'): SelectQuery
     {
         $query = $this->baseQuery();
 
@@ -154,12 +217,78 @@ class GameSearchService
             ]);
         }
 
-        return $query
-            ->where($pointsFilter)
-            ->bind(':min_points', 100, 'integer')
-            ->orderByDesc('Games.game_date')
-            ->all()
-            ->toArray();
+        return $query->where($pointsFilter);
+    }
+
+    /**
+     * Return min/max bounds from a query without materializing the full dataset.
+     *
+     * @param \Cake\ORM\Query\SelectQuery $query
+     * @return array{min:?string,max:?string}
+     */
+    protected function queryDateBounds(SelectQuery $query): array
+    {
+        $boundsQuery = clone $query;
+        $row = $boundsQuery
+            ->contain([], true)
+            ->select([
+                'min_date' => $boundsQuery->func()->min('Games.game_date'),
+                'max_date' => $boundsQuery->func()->max('Games.game_date'),
+            ], true)
+            ->orderBy([], true)
+            ->enableHydration(false)
+            ->first();
+
+        return [
+            'min' => $this->normalizeBoundDate($row['min_date'] ?? null),
+            'max' => $this->normalizeBoundDate($row['max_date'] ?? null),
+        ];
+    }
+
+    /**
+     * Return min/max bounds from an already-built array dataset.
+     *
+     * @param array<int, mixed> $games
+     * @return array{min:?string,max:?string}
+     */
+    protected function arrayDateBounds(array $games): array
+    {
+        $dates = [];
+        foreach ($games as $game) {
+            $normalized = $this->normalizeBoundDate($game->game_date ?? null);
+            if ($normalized !== null) {
+                $dates[] = $normalized;
+            }
+        }
+
+        if ($dates === []) {
+            return ['min' => null, 'max' => null];
+        }
+
+        sort($dates);
+
+        return [
+            'min' => $dates[0],
+            'max' => $dates[count($dates) - 1],
+        ];
+    }
+
+    /**
+     * Normalize various date values to ISO `Y-m-d` strings.
+     */
+    protected function normalizeBoundDate(mixed $date): ?string
+    {
+        if ($date instanceof Date || $date instanceof DateTimeInterface) {
+            return $date->format('Y-m-d');
+        }
+
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        $timestamp = strtotime((string)$date);
+
+        return $timestamp !== false ? date('Y-m-d', $timestamp) : null;
     }
 
     /**

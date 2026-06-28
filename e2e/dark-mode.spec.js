@@ -450,4 +450,45 @@ test.describe("Dark Mode — /games DataTable sub-pages", () => {
             }
         });
     }
+
+    test("All Games date picker stays readable in dark mode", async ({
+        page,
+    }) => {
+        await page.goto("/games/all-games");
+        await page.waitForLoadState("domcontentloaded");
+
+        const filterBtn = page.locator("#games-filter-btn");
+        await expect(filterBtn).toHaveCount(1, { timeout: 20000 });
+        await filterBtn.click();
+
+        const slot = page.locator("#games-searchbuilder-slot");
+        await expect(slot).not.toHaveClass(/d-none/);
+
+        await slot.locator(".dtsb-add").first().click();
+        await slot.locator("select.dtsb-data").first().selectOption({
+            label: "Date",
+        });
+        await slot.locator("select.dtsb-condition").first().selectOption({
+            label: "Before",
+        });
+
+        const picker = page.locator(".dt-datetime").last();
+        await expect(picker).toBeVisible({ timeout: 20000 });
+
+        const colors = await picker.evaluate((el) => {
+            const style = getComputedStyle(el);
+            const button = el.querySelector("button");
+            const buttonStyle = button ? getComputedStyle(button) : null;
+            return {
+                backgroundColor: style.backgroundColor,
+                color: style.color,
+                buttonBackground: buttonStyle?.backgroundColor || null,
+                buttonColor: buttonStyle?.color || null,
+            };
+        });
+
+        expect(colors.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+        expect(colors.buttonBackground).not.toBe("rgb(255, 255, 255)");
+        expect(colors.buttonColor).not.toBe("rgb(255, 255, 255)");
+    });
 });

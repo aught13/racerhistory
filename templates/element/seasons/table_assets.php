@@ -3,10 +3,6 @@
  * @var \App\View\AppView $this
  */
 $this->start('css'); ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/searchbuilder/1.4.2/css/searchBuilder.dataTables.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">
 <style>
 #seasons-table_wrapper .season-freeze-col-3,
 #season-splits-table_wrapper .season-freeze-col-3 {
