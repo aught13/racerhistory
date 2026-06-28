@@ -38,7 +38,9 @@ $filterLabels = [
         <div class="card-body p-0">
             <div class="table-responsive" id="games-table-wrap">
                 <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
-                       data-ajax-url="<?= $this->Url->build(['controller' => 'Games', 'action' => 'ranked', '?' => ['format' => 'json', 'filter' => $rankedFilter]]) ?>">
+                      data-ajax-url="<?= $this->Url->build(['controller' => 'Games', 'action' => 'ranked', '?' => ['format' => 'json', 'filter' => $rankedFilter]]) ?>"
+                      data-min-date="<?= h((string)($gamesDateBounds['min'] ?? '')) ?>"
+                      data-max-date="<?= h((string)($gamesDateBounds['max'] ?? '')) ?>">
                     <thead class="table-dark">
                         <tr>
                             <th>Date</th>

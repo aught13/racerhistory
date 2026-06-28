@@ -286,4 +286,93 @@ test.describe("Games DataTable sticky first column", () => {
         expect(styles.cellWhiteSpace).toBe("normal");
         expect(styles.cellOverflowWrap).toBe("anywhere");
     });
+
+    test("keeps the public all-games date column narrow on mobile", async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+
+        const response = await page.goto("/games/all");
+        if (!response || response.status() !== 200) {
+            test.skip();
+            return;
+        }
+
+        const table = page.locator(TABLE_SELECTOR);
+        if ((await table.count()) === 0) {
+            test.skip();
+            return;
+        }
+
+        try {
+            await page.waitForSelector(`${WRAPPER_SELECTOR} .dataTables_scrollBody`, {
+                timeout: 20000,
+            });
+        } catch {
+            test.skip();
+            return;
+        }
+
+        const filterButton = page.locator("#games-filter-btn");
+        if ((await filterButton.count()) === 1) {
+            await filterButton.click();
+            const slot = page.locator("#games-searchbuilder-slot");
+            await expect(slot).not.toHaveClass(/d-none/);
+
+            const addButton = slot.locator(".dtsb-add").first();
+            if ((await addButton.count()) === 1) {
+                await addButton.click();
+                const dataSelect = slot.locator("select.dtsb-data").first();
+                if ((await dataSelect.count()) === 1) {
+                    await dataSelect.selectOption({ label: "Date" });
+                }
+            }
+        }
+
+        const styles = await page.evaluate((wrapperSelector) => {
+            const wrapper = document.querySelector(wrapperSelector);
+            const firstHeader = wrapper?.querySelector(
+                ".dataTables_scrollHead thead th:first-child",
+            );
+            const firstCell = wrapper?.querySelector(
+                ".dataTables_scrollBody tbody tr:first-child td:first-child",
+            );
+            if (!firstHeader || !firstCell) {
+                return null;
+            }
+
+            const firstHeaderStyle = getComputedStyle(firstHeader);
+            const firstCellStyle = getComputedStyle(firstCell);
+            return {
+                firstHeaderPosition: firstHeaderStyle.position,
+                firstHeaderLeft: firstHeaderStyle.left,
+                cellMaxWidth: firstCellStyle.maxWidth,
+                cellWhiteSpace: firstCellStyle.whiteSpace,
+                cellOverflowWrap: firstCellStyle.overflowWrap,
+            };
+        }, WRAPPER_SELECTOR);
+
+        if (!styles) {
+            test.skip();
+            return;
+        }
+
+        const firstCell = page.locator(
+            `${WRAPPER_SELECTOR} .dataTables_scrollBody tbody tr:first-child td:first-child`,
+        );
+        await expect.poll(async () => {
+            return ((await firstCell.textContent()) || "").trim();
+        }, {
+            timeout: 20000,
+        }).not.toBe("Loading games…");
+
+        const firstCellText = await firstCell.textContent();
+
+        expect(styles.firstHeaderPosition).toBe("sticky");
+        expect(styles.firstHeaderLeft).toBe("0px");
+        expect(styles.cellMaxWidth).toBe("160px");
+        expect(styles.cellWhiteSpace).toBe("normal");
+        expect(styles.cellOverflowWrap).toBe("anywhere");
+        expect(firstCellText).toMatch(
+            /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), /,
+        );
+    });
 });

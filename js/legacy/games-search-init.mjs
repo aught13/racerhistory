@@ -6,17 +6,6 @@
  * drag-to-scroll on wide tables. Initializes on DOMContentLoaded and turbo:load.
  */
 
-const DATATABLES_CORE_SRC =
-    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-const DATATABLES_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
-const DATATABLES_SCROLLER_SRC =
-    "https://cdn.datatables.net/scroller/2.3.0/js/dataTables.scroller.min.js";
-const SEARCHBUILDER_SRC =
-    "https://cdn.datatables.net/searchbuilder/1.4.2/js/dataTables.searchBuilder.min.js";
-const SEARCHBUILDER_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/searchbuilder/1.4.2/js/searchBuilder.bootstrap5.min.js";
-
 /** Track tables that are currently being initialized to prevent duplicates */
 const initializingTables = new Set();
 
@@ -32,6 +21,32 @@ const NUMERIC_COLUMNS = [
 ];
 
 const SCROLLER_THRESHOLD = 75;
+const GAMES_DATE_FORMATS = ["MM/dd/yyyy", "cccc, LLLL d, yyyy"];
+
+function parseCsvNumbers(value) {
+    return String(value ?? "")
+        .split(",")
+        .map((part) => parseInt(part.trim(), 10))
+        .filter((part) => !Number.isNaN(part));
+}
+
+function extractIsoDate(data) {
+    const value = String(data ?? "");
+    const datetimeMatch = value.match(/datetime="([^"]+)"/i);
+    if (datetimeMatch) {
+        return datetimeMatch[1];
+    }
+
+    const dataOrderMatch = value.match(/data-(?:order|search)="([^"]+)"/i);
+    if (dataOrderMatch) {
+        return dataOrderMatch[1];
+    }
+
+    return value
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
 
 function normalizeUrl(url) {
     if (!url) {
@@ -57,62 +72,6 @@ function hasDataTables() {
 
 function hasSearchBuilder() {
     return typeof window.$?.fn?.dataTable?.SearchBuilder === "function";
-}
-
-function loadScript(src, options = {}) {
-    const { forceReload = false } = options;
-
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${src}"]`);
-
-        if (existing && !forceReload) {
-            // Parser-inserted scripts (Turbo head merge/full page render) do not
-            // carry our dataset flag. Treat those as already loaded.
-            if (existing.dataset.loaded !== "pending") {
-                if (existing.dataset.loaded !== "true") {
-                    existing.dataset.loaded = "true";
-                }
-                resolve();
-                return;
-            }
-
-            // If a dynamically inserted script is still pending, wait for completion.
-            if (existing.dataset.loaded === "true") {
-                resolve();
-                return;
-            }
-
-            const handleLoad = () => {
-                existing.dataset.loaded = "true";
-                resolve();
-            };
-
-            const handleError = () => {
-                reject(new Error("Failed to load " + src));
-            };
-
-            existing.addEventListener("load", handleLoad, { once: true });
-            existing.addEventListener("error", handleError, { once: true });
-            return;
-        }
-
-        if (existing && forceReload) {
-            existing.remove();
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.dataset.loaded = "pending";
-        script.addEventListener("load", () => {
-            script.dataset.loaded = "true";
-            resolve();
-        });
-        script.addEventListener("error", () =>
-            reject(new Error("Failed to load " + src)),
-        );
-        document.head.appendChild(script);
-    });
 }
 
 function waitForCondition(checkFn, timeoutMs, intervalMs) {
@@ -141,20 +100,9 @@ async function ensureDataTablesLoaded() {
         await waitForCondition(hasJquery, 10000, 50); // Increased from 5000ms to 10000ms
     }
     if (!hasDataTables()) {
-        await loadScript(DATATABLES_CORE_SRC);
         await waitForCondition(hasDataTables, 5000, 50); // Increased from 3000ms to 5000ms
     }
-    await loadScript(DATATABLES_BOOTSTRAP_SRC);
-    await loadScript(DATATABLES_SCROLLER_SRC);
-    await loadScript(SEARCHBUILDER_SRC);
-    await loadScript(SEARCHBUILDER_BOOTSTRAP_SRC);
-
-    // Turbo navigation can leave DataTables present while SearchBuilder detaches.
-    // Force a one-time re-load of SearchBuilder scripts when detected.
-    if (!hasSearchBuilder()) {
-        await loadScript(SEARCHBUILDER_SRC, { forceReload: true });
-        await loadScript(SEARCHBUILDER_BOOTSTRAP_SRC, { forceReload: true });
-    }
+    registerGamesDateFormat();
 
     // Do not block table rendering if SearchBuilder is unavailable.
     // The table can still function with sorting/searching.
@@ -165,6 +113,45 @@ async function ensureDataTablesLoaded() {
             "Games SearchBuilder unavailable; continuing without advanced filter UI",
         );
     }
+}
+
+function registerGamesDateFormat() {
+    const dataTableNamespace = window.DataTable ?? window.$?.fn?.dataTable;
+    const datetime = dataTableNamespace?.datetime;
+
+    if (typeof datetime === "function") {
+        GAMES_DATE_FORMATS.forEach((format) => {
+            datetime.call(dataTableNamespace, format);
+        });
+    }
+}
+
+function applyGamesDateBounds(table) {
+    if (typeof window.DateTime !== "function") {
+        return;
+    }
+
+    const luxonDateTime = window.luxon?.DateTime;
+    if (!luxonDateTime) {
+        return;
+    }
+
+    const minIso = table?.dataset?.minDate || "";
+    const maxIso = table?.dataset?.maxDate || "";
+    const today = luxonDateTime.now().startOf("day");
+    const minDate = minIso
+        ? luxonDateTime.fromISO(minIso).startOf("day")
+        : null;
+    const maxDate = maxIso
+        ? luxonDateTime.fromISO(maxIso).startOf("day")
+        : null;
+
+    window.DateTime.defaults.minDate = minDate?.isValid
+        ? minDate.toISODate()
+        : null;
+    window.DateTime.defaults.maxDate = maxDate?.isValid
+        ? (maxDate > today ? today : maxDate).toISODate()
+        : today.toISODate();
 }
 
 /**
@@ -345,6 +332,7 @@ function initGamesDataTable(table) {
 
     const headers = table.querySelectorAll("thead th");
     const numericTargets = [];
+    const weekdayTargets = parseCsvNumbers(table.dataset.weekdayColumn);
     headers.forEach((th, idx) => {
         if (NUMERIC_COLUMNS.includes(th.textContent.trim())) {
             numericTargets.push(idx);
@@ -387,7 +375,27 @@ function initGamesDataTable(table) {
         pageLength: SCROLLER_THRESHOLD,
         order: [[dateIdx, "desc"]],
         columnDefs: [
-            { type: "html", targets: [dateIdx] },
+            {
+                type: "date",
+                targets: [dateIdx],
+                render: function (data, type) {
+                    if (
+                        type === "sort" ||
+                        type === "type" ||
+                        type === "filter"
+                    ) {
+                        return extractIsoDate(data);
+                    }
+
+                    return data;
+                },
+            },
+            {
+                visible: false,
+                searchable: true,
+                targets: weekdayTargets,
+                searchBuilderTitle: "Day of Week",
+            },
             { type: "num", targets: numericTargets },
             { orderSequence: ["desc", "asc"], targets: "_all" },
         ],
@@ -403,6 +411,9 @@ function initGamesDataTable(table) {
 
     ensureDataTablesLoaded()
         .then(() => {
+            if (table) {
+                applyGamesDateBounds(table);
+            }
             // Get fresh reference to the table element to handle Turbo navigation
             const freshTable = document.getElementById("games-results-table");
             if (!freshTable) {
@@ -509,7 +520,15 @@ function setupGamesSearchBuilderUi(dt, table) {
         filterBtn.dataset.sbToggleBound = "true";
     }
 
-    new window.$.fn.dataTable.SearchBuilder(dt, {});
+    const searchBuilderColumns = parseCsvNumbers(
+        table.dataset.searchbuilderColumns,
+    );
+    const searchBuilderOptions = {};
+    if (searchBuilderColumns.length > 0) {
+        searchBuilderOptions.columns = searchBuilderColumns;
+    }
+
+    new window.$.fn.dataTable.SearchBuilder(dt, searchBuilderOptions);
     dt.searchBuilder.container().appendTo(window.$(slot));
     dt.searchBuilder.rebuild();
 }

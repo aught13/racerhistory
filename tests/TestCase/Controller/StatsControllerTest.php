@@ -580,9 +580,9 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/player-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('dataTables.bootstrap5.min.css');
-        $this->assertResponseContains('searchBuilder.dataTables.min.css');
-        $this->assertResponseContains('scroller.dataTables.min.css');
+        $this->assertResponseContains('/dist/assets/main-');
+        $this->assertResponseContains('#stats-table-wrap,#games-table-wrap{cursor:grab}');
+        $this->assertResponseContains('#stats-searchbuilder-slot,#games-searchbuilder-slot{margin-bottom:1rem}');
     }
 
     /**
@@ -592,6 +592,7 @@ class StatsControllerTest extends TestCase
     {
         $this->get('/stats/team-season');
         $this->assertResponseOk();
-        $this->assertResponseContains('dataTables.bootstrap5.min.css');
+        $this->assertResponseContains('/dist/assets/main-');
+        $this->assertResponseContains('#stats-results-table,#games-results-table,.dataTables_scrollHeadInner table');
     }
 }

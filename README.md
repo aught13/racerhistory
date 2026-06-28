@@ -98,7 +98,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Bootstrap 5.3.2** responsive framework
 - **AdminLTE 4.0.2** admin dashboard/theme framework (built on Bootstrap)
 - **Bootstrap Icons 1.11.3** for consistent iconography
-- **jQuery 3.7.1** for enhanced interactions
+- **Vite-managed frontend bundles** for public/runtime JavaScript, including jQuery, Bootstrap JS, Luxon, and DataTables extensions
 - Mobile-first responsive design
 
 ### Security Features
@@ -262,7 +262,8 @@ vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 
 ### External Resources
 
-- **CDN Integrity Hashes** for Bootstrap and jQuery
+- **CDN Integrity Hashes** for externally hosted CSS assets
+- **Vite manifest-backed JavaScript bundles** for public/runtime JS dependencies
 - **HTTPS Enforcement** for production deployment
 - **Secure Headers** for XSS and clickjacking protection
 
@@ -278,9 +279,10 @@ vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 
 - **Hotwire Turbo 8.x** - SPA-like navigation without full page reloads
 - **Hotwire Stimulus 3.x** - Modest JavaScript framework for progressive enhancement
-- **jQuery 3.7.1** - DOM manipulation and AJAX
-- **Bootstrap JS** - Modals, dropdowns, components
-- **ES Modules** - `admin.mjs`, loader modules for page-specific initialization
+- **Vite-managed ES modules** - `js/main.js` with split public/admin/runtime bundles
+- **jQuery 3.7.1** - npm-managed for DataTables-dependent public/admin behavior
+- **Bootstrap JS** - npm-managed bundle for modals, dropdowns, and components
+- **DataTables + extensions** - npm-managed public bundles for SearchBuilder, Scroller, Responsive, Buttons, and DateTime/Luxon integration
 - **Sport-Aware Forms**: `games_sport_dynamic.js`, `sport-aware-game-form.js` - Dynamic form fields based on sport configuration
 - **TinyMCE** - Rich text editor for blog posts and team season content
 - **Tests**: Jest + jsdom with 90%+ statement coverage
@@ -289,7 +291,7 @@ vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 
 - **Mobile-First** responsive design
 - **Accessibility** with ARIA labels and semantic HTML
-- **Performance** optimized with CDN resources and minified assets
+- **Performance** optimized with manifest-backed Vite bundles and minified assets
 
 ## Development Workflow
 

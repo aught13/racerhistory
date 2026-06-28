@@ -30,6 +30,7 @@ function setupJQueryMock(opts = {}) {
 
     const DataTableFn = jest.fn().mockReturnValue(dtInstance);
     DataTableFn.isDataTable = jest.fn().mockReturnValue(false);
+    DataTableFn.datetime = jest.fn();
     DataTableFn.SearchBuilder = jest.fn().mockReturnValue({
         container: jest.fn().mockReturnValue({
             appendTo: jest.fn(),
@@ -56,6 +57,8 @@ function setupJQueryMock(opts = {}) {
         dataTable: DataTableFn,
     };
 
+    window.DataTable = DataTableFn;
+
     if (opts.noSearchBuilder) {
         delete DataTableFn.SearchBuilder;
     }
@@ -69,6 +72,7 @@ beforeEach(() => {
     jest.useFakeTimers();
     document.body.innerHTML = "";
     delete window.$;
+    delete window.DataTable;
 
     // Suppress console output
     jest.spyOn(console, "debug").mockImplementation(() => {});

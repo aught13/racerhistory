@@ -132,30 +132,33 @@ describe("stats-init-loader ensureDataTablesLoaded then-chain", () => {
     });
 
     test("initStatsDataTable catch branch on load failure", async () => {
-        // Don't preload scripts - and remove DataTables from mock
-        document.body.innerHTML = `
+        jest.useFakeTimers();
+        try {
+            // Don't preload scripts - and remove DataTables from mock
+            document.body.innerHTML = `
       <table id="stats-results-table" data-ajax-url="/api/stats">
         <thead><tr><th>PTS</th></tr></thead>
         <tbody></tbody>
       </table>
     `;
-        setupJQueryMock();
-        delete window.$.fn.DataTable;
-        delete window.$.fn.dataTable;
+            setupJQueryMock();
+            delete window.$.fn.DataTable;
+            delete window.$.fn.dataTable;
 
-        const mod = await import("../../legacy/stats-init-loader.mjs");
-        mod.initStatsDataTable(document.getElementById("stats-results-table"));
+            const mod = await import("../../legacy/stats-init-loader.mjs");
+            mod.initStatsDataTable(
+                document.getElementById("stats-results-table"),
+            );
 
-        // Trigger error on created script
-        await flush();
-        const scripts = document.head.querySelectorAll("script");
-        scripts.forEach((s) => s.dispatchEvent(new Event("error")));
-        await flush();
+            await jest.advanceTimersByTimeAsync(5050);
 
-        expect(console.warn).toHaveBeenCalledWith(
-            "Stats DataTables init failed:",
-            expect.any(String),
-        );
+            expect(console.warn).toHaveBeenCalledWith(
+                "Stats DataTables init failed:",
+                expect.any(String),
+            );
+        } finally {
+            jest.useRealTimers();
+        }
     });
 
     test("initStatsDataTable returns early without ajaxUrl", async () => {

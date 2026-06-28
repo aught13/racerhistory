@@ -2,7 +2,7 @@ import { jest } from "@jest/globals";
 
 /**
  * Coverage tests for people-index-init-loader.mjs
- * Targets: loadScript, waitForDataTables, ensureDataTablesLoaded,
+ * Targets: waitForDataTables, ensureDataTablesLoaded,
  *   hasJquery, hasDataTables, boot, getInitPeople
  */
 
@@ -78,111 +78,6 @@ describe("people-index-init-loader.mjs (coverage)", () => {
             window.$ = jq;
             document.body.innerHTML = `<table id="people-table"></table>`;
             await import("../../legacy/people-index-init-loader.mjs");
-            await flushPromises();
-        });
-    });
-
-    describe("loadScript", () => {
-        test("loads new scripts by adding script elements", async () => {
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-
-            // jQuery exists but no DataTables
-            const jq = jest.fn(() => ({ length: 0, get: () => null }));
-            jq.fn = {};
-            window.$ = jq;
-
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            const _debugSpy = jest
-                .spyOn(console, "debug")
-                .mockImplementation(() => {});
-
-            await import("../../legacy/people-index-init-loader.mjs");
-
-            // loadScript adds script elements to head
-            await flushPromises();
-            const scripts = document.querySelectorAll("script[src]");
-            // Should have attempted to load DataTables core
-            if (scripts.length > 0) {
-                expect(scripts[0].src).toContain("dataTables");
-                // Fire load event
-                scripts[0].dispatchEvent(new Event("load"));
-                await flushPromises();
-            }
-        });
-
-        test("reuses existing script element", async () => {
-            // Pre-create a script tag
-            const existingScript = document.createElement("script");
-            existingScript.src =
-                "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-            existingScript.dataset.loaded = "true";
-            document.head.appendChild(existingScript);
-
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-
-            const jq = jest.fn(() => ({ length: 0, get: () => null }));
-            jq.fn = {};
-            window.$ = jq;
-
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            const _debugSpy = jest
-                .spyOn(console, "debug")
-                .mockImplementation(() => {});
-
-            await import("../../legacy/people-index-init-loader.mjs");
-            await flushPromises();
-        });
-
-        test("handles script load error", async () => {
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-
-            const jq = jest.fn(() => ({ length: 0, get: () => null }));
-            jq.fn = {};
-            window.$ = jq;
-
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            const _debugSpy = jest
-                .spyOn(console, "debug")
-                .mockImplementation(() => {});
-
-            await import("../../legacy/people-index-init-loader.mjs");
-            await flushPromises();
-
-            // Fire error event on script
-            const scripts = document.querySelectorAll("script[src]");
-            if (scripts.length > 0) {
-                scripts[0].dispatchEvent(new Event("error"));
-                await flushPromises();
-            }
-        });
-
-        test("existing script not yet loaded waits for load event", async () => {
-            const existingScript = document.createElement("script");
-            existingScript.src =
-                "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-            // No data-loaded attribute
-            document.head.appendChild(existingScript);
-
-            const initMock = jest.fn();
-            globalThis.__PEOPLE_INDEX_INIT_LOADER_MOCK__ = initMock;
-
-            const jq = jest.fn(() => ({ length: 0, get: () => null }));
-            jq.fn = {};
-            window.$ = jq;
-
-            document.body.innerHTML = `<table id="people-table"></table>`;
-            const _debugSpy = jest
-                .spyOn(console, "debug")
-                .mockImplementation(() => {});
-
-            await import("../../legacy/people-index-init-loader.mjs");
-            await flushPromises();
-
-            // Fire load on existing script
-            existingScript.dispatchEvent(new Event("load"));
             await flushPromises();
         });
     });
