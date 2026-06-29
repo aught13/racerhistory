@@ -62,6 +62,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+    <!-- DataTables 2.3.8 CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.6/css/buttons.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.8/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/scroller/2.4.3/css/scroller.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/searchbuilder/1.8.4/css/searchBuilder.bootstrap5.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/datatables.net-datetime@1.6.3/dist/dataTables.dateTime.min.css" rel="stylesheet">
+
     <!-- Optional: Custom styles -->
     <?= $this->Html->css(['frontend']) ?>
 
@@ -72,7 +80,8 @@
         <?php if (method_exists($this->Vite, 'element')) : ?>
             <?= $this->Vite->element('js/main.js') ?>
         <?php else : ?>
-            <?php $this->Vite->script(['files' => ['js/main.js']]); ?>
+            <?= $this->Vite->css(['files' => ['js/main.js']]) ?>
+            <?= $this->Vite->script(['files' => ['js/main.js']]); ?>
         <?php endif; ?>
     <?php endif; ?>
 
