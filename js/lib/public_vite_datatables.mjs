@@ -6,7 +6,10 @@ import "datatables.net-responsive-bs5/css/responsive.bootstrap5.css";
 import "datatables.net-datetime/dist/dataTables.dateTime.css";
 
 export const publicDataTablesReady = (async () => {
-    if (typeof window === "undefined" || window.location.pathname.startsWith("/admin")) {
+    if (
+        typeof window === "undefined" ||
+        window.location.pathname.startsWith("/admin")
+    ) {
         return;
     }
 
@@ -32,7 +35,7 @@ export const publicDataTablesReady = (async () => {
         import("datatables.net-searchbuilder-bs5"), // Integrates layout structures automatically
         import("datatables.net-datetime"),
         import("datatables.net-buttons-bs5"),
-        import("datatables.net-responsive-bs5")
+        import("datatables.net-responsive-bs5"),
     ]);
 
     window.__RH_PUBLIC_VITE_DATATABLES_READY__ = true;

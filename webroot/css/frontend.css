@@ -22,6 +22,7 @@
   --rh-link: var(--rh-navy);
   --rh-main-bg: #ffffff;
   --rh-content-bg: #f5f1ed;
+  --rh-searchbuilder-bg: #f5f1ed;
   --rh-user-bar-height: 0px;
 
   color-scheme: light dark;
@@ -38,6 +39,8 @@
     --rh-link: var(--rh-gold);
     --rh-main-bg: #0a0a0a;
     --rh-content-bg: #0f1a2e;
+    /* SearchBuilder uses surface color in dark mode */
+    --rh-searchbuilder-bg: var(--rh-surface);
     /* Bootstrap variable overrides so cards/tables adopt dark colours */
     --bs-body-bg: var(--rh-surface);
     --bs-body-color: var(--rh-text);
@@ -64,6 +67,8 @@
   --rh-link: var(--rh-gold);
   --rh-main-bg: #0a0a0a;
   --rh-content-bg: #0f1a2e;
+  /* SearchBuilder uses surface color in dark mode */
+  --rh-searchbuilder-bg: var(--rh-surface);
   /* Bootstrap variable overrides so cards/tables adopt dark colours */
   --bs-body-bg: var(--rh-surface);
   --bs-body-color: var(--rh-text);
@@ -93,6 +98,9 @@
   /* make the page gutters / area behind the content a muted grey */
   --rh-main-bg: #444444;
   --rh-content-bg: #efe9e3;
+
+  /* SearchBuilder uses grey-based background for better readability in light mode */
+  --rh-searchbuilder-bg: #efe9e3;
 }
 
 html,
@@ -161,9 +169,9 @@ a:hover {
 }
 
 .seasons-table-card thead th {
-  background: #0f2433;
-  color: #eef2f7;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--rh-searchbuilder-bg) !important;
+  color: var(--rh-text) !important;
+  border-color: var(--rh-border) !important;
 }
 
 .seasons-table-card tbody tr {
@@ -191,9 +199,9 @@ a:hover {
 }
 
 .people-table-card thead th {
-  background: #0f2433;
-  color: #eef2f7;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--rh-searchbuilder-bg) !important;
+  color: var(--rh-text) !important;
+  border-color: var(--rh-border) !important;
 }
 
 .people-display-name {
@@ -1907,11 +1915,11 @@ body {
 .dtsb-row,
 .dtsb-criteria,
 .dtsb-buttons {
-  background: var(--rh-surface);
-  color: var(--rh-text);
-  border: 1px solid var(--rh-border);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-  border-radius: 6px;
+  background: var(--rh-searchbuilder-bg) !important;
+  color: var(--rh-text) !important;
+  border: 1px solid var(--rh-border) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35) !important;
+  border-radius: 6px !important;
 }
 
 .dt-button-collection {
@@ -1921,20 +1929,20 @@ body {
 
 .dtsb-input input,
 .dtsb-select select {
-  background: transparent;
-  color: var(--rh-text);
-  border: 1px solid var(--rh-border);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  background: var(--rh-searchbuilder-bg) !important;
+  color: var(--rh-text) !important;
+  border: 1px solid var(--rh-border) !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: 4px !important;
 }
 
 .dtsb-buttons .dtsb-add,
 .dtsb-buttons .dtsb-clearAll {
-  background: transparent;
-  color: var(--rh-text);
-  border: 1px solid var(--rh-border);
-  padding: 0.35rem 0.5rem;
-  border-radius: 4px;
+  background: transparent !important;
+  color: var(--rh-text) !important;
+  border: 1px solid var(--rh-border) !important;
+  padding: 0.35rem 0.5rem !important;
+  border-radius: 4px !important;
 }
 
 /* Stronger overrides for select/options */
@@ -1950,7 +1958,7 @@ body {
 :root .dtsb-condition select option,
 :root .dtsb-field select,
 :root .dtsb-field select option {
-  background-color: var(--rh-surface) !important;
+  background-color: var(--rh-searchbuilder-bg) !important;
   color: var(--rh-text) !important;
   border-color: var(--rh-border) !important;
 }
@@ -2033,7 +2041,7 @@ body {
 select.dtsb-data,
 select.dtsb-dropDown,
 select.dtsb-data.dtsb-dropDown {
-  background-color: var(--rh-surface) !important;
+  background-color: var(--rh-searchbuilder-bg) !important;
   color: var(--rh-text) !important;
   border: 1px solid var(--rh-border) !important;
   box-shadow: none !important;
@@ -2053,14 +2061,14 @@ select.dtsb-dropDown option,
 select.dtsb-data option[disabled],
 select.dtsb-dropDown option[disabled] {
   color: var(--rh-muted) !important;
-  background-color: var(--rh-surface) !important;
+  background-color: var(--rh-searchbuilder-bg) !important;
 }
 
 /* Highest specificity fallback */
 :root select.dtsb-data,
 :root select.dtsb-dropDown,
 :root .dtsb-data.dtsb-dropDown {
-  background-color: var(--rh-surface) !important;
+  background-color: var(--rh-searchbuilder-bg) !important;
   color: var(--rh-text) !important;
 }
 
@@ -2750,6 +2758,24 @@ select.dtsb-dropDown option[disabled] {
 :root[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--rh-text) !important;
+}
+
+/* --- DataTables table header light/dark mode overrides -------------- */
+/* Ensure headers use theme-aware colors instead of hardcoded values */
+.dataTables_scrollHead th,
+.dataTables_scrollHead thead th,
+table.dataTable thead th {
+  background: var(--rh-searchbuilder-bg) !important;
+  color: var(--rh-text) !important;
+  border-color: var(--rh-border) !important;
+}
+
+:root[data-theme="dark"] .dataTables_scrollHead th,
+:root[data-theme="dark"] .dataTables_scrollHead thead th,
+:root[data-theme="dark"] table.dataTable thead th {
+  background: var(--rh-searchbuilder-bg) !important;
+  color: var(--rh-text) !important;
+  border-color: var(--rh-border) !important;
 }
 
 /* --- DataTables table body/cell dark mode overrides ---------------- */
