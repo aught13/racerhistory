@@ -14,6 +14,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - **Deployment asset audits modernized** to require Vite build artifacts (`webroot/dist/manifest.json`) and validate the `js/main.js` manifest entry.
 - **Admin interface migrated to AdminLTE 4 layout patterns** with a dedicated admin shell, desktop collapse persistence, mobile overlay behavior, and Stimulus-powered sidebar controls.
 - **Admin navigation wording refreshed** to use neutral sports terminology across grouped menus and dashboard visuals.
+- **Public DataTables runtime moved fully into Vite-managed npm dependencies** for jQuery, Bootstrap JS, Luxon, and the DataTables extension stack instead of legacy CDN script injection on public pages.
 
 ### Fixed
 
@@ -22,6 +23,9 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - **Playwright stabilization for image/admin dynamic pages** by asserting runtime behavior instead of legacy global helper existence.
 - **Admin sidebar treeview expansion reliability** by aligning grouped menu markup and `menu-open` state handling with AdminLTE expectations.
 - **Regression coverage for admin shell behavior** with expanded Dashboard integration assertions, Stimulus unit tests for sidebar/layout controllers, and Playwright coverage for Sports/Content expansion.
+- **Public stats and games DataTables compatibility restored** after the Vite migration by pinning SearchBuilder to the DataTables 1.13-compatible line and loading the public extension stack in dependency order.
+- **Public games Date column semantics corrected** so SearchBuilder date conditions and column sorting use ISO-backed `<time datetime>` metadata while preserving the long-form display string.
+- **Public games Date column width constrained during filtering** so SearchBuilder interactions no longer let the first column grow arbitrarily on desktop or mobile.
 
 ### Removed
 

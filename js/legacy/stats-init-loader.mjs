@@ -6,17 +6,7 @@
  * drag-to-scroll on wide tables. Initializes on DOMContentLoaded and turbo:load.
  */
 
-/* CDN URLs for DataTables assets loaded dynamically */
-const DATATABLES_CORE_SRC =
-    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-const DATATABLES_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
-const DATATABLES_SCROLLER_SRC =
-    "https://cdn.datatables.net/scroller/2.3.0/js/dataTables.scroller.min.js";
-const SEARCHBUILDER_SRC =
-    "https://cdn.datatables.net/searchbuilder/1.4.2/js/dataTables.searchBuilder.min.js";
-const SEARCHBUILDER_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/searchbuilder/1.4.2/js/searchBuilder.bootstrap5.min.js";
+import { copySearchBuilderLinkToClipboard } from "../lib/datatables_searchbuilder_url_state.mjs";
 
 /** Stat column header labels that contain numeric data. */
 const NUMERIC_COLUMNS = [
@@ -62,28 +52,6 @@ function hasSearchBuilder() {
     return typeof window.$?.fn?.dataTable?.SearchBuilder === "function";
 }
 
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-            resolve();
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.addEventListener("load", () => {
-            script.dataset.loaded = "true";
-            resolve();
-        });
-        script.addEventListener("error", () =>
-            reject(new Error("Failed to load " + src)),
-        );
-        document.head.appendChild(script);
-    });
-}
-
 function waitForCondition(checkFn, timeoutMs, intervalMs) {
     if (checkFn()) {
         return Promise.resolve();
@@ -116,14 +84,76 @@ async function ensureDataTablesLoaded() {
         await waitForCondition(hasJquery, 10000, 50); // Increased from 5000ms to 10000ms
     }
     if (!hasDataTables()) {
-        await loadScript(DATATABLES_CORE_SRC);
         await waitForCondition(hasDataTables, 5000, 50); // Increased from 3000ms to 5000ms
     }
-    await loadScript(DATATABLES_BOOTSTRAP_SRC);
-    await loadScript(DATATABLES_SCROLLER_SRC);
-    await loadScript(SEARCHBUILDER_SRC);
-    await loadScript(SEARCHBUILDER_BOOTSTRAP_SRC);
     await waitForCondition(hasSearchBuilder, 5000, 50); // Increased from 3000ms to 5000ms
+}
+
+/**
+ * Extract SearchBuilder state from URL query parameter.
+ *
+ * @returns {object|null} Parsed SearchBuilder state or null
+ */
+function getSearchBuilderStateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const stateStr = params.get("searchBuilder");
+    if (!stateStr) {
+        return null;
+    }
+    try {
+        return JSON.parse(decodeURIComponent(stateStr));
+    } catch (err) {
+        console.warn("Failed to parse searchBuilder URL state:", err);
+        return null;
+    }
+}
+
+/**
+ * Apply SearchBuilder state from URL after SearchBuilder is initialized.
+ * Note: SearchBuilder 1.4.2 doesn't have setState(), so we rebuild with saved criteria.
+ *
+ * @param {object} dt DataTables instance
+ * @returns {Promise<void>}
+ */
+async function restoreSearchBuilderStateFromUrl(dt) {
+    if (!dt || !dt.searchBuilder) {
+        return;
+    }
+    const state = getSearchBuilderStateFromUrl();
+    if (state && state.criteria && Array.isArray(state.criteria)) {
+        try {
+            // Clear existing criteria by clearing the container
+            const container = dt.searchBuilder.container();
+            if (container) {
+                container.empty();
+            }
+
+            // Rebuild SearchBuilder (this clears the criteria builder UI)
+            dt.searchBuilder.rebuild();
+
+            // Note: Full programmatic restoration of criteria would require
+            // accessing internal SearchBuilder APIs or using StateRestore extension.
+            // For now, the URL is preserved so users can see the filter state was requested,
+            // but criteria won't visually restore until SearchBuilder exposes setState API.
+            console.log("SearchBuilder state in URL:", state);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        } catch (err) {
+            console.warn(
+                "Failed to restore SearchBuilder state from URL:",
+                err,
+            );
+        }
+    }
+}
+
+/**
+ * Copy current SearchBuilder state to clipboard as a shareable URL.
+ * Now delegates to the centralized extension.
+ *
+ * @param {object} dt DataTables instance
+ */
+async function copySearchBuilderLinkToClipboardLocal(dt) {
+    return copySearchBuilderLinkToClipboard(dt);
 }
 
 /* ——— Public functions ———————————————————————————————— */
@@ -241,6 +271,21 @@ function setupStatsSearchBuilderUi(dt, table) {
         card.parentNode.insertBefore(controls, card);
     }
 
+    let copyBtn = document.getElementById("stats-copy-link-btn");
+    if (!copyBtn) {
+        copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.id = "stats-copy-link-btn";
+        copyBtn.className = "btn btn-sm btn-outline-secondary";
+        copyBtn.title = "Copy current filters as shareable link";
+        copyBtn.innerHTML =
+            '<span><i class="bi bi-link-45deg"></i> Copy Link</span>';
+        copyBtn.addEventListener("click", () => {
+            copySearchBuilderLinkToClipboardLocal(dt);
+        });
+        controls.appendChild(copyBtn);
+    }
+
     let filterBtn = document.getElementById("stats-filter-btn");
     if (!filterBtn) {
         filterBtn = document.createElement("button");
@@ -281,6 +326,7 @@ function setupStatsSearchBuilderUi(dt, table) {
     new window.$.fn.dataTable.SearchBuilder(dt, { depthLimit: 2 });
     dt.searchBuilder.container().appendTo(window.$(slot));
     dt.searchBuilder.rebuild();
+    // URL state restoration is now handled by the global extension
 }
 
 /**
@@ -409,6 +455,9 @@ export {
     initDragScroll,
     initCardHover,
     cleanupStatsPage,
+    getSearchBuilderStateFromUrl,
+    restoreSearchBuilderStateFromUrl,
+    copySearchBuilderLinkToClipboardLocal as copySearchBuilderLinkToClipboard,
     NUMERIC_COLUMNS,
     SCROLLER_THRESHOLD,
 };

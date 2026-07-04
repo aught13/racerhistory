@@ -1,10 +1,4 @@
 let initPeoplePromise;
-const DATATABLES_CORE_SRC =
-    "https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js";
-const DATATABLES_BOOTSTRAP_SRC =
-    "https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js";
-const DATATABLES_SCROLLER_SRC =
-    "https://cdn.datatables.net/scroller/2.3.0/js/dataTables.scroller.min.js";
 
 function getInitPeople() {
     const globalRef =
@@ -33,28 +27,6 @@ function hasDataTables() {
 
 function hasJquery() {
     return typeof window.$ === "function" && typeof window.$.fn === "object";
-}
-
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-            resolve();
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.addEventListener("load", () => {
-            script.dataset.loaded = "true";
-            resolve();
-        });
-        script.addEventListener("error", () =>
-            reject(new Error(`Failed to load ${src}`)),
-        );
-        document.head.appendChild(script);
-    });
 }
 
 function waitForDataTables(timeoutMs = 10000, intervalMs = 50) {
@@ -87,10 +59,7 @@ function ensureDataTablesLoaded() {
         return Promise.reject(new Error("jQuery not available"));
     }
 
-    return loadScript(DATATABLES_CORE_SRC)
-        .then(() => loadScript(DATATABLES_BOOTSTRAP_SRC))
-        .then(() => loadScript(DATATABLES_SCROLLER_SRC))
-        .then(() => waitForDataTables());
+    return waitForDataTables();
 }
 
 function boot() {

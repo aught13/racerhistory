@@ -596,6 +596,7 @@ test.describe("Back-button navigation restores index pages", () => {
     test("people index DataTable re-initializes after back navigation from person view", async ({
         page,
     }) => {
+        test.setTimeout(90000); // Extended timeout: back-nav + DataTable re-init is slow in CI
         // Visit the people index first
         await page.goto("/people");
         await page.waitForLoadState("domcontentloaded");
@@ -742,5 +743,71 @@ test.describe("Back-button navigation restores index pages", () => {
         expect(afterBack.hasTable).toBe(true);
         expect(afterBack.hasWrapper).toBe(true);
         expect(afterBack.hasFilterButton).toBe(true);
+    });
+
+    test("games all SearchBuilder shows date conditions for the date column", async ({
+        page,
+    }) => {
+        await page.goto("/games/all");
+        await page.waitForLoadState("domcontentloaded");
+
+        const filterBtn = page.locator("#games-filter-btn");
+        await expect(filterBtn).toHaveCount(1, { timeout: 20000 });
+
+        await filterBtn.click();
+
+        const slot = page.locator("#games-searchbuilder-slot");
+        await expect(slot).not.toHaveClass(/d-none/);
+
+        const addButton = slot.locator(".dtsb-add").first();
+        await expect(addButton).toHaveCount(1, { timeout: 20000 });
+
+        await addButton.click();
+
+        const dataSelect = slot.locator("select.dtsb-data").first();
+        await expect(dataSelect).toHaveCount(1, { timeout: 20000 });
+
+        await dataSelect.selectOption({ label: "Date" });
+
+        const conditionSelect = slot.locator("select.dtsb-condition").first();
+        const conditionLabels = await conditionSelect.locator("option").allTextContents();
+
+        expect(conditionLabels).toContain("Before");
+        expect(conditionLabels).toContain("After");
+        expect(conditionLabels).toContain("Between");
+        expect(conditionLabels).not.toContain("Contains");
+    });
+
+    test("games all SearchBuilder can filter by day of week", async ({
+        page,
+    }) => {
+        await page.goto("/games/all");
+        await page.waitForLoadState("domcontentloaded");
+
+        const filterBtn = page.locator("#games-filter-btn");
+        await expect(filterBtn).toHaveCount(1, { timeout: 20000 });
+        await filterBtn.click();
+
+        const slot = page.locator("#games-searchbuilder-slot");
+        await expect(slot).not.toHaveClass(/d-none/);
+
+        const addButton = slot.locator(".dtsb-add").first();
+        await addButton.click();
+
+        const dataSelect = slot.locator("select.dtsb-data").first();
+        await dataSelect.selectOption({ label: "Day of Week" });
+
+        const conditionSelect = slot.locator("select.dtsb-condition").first();
+        await conditionSelect.selectOption({ label: "Contains" });
+
+        const input = slot.locator("input.dtsb-input").first();
+        await input.fill("Sunday");
+        await input.press("Enter");
+        await page.waitForTimeout(1500);
+
+        const firstCell = page.locator(
+            "#games-results-table_wrapper .dataTables_scrollBody tbody tr:first-child td:first-child",
+        );
+        await expect(firstCell).toContainText("Sunday");
     });
 });

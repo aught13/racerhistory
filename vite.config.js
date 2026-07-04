@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-    base: "/",
+    base: "/dist/",
     build: {
         manifest: "manifest.json",
         outDir: "webroot/dist",

@@ -745,6 +745,16 @@ class GameService
                 $value1 = $hrnMap[$value1];
             }
 
+            $condition = match ($condition) {
+                'before' => '<',
+                'after' => '>',
+                'beforeOrEqualTo', 'onOrBefore', 'before_or_equal' => '<=',
+                'afterOrEqualTo', 'onOrAfter', 'after_or_equal' => '>=',
+                'notBetween', 'not between' => '!between',
+                'notNull', 'not null' => '!null',
+                default => $condition,
+            };
+
             $cond = match ($condition) {
                 '=' => [$field => $value1],
                 '!=' => [$field . ' !=' => $value1],

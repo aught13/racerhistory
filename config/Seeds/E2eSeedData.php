@@ -127,6 +127,10 @@ class E2eSeedData extends BaseSeed
         ]);
 
         // 7. Game (id=1 so /games/view/1 works)
+        // Fields set to make this game appear in all game-type filtered views:
+        //   mur_rk='1'  → ranked games filter
+        //   ot='1'      → overtime games filter
+        //   pts_mur=100 → hundred-point games filter
         $this->upsert('games', [
             'id' => 1,
             'team_season_id' => 1,
@@ -134,6 +138,11 @@ class E2eSeedData extends BaseSeed
             'hrn' => 0,
             'w' => '1',
             'l' => '0',
+            'mur_rk' => '1',
+            'opp_rk' => '5',
+            'ot' => '1',
+            'pts_mur' => '100',
+            'pts_opp' => '72',
         ]);
 
         // 8. Person (id=1 so /people/view/1 works)
@@ -149,10 +158,129 @@ class E2eSeedData extends BaseSeed
 
         // 9. Roster entry (links the person to the team season so the
         // game-log Turbo Frame tabs appear on /people/view/1)
+        $teamSeasonRosterId = 1;
         $this->upsert('team_season_roster', [
-            'id' => 1,
+            'id' => $teamSeasonRosterId,
             'team_season_id' => 1,
             'person_id' => 1,
+        ]);
+
+        // 10. Image (required for admin-images-loading tests to pass)
+        // Use a minimal valid PNG (1x1 pixel, transparent) as base64
+        $pngData = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+            true
+        );
+        $this->upsert('images', [
+            'id' => 1,
+            'filename' => 'test-image.png',
+            'storage_path' => '2024/12/test-image.png',
+            'original_name' => 'test-image.png',
+            'mime' => 'image/png',
+            'ext' => 'png',
+            'byte_size' => strlen($pngData),
+            'width' => 1,
+            'height' => 1,
+            'hash' => hash('sha256', $pngData),
+            'status' => 'active',
+            'created' => $now,
+            'modified' => $now,
+        ]);
+
+        // 11. Game box stats (required for search-builder stats table tests)
+        // This is the team's box score for the game
+        $this->upsert('stat_basket_game_box', [
+            'id' => 1,
+            'game_id' => 1,
+            'opponent_id' => null,  // null = team stats (not opponent)
+            'period' => 'full',
+            'FGM' => '35',
+            'FGA' => '70',
+            'TPM' => '8',
+            'TPA' => '20',
+            'FTM' => '12',
+            'FTA' => '15',
+            'ORB' => '10',
+            'DRB' => '25',
+            'RB' => '35',
+            'AST' => '18',
+            'STL' => '6',
+            'BS' => '3',
+            'TRN' => '8',
+            'PF' => '16',
+            'TF' => '0',
+            'PTS' => '90',
+            'PNT' => '0',
+            'OTO' => '0',
+            'SND' => '0',
+            'FB' => '5',
+            'BN' => '0',
+            'TIED' => '0',
+            'LC' => '0',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // 12. Opponent box stats (for comparison in stats tables)
+        $this->upsert('stat_basket_game_box', [
+            'id' => 2,
+            'game_id' => 1,
+            'opponent_id' => 1,  // opponent_id = opponent stats
+            'period' => 'full',
+            'FGM' => '28',
+            'FGA' => '65',
+            'TPM' => '5',
+            'TPA' => '18',
+            'FTM' => '8',
+            'FTA' => '12',
+            'ORB' => '8',
+            'DRB' => '20',
+            'RB' => '28',
+            'AST' => '14',
+            'STL' => '5',
+            'BS' => '2',
+            'TRN' => '10',
+            'PF' => '14',
+            'TF' => '0',
+            'PTS' => '69',
+            'PNT' => '0',
+            'OTO' => '0',
+            'SND' => '0',
+            'FB' => '3',
+            'BN' => '0',
+            'TIED' => '0',
+            'LC' => '0',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // 13. Player game stats (required for player stats tables to display)
+        // Player (person_id=1) game stats for the game
+        $this->upsert('stat_basket_game_person', [
+            'id' => 1,
+            'team_season_roster_id' => $teamSeasonRosterId,
+            'game_id' => 1,
+            'period' => 'full',
+            'GP' => '1',
+            'GS' => '1',
+            'MIN' => '32',
+            'FGM' => '8',
+            'FGA' => '18',
+            'TPM' => '2',
+            'TPA' => '6',
+            'FTM' => '3',
+            'FTA' => '4',
+            'ORB' => '2',
+            'DRB' => '5',
+            'RB' => '7',
+            'AST' => '4',
+            'STL' => '1',
+            'BS' => '0',
+            'TRN' => '2',
+            'PF' => '3',
+            'PTS' => '21',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
     }
 }

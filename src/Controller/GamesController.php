@@ -194,6 +194,7 @@ class GamesController extends AppController
 
         $this->set('currentSearch', 'ranked');
         $this->set('rankedFilter', $filter);
+        $this->setGamesDateBounds('ranked', ['filter' => $filter]);
 
         return null;
     }
@@ -208,10 +209,11 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->allGames();
 
-            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y', true));
+            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y', true, true));
         }
 
         $this->set('currentSearch', 'all');
+        $this->setGamesDateBounds('all');
 
         return null;
     }
@@ -230,6 +232,7 @@ class GamesController extends AppController
         }
 
         $this->set('currentSearch', 'overtime');
+        $this->setGamesDateBounds('overtime');
 
         return null;
     }
@@ -255,6 +258,7 @@ class GamesController extends AppController
 
         $this->set('currentSearch', 'hundred-point');
         $this->set('hundredPointFilter', $filter);
+        $this->setGamesDateBounds('hundred-point', ['filter' => $filter]);
 
         return null;
     }
@@ -285,6 +289,7 @@ class GamesController extends AppController
 
         $this->set('currentSearch', 'openers');
         $this->set('openerType', $type);
+        $this->setGamesDateBounds('openers', ['type' => $type]);
 
         return null;
     }
@@ -358,6 +363,7 @@ class GamesController extends AppController
             $this->set('seriesGames', $seriesData['games']);
             $this->set('selectedOpponent', $opponentId);
             $this->set('opponentName', $opponents[$opponentId] ?? 'Unknown');
+            $this->setGamesDateBounds('series', ['opponentId' => $opponentId]);
         }
 
         $this->set('currentSearch', 'series');
@@ -478,6 +484,21 @@ class GamesController extends AppController
     }
 
     /**
+     * Push SearchBuilder date bounds for public games tables into the view.
+     *
+     * @param string $searchType
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    protected function setGamesDateBounds(string $searchType, array $options = []): void
+    {
+        $this->set(
+            'gamesDateBounds',
+            $this->gameSearchService->publicGameDateBounds($searchType, $options),
+        );
+    }
+
+    /**
      * Build a safe HTML link.
      *
      * @param string $text
@@ -570,7 +591,7 @@ class GamesController extends AppController
     }
 
     /**
-     * Format a game date with a hidden ISO prefix for DataTables sorting.
+     * Format a game date with semantic ISO metadata for DataTables display.
      *
      * @param mixed $date
      * @param string $displayFormat
@@ -590,7 +611,7 @@ class GamesController extends AppController
             $display = $ts ? date($displayFormat, $ts) : $iso;
         }
 
-        return '<span class="d-none">' . h($iso) . '</span>' . h($display);
+        return '<time class="rh-game-date" datetime="' . h($iso) . '">' . h($display) . '</time>';
     }
 
     /**
@@ -644,12 +665,14 @@ class GamesController extends AppController
      * @param array $games
      * @param string $dateFormat
      * @param bool $showConferenceTypeAbr
+     * @param bool $includeWeekdayColumn
      * @return array
      */
     protected function formatOvertimeRows(
         array $games,
         string $dateFormat = 'm/d/Y',
         bool $showConferenceTypeAbr = false,
+        bool $includeWeekdayColumn = false,
     ): array {
         $rows = [];
         foreach ($games as $g) {
@@ -663,7 +686,7 @@ class GamesController extends AppController
             $gameTypeDisplay = $g->post || ($showConferenceTypeAbr && $isConf)
                 ? h((string)($g->game_type->abr ?? ($isConf ? 'Conf' : 'Post')))
                 : 'Regular';
-            $rows[] = [
+            $row = [
                 $this->link(
                     $dateDisplay,
                     ['controller' => 'Games', 'action' => 'view', $g->id],
@@ -687,9 +710,36 @@ class GamesController extends AppController
                     ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
                 ),
             ];
+
+            if ($includeWeekdayColumn) {
+                $row[] = $this->formatWeekday($g->game_date ?? null);
+            }
+
+            $rows[] = $row;
         }
 
         return $rows;
+    }
+
+    /**
+     * Format weekday label for SearchBuilder filtering.
+     *
+     * @param mixed $date
+     * @return string
+     */
+    protected function formatWeekday(mixed $date): string
+    {
+        if ($date instanceof Date || $date instanceof DateTimeInterface) {
+            return $date->format('l');
+        }
+
+        if ($date === null || $date === '') {
+            return '-';
+        }
+
+        $timestamp = strtotime((string)$date);
+
+        return $timestamp !== false ? date('l', $timestamp) : (string)$date;
     }
 
     /**

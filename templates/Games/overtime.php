@@ -28,7 +28,9 @@ $ajaxUrl = $this->Url->build([
             <div class="table-responsive" id="games-table-wrap">
                 <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
                        data-ajax-url="<?= h($ajaxUrl) ?>"
-                       data-result-column="2">
+                      data-result-column="2"
+                      data-min-date="<?= h((string)($gamesDateBounds['min'] ?? '')) ?>"
+                      data-max-date="<?= h((string)($gamesDateBounds['max'] ?? '')) ?>">
                     <thead class="table-dark">
                         <tr>
                             <th>Date</th>

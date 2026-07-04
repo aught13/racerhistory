@@ -403,8 +403,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard_index: [1, 2, 3]
-        shard_total: [3]
+        shard_index: [1, 2, 3, 4]
+        shard_total: [4]
 
     services:
       mysql:

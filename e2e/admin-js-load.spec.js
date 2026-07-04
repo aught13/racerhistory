@@ -120,6 +120,13 @@ test.describe("Admin JS Loading", () => {
     /* ── Turbo Drive navigation within admin ──────────────────── */
 
     test("navigating to Users page via Turbo Drive works from admin", async ({ page }) => {
+        // This test exercises admin Turbo Drive navigation which behaves differently on mobile
+        const viewport = page.viewportSize();
+        if (viewport && viewport.width < 992) {
+            test.skip();
+            return;
+        }
+
         await page.goto("/admin/", { waitUntil: "domcontentloaded" });
 
         const usersLink = page.locator('a[href="/admin/users"]').first();
@@ -153,6 +160,13 @@ test.describe("Admin JS Loading", () => {
     test("Bootstrap is available after Turbo Drive navigation within admin", async ({
         page,
     }) => {
+        // This test exercises admin Turbo Drive navigation which behaves differently on mobile
+        const viewport = page.viewportSize();
+        if (viewport && viewport.width < 992) {
+            test.skip();
+            return;
+        }
+
         await page.goto("/admin/", { waitUntil: "domcontentloaded" });
 
         const usersLink = page.locator('a[href="/admin/users"]').first();

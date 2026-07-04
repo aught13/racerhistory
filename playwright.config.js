@@ -59,10 +59,10 @@ export default defineConfig({
         // },
 
         // Mobile viewports for responsive testing
-        // {
-        //     name: 'Mobile Chrome',
-        //     use: { ...devices['Pixel 5'] },
-        // },
+        {
+            name: 'Mobile Chrome',
+            use: { ...devices['Pixel 5'] },
+        },
         // {
         //     name: 'Mobile Safari',
         //     use: { ...devices['iPhone 12'] },

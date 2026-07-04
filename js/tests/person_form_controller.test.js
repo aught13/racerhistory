@@ -253,4 +253,194 @@ describe("person-form controller", () => {
             initConfig.images_upload_handler(blobInfo, jest.fn()),
         ).rejects.toBe("Image upload failed");
     });
+
+    test("disconnect clears TinyMCE retry timer", async () => {
+        await flush();
+
+        const controller = application.controllers.find(
+            (c) => c.identifier === "person-form",
+        );
+
+        // Set a retry timer
+        controller.tinyMceRetryTimer = 123;
+        const clearTimeoutSpy = jest.spyOn(window, "clearTimeout");
+
+        controller.disconnect();
+
+        expect(clearTimeoutSpy).toHaveBeenCalledWith(123);
+        expect(controller.tinyMceRetryTimer).toBeNull();
+
+        clearTimeoutSpy.mockRestore();
+    });
+
+    test("disconnect removes event listeners", async () => {
+        await flush();
+
+        const removeEventListenerSpy = jest.spyOn(
+            document,
+            "removeEventListener",
+        );
+        const imageFieldSpy = jest.spyOn(
+            document.getElementById("person-image-field"),
+            "removeEventListener",
+        );
+
+        const controller = application.controllers.find(
+            (c) => c.identifier === "person-form",
+        );
+        controller.disconnect();
+
+        expect(removeEventListenerSpy).toHaveBeenCalledWith(
+            "turbo:before-cache",
+            expect.any(Function),
+        );
+        expect(imageFieldSpy).toHaveBeenCalledWith(
+            "change",
+            expect.any(Function),
+        );
+
+        removeEventListenerSpy.mockRestore();
+        imageFieldSpy.mockRestore();
+    });
+
+    test("removeTinyMceEditor does nothing when tinymce is undefined", async () => {
+        await flush();
+
+        delete window.tinymce;
+        const controller = application.controllers.find(
+            (c) => c.identifier === "person-form",
+        );
+
+        expect(() => controller.removeTinyMceEditor()).not.toThrow();
+    });
+
+    test("removeTinyMceEditor does nothing when bioEditor has no id", async () => {
+        await flush();
+
+        application.stop();
+        application = null;
+
+        document.body.innerHTML = `
+            <div data-controller="person-form">
+                <textarea data-person-form-target="bioEditor"></textarea>
+            </div>
+        `;
+
+        window.tinymce = {
+            get: jest.fn(() => null),
+            init: jest.fn(),
+            remove: jest.fn(),
+        };
+
+        application = Application.start();
+        application.register("person-form", PersonFormController);
+
+        await flush();
+
+        const controller = application.controllers.find(
+            (c) => c.identifier === "person-form",
+        );
+        controller.removeTinyMceEditor();
+
+        // Should not try to remove
+        expect(window.tinymce.remove).not.toHaveBeenCalled();
+    });
+
+    test("withCacheBust appends query parameter with ampersand when URL has existing query", async () => {
+        await flush();
+
+        const controller = application.controllers.find(
+            (c) => c.identifier === "person-form",
+        );
+
+        const urlWithQuery = "http://example.com/image.jpg?width=100";
+        const bustUrl = controller.withCacheBust(urlWithQuery);
+
+        expect(bustUrl).toContain("width=100");
+        expect(bustUrl).toContain("&_ts=");
+    });
+
+    test("updateImagePreview hides when image ID is invalid (non-numeric)", async () => {
+        await flush();
+
+        const imageField = document.getElementById("person-image-field");
+        const imagePreview = document.getElementById("person-image-preview");
+
+        imageField.value = "abc";
+        imageField.dataset.selectedImageUrl = "/img/storage/fallback.jpg";
+        imageField.dispatchEvent(new Event("change", { bubbles: true }));
+
+        expect(imagePreview.style.display).toBe("none");
+    });
+
+    test("updateImagePreview handles missing img element", async () => {
+        application.stop();
+        application = null;
+
+        document.body.innerHTML = `
+            <div data-controller="person-form" data-person-form-initial-image-id-value="42" data-person-form-initial-preview-url-value="/img/42.jpg">
+                <input id="person-image-field" data-person-form-target="imageField" value="42" />
+                <div id="person-image-preview" data-person-form-target="imagePreview" style="display:none;">
+                    <!-- No img element -->
+                </div>
+            </div>
+        `;
+
+        application = Application.start();
+        application.register("person-form", PersonFormController);
+
+        await flush();
+
+        // Should not throw when querySelector returns null
+        expect(() => {
+            const imageField = document.getElementById("person-image-field");
+            imageField.dispatchEvent(new Event("change", { bubbles: true }));
+        }).not.toThrow();
+    });
+
+    test("previewUrlForField uses selectedImageThumbnailUrl over selectedImageUrl", async () => {
+        application.stop();
+        application = null;
+
+        document.body.innerHTML = `
+            <div data-controller="person-form" data-person-form-initial-image-id-value="42" data-person-form-initial-preview-url-value="/img/42.jpg">
+                <input
+                    id="person-image-field"
+                    data-person-form-target="imageField"
+                    value="123"
+                    data-selected-image-thumbnail-url="/img/storage/123-thumb.jpg"
+                    data-selected-image-url="/img/storage/123.jpg"
+                />
+                <div id="person-image-preview" data-person-form-target="imagePreview" style="display:none;">
+                    <img src="" alt="preview" />
+                </div>
+            </div>
+        `;
+
+        application = Application.start();
+        application.register("person-form", PersonFormController);
+
+        await flush();
+
+        const imageField = document.getElementById("person-image-field");
+        imageField.dispatchEvent(new Event("change", { bubbles: true }));
+
+        const previewImg = document
+            .getElementById("person-image-preview")
+            .querySelector("img");
+        expect(previewImg.src).toContain("123-thumb.jpg");
+        expect(previewImg.src).not.toContain("123.jpg");
+    });
+
+    test("withCacheBust returns empty string for falsy url", async () => {
+        await flush();
+
+        const controller = application.controllers.find(
+            (c) => c.identifier === "person-form",
+        );
+
+        expect(controller.withCacheBust("")).toBe("");
+        expect(controller.withCacheBust(null)).toBe("");
+        expect(controller.withCacheBust(undefined)).toBe("");
+    });
 });

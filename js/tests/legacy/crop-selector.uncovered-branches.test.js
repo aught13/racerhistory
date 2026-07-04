@@ -303,4 +303,205 @@ describe("crop-selector uncovered branches", () => {
 
         expect(selector.cropBox.width).toBeGreaterThan(0);
     });
+
+    test("onMouseDown skips when image not complete", () => {
+        const { selector } = setupSelector({
+            complete: false,
+            naturalWidth: 0,
+        });
+        const evt = { clientX: 50, clientY: 50, preventDefault: jest.fn() };
+        expect(() => selector.onMouseDown(evt)).not.toThrow();
+        expect(selector.isDragging).toBe(false);
+        expect(selector.isResizing).toBe(false);
+    });
+
+    test("onMouseDown on a resize handle sets isResizing", () => {
+        const { selector } = setupSelector();
+        selector.cropBox = { x: 5, y: 5, width: 100, height: 100 };
+        // Click exactly on the top-left handle
+        const rect = selector.canvas.getBoundingClientRect();
+        const _h = selector.handleSize;
+        // tl handle is at cropBox.x - h/2, cropBox.y - h/2 in canvas coords
+        // In display coords (dpr=1 in jsdom) that maps 1:1
+        const evt = {
+            clientX: rect.left + selector.cropBox.x,
+            clientY: rect.top + selector.cropBox.y,
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseDown(evt);
+        expect(selector.isResizing).toBe(true);
+    });
+
+    test("onMouseDown outside handle and outside cropBox does not drag", () => {
+        const { selector } = setupSelector();
+        selector.cropBox = { x: 50, y: 50, width: 80, height: 80 };
+        // Click far outside the crop box and handles
+        const rect = selector.canvas.getBoundingClientRect();
+        const evt = {
+            clientX: rect.left + 1,
+            clientY: rect.top + 1,
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseDown(evt);
+        expect(selector.isDragging).toBe(false);
+        expect(selector.isResizing).toBe(false);
+    });
+
+    test("onMouseMove skips when image not complete", () => {
+        const { selector } = setupSelector({
+            complete: false,
+            naturalWidth: 0,
+        });
+        const evt = { clientX: 50, clientY: 50, preventDefault: jest.fn() };
+        expect(() => selector.onMouseMove(evt)).not.toThrow();
+    });
+
+    test("onMouseMove sets crosshair cursor when outside crop box and no handle", () => {
+        const { selector } = setupSelector();
+        selector.cropBox = { x: 50, y: 50, width: 80, height: 80 };
+        const rect = selector.canvas.getBoundingClientRect();
+        // Click outside the crop box
+        const evt = {
+            clientX: rect.left + 1,
+            clientY: rect.top + 1,
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseMove(evt);
+        expect(selector.canvas.style.cursor).toBe("crosshair");
+    });
+
+    test("onMouseMove resize with aspect ratio on 't' handle", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(2); // width/height = 2
+        selector.cropBox = { x: 10, y: 10, width: 100, height: 50 };
+        selector.isResizing = true;
+        selector.resizeHandle = "t";
+        const rect = selector.canvas.getBoundingClientRect();
+        const evt = {
+            clientX: rect.left + 60,
+            clientY: rect.top + 5, // drag top handle up
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseMove(evt);
+        // Width should be adjusted to maintain aspect ratio
+        expect(selector.cropBox.width).toBeCloseTo(
+            selector.cropBox.height * 2,
+            0,
+        );
+    });
+
+    test("onMouseMove resize with aspect ratio on 'b' handle", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(2);
+        selector.cropBox = { x: 10, y: 10, width: 100, height: 50 };
+        selector.isResizing = true;
+        selector.resizeHandle = "b";
+        const rect = selector.canvas.getBoundingClientRect();
+        const evt = {
+            clientX: rect.left + 60,
+            clientY: rect.top + 80, // drag bottom handle down
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseMove(evt);
+        expect(selector.cropBox.width).toBeCloseTo(
+            selector.cropBox.height * 2,
+            0,
+        );
+    });
+
+    test("onMouseMove resize with aspect ratio on 'l' handle", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(2);
+        selector.cropBox = { x: 10, y: 10, width: 100, height: 50 };
+        selector.isResizing = true;
+        selector.resizeHandle = "l";
+        const rect = selector.canvas.getBoundingClientRect();
+        const evt = {
+            clientX: rect.left + 5, // drag left handle
+            clientY: rect.top + 35,
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseMove(evt);
+        expect(selector.cropBox.height).toBeCloseTo(
+            selector.cropBox.width / 2,
+            0,
+        );
+    });
+
+    test("onMouseMove resize with aspect ratio on 'r' handle", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(2);
+        selector.cropBox = { x: 10, y: 10, width: 100, height: 50 };
+        selector.isResizing = true;
+        selector.resizeHandle = "r";
+        const rect = selector.canvas.getBoundingClientRect();
+        const evt = {
+            clientX: rect.left + 130, // drag right handle
+            clientY: rect.top + 35,
+            preventDefault: jest.fn(),
+        };
+        selector.onMouseMove(evt);
+        expect(selector.cropBox.height).toBeCloseTo(
+            selector.cropBox.width / 2,
+            0,
+        );
+    });
+
+    test("onMouseMove without aspect ratio on 't' and 'b' handles", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(null);
+        selector.cropBox = { x: 10, y: 10, width: 100, height: 50 };
+        const rect = selector.canvas.getBoundingClientRect();
+
+        // 't' handle
+        selector.isResizing = true;
+        selector.resizeHandle = "t";
+        selector.onMouseMove({
+            clientX: rect.left + 60,
+            clientY: rect.top + 5,
+            preventDefault: jest.fn(),
+        });
+        expect(selector.cropBox.height).toBeGreaterThanOrEqual(20);
+
+        // 'b' handle
+        selector.isResizing = true;
+        selector.resizeHandle = "b";
+        selector.onMouseMove({
+            clientX: rect.left + 60,
+            clientY: rect.top + 80,
+            preventDefault: jest.fn(),
+        });
+        expect(selector.cropBox.height).toBeGreaterThanOrEqual(20);
+    });
+
+    test("onMouseMove without aspect ratio on 'l' handle", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(null);
+        selector.cropBox = { x: 10, y: 10, width: 100, height: 50 };
+        selector.isResizing = true;
+        selector.resizeHandle = "l";
+        const rect = selector.canvas.getBoundingClientRect();
+        selector.onMouseMove({
+            clientX: rect.left + 5,
+            clientY: rect.top + 35,
+            preventDefault: jest.fn(),
+        });
+        expect(selector.cropBox.width).toBeGreaterThanOrEqual(20);
+    });
+
+    test("setAspectRatio with null clears ratio without snapping", () => {
+        const { selector } = setupSelector();
+        selector.setAspectRatio(4 / 3);
+        const widthBefore = selector.cropBox.width;
+        selector.setAspectRatio(null);
+        expect(selector.aspectRatio).toBeNull();
+        // Width should remain unchanged since no snap occurred
+        expect(selector.cropBox.width).toBe(widthBefore);
+    });
+
+    test("emitChange does not throw when onCropChange is not set", () => {
+        const { selector } = setupSelector();
+        selector.options = {}; // no onCropChange
+        expect(() => selector.emitChange()).not.toThrow();
+    });
 });
