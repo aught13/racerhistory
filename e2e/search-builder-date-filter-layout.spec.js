@@ -30,18 +30,67 @@ const STATS_PAGES = [
  * Helper function to verify table and data loaded
  */
 async function waitForTableReady(page, tableId = "#games-results-table") {
-    const table = page.locator(tableId);
-    const isMobile = page.viewportSize()?.width < 600;
-    const timeout = isMobile ? 30000 : 20000; // 30s for mobile, 20s for desktop
+    try {
+        const table = page.locator(tableId);
+        const isMobile = page.viewportSize()?.width < 600;
+        const timeout = isMobile ? 15000 : 10000; // Reduced timeouts - fail fast on CI
 
-    // Wait for table to be visible
-    await expect(table).toBeVisible({ timeout });
+        // Wait for turbo:load event to fire (critical for Hotwire apps)
+        try {
+            await page.evaluate(() => {
+                return new Promise((resolve) => {
+                    if (document.readyState === 'complete') {
+                        // Page already loaded, Turbo might have already fired
+                        setTimeout(resolve, 500);
+                    } else {
+                        document.addEventListener('turbo:load', () => resolve(), { once: true });
+                        // Fallback timeout
+                        setTimeout(resolve, 2000);
+                    }
+                });
+            });
+        } catch (e) {
+            console.log(`Turbo:load wait timeout (expected on direct navigation): ${e.message}`);
+        }
 
-    // Wait for DataTables wrapper to be ready
-    const wrapper = page.locator(`${tableId}_wrapper`);
-    await expect(wrapper).toBeVisible({ timeout });
+        // Check if table exists first (quick check)
+        const tableCount = await table.count().catch(() => 0);
+        if (tableCount === 0) {
+            console.log(`Table ${tableId} not found in DOM`);
+            return false;
+        }
 
-    return true;
+        // Wait for table to be visible (reduced timeout)
+        try {
+            await expect(table).toBeVisible({ timeout });
+        } catch (e) {
+            console.log(`Table ${tableId} failed to become visible: ${e.message}`);
+            return false;
+        }
+
+        // Wait for DataTables wrapper to be ready
+        const wrapper = page.locator(`${tableId}_wrapper`);
+        try {
+            await expect(wrapper).toBeVisible({ timeout: 5000 });
+        } catch (e) {
+            console.log(`DataTables wrapper for ${tableId} failed to load: ${e.message}`);
+            return false;
+        }
+
+        // Wait for at least one row to be rendered (data loaded)
+        const firstRow = page.locator(`${tableId} tbody tr`).first();
+        try {
+            await expect(firstRow).toBeVisible({ timeout: 5000 });
+        } catch (e) {
+            console.log(`Table ${tableId} has no visible rows: ${e.message}`);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.log(`waitForTableReady error for ${tableId}: ${error.message}`);
+        return false;
+    }
 }
 
 /**

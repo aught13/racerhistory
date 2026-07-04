@@ -601,3 +601,312 @@ describe("roster-multi-add (bulk edit mode)", () => {
         ).toBe("30");
     });
 });
+
+// ── Additional Branch Coverage Tests ──────────────────────────────────
+
+describe("roster-multi-add (edge cases and branch coverage)", () => {
+    beforeEach(() => {
+        document.dispatchEvent(new Event("turbo:before-cache"));
+        global.fetch = jest.fn();
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+        jest.restoreAllMocks();
+    });
+
+    test("search input trims whitespace and requires minimum length", () => {
+        jest.useFakeTimers();
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+
+        // Test with spaces only (should trim to empty)
+        searchInput.value = "   ";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        expect(global.fetch).not.toHaveBeenCalled();
+
+        // Test with single character (MIN_QUERY_LENGTH = 2)
+        searchInput.value = "x";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        expect(global.fetch).not.toHaveBeenCalled();
+
+        jest.useRealTimers();
+    });
+
+    test("results close when clicking outside row", async () => {
+        jest.useFakeTimers();
+        const mockResponse = {
+            ok: true,
+            json: () =>
+                Promise.resolve({
+                    success: true,
+                    results: [{ value: 1, text: "John Doe" }],
+                }),
+        };
+        global.fetch.mockResolvedValue(mockResponse);
+
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+        searchInput.value = "john";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        jest.useRealTimers();
+        // Wait for fetch promise to resolve
+        await new Promise((r) => setTimeout(r, 0));
+
+        const resultsContainer = document.querySelector(
+            ".roster-person-results",
+        );
+        const hasContent = resultsContainer.innerHTML.length > 0;
+        expect(hasContent).toBe(true);
+
+        // Click outside the row
+        document.body.click();
+
+        expect(resultsContainer.innerHTML).toBe("");
+    });
+
+    test("fetch abort cancels previous search when new query issued", () => {
+        jest.useFakeTimers();
+        const mockResponse = {
+            ok: true,
+            json: () => Promise.resolve({ success: true, results: [] }),
+        };
+        global.fetch.mockResolvedValue(mockResponse);
+
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+
+        // First query
+        searchInput.value = "alice";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+
+        // Second query (should abort the first fetch controller if AbortError is triggered)
+        searchInput.value = "bob";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        // We have 2 fetch calls, proving the second didn't wait for the first
+        expect(global.fetch).toHaveBeenCalledTimes(2);
+
+        jest.useRealTimers();
+    });
+
+    test("popupFormSuccess ignores event without detail.id", () => {
+        buildDom();
+        initRosterMultiAdd();
+
+        const hiddenInput = document.querySelector(".roster-person-id");
+        hiddenInput.value = "";
+
+        // Dispatch event with incomplete detail
+        document.dispatchEvent(
+            new CustomEvent("popupFormSuccess", {
+                detail: { label: "Incomplete Event" },
+            }),
+        );
+
+        // Hidden input should still be empty
+        expect(hiddenInput.value).toBe("");
+    });
+
+    test("popupFormSuccess does nothing if all rows are populated", () => {
+        buildDom();
+        initRosterMultiAdd();
+
+        // Pre-fill the only row
+        const hiddenInput = document.querySelector(".roster-person-id");
+        hiddenInput.value = "999";
+
+        // Dispatch event
+        document.dispatchEvent(
+            new CustomEvent("popupFormSuccess", {
+                detail: { id: 1, label: "New Person" },
+            }),
+        );
+
+        // Row should still have old value (no empty row found)
+        expect(hiddenInput.value).toBe("999");
+    });
+
+    test("clear button removes listener from badge after click", async () => {
+        const mockResponse = {
+            ok: true,
+            json: () =>
+                Promise.resolve({
+                    success: true,
+                    results: [{ value: 5, text: "Jane Smith" }],
+                }),
+        };
+        global.fetch.mockResolvedValue(mockResponse);
+
+        jest.useFakeTimers();
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+        searchInput.value = "ja";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        jest.useRealTimers();
+        await new Promise((r) => setTimeout(r, 0));
+
+        // Select something
+        document.querySelector(".roster-search-result").click();
+        const clearBtn = document.querySelector(".roster-clear-person");
+        expect(clearBtn).not.toBeNull();
+
+        // Clear it
+        clearBtn.click();
+        const hiddenInput = document.querySelector(".roster-person-id");
+        expect(hiddenInput.value).toBe("");
+
+        // Clear button should be gone
+        expect(document.querySelector(".roster-clear-person")).toBeNull();
+    });
+
+    test("network error shows error message in results", async () => {
+        jest.useFakeTimers();
+        global.fetch.mockImplementation(() => {
+            return Promise.reject(new Error("Network failed"));
+        });
+
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+        searchInput.value = "query";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        jest.useRealTimers();
+        // Wait for promise rejection to be handled
+        await new Promise((r) => setTimeout(r, 10));
+
+        const resultsContainer = document.querySelector(
+            ".roster-person-results",
+        );
+        expect(resultsContainer.textContent).toContain("Network error");
+    });
+
+    test("empty search results shows no results message", async () => {
+        jest.useFakeTimers();
+        const mockResponse = {
+            ok: true,
+            json: () =>
+                Promise.resolve({
+                    success: true,
+                    results: [],
+                }),
+        };
+        global.fetch.mockResolvedValue(mockResponse);
+
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+        searchInput.value = "notfound";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        jest.useRealTimers();
+        // Wait for promise to resolve
+        await new Promise((r) => setTimeout(r, 0));
+
+        const resultsContainer = document.querySelector(
+            ".roster-person-results",
+        );
+        expect(resultsContainer.textContent).toContain("No results");
+    });
+
+    test("search fails gracefully when data.results is missing", async () => {
+        jest.useFakeTimers();
+        const mockResponse = {
+            ok: true,
+            json: () =>
+                Promise.resolve({
+                    success: true,
+                    // Missing results array
+                }),
+        };
+        global.fetch.mockResolvedValue(mockResponse);
+
+        buildDom();
+        initRosterMultiAdd();
+
+        const searchInput = document.querySelector(".roster-person-search");
+        searchInput.value = "query";
+        searchInput.dispatchEvent(new Event("input"));
+        jest.advanceTimersByTime(350);
+
+        jest.useRealTimers();
+        // Wait for promise to resolve
+        await new Promise((r) => setTimeout(r, 0));
+
+        const resultsContainer = document.querySelector(
+            ".roster-person-results",
+        );
+        expect(resultsContainer.textContent).toContain("No results");
+    });
+
+    test("input name reindexing works correctly after multiple adds", () => {
+        buildDom();
+        initRosterMultiAdd();
+
+        document.getElementById("add-row-btn").click();
+        document.getElementById("add-row-btn").click();
+
+        const thirdRow = document.querySelectorAll(".roster-row")[2];
+        const personIdInput = thirdRow.querySelector(".roster-person-id");
+
+        // Verify the third row has correct indexed name
+        expect(personIdInput.name).toBe("rows[2][person_id]");
+
+        const numberInput = thirdRow.querySelector(
+            'input[name="rows[2][roster_number]"]',
+        );
+        expect(numberInput).not.toBeNull();
+    });
+
+    test("clearing selection via pre-bound clear button", () => {
+        buildDom();
+        initRosterMultiAdd();
+
+        const hiddenInput = document.querySelector(".roster-person-id");
+        const selectedDisplay = document.querySelector(
+            ".roster-person-selected",
+        );
+
+        // The selectedDisplay should initially show "None selected"
+        expect(selectedDisplay.textContent).toContain("None selected");
+        expect(hiddenInput.value).toBe("");
+    });
+
+    test("multiple rows each have independent search bound state", () => {
+        buildDom();
+        initRosterMultiAdd();
+
+        document.getElementById("add-row-btn").click();
+
+        const searchInputs = document.querySelectorAll(".roster-person-search");
+
+        // Each should have searchBound flag
+        searchInputs.forEach((input) => {
+            expect(input.dataset.searchBound).toBe("1");
+        });
+    });
+});

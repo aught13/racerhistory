@@ -193,4 +193,199 @@ describe("place-location controller", () => {
         expect(countryCode.value).toBe("USA");
         expect(countrySearch.value).toBe("United States");
     });
+
+    test("onCountryQuery clears results when query is below MIN_COUNTRY_QUERY_LENGTH", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const countryResults = document.querySelector(
+            "[data-place-location-target='countryResults']",
+        );
+
+        countrySearch.value = "U";
+        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        expect(countryResults.innerHTML).toBe("");
+    });
+
+    test("onCountryQuery with empty string clears results", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const countryResults = document.querySelector(
+            "[data-place-location-target='countryResults']",
+        );
+
+        countrySearch.value = "";
+        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        expect(countryResults.innerHTML).toBe("");
+    });
+
+    test("onCountryBlur with empty value clears country selection", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const countryCode = document.getElementById("place-country");
+        const countryMeta = document.querySelector(
+            "[data-place-location-target='countryMeta']",
+        );
+
+        countrySearch.value = "";
+        countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
+        await flushPromises();
+
+        expect(countryCode.value).toBe("");
+        expect(countrySearch.value).toBe("");
+        expect(countryMeta.textContent).toBe("");
+    });
+
+    test("onCountryBlur shows error for invalid 3-letter code", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const countryMeta = document.querySelector(
+            "[data-place-location-target='countryMeta']",
+        );
+
+        countrySearch.value = "XYZ";
+        countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
+        await flushPromises();
+
+        expect(countryMeta.textContent).toContain(
+            "Could not resolve country code",
+        );
+    });
+
+    test("onStateBlur with exact match sets state value", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const stateInput = document.getElementById("place-state");
+
+        // First select a country
+        countrySearch.value = "United States";
+        countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        // Then select a state with exact match
+        stateInput.value = "California";
+        stateInput.dispatchEvent(new Event("blur", { bubbles: true }));
+        await flushPromises();
+
+        expect(stateInput.value).toBe("California");
+    });
+
+    test("onCityBlur with empty value refreshes options", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const cityInput = document.getElementById("place-city");
+
+        // First select a country
+        countrySearch.value = "United States";
+        countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        // Then clear city
+        cityInput.value = "";
+        cityInput.dispatchEvent(new Event("blur", { bubbles: true }));
+        await flushPromises();
+
+        expect(cityInput.value).toBe("");
+    });
+
+    test("onCityBlur with multiple exact matches selects first", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const cityInput = document.getElementById("place-city");
+
+        // First select a country (USA has cities in multiple states)
+        countrySearch.value = "United States";
+        countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        // Set a city (Los Angeles exists)
+        cityInput.value = "Los Angeles";
+        cityInput.dispatchEvent(new Event("blur", { bubbles: true }));
+        await flushPromises();
+
+        expect(cityInput.value).toBe("Los Angeles");
+    });
+
+    test("selectCountryByCode handles failed API response", async () => {
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = jest.fn((url) => {
+            if (url.includes("/v3.1/alpha/")) {
+                return Promise.resolve({
+                    ok: false,
+                    status: 500,
+                    json: async () => ({}),
+                });
+            }
+            return originalFetch(url);
+        });
+
+        const countrySearch = document.getElementById("place-country-search");
+        const countryCode = document.getElementById("place-country");
+        const countryMeta = document.querySelector(
+            "[data-place-location-target='countryMeta']",
+        );
+
+        countrySearch.value = "USA";
+        countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        expect(countryCode.value).toBe("");
+        expect(countryMeta.textContent).toContain(
+            "Could not resolve country code",
+        );
+    });
+
+    test("searchCountriesByName handles 404 response", async () => {
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = jest.fn((url) => {
+            if (url.includes("/v3.1/name/")) {
+                return Promise.resolve({
+                    ok: false,
+                    status: 404,
+                    json: async () => [],
+                });
+            }
+            return originalFetch(url);
+        });
+
+        const countrySearch = document.getElementById("place-country-search");
+        const countryResults = document.querySelector(
+            "[data-place-location-target='countryResults']",
+        );
+
+        countrySearch.value = "Nonexistent";
+        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        expect(countryResults.textContent).toContain("No countries found");
+    });
+
+    test("searchCountriesByName handles API error", async () => {
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = jest.fn((url) => {
+            if (url.includes("/v3.1/name/")) {
+                return Promise.resolve({
+                    ok: false,
+                    status: 500,
+                    json: async () => ({}),
+                });
+            }
+            return originalFetch(url);
+        });
+
+        const countrySearch = document.getElementById("place-country-search");
+        const countryMeta = document.querySelector(
+            "[data-place-location-target='countryMeta']",
+        );
+
+        countrySearch.value = "United";
+        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
+        jest.runAllTimers();
+        await flushPromises();
+
+        expect(countryMeta.textContent).toContain("Country lookup failed");
+    });
 });
