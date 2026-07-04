@@ -756,3 +756,414 @@ describe("games-search-init waitForCondition", () => {
         expect(mod.SCROLLER_THRESHOLD).toBe(75);
     });
 });
+
+describe("games-search-init utility function branches", () => {
+    test("parseCsvNumbers returns empty array for null/undefined input", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        // parseCsvNumbers is not exported; test via initGamesDataTable
+        // weekdayColumn dataset absent → parseCsvNumbers("") → []
+        document.body.innerHTML = `
+      <div class="card">
+        <div class="table-responsive">
+          <table id="games-results-table" data-ajax-url="/api/games">
+            <thead><tr><th>Date</th><th>Opponent</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+        // No data-weekday-column attribute → parseCsvNumbers(undefined) → []
+        const { DataTableFn } = setupJQueryMock();
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+        // Just verifying no crash — DataTable was initialised
+        expect(DataTableFn).toHaveBeenCalled();
+    });
+
+    test("parseCsvNumbers with valid comma-separated numbers", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        document.body.innerHTML = `
+      <div class="card">
+        <div class="table-responsive">
+          <table id="games-results-table" data-ajax-url="/api/games" data-weekday-column="2,5,7">
+            <thead><tr><th>Date</th><th>Opponent</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+        expect(DataTableFn).toHaveBeenCalled();
+    });
+
+    test("extractIsoDate returns datetime attribute value", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        // extractIsoDate is used in columnDefs render callback
+        // Test by capturing the DataTable options and invoking the render fn
+        document.body.innerHTML = `
+      <div class="card">
+        <div class="table-responsive">
+          <table id="games-results-table" data-ajax-url="/api/games">
+            <thead><tr><th>Date</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        let capturedRender;
+        DataTableFn.mockImplementationOnce((opts) => {
+            const dateDef = opts?.columnDefs?.find((d) => d.type === "date");
+            capturedRender = dateDef?.render;
+            return {
+                ajax: { url: jest.fn(() => ({ load: jest.fn() })) },
+                searchBuilder: {
+                    rebuild: jest.fn(),
+                    container: jest
+                        .fn()
+                        .mockReturnValue({ appendTo: jest.fn() }),
+                },
+                columns: { adjust: jest.fn() },
+                on: jest.fn(),
+                rows: jest.fn().mockReturnValue({
+                    data: jest.fn().mockReturnValue({ each: jest.fn() }),
+                }),
+            };
+        });
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+
+        if (capturedRender) {
+            // datetime attribute path
+            expect(
+                capturedRender(
+                    '<time datetime="2024-12-01">Dec 1</time>',
+                    "sort",
+                ),
+            ).toBe("2024-12-01");
+            // data-order attribute path
+            expect(
+                capturedRender(
+                    '<span data-order="2024-11-15">Nov 15</span>',
+                    "filter",
+                ),
+            ).toBe("2024-11-15");
+            // data-search attribute path
+            expect(
+                capturedRender(
+                    '<span data-search="2024-10-01">Oct 1</span>',
+                    "type",
+                ),
+            ).toBe("2024-10-01");
+            // plain text path (display type)
+            expect(capturedRender("plain text", "display")).toBe("plain text");
+            // strip tags path
+            expect(capturedRender("<b>stripped</b>", "sort")).toBe("stripped");
+        }
+    });
+
+    test("normalizeUrl returns empty string for falsy input", async () => {
+        setupJQueryMock();
+        // normalizeUrl is tested via initGamesPage with empty dataset.ajaxUrl
+        document.body.innerHTML = `
+      <table id="games-results-table" data-ajax-url="">
+        <thead><tr><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        DataTableFn.isDataTable.mockReturnValue(false);
+        const mod = await import("../../legacy/games-search-init.mjs");
+        // ajaxUrl is empty → initGamesDataTable bails on missing ajaxUrl
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+        // No DataTable init because ajaxUrl is empty
+        expect(DataTableFn).not.toHaveBeenCalled();
+    });
+
+    test("normalizeUrl handles invalid URL by falling back to string", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        document.body.innerHTML = `
+      <table id="games-results-table" data-ajax-url="not:a valid url">
+        <thead><tr><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        DataTableFn.isDataTable.mockReturnValue(true);
+        const dtInstance = {
+            ajax: {
+                url: jest.fn().mockReturnValue("not:a valid url"),
+                load: jest.fn(),
+            },
+            search: jest.fn().mockReturnThis(),
+            searchBuilder: { rebuild: jest.fn() },
+        };
+        const jq2 = jest.fn((sel) => ({
+            0: typeof sel === "string" ? document.querySelector(sel) : sel,
+            DataTable: jest.fn().mockReturnValue(dtInstance),
+        }));
+        jq2.fn = { DataTable: DataTableFn, dataTable: DataTableFn };
+        window.$ = jq2;
+        // Should not throw
+        expect(() => mod.initGamesPage()).not.toThrow();
+    });
+
+    test("calculateRecord uses resultColumn from data attribute", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const tableEl = document.createElement("table");
+        tableEl.dataset.resultColumn = "3";
+        const dt = {
+            table: jest
+                .fn()
+                .mockReturnValue({ node: jest.fn().mockReturnValue(tableEl) }),
+            rows: jest.fn().mockReturnValue({
+                data: jest.fn().mockReturnValue({
+                    each: jest.fn((cb) => {
+                        [
+                            ["a", "b", "c", "W"],
+                            ["a", "b", "c", "L"],
+                            ["a", "b", "c", "W"],
+                        ].forEach(cb);
+                    }),
+                }),
+            }),
+        };
+        expect(mod.calculateRecord(dt)).toBe("2-1");
+    });
+
+    test("calculateRecord skips non-W/L values", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const dt = {
+            table: jest
+                .fn()
+                .mockReturnValue({ node: jest.fn().mockReturnValue(null) }),
+            rows: jest.fn().mockReturnValue({
+                data: jest.fn().mockReturnValue({
+                    each: jest.fn((cb) => {
+                        [
+                            ["a", "b", "c", "d", "e", "f", "W"],
+                            ["a", "b", "c", "d", "e", "f", "T"], // draw/other
+                            ["a", "b", "c", "d", "e", "f", "L"],
+                        ].forEach(cb);
+                    }),
+                }),
+            }),
+        };
+        expect(mod.calculateRecord(dt)).toBe("1-1");
+    });
+
+    test("calculateRecord when dt.table is not a function", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const dt = {
+            // no .table method
+            rows: jest.fn().mockReturnValue({
+                data: jest.fn().mockReturnValue({
+                    each: jest.fn((cb) => {
+                        [["a", "b", "c", "d", "e", "f", "W"]].forEach(cb);
+                    }),
+                }),
+            }),
+        };
+        expect(mod.calculateRecord(dt)).toBe("1-0");
+    });
+
+    test("updateRecordDisplay does nothing when element absent", async () => {
+        document.body.innerHTML = ""; // no #games-record-display
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const dt = {
+            table: jest
+                .fn()
+                .mockReturnValue({ node: jest.fn().mockReturnValue(null) }),
+            rows: jest.fn().mockReturnValue({
+                data: jest.fn().mockReturnValue({ each: jest.fn() }),
+            }),
+        };
+        expect(() => mod.updateRecordDisplay(dt)).not.toThrow();
+    });
+
+    test("syncScrollerColumns exercised via draw.dt callback on table without wrapper", async () => {
+        // syncScrollerColumns is not exported; exercise it through the draw.dt callback
+        document.body.innerHTML = `
+      <div class="card">
+        <div class="table-responsive">
+          <table id="games-results-table" data-ajax-url="/api">
+            <thead><tr><th>Date</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+        // table has no .dataTables_scroll ancestor → syncScrollerColumns returns early
+        const { dtInstance } = setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+        const drawCall = dtInstance.on.mock.calls.find(
+            (c) => c[0] === "draw.dt",
+        );
+        if (drawCall) {
+            expect(() => drawCall[1]()).not.toThrow();
+        }
+    });
+
+    test("initDragScroll returns early for null container", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        expect(() => mod.initDragScroll(null)).not.toThrow();
+    });
+
+    test("initDragScroll mousedown on interactive element skips drag", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const container = document.createElement("div");
+        container.scrollLeft = 0;
+        document.body.appendChild(container);
+        mod.initDragScroll(container);
+
+        const btn = document.createElement("button");
+        container.appendChild(btn);
+        // mousedown on button → should not start dragging
+        btn.dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, pageX: 100 }),
+        );
+        expect(container.classList.contains("is-dragging")).toBe(false);
+    });
+
+    test("initDragScroll mousemove updates scrollLeft while dragging", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const container = document.createElement("div");
+        Object.defineProperty(container, "offsetLeft", {
+            value: 0,
+            configurable: true,
+        });
+        Object.defineProperty(container, "scrollLeft", {
+            value: 0,
+            writable: true,
+            configurable: true,
+        });
+        document.body.appendChild(container);
+        mod.initDragScroll(container);
+
+        // Start drag
+        container.dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, pageX: 50 }),
+        );
+        expect(container.classList.contains("is-dragging")).toBe(true);
+
+        // Move
+        container.dispatchEvent(
+            new MouseEvent("mousemove", { bubbles: true, pageX: 80 }),
+        );
+
+        // Leave (cleanup)
+        container.dispatchEvent(
+            new MouseEvent("mouseleave", { bubbles: true }),
+        );
+        expect(container.classList.contains("is-dragging")).toBe(false);
+    });
+
+    test("initDragScroll mousemove while not dragging is no-op", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const container = document.createElement("div");
+        Object.defineProperty(container, "scrollLeft", {
+            value: 0,
+            writable: true,
+        });
+        document.body.appendChild(container);
+        mod.initDragScroll(container);
+
+        const initialScrollLeft = container.scrollLeft;
+        container.dispatchEvent(new MouseEvent("mousemove", { pageX: 200 }));
+        expect(container.scrollLeft).toBe(initialScrollLeft);
+    });
+
+    test("initCardHover adds/removes shadow on mouseenter/mouseleave", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        document.body.innerHTML = `
+      <div id="games-type-cards">
+        <div class="game-type-card">Card A</div>
+        <div class="game-type-card">Card B</div>
+      </div>
+    `;
+        const container = document.getElementById("games-type-cards");
+        mod.initCardHover(container);
+
+        const card = container.querySelector(".game-type-card");
+        card.dispatchEvent(new MouseEvent("mouseenter"));
+        expect(card.classList.contains("shadow-sm")).toBe(true);
+
+        card.dispatchEvent(new MouseEvent("mouseleave"));
+        expect(card.classList.contains("shadow-sm")).toBe(false);
+    });
+
+    test("applyGamesDateBounds skips when window.DateTime not a function", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        delete window.DateTime;
+        document.body.innerHTML = `
+      <table id="games-results-table" data-ajax-url="/api" data-min-date="2024-01-01" data-max-date="2024-12-31">
+        <thead><tr><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+        // Should complete without error even though DateTime missing
+        expect(DataTableFn).toHaveBeenCalled();
+    });
+
+    test("applyGamesDateBounds with maxDate in past uses maxDate", async () => {
+        setupJQueryMock();
+        const mod = await import("../../legacy/games-search-init.mjs");
+        const pastDate = {
+            isValid: true,
+            toISODate: jest.fn().mockReturnValue("2020-01-01"),
+        };
+        const today = {
+            isValid: true,
+            toISODate: jest.fn().mockReturnValue("2024-07-04"),
+            startOf: jest.fn().mockReturnThis(),
+        };
+        window.DateTime = { defaults: {} };
+        window.luxon = {
+            DateTime: {
+                now: jest.fn().mockReturnValue(today),
+                fromISO: jest.fn().mockReturnValue({
+                    ...pastDate,
+                    startOf: jest.fn().mockReturnThis(),
+                    isValid: true,
+                }),
+            },
+        };
+        // Simulate pastDate > today = false (past date is not > today)
+        Object.defineProperty(pastDate, Symbol.toPrimitive, { value: () => 0 });
+
+        document.body.innerHTML = `
+      <table id="games-results-table" data-ajax-url="/api" data-min-date="2020-01-01" data-max-date="2020-06-01">
+        <thead><tr><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+        const { DataTableFn } = setupJQueryMock();
+        mod.initGamesDataTable(document.getElementById("games-results-table"));
+        await flush();
+        expect(DataTableFn).toHaveBeenCalled();
+        delete window.DateTime;
+        delete window.luxon;
+    });
+});

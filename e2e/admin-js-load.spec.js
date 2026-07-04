@@ -124,8 +124,8 @@ test.describe("Admin JS Loading", () => {
 
         const usersLink = page.locator('a[href="/admin/users"]').first();
         test.skip(
-            (await usersLink.count()) === 0,
-            "Users link is not available for this session",
+            (await usersLink.count()) === 0 || !(await usersLink.isVisible()),
+            "Users link is not visible for this viewport/session",
         );
 
         // Turbo Drive captures the link click
@@ -157,8 +157,8 @@ test.describe("Admin JS Loading", () => {
 
         const usersLink = page.locator('a[href="/admin/users"]').first();
         test.skip(
-            (await usersLink.count()) === 0,
-            "Users link is not available for this session",
+            (await usersLink.count()) === 0 || !(await usersLink.isVisible()),
+            "Users link is not visible for this viewport/session",
         );
 
         // Navigate via Turbo Drive

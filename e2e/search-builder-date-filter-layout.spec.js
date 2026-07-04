@@ -559,10 +559,16 @@ test.describe("Stats Pages - SearchBuilder Layout (Mobile)", () => {
                 return;
             }
 
-            // At least first column should be visible
-            const firstHeader = browserPage
-                .locator("#stats-results-table thead th")
-                .first();
+            // DataTables Scroller moves the header to a separate .dataTables_scrollHead
+            // container, making the original thead th hidden. Prefer the scrollHead
+            // header; fall back to the original thead if scrollHead is not present.
+            const scrollHeadTh = browserPage.locator(
+                "#stats-results-table_wrapper .dataTables_scrollHead thead th"
+            ).first();
+            const firstHeader = (await scrollHeadTh.count()) > 0
+                ? scrollHeadTh
+                : browserPage.locator("#stats-results-table thead th").first();
+
             await expect(firstHeader).toBeVisible({ timeout: 10000 });
         });
     }

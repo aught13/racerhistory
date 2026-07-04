@@ -127,6 +127,10 @@ class E2eSeedData extends BaseSeed
         ]);
 
         // 7. Game (id=1 so /games/view/1 works)
+        // Fields set to make this game appear in all game-type filtered views:
+        //   mur_rk='1'  → ranked games filter
+        //   ot='1'      → overtime games filter
+        //   pts_mur=100 → hundred-point games filter
         $this->upsert('games', [
             'id' => 1,
             'team_season_id' => 1,
@@ -134,6 +138,11 @@ class E2eSeedData extends BaseSeed
             'hrn' => 0,
             'w' => '1',
             'l' => '0',
+            'mur_rk' => '1',
+            'opp_rk' => '5',
+            'ot' => '1',
+            'pts_mur' => '100',
+            'pts_opp' => '72',
         ]);
 
         // 8. Person (id=1 so /people/view/1 works)

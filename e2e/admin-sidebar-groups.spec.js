@@ -29,6 +29,13 @@ test.describe("Admin sidebar groups", () => {
     test("sports and content groups expand from mini-collapsed desktop sidebar", async ({
         page,
     }) => {
+        // This test exercises desktop sidebar-collapse behavior which differs on mobile
+        const viewport = page.viewportSize();
+        if (viewport && viewport.width < 992) {
+            test.skip();
+            return;
+        }
+
         const sidebarToggle = page
             .locator('a[data-action="click->admin-layout#toggle"]')
             .first();
