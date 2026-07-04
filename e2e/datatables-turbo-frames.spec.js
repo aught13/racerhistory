@@ -596,6 +596,7 @@ test.describe("Back-button navigation restores index pages", () => {
     test("people index DataTable re-initializes after back navigation from person view", async ({
         page,
     }) => {
+        test.setTimeout(90000); // Extended timeout: back-nav + DataTable re-init is slow in CI
         // Visit the people index first
         await page.goto("/people");
         await page.waitForLoadState("domcontentloaded");

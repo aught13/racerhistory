@@ -6,6 +6,8 @@
  * drag-to-scroll on wide tables. Initializes on DOMContentLoaded and turbo:load.
  */
 
+import { copySearchBuilderLinkToClipboard } from "../lib/datatables_searchbuilder_url_state.mjs";
+
 /** Track tables that are currently being initialized to prevent duplicates */
 const initializingTables = new Set();
 
@@ -124,6 +126,73 @@ function registerGamesDateFormat() {
             datetime.call(dataTableNamespace, format);
         });
     }
+}
+
+/**
+ * Extract SearchBuilder state from URL query parameter.
+ *
+ * @returns {object|null} Parsed SearchBuilder state or null
+ */
+function getSearchBuilderStateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const stateStr = params.get("searchBuilder");
+    if (!stateStr) {
+        return null;
+    }
+    try {
+        return JSON.parse(decodeURIComponent(stateStr));
+    } catch (err) {
+        console.warn("Failed to parse searchBuilder URL state:", err);
+        return null;
+    }
+}
+
+/**
+ * Apply SearchBuilder state from URL after SearchBuilder is initialized.
+ * Note: SearchBuilder 1.4.2 doesn't have setState(), so we rebuild with saved criteria.
+ *
+ * @param {object} dt DataTables instance
+ * @returns {Promise<void>}
+ */
+async function restoreSearchBuilderStateFromUrl(dt) {
+    if (!dt || !dt.searchBuilder) {
+        return;
+    }
+    const state = getSearchBuilderStateFromUrl();
+    if (state && state.criteria && Array.isArray(state.criteria)) {
+        try {
+            // Clear existing criteria by clearing the container
+            const container = dt.searchBuilder.container();
+            if (container) {
+                container.empty();
+            }
+
+            // Rebuild SearchBuilder (this clears the criteria builder UI)
+            dt.searchBuilder.rebuild();
+
+            // Note: Full programmatic restoration of criteria would require
+            // accessing internal SearchBuilder APIs or using StateRestore extension.
+            // For now, the URL is preserved so users can see the filter state was requested,
+            // but criteria won't visually restore until SearchBuilder exposes setState API.
+            console.log("SearchBuilder state in URL:", state);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        } catch (err) {
+            console.warn(
+                "Failed to restore SearchBuilder state from URL:",
+                err,
+            );
+        }
+    }
+}
+
+/**
+ * Copy current SearchBuilder state to clipboard as a shareable URL.
+ * Now delegates to the centralized extension.
+ *
+ * @param {object} dt DataTables instance
+ */
+async function copySearchBuilderLinkToClipboardLocal(dt) {
+    return copySearchBuilderLinkToClipboard(dt);
 }
 
 function applyGamesDateBounds(table) {
@@ -483,6 +552,21 @@ function setupGamesSearchBuilderUi(dt, table) {
         card.parentNode.insertBefore(controls, card);
     }
 
+    let copyBtn = document.getElementById("games-copy-link-btn");
+    if (!copyBtn) {
+        copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.id = "games-copy-link-btn";
+        copyBtn.className = "btn btn-sm btn-outline-secondary";
+        copyBtn.title = "Copy current filters as shareable link";
+        copyBtn.innerHTML =
+            '<span><i class="bi bi-link-45deg"></i> Copy Link</span>';
+        copyBtn.addEventListener("click", () => {
+            copySearchBuilderLinkToClipboardLocal(dt);
+        });
+        controls.appendChild(copyBtn);
+    }
+
     let filterBtn = document.getElementById("games-filter-btn");
     if (!filterBtn) {
         filterBtn = document.createElement("button");
@@ -531,6 +615,7 @@ function setupGamesSearchBuilderUi(dt, table) {
     new window.$.fn.dataTable.SearchBuilder(dt, searchBuilderOptions);
     dt.searchBuilder.container().appendTo(window.$(slot));
     dt.searchBuilder.rebuild();
+    // URL state restoration is now handled by the global extension
 }
 
 /**
@@ -631,6 +716,9 @@ export {
     cleanupGamesPage,
     calculateRecord,
     updateRecordDisplay,
+    getSearchBuilderStateFromUrl,
+    restoreSearchBuilderStateFromUrl,
+    copySearchBuilderLinkToClipboardLocal as copySearchBuilderLinkToClipboard,
     NUMERIC_COLUMNS,
     SCROLLER_THRESHOLD,
 };

@@ -132,4 +132,107 @@ describe("admin-image-manipulate controller", () => {
             document.getElementById("ratio-free").classList.contains("active"),
         ).toBe(true);
     });
+
+    test("applyRotation with non-finite value defaults to 0", () => {
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-manipulate",
+        );
+
+        controller.applyRotation(NaN, null);
+
+        expect(document.getElementById("rotate").value).toBe("0");
+        expect(document.getElementById("rotate-range").value).toBe("0");
+    });
+
+    test("applyRotation with source 'range' skips range update", () => {
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-manipulate",
+        );
+
+        document.getElementById("rotate-range").value = "100";
+        controller.applyRotation(50, "range");
+
+        // Range should stay at 100 because source was 'range'
+        expect(document.getElementById("rotate-range").value).toBe("100");
+        // Input should be updated to 50
+        expect(document.getElementById("rotate").value).toBe("50");
+    });
+
+    test("applyRotation with source 'input' skips input update", () => {
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-manipulate",
+        );
+
+        document.getElementById("rotate").value = "100";
+        controller.applyRotation(75, "input");
+
+        // Input should stay at 100 because source was 'input'
+        expect(document.getElementById("rotate").value).toBe("100");
+        // Range should be updated to 75
+        expect(document.getElementById("rotate-range").value).toBe("75");
+    });
+
+    test("updateCropInputs updates all crop values", () => {
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-manipulate",
+        );
+
+        const cropData = { x: 10, y: 20, width: 100, height: 80 };
+        controller.updateCropInputs(cropData);
+
+        expect(document.getElementById("crop-x").value).toBe("10");
+        expect(document.getElementById("crop-y").value).toBe("20");
+        expect(document.getElementById("crop-width").value).toBe("100");
+        expect(document.getElementById("crop-height").value).toBe("80");
+    });
+
+    test("markActiveRatioButton removes active from others", () => {
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-manipulate",
+        );
+
+        const button1 = document.getElementById("ratio-free");
+        const button2 = document.getElementById("ratio-1");
+
+        button1.classList.add("active");
+        button2.classList.add("active");
+
+        controller.markActiveRatioButton(button2);
+
+        expect(button1.classList.contains("active")).toBe(false);
+        expect(button2.classList.contains("active")).toBe(true);
+    });
+
+    test("markActiveRatioButton with null removes all active", () => {
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-manipulate",
+        );
+
+        const button1 = document.getElementById("ratio-free");
+        const button2 = document.getElementById("ratio-1");
+
+        button1.classList.add("active");
+        button2.classList.add("active");
+
+        controller.markActiveRatioButton(null);
+
+        expect(button1.classList.contains("active")).toBe(false);
+        expect(button2.classList.contains("active")).toBe(false);
+    });
+
+    test("sync rotation from range input", () => {
+        const rangeInput = document.getElementById("rotate-range");
+        rangeInput.value = "60";
+        rangeInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+        expect(document.getElementById("rotate").value).toBe("60");
+    });
+
+    test("sync rotation from numeric input", () => {
+        const numInput = document.getElementById("rotate");
+        numInput.value = "30";
+        numInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+        expect(document.getElementById("rotate-range").value).toBe("30");
+    });
 });

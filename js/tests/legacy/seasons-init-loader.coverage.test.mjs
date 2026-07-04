@@ -556,3 +556,430 @@ describe("seasons-init-loader cleanupSeasonsPage – back-button fix", () => {
         expect(document.querySelector("#seasons-table")).not.toBeNull();
     });
 });
+
+describe("seasons-init-loader.mjs additional branch coverage", () => {
+    describe("getInitSeasons mock resolution paths", () => {
+        test("uses window.__SEASONS_INIT_LOADER_MOCK__ when set", async () => {
+            const initFn = jest.fn();
+            window.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
+            setupDT();
+            globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+                Promise.resolve();
+            await bootLoader();
+            await flushPromises();
+            expect(initFn).toHaveBeenCalled();
+        });
+
+        test("boot calls initSeasons mock as a function", async () => {
+            const initFn = jest.fn();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+                Promise.resolve();
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
+            setupDT();
+            await bootLoader();
+            await flushPromises();
+            expect(initFn).toHaveBeenCalled();
+        });
+    });
+
+    describe("getSearchBuilderLoader mock resolution paths", () => {
+        test("uses window.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ when set", async () => {
+            const sbLoader = jest.fn().mockResolvedValue(undefined);
+            window.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = sbLoader;
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = jest.fn();
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
+            setupDT();
+            await bootLoader();
+            await flushPromises();
+            expect(sbLoader).toHaveBeenCalled();
+        });
+
+        test("falls back to runInit when SearchBuilder loader rejects", async () => {
+            jest.spyOn(console, "warn").mockImplementation(() => {});
+            const initFn = jest.fn();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+                Promise.reject(new Error("sb load failed"));
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
+            setupDT();
+            await bootLoader();
+            await flushPromises();
+            expect(console.warn).toHaveBeenCalledWith(
+                "SearchBuilder failed to load",
+                expect.any(Error),
+            );
+            expect(initFn).toHaveBeenCalled();
+        });
+    });
+
+    describe("inferActiveTable edge cases", () => {
+        test("returns splits table when #season-splits-table present", async () => {
+            document.body.innerHTML = `
+                <table id="season-splits-table"><thead><tr><th>A</th></tr></thead></table>`;
+            const { inferActiveTable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const result = inferActiveTable();
+            expect(result.view).toBe("splits");
+            expect(result.table).not.toBeNull();
+        });
+
+        test("returns standard table when #seasons-table present", async () => {
+            document.body.innerHTML = `
+                <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>`;
+            const { inferActiveTable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const result = inferActiveTable();
+            expect(result.view).toBe("standard");
+            expect(result.table).not.toBeNull();
+        });
+
+        test("returns frame dataset view when neither table present and frame has data attribute", async () => {
+            document.body.innerHTML = `
+                <div id="seasons-table-frame" data-seasons-view="splits"></div>`;
+            const { inferActiveTable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const result = inferActiveTable();
+            expect(result.view).toBe("splits");
+            expect(result.table).toBeNull();
+        });
+
+        test("defaults to standard view when no frame data attribute", async () => {
+            document.body.innerHTML = `
+                <div id="seasons-table-frame"></div>`;
+            const { inferActiveTable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const result = inferActiveTable();
+            expect(result.view).toBe("standard");
+            expect(result.table).toBeNull();
+        });
+
+        test("returns null table with standard view when no elements found", async () => {
+            document.body.innerHTML = "";
+            const { inferActiveTable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const result = inferActiveTable();
+            expect(result.view).toBe("standard");
+            expect(result.table).toBeNull();
+        });
+    });
+
+    describe("countTableColumns edge cases", () => {
+        test("returns 0 when tableEl is null", async () => {
+            const { countTableColumns } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(countTableColumns(null)).toBe(0);
+        });
+
+        test("returns 0 when no header row", async () => {
+            const table = document.createElement("table");
+            const { countTableColumns } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(countTableColumns(table)).toBe(0);
+        });
+
+        test("sums colspan values", async () => {
+            document.body.innerHTML = `
+                <table id="test-table">
+                    <thead>
+                        <tr>
+                            <th colspan="3">A</th>
+                            <th>B</th>
+                            <th colspan="2">C</th>
+                        </tr>
+                    </thead>
+                </table>`;
+            const { countTableColumns } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(
+                countTableColumns(document.getElementById("test-table")),
+            ).toBe(6);
+        });
+
+        test("treats cells with no colspan as 1", async () => {
+            document.body.innerHTML = `
+                <table id="test-table2">
+                    <thead><tr><th>A</th><th>B</th><th>C</th></tr></thead>
+                </table>`;
+            const { countTableColumns } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(
+                countTableColumns(document.getElementById("test-table2")),
+            ).toBe(3);
+        });
+    });
+
+    describe("buildSplitsColumnLabels with hasTies flag", () => {
+        test("includes tie columns when hasTies is true", async () => {
+            const { buildSplitsColumnLabels } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const labels = buildSplitsColumnLabels(true);
+            // Should include T columns for each group (HT, RT, NT, CHT, CRT, CTT, PT)
+            const tieLabels = Object.values(labels).filter((l) =>
+                l.endsWith("T"),
+            );
+            expect(tieLabels.length).toBeGreaterThan(0);
+        });
+
+        test("excludes tie columns when hasTies is false", async () => {
+            const { buildSplitsColumnLabels } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const labels = buildSplitsColumnLabels(false);
+            const tieLabels = Object.values(labels).filter(
+                (l) => l.endsWith("T") && l !== "CT",
+            );
+            // Should have no T-suffix columns (except CT which is a group code)
+            expect(tieLabels.length).toBe(0);
+        });
+    });
+
+    describe("getCellDataAttr edge cases", () => {
+        test("returns null when meta is null", async () => {
+            const { getCellDataAttr } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(getCellDataAttr(null, "search")).toBeNull();
+        });
+
+        test("returns null when cell not in aoData", async () => {
+            const { getCellDataAttr } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const meta = { settings: { aoData: [] }, row: 0, col: 0 };
+            expect(getCellDataAttr(meta, "search")).toBeNull();
+        });
+
+        test("returns attribute value when cell has data attribute", async () => {
+            const { getCellDataAttr } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const td = document.createElement("td");
+            td.setAttribute("data-search", "filter-value");
+            const meta = {
+                settings: { aoData: [{ anCells: [td] }] },
+                row: 0,
+                col: 0,
+            };
+            expect(getCellDataAttr(meta, "search")).toBe("filter-value");
+        });
+
+        test("returns null when attribute not present", async () => {
+            const { getCellDataAttr } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const td = document.createElement("td");
+            const meta = {
+                settings: { aoData: [{ anCells: [td] }] },
+                row: 0,
+                col: 0,
+            };
+            expect(getCellDataAttr(meta, "search")).toBeNull();
+        });
+    });
+
+    describe("buildOptions splits render callback", () => {
+        test("standard buildOptions render returns filter value from data-search attr", async () => {
+            document.body.innerHTML = `
+                <table id="seasons-table">
+                    <thead><tr><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th>
+                    <th>H</th><th>I</th><th>J</th><th>K</th><th>L</th><th>M</th><th>N</th><th>O</th><th>P</th><th>Type</th></tr></thead>
+                </table>`;
+            const { buildOptions } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const opts = buildOptions();
+            const renderFn = opts.dataTableOptions.columnDefs?.[0]?.render;
+            expect(typeof renderFn).toBe("function");
+
+            const td = document.createElement("td");
+            td.setAttribute("data-search", "Basketball");
+            const meta = {
+                settings: {
+                    aoData: [
+                        {
+                            anCells: Array(17)
+                                .fill(null)
+                                .map(() => document.createElement("td")),
+                        },
+                    ],
+                },
+                row: 0,
+                col: 16,
+            };
+            meta.settings.aoData[0].anCells[16] = td;
+
+            // filter type → returns data-search value
+            expect(renderFn("rawData", "filter", {}, meta)).toBe("Basketball");
+            // search type → same
+            expect(renderFn("rawData", "search", {}, meta)).toBe("Basketball");
+            // display type → returns raw data
+            expect(renderFn("rawData", "display", {}, meta)).toBe("rawData");
+        });
+
+        test("standard buildOptions render falls back to data when cell has no data-search", async () => {
+            document.body.innerHTML = `
+                <table id="seasons-table">
+                    <thead><tr>
+                        ${Array(17).fill("<th>X</th>").join("")}
+                    </tr></thead>
+                </table>`;
+            const { buildOptions } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            const opts = buildOptions();
+            const renderFn = opts.dataTableOptions.columnDefs?.[0]?.render;
+            const td = document.createElement("td");
+            // no data attribute
+            const meta = {
+                settings: {
+                    aoData: [
+                        {
+                            anCells: Array(17)
+                                .fill(null)
+                                .map(() => document.createElement("td")),
+                        },
+                    ],
+                },
+                row: 0,
+                col: 16,
+            };
+            meta.settings.aoData[0].anCells[16] = td;
+
+            expect(renderFn("rawData", "filter", {}, meta)).toBe("rawData");
+        });
+    });
+
+    describe("enhancedBoot skips when no table on non-frame events", () => {
+        test("enhancedBoot returns early when no table in DOM on DOMContentLoaded", async () => {
+            document.body.innerHTML = ""; // no #seasons-table
+            setupDT();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = jest.fn();
+            globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+                Promise.resolve();
+            const mod = await import("../../legacy/seasons-init-loader.mjs");
+            // Should not throw and mock should not be called
+            const initFn = jest.fn();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            await mod.enhancedBoot({ type: "DOMContentLoaded" });
+            await flushPromises();
+            expect(initFn).not.toHaveBeenCalled();
+        });
+
+        test("enhancedBoot processes turbo:frame-load for correct frame id", async () => {
+            const initFn = jest.fn();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            globalThis.__SEASONS_SEARCHBUILDER_LOADER_MOCK__ = () =>
+                Promise.resolve();
+            document.body.innerHTML = `
+                <div id="seasons-table-frame" data-seasons-view="standard">
+                    <table id="seasons-table"><thead><tr><th>A</th></tr></thead></table>
+                </div>
+                <div id="seasons-controls"></div>
+                <div id="searchbuilder-panel"></div>`;
+            setupDT();
+            const mod = await import("../../legacy/seasons-init-loader.mjs");
+            const frame = document.getElementById("seasons-table-frame");
+            const evt = { type: "turbo:frame-load", target: frame };
+            await mod.enhancedBoot(evt);
+            await flushPromises();
+            expect(initFn).toHaveBeenCalled();
+        });
+
+        test("enhancedBoot skips turbo:frame-load with wrong frame id", async () => {
+            const initFn = jest.fn();
+            globalThis.__SEASONS_INIT_LOADER_MOCK__ = initFn;
+            document.body.innerHTML = `
+                <div id="other-frame"></div>`;
+            const mod = await import("../../legacy/seasons-init-loader.mjs");
+            const frame = document.getElementById("other-frame");
+            const evt = { type: "turbo:frame-load", target: frame };
+            await mod.enhancedBoot(evt);
+            await flushPromises();
+            expect(initFn).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("isDataTablesAvailable paths", () => {
+        test("returns false when window.$ is undefined", async () => {
+            delete window.$;
+            const { isDataTablesAvailable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(isDataTablesAvailable()).toBe(false);
+        });
+
+        test("returns true when $.fn.DataTable is a function", async () => {
+            const jq = jest.fn();
+            jq.fn = { DataTable: jest.fn(), dataTable: {} };
+            window.$ = jq;
+            const { isDataTablesAvailable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(isDataTablesAvailable()).toBe(true);
+        });
+
+        test("returns true when $.fn.dataTable is an object", async () => {
+            const jq = jest.fn();
+            jq.fn = { dataTable: { isDataTable: jest.fn() } };
+            window.$ = jq;
+            const { isDataTablesAvailable } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(isDataTablesAvailable()).toBe(true);
+        });
+    });
+
+    describe("cleanupSeasonsPage edge cases", () => {
+        test("skips table when jQuery not available", async () => {
+            delete window.$;
+            document.body.innerHTML = `<table id="seasons-table"></table>`;
+            const { cleanupSeasonsPage } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(() => cleanupSeasonsPage()).not.toThrow();
+        });
+
+        test("skips table that is not a DataTable", async () => {
+            document.body.innerHTML = `<table id="seasons-table"></table>`;
+            const { DataTableFn } = setupDT();
+            DataTableFn.isDataTable = jest.fn().mockReturnValue(false);
+            const { cleanupSeasonsPage } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            expect(() => cleanupSeasonsPage()).not.toThrow();
+        });
+
+        test("destroys DataTable and clears panel", async () => {
+            document.body.innerHTML = `
+                <table id="seasons-table"></table>
+                <div id="searchbuilder-panel"><div>content</div></div>`;
+            const { DataTableFn } = setupDT();
+            DataTableFn.isDataTable = jest.fn().mockReturnValue(true);
+            const { cleanupSeasonsPage } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            cleanupSeasonsPage();
+            expect(
+                document.querySelector("#searchbuilder-panel").innerHTML,
+            ).toBe("");
+        });
+
+        test("warns when destroy throws", async () => {
+            jest.spyOn(console, "warn").mockImplementation(() => {});
+            document.body.innerHTML = `<table id="seasons-table"></table>`;
+            const { dtInstance, DataTableFn } = setupDT();
+            DataTableFn.isDataTable = jest.fn().mockReturnValue(true);
+            dtInstance.destroy = jest.fn().mockImplementation(() => {
+                throw new Error("destroy failed");
+            });
+            const { cleanupSeasonsPage } =
+                await import("../../legacy/seasons-init-loader.mjs");
+            cleanupSeasonsPage();
+            expect(console.warn).toHaveBeenCalledWith(
+                expect.stringContaining("Failed to clean up seasons DataTable"),
+                expect.any(Error),
+            );
+        });
+    });
+});

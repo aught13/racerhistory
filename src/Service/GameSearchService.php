@@ -37,7 +37,7 @@ class GameSearchService
                 'GameTypes',
                 'TeamSeason' => ['Teams', 'Seasons'],
             ])
-            ->matching('TeamSeason.Teams', function ($q) {
+            ->innerJoinWith('TeamSeason.Teams', function ($q) {
                 return $q->where([
                     'Teams.sport_id' => 1,
                     'Teams.gender' => 'M',
@@ -100,7 +100,6 @@ class GameSearchService
     public function hundredPointGames(string $filter = 'all'): array
     {
         return $this->hundredPointGamesQuery($filter)
-            ->bind(':min_points', 100, 'integer')
             ->orderByDesc('Games.game_date')
             ->all()
             ->toArray();
@@ -211,17 +210,20 @@ class GameSearchService
         $query = $this->baseQuery();
 
         if ($filter === 'team') {
-            $pointsFilter = $query->newExpr()->add('CAST(Games.pts_mur AS INTEGER) >= :min_points');
+            $query->where(['CAST(Games.pts_mur AS INTEGER) >=' => 100]);
         } elseif ($filter === 'opponent') {
-            $pointsFilter = $query->newExpr()->add('CAST(Games.pts_opp AS INTEGER) >= :min_points');
+            $query->where(['CAST(Games.pts_opp AS INTEGER) >=' => 100]);
         } else {
-            $pointsFilter = $query->newExpr()->or([
-                'CAST(Games.pts_mur AS INTEGER) >= :min_points',
-                'CAST(Games.pts_opp AS INTEGER) >= :min_points',
+            // 💥 FIX: Use the standard CakePHP 'OR' nested array
+            $query->where([
+                'OR' => [
+                    'CAST(Games.pts_mur AS INTEGER) >=' => 100,
+                    'CAST(Games.pts_opp AS INTEGER) >=' => 100,
+                ],
             ]);
         }
 
-        return $query->where($pointsFilter);
+        return $query;
     }
 
     /**
@@ -233,19 +235,39 @@ class GameSearchService
     protected function queryDateBounds(SelectQuery $query): array
     {
         $boundsQuery = clone $query;
-        $row = $boundsQuery
-            ->contain([], true)
-            ->select([
-                'min_date' => $boundsQuery->func()->min('Games.game_date'),
-                'max_date' => $boundsQuery->func()->max('Games.game_date'),
-            ], true)
-            ->orderBy([], true)
-            ->enableHydration(false)
-            ->first();
 
+        // Strip structural restrictions that break aggregate executions
+        $boundsQuery->limit(null);
+        $boundsQuery->order([]);
+        $boundsQuery->clearContain(); // Drop eager loaders
+
+        // Safely capture the compiled WHERE logic and dynamic parameters
+        $whereClause = $boundsQuery->clause('where');
+        $bindings = $boundsQuery->getValueBinder();
+
+        // Rebuild a clean, ultra-optimized target SQL string
+        $sql = "SELECT MIN(Games.game_date) AS min_date, MAX(Games.game_date) AS max_date
+                FROM games Games
+                INNER JOIN team_season TeamSeason ON TeamSeason.id = Games.team_season_id
+                INNER JOIN teams Teams ON Teams.id = TeamSeason.team_id";
+
+        if ($whereClause) {
+            $sql .= ' WHERE ' . $whereClause->sql($bindings);
+        }
+
+        // Extract only the scalar 'value' out of CakePHP's binding array metadata
+        $flatBindings = array_map(function ($binding) {
+            return is_array($binding) ? ($binding['value'] ?? null) : $binding;
+        }, $bindings->bindings());
+
+        // Run the statement directly on the base database connection
+        $connection = $this->fetchTable('Games')->getConnection();
+        $statement = $connection->execute($sql, $flatBindings)->fetch('assoc');
+
+        // Safely return the raw dates array
         return [
-            'min' => $this->normalizeBoundDate($row['min_date'] ?? null),
-            'max' => $this->normalizeBoundDate($row['max_date'] ?? null),
+            'min' => $this->normalizeBoundDate($statement['min_date'] ?? null),
+            'max' => $this->normalizeBoundDate($statement['max_date'] ?? null),
         ];
     }
 
