@@ -7,6 +7,11 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ## [Unreleased]
 
+### Added
+
+- **WordPress-style Frontend Layouts**: Landing (`/`) and News (`/blog`) feeds refactored to rely on standard Bootstrap two-column flex-grid component structure.
+- **Popular Tags Filtering**: Standard backend service algorithm added to extract tags dynamically scaled by post usage count; Sidebar Tag Widget implemented to allow `/blog?tag=slug` chronological isolation natively.
+
 ### Changed
 
 - **Minimum PHP version raised to 8.2+** across project requirements and docs to match the current dependency graph.

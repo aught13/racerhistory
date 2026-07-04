@@ -109,11 +109,17 @@ class BlogPostService
      *
      * @param int $limit
      * @param int $offset
+     * @param bool $ignorePinned
+     * @param string|null $tagSlug Optional tag slug filter
      * @return array{posts:array<int,\App\Model\Entity\BlogPost>,total:int}
      */
-    public function getPublishedPostsPage(int $limit, int $offset = 0): array
-    {
-        $query = $this->getPublishedPostsQuery();
+    public function getPublishedPostsPage(
+        int $limit,
+        int $offset = 0,
+        bool $ignorePinned = false,
+        ?string $tagSlug = null,
+    ): array {
+        $query = $this->getPublishedPostsQuery($ignorePinned, $tagSlug);
         $total = (clone $query)->count();
         $posts = $this->normalizePosts($query->limit($limit)->offset($offset)->all()->toArray());
 
@@ -122,18 +128,28 @@ class BlogPostService
 
     /**
      * Build the published posts query with pinned ordering.
+     *
+     * @param bool $ignorePinned Whether to skip custom pin sorting
+     * @param string|null $tagSlug Optional tag slug filter
+     * @return \Cake\ORM\Query\SelectQuery
      */
-    private function getPublishedPostsQuery(): SelectQuery
+    private function getPublishedPostsQuery(bool $ignorePinned = false, ?string $tagSlug = null): SelectQuery
     {
         $table = $this->posts();
         $query = $table->find()
             ->contain(['BlogTags'])
             ->where(['BlogPosts.is_published' => true]);
 
+        if ($tagSlug) {
+            $query->matching('BlogTags', function ($q) use ($tagSlug) {
+                return $q->where(['BlogTags.slug' => $tagSlug]);
+            });
+        }
+
         $query->select($table);
 
         $schema = $table->getSchema();
-        if ($schema->hasColumn('is_pinned')) {
+        if (!$ignorePinned && $schema->hasColumn('is_pinned') && !$tagSlug) {
             return $query
                 ->orderByDesc('BlogPosts.is_pinned')
                 ->orderByDesc('BlogPosts.pinned_rank')
@@ -141,6 +157,34 @@ class BlogPostService
         }
 
         return $query->orderByDesc('BlogPosts.published_at');
+    }
+
+    /**
+     * Get popular tags associated with published posts.
+     *
+     * @param int $limit Max number of tags to return.
+     * @return array<int|string, \Cake\Datasource\EntityInterface>
+     */
+    public function getPopularTags(int $limit = 20): array
+    {
+        $table = TableRegistry::getTableLocator()->get('BlogTags');
+        $tags = $table->find()
+            ->innerJoinWith('BlogPosts', function ($q) {
+                return $q->where(['BlogPosts.is_published' => true]);
+            })
+            ->group(['BlogTags.id', 'BlogTags.name', 'BlogTags.slug'])
+            ->select([
+                'BlogTags.id',
+                'BlogTags.name',
+                'BlogTags.slug',
+                'post_count' => $table->find()->func()->count('BlogPosts.id'),
+            ])
+            ->orderByDesc('post_count')
+            ->limit($limit)
+            ->all()
+            ->toArray();
+
+        return $tags;
     }
 
     /**

@@ -18,9 +18,5 @@ $this->assign('title', h($post->title));
 <?php $this->end(); ?>
 
 <div class="container py-4" aria-label="Blog Post">
-    <div class="row justify-content-center">
-        <div class="col-lg-10 col-xl-8">
-            <?= $this->element('blog/view_frame') ?>
-        </div>
-    </div>
+    <?= $this->element('blog/view_frame') ?>
 </div>
