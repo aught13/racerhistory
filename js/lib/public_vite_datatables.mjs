@@ -38,5 +38,10 @@ export const publicDataTablesReady = (async () => {
         import("datatables.net-responsive-bs5"),
     ]);
 
+    // Register SearchBuilder URL state extension
+    const { registerSearchBuilderUrlStateExtension } =
+        await import("./datatables_searchbuilder_url_state.mjs");
+    registerSearchBuilderUrlStateExtension();
+
     window.__RH_PUBLIC_VITE_DATATABLES_READY__ = true;
 })();

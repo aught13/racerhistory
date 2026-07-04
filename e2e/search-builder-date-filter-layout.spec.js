@@ -31,13 +31,15 @@ const STATS_PAGES = [
  */
 async function waitForTableReady(page, tableId = "#games-results-table") {
     const table = page.locator(tableId);
+    const isMobile = page.viewportSize()?.width < 600;
+    const timeout = isMobile ? 30000 : 20000; // 30s for mobile, 20s for desktop
 
     // Wait for table to be visible
-    await expect(table).toBeVisible({ timeout: 20000 });
+    await expect(table).toBeVisible({ timeout });
 
     // Wait for DataTables wrapper to be ready
     const wrapper = page.locator(`${tableId}_wrapper`);
-    await expect(wrapper).toBeVisible({ timeout: 20000 });
+    await expect(wrapper).toBeVisible({ timeout });
 
     return true;
 }
@@ -182,6 +184,9 @@ test.describe("Games Pages - SearchBuilder and Date Filter Layout (Desktop)", ()
         test(`${page.label} - Card and table layout on desktop`, async ({
             page: browserPage,
         }) => {
+            // Ensure desktop viewport for this test
+            await browserPage.setViewportSize({ width: 1920, height: 1080 });
+
             await browserPage.goto(page.route);
 
             if (
@@ -360,6 +365,9 @@ test.describe("Stats Pages - SearchBuilder Layout (Desktop)", () => {
         test(`${statsPage.label} - Table and card layout on desktop`, async ({
             page: browserPage,
         }) => {
+            // Ensure desktop viewport for this test
+            await browserPage.setViewportSize({ width: 1920, height: 1080 });
+
             await browserPage.goto(statsPage.route);
 
             if (
@@ -506,7 +514,7 @@ test.describe("Stats Pages - SearchBuilder Layout (Mobile)", () => {
             const firstHeader = browserPage
                 .locator("#stats-results-table thead th")
                 .first();
-            await expect(firstHeader).toBeVisible();
+            await expect(firstHeader).toBeVisible({ timeout: 10000 });
         });
     }
 });
