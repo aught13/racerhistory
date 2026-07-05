@@ -23,7 +23,7 @@ if ($page === 1 && !empty($paginatedPosts)) {
     $listPosts = array_slice($paginatedPosts, 1);
 }
 ?>
-<turbo-frame id="blog" target="_top">
+<turbo-frame id="blog" target="_top" data-controller="blog-interactions">
     <div class="row">
         <!-- 70% Feed Column -->
         <div class="col-lg-8 pe-lg-4">

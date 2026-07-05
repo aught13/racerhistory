@@ -24,7 +24,7 @@ $actionMap = [
 $ajaxAction = $actionMap[$statType] ?? 'index';
 $ajaxUrl = $this->Url->build(['controller' => 'Stats', 'action' => $ajaxAction, '?' => ['sport' => $currentSport, 'format' => 'json']]);
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="stats-page">
 
     <h1 class="h3 mb-4"><?= h($statTypeLabel) ?> Stats</h1>
 

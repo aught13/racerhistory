@@ -8,7 +8,7 @@ declare(strict_types=1);
  */
 $this->assign('title', ($teamSeason->season->start ?? '') . '-' . ($teamSeason->season->end ?? '') . ' Stats');
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="stats-page">
 
     <h1 class="display-6 mb-4">
         <?= h($teamSeason->team->team_name ?? 'Team') ?>

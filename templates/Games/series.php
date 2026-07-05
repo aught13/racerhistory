@@ -28,7 +28,7 @@ if ($selectedOpponent) {
 
 $showOpponentPicker = !$selectedOpponent;
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="games-search series-opponents">
 
     <?= $this->element('Stats/table_assets') ?>
 

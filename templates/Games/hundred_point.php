@@ -19,7 +19,7 @@ $ajaxUrl = $this->Url->build([
     '?' => ['format' => 'json', 'filter' => $hundredPointFilter],
 ]);
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="games-search">
 
 
     <h1 class="h3 mb-4">100 Point Games</h1>

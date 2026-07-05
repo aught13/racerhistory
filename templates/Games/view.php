@@ -79,7 +79,7 @@ $this->assign('title', sprintf('%s vs %s', $teamNickname, $opponentName));
 $this->start('css'); ?>
 <?php $this->end(); ?>
 
-<div class="container py-4 game-view" data-game-view>
+<div class="container py-4 game-view" data-game-view data-controller="game-view">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">

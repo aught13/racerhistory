@@ -113,7 +113,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
 <turbo-frame id="seasons-table-frame"
              data-seasons-view="<?= h($isSplits ? 'splits' : 'standard') ?>"
              data-splits-has-ties="<?= $hasTies ? 'true' : 'false' ?>">
-    <div class="container py-4">
+    <div class="container py-4" data-controller="seasons-page">
         <?php if (empty($teamSeasons)) : ?>
             <div class="alert alert-info">
                 <i class="bi bi-info-circle me-2"></i>
