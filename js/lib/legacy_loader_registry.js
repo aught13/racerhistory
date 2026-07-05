@@ -38,7 +38,8 @@ const LEGACY_MODULES = [
     },
     {
         id: "public-people",
-        matches: (pathname) => matchesAnyPrefix(pathname, ["/people", "/person"]),
+        matches: (pathname) =>
+            matchesAnyPrefix(pathname, ["/people", "/person"]),
         mobileStrategy: "visible",
         visibilityTarget:
             "#people-table, [data-controller~='person-game-log-tabs'], [data-controller~='person-blog-popovers']",
