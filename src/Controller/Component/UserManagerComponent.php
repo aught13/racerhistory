@@ -3,13 +3,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Component;
 
-use App\Model\Entity\User;
+use App\Service\PasswordResetService;
 use Cake\Controller\Component;
 use Cake\Controller\Controller;
 use Cake\Core\Configure;
 use Cake\Http\Response;
 use Cake\Log\Log;
-use DateTime;
 
 /**
  * UserManagerComponent
@@ -355,30 +354,20 @@ class UserManagerComponent extends Component
     /**
      * Handle password reset functionality.
      *
+     * Delegates to PasswordResetService. Kept here for backward compatibility;
+     * UsersController::resetPassword() now calls the service directly.
+     *
      * @param \Cake\Controller\Controller $controller Controller instance
      * @return \Cake\Http\Response|null Null for render, response for redirects
      */
     public function resetPassword(Controller $controller): ?Response
     {
         if ($controller->getRequest()->is('post')) {
-            $data = $controller->getRequest()->getData();
-            $email = $data['email'] ?? '';
-
-            if ($email !== '') {
-                $usersTable = $controller->fetchTable('Users');
-                $user = $usersTable->find()->where(['email' => $email])->first();
-                if ($user instanceof User) {
-                    // Generate a reset token (placeholder implementation)
-                    $user->set('reset_token', bin2hex(random_bytes(16)));
-                    $user->set('reset_token_expires', new DateTime('+1 hour'));
-                    $usersTable->save($user); // Ignore save failures silently for unified response
-                }
-            }
-
+            $email = (string)($controller->getRequest()->getData('email') ?? '');
+            $service = new PasswordResetService();
+            $service->generateAndSendToken($email);
             // Always respond with the same message to avoid account enumeration
             $controller->Flash->success('If your email exists, a reset link will be sent.');
-
-            return null; // Keep same page (tests expect 200 OK, no redirect)
         }
 
         return null;
