@@ -61,6 +61,7 @@ class GamesControllerTest extends TestCase
         $this->get('/admin/games/add?team_season_id=1');
         $this->assertResponseOk();
         $this->assertResponseContains('Add Game');
+        $this->assertResponseContains('data-controller="admin-game-form"');
     }
 
     /**
@@ -280,6 +281,7 @@ class GamesControllerTest extends TestCase
         $this->get('/admin/games/view/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Game Details');
+        $this->assertResponseContains('data-controller="game-view"');
     }
 
     /**

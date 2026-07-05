@@ -47,6 +47,7 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('Players, coaches, and staff');
         $this->assertResponseContains('Teams');
         $this->assertResponseContains('Years Active');
+        $this->assertResponseContains('data-controller="people-index"');
     }
 
     /**
@@ -132,6 +133,7 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('Seasons');
         $this->assertResponseContains('Game Log');
         $this->assertResponseContains('Stories');
+        $this->assertResponseContains('data-controller="person-game-log-tabs"');
     }
 
     /**

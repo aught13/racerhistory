@@ -13,6 +13,7 @@ describe("main runtime bootstrap", () => {
             startNativeBridge: jest.fn(),
             registerServiceWorker: jest.fn(),
             initTurboScrollBehavior: jest.fn(),
+            initializeLegacyModules: jest.fn(),
         };
 
         jest.mock("@hotwired/stimulus", () => {
@@ -56,6 +57,12 @@ describe("main runtime bootstrap", () => {
                 globalThis.__MAIN_TEST_MOCKS__.initTurboScrollBehavior,
         }));
 
+        jest.mock("../lib/legacy_loader_registry.js", () => ({
+            __esModule: true,
+            initializeLegacyModules:
+                globalThis.__MAIN_TEST_MOCKS__.initializeLegacyModules,
+        }));
+
         return globalThis.__MAIN_TEST_MOCKS__;
     }
 
@@ -86,11 +93,56 @@ describe("main runtime bootstrap", () => {
         expect(mocks.startNativeBridge).toHaveBeenCalledTimes(1);
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
         expect(mocks.initTurboScrollBehavior).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
 
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
         const stimulus = mocks.applicationStart.mock.results[0].value;
         expect(stimulus.register).toHaveBeenCalledWith(
+            "admin-dashboard",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "admin-game-form",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "blog-interactions",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "game-view",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "games-search",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
             "image-selector",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "person-blog-popovers",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "person-game-log-tabs",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "people-index",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "seasons-page",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "season-view",
+            expect.any(Function),
+        );
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "series-opponents",
             expect.any(Function),
         );
         expect(stimulus.register).toHaveBeenCalledWith(
@@ -112,6 +164,7 @@ describe("main runtime bootstrap", () => {
         expect(mocks.initAdminRuntimeLifecycle).toHaveBeenCalledTimes(1);
         expect(mocks.initThemeFromCookie).not.toHaveBeenCalled();
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
     });
 
     test("does nothing when runtime boot flag is already set", async () => {
@@ -127,5 +180,6 @@ describe("main runtime bootstrap", () => {
         expect(mocks.startNativeBridge).not.toHaveBeenCalled();
         expect(mocks.registerServiceWorker).not.toHaveBeenCalled();
         expect(mocks.initTurboScrollBehavior).not.toHaveBeenCalled();
+        expect(mocks.initializeLegacyModules).not.toHaveBeenCalled();
     });
 });
