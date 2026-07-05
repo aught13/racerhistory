@@ -81,7 +81,7 @@ describe("main runtime bootstrap", () => {
         window.history.replaceState({}, "", "/");
     });
 
-    test("boots public runtime once and registers controllers", async () => {
+    test("boots public runtime once and hands off to route loader", async () => {
         const mocks = installMocks();
 
         await import("../main.js");
@@ -93,62 +93,12 @@ describe("main runtime bootstrap", () => {
         expect(mocks.startNativeBridge).toHaveBeenCalledTimes(1);
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
         expect(mocks.initTurboScrollBehavior).toHaveBeenCalledTimes(1);
-        expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
 
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
         const stimulus = mocks.applicationStart.mock.results[0].value;
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "admin-dashboard",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "admin-game-form",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "blog-interactions",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "game-view",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "games-search",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "image-selector",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "person-blog-popovers",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "person-game-log-tabs",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "people-index",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "seasons-page",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "season-view",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "series-opponents",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "theme-toggle",
-            expect.any(Function),
-        );
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(stimulus);
+        expect(stimulus.register).not.toHaveBeenCalled();
 
         await import("../main.js");
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
@@ -165,6 +115,9 @@ describe("main runtime bootstrap", () => {
         expect(mocks.initThemeFromCookie).not.toHaveBeenCalled();
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(
+            mocks.applicationStart.mock.results[0].value,
+        );
     });
 
     test("does nothing when runtime boot flag is already set", async () => {
