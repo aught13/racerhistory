@@ -80,7 +80,10 @@ return [
     /*
      * Email configuration.
      *
-     * Host and credential configuration in case you are using SmtpTransport
+     * Set MAIL_TRANSPORT=phpmailer to use PHPMailer/SMTP.
+     * Configure SMTP credentials via environment variables:
+     *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_ENCRYPTION (tls|ssl|none)
+     *   MAIL_FROM_ADDRESS, MAIL_FROM_NAME
      *
      * See app.php for more configuration options.
      */
@@ -92,6 +95,21 @@ return [
             'password' => null,
             'client' => null,
             'url' => env('EMAIL_TRANSPORT_DEFAULT_URL', null),
+        ],
+        'phpmailer' => [
+            'className' => \App\Mailer\Transport\PHPMailerTransport::class,
+            'host' => env('SMTP_HOST', 'localhost'),
+            'port' => (int)env('SMTP_PORT', 587),
+            'username' => env('SMTP_USER', ''),
+            'password' => env('SMTP_PASS', ''),
+            'encryption' => env('SMTP_ENCRYPTION', 'tls'),
+            'timeout' => 30,
+        ],
+    ],
+    'Email' => [
+        'default' => [
+            'transport' => env('MAIL_TRANSPORT', 'default'),
+            'from' => [env('MAIL_FROM_ADDRESS', 'noreply@racerhistory.local') => env('MAIL_FROM_NAME', 'RacerHistory')],
         ],
     ],
 ];

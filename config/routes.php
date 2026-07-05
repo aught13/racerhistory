@@ -208,6 +208,12 @@ return function (RouteBuilder $routes): void {
          */
         $builder->connect('/pages/*', 'Pages::display');
 
+        // Password management
+        $builder->connect('/users/reset-password/{token}', ['controller' => 'Users', 'action' => 'resetPasswordForm'])
+            ->setPass(['token'])
+            ->setPatterns(['token' => '[0-9a-f]+']);
+        $builder->connect('/users/change-password', ['controller' => 'Users', 'action' => 'changePassword']);
+
         /*
          * Connect catchall routes for all controllers.
          *

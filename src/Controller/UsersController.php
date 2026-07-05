@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Model\Entity\SiteOption;
+use App\Service\PasswordResetService;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
@@ -66,11 +67,12 @@ class UsersController extends AppController
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
-        $this->Authentication->addUnauthenticatedActions(['login', 'register', 'resetPassword']);
+        $this->Authentication->addUnauthenticatedActions(['login', 'register', 'resetPassword', 'resetPasswordForm']);
 
-        // Skip authorization for public actions
+        // Skip authorization for public and self-service actions
         $action = $this->request->getParam('action');
-        if (in_array($action, ['login', 'logout', 'register', 'resetPassword'], true)) {
+        $publicActions = ['login', 'logout', 'register', 'resetPassword', 'resetPasswordForm', 'changePassword'];
+        if (in_array($action, $publicActions, true)) {
             $this->Authorization->skipAuthorization();
         }
     }
@@ -160,13 +162,100 @@ class UsersController extends AppController
     }
 
     /**
-     * Password reset action.
+     * Password reset (step 1): request a reset link by email.
      *
      * @return \Cake\Http\Response|null
      */
-    public function resetPassword()
+    public function resetPassword(): ?Response
     {
-        return $this->UserManager->resetPassword($this);
+        if ($this->request->is('post')) {
+            $email = (string)($this->request->getData('email') ?? '');
+            $service = new PasswordResetService();
+            $service->generateAndSendToken($email);
+            // Unified message prevents account enumeration
+            $this->Flash->success('If your email exists, a reset link will be sent.');
+        }
+
+        return null;
+    }
+
+    /**
+     * Password reset (step 2): consume a one-time token and set a new password.
+     *
+     * @param string $token The reset token from the email link.
+     * @return \Cake\Http\Response|null
+     */
+    public function resetPasswordForm(string $token): ?Response
+    {
+        $service = new PasswordResetService();
+        $user = $service->validateToken($token);
+
+        if ($user === null) {
+            $this->Flash->error('This password reset link is invalid or has expired. Please request a new one.');
+
+            return $this->redirect(['action' => 'resetPassword']);
+        }
+
+        if ($this->request->is('post')) {
+            $newPassword = (string)($this->request->getData('password') ?? '');
+            $confirmPassword = (string)($this->request->getData('confirm_password') ?? '');
+
+            if ($newPassword === '' || strlen($newPassword) < 8) {
+                $this->Flash->error('Password must be at least 8 characters.');
+            } elseif ($newPassword !== $confirmPassword) {
+                $this->Flash->error('Passwords do not match.');
+            } elseif ($service->consumeToken($token, $newPassword)) {
+                $this->Flash->success('Your password has been reset. You can now log in.');
+
+                return $this->redirect(['action' => 'login']);
+            } else {
+                $this->Flash->error('Unable to reset password. The link may have expired. Please try again.');
+
+                return $this->redirect(['action' => 'resetPassword']);
+            }
+        }
+
+        $this->set(compact('token'));
+
+        return null;
+    }
+
+    /**
+     * Authenticated self-service password change.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function changePassword(): ?Response
+    {
+        $identity = $this->Authentication->getIdentity();
+        if ($identity === null) {
+            return $this->redirect(['action' => 'login']);
+        }
+
+        if ($this->request->is('post')) {
+            $currentPassword = (string)($this->request->getData('current_password') ?? '');
+            $newPassword = (string)($this->request->getData('password') ?? '');
+            $confirmPassword = (string)($this->request->getData('confirm_password') ?? '');
+
+            if ($currentPassword === '') {
+                $this->Flash->error('Current password is required.');
+            } elseif ($newPassword === '' || strlen($newPassword) < 8) {
+                $this->Flash->error('New password must be at least 8 characters.');
+            } elseif ($newPassword !== $confirmPassword) {
+                $this->Flash->error('New passwords do not match.');
+            } else {
+                $service = new PasswordResetService();
+                $userId = (int)$identity->getIdentifier();
+                if ($service->changePassword($userId, $currentPassword, $newPassword)) {
+                    $this->Flash->success('Your password has been updated.');
+
+                    return $this->redirect('/');
+                }
+                $this->Flash->error('Current password is incorrect.');
+            }
+        }
+
+        return null;
     }
 
     // Redirect all other actions to home
