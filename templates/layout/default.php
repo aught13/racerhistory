@@ -36,8 +36,11 @@
     <meta name="turbo-refresh-method" content="morph">
     <meta name="turbo-refresh-scroll" content="reset">
     <meta name="theme-color" content="#002144">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RacerHistory">
     <link rel="manifest" href="<?= $this->Url->build('/manifest.webmanifest') ?>">
-    <link rel="apple-touch-icon" href="<?= $this->Url->build('/img/logo.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= $this->Url->build('/img/apple-touch-icon-180.png') ?>">
     <title>
         <?= $this->fetch('title') ?> | RacerHistory
     </title>

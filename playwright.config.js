@@ -47,6 +47,13 @@ export default defineConfig({
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
         },
+        {
+            name: 'Desktop Ultrawide',
+            use: {
+                ...devices['Desktop Chrome'],
+                viewport: { width: 1920, height: 1080 },
+            },
+        },
 
         // Uncomment for cross-browser testing
         // {
@@ -62,6 +69,10 @@ export default defineConfig({
         {
             name: 'Mobile Chrome',
             use: { ...devices['Pixel 5'] },
+        },
+        {
+            name: 'Tablet Chrome',
+            use: { ...devices['iPad Air'] },
         },
         // {
         //     name: 'Mobile Safari',
