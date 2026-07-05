@@ -114,6 +114,15 @@ function cleanupPeoplePage() {
                 delete table._peopleNameFilterFn;
             }
             window.$(table).DataTable().destroy(false);
+
+            // Empty the tbody so Turbo caches an empty table.
+            // This prevents performance issues where DataTables tries to parse
+            // and re-initialize 50+ cached HTML rows on back-navigation before
+            // making its server-side AJAX requests.
+            const tbody = table.querySelector("tbody");
+            if (tbody) {
+                tbody.innerHTML = "";
+            }
         }
     } catch (err) {
         console.warn("Failed to clean up people DataTable", err);

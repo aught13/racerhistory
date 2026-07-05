@@ -104,10 +104,10 @@ test.describe("Dark Mode — explicit theme toggle", () => {
     });
 
     test("links should use gold colour in dark mode", async ({ page }) => {
-        await page.goto("/");
+        await page.goto("/seasons");
         await page.waitForLoadState("domcontentloaded");
 
-        const link = page.locator(".rh-main-inner a").first();
+        const link = page.locator(".rh-main-inner a:not(.btn):not(.text-body)").first();
         if ((await link.count()) > 0) {
             const color = await link.evaluate(
                 (el) => getComputedStyle(el).color,

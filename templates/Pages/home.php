@@ -8,7 +8,12 @@
 $this->assign('title', 'Home');
 ?>
 
-<div class="rh-home-content">
+<div class="rh-home-content pt-4">
+    <!-- Inject the new WordPress-style Hero + 3-Grid Array -->
+    <?= $this->cell('BlogWidget::homeFeed') ?>
+
+    <hr class="my-5" />
+
     <div class="row g-4 mb-5">
         <div class="col-md-6">
             <div class="card h-100">

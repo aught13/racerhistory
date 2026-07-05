@@ -17,7 +17,7 @@ test.describe("Blog - Public Pages", () => {
         await expect(page).toHaveURL(/\/blog/);
 
         // Should have a Turbo Frame for content
-        const turboFrame = page.locator('turbo-frame#blog-content');
+        const turboFrame = page.locator('turbo-frame#blog');
         const hasTurboFrame = await turboFrame.count() > 0;
 
         // Either has turbo frame or regular content container
@@ -55,6 +55,15 @@ test.describe("Blog - Public Pages", () => {
         if (articleCount > 0) {
             await expect(articles.first()).toBeVisible();
         }
+    });
+
+    test("blog pages should have a sidebar widget", async ({ page }) => {
+        const sidebar = page.locator('.blog-sidebar');
+        await expect(sidebar.first()).toBeVisible();
+
+        const searchForm = sidebar.locator('form[action*="/blog"]');
+        const hasSearchForm = await searchForm.count() > 0;
+        expect(hasSearchForm).toBe(true);
     });
 
     test("blog images should use picture elements with WebP", async ({ page }) => {

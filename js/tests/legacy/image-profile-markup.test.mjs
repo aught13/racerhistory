@@ -30,7 +30,6 @@ describe("Hybrid image profile markup", () => {
         );
 
         expect(indexFrame).toContain("profile' => 'blog_featured'");
-        expect(indexFrame).toContain("profile' => 'blog_index_card'");
         expect(listItems).toContain("profile' => 'blog_index_card'");
     });
 

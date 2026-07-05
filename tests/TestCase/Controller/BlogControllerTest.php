@@ -27,8 +27,8 @@ class BlogControllerTest extends TestCase
     {
         $this->get('/blog');
         $this->assertResponseOk();
-        $this->assertResponseContains('<turbo-frame id="blog">');
-        $this->assertResponseContains('blog-featured-as-list');
+        $this->assertResponseContains('<turbo-frame id="blog"');
+        $this->assertResponseContains('blog-featured-frame');
         $this->assertResponseContains('/img/storage/');
     }
 
@@ -40,7 +40,7 @@ class BlogControllerTest extends TestCase
         $this->get('/blog/first-post');
         $this->assertResponseOk();
         $this->assertResponseContains('First Post');
-        $this->assertResponseContains('<turbo-frame id="blog-post-view-first-post"');
+        $this->assertResponseContains('<turbo-frame id="blog-post-view"');
         $this->assertResponseContains('/img/storage/');
     }
 

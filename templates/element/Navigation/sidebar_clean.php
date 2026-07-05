@@ -102,6 +102,9 @@ $marginsLosingLinks = [
         <div class="collapse navbar-collapse rh-unified-nav-collapse" id="navbarNav" data-controller="nav-accordion">
             <ul class="navbar-nav rh-nav-list w-100 gap-1">
                 <li class="nav-item rh-nav-item rh-nav-item--link">
+                    <?= $this->Html->link('News', '/blog', $navLinkAttributes('/blog')) ?>
+                </li>
+                <li class="nav-item rh-nav-item rh-nav-item--link">
                     <?= $this->Html->link('Seasons', '/seasons', $navLinkAttributes('/seasons')) ?>
                 </li>
                 <li class="nav-item rh-nav-item rh-nav-item--link">

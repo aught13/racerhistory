@@ -144,7 +144,7 @@ return function (RouteBuilder $routes): void {
             ->setPatterns(['id' => '\\d+']);
 
         // Public server-rendered blog (Hotwire-enhanced)
-        $builder->connect('/', ['controller' => 'Blog', 'action' => 'index']);
+        $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
         $builder->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
         $builder->connect('/blog/{slug}', ['controller' => 'Blog', 'action' => 'view'])
             ->setPass(['slug'])
