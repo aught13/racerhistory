@@ -83,8 +83,10 @@ Key files:
 ## 6) Blog engine
 
 Public blog:
-- `/blog` shows published posts.
-- `/blog/{slug}` shows a single published post.
+- `/` renders a multi-post featured layout grid (`BlogWidgetCell::homeFeed`) without sidebars.
+- `/blog` displays all published posts sorted strictly chronologically alongside a right-hand sidebar.
+- The sidebar utilizes `BlogWidgetCell::sidebar` exposing generic Recent Posts and dynamic Tag Filtering.
+- `/blog/{slug}` shows a single published post displaying the specific article 70% width paired alongside the standard right-hand 30% sidebar widget.
 
 Admin blog:
 - `/admin/blog-posts` for list/add/edit/delete.

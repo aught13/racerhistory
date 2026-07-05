@@ -90,14 +90,15 @@ class BlogController extends AppController
     {
         $page = (int)$this->request->getQuery('page', 1);
         $limit = (int)$this->request->getQuery('limit', 10);
+        $tag = $this->request->getQuery('tag');
 
         $offset = max(0, ($page - 1) * $limit);
-        $result = $this->blogPostService->getPublishedPostsPage($limit, $offset);
+        $result = $this->blogPostService->getPublishedPostsPage($limit, $offset, true, is_string($tag) ? $tag : null);
 
         $posts = $result['posts'];
         $total = $result['total'];
 
-        $this->set(compact('posts', 'page', 'limit', 'total'));
+        $this->set(compact('posts', 'page', 'limit', 'total', 'tag'));
 
         $this->applyTurboFrameResponse('index_frame');
     }

@@ -81,7 +81,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 
 ### Blog
 
-- **Public blog**: `/blog` and `/blog/{slug}`
+- **Public blog**: Landing (`/`) hero layout, News (`/blog`) and individual post (`/blog/{slug}`) endpoints built upon standard WordPress-style grid rendering (incorporating Popular Tag navigation and custom chronologic feed widgets)
 - **Admin editor**: `/admin/blog-posts` with draft/publish workflow
 - **Rich editing**: TinyMCE integration with inline image uploads
 - **Tagging**: reuse the same tag infrastructure as images, with freeform tags and structured tags (team/team-season/game/site/opponent/sport/person/roster)
