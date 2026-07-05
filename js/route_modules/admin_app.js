@@ -1,7 +1,3 @@
-import "admin-lte/dist/css/adminlte.min.css";
-
-import AdminLayoutController from "../controllers/admin_layout_controller.js";
-import AdminDashboardController from "../controllers/admin_dashboard_controller.js";
 import AdminConfirmDeleteController from "../controllers/admin_confirm_delete_controller.js";
 import AdminBulkTableController from "../controllers/admin_bulk_table_controller.js";
 import AdminGamesIndexController from "../controllers/admin_games_index_controller.js";
@@ -33,8 +29,6 @@ import TeamSeasonFormController from "../controllers/team_season_form_controller
 import TeamSeasonImageController from "../controllers/team_season_image_controller.js";
 
 export function registerAdminAppControllers(stimulus) {
-    stimulus.register("admin-layout", AdminLayoutController);
-    stimulus.register("admin-dashboard", AdminDashboardController);
     stimulus.register("admin-confirm-delete", AdminConfirmDeleteController);
     stimulus.register("admin-bulk-table", AdminBulkTableController);
     stimulus.register("admin-games-index", AdminGamesIndexController);

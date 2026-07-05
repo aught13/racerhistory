@@ -3,29 +3,73 @@
 import { resolveLegacyLoadPlan } from "../lib/legacy_loader_registry.js";
 
 describe("legacy loader registry", () => {
-    test("returns a public app load plan for public routes", () => {
-        const plans = [
-            resolveLegacyLoadPlan({
-                pathname: "/people",
-                isMobileViewport: false,
-            }),
-            resolveLegacyLoadPlan({
-                pathname: "/seasons/1",
-                isMobileViewport: false,
-            }),
-            resolveLegacyLoadPlan({
-                pathname: "/games/series",
-                isMobileViewport: false,
-            }),
+    test("returns feature-scoped public plans by route", () => {
+        expect(
+            resolveLegacyLoadPlan({ pathname: "/", isMobileViewport: false }),
+        ).toEqual([{ id: "public-core", strategy: "eager" }]);
+
+        expect(
             resolveLegacyLoadPlan({
                 pathname: "/blog",
                 isMobileViewport: false,
             }),
-        ];
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-blog", strategy: "eager" },
+        ]);
 
-        plans.forEach((plan) => {
-            expect(plan).toEqual([{ id: "public-app", strategy: "eager" }]);
-        });
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/games/series",
+                isMobileViewport: false,
+            }),
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-games", strategy: "eager" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/people",
+                isMobileViewport: false,
+            }),
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-people", strategy: "eager" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/seasons/1",
+                isMobileViewport: false,
+            }),
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-seasons", strategy: "eager" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/stats/player-season",
+                isMobileViewport: false,
+            }),
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-stats", strategy: "eager" },
+        ]);
+    });
+
+    test("applies mobile-aware strategies for constrained clients", () => {
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/blog",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-blog", strategy: "interaction" },
+        ]);
 
         expect(
             resolveLegacyLoadPlan({
@@ -33,17 +77,21 @@ describe("legacy loader registry", () => {
                 isMobileViewport: true,
                 isLowBandwidth: false,
             }),
-        ).toEqual([{ id: "public-app", strategy: "idle" }]);
-    });
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-people", strategy: "visible" },
+        ]);
 
-    test("returns an admin app load plan for admin routes", () => {
         expect(
             resolveLegacyLoadPlan({
                 pathname: "/admin/games/add",
                 isMobileViewport: false,
                 isLowBandwidth: false,
             }),
-        ).toEqual([{ id: "admin-app", strategy: "eager" }]);
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-app", strategy: "eager" },
+        ]);
 
         expect(
             resolveLegacyLoadPlan({
@@ -51,6 +99,9 @@ describe("legacy loader registry", () => {
                 isMobileViewport: true,
                 isLowBandwidth: false,
             }),
-        ).toEqual([{ id: "admin-app", strategy: "idle" }]);
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-app", strategy: "idle" },
+        ]);
     });
 });
