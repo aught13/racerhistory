@@ -164,6 +164,7 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
                     <div class="rh-user-info">
                         <span class="rh-user-label">Logged in as</span>
                         <strong><?= h($identity->get('username')) ?></strong>
+                        <a class="rh-user-link" href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'changePassword', 'plugin' => false]) ?>">Change Password</a>
                         <a class="rh-user-link" href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'logout', 'plugin' => false]) ?>">Logout</a>
                     </div>
                     <?php if ($isAdmin) : ?>
