@@ -11,9 +11,10 @@ function getInitPeople() {
         return Promise.resolve(mockInit);
     }
     if (!initPeoplePromise) {
-        initPeoplePromise = import("../legacy/modules/people-index-init.js").then(
-            (mod) => mod.default,
-        );
+        initPeoplePromise =
+            import("../legacy/modules/people-index-init.js").then(
+                (mod) => mod.default,
+            );
     }
     return initPeoplePromise;
 }
@@ -66,7 +67,9 @@ export function initPeopleIndexPage() {
     return getInitPeople()
         .then((initPeopleIndex) => {
             if (typeof initPeopleIndex !== "function") {
-                console.warn("people-index-init default export is not a function");
+                console.warn(
+                    "people-index-init default export is not a function",
+                );
                 return;
             }
 

@@ -86,8 +86,7 @@ function renderEav(template, existingValues) {
         header.className = "card-header";
         const h6 = document.createElement("h6");
         h6.className = "mb-0";
-        h6.textContent =
-            groupName.charAt(0).toUpperCase() + groupName.slice(1);
+        h6.textContent = groupName.charAt(0).toUpperCase() + groupName.slice(1);
         header.appendChild(h6);
         const body = document.createElement("div");
         body.className = "card-body";
@@ -149,7 +148,8 @@ async function fetchMeta(teamSeasonId) {
                 tmp.innerHTML = text;
                 const sn = tmp.querySelector("[data-sport-name]");
                 if (sn) {
-                    sportNameSpan.textContent = sn.getAttribute("data-sport-name");
+                    sportNameSpan.textContent =
+                        sn.getAttribute("data-sport-name");
                 }
             }
 

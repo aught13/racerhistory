@@ -20,7 +20,11 @@
  */
 ?>
 <!DOCTYPE html>
-<html>
+<?php
+$content = $this->fetch('content');
+$flash = $this->Flash->render();
+?>
+<html data-bs-theme="light" data-theme="light">
 
 <head>
     <?= $this->Html->charset() ?>
@@ -30,15 +34,6 @@
     <meta name="csrfToken" content="<?= $this->request->getAttribute('csrfToken') ?>">
     <title><?= $this->fetch('title') ?> | RacerHistory Admin</title>
     <?= $this->Html->meta('icon') ?>
-    <script>
-        // Admin UI is intentionally light-only; set theme before CSS paints.
-        (function () {
-            const root = document.documentElement;
-            root.setAttribute('data-bs-theme', 'light');
-            root.setAttribute('data-theme', 'light');
-            root.classList.remove('dark-mode', 'theme-dark');
-        })();
-    </script>
     <!-- 1. Bootstrap 5 — required peer for AdminLTE 4 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         crossorigin="anonymous">
@@ -83,110 +78,12 @@
         sidebar-mini      - enables mini collapsed sidebar mode on desktop
         layout-fixed      - fixed/sticky admin layout rules
         sidebar-expand-lg - desktop sidebar at >= lg, off-canvas at < lg
-
-    data-controller="admin-layout" wires up the Stimulus controller that:
-        - toggles sidebar-collapse on desktop
-        - toggles sidebar-open on mobile
-        - persists desktop collapsed state in localStorage
 -->
 <body class="sidebar-mini layout-fixed sidebar-expand-lg">
-    <div class="app-wrapper" data-controller="admin-layout">
-
-        <!-- ═══════════════════════════════════════════════════════════
-             TOP NAVIGATION BAR (data-turbo-permanent: preserved across visits)
-             ═══════════════════════════════════════════════════════════ -->
-        <nav class="app-header navbar navbar-expand" id="adminHeader" data-turbo-permanent>
-            <div class="container-fluid">
-                <!-- Left: sidebar toggle + brand -->
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" role="button" aria-label="Toggle sidebar"
-                            data-action="click->admin-layout#toggle">
-                            <i class="bi bi-list fs-4"></i>
-                        </a>
-                    </li>
-                    <li class="nav-item d-none d-md-flex align-items-center ms-2">
-                        <a class="navbar-brand fw-semibold"
-                            href="<?= $this->Url->build(['controller' => 'Dashboard', 'action' => 'index', 'prefix' => 'Admin']) ?>">
-                            RacerHistory Admin
-                        </a>
-                    </li>
-                </ul>
-
-                <!-- Right: identity + logout -->
-                <ul class="navbar-nav ms-auto">
-                    <?php if ($this->getRequest()->getAttribute('identity')) : ?>
-                        <li class="nav-item d-flex align-items-center me-2">
-                            <span class="navbar-text">
-                                <i class="bi bi-person-circle me-1"></i>
-                                <?= h($this->getRequest()->getAttribute('identity')->get('username')) ?>
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link"
-                                href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'logout']) ?>"
-                                data-turbo-frame="_top">
-                                <i class="bi bi-box-arrow-right me-1"></i>Logout
-                            </a>
-                        </li>
-                    <?php else : ?>
-                        <li class="nav-item">
-                            <a class="nav-link"
-                                href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Users', 'action' => 'login']) ?>"
-                                data-turbo-frame="_top">
-                                <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-            </div>
-        </nav>
-
-        <!-- ═══════════════════════════════════════════════════════════
-             SIDEBAR (data-turbo-permanent: preserved across visits)
-             ═══════════════════════════════════════════════════════════ -->
-        <aside class="app-sidebar bg-body-secondary shadow" id="adminSidebar"
-            data-bs-theme="dark" data-turbo-permanent>
-            <!-- Brand logo area -->
-            <div class="sidebar-brand">
-                <a href="<?= $this->Url->build(['controller' => 'Dashboard', 'action' => 'index', 'prefix' => 'Admin']) ?>"
-                    class="brand-link">
-                    <i class="bi bi-mortarboard-fill brand-image me-2 text-warning"></i>
-                    <span class="brand-text fw-semibold">RacerHistory</span>
-                </a>
-            </div>
-
-            <!-- Navigation menu -->
-            <div class="sidebar-wrapper">
-                <?= $this->element('Admin/nav') ?>
-            </div>
-        </aside>
-
-        <div class="sidebar-overlay" data-action="click->admin-layout#closeMobile"></div>
-
-        <!-- ═══════════════════════════════════════════════════════════
-             MAIN CONTENT AREA
-             ═══════════════════════════════════════════════════════════ -->
-        <main class="app-main">
-            <div class="app-content">
-                <div class="container-fluid py-3">
-                    <turbo-frame id="admin-content" data-turbo-action="advance">
-                        <?= $this->Flash->render() ?>
-                        <?= $this->fetch('content') ?>
-                    </turbo-frame>
-                </div>
-            </div>
-        </main>
-
-        <!-- ═══════════════════════════════════════════════════════════
-             FOOTER
-             ═══════════════════════════════════════════════════════════ -->
-        <footer class="app-footer">
-            <strong>&copy; <?= date('Y') ?> RacerHistory Admin</strong>
-            <span class="float-end d-none d-sm-inline text-muted">Powered by CakePHP</span>
-        </footer>
-
-    </div><!-- /.app-wrapper -->
+    <?= $this->element('Layout/admin_shell', [
+        'content' => $content,
+        'flash' => $flash,
+    ]) ?>
 </body>
 
 </html>

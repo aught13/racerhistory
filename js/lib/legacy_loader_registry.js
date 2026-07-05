@@ -2,7 +2,26 @@ import { getRuntimeProfile } from "./runtime_profile.js";
 
 const IDLE_TIMEOUT_MS = 1500;
 
-const LEGACY_MODULES = [];
+const LEGACY_MODULES = [
+    {
+        id: "public-app",
+        matches: (pathname) => !pathname.startsWith("/admin"),
+        mobileStrategy: "idle",
+        load: async (stimulus) => {
+            const module = await import("../route_modules/public_app.js");
+            module.registerPublicAppControllers(stimulus);
+        },
+    },
+    {
+        id: "admin-app",
+        matches: (pathname) => pathname.startsWith("/admin"),
+        mobileStrategy: "idle",
+        load: async (stimulus) => {
+            const module = await import("../route_modules/admin_app.js");
+            module.registerAdminAppControllers(stimulus);
+        },
+    },
+];
 
 const loadedModules = new Set();
 let hasTurboListener = false;
@@ -29,7 +48,7 @@ function queueIdle(callback) {
     window.setTimeout(() => callback(), 50);
 }
 
-async function loadModule(moduleDefinition) {
+async function loadModule(moduleDefinition, stimulus) {
     if (loadedModules.has(moduleDefinition.id)) {
         return;
     }
@@ -37,7 +56,7 @@ async function loadModule(moduleDefinition) {
     loadedModules.add(moduleDefinition.id);
 
     try {
-        await moduleDefinition.load();
+        await moduleDefinition.load(stimulus);
     } catch (error) {
         loadedModules.delete(moduleDefinition.id);
         console.warn(
@@ -57,6 +76,7 @@ export function resolveLegacyLoadPlan(profile = getRuntimeProfile()) {
 }
 
 export function loadLegacyModulesForCurrentRoute(
+    stimulus,
     profile = getRuntimeProfile(),
 ) {
     const matchingModules = LEGACY_MODULES.filter((moduleDefinition) =>
@@ -67,24 +87,24 @@ export function loadLegacyModulesForCurrentRoute(
         const strategy = strategyForModule(moduleDefinition, profile);
         if (strategy === "idle") {
             queueIdle(() => {
-                void loadModule(moduleDefinition);
+                void loadModule(moduleDefinition, stimulus);
             });
             continue;
         }
 
-        void loadModule(moduleDefinition);
+        void loadModule(moduleDefinition, stimulus);
     }
 }
 
-export function initializeLegacyModules() {
-    loadLegacyModulesForCurrentRoute();
+export function initializeLegacyModules(stimulus) {
+    loadLegacyModulesForCurrentRoute(stimulus);
 
     if (hasTurboListener || typeof document === "undefined") {
         return;
     }
 
     document.addEventListener("turbo:load", () => {
-        loadLegacyModulesForCurrentRoute();
+        loadLegacyModulesForCurrentRoute(stimulus);
     });
 
     hasTurboListener = true;

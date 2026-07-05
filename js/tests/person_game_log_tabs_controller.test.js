@@ -12,7 +12,10 @@ describe("person-game-log-tabs controller", () => {
             '<div id="person-log-root" data-controller="person-game-log-tabs"></div>';
 
         application = Application.start();
-        application.register("person-game-log-tabs", PersonGameLogTabsController);
+        application.register(
+            "person-game-log-tabs",
+            PersonGameLogTabsController,
+        );
     });
 
     afterEach(() => {
@@ -32,7 +35,10 @@ describe("person-game-log-tabs controller", () => {
 
         application.stop();
         application = Application.start();
-        application.register("person-game-log-tabs", PersonGameLogTabsController);
+        application.register(
+            "person-game-log-tabs",
+            PersonGameLogTabsController,
+        );
         await Promise.resolve();
 
         expect(initMock).toHaveBeenCalledWith({
@@ -46,7 +52,10 @@ describe("person-game-log-tabs controller", () => {
 
         application.stop();
         application = Application.start();
-        application.register("person-game-log-tabs", PersonGameLogTabsController);
+        application.register(
+            "person-game-log-tabs",
+            PersonGameLogTabsController,
+        );
         await Promise.resolve();
 
         const frame = document.createElement("turbo-frame");

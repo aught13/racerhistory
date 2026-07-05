@@ -28,7 +28,15 @@
 
 ?>
 <!DOCTYPE html>
-<html>
+<?php
+$themeCookie = (string)($this->request->getCookie('theme') ?? '');
+$htmlThemeAttribute = in_array($themeCookie, ['light', 'dark'], true)
+    ? ' data-theme="' . h($themeCookie) . '"'
+    : '';
+$content = $this->fetch('content');
+$flash = $this->Flash->render();
+?>
+<html<?= $htmlThemeAttribute ?>>
 
 <head>
     <?= $this->Html->charset() ?>
@@ -45,19 +53,6 @@
         <?= $this->fetch('title') ?> | RacerHistory
     </title>
     <?= $this->Html->meta('icon') ?>
-
-    <script>
-        (function () {
-            var match = document.cookie.match(/(?:^|; )theme=([^;]*)/);
-            var theme = match ? decodeURIComponent(match[1]) : '';
-            if (theme === 'light' || theme === 'dark') {
-                document.documentElement.dataset.theme = theme;
-            } else {
-                delete document.documentElement.dataset.theme;
-            }
-        })();
-    </script>
-
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -89,60 +84,6 @@
     <?php endif; ?>
 
     <?= $this->fetch('script') ?>
-
-    <script>
-        function initNavBehavior() {
-            const body = document.body;
-            const head = document.querySelector('.rh-head');
-            const navLogo = document.querySelector('.rh-nav-logo');
-            const navWrap = document.querySelector('.rh-nav-wrap');
-            const scrollTopBtn = document.querySelector('.rh-scroll-top');
-
-            function setNavState(isStuck) {
-                if (isStuck) {
-                    body.classList.add('rh-nav-stuck');
-                    body.classList.add('rh-head-collapsed');
-                } else {
-                    body.classList.remove('rh-nav-stuck');
-                    body.classList.remove('rh-head-collapsed');
-                }
-            }
-
-            function updateNavState() {
-                if (!head || !navLogo) {
-                    setNavState(true);
-                    return;
-                }
-
-                const navHeight = navWrap?.offsetHeight ?? 0;
-                const headHeight = head.offsetHeight ?? 0;
-                const isStuck = window.scrollY >= Math.max(0, headHeight - navHeight);
-                setNavState(isStuck);
-            }
-
-            function handleScrollTopButton() {
-                if (!scrollTopBtn) {
-                    return;
-                }
-                const current = window.scrollY;
-                const show = current > (window.innerHeight * 1.25);
-                scrollTopBtn.classList.toggle('is-visible', show);
-            }
-
-            updateNavState();
-            handleScrollTopButton();
-
-            window.addEventListener('scroll', updateNavState, { passive: true });
-            window.addEventListener('scroll', handleScrollTopButton, { passive: true });
-
-            scrollTopBtn?.addEventListener('click', function() {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', initNavBehavior);
-        document.addEventListener('turbo:load', initNavBehavior);
-    </script>
 </head>
 
 <?php
@@ -158,74 +99,14 @@ $isMainPage = $action === 'index' && in_array($controller, ['Blog', 'Seasons', '
 $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-head' : ''));
 ?>
 <body class="<?= h($bodyClass) ?>" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">
-    <a class="rh-skip-link" href="#main-content">Skip to main content</a>
-    <div class="rh-page">
-        <header class="rh-header">
-            <?php if ($identity) : ?>
-            <div class="rh-user-bar" role="status">
-                <div class="rh-header-inner rh-header-row">
-                    <div class="rh-user-info">
-                        <span class="rh-user-label">Logged in as</span>
-                        <strong><?= h($identity->get('username')) ?></strong>
-                        <a class="rh-user-link" href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'changePassword', 'plugin' => false]) ?>">Change Password</a>
-                        <a class="rh-user-link" href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'logout', 'plugin' => false]) ?>">Logout</a>
-                    </div>
-                    <?php if ($isAdmin) : ?>
-                        <a class="rh-admin-link" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']) ?>">Admin Dashboard</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <?php if ($isMainPage) : ?>
-            <div class="rh-head" data-head>
-                <div class="rh-header-inner rh-head-inner">
-                    <div class="rh-head-logo">
-                        <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="RacerHistory" class="rh-hero-logo-img">
-                    </div>
-                    <div class="rh-ad-slot rh-ad-slot--header">Ad</div>
-                </div>
-            </div>
-            <?php endif; ?>
-
-        </header>
-
-        <div class="rh-nav-wrap rh-unified-nav-wrap" data-nav>
-            <?= $this->element('Navigation/sidebar_clean') ?>
-        </div>
-
-        <main id="main-content" class="rh-main">
-            <div class="rh-main-bg">
-                <div class="rh-main-inner">
-                    <?= $this->Flash->render() ?>
-                    <?= $this->fetch('content') ?>
-                </div>
-            </div>
-        </main>
-
-        <footer class="rh-footer">
-            <div class="rh-footer-inner">
-                <div class="rh-footer-ad">Ad</div>
-                <div class="rh-footer-copy">
-                    <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory</span>
-                </div>
-                <div class="rh-footer-controls">
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary btn-sm"
-                        data-controller="theme-toggle"
-                        data-action="click->theme-toggle#toggle"
-                        aria-pressed="false">
-                        <i class="bi bi-circle-half" aria-hidden="true"></i>
-                        <span class="ms-1" data-theme-toggle-target="label">System</span>
-                    </button>
-                </div>
-            </div>
-        </footer>
-    </div>
-    <button class="rh-scroll-top" type="button" aria-label="Scroll to top">
-        <i class="bi bi-arrow-up"></i>
-    </button>
+    <?= $this->element('Layout/public_shell', [
+        'identity' => $identity,
+        'isAdmin' => $isAdmin,
+        'isMainPage' => $isMainPage,
+        'bodyClass' => $bodyClass,
+        'content' => $content,
+        'flash' => $flash,
+    ]) ?>
 </body>
 
 </html>

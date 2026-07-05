@@ -35,8 +35,7 @@ export default class extends Controller {
             }
 
             const sportModuleExports =
-                sportModule?.default &&
-                typeof sportModule.default === "object"
+                sportModule?.default && typeof sportModule.default === "object"
                     ? sportModule.default
                     : sportModule;
 
