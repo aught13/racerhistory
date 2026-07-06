@@ -26,6 +26,10 @@ function expectedBlogStrategy(width) {
     return width < 992 ? "interaction" : "eager";
 }
 
+function expectedStatsEntryStrategy(width) {
+    return width < 992 ? "interaction" : "eager";
+}
+
 async function getLoaderDebug(page) {
     return page.evaluate(() => window.__RH_LOADER_DEBUG__ ?? null);
 }
@@ -210,6 +214,100 @@ test.describe("loader strategy - admin routes", () => {
             () =>
                 Array.isArray(window.__RH_LOADER_DEBUG__?.loadedModules) &&
                 window.__RH_LOADER_DEBUG__.loadedModules.includes("admin-core"),
+            undefined,
+            { timeout: 2000 },
+        );
+    });
+
+    test("admin stats-entry route uses interaction deferral on constrained clients", async ({
+        page,
+    }) => {
+        await page.goto("/admin/stat-basket-game-person/add/1", {
+            waitUntil: "domcontentloaded",
+        });
+
+        if (await isAdminAccessBlocked(page)) {
+            const reloggedIn = await loginToAdmin(page, {
+                waitUntil: "domcontentloaded",
+                timeout: 10000,
+            });
+
+            if (reloggedIn) {
+                await page.goto("/admin/stat-basket-game-person/add/1", {
+                    waitUntil: "domcontentloaded",
+                });
+            }
+        }
+
+        test.skip(
+            await isAdminAccessBlocked(page),
+            "Could not reach /admin/stat-basket-game-person/add/1 with the e2e admin account",
+        );
+
+        const debug = await waitForLoaderPlan(
+            page,
+            "/admin/stat-basket-game-person/add/1",
+        );
+
+        const width = viewportWidth(page);
+        const expectedStrategy = expectedStatsEntryStrategy(width);
+
+        expect(debug).toBeTruthy();
+
+        const core = debug.lastPlan.modules.find(
+            (entry) => entry.id === "admin-core",
+        );
+        const overlay = debug.lastPlan.modules.find(
+            (entry) => entry.id === "admin-overlay",
+        );
+        const statsEntry = debug.lastPlan.modules.find(
+            (entry) => entry.id === "admin-stats-entry",
+        );
+        const games = debug.lastPlan.modules.find(
+            (entry) => entry.id === "admin-games",
+        );
+
+        expect(core).toBeTruthy();
+        expect(core.strategy).toBe("eager");
+
+        expect(overlay).toBeTruthy();
+        expect(overlay.strategy).toBe(width < 992 ? "interaction" : "eager");
+
+        expect(statsEntry).toBeTruthy();
+        expect(statsEntry.strategy).toBe(expectedStrategy);
+
+        expect(games).toBeUndefined();
+
+        if (expectedStrategy !== "interaction") {
+            await page.waitForFunction(
+                () =>
+                    Array.isArray(window.__RH_LOADER_DEBUG__?.loadedModules) &&
+                    window.__RH_LOADER_DEBUG__.loadedModules.includes(
+                        "admin-stats-entry",
+                    ),
+                undefined,
+                { timeout: 2000 },
+            );
+            return;
+        }
+
+        await page.waitForTimeout(400);
+
+        const beforeInteractionLoaded = await page.evaluate(() =>
+            window.__RH_LOADER_DEBUG__?.loadedModules?.includes(
+                "admin-stats-entry",
+            ),
+        );
+        expect(beforeInteractionLoaded).toBe(false);
+
+        await page.locator("body").click({ position: { x: 30, y: 30 } });
+
+        await page.waitForFunction(
+            () =>
+                Array.isArray(window.__RH_LOADER_DEBUG__?.loadedModules) &&
+                window.__RH_LOADER_DEBUG__.loadedModules.includes(
+                    "admin-stats-entry",
+                ),
             undefined,
             { timeout: 2000 },
         );

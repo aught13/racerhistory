@@ -118,4 +118,103 @@ describe("legacy loader registry", () => {
             { id: "admin-users", strategy: "visible" },
         ]);
     });
+
+    test("covers the remaining admin route buckets", () => {
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/stat-basket-game-person/add/1",
+                isMobileViewport: false,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "eager" },
+            { id: "admin-stats-entry", strategy: "eager" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/images",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-images", strategy: "visible" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/persons/edit/1",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-people", strategy: "visible" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/team-season-rosters/add",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-rosters", strategy: "visible" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/sport-stats/1",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-taxonomy", strategy: "visible" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/blog-posts/add",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-content", strategy: "interaction" },
+        ]);
+    });
+
+    test("treats low-bandwidth clients like constrained clients", () => {
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/blog",
+                isMobileViewport: false,
+                isLowBandwidth: true,
+            }),
+        ).toEqual([
+            { id: "public-core", strategy: "eager" },
+            { id: "public-blog", strategy: "interaction" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/images",
+                isMobileViewport: false,
+                isLowBandwidth: true,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-images", strategy: "visible" },
+        ]);
+    });
 });
