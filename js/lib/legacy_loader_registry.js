@@ -111,7 +111,8 @@ const LEGACY_MODULES = [
             ]),
         mobileStrategy: "interaction",
         load: async (stimulus) => {
-            const module = await import("../route_modules/admin_stats_entry.js");
+            const module =
+                await import("../route_modules/admin_stats_entry.js");
             module.registerAdminStatsEntryControllers(stimulus);
         },
     },
@@ -139,7 +140,8 @@ const LEGACY_MODULES = [
     },
     {
         id: "admin-rosters",
-        matches: (pathname) => pathname.startsWith("/admin/team-season-rosters"),
+        matches: (pathname) =>
+            pathname.startsWith("/admin/team-season-rosters"),
         mobileStrategy: "visible",
         visibilityTarget:
             "[data-controller~='roster-edit-person'], [data-controller~='roster-multi-add'], [data-controller~='place-search']",

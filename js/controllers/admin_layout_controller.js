@@ -125,8 +125,14 @@ export default class extends Controller {
                   : "desktop";
 
         document.body.dataset.layoutVariant = variant;
-        document.body.classList.toggle("rh-layout--mobile", variant === "mobile");
-        document.body.classList.toggle("rh-layout--desktop", variant === "desktop");
+        document.body.classList.toggle(
+            "rh-layout--mobile",
+            variant === "mobile",
+        );
+        document.body.classList.toggle(
+            "rh-layout--desktop",
+            variant === "desktop",
+        );
         document.body.classList.toggle(
             "rh-layout--ultrawide",
             variant === "ultrawide",

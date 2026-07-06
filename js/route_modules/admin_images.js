@@ -8,7 +8,10 @@ import ImageUploadController from "../controllers/image_upload_controller.js";
 
 export function registerAdminImagesControllers(stimulus) {
     stimulus.register("admin-index-table", AdminIndexTableController);
-    stimulus.register("admin-image-bulk-upload", AdminImageBulkUploadController);
+    stimulus.register(
+        "admin-image-bulk-upload",
+        AdminImageBulkUploadController,
+    );
     stimulus.register("admin-image-crop-thumb", AdminImageCropThumbController);
     stimulus.register("admin-image-manipulate", AdminImageManipulateController);
     stimulus.register("hero-crop", HeroCropController);
