@@ -30,6 +30,10 @@
     --color-message-info-bg: #eff8ff;
     --color-message-info-text: #2779bd;
     --color-message-info-border: #6cb2eb;
+
+    --rh-admin-main-max-desktop: 1280px;
+    --rh-admin-main-max-ultrawide: 1760px;
+    --rh-admin-gutter-inline: clamp(0.75rem, 1.8vw, 2rem);
 }
 
 .button, button, input[type='button'], input[type='reset'], input[type='submit'] {
@@ -41,6 +45,65 @@ body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 400;
     background: var(--color-main-bg);
+}
+
+body.sidebar-mini.layout-fixed {
+    --rh-admin-main-max: var(--rh-admin-main-max-desktop);
+}
+
+body.sidebar-mini.layout-fixed.rh-layout--ultrawide {
+    --rh-admin-main-max: var(--rh-admin-main-max-ultrawide);
+}
+
+body.sidebar-mini.layout-fixed.rh-layout--mobile {
+    --rh-admin-main-max: 100%;
+}
+
+.app-wrapper {
+    container-type: inline-size;
+    container-name: admin-shell;
+}
+
+.app-main .container-fluid {
+    width: 100%;
+    max-width: var(--rh-admin-main-max);
+    margin-inline: auto;
+    padding-inline: var(--rh-admin-gutter-inline);
+}
+
+.app-main .table-responsive {
+    width: 100%;
+    margin-inline: auto;
+}
+
+@container admin-shell (min-width: 1420px) {
+    .app-main .table-responsive,
+    .app-main table.table {
+        max-width: min(1660px, 100%);
+    }
+
+    .app-main .card,
+    .app-main .container,
+    .app-main .container-fluid {
+        max-width: min(var(--rh-admin-main-max), 100%);
+    }
+}
+
+@container admin-shell (min-width: 1700px) {
+    .app-main .container-fluid {
+        max-width: var(--rh-admin-main-max-ultrawide);
+    }
+
+    .app-main .table-responsive,
+    .app-main table.table {
+        max-width: 1720px;
+    }
+
+    .app-main .navbar,
+    .app-header .container-fluid {
+        max-width: 1840px;
+        margin-inline: auto;
+    }
 }
 
 .top-nav-links,

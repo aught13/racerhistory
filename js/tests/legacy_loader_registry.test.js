@@ -90,7 +90,8 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-app", strategy: "eager" },
+            { id: "admin-overlay", strategy: "eager" },
+            { id: "admin-games", strategy: "eager" },
         ]);
 
         expect(
@@ -101,7 +102,20 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-app", strategy: "idle" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-games", strategy: "visible" },
+        ]);
+
+        expect(
+            resolveLegacyLoadPlan({
+                pathname: "/admin/users",
+                isMobileViewport: true,
+                isLowBandwidth: false,
+            }),
+        ).toEqual([
+            { id: "admin-core", strategy: "eager" },
+            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-users", strategy: "visible" },
         ]);
     });
 });

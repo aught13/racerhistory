@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus";
 
 const STORAGE_KEY = "rh_admin_sidebar_collapsed";
 const DESKTOP_BREAKPOINT = 992;
+const ULTRAWIDE_BREAKPOINT = 1600;
 
 /**
  * AdminLTE 4 layout controller.
@@ -29,6 +30,7 @@ export default class extends Controller {
      */
     connect() {
         this.restoreState();
+        this.applyLayoutVariant();
         document.addEventListener("turbo:load", this._handleTurboLoad, {
             once: false,
         });
@@ -101,6 +103,7 @@ export default class extends Controller {
      */
     _handleTurboLoad = () => {
         this.restoreState();
+        this.applyLayoutVariant();
     };
 
     _handleResize = () => {
@@ -108,7 +111,27 @@ export default class extends Controller {
         if (!this._isMobile()) {
             this.closeMobile();
         }
+
+        this.applyLayoutVariant();
     };
+
+    applyLayoutVariant() {
+        const width = window.innerWidth;
+        const variant =
+            width >= ULTRAWIDE_BREAKPOINT
+                ? "ultrawide"
+                : this._isMobile()
+                  ? "mobile"
+                  : "desktop";
+
+        document.body.dataset.layoutVariant = variant;
+        document.body.classList.toggle("rh-layout--mobile", variant === "mobile");
+        document.body.classList.toggle("rh-layout--desktop", variant === "desktop");
+        document.body.classList.toggle(
+            "rh-layout--ultrawide",
+            variant === "ultrawide",
+        );
+    }
 
     _isMobile() {
         return window.innerWidth < DESKTOP_BREAKPOINT;
