@@ -40,9 +40,8 @@ const LEGACY_MODULES = [
         id: "public-people",
         matches: (pathname) =>
             matchesAnyPrefix(pathname, ["/people", "/person"]),
-        mobileStrategy: "visible",
-        visibilityTarget:
-            "#people-table, [data-controller~='person-game-log-tabs'], [data-controller~='person-blog-popovers']",
+        // Load eagerly for reliability: DataTables and the people index
+        // are user-facing and should initialize immediately after navigation.
         load: async (stimulus) => {
             const module = await import("../route_modules/public_people.js");
             module.registerPublicPeopleControllers(stimulus);

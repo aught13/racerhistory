@@ -78,10 +78,62 @@ export function initPeopleIndexPage() {
 
             return ensureDataTablesLoaded()
                 .then(() => {
-                    initPeopleIndex({
+                    const initOptions = {
                         tableSelector: "#people-table",
                         searchInputSelector: "#people-name-search",
                         dataUrl: dataUrl || undefined,
+                    };
+
+                    // Attempt initialization, retrying a few times if the
+                    // first attempt doesn't produce a DataTable (race with
+                    // loader timing or Turbo cache restores can cause this).
+                    const attemptInit = () => {
+                        try {
+                            return initPeopleIndex(initOptions) || { table: null };
+                        } catch (err) {
+                            console.debug(err);
+                            return { table: null };
+                        }
+                    };
+
+                    const result = attemptInit();
+                    if (result && result.table) {
+                        try {
+                            if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                                window.addEventListener('turbo:before-cache', cleanupPeopleIndexPage, { once: true });
+                            }
+                        } catch (err) {
+                            // no-op
+                        }
+                        return result;
+                    }
+
+                    const backoffs = [150, 300, 600, 1200];
+                    let attempt = 0;
+
+                    return new Promise((resolve) => {
+                        const retry = () => {
+                            attempt += 1;
+                            const r = attemptInit();
+                            if (r && r.table) {
+                                try {
+                                    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+                                        window.addEventListener('turbo:before-cache', cleanupPeopleIndexPage, { once: true });
+                                    }
+                                } catch (err) {
+                                    // no-op
+                                }
+                                resolve(r);
+                                return;
+                            }
+                            if (attempt >= backoffs.length) {
+                                resolve(r);
+                                return;
+                            }
+                            window.setTimeout(retry, backoffs[attempt - 1]);
+                        };
+
+                        window.setTimeout(retry, backoffs[0]);
                     });
                 })
                 .catch((err) => {
@@ -121,5 +173,15 @@ export function cleanupPeopleIndexPage() {
         }
     } catch (err) {
         console.warn("Failed to clean up people DataTable", err);
+    }
+    // Also clear any search binding marker so re-initialization (e.g. after
+    // Turbo-backed navigation) can re-bind the input event listeners.
+    try {
+        const input = document.querySelector("#people-name-search");
+        if (input && input.dataset && input.dataset.peopleSearchBound) {
+            delete input.dataset.peopleSearchBound;
+        }
+    } catch (err) {
+        // no-op
     }
 }

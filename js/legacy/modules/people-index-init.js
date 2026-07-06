@@ -73,8 +73,20 @@ export default function initPeopleIndex(options = {}) {
         if (useServerSide) {
             if (input.dataset.peopleSearchBound !== "true") {
                 input.addEventListener("input", () => {
-                    if (api && typeof api.search === "function") {
-                        api.search(input.value).draw();
+                    try {
+                        // Resolve the DataTable API at event time to avoid stale
+                        // closures when the table is destroyed/recreated (Turbo
+                        // navigation can create timing races where the captured
+                        // `api` is no longer the live instance).
+                        const runtimeApi = (window.$ && window.$.fn && typeof window.$(tableSelector).DataTable === 'function')
+                            ? window.$(tableSelector).DataTable()
+                            : api;
+
+                        if (runtimeApi && typeof runtimeApi.search === "function") {
+                            runtimeApi.search(input.value).draw();
+                        }
+                    } catch (err) {
+                        // Ignore runtime errors during input handling.
                     }
                 });
                 input.dataset.peopleSearchBound = "true";
