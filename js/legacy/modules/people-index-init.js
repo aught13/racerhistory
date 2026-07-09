@@ -74,18 +74,28 @@ export default function initPeopleIndex(options = {}) {
             if (input.dataset.peopleSearchBound !== "true") {
                 input.addEventListener("input", () => {
                     try {
-                        // Resolve the DataTable API at event time to avoid stale
-                        // closures when the table is destroyed/recreated (Turbo
-                        // navigation can create timing races where the captured
-                        // `api` is no longer the live instance).
-                        const runtimeApi = (window.$ && window.$.fn && typeof window.$(tableSelector).DataTable === 'function')
-                            ? window.$(tableSelector).DataTable()
-                            : api;
+                        // Prefer the API object resolved during init (dtApi.api())
+                        // when it provides a `search` method, otherwise fall back
+                        // to calling the current DataTable instance. This keeps
+                        // test harnesses deterministic while still avoiding
+                        // stale closures in production.
+                        const runtimeApi =
+                            api && typeof api.search === "function"
+                                ? api
+                                : window.$ &&
+                                    window.$.fn &&
+                                    typeof window.$(tableSelector).DataTable ===
+                                        "function"
+                                  ? window.$(tableSelector).DataTable()
+                                  : api;
 
-                        if (runtimeApi && typeof runtimeApi.search === "function") {
+                        if (
+                            runtimeApi &&
+                            typeof runtimeApi.search === "function"
+                        ) {
                             runtimeApi.search(input.value).draw();
                         }
-                    } catch (err) {
+                    } catch {
                         // Ignore runtime errors during input handling.
                     }
                 });

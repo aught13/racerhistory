@@ -48,6 +48,8 @@ export default class extends Controller {
             `${this.modalId}-skip-crop`,
         );
 
+        this.searchDebounce = null;
+
         this.selectBtn = document.getElementById(`${this.modalId}-select-btn`);
         this.uploadBtn = document.getElementById(`${this.modalId}-upload-btn`);
         this.rotateLeftBtn = document.getElementById(
@@ -320,14 +322,69 @@ export default class extends Controller {
     }
 
     onSearch(query) {
-        const loweredQuery = query.toLowerCase();
-        const filtered = this.loadedImages.filter((img) => {
-            const searchText =
-                `${img.id} ${img.original_name || ""} ${(img.tags || []).join(" ")}`.toLowerCase();
-            return searchText.includes(loweredQuery);
+        const q = (query || "").trim();
+
+        if (q === "") {
+            this.lastSearchQuery = "";
+            this.lastLocalFiltered = this.loadedImages
+                ? this.loadedImages.slice()
+                : [];
+            this.renderGallery(this.loadedImages);
+            return;
+        }
+
+        const qLower = q.toLowerCase();
+        const localFiltered = (this.loadedImages || []).filter((img) => {
+            if (String(img.id) === q) return true;
+            if (
+                img.original_name &&
+                String(img.original_name).toLowerCase().includes(qLower)
+            )
+                return true;
+            if (
+                Array.isArray(img.tags) &&
+                img.tags.join(" ").toLowerCase().includes(qLower)
+            )
+                return true;
+            return false;
         });
 
-        this.renderGallery(filtered);
+        this.lastSearchQuery = q;
+        this.lastLocalFiltered = localFiltered;
+        this.renderGallery(localFiltered);
+
+        if (this.searchDebounce) clearTimeout(this.searchDebounce);
+        this.searchDebounce = setTimeout(
+            () => this.performServerSearch(q),
+            300,
+        );
+    }
+
+    async performServerSearch(q) {
+        if (!this.gallery) return;
+
+        try {
+            let url = "/admin/images/browse";
+            const params = new URLSearchParams();
+            if (this.config.tagFilter) {
+                params.append("tag", this.config.tagFilter);
+            }
+            params.append("q", q);
+            params.append("limit", "500");
+            url += "?" + params.toString();
+
+            const response = await fetch(url, { credentials: "same-origin" });
+            if (!response.ok) throw new Error("Failed to search images");
+            const data = await response.json();
+            this.loadedImages = data.images || [];
+            this.syncTargetFieldSelection();
+            this.renderGallery(this.loadedImages);
+        } catch (err) {
+            console.error("Search error:", err);
+            if (this.lastLocalFiltered) {
+                this.renderGallery(this.lastLocalFiltered);
+            }
+        }
     }
 
     onGalleryImageClick(card) {

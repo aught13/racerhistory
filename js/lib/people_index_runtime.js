@@ -89,7 +89,9 @@ export function initPeopleIndexPage() {
                     // loader timing or Turbo cache restores can cause this).
                     const attemptInit = () => {
                         try {
-                            return initPeopleIndex(initOptions) || { table: null };
+                            return (
+                                initPeopleIndex(initOptions) || { table: null }
+                            );
                         } catch (err) {
                             console.debug(err);
                             return { table: null };
@@ -99,10 +101,17 @@ export function initPeopleIndexPage() {
                     const result = attemptInit();
                     if (result && result.table) {
                         try {
-                            if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-                                window.addEventListener('turbo:before-cache', cleanupPeopleIndexPage, { once: true });
+                            if (
+                                typeof window !== "undefined" &&
+                                typeof window.addEventListener === "function"
+                            ) {
+                                window.addEventListener(
+                                    "turbo:before-cache",
+                                    cleanupPeopleIndexPage,
+                                    { once: true },
+                                );
                             }
-                        } catch (err) {
+                        } catch {
                             // no-op
                         }
                         return result;
@@ -117,10 +126,18 @@ export function initPeopleIndexPage() {
                             const r = attemptInit();
                             if (r && r.table) {
                                 try {
-                                    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-                                        window.addEventListener('turbo:before-cache', cleanupPeopleIndexPage, { once: true });
+                                    if (
+                                        typeof window !== "undefined" &&
+                                        typeof window.addEventListener ===
+                                            "function"
+                                    ) {
+                                        window.addEventListener(
+                                            "turbo:before-cache",
+                                            cleanupPeopleIndexPage,
+                                            { once: true },
+                                        );
                                     }
-                                } catch (err) {
+                                } catch {
                                     // no-op
                                 }
                                 resolve(r);
@@ -181,7 +198,7 @@ export function cleanupPeopleIndexPage() {
         if (input && input.dataset && input.dataset.peopleSearchBound) {
             delete input.dataset.peopleSearchBound;
         }
-    } catch (err) {
+    } catch {
         // no-op
     }
 }

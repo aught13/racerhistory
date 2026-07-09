@@ -12,30 +12,39 @@ export function registerPublicCoreControllers(stimulus) {
     // Prefetch heavier page modules on nav hover/interact to reduce
     // race conditions during Turbo navigation (e.g. clicking "People").
     try {
-        if (typeof window !== 'undefined' && !window.__RH_PREFETCH_INSTALLED__) {
+        if (
+            typeof window !== "undefined" &&
+            !window.__RH_PREFETCH_INSTALLED__
+        ) {
             window.__RH_PREFETCH_INSTALLED__ = true;
             document.addEventListener(
-                'pointerenter',
+                "pointerenter",
                 (e) => {
-                    const a = e.target && e.target.closest && e.target.closest('a[href]');
+                    const a =
+                        e.target &&
+                        e.target.closest &&
+                        e.target.closest("a[href]");
                     if (!a) {
                         return;
                     }
                     let url;
                     try {
-                        url = new URL(a.href, location.origin);
+                        url = new URL(a.href, window.location.origin);
                     } catch (err) {
+                        console.debug(err);
                         return;
                     }
 
-                    if (url.pathname === '/people') {
-                        void import('../route_modules/public_people.js').catch(() => null);
+                    if (url.pathname === "/people") {
+                        void import("../route_modules/public_people.js").catch(
+                            () => null,
+                        );
                     }
                 },
                 { capture: true, passive: true },
             );
         }
     } catch (err) {
-        // no-op
+        console.debug(err);
     }
 }

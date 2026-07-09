@@ -113,7 +113,7 @@ class TeamSeasonsController extends AppController
             if ($result['success']) {
                 $this->Flash->success(__('The team season has been saved.'));
 
-                return $this->redirect(['action' => 'index']);
+                return $this->redirect(['action' => 'view', $id]);
             }
             $this->Flash->error(__('The team season could not be saved. Please, try again.'));
         }
