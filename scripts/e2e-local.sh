@@ -126,10 +126,10 @@ if docker ps -a --format '{{.Names}}' | grep -qx "$DB_CONTAINER_NAME"; then
     if docker inspect -f '{{.State.Running}}' "$DB_CONTAINER_NAME" 2>/dev/null | grep -q true; then
         log "Reusing existing running container $DB_CONTAINER_NAME";
         # read host port (if mapped)
-        portmap=$(docker port "$DB_CONTAINER_NAME" 3306/tcp 2>/dev/null || true)
+        portmap=$(docker port "$DB_CONTAINER_NAME" 3306/tcp 2>/dev/null | head -1 || true)
         if [[ -n "$portmap" ]]; then
-            hostport=$(echo "$portmap" | sed -n 's/.*://p')
-            if [[ -n "$hostport" ]]; then DB_PORT=$hostport; fi
+            hostport=$(echo "$portmap" | sed 's/.*://; s/[^0-9].*//')
+            if [[ -n "$hostport" && "$hostport" =~ ^[0-9]+$ ]]; then DB_PORT=$hostport; fi
         fi
     else
         log "Starting existing container $DB_CONTAINER_NAME";
