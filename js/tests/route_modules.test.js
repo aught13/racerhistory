@@ -76,21 +76,29 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("admin-games-index")).toBe(true);
             expect(registeredControllers.has("admin-game-form")).toBe(true);
             expect(registeredControllers.has("game-view")).toBe(true);
-            expect(registeredControllers.has("game-box-totals-toggle")).toBe(true);
+            expect(registeredControllers.has("game-box-totals-toggle")).toBe(
+                true,
+            );
         });
 
         test("registerAdminImagesControllers registers image manipulation controllers", () => {
             registerAdminImagesControllers(application);
             expect(registeredControllers.has("admin-index-table")).toBe(true);
-            expect(registeredControllers.has("admin-image-crop-thumb")).toBe(true);
-            expect(registeredControllers.has("admin-image-manipulate")).toBe(true);
+            expect(registeredControllers.has("admin-image-crop-thumb")).toBe(
+                true,
+            );
+            expect(registeredControllers.has("admin-image-manipulate")).toBe(
+                true,
+            );
             expect(registeredControllers.has("image-selector")).toBe(true);
             expect(registeredControllers.has("image-upload")).toBe(true);
         });
 
         test("registerAdminOverlayControllers registers overlay dialog controller", () => {
             registerAdminOverlayControllers(application);
-            expect(registeredControllers.has("admin-confirm-delete")).toBe(true);
+            expect(registeredControllers.has("admin-confirm-delete")).toBe(
+                true,
+            );
         });
 
         test("registerAdminPeopleControllers registers people management controllers", () => {
@@ -158,8 +166,12 @@ describe("Route Module Controller Registration", () => {
         test("registerPublicPeopleControllers registers people viewing controllers", () => {
             registerPublicPeopleControllers(application);
             expect(registeredControllers.has("people-index")).toBe(true);
-            expect(registeredControllers.has("person-game-log-tabs")).toBe(true);
-            expect(registeredControllers.has("person-blog-popovers")).toBe(true);
+            expect(registeredControllers.has("person-game-log-tabs")).toBe(
+                true,
+            );
+            expect(registeredControllers.has("person-blog-popovers")).toBe(
+                true,
+            );
         });
 
         test("registerPublicSeasonsControllers registers season view controllers", () => {

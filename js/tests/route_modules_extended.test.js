@@ -35,7 +35,10 @@ describe("Route modules extended coverage", () => {
         });
 
         test("public_core prefetch installs listener once", () => {
-            const addEventListenerSpy = jest.spyOn(document, "addEventListener");
+            const addEventListenerSpy = jest.spyOn(
+                document,
+                "addEventListener",
+            );
 
             registerPublicCoreControllers(mockStimulus);
             const firstCallCount = addEventListenerSpy.mock.calls.length;

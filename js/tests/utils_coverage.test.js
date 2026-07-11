@@ -47,9 +47,9 @@ describe("Native Bridge utility", () => {
 describe("TinyMCE Loader utility", () => {
     beforeEach(() => {
         // Clear any existing script tags
-        document.querySelectorAll('script[data-rh-tinymce="true"]').forEach(
-            (s) => s.remove(),
-        );
+        document
+            .querySelectorAll('script[data-rh-tinymce="true"]')
+            .forEach((s) => s.remove());
         delete window.tinymce;
     });
 

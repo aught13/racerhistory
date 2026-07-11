@@ -198,7 +198,9 @@ describe("legacy loader registry - comprehensive coverage", () => {
             const gamesLowBandwidth = lowBandwidthResult.find(
                 (m) => m.id === "admin-games",
             );
-            const gamesMobile = mobileResult.find((m) => m.id === "admin-games");
+            const gamesMobile = mobileResult.find(
+                (m) => m.id === "admin-games",
+            );
 
             expect(gamesLowBandwidth?.strategy).toBe(gamesMobile?.strategy);
         });
@@ -221,8 +223,7 @@ describe("legacy loader registry - comprehensive coverage", () => {
                 });
                 expect(
                     result.some(
-                        (m) =>
-                            m.id === "admin-core" && m.strategy === "eager",
+                        (m) => m.id === "admin-core" && m.strategy === "eager",
                     ),
                 ).toBe(true);
             });
@@ -238,8 +239,7 @@ describe("legacy loader registry - comprehensive coverage", () => {
                 });
                 expect(
                     result.some(
-                        (m) =>
-                            m.id === "public-core" && m.strategy === "eager",
+                        (m) => m.id === "public-core" && m.strategy === "eager",
                     ),
                 ).toBe(true);
             });
@@ -314,9 +314,9 @@ describe("legacy loader registry - comprehensive coverage", () => {
                 isMobileViewport: false,
             });
 
-            expect(
-                withoutSlash.some((m) => m.id === "public-games"),
-            ).toBe(true);
+            expect(withoutSlash.some((m) => m.id === "public-games")).toBe(
+                true,
+            );
             expect(withSlash.some((m) => m.id === "public-games")).toBe(true);
         });
 
