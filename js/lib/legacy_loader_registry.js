@@ -30,6 +30,9 @@ const LEGACY_MODULES = [
     {
         id: "public-games",
         matches: (pathname) => pathname.startsWith("/games"),
+        // Defer loading public games until the relevant section becomes
+        // visible on small viewports to save network and CPU.
+        mobileStrategy: "visible",
         load: async (stimulus) => {
             const module = await import("../route_modules/public_games.js");
             module.registerPublicGamesControllers(stimulus);
@@ -96,7 +99,10 @@ const LEGACY_MODULES = [
                 "/admin/stat-basket-game-person",
                 "/admin/stat-basket-game-opponent",
             ]),
-        mobileStrategy: "visible",
+        // Prefer interaction-based deferral on constrained/mobile clients
+        // so the editor doesn't eagerly load heavier admin logic until the
+        // user interacts with the form.
+        mobileStrategy: "interaction",
         visibilityTarget:
             "#stat-rows, [data-controller~='stat-multi-add'], #add-row-btn",
         load: async (stimulus) => {
@@ -549,7 +555,7 @@ export function resolveLegacyLoadPlan(profile = getRuntimeProfile()) {
     }));
 }
 
-export function loadLegacyModulesForCurrentRoute(
+export async function loadLegacyModulesForCurrentRoute(
     stimulus,
     profile = getRuntimeProfile(),
 ) {
@@ -570,10 +576,12 @@ export function loadLegacyModulesForCurrentRoute(
         moduleDefinition.matches(profile.pathname),
     );
 
-    // Heuristic: if the stat multi-add markup is present on the page, proactively
-    // load the admin-stats-entry module so either the Stimulus controller or the
-    // legacy initializer attaches before user interaction. This prevents a
-    // deferred-load race where no handler is present at click time.
+    // Heuristic: if the stat multi-add markup is present on the page, we may
+    // proactively load the admin-stats-entry module so either the Stimulus
+    // controller or the legacy initializer attaches before user interaction.
+    // However, on constrained clients (mobile viewport or low bandwidth) we
+    // should respect the module's interaction-based deferral and avoid
+    // eagerly importing heavy admin logic.
     try {
         if (
             typeof document !== "undefined" &&
@@ -583,7 +591,15 @@ export function loadLegacyModulesForCurrentRoute(
                 (m) => m.id === "admin-stats-entry",
             );
             if (statsModule) {
-                void loadModule(statsModule, stimulus);
+                const mobileOrConstrained =
+                    profile.isMobileViewport || profile.isLowBandwidth;
+
+                if (!mobileOrConstrained) {
+                    void loadModule(statsModule, stimulus);
+                } else {
+                    // Deliberately skip eager load on constrained clients to
+                    // preserve interaction deferral semantics.
+                }
             }
         }
     } catch {
@@ -620,7 +636,18 @@ export function loadLegacyModulesForCurrentRoute(
             continue;
         }
 
-        void loadModule(moduleDefinition, stimulus);
+        // For most eager modules we can load asynchronously, but the
+        // `admin-core` module is small and critical for admin routes. Under
+        // heavy test-suite concurrency its dynamic import can sometimes be
+        // delayed enough to flake tests that expect `admin-core` to be
+        // registered quickly. Awaiting the `admin-core` load here ensures
+        // predictable availability without changing the behavior for other
+        // modules.
+        if (moduleDefinition.id === "admin-core") {
+            await loadModule(moduleDefinition, stimulus);
+        } else {
+            void loadModule(moduleDefinition, stimulus);
+        }
     }
 }
 

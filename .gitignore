@@ -75,3 +75,4 @@ phpDocumentor.phar
 /webroot/dist/
 /.phpdoc/
 phpdoc.dist.xml
+server.pid

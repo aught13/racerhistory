@@ -36,11 +36,36 @@ function ensureDataTablesLoaded() {
         return Promise.resolve();
     }
 
-    if (!hasJquery()) {
-        return Promise.reject(new Error("jQuery not available"));
-    }
+    // Wait for jQuery to appear on the page for a bounded time, then
+    // wait for DataTables. This makes the initializer tolerant of
+    // deferred-loading strategies that may register jQuery shortly after
+    // page startup (e.g. via route modules).
+    const start = Date.now();
+    const timeoutMs = 5000;
 
-    return waitForDataTables();
+    return new Promise((resolve, reject) => {
+        const check = () => {
+            if (hasDataTables()) {
+                resolve();
+                return;
+            }
+
+            if (hasJquery()) {
+                // jQuery is available; wait for DataTables specifically.
+                waitForDataTables().then(resolve).catch(reject);
+                return;
+            }
+
+            if (Date.now() - start >= timeoutMs) {
+                reject(new Error("jQuery not available"));
+                return;
+            }
+
+            window.setTimeout(check, 100);
+        };
+
+        check();
+    });
 }
 
 function bindOpponentSearchInput(dtApi) {

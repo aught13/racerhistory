@@ -2,9 +2,11 @@
 // @ts-check
 
 const eslint = require("@eslint/js");
+const pluginSecurity = require("eslint-plugin-security")
 
 module.exports = [
     eslint.configs.recommended,
+    pluginSecurity.configs.recommended,
     {
         // Ignore third-party libraries, config and vendor files
         ignores: [

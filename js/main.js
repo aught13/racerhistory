@@ -8,6 +8,7 @@ import { registerServiceWorker } from "./lib/pwa.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
 import { initTinyMceLoader } from "./lib/tinymce_loader.js";
 import { initializeLegacyModules } from "./lib/legacy_loader_registry.js";
+import { getRuntimeProfile } from "./lib/runtime_profile.js";
 
 const isAdminPath =
     typeof window !== "undefined" &&
@@ -39,6 +40,27 @@ if (!runtimeAlreadyBooted) {
     if (hasWindow) {
         window.StimulusApplication = stimulus;
     }
+    // Eagerly load the critical admin core on admin pages to reduce
+    // test-suite and runtime flakiness where dynamic imports may be
+    // delayed under heavy concurrency. Register controllers directly
+    // with the Stimulus application when available.
+    try {
+        if (isAdminPath) {
+            void import("./route_modules/admin_core.js").then((mod) => {
+                try {
+                    mod.registerAdminCoreControllers(stimulus);
+                } catch (e) {
+                    console.debug(
+                        "main: failed to eagerly register admin_core",
+                        e,
+                    );
+                }
+            });
+        }
+    } catch {
+        void 0;
+    }
+
     initializeLegacyModules(stimulus);
 }
 
@@ -60,13 +82,19 @@ try {
                     )));
 
         if (shouldImportStatsModule) {
+            // Only eagerly import the admin stats entry module on non-mobile
+            // and non-low-bandwidth clients. On constrained clients we prefer
+            // the deferred/interaction strategy to avoid loading heavy admin
+            // logic until the user interacts (matches the loader strategy
+            // heuristics used elsewhere).
+            const profile = getRuntimeProfile();
+            const constrained =
+                profile.isMobileViewport || profile.isLowBandwidth;
+
             const doImport = () => {
                 void import("./route_modules/admin_stats_entry.js").then(
                     (mod) => {
                         try {
-                            // Call the register function even if we don't have a Stimulus
-                            // instance available; the function contains a try/catch and
-                            // will run the legacy initializer as a fallback.
                             mod.registerAdminStatsEntryControllers(
                                 window.StimulusApplication,
                             );
@@ -80,12 +108,14 @@ try {
                 );
             };
 
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", doImport, {
-                    once: true,
-                });
-            } else {
-                doImport();
+            if (!constrained) {
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", doImport, {
+                        once: true,
+                    });
+                } else {
+                    doImport();
+                }
             }
         }
     }

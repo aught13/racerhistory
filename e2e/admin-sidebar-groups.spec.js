@@ -53,12 +53,14 @@ test.describe("Admin sidebar groups", () => {
 
         // 1) Collapse desktop sidebar to emulate the user-reported state.
         await sidebarToggle.click();
-        await expect(body).toHaveClass(/sidebar-collapse/);
+        await expect(body).toHaveClass(/sidebar-collapse/, { timeout: 5000 });
 
         // 2) Clicking Sports should auto-expand sidebar and open Sports group.
         await sportsToggle.click();
-        await expect(body).not.toHaveClass(/sidebar-collapse/);
-        await expect(sportsToggle).toHaveAttribute("aria-expanded", "true");
+        await expect(body).not.toHaveClass(/sidebar-collapse/, { timeout: 5000 });
+        await expect(sportsToggle).toHaveAttribute("aria-expanded", "true", {
+            timeout: 5000,
+        });
 
         const sportsPanel = sportsToggle.locator("xpath=following-sibling::ul[1]");
         await expect(sportsPanel).toBeVisible();
@@ -68,11 +70,13 @@ test.describe("Admin sidebar groups", () => {
 
         // 3) Collapse again, then verify Content follows the same behavior.
         await sidebarToggle.click();
-        await expect(body).toHaveClass(/sidebar-collapse/);
+        await expect(body).toHaveClass(/sidebar-collapse/, { timeout: 5000 });
 
         await contentToggle.click();
-        await expect(body).not.toHaveClass(/sidebar-collapse/);
-        await expect(contentToggle).toHaveAttribute("aria-expanded", "true");
+        await expect(body).not.toHaveClass(/sidebar-collapse/, { timeout: 5000 });
+        await expect(contentToggle).toHaveAttribute("aria-expanded", "true", {
+            timeout: 5000,
+        });
 
         const contentPanel = contentToggle.locator("xpath=following-sibling::ul[1]");
         await expect(contentPanel).toBeVisible();

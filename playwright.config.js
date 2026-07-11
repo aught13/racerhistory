@@ -22,9 +22,11 @@ export default defineConfig({
     workers: process.env.CI ? 1 : undefined,
 
     // Reporter to use.
+    // Use the HTML reporter on CI only. Locally prefer the compact `list`
+    // reporter to avoid launching/serving the HTML report automatically.
     reporter: process.env.CI
         ? [['html'], ['junit', { outputFile: 'test-results-e2e.xml' }], ['list']]
-        : [['html'], ['list']],
+        : [['list']],
 
     // Shared settings for all the projects below.
     use: {

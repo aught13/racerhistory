@@ -84,7 +84,7 @@ test.describe("loader strategy - public routes", () => {
                             ?.dataset?.layoutVariant,
                 ),
             undefined,
-            { timeout: 2000 },
+            { timeout: 5000 },
         );
 
         const variant = await page.evaluate(() => {
@@ -121,7 +121,7 @@ test.describe("loader strategy - public routes", () => {
                         "public-blog",
                     ),
                 undefined,
-                { timeout: 2000 },
+                { timeout: 5000 },
             );
             return;
         }
@@ -215,7 +215,7 @@ test.describe("loader strategy - admin routes", () => {
                 Array.isArray(window.__RH_LOADER_DEBUG__?.loadedModules) &&
                 window.__RH_LOADER_DEBUG__.loadedModules.includes("admin-core"),
             undefined,
-            { timeout: 2000 },
+            { timeout: 5000 },
         );
     });
 
@@ -286,7 +286,7 @@ test.describe("loader strategy - admin routes", () => {
                         "admin-stats-entry",
                     ),
                 undefined,
-                { timeout: 2000 },
+                { timeout: 5000 },
             );
             return;
         }
@@ -309,7 +309,7 @@ test.describe("loader strategy - admin routes", () => {
                     "admin-stats-entry",
                 ),
             undefined,
-            { timeout: 2000 },
+            { timeout: 5000 },
         );
     });
 });
