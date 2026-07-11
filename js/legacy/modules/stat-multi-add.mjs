@@ -49,7 +49,16 @@ export function initStatMultiAdd() {
         }
     });
 
-    addBtn.addEventListener("click", () => {
+    addBtn.addEventListener("click", (ev) => {
+        try {
+            if (ev && ev.__rh_add_handled) {
+                return;
+            }
+            ev.__rh_add_handled = true;
+        } catch {
+            void 0;
+        }
+
         addRow(container);
     });
 
@@ -70,6 +79,10 @@ export function initStatMultiAdd() {
  * @param {HTMLElement} container The #stat-rows container
  */
 function addRow(container) {
+    // Event-level guarding (event.__rh_add_handled) prevents duplicate
+    // handling of the same native click event across multiple handlers.
+    // Avoid a dataset-backed lock here so synchronous programmatic
+    // clicks in unit tests are not blocked.
     const rows = container.querySelectorAll(".stat-row");
     const template = rows[0];
     if (!template) {

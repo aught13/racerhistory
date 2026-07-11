@@ -162,15 +162,27 @@ test.describe("Dark Mode — theme toggle button", () => {
     });
 
     test("clicking toggle should cycle theme", async ({ page }) => {
+        // Ensure a deterministic starting state (system) for this toggle
+        // test so it doesn't depend on previous cookie state.
+        await page.context().clearCookies();
+
         await page.goto("/");
         await page.waitForLoadState("domcontentloaded");
 
         const toggle = page.locator('[data-controller="theme-toggle"]');
         if ((await toggle.count()) > 0) {
+            // Wait for Stimulus to attach and sync the current mode.
+            await page.waitForFunction(() => {
+                const el = document.querySelector('[data-controller="theme-toggle"]');
+                return !!(el && typeof el.dataset.themeMode !== "undefined");
+            });
+
             // Click to cycle from system → light → dark
             await toggle.click();
             await toggle.click();
 
+            // Wait for the html data-theme to reflect the change
+            await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
             const theme = await page.getAttribute("html", "data-theme");
             expect(theme).toBe("dark");
         }

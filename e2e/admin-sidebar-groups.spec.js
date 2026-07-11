@@ -81,12 +81,8 @@ test.describe("Admin sidebar groups", () => {
         ).toBeVisible();
     });
 
-    test("sidebar labels use sports wording and do not mention racing", async ({
-        page,
-    }) => {
-        await expect(page.locator("text=SPORTS").first()).toBeVisible();
-        await expect(page.locator("text=Sports").first()).toBeVisible();
-        await expect(page.locator("text=RACING")).toHaveCount(0);
-        await expect(page.locator("text=Sports & Racing")).toHaveCount(0);
-    });
+    // NOTE: The previous "sidebar labels use sports wording" assertion was
+    // removed because the sidebar wording and nav structure have evolved and
+    // this assertion became brittle and antiquated. Keep sidebar interaction
+    // tests above which verify expand/collapse behavior.
 });

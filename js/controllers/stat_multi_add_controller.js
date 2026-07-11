@@ -17,7 +17,20 @@ export default class extends Controller {
         }
 
         this.boundRowsClick = (event) => this.handleRowsClick(event);
-        this.boundAddClick = () => this.addRow();
+        this.boundAddClick = (event) => {
+            try {
+                if (event && event.__rh_add_handled) {
+                    return;
+                }
+                if (event) {
+                    event.__rh_add_handled = true;
+                }
+            } catch {
+                void 0;
+            }
+
+            this.addRow();
+        };
 
         if (this.hasRowsTarget) {
             this.rowsTarget.addEventListener("click", this.boundRowsClick);
@@ -80,6 +93,11 @@ export default class extends Controller {
     }
 
     addRow() {
+        // Event-level guarding (event.__rh_add_handled) prevents duplicate
+        // handling of the same click event across multiple handlers.
+        // Avoid a dataset-backed lock here because unit tests call
+        // `.click()` synchronously and it would prevent immediate
+        // sequential programmatic clicks.
         const rows = this.rowsTarget.querySelectorAll(".stat-row");
         const template = rows[0];
         try {
