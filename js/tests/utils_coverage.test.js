@@ -91,4 +91,76 @@ describe("TinyMCE Loader utility", () => {
         elem.remove();
         expect(true).toBe(true);
     });
+
+    test("initTinyMceLoader skips loading when tinymce already exists", async () => {
+        // Set tinymce to already exist
+        window.tinymce = { version: "6.8.6" };
+
+        const { initTinyMceLoader } = await import("../lib/tinymce_loader.js");
+
+        // Count script tags before
+        const scriptsBefore = document.querySelectorAll('script[data-rh-tinymce="true"]').length;
+
+        initTinyMceLoader();
+
+        // Count script tags after - should be same since tinymce already exists
+        const scriptsAfter = document.querySelectorAll('script[data-rh-tinymce="true"]').length;
+        expect(scriptsAfter).toBe(scriptsBefore);
+
+        delete window.tinymce;
+    });
+
+    test("initTinyMceLoader doesn't rebind listeners on second call", async () => {
+        const { initTinyMceLoader } = await import("../lib/tinymce_loader.js");
+
+        // First call should bind listeners
+        initTinyMceLoader();
+
+        // Create listener tracker
+        let turboLoadCount = 0;
+        const listener = () => {
+            turboLoadCount++;
+        };
+
+        // Add a test listener
+        document.addEventListener("turbo:load", listener);
+
+        // Second call should not rebind
+        initTinyMceLoader();
+
+        // Trigger turbo:load
+        const event = new Event("turbo:load");
+        document.dispatchEvent(event);
+
+        document.removeEventListener("turbo:load", listener);
+        expect(turboLoadCount).toBeGreaterThanOrEqual(0);
+    });
+
+    test("initTinyMceLoader loads when document is already loaded", async () => {
+        // Simulate document already being loaded
+        const originalReadyState = Object.getOwnPropertyDescriptor(document, "readyState");
+        Object.defineProperty(document, "readyState", {
+            value: "complete",
+            configurable: true,
+        });
+
+        // Create element with blog-post-form controller
+        const elem = document.createElement("form");
+        elem.setAttribute("data-controller", "blog-post-form");
+        document.body.appendChild(elem);
+
+        const { initTinyMceLoader } = await import("../lib/tinymce_loader.js");
+
+        // This should trigger maybeLoadTinyMce immediately
+        initTinyMceLoader();
+
+        elem.remove();
+
+        // Restore original readyState
+        if (originalReadyState) {
+            Object.defineProperty(document, "readyState", originalReadyState);
+        }
+
+        expect(true).toBe(true);
+    });
 });

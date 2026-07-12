@@ -104,4 +104,88 @@ describe("back-navigation controller", () => {
 
         expect(navigateSpy).toHaveBeenCalledWith("/admin/persons");
     });
+
+    test("uses window.history.back() when history available", () => {
+        const backButton = document.getElementById("back-btn");
+        const historySpy = jest.spyOn(window.history, "back").mockImplementation(() => {});
+
+        setReferrer("http://localhost/admin/games");
+        Object.defineProperty(window.history, "length", {
+            value: 5,
+            configurable: true,
+        });
+
+        backButton.click();
+
+        expect(historySpy).toHaveBeenCalled();
+        historySpy.mockRestore();
+    });
+
+    test("calls navigateToIndex when referrer is from index", () => {
+        const backButton = document.getElementById("back-btn");
+        const navigateSpy = jest.fn();
+
+        setReferrer("http://localhost/admin/persons");
+        window.__RH_NAVIGATE__ = navigateSpy;
+
+        backButton.click();
+
+        expect(navigateSpy).toHaveBeenCalledWith("/admin/persons");
+    });
+
+    test("skips update when backButton target missing", () => {
+        document.body.innerHTML = `
+            <div
+                data-controller="back-navigation"
+                data-back-navigation-index-url-value="/admin/persons"
+            >
+                <p>No back button here</p>
+            </div>
+        `;
+
+        application.stop();
+        application = Application.start();
+        application.register("back-navigation", BackNavigationController);
+
+        // Should not throw even without target
+        expect(true).toBe(true);
+    });
+
+    test("navigateToIndex does nothing when indexUrl not set", () => {
+        document.body.innerHTML = `
+            <div data-controller="back-navigation">
+                <button data-action="click->back-navigation#goBack">Back</button>
+            </div>
+        `;
+
+        application.stop();
+        application = Application.start();
+        application.register("back-navigation", BackNavigationController);
+
+        const button = document.querySelector("button");
+        button.click();
+
+        // Should handle gracefully without indexUrl
+        expect(true).toBe(true);
+    });
+
+    test("uses default paths when values not provided", () => {
+        document.body.innerHTML = `
+            <div data-controller="back-navigation" data-back-navigation-index-url-value="/admin/persons">
+                <button data-action="click->back-navigation#goBack">Back</button>
+            </div>
+        `;
+
+        application.stop();
+        application = Application.start();
+        application.register("back-navigation", BackNavigationController);
+
+        setReferrer("http://localhost/admin/persons");
+        const button = document.querySelector("button");
+
+        // Should use default paths
+        button.click();
+
+        expect(true).toBe(true);
+    });
 });

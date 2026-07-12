@@ -37,7 +37,7 @@ test.describe("PWA installability and offline behavior", () => {
         test.skip(browserName !== "chromium", "Service worker check is Chromium-focused");
 
         await page.goto("/");
-        
+
         // Give the service worker registration some time to start
         await page.waitForTimeout(500);
 
@@ -59,7 +59,7 @@ test.describe("PWA installability and offline behavior", () => {
                 return true;
             } catch (err) {
                 console.debug("Service Worker ready failed:", err.message);
-                
+
                 // Check if there are any registrations at all
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 console.debug(`Found ${registrations.length} SW registrations`);
@@ -71,7 +71,7 @@ test.describe("PWA installability and offline behavior", () => {
                         waiting: !!reg.waiting,
                     });
                 });
-                
+
                 return false;
             }
         });
@@ -87,7 +87,7 @@ test.describe("PWA installability and offline behavior", () => {
         test.skip(browserName !== "chromium", "Offline SW behavior is Chromium-focused");
 
         await page.goto("/");
-        
+
         // Wait for service worker to be ready with proper timeout
         await page.waitForTimeout(500);
         const swReady = await page.evaluate(async () => {
