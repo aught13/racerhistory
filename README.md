@@ -200,9 +200,9 @@ racerhistory/
 ### Testing & Quality
 
 - **PHP**: PHPUnit (1235 tests / 4056 assertions), PHPStan (0 errors), PHPCS (clean)
-- **JavaScript**: Jest (1112 tests across 125 suites; latest local coverage about 89.73% statements, 81.97% branches), ESLint, Prettier
-- **E2E**: Playwright coverage for Turbo/admin flows including sidebar group expansion behavior
-- **Coverage Targets**: PHP 98%, JS 88%, branches 80% (enforced via Codecov)
+- **JavaScript**: Jest (1578 tests across 159 suites; 88.37% statements, 80% branches, 87.37% functions), ESLint, Prettier
+- **E2E**: Playwright coverage for Turbo/admin flows including sidebar group expansion behavior; resilient service worker tests with CI graceful handling
+- **Coverage Targets**: PHP 98%, JS 88% statements / 80% branches (enforced via Codecov)
 - VS Code tasks exist for common workflows (PHPUnit/PHPCS/PHPStan/Jest)
 
 ### Key Documentation Features
@@ -220,7 +220,7 @@ racerhistory/
 # PHP tests (1235 tests, 4056 assertions)
 vendor/bin/phpunit
 
-# JavaScript tests with coverage (1112 tests, 125 suites)
+# JavaScript tests with coverage (1578 tests, 159 suites)
 npm run test:js
 
 # PHP coverage report (CI-style)
