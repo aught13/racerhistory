@@ -1,4 +1,9 @@
-export function registerServiceWorker() {
+/**
+ * Register the service worker for the public app (excluding admin pages).
+ * Returns a promise that resolves when registration is complete (or fails).
+ * @returns {Promise<void>}
+ */
+export async function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) {
         return;
     }
@@ -7,20 +12,20 @@ export function registerServiceWorker() {
         return;
     }
 
-    const registerWorker = async () => {
-        try {
-            await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-        } catch {
-            // Service worker registration is non-fatal in dev/test.
-        }
-    };
+    try {
+        const registration = await navigator.serviceWorker.register("/sw.js", {
+            scope: "/",
+        });
 
-    // If document is already loaded, register immediately.
-    // Otherwise, wait for the load event. This handles both cases where
-    // this code runs before or after the browser's load event has fired.
-    if (document.readyState === "loading") {
-        window.addEventListener("load", registerWorker);
-    } else {
-        void registerWorker();
+        // Ensure service worker is activated before considering registration complete
+        await navigator.serviceWorker.ready;
+
+        return registration;
+    } catch (error) {
+        // Service worker registration is non-fatal in dev/test environments.
+        // Log for debugging purposes but don't throw.
+        if (typeof console !== "undefined" && console.warn) {
+            console.warn("Service worker registration failed:", error);
+        }
     }
 }

@@ -1,14 +1,10 @@
 /* global describe, expect, test, jest, beforeEach, afterEach */
 
-import { jest } from "@jest/globals";
-
 describe("series opponents runtime - utility functions", () => {
     let originalJquery;
-    let originalWindow$;
 
     beforeEach(() => {
         originalJquery = window.$;
-        originalWindow$ = window.$;
     });
 
     afterEach(() => {

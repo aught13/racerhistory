@@ -1,14 +1,10 @@
 /* global describe, expect, test, jest, beforeEach, afterEach */
 
-import { jest } from "@jest/globals";
-
 describe("people index runtime - initialization utilities", () => {
     let originalJquery;
-    let originalWindow;
 
     beforeEach(() => {
         originalJquery = window.$;
-        originalWindow = { ...window };
     });
 
     afterEach(() => {
@@ -140,14 +136,16 @@ describe("people index runtime - initialization utilities", () => {
         });
 
         test("accesses window when available", () => {
-            const windowRef = typeof window !== "undefined" ? window : undefined;
+            const windowRef =
+                typeof window !== "undefined" ? window : undefined;
             expect(typeof windowRef).not.toBe("undefined");
         });
 
         test("prefers globalThis over window", () => {
             const globalRef =
                 typeof globalThis !== "undefined" ? globalThis : undefined;
-            const windowRef = typeof window !== "undefined" ? window : undefined;
+            const windowRef =
+                typeof window !== "undefined" ? window : undefined;
 
             // Both should be available in browser environment
             expect(globalRef).toBeDefined();
@@ -225,9 +223,7 @@ describe("people index runtime - initialization utilities", () => {
         });
 
         test("returns null for non-existent selector", () => {
-            const found = document.querySelector(
-                "#nonexistent-selector-12345",
-            );
+            const found = document.querySelector("#nonexistent-selector-12345");
             expect(found).toBeNull();
         });
 
@@ -291,7 +287,9 @@ describe("people index runtime - initialization utilities", () => {
         });
 
         test("logs warning when export is not function", () => {
-            const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+            const consoleWarnSpy = jest
+                .spyOn(console, "warn")
+                .mockImplementation();
 
             const initPeopleIndex = "not a function";
             if (typeof initPeopleIndex !== "function") {
@@ -358,9 +356,7 @@ describe("people index runtime - initialization utilities", () => {
 
             jest.advanceTimersByTime(timeoutMs + 1);
 
-            expect(Date.now() - startedAt).toBeGreaterThanOrEqual(
-                timeoutMs,
-            );
+            expect(Date.now() - startedAt).toBeGreaterThanOrEqual(timeoutMs);
 
             jest.useRealTimers();
         });

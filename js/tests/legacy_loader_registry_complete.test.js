@@ -1,9 +1,7 @@
 /* global describe, expect, test, jest, beforeEach, afterEach */
 
-import { jest } from "@jest/globals";
 import {
     resolveLegacyLoadPlan,
-    loadLegacyModulesForCurrentRoute,
     initializeLegacyModules,
     __resetLegacyLoaderRegistryForTests,
 } from "../lib/legacy_loader_registry.js";
@@ -89,21 +87,16 @@ describe("legacy loader registry - complete coverage", () => {
 
     describe("pathway matching", () => {
         test("matches public-core for all non-admin paths", () => {
-            [
-                "/",
-                "/blog",
-                "/games",
-                "/people",
-                "/seasons",
-                "/stats",
-            ].forEach((path) => {
-                const plan = resolveLegacyLoadPlan({
-                    pathname: path,
-                    isMobileViewport: false,
-                    isLowBandwidth: false,
-                });
-                expect(plan.some((m) => m.id === "public-core")).toBe(true);
-            });
+            ["/", "/blog", "/games", "/people", "/seasons", "/stats"].forEach(
+                (path) => {
+                    const plan = resolveLegacyLoadPlan({
+                        pathname: path,
+                        isMobileViewport: false,
+                        isLowBandwidth: false,
+                    });
+                    expect(plan.some((m) => m.id === "public-core")).toBe(true);
+                },
+            );
         });
 
         test("matches admin-core for all admin paths", () => {
@@ -176,7 +169,10 @@ describe("legacy loader registry - complete coverage", () => {
                     isMobileViewport: false,
                     isLowBandwidth: false,
                 });
-                expect(plan.some((m) => m.id === expected)).toBe(true, `${expected} not found for path ${path}`);
+                expect(plan.some((m) => m.id === expected)).toBe(
+                    true,
+                    `${expected} not found for path ${path}`,
+                );
             });
         });
 
@@ -231,7 +227,7 @@ describe("legacy loader registry - complete coverage", () => {
             // The initializeLegacyModules function adds a turbo:load listener
             // This test verifies the function exists and can be called
             const mockStimulus = {};
-            
+
             expect(() => {
                 initializeLegacyModules(mockStimulus);
             }).not.toThrow();
@@ -293,7 +289,7 @@ describe("legacy loader registry - complete coverage", () => {
     describe("initialization", () => {
         test("initializes legacy modules without throwing", () => {
             const mockStimulus = {};
-            
+
             expect(() => {
                 initializeLegacyModules(mockStimulus);
             }).not.toThrow();
@@ -303,9 +299,21 @@ describe("legacy loader registry - complete coverage", () => {
     describe("module definitions", () => {
         test("all module definitions have required properties", () => {
             const paths = [
-                { pathname: "/", isMobileViewport: false, isLowBandwidth: false },
-                { pathname: "/blog", isMobileViewport: false, isLowBandwidth: false },
-                { pathname: "/admin", isMobileViewport: false, isLowBandwidth: false },
+                {
+                    pathname: "/",
+                    isMobileViewport: false,
+                    isLowBandwidth: false,
+                },
+                {
+                    pathname: "/blog",
+                    isMobileViewport: false,
+                    isLowBandwidth: false,
+                },
+                {
+                    pathname: "/admin",
+                    isMobileViewport: false,
+                    isLowBandwidth: false,
+                },
             ];
 
             paths.forEach((profile) => {
@@ -314,9 +322,12 @@ describe("legacy loader registry - complete coverage", () => {
                 plan.forEach((module) => {
                     expect(module.id).toBeDefined();
                     expect(module.strategy).toBeDefined();
-                    expect(["eager", "visible", "interaction", "idle"]).toContain(
-                        module.strategy,
-                    );
+                    expect([
+                        "eager",
+                        "visible",
+                        "interaction",
+                        "idle",
+                    ]).toContain(module.strategy);
                 });
             });
         });
@@ -334,7 +345,10 @@ describe("legacy loader registry - complete coverage", () => {
                 const ids = plan.map((m) => m.id);
                 const uniqueIds = new Set(ids);
 
-                expect(uniqueIds.size).toBe(ids.length, `Duplicate modules found for path ${pathname}`);
+                expect(uniqueIds.size).toBe(
+                    ids.length,
+                    `Duplicate modules found for path ${pathname}`,
+                );
             });
         });
     });

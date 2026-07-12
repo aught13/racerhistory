@@ -31,7 +31,8 @@ if (!runtimeAlreadyBooted) {
     }
 
     startNativeBridge();
-    registerServiceWorker();
+    // Service worker registration is async but non-blocking for the app
+    void registerServiceWorker();
     initTurboScrollBehavior();
     initTinyMceLoader();
     const stimulus = Application.start();

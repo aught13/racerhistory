@@ -1,7 +1,5 @@
 /* global describe, expect, test, jest, beforeEach, afterEach */
 
-import { jest } from "@jest/globals";
-
 // Mock the runtime profile
 jest.mock("../lib/runtime_profile.js", () => ({
     getRuntimeProfile: jest.fn().mockReturnValue({

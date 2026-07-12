@@ -3,12 +3,10 @@ import { registerServiceWorker } from "../../lib/pwa.js";
 
 describe("hotwire/pwa", () => {
     let originalServiceWorker;
-    let originalReadyState;
     let addListenerSpy;
 
     beforeEach(() => {
         originalServiceWorker = navigator.serviceWorker;
-        originalReadyState = Object.getOwnPropertyDescriptor(document, "readyState");
         addListenerSpy = jest.spyOn(window, "addEventListener");
         window.history.pushState({}, "", "/");
     });
@@ -20,81 +18,82 @@ describe("hotwire/pwa", () => {
             navigator.serviceWorker = originalServiceWorker;
         }
 
-        if (originalReadyState) {
-            Object.defineProperty(document, "readyState", originalReadyState);
-        }
-
         addListenerSpy.mockRestore();
+        jest.clearAllMocks();
     });
 
-    test("returns early when service worker is unavailable", () => {
+    test("returns early when service worker is unavailable", async () => {
         delete navigator.serviceWorker;
 
-        registerServiceWorker();
+        const result = await registerServiceWorker();
 
-        expect(addListenerSpy).not.toHaveBeenCalled();
+        expect(result).toBeUndefined();
     });
 
-    test("skips registration on admin routes", () => {
+    test("skips registration on admin routes", async () => {
         navigator.serviceWorker = { register: jest.fn() };
         window.history.pushState({}, "", "/admin/dashboard");
 
-        registerServiceWorker();
+        const result = await registerServiceWorker();
 
-        expect(addListenerSpy).not.toHaveBeenCalled();
+        expect(navigator.serviceWorker.register).not.toHaveBeenCalled();
+        expect(result).toBeUndefined();
     });
 
-    test("registers service worker on load event when document is still loading", async () => {
-        const register = jest.fn().mockResolvedValue({});
-        navigator.serviceWorker = { register };
+    test("registers service worker and waits for ready", async () => {
+        const mockRegistration = { scope: "/" };
+        const register = jest.fn().mockResolvedValue(mockRegistration);
+        const ready = Promise.resolve();
 
-        Object.defineProperty(document, "readyState", {
-            value: "loading",
-            configurable: true,
-        });
+        navigator.serviceWorker = { register, ready };
 
-        addListenerSpy.mockImplementation((event, handler) => {
-            if (event === "load") {
-                handler();
-            }
-        });
-
-        registerServiceWorker();
+        const result = await registerServiceWorker();
 
         expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
+        expect(result).toBe(mockRegistration);
     });
 
-    test("registers service worker immediately when document is already loaded", async () => {
-        const register = jest.fn().mockResolvedValue({});
+    test("handles registration error gracefully", async () => {
+        const error = new Error("Registration failed");
+        const register = jest.fn().mockRejectedValue(error);
+        const consoleWarnSpy = jest
+            .spyOn(console, "warn")
+            .mockImplementation(() => {});
+
         navigator.serviceWorker = { register };
 
-        Object.defineProperty(document, "readyState", {
-            value: "complete",
-            configurable: true,
-        });
+        const result = await registerServiceWorker();
 
-        registerServiceWorker();
+        expect(result).toBeUndefined();
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+            "Service worker registration failed:",
+            error,
+        );
 
-        // Wait for async registration to complete
-        await new Promise((resolve) => setTimeout(resolve, 10));
-
-        expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
+        consoleWarnSpy.mockRestore();
     });
 
-    test("registers service worker immediately when document is interactive", async () => {
-        const register = jest.fn().mockResolvedValue({});
-        navigator.serviceWorker = { register };
+    test("handles ready promise rejection gracefully", async () => {
+        const mockRegistration = { scope: "/" };
+        const readyError = new Error("Activation failed");
+        const register = jest.fn().mockResolvedValue(mockRegistration);
 
-        Object.defineProperty(document, "readyState", {
-            value: "interactive",
-            configurable: true,
-        });
+        navigator.serviceWorker = {
+            register,
+            get ready() {
+                return Promise.reject(readyError);
+            },
+        };
 
-        registerServiceWorker();
+        const consoleWarnSpy = jest
+            .spyOn(console, "warn")
+            .mockImplementation(() => {});
 
-        // Wait for async registration to complete
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        const result = await registerServiceWorker();
 
-        expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
+        expect(result).toBeUndefined();
+        expect(consoleWarnSpy).toHaveBeenCalled();
+
+        consoleWarnSpy.mockRestore();
     });
 });
