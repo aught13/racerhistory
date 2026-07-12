@@ -82,4 +82,20 @@ describe("stats-page controller", () => {
 
         expect(true).toBe(true);
     });
+
+    test("handles override being non-function value", async () => {
+        window.__STATS_PAGE_INIT__ = "not a function";
+        window.__STATS_PAGE_CLEANUP__ = { obj: true };
+
+        application.stop();
+        application = Application.start();
+        application.register("stats-page", StatsPageController);
+
+        await Promise.resolve();
+
+        document.getElementById("stats-root").remove();
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
 });

@@ -81,7 +81,8 @@ describe("person-blog-popover loader", () => {
         jest.resetModules();
         globalThis.__PERSON_BLOG_POPOVER_INIT__ = "not a function";
 
-        const module = await import("../../legacy/person-blog-popover-loader.mjs");
+        const module =
+            await import("../../legacy/person-blog-popover-loader.mjs");
         // Should use default initPersonBlogPopovers
         expect(true).toBe(true);
         delete globalThis.__PERSON_BLOG_POPOVER_INIT__;

@@ -85,4 +85,20 @@ describe("people-index controller", () => {
         // Should not throw even without override
         expect(true).toBe(true);
     });
+
+    test("handles override being non-function value", async () => {
+        window.__PEOPLE_INDEX_INIT__ = "not a function";
+        window.__PEOPLE_INDEX_CLEANUP__ = { obj: true };
+
+        application.stop();
+        application = Application.start();
+        application.register("people-index", PeopleIndexController);
+
+        await Promise.resolve();
+
+        document.getElementById("people-root").remove();
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
 });

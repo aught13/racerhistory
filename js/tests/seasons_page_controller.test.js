@@ -82,4 +82,20 @@ describe("seasons-page controller", () => {
 
         expect(true).toBe(true);
     });
+
+    test("handles override being non-function value", async () => {
+        window.__SEASONS_PAGE_INIT__ = "not a function";
+        window.__SEASONS_PAGE_CLEANUP__ = { obj: true };
+
+        application.stop();
+        application = Application.start();
+        application.register("seasons-page", SeasonsPageController);
+
+        await Promise.resolve();
+
+        document.getElementById("seasons-root").remove();
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
 });

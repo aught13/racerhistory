@@ -82,4 +82,20 @@ describe("series-opponents controller", () => {
 
         expect(true).toBe(true);
     });
+
+    test("handles override being non-function value", async () => {
+        window.__SERIES_OPPONENTS_INIT__ = "not a function";
+        window.__SERIES_OPPONENTS_CLEANUP__ = { obj: true };
+
+        application.stop();
+        application = Application.start();
+        application.register("series-opponents", SeriesOpponentsController);
+
+        await Promise.resolve();
+
+        document.getElementById("series-root").remove();
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
 });
