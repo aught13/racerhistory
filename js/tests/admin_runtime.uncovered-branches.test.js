@@ -59,7 +59,6 @@ describe("admin_runtime - uncovered branches", () => {
                 configurable: true,
             });
 
-            const root = document.documentElement;
             expect(() => {
                 AdminRuntime.enforceAdminLightTheme();
             }).not.toThrow();

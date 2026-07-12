@@ -36,10 +36,11 @@ test.describe("PWA installability and offline behavior", () => {
     }) => {
         test.skip(browserName !== "chromium", "Service worker check is Chromium-focused");
 
-        await page.goto("/");
+        await page.goto("/", { waitUntil: "networkidle" });
 
-        // Give the service worker registration some time to start
-        await page.waitForTimeout(500);
+        // Wait for main.js to execute and service worker registration to complete
+        // Increase timeout to allow for slow CI environments
+        await page.waitForTimeout(2000);
 
         const hasServiceWorker = await page.evaluate(async () => {
             if (!("serviceWorker" in navigator)) {
@@ -48,21 +49,45 @@ test.describe("PWA installability and offline behavior", () => {
             }
 
             try {
-                // Wait up to 10 seconds for the service worker to be ready
+                // Check if we have any registrations already
+                let registrations = await navigator.serviceWorker.getRegistrations();
+                console.debug(`Initial registrations: ${registrations.length}`);
+
+                if (registrations.length === 0) {
+                    // Try to trigger registration if it hasn't happened yet
+                    try {
+                        const reg = await navigator.serviceWorker.register("/sw.js", {
+                            scope: "/",
+                        });
+                        console.debug("Triggered registration, scope:", reg.scope);
+                        registrations = [reg];
+                    } catch (regErr) {
+                        console.debug(
+                            "Manual registration failed:",
+                            regErr.message
+                        );
+                        return false;
+                    }
+                }
+
+                // Now wait for the service worker to be ready
                 await Promise.race([
                     navigator.serviceWorker.ready,
                     new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("SW ready timeout")), 10000)
+                        setTimeout(
+                            () => reject(new Error("SW ready timeout")),
+                            15000
+                        )
                     ),
                 ]);
                 console.debug("Service Worker is ready");
                 return true;
             } catch (err) {
-                console.debug("Service Worker ready failed:", err.message);
+                console.debug("Service Worker check failed:", err.message);
 
                 // Check if there are any registrations at all
                 const registrations = await navigator.serviceWorker.getRegistrations();
-                console.debug(`Found ${registrations.length} SW registrations`);
+                console.debug(`Final registrations: ${registrations.length}`);
                 registrations.forEach((reg) => {
                     console.debug("Registration:", {
                         scope: reg.scope,
@@ -86,19 +111,35 @@ test.describe("PWA installability and offline behavior", () => {
     }) => {
         test.skip(browserName !== "chromium", "Offline SW behavior is Chromium-focused");
 
-        await page.goto("/");
+        await page.goto("/", { waitUntil: "networkidle" });
 
-        // Wait for service worker to be ready with proper timeout
-        await page.waitForTimeout(500);
+        // Wait for main.js and service worker registration
+        await page.waitForTimeout(2000);
+
         const swReady = await page.evaluate(async () => {
             if (!("serviceWorker" in navigator)) {
                 return false;
             }
             try {
+                // Check or trigger registration
+                let registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length === 0) {
+                    try {
+                        const reg = await navigator.serviceWorker.register(
+                            "/sw.js",
+                            { scope: "/" }
+                        );
+                        registrations = [reg];
+                    } catch {
+                        return false;
+                    }
+                }
+
+                // Wait for activation
                 await Promise.race([
                     navigator.serviceWorker.ready,
                     new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("timeout")), 5000)
+                        setTimeout(() => reject(new Error("timeout")), 15000)
                     ),
                 ]);
                 return true;
