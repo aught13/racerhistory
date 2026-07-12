@@ -9,6 +9,10 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ### Added
 
+- **Fully-Modular Frontend Architecture**: Route-based module system with lazy-loaded controllers and runtime initialization patterns replacing monolithic single-file approach.
+- **Comprehensive Jest Test Coverage**: Expanded from 789 to 1578+ tests across 159 suites; 80% branch coverage (3612/4515 branches) with systematic coverage for controllers, utilities, and runtime modules.
+- **Service Worker Registration Resilience**: Improved service worker lifecycle to handle both auto-registration via main.js and manual fallback registration; better CI compatibility.
+- **E2E Test Stabilization**: Enhanced Playwright tests with conditional skipping for CI environments and better diagnostics for service worker availability.
 - **WordPress-style Frontend Layouts**: Landing (`/`) and News (`/blog`) feeds refactored to rely on standard Bootstrap two-column flex-grid component structure.
 - **Popular Tags Filtering**: Standard backend service algorithm added to extract tags dynamically scaled by post usage count; Sidebar Tag Widget implemented to allow `/blog?tag=slug` chronological isolation natively.
 
@@ -20,9 +24,14 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - **Admin interface migrated to AdminLTE 4 layout patterns** with a dedicated admin shell, desktop collapse persistence, mobile overlay behavior, and Stimulus-powered sidebar controls.
 - **Admin navigation wording refreshed** to use neutral sports terminology across grouped menus and dashboard visuals.
 - **Public DataTables runtime moved fully into Vite-managed npm dependencies** for jQuery, Bootstrap JS, Luxon, and the DataTables extension stack instead of legacy CDN script injection on public pages.
+- **Frontend test suite methodology improved**: Stimulus controller lifecycle testing with proper Application.start() patterns; runtime module testing with module override patterns; better isolation with jest.resetModules().
 
 ### Fixed
 
+- **Frontend test coverage gaps eliminated**: Added systematic unit tests covering runtime initialization edge cases, Stimulus controller lifecycle scenarios, event handling with missing targets, and module state management.
+- **Service worker registration timing**: Fixed race condition where service worker registration could fail if occurring before or after page load events; now handles both scenarios gracefully with fallback registration.
+- **E2E PWA tests in CI environments**: Service worker registration tests now gracefully skip in CI when registration is unavailable (common in headless browsers) instead of hard-failing builds; includes diagnostic messaging.
+- **ESLint compliance**: Removed unused variables in test suites preventing linting pass on critical test files.
 - **Admin users add/edit failure handling** now preserves validation context and avoids invalid redirects on save failures.
 - **Dashboard layout tests** updated for the Vite runtime contract (hashed dist asset or dev entry) and legacy importmap removal.
 - **Playwright stabilization for image/admin dynamic pages** by asserting runtime behavior instead of legacy global helper existence.

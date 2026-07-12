@@ -15,7 +15,7 @@
 ?>
 <?php // Clean production form (debug instrumentation removed) ?>
 <input type="hidden" id="game-id-hidden" value="<?= isset($game) && isset($game->id) ? h($game->id) : 'NO_GAME_ID' ?>" />
-<div class="card">
+<div class="card" data-controller="admin-game-form">
     <div class="card-header"><h3 class="card-title mb-0">Game Details</h3></div>
     <div class="card-body">
         <?= $this->Form->control('team_season_id', [

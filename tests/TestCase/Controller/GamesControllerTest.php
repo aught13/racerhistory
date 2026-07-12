@@ -49,6 +49,7 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Games');
         $this->assertResponseContains('Explore Men\'s Basketball game history');
         $this->assertResponseContains('data-controller="nav-accordion"');
+        $this->assertResponseContains('data-controller="games-search"');
         $this->assertResponseContains('/games/series-history');
     }
 
@@ -76,6 +77,7 @@ class GamesControllerTest extends TestCase
         $this->get('/games/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Box Score');
+        $this->assertResponseContains('data-controller="game-view"');
     }
 
     /**
@@ -168,6 +170,7 @@ class GamesControllerTest extends TestCase
         $this->get('/games/all');
         $this->assertResponseOk();
         $this->assertResponseContains('All Games');
+        $this->assertResponseContains('data-controller="games-search"');
         $this->assertResponseContains('data-weekday-column="11"');
 
         $bounds = $this->viewVariable('gamesDateBounds');
@@ -475,6 +478,7 @@ class GamesControllerTest extends TestCase
         $this->get('/games/series');
         $this->assertResponseOk();
         $this->assertResponseContains('Series History');
+        $this->assertResponseContains('data-controller="games-search series-opponents"');
         $this->assertResponseContains('Select an opponent');
         $this->assertResponseContains('series-opponents-search');
         $this->assertResponseContains('series-opponents-table');

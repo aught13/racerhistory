@@ -49,9 +49,28 @@ export function initStatMultiAdd() {
         }
     });
 
-    addBtn.addEventListener("click", () => {
+    addBtn.addEventListener("click", (ev) => {
+        try {
+            if (ev && ev.__rh_add_handled) {
+                return;
+            }
+            ev.__rh_add_handled = true;
+        } catch {
+            void 0;
+        }
+
         addRow(container);
     });
+
+    // Signal readiness for E2E tests and other runtime consumers.
+    try {
+        if (addBtn && addBtn.dataset) {
+            addBtn.dataset.rhReady = "1";
+        }
+        window.__RH_STAT_MULTI_ADD_READY = true;
+    } catch {
+        void 0;
+    }
 }
 
 /**
@@ -60,6 +79,10 @@ export function initStatMultiAdd() {
  * @param {HTMLElement} container The #stat-rows container
  */
 function addRow(container) {
+    // Event-level guarding (event.__rh_add_handled) prevents duplicate
+    // handling of the same native click event across multiple handlers.
+    // Avoid a dataset-backed lock here so synchronous programmatic
+    // clicks in unit tests are not blocked.
     const rows = container.querySelectorAll(".stat-row");
     const template = rows[0];
     if (!template) {
@@ -159,4 +182,13 @@ function updateRemoveButtons(container) {
 // Reset flag on turbo:before-cache so re-init works after Turbo navigation
 document.addEventListener("turbo:before-cache", () => {
     _initialised = false;
+    try {
+        window.__RH_STAT_MULTI_ADD_READY = false;
+        const addBtn = document.getElementById("add-row-btn");
+        if (addBtn && addBtn.dataset) {
+            delete addBtn.dataset.rhReady;
+        }
+    } catch {
+        void 0;
+    }
 });

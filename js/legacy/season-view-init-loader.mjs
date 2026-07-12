@@ -1,19 +1,6 @@
+import { bootSeasonView as boot } from "../lib/season_view_runtime.js";
+
 const doc = globalThis.document;
-const El = globalThis.Element;
-
-import initSeasonView from "./modules/season-view-init.mjs";
-
-function boot(event) {
-    if (event?.type === "turbo:frame-load") {
-        const frame = event.target;
-        if (frame instanceof El) {
-            initSeasonView({ root: frame });
-            return;
-        }
-    }
-
-    initSeasonView({ root: doc });
-}
 
 if (doc.readyState === "loading") {
     doc.addEventListener("DOMContentLoaded", boot);

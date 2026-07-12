@@ -1,6 +1,23 @@
 import { test, expect } from "@playwright/test";
 import { loginToAdmin } from "./support/auth.js";
 
+// Helper: wait for stat multi-add readiness signal from Stimulus or legacy initializer
+async function waitForStatMultiAddReady(page) {
+    try {
+        await page.waitForFunction(() => !!window.__RH_STAT_MULTI_ADD_READY, null, {
+            timeout: 3000,
+        });
+        return;
+    } catch (e) {
+        // fall through to attribute-based fallback
+    }
+
+    // Fallback: wait for the add button to have the readiness data attribute
+    await page.waitForSelector('#add-row-btn[data-rh-ready="1"]', {
+        timeout: 2000,
+    });
+}
+
 /**
  * E2E tests for the stat multi-add forms.
  *
@@ -67,6 +84,8 @@ test.describe("Stat Multi-Add: Player (Person)", () => {
 
         await expect(page.locator(".stat-row")).toHaveCount(1);
 
+        await waitForStatMultiAddReady(page);
+
         await page.click("#add-row-btn");
 
         await expect(page.locator(".stat-row")).toHaveCount(2);
@@ -81,6 +100,8 @@ test.describe("Stat Multi-Add: Player (Person)", () => {
     test("adding multiple rows creates correct count", async ({ page }) => {
         await page.goto("/admin/stat-basket-game-person/add/1");
         await page.waitForLoadState("networkidle");
+
+        await waitForStatMultiAddReady(page);
 
         await page.click("#add-row-btn");
         await page.click("#add-row-btn");
@@ -105,6 +126,8 @@ test.describe("Stat Multi-Add: Player (Person)", () => {
         await page.goto("/admin/stat-basket-game-person/add/1");
         await page.waitForLoadState("networkidle");
 
+        await waitForStatMultiAddReady(page);
+
         await page.click("#add-row-btn");
 
         const removeBtns = page.locator(".remove-row-btn");
@@ -115,6 +138,8 @@ test.describe("Stat Multi-Add: Player (Person)", () => {
     test("removing a row updates count and re-indexes", async ({ page }) => {
         await page.goto("/admin/stat-basket-game-person/add/1");
         await page.waitForLoadState("networkidle");
+
+        await waitForStatMultiAddReady(page);
 
         await page.click("#add-row-btn");
         await page.click("#add-row-btn");
@@ -149,6 +174,8 @@ test.describe("Stat Multi-Add: Player (Person)", () => {
     test("row labels update correctly", async ({ page }) => {
         await page.goto("/admin/stat-basket-game-person/add/1");
         await page.waitForLoadState("networkidle");
+
+        await waitForStatMultiAddReady(page);
 
         await page.click("#add-row-btn");
 
@@ -204,6 +231,8 @@ test.describe("Stat Multi-Add: Opponent", () => {
 
         await expect(page.locator(".stat-row")).toHaveCount(1);
 
+        await waitForStatMultiAddReady(page);
+
         await page.click("#add-row-btn");
 
         await expect(page.locator(".stat-row")).toHaveCount(2);
@@ -225,6 +254,8 @@ test.describe("Stat Multi-Add: Opponent", () => {
     test("removing a row re-indexes opponent rows", async ({ page }) => {
         await page.goto("/admin/stat-basket-game-opponent/add/1");
         await page.waitForLoadState("networkidle");
+
+        await waitForStatMultiAddReady(page);
 
         await page.click("#add-row-btn");
         await page.click("#add-row-btn");

@@ -11,6 +11,11 @@
   --rh-main-max: 1220px;
   --rh-footer-max: 1440px;
   --rh-nav-height: 64px;
+  --rh-shell-max-desktop: 1220px;
+  --rh-shell-max-ultrawide: 1740px;
+  --rh-shell-gutter-inline: clamp(0.85rem, 1.8vw, 1.8rem);
+  --rh-nav-max-ultrawide: 1800px;
+  --rh-data-max-ultrawide: 1700px;
 
   /* Light theme defaults */
   /* page gutter / deadspace color (light mode should be muted gray, not bright white) */
@@ -574,6 +579,22 @@ button.season-roster-link:active {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  container-type: inline-size;
+  container-name: rh-shell;
+}
+
+body.rh-layout--desktop {
+  --rh-main-max: var(--rh-shell-max-desktop);
+}
+
+body.rh-layout--ultrawide {
+  --rh-main-max: var(--rh-shell-max-ultrawide);
+  --rh-header-max: var(--rh-nav-max-ultrawide);
+  --rh-footer-max: var(--rh-nav-max-ultrawide);
+}
+
+body.rh-layout--mobile {
+  --rh-main-max: 100%;
 }
 
 .rh-header {
@@ -1669,9 +1690,48 @@ button.season-roster-link:active {
   width: 100%;
   max-width: var(--rh-main-max);
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 1.5rem var(--rh-shell-gutter-inline);
   background: var(--rh-content-bg);
   min-height: 60vh;
+}
+
+@container rh-shell (min-width: 1320px) {
+  #games-table-wrap,
+  #stats-table-wrap,
+  .people-table-card,
+  .seasons-table-card,
+  .season-section {
+    margin-inline: auto;
+    max-width: min(var(--rh-data-max-ultrawide), 100%);
+  }
+
+  #games-table-wrap .table,
+  #stats-table-wrap .table,
+  .people-table-card .table,
+  .seasons-table-card .table {
+    font-size: 0.95rem;
+  }
+}
+
+@container rh-shell (min-width: 1640px) {
+  .rh-main-inner {
+    max-width: min(var(--rh-shell-max-ultrawide), 96vw);
+  }
+
+  .navbar-container,
+  .rh-footer-inner,
+  .rh-header-inner {
+    max-width: var(--rh-nav-max-ultrawide);
+  }
+
+  .rh-nav-list {
+    gap: 0.35rem;
+  }
+
+  .rh-nav-list .nav-link {
+    padding-inline: 0.75rem;
+    font-size: 0.95rem;
+  }
 }
 
 .rh-footer-ad {

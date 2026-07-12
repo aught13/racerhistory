@@ -103,6 +103,18 @@ class ImagesController extends AppController
                 /** @var \App\Model\Entity\Image $image */
                 $image = $result['image'];
 
+                // Apply full tag data coming from the tag form (including select fields)
+                // parseTagsFromRequest only handles raw "tags" and context; applyFromData
+                // will build tags from person_select/team_select/etc and persist them.
+                try {
+                    if ($image) {
+                        $tagging->applyFromData((int)$image->id, (array)$this->getRequest()->getData());
+                    }
+                } catch (Throwable $e) {
+                    // Log but don't fail the upload response
+                    Log::warning('Image upload tagging failed: ' . $e->getMessage());
+                }
+
                 return $this->json([
                     'success' => true,
                     'image' => $this->serializeImage($image),
@@ -208,9 +220,11 @@ class ImagesController extends AppController
 
         $tag = $request->getQuery('tag');
         $limit = $request->getQuery('limit');
+        $search = $request->getQuery('q') ?? $request->getQuery('search');
 
         $payload = (new ImageBrowseService())->browse(
             is_string($tag) ? $tag : null,
+            is_string($search) ? $search : null,
             $limit !== null ? (int)$limit : null,
         );
 

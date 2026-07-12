@@ -17,7 +17,7 @@
  */
 ?>
 <?php $this->assign('title', 'Game Details'); ?>
-<div class="col-md-12" style="min-height: 500px;">
+<div class="col-md-12" style="min-height: 500px;" data-controller="game-view">
     <!-- Top Action Buttons: Edit Game, Edit Opponent, Back -->
     <div class="row mb-3">
         <div class="col-12">

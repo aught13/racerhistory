@@ -22,9 +22,11 @@ export default defineConfig({
     workers: process.env.CI ? 1 : undefined,
 
     // Reporter to use.
+    // Use the HTML reporter on CI only. Locally prefer the compact `list`
+    // reporter to avoid launching/serving the HTML report automatically.
     reporter: process.env.CI
         ? [['html'], ['junit', { outputFile: 'test-results-e2e.xml' }], ['list']]
-        : [['html'], ['list']],
+        : [['list']],
 
     // Shared settings for all the projects below.
     use: {
@@ -47,6 +49,13 @@ export default defineConfig({
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
         },
+        {
+            name: 'Desktop Ultrawide',
+            use: {
+                ...devices['Desktop Chrome'],
+                viewport: { width: 1920, height: 1080 },
+            },
+        },
 
         // Uncomment for cross-browser testing
         // {
@@ -62,6 +71,10 @@ export default defineConfig({
         {
             name: 'Mobile Chrome',
             use: { ...devices['Pixel 5'] },
+        },
+        {
+            name: 'Tablet Chrome',
+            use: { ...devices['iPad Air'] },
         },
         // {
         //     name: 'Mobile Safari',

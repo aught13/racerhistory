@@ -1,41 +1,5 @@
 import * as Turbo from "@hotwired/turbo";
 import { Application } from "@hotwired/stimulus";
-import "./lib/public_vite_datatables.mjs";
-
-// AdminLTE 4 layout CSS (supplements Bootstrap 5; structural classes only, no JS)
-import "admin-lte/dist/css/adminlte.min.css";
-
-import AdminLayoutController from "./controllers/admin_layout_controller.js";
-import HeroCropController from "./controllers/hero_crop_controller.js";
-import AdminConfirmDeleteController from "./controllers/admin_confirm_delete_controller.js";
-import AdminBulkTableController from "./controllers/admin_bulk_table_controller.js";
-import AdminGamesIndexController from "./controllers/admin_games_index_controller.js";
-import AdminImageBulkUploadController from "./controllers/admin_image_bulk_upload_controller.js";
-import AdminImageCropThumbController from "./controllers/admin_image_crop_thumb_controller.js";
-import AdminImageManipulateController from "./controllers/admin_image_manipulate_controller.js";
-import AdminUsersIndexController from "./controllers/admin_users_index_controller.js";
-import BackNavigationController from "./controllers/back_navigation_controller.js";
-import BlogPostFormController from "./controllers/blog_post_form_controller.js";
-import FieldMappingController from "./controllers/field_mapping_controller.js";
-import AdminIndexTableController from "./controllers/admin_index_table_controller.js";
-import GameBoxTotalsToggleController from "./controllers/game_box_totals_toggle_controller.js";
-import RosterEditPersonController from "./controllers/roster_edit_person_controller.js";
-import ImageSelectorController from "./controllers/image_selector_controller.js";
-import ImageUploadController from "./controllers/image_upload_controller.js";
-import PersonFormController from "./controllers/person_form_controller.js";
-import PersonsIndexController from "./controllers/persons_index_controller.js";
-import PlaceSearchController from "./controllers/place_search_controller.js";
-import PlaceLocationController from "./controllers/place_location_controller.js";
-import PasswordToggleController from "./controllers/password_toggle_controller.js";
-import RosterMultiAddController from "./controllers/roster_multi_add_controller.js";
-import SeasonFormController from "./controllers/season_form_controller.js";
-import SportsConfigsFormController from "./controllers/sports_configs_form_controller.js";
-import SportsFormController from "./controllers/sports_form_controller.js";
-import TeamSeasonFormController from "./controllers/team_season_form_controller.js";
-import TeamSeasonImageController from "./controllers/team_season_image_controller.js";
-import StatMultiAddController from "./controllers/stat_multi_add_controller.js";
-import NavAccordionController from "./controllers/nav_accordion_controller.js";
-import ThemeToggleController from "./controllers/theme_toggle_controller.js";
 
 import { initThemeFromCookie } from "./lib/theme.js";
 import { initAdminRuntimeLifecycle } from "./lib/admin_runtime.js";
@@ -43,21 +7,8 @@ import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
 import { initTinyMceLoader } from "./lib/tinymce_loader.js";
-
-import "./legacy/admin-dashboard.js";
-import "./legacy/blog-view-init-loader.js";
-import "./legacy/game-form-lookups.js";
-import "./legacy/game-view-init-loader.mjs";
-import "./legacy/games-search-init.mjs";
-import "./legacy/games-series-opponents-init.mjs";
-import "./legacy/image-retry.mjs";
-import "./legacy/people-index-init-loader.mjs";
-import "./legacy/person-blog-popover-loader.mjs";
-import "./legacy/person-game-log-tabs-loader.mjs";
-import "./legacy/season-view-init-loader.mjs";
-import "./legacy/seasons-init-loader.mjs";
-import "./legacy/stats-init-loader.mjs";
-import "./legacy/games_sport_dynamic.js";
+import { initializeLegacyModules } from "./lib/legacy_loader_registry.js";
+import { getRuntimeProfile } from "./lib/runtime_profile.js";
 
 const isAdminPath =
     typeof window !== "undefined" &&
@@ -74,48 +25,101 @@ if (!runtimeAlreadyBooted) {
 
     if (!isAdminPath) {
         initThemeFromCookie();
+        void import("./legacy/image-retry.mjs");
     } else {
         initAdminRuntimeLifecycle();
     }
 
     startNativeBridge();
-    registerServiceWorker();
+    // Service worker registration is async but non-blocking for the app
+    void registerServiceWorker();
     initTurboScrollBehavior();
     initTinyMceLoader();
-
     const stimulus = Application.start();
-    stimulus.register("admin-layout", AdminLayoutController);
-    stimulus.register("admin-confirm-delete", AdminConfirmDeleteController);
-    stimulus.register("admin-bulk-table", AdminBulkTableController);
-    stimulus.register("admin-games-index", AdminGamesIndexController);
-    stimulus.register(
-        "admin-image-bulk-upload",
-        AdminImageBulkUploadController,
-    );
-    stimulus.register("admin-image-crop-thumb", AdminImageCropThumbController);
-    stimulus.register("admin-image-manipulate", AdminImageManipulateController);
-    stimulus.register("admin-index-table", AdminIndexTableController);
-    stimulus.register("admin-users-index", AdminUsersIndexController);
-    stimulus.register("back-navigation", BackNavigationController);
-    stimulus.register("field-mapping", FieldMappingController);
-    stimulus.register("game-box-totals-toggle", GameBoxTotalsToggleController);
-    stimulus.register("hero-crop", HeroCropController);
-    stimulus.register("blog-post-form", BlogPostFormController);
-    stimulus.register("image-selector", ImageSelectorController);
-    stimulus.register("image-upload", ImageUploadController);
-    stimulus.register("person-form", PersonFormController);
-    stimulus.register("persons-index", PersonsIndexController);
-    stimulus.register("place-location", PlaceLocationController);
-    stimulus.register("password-toggle", PasswordToggleController);
-    stimulus.register("roster-edit-person", RosterEditPersonController);
-    stimulus.register("roster-multi-add", RosterMultiAddController);
-    stimulus.register("season-form", SeasonFormController);
-    stimulus.register("nav-accordion", NavAccordionController);
-    stimulus.register("sports-configs-form", SportsConfigsFormController);
-    stimulus.register("sports-form", SportsFormController);
-    stimulus.register("team-season-form", TeamSeasonFormController);
-    stimulus.register("team-season-image", TeamSeasonImageController);
-    stimulus.register("place-search", PlaceSearchController);
-    stimulus.register("stat-multi-add", StatMultiAddController);
-    stimulus.register("theme-toggle", ThemeToggleController);
+    // Expose Stimulus application globally so eager module imports can
+    // register controllers directly instead of relying on fallbacks.
+    if (hasWindow) {
+        window.StimulusApplication = stimulus;
+    }
+    // Eagerly load the critical admin core on admin pages to reduce
+    // test-suite and runtime flakiness where dynamic imports may be
+    // delayed under heavy concurrency. Register controllers directly
+    // with the Stimulus application when available.
+    try {
+        if (isAdminPath) {
+            void import("./route_modules/admin_core.js").then((mod) => {
+                try {
+                    mod.registerAdminCoreControllers(stimulus);
+                } catch (e) {
+                    console.debug(
+                        "main: failed to eagerly register admin_core",
+                        e,
+                    );
+                }
+            });
+        }
+    } catch {
+        void 0;
+    }
+
+    initializeLegacyModules(stimulus);
+}
+
+// Eagerly load the admin stats entry module when the multi-add markup is
+// present so we avoid a race where deferred loading leaves no handler
+// attached at the moment of a user click (causes E2E flakes). Run this
+// regardless of the runtime boot flag so hot reloads / Turbo navigations
+// still ensure the handler is present.
+try {
+    if (typeof document !== "undefined") {
+        const shouldImportStatsModule =
+            !!document.getElementById("add-row-btn") ||
+            (typeof window !== "undefined" &&
+                (window.location.pathname.startsWith(
+                    "/admin/stat-basket-game-person",
+                ) ||
+                    window.location.pathname.startsWith(
+                        "/admin/stat-basket-game-opponent",
+                    )));
+
+        if (shouldImportStatsModule) {
+            // Only eagerly import the admin stats entry module on non-mobile
+            // and non-low-bandwidth clients. On constrained clients we prefer
+            // the deferred/interaction strategy to avoid loading heavy admin
+            // logic until the user interacts (matches the loader strategy
+            // heuristics used elsewhere).
+            const profile = getRuntimeProfile();
+            const constrained =
+                profile.isMobileViewport || profile.isLowBandwidth;
+
+            const doImport = () => {
+                void import("./route_modules/admin_stats_entry.js").then(
+                    (mod) => {
+                        try {
+                            mod.registerAdminStatsEntryControllers(
+                                window.StimulusApplication,
+                            );
+                        } catch (e) {
+                            console.debug(
+                                "main: failed to register admin_stats_entry controllers",
+                                e,
+                            );
+                        }
+                    },
+                );
+            };
+
+            if (!constrained) {
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", doImport, {
+                        once: true,
+                    });
+                } else {
+                    doImport();
+                }
+            }
+        }
+    }
+} catch {
+    void 0;
 }

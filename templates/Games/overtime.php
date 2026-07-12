@@ -13,7 +13,7 @@ $ajaxUrl = $this->Url->build([
     '?' => ['format' => 'json'],
 ]);
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="games-search">
 
 
     <h1 class="h3 mb-4">Overtime Games</h1>

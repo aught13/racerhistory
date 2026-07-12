@@ -111,6 +111,22 @@ Admin:
 
 Routes are defined in `config/routes.php`.
 
+## 7) Frontend Module System
+
+The JavaScript frontend has been refactored into a fully-modular architecture:
+
+- **Entry Point**: `js/main.js` initializes Stimulus application and registers runtime lifecycle hooks.
+- **Route Modules**: `js/route_modules/` contains page-specific initialization (e.g., `admin_games.js`, `public_blog.js`).
+- **Stimulus Controllers**: Registered via `js/controllers/` with automatic lifecycle management.
+- **Utilities**: `js/lib/` contains shared utilities for theme, PWA, scrolling, and runtime profiling.
+- **Legacy Loaders**: `js/lib/legacy_loader_registry.js` provides backward-compatible dynamic imports for existing pages.
+- **Build System**: Vite bundles ES modules with Turbo Drive for SPA-like navigation.
+
+Key patterns:
+- Initialize controllers on both `DOMContentLoaded` and `turbo:load` events for page reloads and navigation.
+- Service worker registration is non-blocking and gracefully handles CI environments.
+- Stimulus Application is exposed globally (`window.StimulusApplication`) for eager controller registration.
+
 ## Development Workflow
 
 Common commands:
@@ -118,7 +134,7 @@ Common commands:
 - Static analysis: `php vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G`
 - PHPCS: `php vendor/bin/phpcs --standard=phpcs.xml src/ tests/`
 - JS lint: `npm run lint:js`
-- JS tests: `npm run test:js`
+- JS tests: `npm run test:js` (1578+ tests, 80% branch coverage)
 - E2E tests: `npx playwright test`
 
 VS Code tasks are provided for the above workflows.

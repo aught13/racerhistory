@@ -49,6 +49,7 @@ $this->assign('title', 'Set New Password');
                     </div>
 
                     <?= $this->Form->button(__('Set New Password'), ['class' => 'btn btn-primary w-100']) ?>
+                    <?= $this->Form->secure(['password', 'confirm_password']) ?>
                     <?= $this->Form->end() ?>
 
                     <div class="text-center mt-3">

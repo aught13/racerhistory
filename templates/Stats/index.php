@@ -10,7 +10,7 @@ use Cake\Utility\Inflector;
  */
 $this->assign('title', 'Statistics');
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="stats-page">
 
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4">
         <h1 class="h3 mb-2 mb-md-0">Statistics</h1>

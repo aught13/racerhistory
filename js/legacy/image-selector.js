@@ -23,6 +23,7 @@ class ImageSelector {
         this.selectedFile = null;
         this.tagForm = null;
         this.skipCropToggle = null;
+        this.searchDebounce = null;
         // Default aspect ratio is 1 (square), can be overridden via config.aspectRatio; null = free
         this.aspectRatio =
             typeof this.config.aspectRatio === "number" &&
@@ -89,7 +90,7 @@ class ImageSelector {
             this.onUploadTabShown(),
         );
 
-        // Search
+        // Search (debounced server-backed search when typing)
         this.searchInput?.addEventListener("input", (e) =>
             this.onSearch(e.target.value),
         );
@@ -214,12 +215,80 @@ class ImageSelector {
     }
 
     onSearch(query) {
-        const filtered = this.loadedImages.filter((img) => {
-            const searchText =
-                `${img.id} ${img.original_name || ""} ${(img.tags || []).join(" ")}`.toLowerCase();
-            return searchText.includes(query.toLowerCase());
+        const q = (query || "").trim();
+
+        // When query is empty, show the initial loaded images
+        if (q === "") {
+            this.lastSearchQuery = "";
+            this.lastLocalFiltered = this.loadedImages
+                ? this.loadedImages.slice()
+                : [];
+            this.renderGallery(this.loadedImages);
+            return;
+        }
+
+        // Perform immediate local filtering so tests and quick UX remain
+        // responsive even if server search is unavailable. Server search
+        // will run in the background and refresh results when ready.
+        const qLower = q.toLowerCase();
+        const localFiltered = (this.loadedImages || []).filter((img) => {
+            // match by exact id
+            if (String(img.id) === q) return true;
+            if (
+                img.original_name &&
+                String(img.original_name).toLowerCase().includes(qLower)
+            )
+                return true;
+            if (
+                Array.isArray(img.tags) &&
+                img.tags.join(" ").toLowerCase().includes(qLower)
+            )
+                return true;
+            return false;
         });
-        this.renderGallery(filtered);
+
+        this.lastSearchQuery = q;
+        this.lastLocalFiltered = localFiltered;
+        this.renderGallery(localFiltered);
+
+        // Debounce server requests to update with authoritative results
+        if (this.searchDebounce) clearTimeout(this.searchDebounce);
+        this.searchDebounce = setTimeout(
+            () => this.performServerSearch(q),
+            300,
+        );
+    }
+
+    async performServerSearch(q) {
+        if (!this.gallery) return;
+
+        try {
+            let url = "/admin/images/browse";
+            const params = new URLSearchParams();
+            if (this.config.tagFilter) {
+                params.append("tag", this.config.tagFilter);
+            }
+            params.append("q", q);
+            // Increase limit for searches to return more matches
+            params.append("limit", "500");
+
+            url += "?" + params.toString();
+
+            const response = await fetch(url, { credentials: "same-origin" });
+            if (!response.ok) throw new Error("Failed to search images");
+            const data = await response.json();
+            this.loadedImages = data.images || [];
+            this.syncTargetFieldSelection();
+            this.renderGallery(this.loadedImages);
+        } catch (err) {
+            console.error("Search error:", err);
+            // On failure, leave the immediate local results in place so tests
+            // and UX don't get interrupted. If we have a cached local result,
+            // re-render it.
+            if (this.lastLocalFiltered) {
+                this.renderGallery(this.lastLocalFiltered);
+            }
+        }
     }
 
     onGalleryImageClick(card) {
