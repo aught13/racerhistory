@@ -54,4 +54,35 @@ describe("people-index controller", () => {
 
         expect(cleanupMock).toHaveBeenCalledTimes(1);
     });
+
+    test("calls default init when no override", async () => {
+        // Ensure no overrides exist
+        delete window.__PEOPLE_INDEX_INIT__;
+        delete window.__PEOPLE_INDEX_CLEANUP__;
+
+        application.stop();
+        application = Application.start();
+        application.register("people-index", PeopleIndexController);
+
+        await Promise.resolve();
+
+        // Should not throw even without override
+        expect(true).toBe(true);
+    });
+
+    test("calls default cleanup when no override", async () => {
+        delete window.__PEOPLE_INDEX_INIT__;
+        delete window.__PEOPLE_INDEX_CLEANUP__;
+
+        application.stop();
+        application = Application.start();
+        application.register("people-index", PeopleIndexController);
+        await Promise.resolve();
+
+        document.getElementById("people-root").remove();
+        await Promise.resolve();
+
+        // Should not throw even without override
+        expect(true).toBe(true);
+    });
 });

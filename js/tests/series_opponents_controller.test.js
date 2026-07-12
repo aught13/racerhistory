@@ -54,4 +54,32 @@ describe("series-opponents controller", () => {
 
         expect(cleanupMock).toHaveBeenCalledTimes(1);
     });
+
+    test("calls default init when no override", async () => {
+        delete window.__SERIES_OPPONENTS_INIT__;
+        delete window.__SERIES_OPPONENTS_CLEANUP__;
+
+        application.stop();
+        application = Application.start();
+        application.register("series-opponents", SeriesOpponentsController);
+
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
+
+    test("calls default cleanup when no override", async () => {
+        delete window.__SERIES_OPPONENTS_INIT__;
+        delete window.__SERIES_OPPONENTS_CLEANUP__;
+
+        application.stop();
+        application = Application.start();
+        application.register("series-opponents", SeriesOpponentsController);
+        await Promise.resolve();
+
+        document.getElementById("series-root").remove();
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
 });

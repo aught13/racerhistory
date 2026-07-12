@@ -155,7 +155,10 @@ describe("admin_runtime - uncovered branches", () => {
             // Set the init flag first
             window.__RH_ADMIN_RUNTIME_INIT__ = true;
 
-            const addEventListenerSpy = jest.spyOn(document, "addEventListener");
+            const addEventListenerSpy = jest.spyOn(
+                document,
+                "addEventListener",
+            );
             AdminRuntime.initAdminRuntimeLifecycle();
 
             // addEventListener should not be called again if already init
@@ -165,7 +168,10 @@ describe("admin_runtime - uncovered branches", () => {
         });
 
         test("sets up turbo event listeners", () => {
-            const addEventListenerSpy = jest.spyOn(document, "addEventListener");
+            const addEventListenerSpy = jest.spyOn(
+                document,
+                "addEventListener",
+            );
             AdminRuntime.initAdminRuntimeLifecycle();
 
             // Should have added event listeners

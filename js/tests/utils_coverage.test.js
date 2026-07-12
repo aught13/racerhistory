@@ -99,12 +99,16 @@ describe("TinyMCE Loader utility", () => {
         const { initTinyMceLoader } = await import("../lib/tinymce_loader.js");
 
         // Count script tags before
-        const scriptsBefore = document.querySelectorAll('script[data-rh-tinymce="true"]').length;
+        const scriptsBefore = document.querySelectorAll(
+            'script[data-rh-tinymce="true"]',
+        ).length;
 
         initTinyMceLoader();
 
         // Count script tags after - should be same since tinymce already exists
-        const scriptsAfter = document.querySelectorAll('script[data-rh-tinymce="true"]').length;
+        const scriptsAfter = document.querySelectorAll(
+            'script[data-rh-tinymce="true"]',
+        ).length;
         expect(scriptsAfter).toBe(scriptsBefore);
 
         delete window.tinymce;
@@ -138,7 +142,10 @@ describe("TinyMCE Loader utility", () => {
 
     test("initTinyMceLoader loads when document is already loaded", async () => {
         // Simulate document already being loaded
-        const originalReadyState = Object.getOwnPropertyDescriptor(document, "readyState");
+        const originalReadyState = Object.getOwnPropertyDescriptor(
+            document,
+            "readyState",
+        );
         Object.defineProperty(document, "readyState", {
             value: "complete",
             configurable: true,

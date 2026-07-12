@@ -26,7 +26,9 @@ describe("Branch Coverage - Comprehensive Targeting", () => {
                 </div>
             `;
 
-            expect(document.querySelector("[data-controller*='admin']")).toBeDefined();
+            expect(
+                document.querySelector("[data-controller*='admin']"),
+            ).toBeDefined();
         });
     });
 
@@ -44,7 +46,9 @@ describe("Branch Coverage - Comprehensive Targeting", () => {
                 writable: true,
                 value: 1200,
             });
-            expect(window.innerWidth >= 992 && window.innerWidth < 1600).toBe(true);
+            expect(window.innerWidth >= 992 && window.innerWidth < 1600).toBe(
+                true,
+            );
 
             // Test ultrawide viewport
             Object.defineProperty(window, "innerWidth", {
@@ -63,7 +67,9 @@ describe("Branch Coverage - Comprehensive Targeting", () => {
     describe("tinymce_loader execution paths", () => {
         beforeEach(() => {
             delete window.tinymce;
-            document.querySelectorAll('script[data-rh-tinymce="true"]').forEach((s) => s.remove());
+            document
+                .querySelectorAll('script[data-rh-tinymce="true"]')
+                .forEach((s) => s.remove());
         });
 
         test("detects multiple tinymce-requiring controllers", () => {
@@ -87,7 +93,9 @@ describe("Branch Coverage - Comprehensive Targeting", () => {
 
         test("handles document state variations", () => {
             // Test readyState
-            expect(document.readyState).toMatch(/^(loading|interactive|complete)$/);
+            expect(document.readyState).toMatch(
+                /^(loading|interactive|complete)$/,
+            );
         });
     });
 

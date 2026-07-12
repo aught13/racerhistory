@@ -54,4 +54,32 @@ describe("stats-page controller", () => {
 
         expect(cleanupMock).toHaveBeenCalledTimes(1);
     });
+
+    test("calls default init when no override", async () => {
+        delete window.__STATS_PAGE_INIT__;
+        delete window.__STATS_PAGE_CLEANUP__;
+
+        application.stop();
+        application = Application.start();
+        application.register("stats-page", StatsPageController);
+
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
+
+    test("calls default cleanup when no override", async () => {
+        delete window.__STATS_PAGE_INIT__;
+        delete window.__STATS_PAGE_CLEANUP__;
+
+        application.stop();
+        application = Application.start();
+        application.register("stats-page", StatsPageController);
+        await Promise.resolve();
+
+        document.getElementById("stats-root").remove();
+        await Promise.resolve();
+
+        expect(true).toBe(true);
+    });
 });

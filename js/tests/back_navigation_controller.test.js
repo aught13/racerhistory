@@ -107,7 +107,9 @@ describe("back-navigation controller", () => {
 
     test("uses window.history.back() when history available", () => {
         const backButton = document.getElementById("back-btn");
-        const historySpy = jest.spyOn(window.history, "back").mockImplementation(() => {});
+        const historySpy = jest
+            .spyOn(window.history, "back")
+            .mockImplementation(() => {});
 
         setReferrer("http://localhost/admin/games");
         Object.defineProperty(window.history, "length", {
