@@ -8,7 +8,7 @@ declare(strict_types=1);
  * @var \App\View\AppView $this
  */
 ?>
-<turbo-frame id="blog-post-view" class="blog-expanded-frame" target="_top">
+<turbo-frame id="blog-post-view" class="blog-expanded-frame" target="_top" data-controller="blog-interactions">
     <!-- Add standard Bootstrap 2-column wrappings to mimic news layout -->
     <div class="row">
         <div class="col-lg-8 pe-lg-4">

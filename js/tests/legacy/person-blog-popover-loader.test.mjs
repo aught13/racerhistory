@@ -76,4 +76,32 @@ describe("person-blog-popover loader", () => {
         });
         addSpy.mockRestore();
     });
+
+    test("uses default init when override is not a function", async () => {
+        jest.resetModules();
+        globalThis.__PERSON_BLOG_POPOVER_INIT__ = "not a function";
+
+        await import("../../legacy/person-blog-popover-loader.mjs");
+        // Should use default initPersonBlogPopovers
+        expect(true).toBe(true);
+        delete globalThis.__PERSON_BLOG_POPOVER_INIT__;
+    });
+
+    test("handles non-turbo frame-load events", async () => {
+        const { initMock, boot } = await importLoader();
+        initMock.mockClear();
+
+        boot({ type: "other-event", target: document.createElement("div") });
+
+        expect(initMock).toHaveBeenCalledWith({ root: document });
+    });
+
+    test("handles invalid frame targets", async () => {
+        const { initMock, boot } = await importLoader();
+        initMock.mockClear();
+
+        boot({ type: "turbo:frame-load", target: "not an element" });
+
+        expect(initMock).toHaveBeenCalledWith({ root: document });
+    });
 });

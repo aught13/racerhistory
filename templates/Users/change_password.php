@@ -63,6 +63,7 @@ $this->assign('title', 'Change Password');
                     </div>
 
                     <?= $this->Form->button(__('Update Password'), ['class' => 'btn btn-primary w-100']) ?>
+                    <?= $this->Form->secure(['current_password', 'password', 'confirm_password']) ?>
                     <?= $this->Form->end() ?>
 
                 </div>

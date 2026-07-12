@@ -23,7 +23,7 @@ $filterLabels = [
     'conf_road' => 'Conf Road',
 ];
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="games-search">
 
 
     <h1 class="h3 mb-3"><?= $type === 'win' ? 'Biggest Wins' : 'Largest Losses' ?></h1>

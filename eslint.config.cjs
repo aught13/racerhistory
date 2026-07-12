@@ -2,9 +2,11 @@
 // @ts-check
 
 const eslint = require("@eslint/js");
+const pluginSecurity = require("eslint-plugin-security")
 
 module.exports = [
     eslint.configs.recommended,
+    pluginSecurity.configs.recommended,
     {
         // Ignore third-party libraries, config and vendor files
         ignores: [
@@ -74,6 +76,9 @@ module.exports = [
                 module: "readonly",
             },
         },
+        rules: {
+            "security/detect-object-injection": "off",
+        },
     },
     {
         // Module files (ESM)
@@ -109,10 +114,16 @@ module.exports = [
                 CustomEvent: "readonly",
             },
         },
+        rules: {
+            "security/detect-object-injection": "off",
+        },
     },
     {
         // CommonJS and other script-like module files
         files: ["js/legacy/modules/**/*.cjs", "js/legacy/**/*.cjs"],
+        rules: {
+            "security/detect-object-injection": "off",
+        },
     },
     {
         // Jest mock files (CommonJS)
@@ -189,6 +200,16 @@ module.exports = [
                 "error",
                 { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
             ],
+            "security/detect-object-injection": "off",
+            "security/detect-unsafe-regex": "off",
+            "security/detect-non-literal-fs-filename": "off",
+        },
+    },
+    {
+        // Production lib code (data munging, transformations, runtimes)
+        files: ["js/lib/**/*.js", "js/lib/**/*.mjs"],
+        rules: {
+            "security/detect-object-injection": "off",
         },
     },
     {

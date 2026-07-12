@@ -126,8 +126,12 @@ foreach ($audit['results'] as $r) {
                         <?= $this->Form->create(null, [
                             'url' => ['controller' => 'Dashboard', 'action' => 'clearCache', 'prefix' => 'Admin'],
                             'id' => 'clear-cache-form',
+                            'data-controller' => 'admin-dashboard',
+                            'data-action' => 'submit->admin-dashboard#confirmAndSubmit',
+                            'data-admin-dashboard-confirm-message-value' => 'Clear all CakePHP cache engines?',
+                            'data-admin-dashboard-loading-label-value' => 'Clearing...',
                         ]) ?>
-                            <button type="submit" class="btn btn-outline-warning" id="btn-clear-cache">
+                            <button type="submit" class="btn btn-outline-warning" id="btn-clear-cache" data-admin-dashboard-target="button">
                                 <i class="bi bi-trash3 me-2"></i>Clear CakePHP Cache
                             </button>
                         <?= $this->Form->end() ?>

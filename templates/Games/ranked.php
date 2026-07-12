@@ -14,7 +14,7 @@ $filterLabels = [
     'opponent' => 'Opponent Ranked',
 ];
 ?>
-<div class="container py-4">
+<div class="container py-4" data-controller="games-search">
 
 
     <h1 class="h3 mb-3">Ranked Games</h1>

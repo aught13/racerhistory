@@ -13,6 +13,7 @@ describe("main runtime bootstrap", () => {
             startNativeBridge: jest.fn(),
             registerServiceWorker: jest.fn(),
             initTurboScrollBehavior: jest.fn(),
+            initializeLegacyModules: jest.fn(),
         };
 
         jest.mock("@hotwired/stimulus", () => {
@@ -56,6 +57,12 @@ describe("main runtime bootstrap", () => {
                 globalThis.__MAIN_TEST_MOCKS__.initTurboScrollBehavior,
         }));
 
+        jest.mock("../lib/legacy_loader_registry.js", () => ({
+            __esModule: true,
+            initializeLegacyModules:
+                globalThis.__MAIN_TEST_MOCKS__.initializeLegacyModules,
+        }));
+
         return globalThis.__MAIN_TEST_MOCKS__;
     }
 
@@ -74,7 +81,7 @@ describe("main runtime bootstrap", () => {
         window.history.replaceState({}, "", "/");
     });
 
-    test("boots public runtime once and registers controllers", async () => {
+    test("boots public runtime once and hands off to route loader", async () => {
         const mocks = installMocks();
 
         await import("../main.js");
@@ -89,14 +96,9 @@ describe("main runtime bootstrap", () => {
 
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
         const stimulus = mocks.applicationStart.mock.results[0].value;
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "image-selector",
-            expect.any(Function),
-        );
-        expect(stimulus.register).toHaveBeenCalledWith(
-            "theme-toggle",
-            expect.any(Function),
-        );
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(stimulus);
+        expect(stimulus.register).not.toHaveBeenCalled();
 
         await import("../main.js");
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
@@ -112,6 +114,10 @@ describe("main runtime bootstrap", () => {
         expect(mocks.initAdminRuntimeLifecycle).toHaveBeenCalledTimes(1);
         expect(mocks.initThemeFromCookie).not.toHaveBeenCalled();
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
+        expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(
+            mocks.applicationStart.mock.results[0].value,
+        );
     });
 
     test("does nothing when runtime boot flag is already set", async () => {
@@ -127,5 +133,6 @@ describe("main runtime bootstrap", () => {
         expect(mocks.startNativeBridge).not.toHaveBeenCalled();
         expect(mocks.registerServiceWorker).not.toHaveBeenCalled();
         expect(mocks.initTurboScrollBehavior).not.toHaveBeenCalled();
+        expect(mocks.initializeLegacyModules).not.toHaveBeenCalled();
     });
 });

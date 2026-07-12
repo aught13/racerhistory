@@ -51,6 +51,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="seasons-controls"');
         $this->assertResponseContains('id="searchbuilder-panel"');
         $this->assertResponseContains('id="seasons-table-frame"');
+        $this->assertResponseContains('data-controller="seasons-page"');
     }
 
     /**
@@ -96,6 +97,7 @@ class SeasonsControllerTest extends TestCase
         $this->get('/seasons/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Game Log');
+        $this->assertResponseContains('data-controller="season-view"');
     }
 
     /**
@@ -164,6 +166,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('Season Splits');
         $this->assertResponseContains('id="season-splits-table"');
         $this->assertResponseContains('id="seasons-table-frame"');
+        $this->assertResponseContains('data-controller="seasons-page"');
     }
 
     /**

@@ -251,7 +251,7 @@ $formatSeasonLabel = static function ($season): string {
         <?php endif; ?>
 
         <div class="col-12">
-            <section class="card shadow-sm" data-person-game-log>
+            <section class="card shadow-sm" data-controller="person-game-log-tabs" data-person-game-log>
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h5 mb-0">Game Log</h2>
                 </div>
@@ -377,7 +377,7 @@ $formatSeasonLabel = static function ($season): string {
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h5 mb-0">Stories</h2>
                 </div>
-                <div class="card-body" data-person-blog-popovers>
+                <div class="card-body" data-controller="person-blog-popovers" data-person-blog-popovers>
                     <?php if (!empty($blogPosts)) : ?>
                         <div class="list-group">
                             <?php foreach ($blogPosts as $post) : ?>

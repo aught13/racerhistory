@@ -121,7 +121,7 @@ $this->assign('title', $teamName . ' ' . $seasonLabel . ' Season');
 $this->start('css'); ?>
 <?php $this->end(); ?>
 
-<div class="container py-4 season-view" data-season-view>
+<div class="container py-4 season-view" data-season-view data-controller="season-view">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">

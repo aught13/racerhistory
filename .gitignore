@@ -75,3 +75,5 @@ phpDocumentor.phar
 /webroot/dist/
 /.phpdoc/
 phpdoc.dist.xml
+server.pid
+config/Migrations/schema-dump-default.lock

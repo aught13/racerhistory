@@ -23,7 +23,7 @@ $siteSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites'
 $gameTypeSearchUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'ajaxSearch']);
 
 ?>
-<div class="card" id="game-form-card"
+<div class="card" id="game-form-card" data-controller="admin-game-form"
      data-opponent-search-url="<?= h($opponentSearchUrl) ?>"
      data-place-search-url="<?= h($placeSearchUrl) ?>"
      data-site-search-url="<?= h($siteSearchUrl) ?>"
