@@ -88,6 +88,10 @@ describe("admin-dashboard controller", () => {
         `;
 
         application.stop();
+        confirmSpy = jest
+            .spyOn(window, "confirm")
+            .mockImplementation(() => true);
+
         application = Application.start();
         application.register("admin-dashboard", AdminDashboardController);
         await Promise.resolve();
@@ -98,6 +102,10 @@ describe("admin-dashboard controller", () => {
             cancelable: true,
         });
 
+        form.dispatchEvent(submitEvent);
+
+        expect(window.confirm).toHaveBeenCalled();
+        // Should not throw even though button target is missing
         expect(() => form.dispatchEvent(submitEvent)).not.toThrow();
     });
 });

@@ -71,4 +71,32 @@ describe("person-game-log-tabs controller", () => {
 
         expect(initMock).toHaveBeenCalledWith({ root: frame });
     });
+
+    test("ignores turbo:frame-load events with non-Element targets", async () => {
+        const initMock = jest.fn();
+        window.__PERSON_GAME_LOG_TABS_INIT__ = initMock;
+
+        application.stop();
+        application = Application.start();
+        application.register(
+            "person-game-log-tabs",
+            PersonGameLogTabsController,
+        );
+        await Promise.resolve();
+
+        const callsBefore = initMock.mock.calls.length;
+
+        // Dispatch event with a non-Element target
+        const event = new CustomEvent("turbo:frame-load", {
+            bubbles: true,
+            detail: {},
+        });
+        Object.defineProperty(event, "target", { value: "not-an-element" });
+        document.dispatchEvent(event);
+
+        await Promise.resolve();
+
+        // Init should not have been called for non-Element target
+        expect(initMock.mock.calls.length).toBe(callsBefore);
+    });
 });

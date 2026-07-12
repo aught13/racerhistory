@@ -598,4 +598,44 @@ describe("admin-users-index controller branch coverage", () => {
         controller.updateBulkButtonState();
         expect(controller.actionButtonTarget.disabled).toBe(false);
     });
+
+    test("handles delete action with missing second column cell", async () => {
+        const mounted = startController({
+            includeRows: true,
+        });
+
+        // Add row without second column cell
+        const tbody = document.querySelector(
+            '[data-admin-users-index-target="pendingTable"] tbody',
+        );
+        const rowWithoutCell = document.createElement("tr");
+        const cellWithCheckbox = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "user-checkbox";
+        checkbox.name = "user_ids[]";
+        checkbox.value = "99";
+        checkbox.setAttribute("data-admin-users-index-role", "row-checkbox");
+        cellWithCheckbox.appendChild(checkbox);
+        rowWithoutCell.appendChild(cellWithCheckbox);
+        // Note: no second td/name cell
+        tbody.appendChild(rowWithoutCell);
+
+        jest.advanceTimersByTime(0);
+
+        const controller = await mounted.getController();
+        const checkboxes = controller.rowCheckboxes();
+        checkboxes[checkboxes.length - 1].checked = true;
+        controller.actionSelectTarget.value = "delete";
+
+        const form = document.getElementById("bulk-action-form");
+        form.dispatchEvent(
+            new Event("submit", { bubbles: true, cancelable: true }),
+        );
+
+        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalled();
+        const call = window.__rhStimulusShowConfirmDelete.mock.calls[0][0];
+        // Should include empty string for row without second column cell
+        expect(call.associated).toContain("");
+    });
 });
