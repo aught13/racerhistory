@@ -9,6 +9,7 @@ describe("main runtime bootstrap", () => {
                 register: jest.fn(),
             })),
             initThemeFromCookie: jest.fn(),
+            enforceAdminLightTheme: jest.fn(),
             initAdminRuntimeLifecycle: jest.fn(),
             startNativeBridge: jest.fn(),
             registerServiceWorker: jest.fn(),
@@ -36,6 +37,8 @@ describe("main runtime bootstrap", () => {
 
         jest.mock("../lib/admin_runtime.js", () => ({
             __esModule: true,
+            enforceAdminLightTheme:
+                globalThis.__MAIN_TEST_MOCKS__.enforceAdminLightTheme,
             initAdminRuntimeLifecycle:
                 globalThis.__MAIN_TEST_MOCKS__.initAdminRuntimeLifecycle,
         }));
@@ -104,15 +107,18 @@ describe("main runtime bootstrap", () => {
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
     });
 
-    test("boots admin runtime without theme bootstrap", async () => {
+    test("boots admin runtime with theme bootstrap first", async () => {
         window.history.replaceState({}, "", "/admin/dashboard");
 
         const mocks = installMocks();
 
         await import("../main.js");
 
-        expect(mocks.initAdminRuntimeLifecycle).toHaveBeenCalledTimes(1);
+        // On admin paths, enforce light theme first (before cookie preference)
+        // to prevent dark mode from bleeding through during page transitions.
+        expect(mocks.enforceAdminLightTheme).toHaveBeenCalledTimes(1);
         expect(mocks.initThemeFromCookie).not.toHaveBeenCalled();
+        expect(mocks.initAdminRuntimeLifecycle).toHaveBeenCalledTimes(1);
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(

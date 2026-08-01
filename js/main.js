@@ -2,7 +2,10 @@ import * as Turbo from "@hotwired/turbo";
 import { Application } from "@hotwired/stimulus";
 
 import { initThemeFromCookie } from "./lib/theme.js";
-import { initAdminRuntimeLifecycle } from "./lib/admin_runtime.js";
+import {
+    initAdminRuntimeLifecycle,
+    enforceAdminLightTheme,
+} from "./lib/admin_runtime.js";
 import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
@@ -23,10 +26,22 @@ if (!runtimeAlreadyBooted) {
         window.Turbo = Turbo;
     }
 
+    // On admin paths, enforce light theme FIRST before any cookie-based theme
+    // is applied. This prevents dark mode from bleeding through during page
+    // transitions from public routes to admin.
+    if (isAdminPath) {
+        enforceAdminLightTheme();
+    }
+
+    // Initialize theme system on public paths (respects user preference).
+    // On admin paths, this just sets up the media query listener without
+    // overriding the light theme already enforced above.
     if (!isAdminPath) {
         initThemeFromCookie();
         void import("./legacy/image-retry.mjs");
     } else {
+        // Initialize admin runtime which sets up Turbo event listeners
+        // to maintain light theme throughout admin session
         initAdminRuntimeLifecycle();
     }
 

@@ -27,6 +27,7 @@ export default class extends Controller {
         this.tinyMceRetryTimer = null;
         this.boundBeforeRender = () => this.destroyTinyMCE();
         this.boundBeforeCache = () => this.destroyTinyMCE();
+        this.boundTurboLoad = () => this.onTurboLoad();
         this.boundHeroChange = () => this.onHeroFieldChange();
         this.boundUnsetHero = () => this.clearHeroImage();
         this.boundInlineChange = () => this.onInlineFieldChange();
@@ -36,6 +37,7 @@ export default class extends Controller {
             this.boundBeforeRender,
         );
         document.addEventListener("turbo:before-cache", this.boundBeforeCache);
+        document.addEventListener("turbo:load", this.boundTurboLoad);
 
         if (this.hasHeroFieldTarget) {
             this.heroFieldTarget.addEventListener(
@@ -72,6 +74,7 @@ export default class extends Controller {
             "turbo:before-cache",
             this.boundBeforeCache,
         );
+        document.removeEventListener("turbo:load", this.boundTurboLoad);
 
         if (this.hasHeroFieldTarget) {
             this.heroFieldTarget.removeEventListener(
@@ -98,6 +101,13 @@ export default class extends Controller {
         }
 
         this.destroyTinyMCE();
+    }
+
+    onTurboLoad() {
+        // Re-initialize TinyMCE after successful Turbo navigation
+        // This ensures the editor is properly set up even if destroyed during navigation
+        this.tinyMceRetryCount = 0;
+        this.initTinyMceWhenReady();
     }
 
     initTinyMceWhenReady() {
@@ -303,11 +313,25 @@ export default class extends Controller {
     }
 
     destroyTinyMCE() {
-        if (typeof window.tinymce !== "undefined") {
+        if (typeof window.tinymce === "undefined") {
+            return;
+        }
+
+        try {
             const editor = window.tinymce.get("body-editor");
-            if (editor) {
-                editor.remove();
+            // Save content before removing to prevent data loss
+            if (
+                editor &&
+                typeof editor === "object" &&
+                typeof editor.getContent === "function" &&
+                this.hasEditorTarget
+            ) {
+                this.editorTarget.value = editor.getContent();
             }
+            // Remove the editor instance (use editor object or selector string)
+            window.tinymce.remove(editor || "#body-editor");
+        } catch (e) {
+            console.warn("Error destroying TinyMCE editor:", e);
         }
     }
 
