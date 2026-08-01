@@ -23,8 +23,12 @@ if (!runtimeAlreadyBooted) {
         window.Turbo = Turbo;
     }
 
+    // Initialize theme system first on all paths to ensure proper media query
+    // setup. On admin paths, initAdminRuntimeLifecycle() will override with
+    // light theme enforcement.
+    initThemeFromCookie();
+
     if (!isAdminPath) {
-        initThemeFromCookie();
         void import("./legacy/image-retry.mjs");
     } else {
         initAdminRuntimeLifecycle();

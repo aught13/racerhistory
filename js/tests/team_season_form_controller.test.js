@@ -535,4 +535,31 @@ describe("team-season-form controller", () => {
         expect(() => controller.updateImagePreview()).not.toThrow();
         expect(() => controller.disconnect()).not.toThrow();
     });
+
+    test("destroyTinyMCE covers editors without getContent and missing editor ids branches", async () => {
+        // Branch: editors exist but don't have getContent method
+        const removeMock = jest.fn();
+        tinymceGetMock.mockImplementation(() => ({
+            remove: removeMock,
+        }));
+
+        const controller = await mountController();
+        controller.destroyTinyMCE();
+
+        // Should be called twice (for both preview and recap editors)
+        expect(tinymceGetMock).toHaveBeenCalledWith("team-season-preview");
+        expect(tinymceGetMock).toHaveBeenCalledWith("team-season-recap");
+        expect(removeMock).toHaveBeenCalledTimes(2);
+
+        // Branch: no editor ids (missing id attributes)
+        removeMock.mockClear();
+        tinymceGetMock.mockClear();
+
+        const controllerNoIds = await mountController({
+            includePreviewEditor: false,
+            includeRecapEditor: false,
+        });
+        controllerNoIds.destroyTinyMCE();
+        expect(tinymceGetMock).not.toHaveBeenCalled();
+    });
 });

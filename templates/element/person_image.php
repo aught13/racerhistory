@@ -6,6 +6,7 @@
  *
  * Variables:
  * - $person: Person entity with person_image field
+ * - $rosterId: Optional team season roster ID to look for roster-tagged images first
  * - $size: Optional size ('small', 'medium', 'large') - defaults to 'medium'
  * - $profile: Optional image profile to use
  * - $variant: Optional image variant to use (e.g., 'thumb', 'medium')
@@ -16,12 +17,15 @@
  * @var \App\Model\Entity\Person $person
  */
 
+use App\Service\ImageTagService;
+
 $size = $size ?? 'medium';
 $profile = $profile ?? null;
 $variant = $variant ?? 'thumb';
 $class = $class ?? '';
 $style = $style ?? '';
 $deferred = $deferred ?? false;
+$rosterId = (int)($rosterId ?? 0);
 
 // Size presets
 $sizeMap = [
@@ -66,10 +70,26 @@ $normalizeImageUrl = static function (?string $value): string {
 };
 
 $imageId = 0;
-foreach ([$person->person_image ?? null, $person->person_image_id ?? null, $person->image_id ?? null] as $candidate) {
-    if (is_numeric((string)$candidate) && (int)$candidate > 0) {
-        $imageId = (int)$candidate;
-        break;
+
+// Priority 1: If roster_id provided, look for roster-tagged image
+if ($rosterId > 0) {
+    $imageTagService = new ImageTagService();
+    $rosterImages = $imageTagService->getRosterEntryImage($rosterId, 1);
+    if (!empty($rosterImages)) {
+        $rosterImage = reset($rosterImages);
+        if (is_object($rosterImage) && is_numeric((string)($rosterImage->id ?? null))) {
+            $imageId = (int)$rosterImage->id;
+        }
+    }
+}
+
+// Priority 2: Fall back to person_image
+if ($imageId <= 0) {
+    foreach ([$person->person_image ?? null, $person->person_image_id ?? null, $person->image_id ?? null] as $candidate) {
+        if (is_numeric((string)$candidate) && (int)$candidate > 0) {
+            $imageId = (int)$candidate;
+            break;
+        }
     }
 }
 

@@ -163,6 +163,18 @@ class ImageTagService
     }
 
     /**
+     * Get image tagged with a roster entry.
+     *
+     * @param int $rosterId Team season roster ID
+     * @param int $limit
+     * @return array<int,\App\Model\Entity\Image>
+     */
+    public function getRosterEntryImage(int $rosterId, int $limit = 1): array
+    {
+        return $this->getImagesByAllTags(["team_season_roster-{$rosterId}"], $limit);
+    }
+
+    /**
      * Resolve or create and return ImageTags for provided slugs.
      *
      * @param array $tagSlugs

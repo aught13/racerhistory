@@ -65,7 +65,7 @@
                                 class="roster-checkbox"></td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <?= $this->element('person_image', ['person' => $roster->person, 'size' => 'small', 'class' => 'me-2']) ?>
+                                <?= $this->element('person_image', ['person' => $roster->person, 'rosterId' => $roster->id, 'size' => 'small', 'class' => 'me-2']) ?>
                                 <a
                                     href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'view', $roster->person->id]) ?>">
                                     <?= h($roster->person->display ?? ($roster->person->first . ' ' . $roster->person->last)) ?>

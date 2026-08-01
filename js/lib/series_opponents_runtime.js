@@ -95,9 +95,8 @@ function bindOpponentSearchInput(dtApi) {
 }
 
 function bindOpponentPickerToggle() {
-    const panel = document.getElementById("series-opponents-picker-panel");
     const toggle = document.getElementById("series-opponents-picker-toggle");
-    if (!panel || !toggle) {
+    if (!toggle) {
         return;
     }
 
@@ -108,16 +107,27 @@ function bindOpponentPickerToggle() {
         );
     }
 
-    const setExpandedState = (expanded) => {
-        toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-        toggle.textContent = expanded
-            ? "Hide opponent picker"
-            : "Change opponent";
-    };
-
-    setExpandedState(!panel.classList.contains("d-none"));
-
     const handler = () => {
+        // Re-fetch elements on each click to avoid stale references
+        const panel = document.getElementById("series-opponents-picker-panel");
+        if (!panel) {
+            console.warn("Series opponents picker panel not found");
+            return;
+        }
+
+        const currentToggle = document.getElementById("series-opponents-picker-toggle");
+        if (!currentToggle) {
+            console.warn("Series opponents picker toggle not found");
+            return;
+        }
+
+        const setExpandedState = (expanded) => {
+            currentToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+            currentToggle.textContent = expanded
+                ? "Hide opponent picker"
+                : "Change opponent";
+        };
+
         const isHidden = panel.classList.contains("d-none");
         if (isHidden) {
             panel.classList.remove("d-none");
@@ -131,6 +141,18 @@ function bindOpponentPickerToggle() {
         panel.classList.add("d-none");
         setExpandedState(false);
     };
+
+    // Set initial expanded state based on current panel visibility
+    const initialPanel = document.getElementById("series-opponents-picker-panel");
+    if (initialPanel) {
+        const setExpandedState = (expanded) => {
+            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+            toggle.textContent = expanded
+                ? "Hide opponent picker"
+                : "Change opponent";
+        };
+        setExpandedState(!initialPanel.classList.contains("d-none"));
+    }
 
     toggle.addEventListener("click", handler);
     toggle._seriesOpponentsToggleHandler = handler;

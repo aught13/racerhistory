@@ -40,6 +40,7 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
         'url' => isset($post->id) ? ['action' => 'edit', $post->id] : ['action' => 'add'],
         'class' => 'needs-validation',
         'novalidate' => true,
+        'data-turbo-cache' => 'false',
     ]) ?>
     <?php $this->Form->unlockField('is_published'); ?>
     <div class="row">

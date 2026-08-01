@@ -104,15 +104,17 @@ describe("main runtime bootstrap", () => {
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);
     });
 
-    test("boots admin runtime without theme bootstrap", async () => {
+    test("boots admin runtime with theme bootstrap first", async () => {
         window.history.replaceState({}, "", "/admin/dashboard");
 
         const mocks = installMocks();
 
         await import("../main.js");
 
+        // Theme bootstrap now runs on ALL paths to ensure media query setup.
+        // On admin paths, initAdminRuntimeLifecycle() will override with light theme.
+        expect(mocks.initThemeFromCookie).toHaveBeenCalledTimes(1);
         expect(mocks.initAdminRuntimeLifecycle).toHaveBeenCalledTimes(1);
-        expect(mocks.initThemeFromCookie).not.toHaveBeenCalled();
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(
