@@ -32,9 +32,14 @@
                         <i class="bi bi-pencil"></i> Edit Opponent
                     </a>
                 <?php endif; ?>
-                <button type="button" class="btn btn-secondary" onclick="history.back()">
-                    <i class="bi bi-arrow-left"></i> Back
-                </button>
+                <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Games
+                </a>
+                <a href="<?= $this->Url->build([
+                    'controller' => 'TeamSeasons', 'action' => 'view', $game->team_season->id,
+                ]) ?>" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Season
+                </a>
             </div>
         </div>
     </div>
@@ -782,9 +787,14 @@
         <div class="row"><!-- Opponent Stats --></div>
         <hr>
         <div class="btn-group">
-            <button type="button" class="btn btn-secondary" onclick="history.back()">
-                <i class="bi bi-arrow-left"></i> Back
-            </button>
+            <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Games
+            </a>
+            <a href="<?= $this->Url->build([
+                'controller' => 'TeamSeasons', 'action' => 'view', $game->team_season->id,
+            ]) ?>" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Season
+            </a>
         </div>
     </div>
 </div>

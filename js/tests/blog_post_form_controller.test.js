@@ -500,4 +500,90 @@ describe("blog-post-form controller", () => {
             controller.withCacheBust("/img/storage/1.jpg?size=hero"),
         ).toContain("&_ts=");
     });
+
+    test("destroyTinyMCE covers editor without getContent and no hasEditorTarget branches", () => {
+        tinymceGetMock.mockReturnValue({
+            remove: tinymceRemoveMock,
+        });
+
+        // Branch: editor exists but hasEditorTarget is false
+        const fakeNoTarget = {
+            hasEditorTarget: false,
+            destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
+        };
+        fakeNoTarget.destroyTinyMCE();
+        expect(tinymceRemoveMock).toHaveBeenCalled();
+        tinymceRemoveMock.mockClear();
+
+        // Branch: editor exists but doesn't have getContent method
+        tinymceGetMock.mockReturnValue({
+            remove: tinymceRemoveMock,
+        });
+        const fakeWithTarget = {
+            hasEditorTarget: true,
+            editorTarget: {
+                value: "original",
+            },
+            destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
+        };
+        fakeWithTarget.destroyTinyMCE();
+        expect(tinymceRemoveMock).toHaveBeenCalled();
+        expect(fakeWithTarget.editorTarget.value).toBe("original");
+    });
+
+    test("destroyTinyMCE covers null editor fallback and error handling branches", () => {
+        // Branch: editor is null, should call remove with selector string
+        tinymceGetMock.mockReturnValue(null);
+        const removeWithSelectorMock = jest.fn();
+        window.tinymce.remove = removeWithSelectorMock;
+
+        const controller = {
+            hasEditorTarget: true,
+            editorTarget: {
+                value: "test",
+            },
+            destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
+        };
+        controller.destroyTinyMCE();
+
+        // When editor is null, should call remove with selector
+        expect(removeWithSelectorMock).toHaveBeenCalledWith("#body-editor");
+
+        // Branch: error in try block is caught
+        tinymceGetMock.mockImplementation(() => {
+            throw new Error("Unexpected error");
+        });
+        const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+
+        controller.destroyTinyMCE();
+        expect(warnSpy).toHaveBeenCalledWith(
+            "Error destroying TinyMCE editor:",
+            expect.any(Error),
+        );
+
+        warnSpy.mockRestore();
+    });
+
+    test("destroyTinyMCE with editor that has getContent saves content before removal", () => {
+        // Branch: editor with getContent function - should save content
+        const editorWithGetContent = {
+            getContent: jest.fn(() => "saved content"),
+            remove: jest.fn(),
+        };
+        tinymceGetMock.mockReturnValue(editorWithGetContent);
+
+        const controller = {
+            hasEditorTarget: true,
+            editorTarget: {
+                value: "",
+            },
+            destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
+        };
+
+        controller.destroyTinyMCE();
+
+        // Verify content was saved
+        expect(editorWithGetContent.getContent).toHaveBeenCalled();
+        expect(controller.editorTarget.value).toBe("saved content");
+    });
 });

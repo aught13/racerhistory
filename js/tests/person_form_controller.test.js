@@ -443,4 +443,67 @@ describe("person-form controller", () => {
         expect(controller.withCacheBust(null)).toBe("");
         expect(controller.withCacheBust(undefined)).toBe("");
     });
+
+    test("removeTinyMceEditor covers editor without getContent and missing editor id branches", async () => {
+        await flush();
+
+        // Branch: editor exists but doesn't have getContent method
+        window.tinymce.get = jest.fn(() => ({
+            remove: jest.fn(),
+        }));
+
+        const controller = application.getControllerForElementAndIdentifier(
+            document.querySelector('[data-controller="person-form"]'),
+            "person-form",
+        );
+        controller.removeTinyMceEditor();
+        expect(window.tinymce.get).toHaveBeenCalledWith("bio-editor");
+
+        // Branch: no editor id (textarea without id attribute)
+        application.stop();
+        application = null;
+        document.body.innerHTML = `
+            <div data-controller="person-form">
+                <textarea data-person-form-target="bioEditor"></textarea>
+            </div>
+        `;
+        window.tinymce = {
+            get: jest.fn(() => null),
+            init: jest.fn(),
+            remove: jest.fn(),
+        };
+        application = Application.start();
+        application.register("person-form", PersonFormController);
+        await flush();
+
+        const controllerNoId = application.getControllerForElementAndIdentifier(
+            document.querySelector('[data-controller="person-form"]'),
+            "person-form",
+        );
+        controllerNoId.removeTinyMceEditor();
+        expect(window.tinymce.get).not.toHaveBeenCalled();
+    });
+
+    test("removeTinyMceEditor with getContent saves and removes editor", async () => {
+        await flush();
+
+        // Create an editor with getContent and remove methods
+        const editorWithGetContent = {
+            getContent: jest.fn(() => "editor content"),
+            remove: jest.fn(),
+        };
+        window.tinymce.get = jest.fn(() => editorWithGetContent);
+
+        const controller = application.getControllerForElementAndIdentifier(
+            document.querySelector('[data-controller="person-form"]'),
+            "person-form",
+        );
+
+        controller.removeTinyMceEditor();
+
+        expect(editorWithGetContent.getContent).toHaveBeenCalled();
+        expect(window.tinymce.remove).toHaveBeenCalledWith(
+            editorWithGetContent,
+        );
+    });
 });
