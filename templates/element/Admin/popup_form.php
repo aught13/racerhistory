@@ -65,14 +65,23 @@ $hasPlaceLocationBehavior =
                     <?php if ($hasPlaceLocationBehavior) : ?>
                     <div class="mb-3">
                         <label class="form-label" for="<?= h($popupId) ?>-country-search">Country Search (common name)</label>
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="<?= h($popupId) ?>-country-search"
-                            autocomplete="off"
-                            placeholder="Type a country name (e.g., United States)"
-                            data-place-location-target="countrySearch"
-                            data-action="input->place-location#onCountryQuery blur->place-location#onCountryBlur" />
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="<?= h($popupId) ?>-country-search"
+                                autocomplete="off"
+                                placeholder="Type a country name (e.g., United States)"
+                                data-place-location-target="countrySearch"
+                                data-action="input->place-location#onCountryQuery blur->place-location#onCountryBlur" />
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                data-place-location-target="countrySearchBtn"
+                                data-action="click->place-location#onSearchCountries">
+                                Search
+                            </button>
+                        </div>
                         <div class="mt-1 position-relative" data-place-location-target="countryResults"></div>
                         <small class="text-muted d-block mt-1" data-place-location-target="countryMeta">Select a country to store its ISO3 code and load subdivisions/localities.</small>
                     </div>
