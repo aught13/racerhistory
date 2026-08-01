@@ -115,14 +115,19 @@ function bindOpponentPickerToggle() {
             return;
         }
 
-        const currentToggle = document.getElementById("series-opponents-picker-toggle");
+        const currentToggle = document.getElementById(
+            "series-opponents-picker-toggle",
+        );
         if (!currentToggle) {
             console.warn("Series opponents picker toggle not found");
             return;
         }
 
         const setExpandedState = (expanded) => {
-            currentToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+            currentToggle.setAttribute(
+                "aria-expanded",
+                expanded ? "true" : "false",
+            );
             currentToggle.textContent = expanded
                 ? "Hide opponent picker"
                 : "Change opponent";
@@ -143,7 +148,9 @@ function bindOpponentPickerToggle() {
     };
 
     // Set initial expanded state based on current panel visibility
-    const initialPanel = document.getElementById("series-opponents-picker-panel");
+    const initialPanel = document.getElementById(
+        "series-opponents-picker-panel",
+    );
     if (initialPanel) {
         const setExpandedState = (expanded) => {
             toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
