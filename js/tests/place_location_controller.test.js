@@ -399,7 +399,7 @@ describe("place-location controller", () => {
         jest.useFakeTimers();
 
         const countrySearch = document.getElementById("place-country-search");
-        const countryResults = document.querySelector(
+        const _countryResults = document.querySelector(
             "[data-place-location-target='countryResults']",
         );
 

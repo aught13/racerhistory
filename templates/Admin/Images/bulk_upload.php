@@ -66,25 +66,11 @@
                 }
             }
             ?>
-            <?= $this->element('Admin/tag_selection', [
-                'teams' => $teams ?? [],
-                'teamSeasons' => $teamSeasonLabels ?? [],
-                'games' => $gameLabels ?? [],
-                'sites' => $siteLabels ?? [],
-                'opponents' => $opponents ?? [],
-                'sports' => $sportsForSelect,
+            <?= $this->element('Admin/tag_modal_trigger', [
+                'subject' => 'images',
+                'subjectId' => 0,
+                'syncHiddenInputs' => true,
                 'currentTags' => $currentTags ?? [],
-                'tagString' => '',
-                'freeform' => [
-                    'type' => 'text',
-                    'name' => 'common_tags',
-                    'label' => 'Additional Freeform Tags (comma-separated)',
-                    'help' => 'These will be applied to all uploaded files along with entity tags.',
-                    'attributes' => [
-                        'id' => 'commonTags',
-                        'placeholder' => 'tag1, tag2, tag3',
-                    ],
-                ],
             ]) ?>
             <div class="alert alert-info small">
                 <strong>Note:</strong> Entity tags and freeform tags here apply to <strong>all</strong> uploaded files.

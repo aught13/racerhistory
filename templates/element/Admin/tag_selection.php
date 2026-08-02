@@ -180,7 +180,20 @@ foreach ($unlockedFields as $field) {
 }
 ?>
 
-<div data-controller="tag-selection" data-initial-persons-json="<?= h(json_encode($selectedPersons, JSON_THROW_ON_ERROR | JSON_HEX_QUOT)) ?>" data-initial-roster-id="<?= h((int)($initialRosterId ?? 0)) ?>">
+<?php
+// Provide both legacy attributes (used by inline fallback script) and
+// Stimulus-compatible value attributes so dynamic insertion via AJAX
+// still supplies initial data to the `tag-selection` controller.
+$initialPersonsJson = h(json_encode($selectedPersons, JSON_THROW_ON_ERROR | JSON_HEX_QUOT));
+$initialRosterIdVal = h((int)($initialRosterId ?? 0));
+?>
+<div
+    data-controller="tag-selection"
+    data-initial-persons-json="<?= $initialPersonsJson ?>"
+    data-initial-roster-id="<?= $initialRosterIdVal ?>"
+    data-tag-selection-initial-persons-json-value="<?= $initialPersonsJson ?>"
+    data-tag-selection-initial-roster-id-value="<?= $initialRosterIdVal ?>"
+>
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Person</label>
@@ -321,71 +334,4 @@ foreach ($unlockedFields as $field) {
         <div class="form-text"><?= h($freeform['help']) ?></div>
     <?php endif; ?>
 </div>
-</div> <!-- closes data-controller="tag-selection" wrapper -->
-
-<script>
-// Direct initialization since Stimulus may not connect in time
-document.addEventListener('DOMContentLoaded', function() {
-  const wrapper = document.querySelector('[data-controller="tag-selection"]');
-  if (!wrapper) return;
-  
-  const personsJson = wrapper.getAttribute('data-initial-persons-json');
-  const rosterId = parseInt(wrapper.getAttribute('data-initial-roster-id') || '0', 10);
-  
-  if (!personsJson) return;
-  
-  try {
-    const persons = JSON.parse(personsJson);
-    const selectedPersonsEl = wrapper.querySelector('#selectedPersons');
-    const hiddenInputsContainer = wrapper.querySelector('#person_hidden_inputs');
-    const rosterSelect = wrapper.querySelector('#roster_select');
-    
-    if (!selectedPersonsEl || !hiddenInputsContainer || !rosterSelect) return;
-    
-    // Clear badges
-    selectedPersonsEl.innerHTML = '';
-    
-    // Render persons
-    persons.forEach(person => {
-      const badge = document.createElement('span');
-      badge.className = 'badge bg-secondary';
-      badge.textContent = person.label;
-      selectedPersonsEl.appendChild(badge);
-      
-      // Fetch and populate rosters
-      if (rosterId > 0) {
-        fetch(`/admin/tag-lookups/rosters?person_id=${person.id}`)
-          .then(r => r.json())
-          .then(data => {
-            // Clear existing options
-            while (rosterSelect.options.length > 1) {
-              rosterSelect.remove(1);
-            }
-            
-            // Add new options
-            if (data.rosters && Array.isArray(data.rosters)) {
-              data.rosters.forEach(roster => {
-                const option = document.createElement('option');
-                option.value = roster.id;
-                option.textContent = roster.label;
-                if (roster.id === rosterId) {
-                  option.selected = true;
-                }
-                rosterSelect.appendChild(option);
-              });
-            }
-          });
-      }
-    });
-  } catch (e) {
-    console.error('Tag selection initialization error:', e);
-  }
-});
-</script>
-
-<?php
-// Script removed - Stimulus tag_selection_controller now handles all initialization
-// The controller is instantiated via data-controller="tag-selection" on the wrapper div above
-// Initial data is passed via data- attributes
-?>
-<!-- Direct initialization script handles tag selection setup -->
+</div>

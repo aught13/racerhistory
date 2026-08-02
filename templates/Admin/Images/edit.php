@@ -83,11 +83,11 @@ $this->assign('title', 'Edit Image');
             ['action' => 'manipulate', $image->id],
             ['class' => 'btn btn-warning btn-sm'],
         ) ?>
-        <?= $this->Html->link(
-            'View Tags',
-            ['action' => 'tags', $image->id],
-            ['class' => 'btn btn-info btn-sm'],
-        ) ?>
+        <?= $this->element('Admin/tag_modal_trigger', [
+          'subject' => 'images',
+          'subjectId' => $image->id,
+          'currentTags' => $currentTags ?? [],
+        ]) ?>
         <?= $this->Form->postButton(
             'Delete Image',
             ['action' => 'delete', $image->id],
@@ -123,7 +123,11 @@ $this->assign('title', 'Edit Image');
             <div class="small text-muted">No tags assigned.</div>
           <?php endif; ?>
           <div class="mt-2">
-            <?= $this->Html->link('Manage Tags', ['action' => 'tags', $image->id], ['class' => 'btn btn-sm btn-info']) ?>
+            <?= $this->element('Admin/tag_modal_trigger', [
+                'subject' => 'images',
+                'subjectId' => $image->id,
+                'currentTags' => $currentTags ?? [],
+            ]) ?>
           </div>
         </div>
       </div>

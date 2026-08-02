@@ -293,10 +293,15 @@ export default class extends Controller {
 
     async searchCountriesByName(query) {
         try {
-            const url = new URL(this.countryNameUrlValue, window.location.origin);
+            const url = new URL(
+                this.countryNameUrlValue,
+                window.location.origin,
+            );
             url.searchParams.set("q", query);
 
-            const response = await fetch(url.toString(), { credentials: "include" });
+            const response = await fetch(url.toString(), {
+                credentials: "include",
+            });
 
             if (!response.ok) {
                 if (response.status === 404) {
