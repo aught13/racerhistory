@@ -11,15 +11,25 @@
     <div class="row g-3">
         <div class="col-md-4">
             <label for="place-country-search" class="form-label">Country Search (common name)</label>
-            <input
-                id="place-country-search"
-                type="text"
-                class="form-control"
-                placeholder="Type a country name (e.g., United States)"
-                autocomplete="off"
-                data-place-location-target="countrySearch"
-                data-action="input->place-location#onCountryQuery blur->place-location#onCountryBlur"
-            >
+            <div class="input-group">
+                <input
+                    id="place-country-search"
+                    type="text"
+                    class="form-control"
+                    placeholder="Type a country name (e.g., United States)"
+                    autocomplete="off"
+                    data-place-location-target="countrySearch"
+                    data-action="blur->place-location#onCountryBlur"
+                >
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-place-location-target="countrySearchBtn"
+                    data-action="click->place-location#onSearchCountries"
+                >
+                    Search
+                </button>
+            </div>
             <div class="mt-1 position-relative" data-place-location-target="countryResults"></div>
             <small class="text-muted d-block mt-1" data-place-location-target="countryMeta">Select a country to store its ISO3 code and load subdivisions/localities.</small>
             <?= $this->Form->control('place_country', [

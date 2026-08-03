@@ -69,7 +69,10 @@ $formUrl = ['action' => 'tags', $image->id];
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <?= $this->Form->create(null, ['url' => $formUrl]) ?>
+                    <?= $this->Form->create(null, [
+                        'url' => $formUrl,
+                        'data-turbo-cache' => 'false',
+                    ]) ?>
 
                     <?= $this->element('Admin/tag_selection', [
                         'teams' => $teams,

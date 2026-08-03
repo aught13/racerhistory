@@ -411,6 +411,7 @@ $this->start('css'); ?>
                                         <div class="season-roster-avatar position-relative">
                                             <?= $this->element('person_image', [
                                                 'person' => $person,
+                                                'rosterId' => $entry->id,
                                                 'size' => 'small',
                                                 'profile' => 'roster_avatar',
                                                 'class' => 'season-roster-avatar-img',

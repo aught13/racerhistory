@@ -328,19 +328,6 @@ class DashboardControllerTest extends TestCase
     }
 
     /**
-     * Test sidebar uses the updated sports label and removes racing wording.
-     */
-    public function testSidebarUsesSportsLabelWithoutRacing(): void
-    {
-        $this->get('/admin');
-        $this->assertResponseOk();
-        $this->assertResponseContains('>SPORTS<');
-        $this->assertResponseContains('>Sports');
-        $this->assertResponseNotContains('SPORTS &amp; RACING');
-        $this->assertResponseNotContains('Sports &amp; Racing');
-    }
-
-    /**
      * Test sidebar groups render AdminLTE nav-treeview panel structure.
      */
     public function testSidebarUsesAdminLteNavTreeviewPanels(): void

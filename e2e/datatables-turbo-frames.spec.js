@@ -47,6 +47,25 @@ async function assertSingleDataTableInstance(page, tableId) {
     expect(wrapperCount).toBeGreaterThanOrEqual(1);
 }
 
+/**
+ * Wait for a visible table to appear inside a turbo-frame with the given id.
+ * Ensures that the table has non-zero layout size and is not display:none.
+ */
+async function waitForVisibleTableInFrame(page, frameId = "seasons-table-frame", timeout = 15000) {
+    await page.waitForFunction(
+        ({ id }) => {
+            const frame = document.getElementById(id);
+            if (!frame) return false;
+            const table = frame.querySelector("table");
+            if (!table) return false;
+            const style = window.getComputedStyle(table);
+            return style && style.display !== "none" && table.offsetWidth > 0 && table.offsetHeight > 0;
+        },
+        { id: frameId },
+        { timeout },
+    );
+}
+
 /* ────────── Seasons table (Turbo Frame) ────────── */
 
 test.describe("DataTables inside Turbo Frames", () => {
@@ -85,11 +104,10 @@ test.describe("DataTables inside Turbo Frames", () => {
             const frame = page.locator("turbo-frame#seasons-table-frame");
             await expect(frame).toBeVisible({ timeout: 10000 });
 
-            // A DataTable (or at least a table) should be present
+            // Wait for a visible table to appear inside the frame and assert it's visible
+            await waitForVisibleTableInFrame(page, "seasons-table-frame", 15000);
             const table = frame.locator("table").first();
-            if ((await table.count()) > 0) {
-                await expect(table).toBeVisible();
-            }
+            await expect(table).toBeVisible({ timeout: 10000 });
         });
 
         test("re-initializes after turbo-frame filter link", async ({
@@ -107,11 +125,10 @@ test.describe("DataTables inside Turbo Frames", () => {
             const frame = page.locator("turbo-frame#seasons-table-frame");
             await expect(frame).toBeVisible();
 
-            // Table should be present and visible after frame reload
+            // Wait for a visible table to appear inside the frame after reload
+            await waitForVisibleTableInFrame(page, "seasons-table-frame", 15000);
             const table = frame.locator("table").first();
-            if ((await table.count()) > 0) {
-                await expect(table).toBeVisible();
-            }
+            await expect(table).toBeVisible({ timeout: 10000 });
         });
 
         test("no duplicate DataTable wrappers after frame reload", async ({

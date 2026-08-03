@@ -150,6 +150,7 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertResponseContains('data-controller="admin-image-bulk-upload"');
         $this->assertResponseContains('data-admin-image-bulk-upload-target="uploadsInput"');
         $this->assertResponseContains('data-action="click->admin-image-bulk-upload#uploadAll"');
+        $this->assertResponseContains('tag-modal-hidden-inputs');
     }
 
     /**

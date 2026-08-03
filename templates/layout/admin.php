@@ -71,6 +71,67 @@ $flash = $this->Flash->render();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         crossorigin="anonymous"></script>
     <?= $this->fetch('script') ?>
+    <!-- CRITICAL: Force light theme after all CSS has loaded to override AdminLTE dark styles -->
+    <style>
+        :root {
+            color-scheme: light !important;
+            --bs-body-bg: #ffffff !important;
+            --bs-body-color: #212529 !important;
+            --bs-border-color: #dee2e6 !important;
+            --bs-secondary-bg: #f8f9fa !important;
+            --bs-tertiary-bg: #f8f9fa !important;
+            --bs-link-color: #0d6efd !important;
+        }
+        html, body {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+        }
+        /* Override ALL backgrounds and colors */
+        * {
+            --bs-body-bg: #ffffff !important;
+            --bs-body-color: #212529 !important;
+        }
+        /* Override sidebar specifically - keep it darker grey */
+        .sidebar, .app-sidebar, .main-sidebar, [class*="sidebar"] {
+            background-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+        /* Override cards */
+        .card, .card-header, .card-body, .card-footer {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+            border-color: #dee2e6 !important;
+        }
+        /* Override specific AdminLTE dark elements */
+        .content, .content-wrapper, main, [role="main"] {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+        }
+        /* Override accordion elements */
+        .accordion-button, .accordion-item, .accordion-body {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+            border-color: #dee2e6 !important;
+        }
+        /* Override list groups */
+        .list-group-item {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+            border-color: #dee2e6 !important;
+        }
+        /* Override anything with dark in the class name */
+        [class*="dark"], [class*="bg-dark"] {
+            background-color: #f8f9fa !important;
+            color: #212529 !important;
+            border-color: #dee2e6 !important;
+        }
+        /* Override data-theme and data-bs-theme attributes */
+        [data-theme="dark"], [data-bs-theme="dark"],
+        [data-theme], [data-bs-theme] {
+            background-color: transparent !important;
+            color: inherit !important;
+        }
+    </style>
 </head>
 
 <!--

@@ -20,9 +20,11 @@ export default class extends Controller {
         this.tinyMceRetryTimer = null;
 
         this.boundBeforeCache = () => this.removeTinyMceEditor();
+        this.boundTurboLoad = () => this.onTurboLoad();
         this.boundImageChange = () => this.updateImagePreview();
 
         document.addEventListener("turbo:before-cache", this.boundBeforeCache);
+        document.addEventListener("turbo:load", this.boundTurboLoad);
 
         if (this.hasImageFieldTarget) {
             this.imageFieldTarget.addEventListener(
@@ -40,6 +42,7 @@ export default class extends Controller {
             "turbo:before-cache",
             this.boundBeforeCache,
         );
+        document.removeEventListener("turbo:load", this.boundTurboLoad);
 
         if (this.hasImageFieldTarget) {
             this.imageFieldTarget.removeEventListener(
@@ -54,6 +57,12 @@ export default class extends Controller {
         }
 
         this.removeTinyMceEditor();
+    }
+
+    onTurboLoad() {
+        // Re-initialize TinyMCE after successful Turbo navigation
+        this.tinyMceRetryCount = 0;
+        this.initTinyMceWhenReady();
     }
 
     initTinyMceWhenReady() {
@@ -168,9 +177,23 @@ export default class extends Controller {
             return;
         }
 
-        const editorId = this.bioEditorTarget.id;
-        if (editorId) {
-            window.tinymce.remove(`#${editorId}`);
+        try {
+            const editorId = this.bioEditorTarget.id;
+            if (editorId) {
+                const editor = window.tinymce.get(editorId);
+                // Save content before removing to prevent data loss
+                if (
+                    editor &&
+                    typeof editor === "object" &&
+                    typeof editor.getContent === "function"
+                ) {
+                    this.bioEditorTarget.value = editor.getContent();
+                }
+                // Remove the editor instance (use selector string or editor object)
+                window.tinymce.remove(editor || `#${editorId}`);
+            }
+        } catch (e) {
+            console.warn("Error removing TinyMCE editor:", e);
         }
     }
 

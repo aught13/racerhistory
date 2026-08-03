@@ -2,7 +2,10 @@ import * as Turbo from "@hotwired/turbo";
 import { Application } from "@hotwired/stimulus";
 
 import { initThemeFromCookie } from "./lib/theme.js";
-import { initAdminRuntimeLifecycle } from "./lib/admin_runtime.js";
+import {
+    initAdminRuntimeLifecycle,
+    enforceAdminLightTheme,
+} from "./lib/admin_runtime.js";
 import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
@@ -17,16 +20,58 @@ const isAdminPath =
 const hasWindow = typeof window !== "undefined";
 const runtimeAlreadyBooted = hasWindow && window.__RH_RUNTIME_BOOTED__ === true;
 
+function isAdminUrl(urlLike) {
+    if (typeof window === "undefined" || !urlLike) {
+        return false;
+    }
+
+    try {
+        const parsed = new URL(String(urlLike), window.location.origin);
+
+        return parsed.pathname.startsWith("/admin");
+    } catch {
+        return false;
+    }
+}
+
+function ensureAdminThemeLifecycleForCurrentPath() {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    if (!window.location.pathname.startsWith("/admin")) {
+        return;
+    }
+
+    // Ensure admin lifecycle listeners are installed even when the app first
+    // booted on a public (possibly dark-mode) route and later Turbo-navigated
+    // into /admin.
+    initAdminRuntimeLifecycle();
+    enforceAdminLightTheme();
+}
+
 if (!runtimeAlreadyBooted) {
     if (hasWindow) {
         window.__RH_RUNTIME_BOOTED__ = true;
         window.Turbo = Turbo;
     }
 
+    // On admin paths, enforce light theme FIRST before any cookie-based theme
+    // is applied. This prevents dark mode from bleeding through during page
+    // transitions from public routes to admin.
+    if (isAdminPath) {
+        enforceAdminLightTheme();
+    }
+
+    // Initialize theme system on public paths (respects user preference).
+    // On admin paths, this just sets up the media query listener without
+    // overriding the light theme already enforced above.
     if (!isAdminPath) {
         initThemeFromCookie();
         void import("./legacy/image-retry.mjs");
     } else {
+        // Initialize admin runtime which sets up Turbo event listeners
+        // to maintain light theme throughout admin session
         initAdminRuntimeLifecycle();
     }
 
@@ -63,6 +108,55 @@ if (!runtimeAlreadyBooted) {
     }
 
     initializeLegacyModules(stimulus);
+}
+
+if (hasWindow && !window.__RH_ADMIN_PATH_THEME_WATCHER_INIT__) {
+    window.__RH_ADMIN_PATH_THEME_WATCHER_INIT__ = true;
+
+    document.addEventListener("turbo:before-visit", (event) => {
+        if (isAdminUrl(event?.detail?.url)) {
+            enforceAdminLightTheme();
+        }
+    });
+
+    document.addEventListener("turbo:before-render", (event) => {
+        const nextBody = event?.detail?.newBody;
+        const looksLikeAdminBody =
+            !!nextBody &&
+            typeof nextBody.classList?.contains === "function" &&
+            nextBody.classList.contains("sidebar-mini");
+
+        if (looksLikeAdminBody || isAdminUrl(event?.detail?.newFrame?.src)) {
+            ensureAdminThemeLifecycleForCurrentPath();
+            // Repeat once on the next turn to guard against late-applied
+            // dark-mode attrs while Turbo is finalizing the render.
+            window.setTimeout(ensureAdminThemeLifecycleForCurrentPath, 0);
+        }
+    });
+
+    document.addEventListener("turbo:load", () => {
+        ensureAdminThemeLifecycleForCurrentPath();
+    });
+
+    document.addEventListener("turbo:render", () => {
+        ensureAdminThemeLifecycleForCurrentPath();
+    });
+
+    window.addEventListener("pageshow", () => {
+        ensureAdminThemeLifecycleForCurrentPath();
+    });
+
+    if (document.readyState === "loading") {
+        document.addEventListener(
+            "DOMContentLoaded",
+            () => {
+                ensureAdminThemeLifecycleForCurrentPath();
+            },
+            { once: true },
+        );
+    } else {
+        ensureAdminThemeLifecycleForCurrentPath();
+    }
 }
 
 // Eagerly load the admin stats entry module when the multi-add markup is

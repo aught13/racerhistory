@@ -27,6 +27,7 @@ export default class extends Controller {
         this.tinyMceRetryTimer = null;
         this.boundBeforeCache = () => this.destroyTinyMCE();
         this.boundBeforeRender = () => this.destroyTinyMCE();
+        this.boundTurboLoad = () => this.onTurboLoad();
         this.boundImageChange = () => this.updateImagePreview();
         this.boundUploadClick = (event) => this.handleUploadClick(event);
 
@@ -35,6 +36,7 @@ export default class extends Controller {
             "turbo:before-render",
             this.boundBeforeRender,
         );
+        document.addEventListener("turbo:load", this.boundTurboLoad);
 
         if (this.hasImageFieldTarget) {
             this.imageFieldTarget.addEventListener(
@@ -67,6 +69,7 @@ export default class extends Controller {
             "turbo:before-render",
             this.boundBeforeRender,
         );
+        document.removeEventListener("turbo:load", this.boundTurboLoad);
 
         if (this.hasImageFieldTarget) {
             this.imageFieldTarget.removeEventListener(
@@ -88,6 +91,12 @@ export default class extends Controller {
         }
 
         this.destroyTinyMCE();
+    }
+
+    onTurboLoad() {
+        // Re-initialize TinyMCE after successful Turbo navigation
+        this.tinyMceRetryCount = 0;
+        this.initTinyMceWhenReady();
     }
 
     initTinyMceWhenReady() {
@@ -199,17 +208,44 @@ export default class extends Controller {
             return;
         }
 
-        [
-            this.hasPreviewEditorTarget ? this.previewEditorTarget.id : null,
-            this.hasRecapEditorTarget ? this.recapEditorTarget.id : null,
-        ]
-            .filter(Boolean)
-            .forEach((editorId) => {
-                const editor = window.tinymce.get(editorId);
-                if (editor) {
-                    editor.remove();
-                }
-            });
+        try {
+            [
+                this.hasPreviewEditorTarget
+                    ? this.previewEditorTarget.id
+                    : null,
+                this.hasRecapEditorTarget ? this.recapEditorTarget.id : null,
+            ]
+                .filter(Boolean)
+                .forEach((editorId) => {
+                    const editor = window.tinymce.get(editorId);
+                    // Save content before removing to prevent data loss
+                    const target = document.getElementById(editorId);
+                    if (
+                        target &&
+                        editor &&
+                        typeof editor === "object" &&
+                        typeof editor.getContent === "function"
+                    ) {
+                        target.value = editor.getContent();
+                    }
+                    // Remove the editor instance (call remove() on the editor if it exists)
+                    if (
+                        editor &&
+                        typeof editor === "object" &&
+                        typeof editor.remove === "function"
+                    ) {
+                        editor.remove();
+                    } else if (editor) {
+                        // Fallback to global remove if editor doesn't have remove method
+                        window.tinymce.remove(editor || `#${editorId}`);
+                    } else {
+                        // If no editor instance, try with selector
+                        window.tinymce.remove(`#${editorId}`);
+                    }
+                });
+        } catch (e) {
+            console.warn("Error destroying TinyMCE editors:", e);
+        }
     }
 
     handleUploadClick(event) {

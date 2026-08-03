@@ -65,7 +65,7 @@ test.describe("Admin sidebar groups", () => {
         const sportsPanel = sportsToggle.locator("xpath=following-sibling::ul[1]");
         await expect(sportsPanel).toBeVisible();
         await expect(
-            sportsPanel.locator('a[href="/admin/teams"]'),
+            sportsPanel.locator('a[href="/admin/sports"]'),
         ).toBeVisible();
 
         // 3) Collapse again, then verify Content follows the same behavior.
