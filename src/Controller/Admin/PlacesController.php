@@ -4,7 +4,10 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\PlaceAdminService;
+use Cake\Core\Configure;
+use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Exception;
 
 /**
  * Places Admin Controller
@@ -42,8 +45,29 @@ class PlacesController extends AppController
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
-            $this->FormProtection->setConfig('unlockedActions', array_merge($current, ['ajaxSearch', 'ajaxAdd']));
+            $unlockedActions = array_merge(
+                $current,
+                ['ajaxSearch', 'ajaxAdd', 'countriesLookup'],
+            );
+            $this->FormProtection->setConfig('unlockedActions', $unlockedActions);
         }
+    }
+
+    /**
+     * Before filter - skip authentication for country lookup and form protection actions.
+     *
+     * @param \Cake\Event\EventInterface $event
+     */
+    public function beforeFilter(EventInterface $event): void
+    {
+        $action = $this->request->getParam('action');
+
+        // Skip authentication check for country lookup (external AJAX call)
+        if ($action === 'countriesLookup') {
+            return;
+        }
+
+        parent::beforeFilter($event);
     }
 
     /**
@@ -209,5 +233,84 @@ class PlacesController extends AppController
                 'success' => false,
                 'errors' => ['Invalid request method.'],
             ]));
+    }
+
+    /**
+     * AJAX country lookup proxy - uses REST Countries v5 API.
+     *
+     * @return \Cake\Http\Response
+     */
+    public function countriesLookup(): Response
+    {
+        $this->request->allowMethod(['get']);
+        $query = trim((string)$this->request->getQuery('q'));
+
+        if (strlen($query) < 2) {
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([]));
+        }
+
+        try {
+            // Use REST Countries v5 API with API key from config
+            $apiKey = (string)(Configure::read('Api.RestCountries.key') ?? '');
+            if (!$apiKey) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([]));
+            }
+
+            // Use the /name aggregate endpoint for country name searches
+            $url = 'https://api.restcountries.com/countries/v5/name';
+            $url .= '?q=' . urlencode($query);
+            $url .= '&limit=20&response_fields=names.common,codes.alpha_3';
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'timeout' => 10,
+                    'header' => 'Accept: application/json' . "\r\n" .
+                        'Authorization: Bearer ' . $apiKey,
+                ],
+            ]);
+
+            // Fetch data from REST Countries API, suppressing network warnings
+            // as they're expected and handled by the null check below
+            set_error_handler(static function () {
+                return true;
+            });
+            $response = file_get_contents($url, false, $context);
+            restore_error_handler();
+
+            if ($response === false) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([]));
+            }
+
+            $payload = json_decode($response, true);
+            if (!is_array($payload) || empty($payload['data']['objects'])) {
+                return $this->response
+                    ->withType('application/json')
+                    ->withStringBody(json_encode([]));
+            }
+
+            // Transform the v5 response format to match frontend expectations
+            $countries = array_map(function ($country) {
+                return [
+                    'name' => ['common' => $country['names']['common'] ?? ''],
+                    'cca3' => strtoupper($country['codes']['alpha_3'] ?? ''),
+                ];
+            }, $payload['data']['objects']);
+
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode(array_filter($countries, function ($c) {
+                    return !empty($c['name']['common']) && !empty($c['cca3']);
+                })));
+        } catch (Exception $e) {
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode([]));
+        }
     }
 }

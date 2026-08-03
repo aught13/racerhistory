@@ -487,7 +487,10 @@ class ImagesControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/images/edit/1');
         $this->assertResponseOk();
-        $this->assertStringContainsString('<form', (string)$this->_response->getBody(), 'Edit form should render');
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('<form', $body, 'Edit form should render');
+        $this->assertStringContainsString('data-controller="tag-modal"', $body, 'Edit page should still render tag modal trigger');
+        $this->assertStringNotContainsString('tag-modal-hidden-inputs', $body, 'Edit form should not render hidden tag sync fields');
     }
 
     /**

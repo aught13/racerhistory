@@ -41,11 +41,11 @@ describe("place-location controller", () => {
     let application;
 
     beforeEach(() => {
-        jest.useFakeTimers();
         __resetPlaceLocationCacheForTests();
 
         globalThis.fetch = jest.fn((url) => {
-            if (url.includes("/v3.1/name/United")) {
+            // Handle new backend endpoint for country lookup
+            if (url.includes("/admin/places/countries-lookup")) {
                 return Promise.resolve({
                     ok: true,
                     json: async () => [
@@ -82,12 +82,22 @@ describe("place-location controller", () => {
         document.body.innerHTML = `
             <form data-controller="place-location">
                 <input id="place-country" data-place-location-target="countryCode" value="" />
-                <input
-                    id="place-country-search"
-                    data-place-location-target="countrySearch"
-                    data-action="input->place-location#onCountryQuery blur->place-location#onCountryBlur"
-                    value=""
-                />
+                <div>
+                    <input
+                        id="place-country-search"
+                        data-place-location-target="countrySearch"
+                        data-action="blur->place-location#onCountryBlur"
+                        value=""
+                    />
+                    <button
+                        id="country-search-btn"
+                        type="button"
+                        data-place-location-target="countrySearchBtn"
+                        data-action="click->place-location#onSearchCountries"
+                    >
+                        Search
+                    </button>
+                </div>
                 <div data-place-location-target="countryResults"></div>
                 <small data-place-location-target="countryMeta"></small>
                 <input
@@ -127,6 +137,7 @@ describe("place-location controller", () => {
 
     test("searches country by common name, stores cca3, and cross-filters city/state", async () => {
         const countrySearch = document.getElementById("place-country-search");
+        const countrySearchBtn = document.getElementById("country-search-btn");
         const countryCode = document.getElementById("place-country");
         const countryResults = document.querySelector(
             '[data-place-location-target="countryResults"]',
@@ -137,9 +148,8 @@ describe("place-location controller", () => {
         const stateList = document.getElementById("place-state-options");
 
         countrySearch.value = "United";
-        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
+        countrySearchBtn.click();
 
-        jest.advanceTimersByTime(300);
         await flushPromises();
 
         const firstCountry = countryResults.querySelector("button");
@@ -196,13 +206,13 @@ describe("place-location controller", () => {
 
     test("onCountryQuery clears results when query is below MIN_COUNTRY_QUERY_LENGTH", async () => {
         const countrySearch = document.getElementById("place-country-search");
+        const countrySearchBtn = document.getElementById("country-search-btn");
         const countryResults = document.querySelector(
             "[data-place-location-target='countryResults']",
         );
 
         countrySearch.value = "U";
-        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
-        jest.runAllTimers();
+        countrySearchBtn.click();
         await flushPromises();
 
         expect(countryResults.innerHTML).toBe("");
@@ -210,13 +220,13 @@ describe("place-location controller", () => {
 
     test("onCountryQuery with empty string clears results", async () => {
         const countrySearch = document.getElementById("place-country-search");
+        const countrySearchBtn = document.getElementById("country-search-btn");
         const countryResults = document.querySelector(
             "[data-place-location-target='countryResults']",
         );
 
         countrySearch.value = "";
-        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
-        jest.runAllTimers();
+        countrySearchBtn.click();
         await flushPromises();
 
         expect(countryResults.innerHTML).toBe("");
@@ -260,7 +270,6 @@ describe("place-location controller", () => {
         // First select a country
         countrySearch.value = "United States";
         countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
-        jest.runAllTimers();
         await flushPromises();
 
         // Then select a state with exact match
@@ -278,7 +287,6 @@ describe("place-location controller", () => {
         // First select a country
         countrySearch.value = "United States";
         countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
-        jest.runAllTimers();
         await flushPromises();
 
         // Then clear city
@@ -296,7 +304,6 @@ describe("place-location controller", () => {
         // First select a country (USA has cities in multiple states)
         countrySearch.value = "United States";
         countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
-        jest.runAllTimers();
         await flushPromises();
 
         // Set a city (Los Angeles exists)
@@ -328,7 +335,6 @@ describe("place-location controller", () => {
 
         countrySearch.value = "USA";
         countrySearch.dispatchEvent(new Event("blur", { bubbles: true }));
-        jest.runAllTimers();
         await flushPromises();
 
         expect(countryCode.value).toBe("");
@@ -340,7 +346,7 @@ describe("place-location controller", () => {
     test("searchCountriesByName handles 404 response", async () => {
         const originalFetch = globalThis.fetch;
         globalThis.fetch = jest.fn((url) => {
-            if (url.includes("/v3.1/name/")) {
+            if (url.includes("/admin/places/countries-lookup")) {
                 return Promise.resolve({
                     ok: false,
                     status: 404,
@@ -351,13 +357,13 @@ describe("place-location controller", () => {
         });
 
         const countrySearch = document.getElementById("place-country-search");
+        const countrySearchBtn = document.getElementById("country-search-btn");
         const countryResults = document.querySelector(
             "[data-place-location-target='countryResults']",
         );
 
         countrySearch.value = "Nonexistent";
-        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
-        jest.runAllTimers();
+        countrySearchBtn.click();
         await flushPromises();
 
         expect(countryResults.textContent).toContain("No countries found");
@@ -366,7 +372,7 @@ describe("place-location controller", () => {
     test("searchCountriesByName handles API error", async () => {
         const originalFetch = globalThis.fetch;
         globalThis.fetch = jest.fn((url) => {
-            if (url.includes("/v3.1/name/")) {
+            if (url.includes("/admin/places/countries-lookup")) {
                 return Promise.resolve({
                     ok: false,
                     status: 500,
@@ -377,15 +383,100 @@ describe("place-location controller", () => {
         });
 
         const countrySearch = document.getElementById("place-country-search");
+        const countrySearchBtn = document.getElementById("country-search-btn");
         const countryMeta = document.querySelector(
             "[data-place-location-target='countryMeta']",
         );
 
         countrySearch.value = "United";
-        countrySearch.dispatchEvent(new Event("input", { bubbles: true }));
-        jest.runAllTimers();
+        countrySearchBtn.click();
         await flushPromises();
 
         expect(countryMeta.textContent).toContain("Country lookup failed");
+    });
+
+    test("onCountryQuery debounces and searches with sufficient input", async () => {
+        jest.useFakeTimers();
+
+        const countrySearch = document.getElementById("place-country-search");
+        const _countryResults = document.querySelector(
+            "[data-place-location-target='countryResults']",
+        );
+
+        countrySearch.value = "Un";
+        const controller = application.getControllerForElementAndIdentifier(
+            document.querySelector("[data-controller]"),
+            "place-location",
+        );
+        controller.onCountryQuery();
+
+        // Timer should be set but not fired yet
+        expect(fetch).not.toHaveBeenCalled();
+
+        // Fast-forward the timer
+        jest.runAllTimers();
+        await flushPromises();
+
+        // Now fetch should have been called
+        expect(
+            fetch.mock.calls.some(([url]) =>
+                String(url).includes("countries-lookup"),
+            ),
+        ).toBe(true);
+    });
+
+    test("onCountryQuery clears debounce timer on disconnect", async () => {
+        jest.useFakeTimers();
+
+        const countrySearch = document.getElementById("place-country-search");
+        const controller = application.getControllerForElementAndIdentifier(
+            document.querySelector("[data-controller]"),
+            "place-location",
+        );
+
+        countrySearch.value = "United";
+        controller.onCountryQuery();
+
+        // Timer should be set
+        expect(controller.countryQueryDebounceTimer).not.toBeNull();
+
+        // Disconnect should clear it
+        controller.disconnect();
+        expect(controller.countryQueryDebounceTimer).toBeDefined();
+
+        // Fast-forward - fetch should not be called since timer was cleared
+        jest.runAllTimers();
+        expect(
+            fetch.mock.calls.some(([url]) =>
+                String(url).includes("countries-lookup"),
+            ),
+        ).toBe(false);
+    });
+
+    test("onCountryQuery with too-short query clears results without calling API", async () => {
+        const countrySearch = document.getElementById("place-country-search");
+        const countryResults = document.querySelector(
+            "[data-place-location-target='countryResults']",
+        );
+        const controller = application.getControllerForElementAndIdentifier(
+            document.querySelector("[data-controller]"),
+            "place-location",
+        );
+
+        // First populate results
+        countrySearch.value = "United States";
+        const countrySearchBtn = document.getElementById("country-search-btn");
+        countrySearchBtn.click();
+        await flushPromises();
+
+        expect(countryResults.textContent).not.toBe("");
+
+        // Now query with just one character
+        countrySearch.value = "U";
+        controller.onCountryQuery();
+        await flushPromises();
+
+        // Results should be cleared
+        expect(countryResults.innerHTML).toBe("");
     });
 });

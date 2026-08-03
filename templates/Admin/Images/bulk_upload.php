@@ -37,6 +37,13 @@
 
             <div id="fileList" class="row g-3" data-admin-image-bulk-upload-target="fileList"></div>
 
+            <?= $this->element('Admin/tag_modal_trigger', [
+                'subject' => 'images',
+                'subjectId' => 0,
+                'currentTags' => [],
+                'syncHiddenInputs' => true,
+            ]) ?>
+
             <div class="d-flex gap-2 mt-3">
                 <button id="uploadAll" class="btn btn-primary" type="button" disabled
                     data-admin-image-bulk-upload-target="uploadButton"
@@ -52,45 +59,7 @@
         </div>
     </div>
 
-    <!-- Entity Tags (Apply to All Files) -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Entity Tags (Apply to All Files)</h5>
-        </div>
-        <div class="card-body">
-            <?php
-            $sportsForSelect = [];
-            if (isset($sports) && is_iterable($sports)) {
-                foreach ($sports as $sp) {
-                    $sportsForSelect[] = ['id' => $sp->id ?? null, 'label' => $sp->sport_name ?? ''];
-                }
-            }
-            ?>
-            <?= $this->element('Admin/tag_selection', [
-                'teams' => $teams ?? [],
-                'teamSeasons' => $teamSeasonLabels ?? [],
-                'games' => $gameLabels ?? [],
-                'sites' => $siteLabels ?? [],
-                'opponents' => $opponents ?? [],
-                'sports' => $sportsForSelect,
-                'currentTags' => $currentTags ?? [],
-                'tagString' => '',
-                'freeform' => [
-                    'type' => 'text',
-                    'name' => 'common_tags',
-                    'label' => 'Additional Freeform Tags (comma-separated)',
-                    'help' => 'These will be applied to all uploaded files along with entity tags.',
-                    'attributes' => [
-                        'id' => 'commonTags',
-                        'placeholder' => 'tag1, tag2, tag3',
-                    ],
-                ],
-            ]) ?>
-            <div class="alert alert-info small">
-                <strong>Note:</strong> Entity tags and freeform tags here apply to <strong>all</strong> uploaded files.
-            </div>
-        </div>
-    </div>
+    <!-- Per-file tagging: removed global entity-tags card. Use per-file "Apply Tags" links shown after upload. -->
     <?= $this->Form->end() ?>
 </div>
 

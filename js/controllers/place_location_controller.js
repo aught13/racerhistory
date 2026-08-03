@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
-const DEFAULT_COUNTRY_NAME_URL = "https://restcountries.com/v3.1/name";
+const DEFAULT_COUNTRY_NAME_URL = "/admin/places/countries-lookup";
 const DEFAULT_COUNTRY_ALPHA_URL = "https://restcountries.com/v3.1/alpha";
 const DEFAULT_CSC_URL =
     "https://raw.githubusercontent.com/dr5hn/countries-states-cities-database/master/json/countries+states+cities.json";
@@ -85,6 +85,7 @@ export default class extends Controller {
     static targets = [
         "countryCode",
         "countrySearch",
+        "countrySearchBtn",
         "countryResults",
         "countryMeta",
         "state",
@@ -110,7 +111,6 @@ export default class extends Controller {
     };
 
     connect() {
-        this.countrySearchTimer = null;
         this.stateRecords = [];
         this.cityRecords = [];
         this.countryResultsByName = new Map();
@@ -123,32 +123,48 @@ export default class extends Controller {
     }
 
     disconnect() {
-        document.removeEventListener("click", this.boundHandleDocumentClick);
-
-        if (this.countrySearchTimer) {
-            window.clearTimeout(this.countrySearchTimer);
-            this.countrySearchTimer = null;
+        if (this.countryQueryDebounceTimer) {
+            clearTimeout(this.countryQueryDebounceTimer);
         }
+        document.removeEventListener("click", this.boundHandleDocumentClick);
     }
 
-    async onCountryQuery() {
+    async onSearchCountries() {
         if (!this.hasCountrySearchTarget || !this.hasCountryResultsTarget) {
             return;
         }
 
         const query = this.countrySearchTarget.value.trim();
         if (query.length < MIN_COUNTRY_QUERY_LENGTH) {
+            this.setCountryMeta("Please enter at least 2 characters.", true);
             this.clearCountryResults();
             return;
         }
 
-        if (this.countrySearchTimer) {
-            window.clearTimeout(this.countrySearchTimer);
+        await this.searchCountriesByName(query);
+    }
+
+    onCountryQuery() {
+        if (!this.hasCountrySearchTarget) {
+            return;
         }
 
-        this.countrySearchTimer = window.setTimeout(async () => {
-            this.countrySearchTimer = null;
-            await this.searchCountriesByName(query);
+        const query = this.countrySearchTarget.value.trim();
+
+        // Clear any existing debounce timer
+        if (this.countryQueryDebounceTimer) {
+            clearTimeout(this.countryQueryDebounceTimer);
+        }
+
+        // Too short, don't bother searching
+        if (query.length < MIN_COUNTRY_QUERY_LENGTH) {
+            this.clearCountryResults();
+            return;
+        }
+
+        // Set up debounced search
+        this.countryQueryDebounceTimer = setTimeout(() => {
+            this.searchCountriesByName(query);
         }, COUNTRY_SEARCH_DEBOUNCE_MS);
     }
 
@@ -277,10 +293,15 @@ export default class extends Controller {
 
     async searchCountriesByName(query) {
         try {
-            const response = await fetch(
-                `${this.countryNameUrlValue}/${encodeURIComponent(query)}?fields=name,cca3`,
-                { credentials: "omit" },
+            const url = new URL(
+                this.countryNameUrlValue,
+                window.location.origin,
             );
+            url.searchParams.set("q", query);
+
+            const response = await fetch(url.toString(), {
+                credentials: "include",
+            });
 
             if (!response.ok) {
                 if (response.status === 404) {

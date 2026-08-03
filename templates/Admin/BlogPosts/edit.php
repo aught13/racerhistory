@@ -199,15 +199,10 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
             <div class="card">
                 <div class="card-header"><h3 class="h6 mb-0">Tags</h3></div>
                 <div class="card-body">
-                    <?= $this->element('Admin/tag_selection', [
-                        'teams' => $teams,
-                        'teamSeasons' => $teamSeasons,
-                        'games' => $games,
-                        'sites' => $sites,
-                        'opponents' => $opponents,
-                        'sports' => $sports,
-                        'currentTags' => $currentTags,
-                        'tagString' => $tagString ?? '',
+                    <?= $this->element('Admin/tag_modal_trigger', [
+                        'subject' => 'blogposts',
+                        'subjectId' => $post->id ?? 0,
+                        'currentTags' => $currentTags ?? [],
                     ]) ?>
                 </div>
             </div>

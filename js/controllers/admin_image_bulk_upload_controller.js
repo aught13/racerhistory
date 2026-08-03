@@ -150,7 +150,7 @@ export default class extends Controller {
                 "</div>" +
                 `<span class="badge bg-secondary">#${index + 1}</span>` +
                 "</div>" +
-                '<div class="text-muted small">Tags will be applied from the "Entity Tags (Apply to All Files)" section above.</div>' +
+                '<div class="text-muted small">Apply tags per-file after upload using the "Apply Tags" link next to each successful file.</div>' +
                 "</div>";
             this.fileListTarget.appendChild(col);
         });
@@ -210,7 +210,19 @@ export default class extends Controller {
                 const error = result?.error
                     ? `: ${this.escapeHtml(result.error)}`
                     : "";
-                return `<li class="${statusClass}"><i class="bi ${icon}"></i> ${fileName}${duplicate}${error}</li>`;
+
+                // Per-file "Apply Tags" trigger for successful uploads that produced an image id.
+                let applyHtml = "";
+                const imageId =
+                    result && result.image && result.image.id
+                        ? String(result.image.id)
+                        : null;
+                if (ok && imageId) {
+                    const hostId = `tag-modal-host-images-${imageId}`;
+                    applyHtml = ` <span class="ms-2 d-inline-block"><div class="tag-modal-trigger d-inline-block" data-controller="tag-modal" data-tag-modal-subject-value="images" data-tag-modal-subject-id-value="${imageId}"><button type="button" class="btn btn-link btn-sm p-0" data-action="click->tag-modal#open">Edit Tags</button><div id="${hostId}" class="tag-modal-host" aria-hidden="true"></div></div></span>`;
+                }
+
+                return `<li class="${statusClass}"><i class="bi ${icon}"></i> ${fileName}${duplicate}${error}${applyHtml}</li>`;
             })
             .join("");
 
