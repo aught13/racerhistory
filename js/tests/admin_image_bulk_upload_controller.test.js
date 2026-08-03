@@ -3,6 +3,7 @@
 import { Application } from "@hotwired/stimulus";
 
 import AdminImageBulkUploadController from "../controllers/admin_image_bulk_upload_controller.js";
+import TagModalController from "../controllers/tag_modal_controller.js";
 
 const flushPromises = async () => {
     await Promise.resolve();
@@ -201,6 +202,79 @@ describe("admin-image-bulk-upload controller", () => {
         expect(document.getElementById("uploadStatus").textContent).toContain(
             "Unexpected error while uploading.",
         );
+    });
+
+    test("Apply Tags trigger fetches modal markup on each click (re-fetches after save)", async () => {
+        application.register("tag-modal", TagModalController);
+
+        const controller = application.controllers.find(
+            (c) => c.identifier === "admin-image-bulk-upload",
+        );
+
+        let modalFetchCount = 0;
+        global.fetch = jest.fn(async (url) => {
+            const s = String(url);
+            if (s.includes("/admin/tags/modal/images/100")) {
+                modalFetchCount += 1;
+                return {
+                    ok: true,
+                    text: async () =>
+                        `<div class="modal" id="tag-modal-images-100"><div class="modal-dialog"><div class="modal-content"><button data-action="tag-modal#save">Save Tags</button><div data-tag-modal-fields="1" data-apply-url="/admin/tags/apply/images/100"><input name="tags" value="" /></div></div></div></div>`,
+                };
+            }
+            if (s.includes("/admin/tags/apply/images/100")) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        tags: [{ name: "t1" }],
+                        formFields: { tags: "t1" },
+                    }),
+                };
+            }
+
+            return { ok: true, json: async () => ({ results: [] }) };
+        });
+
+        // Inject details with a successful image result that includes an image id.
+        const detailsHtml = controller.buildDetails([
+            { success: true, image: { id: 100 }, name: "first.png" },
+        ]);
+        controller.uploadStatusTarget.innerHTML = detailsHtml;
+        await flushPromises();
+
+        const triggerButton = document.querySelector(
+            ".tag-modal-trigger button",
+        );
+        expect(triggerButton).not.toBeNull();
+
+        // First click -> should fetch modal markup once.
+        triggerButton.click();
+        await flushPromises();
+        expect(modalFetchCount).toBe(1);
+
+        const triggerRoot = document.querySelector(".tag-modal-trigger");
+        const tagCtrl =
+            (application.getControllerForElementAndIdentifier &&
+                application.getControllerForElementAndIdentifier(
+                    triggerRoot,
+                    "tag-modal",
+                )) ||
+            application.controllers.find(
+                (c) =>
+                    c.identifier === "tag-modal" && c.element === triggerRoot,
+            );
+
+        expect(tagCtrl).toBeDefined();
+
+        // Save via controller -> triggers apply fetch and removal of modal DOM.
+        await tagCtrl.save();
+        await flushPromises();
+        expect(document.getElementById("tag-modal-images-100")).toBeNull();
+
+        // Second click -> should fetch modal markup again.
+        triggerButton.click();
+        await flushPromises();
+        expect(modalFetchCount).toBe(2);
     });
 });
 

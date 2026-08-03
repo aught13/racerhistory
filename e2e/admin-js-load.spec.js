@@ -164,17 +164,45 @@ test.describe("Admin JS Loading", () => {
 
         await page.goto("/admin/", { waitUntil: "domcontentloaded" });
 
-        const usersLink = page.locator('a[href="/admin/users"]').first();
-        test.skip(
-            (await usersLink.count()) === 0,
-            "Users link is not available for this session",
-        );
+        const usersLinks = page.locator('a[href="/admin/users"]');
+        test.skip((await usersLinks.count()) === 0, "Users link is not available for this session");
 
-        // Turbo Drive captures the link click
-        await Promise.all([
-            page.waitForURL(/\/admin\/users/, { timeout: 15000 }),
-            usersLink.click(),
-        ]);
+        let usersLink = usersLinks.first();
+        // Prefer a visible candidate if multiple anchors exist
+        const total = await usersLinks.count();
+        for (let i = 0; i < total; i++) {
+            const cand = usersLinks.nth(i);
+            if (await cand.isVisible()) {
+                usersLink = cand;
+                break;
+            }
+        }
+
+        // Fallback: prefer a text-matched visible anchor
+        if (!(await usersLink.isVisible())) {
+            const textAnchor = page.locator('a:has-text("Manage Users")').first();
+            if ((await textAnchor.count()) > 0 && (await textAnchor.isVisible())) {
+                usersLink = textAnchor;
+            }
+        }
+
+        if (!(await usersLink.isVisible())) {
+            // Last resort: script a click in page context (still triggers Turbo handlers)
+            await page.evaluate(() => {
+                const a = document.querySelector('a[href="/admin/users"]');
+                if (a) {
+                    a.scrollIntoView();
+                    a.click();
+                }
+            });
+            await page.waitForURL(/\/admin\/users/, { timeout: 15000 });
+        } else {
+            await usersLink.scrollIntoViewIfNeeded();
+            await Promise.all([
+                page.waitForURL(/\/admin\/users/, { timeout: 15000 }),
+                usersLink.click(),
+            ]);
+        }
 
         await page.waitForLoadState("domcontentloaded");
 
@@ -204,17 +232,42 @@ test.describe("Admin JS Loading", () => {
 
         await page.goto("/admin/", { waitUntil: "domcontentloaded" });
 
-        const usersLink = page.locator('a[href="/admin/users"]').first();
-        test.skip(
-            (await usersLink.count()) === 0,
-            "Users link is not available for this session",
-        );
+        const usersLinks = page.locator('a[href="/admin/users"]');
+        test.skip((await usersLinks.count()) === 0, "Users link is not available for this session");
 
-        // Navigate via Turbo Drive
-        await Promise.all([
-            page.waitForURL(/\/admin\/users/, { timeout: 15000 }),
-            usersLink.click(),
-        ]);
+        let usersLink = usersLinks.first();
+        const total = await usersLinks.count();
+        for (let i = 0; i < total; i++) {
+            const cand = usersLinks.nth(i);
+            if (await cand.isVisible()) {
+                usersLink = cand;
+                break;
+            }
+        }
+
+        if (!(await usersLink.isVisible())) {
+            const textAnchor = page.locator('a:has-text("Manage Users")').first();
+            if ((await textAnchor.count()) > 0 && (await textAnchor.isVisible())) {
+                usersLink = textAnchor;
+            }
+        }
+
+        if (!(await usersLink.isVisible())) {
+            await page.evaluate(() => {
+                const a = document.querySelector('a[href="/admin/users"]');
+                if (a) {
+                    a.scrollIntoView();
+                    a.click();
+                }
+            });
+            await page.waitForURL(/\/admin\/users/, { timeout: 15000 });
+        } else {
+            await usersLink.scrollIntoViewIfNeeded();
+            await Promise.all([
+                page.waitForURL(/\/admin\/users/, { timeout: 15000 }),
+                usersLink.click(),
+            ]);
+        }
         await page.waitForLoadState("domcontentloaded");
 
         const bootstrapAvailable = await page.evaluate(

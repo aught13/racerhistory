@@ -201,17 +201,63 @@ export default class extends Controller {
         if (bootstrapModal) {
             const instance = bootstrapModal.getInstance(modalEl);
             if (instance) {
+                // Wait for Bootstrap's hidden event, then remove the modal
+                // from the DOM so it will be re-fetched and re-initialized
+                // the next time it is opened.
+                const onHidden = () => {
+                    modalEl.removeEventListener("hidden.bs.modal", onHidden);
+                    try {
+                        if (this.saveButton) {
+                            this.saveButton.removeEventListener(
+                                "click",
+                                this.handleSaveClick,
+                            );
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    if (modalEl.parentElement) {
+                        modalEl.parentElement.removeChild(modalEl);
+                    }
+                    if (this.modalEl === modalEl) {
+                        this.modalEl = null;
+                    }
+                    this.saveButton = null;
+                };
+
+                modalEl.addEventListener("hidden.bs.modal", onHidden);
                 instance.hide();
 
                 return;
             }
         }
 
+        // Non-Bootstrap fallback: hide and remove immediately so next open
+        // will fetch a fresh modal markup and re-run Stimulus connect.
         modalEl.classList.remove("show");
         modalEl.style.display = "none";
         modalEl.setAttribute("aria-hidden", "true");
         modalEl.removeAttribute("aria-modal");
         document.body.classList.remove("modal-open");
+
+        try {
+            if (this.saveButton) {
+                this.saveButton.removeEventListener(
+                    "click",
+                    this.handleSaveClick,
+                );
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        if (modalEl.parentElement) {
+            modalEl.parentElement.removeChild(modalEl);
+        }
+        if (this.modalEl === modalEl) {
+            this.modalEl = null;
+        }
+        this.saveButton = null;
     }
 
     buildFormDataFromFields(root) {
