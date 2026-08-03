@@ -213,7 +213,7 @@ export default class extends Controller {
                                 this.handleSaveClick,
                             );
                         }
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                     if (modalEl.parentElement) {
@@ -247,7 +247,7 @@ export default class extends Controller {
                     this.handleSaveClick,
                 );
             }
-        } catch (e) {
+        } catch {
             // ignore
         }
 
