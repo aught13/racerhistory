@@ -45,18 +45,18 @@ $u = fn(array $r): string => $this->Url->build($r);
             </a>
         </li>
 
-        <!-- ── Sports section ────────────────────────────────────────── -->
-        <li class="nav-header">SPORTS</li>
+        <!-- ── Settings section ────────────────────────────────────────── -->
+        <li class="nav-header">ADMINISTRATION</li>
 
         <li class="nav-item w-100">
             <button type="button"
-                    class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Sports', 'Teams', 'Seasons', 'TeamSeasons', 'Games', 'GameTypes', 'Opponents', 'Persons', 'Places', 'Sites') ?>"
+                    class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Sports', 'Users') ?>"
                     data-nav-accordion-target="toggle"
-                    data-nav-accordion-prefix="/admin/sports|/admin/teams|/admin/seasons|/admin/team-seasons|/admin/games|/admin/game-types|/admin/opponents|/admin/persons|/admin/places|/admin/sites"
+                    data-nav-accordion-prefix="/admin/sports|/admin/users"
                     aria-expanded="false"
                     data-action="click->nav-accordion#toggle">
-                <i class="nav-icon bi bi-trophy"></i>
-                <p>Sports
+                <i class="nav-icon bi bi-check-square"></i>
+                <p>Settings
                     <i class="nav-arrow bi bi-chevron-down ms-auto"></i>
                 </p>
             </button>
@@ -65,85 +65,20 @@ $u = fn(array $r): string => $this->Url->build($r);
                         <a class="nav-link ps-4<?= $isActive('Sports') ?>"
                            href="<?= $u(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>"
                            data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
+                            <i class="nav-icon bi bi-trophy-fill"></i>
                             <p>Sports</p>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Teams') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Teams</p>
+                        <a class="nav-link ps-4<?= $isActive('Users') ?>"
+                            href="<?= $u(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index']) ?>"
+                            data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-people-fill"></i>
+                            <p>Users</p>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Seasons') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Seasons</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('TeamSeasons') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Team Seasons</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Games') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Games</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('GameTypes') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Game Types</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Opponents') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Opponents</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Persons') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Persons</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Places') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Places</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Sites') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'index']) ?>"
-                           data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-dash-circle"></i>
-                            <p>Sites</p>
-                        </a>
-                    </li>
-                </ul>
+            </ul>
         </li>
-
         <!-- ── Content section ──────────────────────────────────────── -->
         <li class="nav-header">CONTENT</li>
 
@@ -187,16 +122,113 @@ $u = fn(array $r): string => $this->Url->build($r);
                 </ul>
         </li>
 
-        <!-- ── Administration section ───────────────────────────────── -->
-        <li class="nav-header">ADMINISTRATION</li>
+        <!-- ── Program Data section ────────────────────────────────────────── -->
+        <li class="nav-header">PROGRAM DATA</li>
 
-        <li class="nav-item">
-            <a class="nav-link<?= $isActive('Users') ?>"
-               href="<?= $u(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index']) ?>"
-               data-turbo-frame="admin-content">
-                <i class="nav-icon bi bi-people-fill"></i>
-                <p>Users</p>
-            </a>
+        <li class="nav-item w-100">
+            <button type="button"
+                    class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Teams', 'Seasons', 'TeamSeasons', 'Persons', 'Games') ?>"
+                    data-nav-accordion-target="toggle"
+                    data-nav-accordion-prefix="/admin/teams|/admin/seasons|/admin/team-seasons|/admin/persons|/admin/games"
+                    aria-expanded="false"
+                    data-action="click->nav-accordion#toggle">
+                <i class="nav-icon bi bi-database"></i>
+                <p>Program Data
+                    <i class="nav-arrow bi bi-chevron-down ms-auto"></i>
+                </p>
+            </button>
+            <ul class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Teams') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-clipboard-fill"></i>
+                            <p>Teams</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Seasons') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-calendar3-range-fill"></i>
+                            <p>Seasons</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('TeamSeasons') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-card-list"></i>
+                            <p>Team Seasons</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Persons') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-person-fill-add"></i>
+                            <p>People</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Games') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-calendar3-event-fill"></i>
+                            <p>Games</p>
+                        </a>
+                    </li>
+            </ul>
+        </li>
+        <!-- ── Reference Data section ────────────────────────────────────────── -->
+        <li class="nav-header">REFERENCE DATA</li>
+
+        <li class="nav-item w-100">
+            <button type="button"
+                    class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('GameTypes', 'Opponents', 'Places', 'Sites') ?>"
+                    data-nav-accordion-target="toggle"
+                    data-nav-accordion-prefix="/admin/game-types|/admin/opponents|/admin/places|/admin/sites"
+                    aria-expanded="false"
+                    data-action="click->nav-accordion#toggle">
+                <i class="nav-icon bi bi-database"></i>
+                <p>Reference Data
+                    <i class="nav-arrow bi bi-chevron-down ms-auto"></i>
+                </p>
+            </button>
+            <ul class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('GameTypes') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'GameTypes', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-funnel-fill"></i>
+                            <p>Game Types</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Opponents') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-funnel-fill"></i>
+                            <p>Opponents</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Places') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-map-fill"></i>
+                            <p>Places</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Sites') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-pin-map-fill"></i>
+                            <p>Sites</p>
+                        </a>
+                    </li>
+                </ul>
         </li>
 
     </ul>
