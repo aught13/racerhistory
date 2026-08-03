@@ -98,6 +98,34 @@ class TagsControllerTest extends TestCase
     }
 
     /**
+     * Test that blog-post aliases map to canonical blogposts subject.
+     */
+    public function testModalAliasPostReturnsBlogPostsModal(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/tags/modal/post/1');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('data-apply-url="/admin/tags/apply/blogposts/1"', $body);
+    }
+
+    /**
+     * Test that unknown subjects render fallback modal content.
+     */
+    public function testModalFallbackForUnknownSubject(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/tags/modal/custom-subject/9');
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+
+        $this->assertStringContainsString('data-tag-modal-fields="1"', $body);
+        $this->assertStringContainsString('data-apply-url="/admin/tags/apply/custom-subject/9"', $body);
+    }
+
+    /**
      * Test that the apply action allows an AJAX POST without a security token.
      */
     public function testApplyAllowsAjaxPostWithoutSecurityToken(): void
@@ -138,5 +166,45 @@ class TagsControllerTest extends TestCase
         $junction = TableRegistry::getTableLocator()->get('BlogPostsBlogTags');
         $count = $junction->find()->where(['blog_tag_id' => $tag->id, 'blog_post_id' => 1])->count();
         $this->assertSame(1, (int)$count);
+    }
+
+    /**
+     * Test that blog_post alias applies tags and returns filtered form fields.
+     */
+    public function testApplyBlogPostAliasReturnsFilteredFormFields(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/tags/apply/blog_post/1', [
+            'tags' => 'team-1',
+            'person_select' => 42,
+            'ignored' => 'drop-me',
+        ]);
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+
+        $this->assertTrue((bool)($payload['success'] ?? false));
+        $this->assertSame('team-1', $payload['formFields']['tags'] ?? null);
+        $this->assertSame('42', (string)($payload['formFields']['person_select'] ?? ''));
+        $this->assertArrayNotHasKey('ignored', $payload['formFields'] ?? []);
+    }
+
+    /**
+     * Test unsupported apply subjects return success false JSON.
+     */
+    public function testApplyUnknownSubjectReturnsSuccessFalse(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/tags/apply/unknown/1', ['tags' => 'no-op']);
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse((bool)($payload['success'] ?? true));
     }
 }
