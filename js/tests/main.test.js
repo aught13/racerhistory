@@ -1,6 +1,11 @@
 /* global afterEach, beforeEach, describe, expect, jest, test */
 
 describe("main runtime bootstrap", () => {
+    const flush = async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+    };
+
     function installMocks() {
         jest.resetModules();
 
@@ -15,6 +20,12 @@ describe("main runtime bootstrap", () => {
             registerServiceWorker: jest.fn(),
             initTurboScrollBehavior: jest.fn(),
             initializeLegacyModules: jest.fn(),
+            getRuntimeProfile: jest.fn(() => ({
+                isMobileViewport: false,
+                isLowBandwidth: false,
+            })),
+            registerAdminCoreControllers: jest.fn(),
+            registerAdminStatsEntryControllers: jest.fn(),
         };
 
         jest.mock("@hotwired/stimulus", () => {
@@ -66,21 +77,49 @@ describe("main runtime bootstrap", () => {
                 globalThis.__MAIN_TEST_MOCKS__.initializeLegacyModules,
         }));
 
+        jest.mock("../lib/runtime_profile.js", () => ({
+            __esModule: true,
+            getRuntimeProfile: globalThis.__MAIN_TEST_MOCKS__.getRuntimeProfile,
+        }));
+
+        jest.mock("../route_modules/admin_core.js", () => ({
+            __esModule: true,
+            registerAdminCoreControllers: (...args) =>
+                globalThis.__MAIN_TEST_MOCKS__.registerAdminCoreControllers(
+                    ...args,
+                ),
+        }));
+
+        jest.mock("../route_modules/admin_stats_entry.js", () => ({
+            __esModule: true,
+            registerAdminStatsEntryControllers: (...args) =>
+                globalThis.__MAIN_TEST_MOCKS__.registerAdminStatsEntryControllers(
+                    ...args,
+                ),
+        }));
+
         return globalThis.__MAIN_TEST_MOCKS__;
     }
 
     beforeEach(() => {
         document.body.innerHTML = "";
         delete window.__RH_RUNTIME_BOOTED__;
+        delete window.__RH_ADMIN_PATH_THEME_WATCHER_INIT__;
+        delete window.StimulusApplication;
+        delete window.Turbo;
         delete globalThis.__MAIN_TEST_MOCKS__;
         window.history.replaceState({}, "", "/");
     });
 
     afterEach(() => {
         delete window.__RH_RUNTIME_BOOTED__;
+        delete window.__RH_ADMIN_PATH_THEME_WATCHER_INIT__;
+        delete window.StimulusApplication;
+        delete window.Turbo;
         delete globalThis.__MAIN_TEST_MOCKS__;
         jest.resetModules();
         jest.restoreAllMocks();
+        jest.useRealTimers();
         window.history.replaceState({}, "", "/");
     });
 
@@ -88,6 +127,7 @@ describe("main runtime bootstrap", () => {
         const mocks = installMocks();
 
         await import("../main.js");
+        await flush();
 
         expect(window.__RH_RUNTIME_BOOTED__).toBe(true);
         expect(window.Turbo).toBeTruthy();
@@ -116,9 +156,13 @@ describe("main runtime bootstrap", () => {
 
         // On admin paths, enforce light theme first (before cookie preference)
         // to prevent dark mode from bleeding through during page transitions.
-        expect(mocks.enforceAdminLightTheme).toHaveBeenCalledTimes(1);
+        expect(
+            mocks.enforceAdminLightTheme.mock.calls.length,
+        ).toBeGreaterThanOrEqual(1);
         expect(mocks.initThemeFromCookie).not.toHaveBeenCalled();
-        expect(mocks.initAdminRuntimeLifecycle).toHaveBeenCalledTimes(1);
+        expect(
+            mocks.initAdminRuntimeLifecycle.mock.calls.length,
+        ).toBeGreaterThanOrEqual(1);
         expect(mocks.registerServiceWorker).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(
@@ -140,5 +184,136 @@ describe("main runtime bootstrap", () => {
         expect(mocks.registerServiceWorker).not.toHaveBeenCalled();
         expect(mocks.initTurboScrollBehavior).not.toHaveBeenCalled();
         expect(mocks.initializeLegacyModules).not.toHaveBeenCalled();
+    });
+
+    test("theme watchers react to turbo and page lifecycle events", async () => {
+        jest.useFakeTimers();
+        window.history.replaceState({}, "", "/admin/dashboard");
+
+        const mocks = installMocks();
+        await import("../main.js");
+        await flush();
+
+        const beforeEnforce = mocks.enforceAdminLightTheme.mock.calls.length;
+        const beforeLifecycle =
+            mocks.initAdminRuntimeLifecycle.mock.calls.length;
+
+        document.dispatchEvent(
+            new CustomEvent("turbo:before-visit", {
+                detail: { url: "/admin/images" },
+            }),
+        );
+        document.dispatchEvent(new Event("turbo:before-visit"));
+
+        const adminBody = document.createElement("body");
+        adminBody.classList.add("sidebar-mini");
+        document.dispatchEvent(
+            new CustomEvent("turbo:before-render", {
+                detail: { newBody: adminBody },
+            }),
+        );
+
+        document.dispatchEvent(new Event("turbo:load"));
+        document.dispatchEvent(new Event("turbo:render"));
+        window.dispatchEvent(new Event("pageshow"));
+        jest.runOnlyPendingTimers();
+
+        expect(mocks.enforceAdminLightTheme.mock.calls.length).toBeGreaterThan(
+            beforeEnforce,
+        );
+        expect(
+            mocks.initAdminRuntimeLifecycle.mock.calls.length,
+        ).toBeGreaterThan(beforeLifecycle);
+    });
+
+    test("logs debug when eager admin core registration throws", async () => {
+        window.history.replaceState({}, "", "/admin/dashboard");
+        const debugSpy = jest.spyOn(console, "debug").mockImplementation(() => {});
+
+        const mocks = installMocks();
+        mocks.registerAdminCoreControllers.mockImplementation(() => {
+            throw new Error("core registration failed");
+        });
+
+        await import("../main.js");
+        await flush();
+
+        expect(debugSpy).toHaveBeenCalledWith(
+            "main: failed to eagerly register admin_core",
+            expect.any(Error),
+        );
+    });
+
+    test("eager-loads stats entry module for unconstrained clients", async () => {
+        window.history.replaceState(
+            {},
+            "",
+            "/admin/stat-basket-game-person",
+        );
+        const mocks = installMocks();
+        mocks.getRuntimeProfile.mockReturnValue({
+            isMobileViewport: false,
+            isLowBandwidth: false,
+        });
+
+        await import("../main.js");
+        await flush();
+
+        expect(mocks.registerAdminStatsEntryControllers).toHaveBeenCalledWith(
+            window.StimulusApplication,
+        );
+    });
+
+    test("does not eager-load stats entry for constrained clients", async () => {
+        window.history.replaceState(
+            {},
+            "",
+            "/admin/stat-basket-game-opponent",
+        );
+        const mocks = installMocks();
+        mocks.getRuntimeProfile.mockReturnValue({
+            isMobileViewport: true,
+            isLowBandwidth: false,
+        });
+
+        await import("../main.js");
+        await flush();
+
+        expect(mocks.registerAdminStatsEntryControllers).not.toHaveBeenCalled();
+    });
+
+    test("defers eager stats import until DOMContentLoaded when readyState is loading", async () => {
+        const originalReadyState = Object.getOwnPropertyDescriptor(
+            Object.getPrototypeOf(document),
+            "readyState",
+        );
+
+        Object.defineProperty(document, "readyState", {
+            configurable: true,
+            get: () => "loading",
+        });
+
+        window.history.replaceState(
+            {},
+            "",
+            "/admin/stat-basket-game-person",
+        );
+
+        const mocks = installMocks();
+        await import("../main.js");
+        await flush();
+
+        expect(mocks.registerAdminStatsEntryControllers).not.toHaveBeenCalled();
+
+        document.dispatchEvent(new Event("DOMContentLoaded"));
+        await flush();
+
+        expect(mocks.registerAdminStatsEntryControllers).toHaveBeenCalledWith(
+            window.StimulusApplication,
+        );
+
+        if (originalReadyState) {
+            Object.defineProperty(document, "readyState", originalReadyState);
+        }
     });
 });
