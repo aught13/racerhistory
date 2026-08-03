@@ -77,7 +77,7 @@ describe("tag-modal controller", () => {
         // Mock fetch: first call returns modal markup, subsequent call returns JSON payload
         window.fetch = jest.fn(async (url) => {
             if (String(url).includes("/admin/tags/modal/")) {
-                                return { ok: true, text: async () => modalHtml() };
+                return { ok: true, text: async () => modalHtml() };
             }
 
             return {
@@ -108,7 +108,7 @@ describe("tag-modal controller", () => {
     test("works with bootstrap modal instance and removes after hidden.bs.modal", async () => {
         window.fetch = jest.fn(async (url) => {
             if (String(url).includes("/admin/tags/modal/")) {
-                                return { ok: true, text: async () => modalHtml() };
+                return { ok: true, text: async () => modalHtml() };
             }
 
             return {
@@ -161,7 +161,9 @@ describe("tag-modal controller", () => {
         const result = await controller.ensureModal();
 
         expect(result).toBeNull();
-        expect(console.warn).toHaveBeenCalledWith("No host element for tag modal");
+        expect(console.warn).toHaveBeenCalledWith(
+            "No host element for tag modal",
+        );
         expect(window.fetch).not.toHaveBeenCalled();
     });
 
@@ -234,11 +236,14 @@ describe("tag-modal controller", () => {
             }),
         );
 
-        const badges = controller.element.querySelector(".tag-badges").textContent;
+        const badges =
+            controller.element.querySelector(".tag-badges").textContent;
         expect(badges).toContain("Seed Tag");
 
         const hiddenPairs = Array.from(
-            controller.element.querySelectorAll(".tag-modal-hidden-inputs input"),
+            controller.element.querySelectorAll(
+                ".tag-modal-hidden-inputs input",
+            ),
         ).map((input) => `${input.name}:${input.value}`);
 
         expect(hiddenPairs).toContain("person_select[]:1");
@@ -335,7 +340,10 @@ describe("tag-modal controller", () => {
                 return { ok: true, text: async () => modalHtml() };
             }
 
-            return { ok: true, json: async () => ({ tags: [], formFields: {} }) };
+            return {
+                ok: true,
+                json: async () => ({ tags: [], formFields: {} }),
+            };
         });
 
         const controller = getController();

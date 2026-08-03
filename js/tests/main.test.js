@@ -228,7 +228,9 @@ describe("main runtime bootstrap", () => {
 
     test("logs debug when eager admin core registration throws", async () => {
         window.history.replaceState({}, "", "/admin/dashboard");
-        const debugSpy = jest.spyOn(console, "debug").mockImplementation(() => {});
+        const debugSpy = jest
+            .spyOn(console, "debug")
+            .mockImplementation(() => {});
 
         const mocks = installMocks();
         mocks.registerAdminCoreControllers.mockImplementation(() => {
@@ -245,11 +247,7 @@ describe("main runtime bootstrap", () => {
     });
 
     test("eager-loads stats entry module for unconstrained clients", async () => {
-        window.history.replaceState(
-            {},
-            "",
-            "/admin/stat-basket-game-person",
-        );
+        window.history.replaceState({}, "", "/admin/stat-basket-game-person");
         const mocks = installMocks();
         mocks.getRuntimeProfile.mockReturnValue({
             isMobileViewport: false,
@@ -265,11 +263,7 @@ describe("main runtime bootstrap", () => {
     });
 
     test("does not eager-load stats entry for constrained clients", async () => {
-        window.history.replaceState(
-            {},
-            "",
-            "/admin/stat-basket-game-opponent",
-        );
+        window.history.replaceState({}, "", "/admin/stat-basket-game-opponent");
         const mocks = installMocks();
         mocks.getRuntimeProfile.mockReturnValue({
             isMobileViewport: true,
@@ -293,11 +287,7 @@ describe("main runtime bootstrap", () => {
             get: () => "loading",
         });
 
-        window.history.replaceState(
-            {},
-            "",
-            "/admin/stat-basket-game-person",
-        );
+        window.history.replaceState({}, "", "/admin/stat-basket-game-person");
 
         const mocks = installMocks();
         await import("../main.js");

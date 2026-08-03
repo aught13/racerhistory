@@ -277,7 +277,9 @@ describe("tag-selection controller", () => {
         const personSearch = controllerElement.querySelector(
             "input[name='person_search']",
         );
-        const addBtn = controllerElement.querySelector("button[id$='add_person_btn']");
+        const addBtn = controllerElement.querySelector(
+            "button[id$='add_person_btn']",
+        );
 
         controller._maps.persons.set("Jane Doe", 77);
 
@@ -296,7 +298,9 @@ describe("tag-selection controller", () => {
         ).toHaveLength(1);
         expect(personSearch.value).toBe("");
 
-        const badge = controllerElement.querySelector("#uploadModalTag_selectedPersons .badge");
+        const badge = controllerElement.querySelector(
+            "#uploadModalTag_selectedPersons .badge",
+        );
         badge.dispatchEvent(new Event("click", { bubbles: true }));
 
         expect(
@@ -393,7 +397,9 @@ describe("tag-selection controller", () => {
         const siteSearch = controllerElement.querySelector(
             "input[name='site_search']",
         );
-        const sitesList = controllerElement.querySelector("datalist[id$='sitesList']");
+        const sitesList = controllerElement.querySelector(
+            "datalist[id$='sitesList']",
+        );
 
         siteSearch.value = "Mu";
         siteSearch.dispatchEvent(new Event("input", { bubbles: true }));
