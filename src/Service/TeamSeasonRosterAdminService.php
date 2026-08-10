@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Model\Table\SportsTable;
 use App\Model\Table\TeamSeasonRostersTable;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\TableRegistry;
@@ -22,6 +21,16 @@ use Cake\ORM\TableRegistry;
  */
 class TeamSeasonRosterAdminService
 {
+    private TeamSportContextService $teamSportContextService;
+
+    /**
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     */
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
+    {
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
     /**
      * Return detail page data.
      *
@@ -48,7 +57,7 @@ class TeamSeasonRosterAdminService
     public function getAddFormData(?int $teamSeasonId): array
     {
         $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonId', 'teamSeasonsList', 'sports');
     }
@@ -114,7 +123,7 @@ class TeamSeasonRosterAdminService
         }
 
         $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonId', 'teamSeasonsList', 'sports', 'existingRosters');
     }
@@ -216,7 +225,7 @@ class TeamSeasonRosterAdminService
         $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
         $personIdExisting = (int)$teamSeasonRoster->get('person_id');
         $persons = (new PersonService())->getPersonsList(200, $personIdExisting ?: null);
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonRoster', 'teamSeasonsList', 'persons', 'sports');
     }
@@ -374,17 +383,6 @@ class TeamSeasonRosterAdminService
     {
         /** @var \App\Model\Table\TeamSeasonRostersTable $table */
         $table = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
-
-        return $table;
-    }
-
-    /**
-     * @return \App\Model\Table\SportsTable
-     */
-    private function getSportsTable(): SportsTable
-    {
-        /** @var \App\Model\Table\SportsTable $table */
-        $table = TableRegistry::getTableLocator()->get('Sports');
 
         return $table;
     }

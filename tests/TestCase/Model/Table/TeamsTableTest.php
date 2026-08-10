@@ -60,7 +60,7 @@ class TeamsTableTest extends TestCase
     public function testValidationDefault(): void
     {
         $team = $this->Teams->newEntity([
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => 'Test Team',
             'abbr' => 'TT',
             'team_nickname' => 'Testers',
@@ -81,7 +81,7 @@ class TeamsTableTest extends TestCase
         $team = $this->Teams->newEntity([]);
         $errors = $team->getErrors();
 
-        $this->assertArrayHasKey('sport_id', $errors);
+        $this->assertArrayHasKey('sport_key', $errors);
         $this->assertArrayHasKey('team_name', $errors);
         $this->assertArrayHasKey('abbr', $errors);
         $this->assertArrayHasKey('team_nickname', $errors);
@@ -97,7 +97,7 @@ class TeamsTableTest extends TestCase
     public function testValidationInvalidGender(): void
     {
         $team = $this->Teams->newEntity([
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => 'Test Team',
             'abbr' => 'TT',
             'team_nickname' => 'Testers',
@@ -120,7 +120,7 @@ class TeamsTableTest extends TestCase
 
         foreach ($validGenders as $gender) {
             $team = $this->Teams->newEntity([
-                'sport_id' => 1,
+                'sport_key' => 'basketball',
                 'team_name' => 'Test Team ' . $gender,
                 'abbr' => 'T' . $gender,
                 'team_nickname' => 'Testers',
@@ -140,7 +140,7 @@ class TeamsTableTest extends TestCase
     public function testValidationMaxLengths(): void
     {
         $team = $this->Teams->newEntity([
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => str_repeat('a', 163), // Too long
             'team_description' => str_repeat('b', 241), // Too long
             'abbr' => 'TOOLONG', // Too long
@@ -158,15 +158,12 @@ class TeamsTableTest extends TestCase
     }
 
     /**
-     * Test belongsTo association with Sports
+     * Test Sports association has been removed from Teams.
      *
      * @return void
      */
-    public function testBelongsToSports(): void
+    public function testSportsAssociationRemoved(): void
     {
-        $association = $this->Teams->getAssociation('Sports');
-        $this->assertEquals('manyToOne', $association->type());
-        $this->assertEquals('sport_id', $association->getForeignKey());
-        $this->assertEquals('INNER', $association->getJoinType());
+        $this->assertFalse($this->Teams->hasAssociation('Sports'));
     }
 }
