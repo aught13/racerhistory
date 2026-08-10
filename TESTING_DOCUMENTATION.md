@@ -34,7 +34,7 @@ Each controller test includes:
 
 All tests use comprehensive fixtures to simulate database state:
 
-- `Sports`, `Teams`, `Seasons`, `TeamSeasons`
+- `Sports` (legacy/backcompat — tests have been updated to prefer `sport_key` where applicable), `Teams`, `Seasons`, `TeamSeasons`
 - `Persons`, `TeamSeasonRosters`
 - `Games`, `GameTypes`, `Opponents`, `Places`, `Sites`
 - `Images`, `ImageTags`, `ImagesImageTags`
@@ -221,9 +221,9 @@ Per project requirements in `codecov.yml`:
    - Example: `TeamSeason` (singular) not `TeamSeasons` (plural)
    - Example: TeamSeasons doesn't have `Sports` association
 
-3. **Sport Filtering**: Use correct sport identification
-   - Use `sport_id` or combination of `sport_name` + `gender` field
-   - Example: Men's Basketball is `sport_name='Basketball'` + `gender='M'`
+3. **Sport Filtering**: Use correct sport identification (prefer `sport_key`)
+  - Prefer `sport_key` as the canonical runtime identifier. Use legacy `sport_id` only when interacting with older fixtures or migration snapshots.
+  - Example: Prefer `sport_key` values provided by `SiteOptionsService::getAvailableSports()`; migration tooling maps legacy `sport_id` → `sport_key` where necessary.
 
 ### Test Environment
 

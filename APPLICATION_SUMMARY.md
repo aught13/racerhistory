@@ -1,6 +1,7 @@
 # RacerHistory Application Summary (v0.2.0-beta)
 
-RacerHistory is a CakePHP 5.2+ web application for managing historical sports data (sports, teams, seasons, team seasons, rosters, games, and sport-specific stats) plus a small blog engine. It includes an admin area for managing data and a public area for general viewing (including public blog pages and public image serving).
+RacerHistory is a CakePHP 5.2+ web application for managing historical sports data (teams, seasons, team seasons, rosters, games, and sport-specific stats).
+sport configuration and defaults are managed via the Admin Site Options surface (`SiteOptions`). The project also includes a small blog engine and provides both an admin area for content/data management and a public area for viewing (including public blog pages and public image serving).
 
 ## Primary Modules
 
@@ -25,9 +26,9 @@ Admin UI notes:
 - Admin pages now use an AdminLTE 4-style shell layout.
 - Sidebar behavior is managed with Stimulus (`admin_layout_controller` + `nav_accordion_controller`) for desktop collapse persistence, mobile open/close, and grouped treeview expansion.
 
-### Core entities managed in admin
+-### Core entities managed in admin
 
-- Sports, Teams
+- Teams
 - Seasons, Team Seasons
 - Team Season Rosters (with person lookup)
 - Games (sport-aware dynamic forms)
@@ -50,7 +51,7 @@ Highlights:
 - Business rules include season date-range validation and sport-aware scoring/period validation.
 
 Key files:
-- `src/Service/GameService.php`, `src/Service/SportConfigService.php`
+- `src/Service/GameService.php`, `src/Service/SiteOptionsService.php`
 - `src/Controller/Admin/GamesController.php`
 - `js/legacy/sport-aware-game-form.js`, `js/legacy/games_sport_dynamic.js`
 
@@ -107,7 +108,7 @@ Public:
 
 Admin:
 - `/admin` (dashboard)
-- `/admin/*` CRUD controllers (sports/teams/seasons/team-seasons/games/images/blog-posts/etc.)
+- `/admin/*` CRUD controllers (teams/seasons/team-seasons/games/images/blog-posts/etc.) — legacy `/admin/sports/*` routes now redirect to the SiteOptions-backed sport configuration surfaces (`Admin/SiteOptionsController`).
 
 Routes are defined in `config/routes.php`.
 

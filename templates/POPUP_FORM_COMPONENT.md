@@ -172,11 +172,11 @@ echo $this->element('Admin/popup_form', [
             'attributes' => ['maxlength' => 162]
         ],
         [
-            'name' => 'sport_id',
+            'name' => 'sport_key',
             'type' => 'select',
             'label' => 'Sport',
             'required' => true,
-            'options' => $sports
+            'options' => $sportOptions // Provided by SiteOptionsService::getAvailableSports()
         ],
         [
             'name' => 'description',
@@ -256,15 +256,15 @@ public function testAddFormWithPopup()
 }
 ```
 
-## Real-World Example: Sports in Teams
+## Real-World Example: Sport selection in Teams
 
 See the implementation in:
 
-- **Template**: `templates/Admin/Teams/add.php`
-- **Controller**: `src/Controller/Admin/SportsController.php::ajaxAdd()`
-- **Tests**: `tests/TestCase/Controller/Admin/SportsControllerTest.php`
+- **Template**: `templates/Admin/Teams/add.php` (team form uses `sport_key` select populated from SiteOptions)
+- **Controller**: `src/Controller/Admin/SiteOptionsController.php::editSportConfigs()` (sport configuration surface) and `src/Controller/Admin/TeamsController.php::ajaxAdd()` (team creation endpoint)
+- **Tests**: `tests/TestCase/Controller/Admin/TeamsControllerTest.php` (verify `sport_key` handling and SiteOptions integration)
 
-This example demonstrates adding sports from within the team creation form, automatically updating the sport dropdown when a new sport is created.
+This example demonstrates selecting a sport via `sport_key` (the canonical runtime identifier). Sport configuration/creation is managed through the Admin Site Options UI rather than a popup-backed Sports CRUD.
 
 ## Troubleshooting
 
