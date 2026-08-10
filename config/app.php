@@ -91,6 +91,112 @@ return [
     ],
 
     /*
+     * Global Site Options defaults.
+     *
+     * Each option defines:
+     * - label: Human-friendly admin UI label.
+     * - type: Form semantic type used by the admin settings screen.
+     * - default: Fallback used when no DB override exists.
+     */
+    'SiteOptionsDefaults' => [
+        'registration' => [
+            'label' => 'Enable User Registration',
+            'type' => 'checkbox',
+            'default' => true,
+        ],
+        'site_maintenance' => [
+            'label' => 'Site Maintenance Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'records_per_page' => [
+            'label' => 'Default Records Per Page',
+            'type' => 'number',
+            'default' => 20,
+        ],
+        'support_email' => [
+            'label' => 'System Support Email Address',
+            'type' => 'email',
+            'default' => 'admin@example.com',
+        ],
+    ],
+
+    /*
+     * Canonical sport configuration defaults.
+     *
+     * The application treats these values as the source of truth and stores
+     * only per-sport runtime overrides in SiteOptions.
+     */
+    'SportsDefaults' => [
+        'basketball' => [
+            'id' => 1,
+            'key' => 'basketball',
+            'name' => 'Basketball',
+            'sport_active' => true,
+            'has_stats' => true,
+            'stats_tracked' => [
+                'MIN', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA',
+                'OREB', 'ORB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS',
+                'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+            ],
+            'period_names' => [
+                2 => 'Half',
+                4 => 'Quarter',
+            ],
+            'supports_periods' => 'any',
+            'default_periods' => 4,
+            'overtime_name' => 'OT',
+            'officials' => ['Referee 1', 'Referee 2', 'Umpire'],
+            'scoring_type' => 'cumulative',
+        ],
+        'football' => [
+            'id' => 2,
+            'key' => 'football',
+            'name' => 'Football',
+            'sport_active' => true,
+            'has_stats' => true,
+            'stats_tracked' => [
+                'COMP', 'ATT', 'YDS', 'TD', 'INT', 'RUSH', 'RYDS',
+                'RTD', 'REC', 'RECYDS', 'RECTD', 'TKL', 'AST', 'SACK',
+                'FF', 'FR', 'DINT', 'PD', 'DTD', 'FGM', 'FGA', 'XPM',
+                'XPA', 'PUNTS', 'PAVG', 'TB', 'I20',
+            ],
+            'period_names' => [
+                4 => 'Quarter',
+            ],
+            'supports_periods' => 'any',
+            'default_periods' => 4,
+            'overtime_name' => 'OT',
+            'officials' => [
+                'Referee',
+                'Umpire',
+                'Head Linesman',
+                'Line Judge',
+                'Field Judge',
+                'Side Judge',
+                'Back Judge',
+            ],
+            'scoring_type' => 'cumulative',
+        ],
+        'baseball' => [
+            'id' => 3,
+            'key' => 'baseball',
+            'name' => 'Baseball',
+            'sport_active' => true,
+            'has_stats' => false,
+            'stats_tracked' => [],
+            'period_names' => [
+                9 => 'Inning',
+            ],
+            'supports_periods' => 'any',
+            'default_periods' => 9,
+            'overtime_name' => 'Extra Inning',
+            'officials' => ['Home Plate', 'First Base', 'Second Base', 'Third Base'],
+            'scoring_type' => 'by_period',
+        ],
+    ],
+
+    /*
      * Apply timestamps with the last modified time to static assets (js, css, images).
      * Will append a querystring parameter containing the time the file was modified.
      * This is useful for busting browser caches.

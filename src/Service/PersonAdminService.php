@@ -49,6 +49,11 @@ class PersonAdminService
     private StatsService $statsService;
 
     /**
+     * @var \App\Service\TeamSportContextService
+     */
+    private TeamSportContextService $teamSportContextService;
+
+    /**
      * @param \App\Model\Table\PersonsTable|null $personsTable
      * @param \App\Service\StatsService|null $statsService
      */
@@ -61,6 +66,7 @@ class PersonAdminService
         $this->personsTable = $table;
 
         $this->statsService = $statsService ?? new StatsService();
+        $this->teamSportContextService = new TeamSportContextService();
     }
 
     /**
@@ -186,7 +192,7 @@ class PersonAdminService
         /** @var \App\Model\Entity\Person $person */
         $person = $this->personsTable->get($id, contain: [
             'TeamSeasonRosters' => [
-                'TeamSeasons' => ['Teams' => ['Sports'], 'Seasons'],
+                'TeamSeasons' => ['Teams', 'Seasons'],
             ],
         ]);
 
@@ -195,12 +201,17 @@ class PersonAdminService
 
         foreach ($person->team_season_rosters as $roster) {
             $teamSeason = $roster->team_season;
-            $sport = $teamSeason->team->sport ?? null;
-            if (!$sport) {
+            if ($teamSeason === null) {
                 continue;
             }
 
-            $sportId = $sport->id;
+            $team = $teamSeason->team ?? null;
+            $this->teamSportContextService->attachSportContextToTeam($team);
+            $sport = $team->sport ?? null;
+            $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
+            if (!$sport || !$sportId) {
+                continue;
+            }
 
             if (!isset($rostersBySport[$sportId])) {
                 $rostersBySport[$sportId] = [

@@ -15,6 +15,7 @@
  * @var object $teamTeamStats
  * @var \App\Model\Entity\Game $game
  */
+$teamSportName = strtolower((string)($game->team_season->team->sport_name ?? $game->team_season->team->sport->sport_name ?? ''));
 ?>
 <?php $this->assign('title', 'Game Details'); ?>
 <div class="col-md-12" style="min-height: 500px;" data-controller="game-view">
@@ -229,7 +230,7 @@
         <hr>
 
         <!-- Basketball Game Statistics -->
-        <?php if (!empty($hasSportConfig) && isset($game->team_season->team->sport) && strtolower((string)$game->team_season->team->sport->sport_name) === 'basketball') : ?>
+        <?php if (!empty($hasSportConfig) && $teamSportName === 'basketball') : ?>
             <?= $this->element('Admin/basketball_game_stats', [
                 'game' => $game,
                 'teamBoxStats' => $teamBoxStats ?? [],

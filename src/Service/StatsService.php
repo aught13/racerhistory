@@ -32,6 +32,11 @@ class StatsService
     protected SportConfigService $sportConfig;
 
     /**
+     * @var \App\Service\TeamSportContextService
+     */
+    protected TeamSportContextService $teamSportContextService;
+
+    /**
      * Map of sport names to their stat service class names
      *
      * @var array<string, string>
@@ -85,6 +90,7 @@ class StatsService
     public function __construct(?SportConfigService $sportConfig = null)
     {
         $this->sportConfig = $sportConfig ?? $this->loadService('SportConfig', [], false);
+        $this->teamSportContextService = new TeamSportContextService($this->sportConfig);
     }
 
     /**
@@ -383,20 +389,15 @@ class StatsService
         $gamesTable = $this->fetchTable('Games');
 
         $game = $gamesTable->find()
-            ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
+            ->contain(['TeamSeason' => ['Teams']])
             ->where(['Games.id' => $gameId])
             ->first();
 
-        if (
-            !($game instanceof Game)
-            || !$game->team_season
-            || !$game->team_season->team
-            || !$game->team_season->team->sport
-        ) {
+        if (!($game instanceof Game) || !$game->team_season || !$game->team_season->team) {
             return null;
         }
 
-        return $game->team_season->team->sport->id;
+        return $this->teamSportContextService->resolveSportIdFromTeam($game->team_season->team);
     }
 
     /**
@@ -411,15 +412,15 @@ class StatsService
         $teamSeasonsTable = $this->fetchTable('TeamSeasons');
 
         $teamSeason = $teamSeasonsTable->find()
-            ->contain(['Teams' => ['Sports']])
+            ->contain(['Teams'])
             ->where(['TeamSeasons.id' => $teamSeasonId])
             ->first();
 
-        if (!($teamSeason instanceof TeamSeason) || !$teamSeason->team || !$teamSeason->team->sport) {
+        if (!($teamSeason instanceof TeamSeason) || !$teamSeason->team) {
             return null;
         }
 
-        return $teamSeason->team->sport->id;
+        return $this->teamSportContextService->resolveSportIdFromTeam($teamSeason->team);
     }
 
     /**
@@ -605,14 +606,12 @@ class StatsService
      */
     public function getSportIdByName(string $sportName): ?int
     {
-        /** @var \App\Model\Table\SportsTable $sportsTable */
-        $sportsTable = $this->fetchTable('Sports');
+        $sportKey = $this->teamSportContextService->resolveSportKey($sportName);
+        if ($sportKey === null) {
+            return null;
+        }
 
-        $sport = $sportsTable->find()
-            ->where(['LOWER(sport_name)' => strtolower($sportName)])
-            ->first();
-
-        return $sport ? (int)($sport->get('id') ?? 0) : null;
+        return $this->sportConfig->getIdByKey($sportKey);
     }
 
     /**

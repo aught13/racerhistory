@@ -3,46 +3,22 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\SportStatsAdminService;
-use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
 /**
  * Admin Sport Stats Controller
  *
- * Thin HTTP orchestrator for managing sport stat table configurations
- * (SportStatRegistry records). All ORM access and business logic live in
- * SportStatsAdminService; this controller extracts request data, delegates,
- * then sets flash messages and performs redirects.
+ * Backward-compatible controller for legacy /admin/sport-stats routes.
  *
- * The beforeFilter disables FormProtection for add/edit because those actions
- * render dynamic field-mapping rows whose keys cannot be predicted at
- * form-render time and would fail the token check.
+ * The old SportStatRegistry CRUD surface has been retired. These actions now
+ * redirect users to SiteOptions sport configuration pages where stat behavior
+ * is managed via SiteOptions-backed sport configs.
  *
- * Actions:
- * - index: Lists all stat-table configs, optionally filtered by sport.
- * - view: Displays a single stat-table config with its sport.
- * - add: Create form and POST handler; pre-selects sport when sportId passed.
- * - edit: Edit form and POST handler; decodes field_mapping for the form.
- * - delete: POST/DELETE handler; clears sport config cache on success.
- *
- * Notes:
- * - Do not put ORM queries or field-mapping encoding here; that belongs in
- *   SportStatsAdminService.
- * - Flash strings are tested directly in SportStatsControllerTest — keep them
- *   stable.
- *
- * @property \App\Service\SportStatsAdminService $sportStatsAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
  */
 class SportStatsController extends AppController
 {
-    /**
-     * @var \App\Service\SportStatsAdminService Admin service for sport stat registry CRUD
-     */
-    protected SportStatsAdminService $sportStatsAdminService;
-
     /**
      * Initialization hook method.
      *
@@ -51,142 +27,106 @@ class SportStatsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->sportStatsAdminService = new SportStatsAdminService();
     }
 
     /**
-     * Before filter callback.
-     *
-     * @param \Cake\Event\EventInterface $event An Event instance
-     * @return void
-     */
-    public function beforeFilter(EventInterface $event): void
-    {
-        parent::beforeFilter($event);
-
-        // Disable form protection for add/edit due to dynamic form fields
-        if (in_array($this->request->getParam('action'), ['add', 'edit'], true)) {
-            if ($this->components()->has('FormProtection')) {
-                $this->FormProtection->setConfig('unlockedActions', ['add', 'edit']);
-            }
-        }
-    }
-
-    /**
-     * Index method — list all stat tables with optional sport filter.
+     * Redirect legacy stat-registry index to SiteOptions sport configs.
      *
      * @param string|null $sportId Sport ID to filter by
-     * @return \Cake\Http\Response|null|void
+     * @return \Cake\Http\Response
      */
-    public function index(?string $sportId = null)
+    public function index(?string $sportId = null): Response
     {
-        $sportIdInt = $sportId !== null ? (int)$sportId : null;
-        $query = $this->sportStatsAdminService->buildIndexQuery($sportIdInt);
-        $statRegistries = $this->paginate($query);
+        if ($sportId === null || trim($sportId) === '') {
+            return $this->redirect([
+                'prefix' => 'Admin',
+                'controller' => 'SiteOptions',
+                'action' => 'sportsConfigs',
+            ]);
+        }
 
-        $sport = $this->sportStatsAdminService->getFilterSport($sportIdInt);
-        $options = $this->sportStatsAdminService->getFormOptions();
-
-        $this->set(compact('statRegistries', 'sport', 'sportId'));
-        $this->set('sports', $options['sports']);
+        return $this->redirect([
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => 'sportsConfigs',
+            trim($sportId),
+        ]);
     }
 
     /**
-     * View a single stat-table configuration.
+     * Redirect legacy stat-registry view to SiteOptions sport configs.
      *
      * @param string $id Registry ID
-     * @return \Cake\Http\Response|null|void
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
+     * @return \Cake\Http\Response
      */
-    public function view(string $id)
+    public function view(string $id): Response
     {
-        $statRegistry = $this->sportStatsAdminService->getViewEntity((int)$id);
-        $this->set(compact('statRegistry'));
+        $message = 'Legacy stat registry entries are retired. '
+            . 'Use sport configuration settings instead.';
+        $this->Flash->warning(__($message));
+
+        return $this->redirect([
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => 'sportsConfigs',
+        ]);
     }
 
     /**
-     * Add new stat registry entry.
+     * Redirect legacy add route to SiteOptions sport-config editor.
      *
      * @param string|null $sportId Optional sport ID to pre-select
-     * @return \Cake\Http\Response|null|void Redirects on successful add
+     * @return \Cake\Http\Response
      */
-    public function add(?string $sportId = null)
+    public function add(?string $sportId = null): Response
     {
-        $sportIdInt = $sportId !== null ? (int)$sportId : null;
+        $target = [
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => 'editSportConfigs',
+        ];
 
-        if ($this->request->is('post')) {
-            $result = $this->sportStatsAdminService->add(
-                $this->request->getData(),
-                $sportIdInt,
-            );
-
-            if ($result['success']) {
-                $this->Flash->success(__('The stat table configuration has been saved.'));
-
-                return $this->redirect(['action' => 'index', $result['sportId']]);
-            }
-
-            $this->Flash->error(__('The stat table configuration could not be saved. Please try again.'));
-            $statRegistry = $result['statRegistry'];
-        } else {
-            $statRegistry = $this->sportStatsAdminService->newEntity($sportIdInt);
+        if ($sportId !== null && trim($sportId) !== '') {
+            $target[] = trim($sportId);
         }
 
-        $options = $this->sportStatsAdminService->getFormOptions();
-        $this->set(compact('statRegistry'));
-        $this->set($options);
+        return $this->redirect($target);
     }
 
     /**
-     * Edit an existing stat-table configuration.
+     * Redirect legacy edit route to SiteOptions sport configs.
      *
      * @param string $id Stat registry ID
-     * @return \Cake\Http\Response|null|void Redirects on successful edit
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
+     * @return \Cake\Http\Response
      */
-    public function edit(string $id)
+    public function edit(string $id): Response
     {
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->sportStatsAdminService->edit((int)$id, $this->request->getData());
+        $message = 'Legacy stat registry entries are retired. '
+            . 'Use sport configuration settings instead.';
+        $this->Flash->warning(__($message));
 
-            if ($result['success']) {
-                $this->Flash->success(__('The stat table configuration has been updated.'));
-
-                return $this->redirect(['action' => 'view', $id]);
-            }
-
-            $this->Flash->error(__('The stat table configuration could not be updated. Please try again.'));
-            $statRegistry = $result['statRegistry'];
-            $mappedFields = [];
-        } else {
-            $editData = $this->sportStatsAdminService->getEditData((int)$id);
-            $statRegistry = $editData['statRegistry'];
-            $mappedFields = $editData['mappedFields'];
-        }
-
-        $options = $this->sportStatsAdminService->getFormOptions();
-        $this->set(compact('statRegistry', 'mappedFields'));
-        $this->set($options);
+        return $this->redirect([
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => 'sportsConfigs',
+        ]);
     }
 
     /**
-     * Delete a stat-table configuration.
+     * Redirect legacy delete route to SiteOptions sport configs.
      *
      * @param string $id Stat registry ID
-     * @return \Cake\Http\Response|null Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
+     * @return \Cake\Http\Response
      */
-    public function delete(string $id): ?Response
+    public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
-        $result = $this->sportStatsAdminService->delete((int)$id);
+        $this->Flash->success(__('Legacy stat registry configuration is retired and no longer required.'));
 
-        if ($result['success']) {
-            $this->Flash->success(__('The stat table configuration has been deleted.'));
-        } else {
-            $this->Flash->error(__('The stat table configuration could not be deleted. Please try again.'));
-        }
-
-        return $this->redirect(['action' => 'index', $result['sportId']]);
+        return $this->redirect([
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => 'sportsConfigs',
+        ]);
     }
 }

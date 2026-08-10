@@ -4,11 +4,12 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Cache\Cache;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
 /**
- * App\Controller\Admin\SportsController Test Case for view with configs
+ * Coverage for legacy Sports config view URLs.
  */
 class SportsViewConfigTest extends TestCase
 {
@@ -16,62 +17,47 @@ class SportsViewConfigTest extends TestCase
     use AuthTestTrait;
 
     /**
-     * Fixtures
+     * @var array<string>
      */
     protected array $fixtures = [
-        'app.Sports',
-        'app.SportConfigs',
-        'app.Teams',
         'app.Users',
         'app.SiteOptions',
     ];
 
     /**
-     * setUp method
+     * @return void
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->mockIdentity(['role' => 'admin']);
+        Cache::clear('default');
     }
 
     /**
-     * Test view method includes sport configurations
+     * Legacy /admin/sports/view/:ref should render the SiteOptions-backed config page.
      */
-    public function testViewIncludesConfigurations(): void
+    public function testLegacyViewRouteShowsConfigScreen(): void
     {
-        // Create a sport with some configurations
-        $sportConfigs = $this->getTableLocator()->get('SportConfigs');
-        $sportConfigs->setConfig(1, 'period_name_2', 'Half', 'Basketball halves');
-        $sportConfigs->setConfig(1, 'period_name_4', 'Quarter', 'Basketball quarters');
-        $sportConfigs->setConfig(1, 'officials', ['Referee 1', 'Referee 2'], 'Basketball officials');
-
         $this->get('/admin/sports/view/1');
 
         $this->assertResponseOk();
         $this->assertResponseContains('Sport Configurations');
         $this->assertResponseContains('Edit Configurations');
-        $this->assertResponseContains('View All Configs');
-        $this->assertResponseContains('Period Names');
         $this->assertResponseContains('Officials');
-        $this->assertResponseContains('Half');
-        $this->assertResponseContains('Quarter');
-        $this->assertResponseContains('Referee 1');
     }
 
     /**
-     * Test view method shows sport configurations section
+     * Legacy view should expose sport switcher buttons from the configured sport catalog.
      */
-    public function testViewShowsConfigurationsSection(): void
+    public function testLegacyViewRouteShowsSportSwitcher(): void
     {
         $this->get('/admin/sports/view/1');
 
         $this->assertResponseOk();
-        $this->assertResponseContains('Sport Configurations');
-        $this->assertResponseContains('Edit Configurations');
-        $this->assertResponseContains('View All Configs');
-        // Check that configuration management buttons are present
-        $this->assertResponseContains('btn-warning'); // Edit config button
-        $this->assertResponseContains('btn-info'); // View config button
+        $this->assertResponseContains('Basketball');
+        $this->assertResponseContains('Football');
+        $this->assertResponseContains('Baseball');
+        $this->assertResponseContains('btn-outline-primary');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\DeployAuditService;
+use App\Service\SportConfigService;
 use Cake\Cache\Cache;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
@@ -60,8 +61,9 @@ class DashboardController extends AppController
         $audit = $service->run();
 
         $locator = TableRegistry::getTableLocator();
+        $sportCount = count((new SportConfigService())->getAvailableSports());
         $counts = [
-            'sports' => $locator->get('Sports')->find()->count(),
+            'sports' => $sportCount,
             'teams' => $locator->get('Teams')->find()->count(),
             'games' => $locator->get('Games')->find()->count(),
             'images' => $locator->get('Images')->find()->count(),

@@ -329,7 +329,7 @@ class TeamSeasonsControllerTest extends TestCase
         $season2025 = $seasonsTable->newEntity(['start' => 2025, 'end' => 2026]);
         $seasonsTable->save($season2025);
 
-        // Create team seasons for navigation using existing teams (team_id 1 and 2 both have sport_id = 1)
+        // Create team seasons for navigation using existing teams in the same sport.
         $teamSeason2022 = $teamSeasonsTable->newEntity([
             'team_id' => 2, // Use different team but same sport
             'season_id' => $season2022->id,
@@ -352,13 +352,13 @@ class TeamSeasonsControllerTest extends TestCase
         $previousTeamSeason = $this->viewVariable('previousTeamSeason');
         $this->assertNotNull($previousTeamSeason, 'Previous team season should be available');
         $this->assertEquals(2023, $previousTeamSeason->season->end, 'Previous should be 2022-2023 season');
-        $this->assertEquals(1, $previousTeamSeason->team->sport_id, 'Previous should be same sport');
+        $this->assertEquals('basketball', $previousTeamSeason->team->sport_key, 'Previous should be same sport');
 
         $nextTeamSeason = $this->viewVariable('nextTeamSeason');
         $this->assertNotNull($nextTeamSeason, 'Next team season should be available');
         // The next should be 2025-2026 since we created that season above
         $this->assertEquals(2026, $nextTeamSeason->season->end, 'Next should be 2025-2026 season');
-        $this->assertEquals(1, $nextTeamSeason->team->sport_id, 'Next should be same sport');
+        $this->assertEquals('basketball', $nextTeamSeason->team->sport_key, 'Next should be same sport');
     }
 
     /**
@@ -368,35 +368,19 @@ class TeamSeasonsControllerTest extends TestCase
     {
         $this->mockIdentity();
 
-        // Create a team season in a different sport
+        // Create a future team season in a different sport (fixture team_id=3 is football).
         $seasonsTable = $this->getTableLocator()->get('Seasons');
-        $teamsTable = $this->getTableLocator()->get('Teams');
         $teamSeasonsTable = $this->getTableLocator()->get('TeamSeasons');
-        $sportsTable = $this->getTableLocator()->get('Sports');
-
-        // Create a different sport
-        $differentSport = $sportsTable->newEntity(['sport_name' => 'Soccer']);
-        $sportsTable->save($differentSport);
-
-        // Create a team in the different sport
-        $differentTeam = $teamsTable->newEntity([
-            'team_name' => 'Soccer Team',
-            'sport_id' => $differentSport->id,
-            'abbreviation' => 'SOC',
-            'gender' => 'Female',
-        ]);
-        $teamsTable->save($differentTeam);
 
         // Create a team season with the different sport in a future season
         $futureSeason = $seasonsTable->newEntity(['start' => 2025, 'end' => 2026]);
         $seasonsTable->save($futureSeason);
 
-        $differentTeamSeason = $teamSeasonsTable->newEntity([
-            'team_id' => $differentTeam->id,
+        $teamSeasonsTable->save($teamSeasonsTable->newEntity([
+            'team_id' => 3,
             'season_id' => $futureSeason->id,
-            'semester' => 'Fall',
-        ]);
-        $teamSeasonsTable->save($differentTeamSeason);
+            'semester' => 1,
+        ]));
 
         // View the original team season (should not see the different sport in navigation)
         $this->get('/admin/team-seasons/view/1');
@@ -406,8 +390,8 @@ class TeamSeasonsControllerTest extends TestCase
         $nextTeamSeason = $this->viewVariable('nextTeamSeason');
         if ($nextTeamSeason) {
             $this->assertNotEquals(
-                $differentSport->id,
-                $nextTeamSeason->team->sport_id,
+                'football',
+                $nextTeamSeason->team->sport_key,
                 'Navigation should not include different sport team seasons',
             );
         }

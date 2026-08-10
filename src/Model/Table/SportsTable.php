@@ -32,8 +32,6 @@ use Cake\Validation\Validator;
  * - created_at: Timestamp when record was created
  * - updated_at: Timestamp when record was last modified
  * @property \App\Model\Table\TeamsTable&\Cake\ORM\Association\HasMany $Teams
- * @property \App\Model\Table\SportConfigsTable&\Cake\ORM\Association\HasMany $SportConfigs
- * @property \App\Model\Table\SportStatRegistryTable&\Cake\ORM\Association\HasMany $SportStatRegistry
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
@@ -58,16 +56,6 @@ class SportsTable extends Table
 
         // Associations
         $this->hasMany('Teams', [
-            'foreignKey' => 'sport_id',
-            'dependent' => true,
-        ]);
-
-        $this->hasMany('SportConfigs', [
-            'foreignKey' => 'sport_id',
-            'dependent' => true,
-        ]);
-
-        $this->hasMany('SportStatRegistry', [
             'foreignKey' => 'sport_id',
             'dependent' => true,
         ]);

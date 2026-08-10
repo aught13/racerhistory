@@ -20,6 +20,7 @@ class GameUpsertService
     private GameService $gameService;
     private SportConfigService $sportConfigService;
     private GameEavUiService $gameEavUi;
+    private TeamSportContextService $teamSportContextService;
 
     /**
      * Constructor.
@@ -42,6 +43,7 @@ class GameUpsertService
         $this->gameService = $gameService ?? new GameService();
         $this->sportConfigService = $sportConfigService ?? new SportConfigService();
         $this->gameEavUi = $gameEavUi ?? new GameEavUiService();
+        $this->teamSportContextService = new TeamSportContextService($this->sportConfigService);
     }
 
     /**
@@ -189,7 +191,8 @@ class GameUpsertService
         $this->gameService->normalizeAssociatedInlineCreate($data);
         $data = $this->gameService->calculateWinLoss($data);
 
-        $sportId = $game->team_season->team->sport->id;
+        $team = $game->team_season->team;
+        $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
 
         $eavErrors = $sportId ? $this->sportConfigService->validatePeriodScores((int)$sportId, $data) : [];
         if (!empty($eavErrors)) {
@@ -254,9 +257,11 @@ class GameUpsertService
     {
         /** @var \App\Model\Entity\Game $game */
         $game = $this->gamesTable->find()
-            ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
+            ->contain(['TeamSeason' => ['Teams']])
             ->where(['Games.id' => $gameId])
             ->firstOrFail();
+
+        $this->teamSportContextService->attachSportContextToTeam($game->team_season->team);
 
         return $game;
     }
