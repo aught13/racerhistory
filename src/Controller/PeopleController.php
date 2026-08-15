@@ -8,6 +8,7 @@ use App\Model\Entity\TeamSeasonRosters;
 use App\Service\ImageProcessor;
 use App\Service\PersonService;
 use App\Service\StatsService;
+use App\Service\TeamSportContextService;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\Query\SelectQuery;
@@ -72,6 +73,7 @@ class PeopleController extends AppController
     private PersonService $personService;
     private ImageProcessor $imageProcessor;
     protected StatsService $Stats;
+    private TeamSportContextService $teamSportContextService;
 
     /**
      * Initialize controller.
@@ -83,6 +85,7 @@ class PeopleController extends AppController
         $this->Stats = new StatsService();
         $this->personService = new PersonService();
         $this->imageProcessor = new ImageProcessor();
+        $this->teamSportContextService = new TeamSportContextService();
     }
 
     /**
@@ -394,12 +397,18 @@ class PeopleController extends AppController
 
         foreach ($rosterEntries as $roster) {
             $teamSeason = $roster->team_season ?? null;
-            $sport = $teamSeason?->team->sport ?? null;
-            if (!$sport) {
+            if ($teamSeason === null) {
                 continue;
             }
 
-            $sportId = $sport->id;
+            $team = $teamSeason->team ?? null;
+            $this->teamSportContextService->attachSportContextToTeam($team);
+            $sport = $team->sport ?? null;
+            $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
+            if (!$sport || !$sportId) {
+                continue;
+            }
+
             if (!isset($rostersBySport[$sportId])) {
                 $rostersBySport[$sportId] = [
                     'sport' => $sport,
@@ -489,7 +498,7 @@ class PeopleController extends AppController
 
         $rosterTable = $this->fetchTable('TeamSeasonRosters');
         $roster = $rosterTable->find()
-            ->contain(['TeamSeasons' => ['Teams' => ['Sports'], 'Seasons']])
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
             ->where([
                 'TeamSeasonRosters.person_id' => $personId,
                 'TeamSeasonRosters.team_season_id' => $teamSeasonId,
@@ -501,13 +510,16 @@ class PeopleController extends AppController
         }
 
         $teamSeason = $roster->team_season ?? null;
-        $sport = $teamSeason?->team->sport ?? null;
+        $team = $teamSeason ? ($teamSeason->team ?? null) : null;
+        $this->teamSportContextService->attachSportContextToTeam($team);
+        $sport = $team ? ($team->sport ?? null) : null;
+        $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
         $gameLogRows = [];
         $gameLogElement = null;
-        if ($sport && $this->Stats->hasSportSupport((int)$sport->id)) {
-            $gameLogElement = $this->Stats->getPersonGameLogElement((int)$sport->id);
+        if ($sport && $sportId && $this->Stats->hasSportSupport((int)$sportId)) {
+            $gameLogElement = $this->Stats->getPersonGameLogElement((int)$sportId);
             $gameLogRows = $this->Stats->getPersonGameStats(
-                (int)$sport->id,
+                (int)$sportId,
                 (int)$roster->id,
             );
         }
@@ -565,7 +577,7 @@ class PeopleController extends AppController
     {
         $table = $this->fetchTable('TeamSeasonRosters');
         $rows = $table->find()
-            ->contain(['TeamSeasons' => ['Teams' => ['Sports'], 'Seasons']])
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
             ->where(['TeamSeasonRosters.person_id' => $personId])
             ->orderByDesc('Seasons.start')
             ->all()
@@ -589,12 +601,21 @@ class PeopleController extends AppController
 
         foreach ($rosterEntries as $roster) {
             $teamSeason = $roster->team_season ?? null;
-            $sport = $teamSeason?->team->sport ?? null;
+            if ($teamSeason === null) {
+                continue;
+            }
+
+            $team = $teamSeason->team ?? null;
+            $this->teamSportContextService->attachSportContextToTeam($team);
+            $sport = $team->sport ?? null;
             if (!$sport) {
                 continue;
             }
 
-            $sportId = (int)$sport->id;
+            $sportId = (int)($this->teamSportContextService->resolveSportIdFromTeam($team) ?? 0);
+            if ($sportId <= 0) {
+                continue;
+            }
             if (!$this->Stats->hasSportSupport($sportId)) {
                 continue;
             }

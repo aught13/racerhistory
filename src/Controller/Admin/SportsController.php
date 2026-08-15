@@ -3,61 +3,24 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\SportConfigAdminService;
-use App\Service\SportsAdminService;
-use Cake\Datasource\Exception\RecordNotFoundException;
-use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
 /**
- * Admin Sports Controller
+ * Legacy Admin Sports Controller
  *
- * Thin HTTP orchestrator for managing Sport records and their key-value
- * configurations. CRUD and popup-add logic is owned by SportsAdminService;
- * config-management actions delegate to SportConfigAdminService. This
- * controller only extracts request data, calls the appropriate service method,
- * then sets flash messages and redirects.
+ * Compatibility shim for historical `/admin/sports/*` URLs.
  *
- * Actions:
- * - index: Lists all sports (with Teams for count display in confirmations).
- * - view: Displays a single sport with Teams and formatted configs.
- * - add: Add form and POST handler.
- * - edit: Edit form and POST handler.
- * - delete: POST/DELETE handler for a single sport.
- * - bulkDelete: POST handler for multiple sport deletions.
- * - bulk: Dispatcher that routes bulk_action to bulkDelete.
- * - ajaxAdd: JSON endpoint for popup-form sport creation.
- * - configs: Displays the key-value configs for a sport.
- * - editConfigs: Edit form and POST handler for bulk config save.
- * - addConfig: POST-only handler for adding a single config key.
- * - deleteConfig: DELETE handler for a single config key.
- * - resetConfigs: POST-only handler to reset all configs to defaults.
+ * All canonical sport configuration behavior now lives under
+ * SiteOptionsController + SiteOptionsService.
  *
- * Notes:
- * - CRUD and popup-add ORM must stay in SportsAdminService, not here.
- * - Config ORM must stay in SportConfigAdminService, not here.
- * - Flash strings and JSON response shapes are asserted in tests — keep stable.
- * - beforeFilter disables FormProtection for editConfigs due to dynamic rows.
+ * Deprecated Sports CRUD actions now redirect with user guidance.
  *
- * @property \App\Service\SportsAdminService $sportsAdminService
- * @property \App\Service\SportConfigAdminService $sportConfigAdminService
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FlashComponent $Flash
- * @property \App\Model\Table\SportsTable $Sports
  */
 
 class SportsController extends AppController
 {
-    /**
-     * @var \App\Service\SportsAdminService Admin service for sports CRUD and popup-add
-     */
-    private SportsAdminService $sportsAdminService;
-
-    /**
-     * @var \App\Service\SportConfigAdminService Admin service for sport config management
-     */
-    private SportConfigAdminService $sportConfigAdminService;
-
     /**
      * Initialization hook method.
      *
@@ -66,153 +29,83 @@ class SportsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-
-        $this->sportsAdminService = new SportsAdminService();
-        $this->sportConfigAdminService = new SportConfigAdminService();
     }
 
     /**
-     * Before filter callback.
+     * Legacy index now points to SiteOptions sport configs.
      *
-     * @param \Cake\Event\EventInterface $event An Event instance
-     * @return void
+     * @return \Cake\Http\Response
      */
-    public function beforeFilter(EventInterface $event): void
+    public function index(): Response
     {
-        parent::beforeFilter($event);
-
-        // Disable form protection for editConfigs due to dynamic form fields
-        if ($this->request->getParam('action') === 'editConfigs') {
-            if ($this->components()->has('FormProtection')) {
-                $this->FormProtection->setConfig('unlockedActions', ['editConfigs']);
-            }
-        }
+        return $this->redirect([
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => 'sportsConfigs',
+        ]);
     }
 
     /**
-     * List all sports for administration.
+     * Legacy view route now points to SiteOptions sport configs.
      *
-     * @return void
+     * @param string|null $sportRef Legacy sport ref (id/key)
+     * @return \Cake\Http\Response
      */
-    public function index()
+    public function view(?string $sportRef = null): Response
     {
-        $sports = $this->sportsAdminService->getIndexData();
-        $this->set(compact('sports'));
+        return $this->redirectToSiteOptions('sportsConfigs', $sportRef);
     }
 
     /**
-     * View a single sport.
+     * Deprecated sport creation action.
      *
-     * @param string $id Sport ID
-     * @return void
+     * @return \Cake\Http\Response
      */
-    public function view(string $id)
+    public function add(): Response
     {
-        $sport = $this->sportsAdminService->getViewEntity($id);
-        $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
-        $this->set(compact('sport', 'configs'));
+        $this->Flash->warning(__('Sport CRUD has been retired. Manage sport behavior via Sport Configs.'));
+
+        return $this->redirectToSiteOptions('sportsConfigs');
     }
 
     /**
-     * Add new sport form and processing.
-     *
-     * @return \Cake\Http\Response|null
-     */
-    public function add()
-    {
-        if ($this->request->is('post')) {
-            $result = $this->sportsAdminService->add($this->request->getData());
-
-            if ($result['success']) {
-                $this->Flash->success(__('The sport has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The sport could not be saved. Please, try again.'));
-            $sport = $result['sport'];
-        } else {
-            $sport = $this->sportsAdminService->newEntity();
-        }
-
-        $this->set(compact('sport'));
-
-        return null;
-    }
-
-    /**
-     * Edit sport form and processing.
-     *
-     * @param string $id Sport ID
-     * @return \Cake\Http\Response|null
-     */
-    public function edit(string $id)
-    {
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->sportsAdminService->edit($id, $this->request->getData());
-
-            if ($result['success']) {
-                $this->Flash->success(__('The sport has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The sport could not be saved. Please, try again.'));
-            $sport = $result['sport'];
-        } else {
-            $sport = $this->sportsAdminService->getEditEntity($id);
-        }
-
-        $this->set(compact('sport'));
-
-        return null;
-    }
-
-    /**
-     * Delete a sport.
+     * Deprecated sport edit action.
      *
      * @param string $id Sport ID
      * @return \Cake\Http\Response
      */
-    public function delete(string $id)
+    public function edit(string $id): Response
+    {
+        $this->Flash->warning(__('Sport CRUD has been retired. Manage sport behavior via Sport Configs.'));
+
+        return $this->redirectToSiteOptions('sportsConfigs', $id);
+    }
+
+    /**
+     * Deprecated sport delete action.
+     *
+     * @param string $id Sport ID
+     * @return \Cake\Http\Response
+     */
+    public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $this->Flash->warning(__('Sport records are retired and can no longer be deleted.'));
 
-        if ($this->sportsAdminService->delete($id)) {
-            $this->Flash->success(__('The sport has been deleted.'));
-        } else {
-            $this->Flash->error(__('The sport could not be deleted. Please, try again.'));
-        }
-
-        return $this->redirect(['action' => 'index']);
+        return $this->redirectToSiteOptions('sportsConfigs');
     }
 
     /**
-     * Bulk delete multiple sports.
+     * Deprecated sport bulk delete action.
      *
      * @return \Cake\Http\Response
      */
-    public function bulkDelete()
+    public function bulkDelete(): Response
     {
         $this->request->allowMethod(['post']);
-        $sportIds = (array)$this->request->getData('sport_ids');
-        $sportIds = array_values(array_filter($sportIds, function ($v) {
-            return $v !== '' && $v !== null && ctype_digit((string)$v);
-        }));
+        $this->Flash->warning(__('Sport records are retired and bulk delete is no longer available.'));
 
-        if (empty($sportIds)) {
-            $this->Flash->error('No sports selected for deletion.');
-
-            return $this->redirect(['action' => 'index']);
-        }
-
-        $deletedCount = $this->sportsAdminService->bulkDelete($sportIds);
-
-        if ($deletedCount > 0) {
-            $this->Flash->success(__('Deleted {0} sport(s).', $deletedCount));
-        } else {
-            $this->Flash->error('No sports could be deleted.');
-        }
-
-        return $this->redirect(['action' => 'index']);
+        return $this->redirectToSiteOptions('sportsConfigs');
     }
 
     /**
@@ -227,187 +120,120 @@ class SportsController extends AppController
             return $this->bulkDelete();
         }
 
-        $this->Flash->error('Invalid bulk action.');
+        $this->Flash->warning(__('Sport records are retired and bulk actions are no longer available.'));
 
-        return $this->redirect(['action' => 'index']);
+        return $this->redirectToSiteOptions('sportsConfigs');
     }
 
     /**
-     * AJAX endpoint for adding sports from popup forms.
+     * Deprecated popup sport creation endpoint.
      *
      * @return \Cake\Http\Response
      */
     public function ajaxAdd(): Response
     {
-        if ($this->request->is('post')) {
-            $result = $this->sportsAdminService->createSportFromPopup($this->request->getData());
-
+        if (!$this->request->is('post')) {
             return $this->response
                 ->withType('application/json')
-                ->withStringBody(json_encode($result));
+                ->withStringBody(json_encode([
+                    'success' => false,
+                    'errors' => ['Invalid request method.'],
+                ]));
         }
 
         return $this->response
             ->withType('application/json')
             ->withStringBody(json_encode([
                 'success' => false,
-                'errors' => ['Invalid request method.'],
+                'errors' => [
+                    'Sport creation has been retired. Use Site Options > Sport Configs and SportsDefaults.',
+                ],
             ]));
     }
 
     /**
-     * View sport configurations
+     * Redirect legacy config view URL to SiteOptions config view.
      *
-     * @param string $id Sport ID
-     * @return \Cake\Http\Response|null Renders view
+     * @param string|null $sportRef Sport key or legacy sport ID
+     * @return \Cake\Http\Response
      */
-    public function configs(string $id): ?Response
+    public function configs(?string $sportRef = null): Response
     {
-        try {
-            $sport = $this->sportsAdminService->getViewEntity($id);
-            $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
-
-            $this->set(compact('sport', 'configs'));
-
-            return null;
-        } catch (RecordNotFoundException $e) {
-            $this->Flash->error(__('Sport not found.'));
-
-            return $this->redirect(['action' => 'index']);
-        }
+        return $this->redirectToSiteOptions('sportsConfigs', $sportRef);
     }
 
     /**
-     * Edit sport configurations
+     * Redirect legacy config editor URL to SiteOptions config editor.
      *
-     * @param string $id Sport ID
-     * @return \Cake\Http\Response|null Renders view or redirects
+     * @param string|null $sportRef Sport key or legacy sport ID
+     * @return \Cake\Http\Response
      */
-    public function editConfigs(string $id): ?Response
+    public function editConfigs(?string $sportRef = null): Response
     {
-        try {
-            $sport = $this->sportsAdminService->getViewEntity($id);
-
-            if ($this->request->is(['patch', 'post', 'put'])) {
-                $configData = $this->request->getData('configs', []);
-
-                if ($this->sportConfigAdminService->saveBulkConfigs((int)$id, $configData)) {
-                    $this->Flash->success(__('Sport configurations have been updated.'));
-
-                    return $this->redirect(['action' => 'configs', $id]);
-                } else {
-                    $this->Flash->error(__('Unable to update sport configurations. Please try again.'));
-                }
-            }
-
-            $configs = $this->sportConfigAdminService->getFormattedConfigsForSport((int)$id);
-            $configs = $this->sportConfigAdminService->normalizeFormattedConfigs($configs);
-
-            $this->set(compact('sport', 'configs'));
-
-            return null;
-        } catch (RecordNotFoundException $e) {
-            $this->Flash->error(__('Sport not found.'));
-
-            return $this->redirect(['action' => 'index']);
-        }
+        return $this->redirectToSiteOptions('editSportConfigs', $sportRef);
     }
 
     /**
-     * Add a new sport configuration
+     * Redirect legacy add-config URL to SiteOptions add-config action.
      *
-     * @param string $id Sport ID
-     * @return \Cake\Http\Response|null Redirects
+     * @param string|null $sportRef Sport key or legacy sport ID
+     * @return \Cake\Http\Response
      */
-    public function addConfig(string $id): ?Response
+    public function addConfig(?string $sportRef = null): Response
     {
-        $this->request->allowMethod(['post']);
-
-        try {
-            // Verify sport exists (throws RecordNotFoundException if not)
-            $this->sportsAdminService->getViewEntity($id);
-
-            $key = $this->request->getData('config_key');
-            $value = $this->request->getData('config_value');
-            $description = $this->request->getData('description');
-
-            if (empty($key)) {
-                $this->Flash->error(__('Configuration key is required.'));
-
-                return $this->redirect(['action' => 'editConfigs', $id]);
-            }
-
-            // Handle array values (like officials)
-            if (str_contains($value, ',')) {
-                $value = array_map('trim', explode(',', $value));
-            }
-
-            $result = $this->sportConfigAdminService->setConfig((int)$id, (string)$key, $value, (string)$description);
-
-            if ($result) {
-                $this->Flash->success(__('Configuration added successfully.'));
-            } else {
-                $this->Flash->error(__('Unable to add configuration. Please try again.'));
-            }
-        } catch (RecordNotFoundException $e) {
-            $this->Flash->error(__('Sport not found.'));
-        }
-
-        return $this->redirect(['action' => 'editConfigs', $id]);
+        return $this->redirectToSiteOptions('addSportConfig', $sportRef);
     }
 
     /**
-     * Delete a sport configuration
+     * Redirect legacy delete-config URL to SiteOptions delete-config action.
      *
-     * @param string $id        Sport ID
+     * @param string|null $sportRef Sport key or legacy sport ID
      * @param string $configKey Configuration key
      * @return \Cake\Http\Response Redirects
      */
-    public function deleteConfig(string $id, string $configKey): Response
+    public function deleteConfig(?string $sportRef = null, string $configKey = ''): Response
     {
-        $this->request->allowMethod(['delete']);
-
-        try {
-            // Verify sport exists (throws RecordNotFoundException if not)
-            $this->sportsAdminService->getViewEntity($id);
-
-            if ($this->sportConfigAdminService->deleteConfig((int)$id, $configKey)) {
-                $this->Flash->success(__('Configuration deleted successfully.'));
-            } else {
-                $this->Flash->error(__('Unable to delete configuration.'));
-            }
-        } catch (RecordNotFoundException $e) {
-            $this->Flash->error(__('Sport not found.'));
-        }
-
-        return $this->redirect(['action' => 'editConfigs', $id]);
+        return $this->redirectToSiteOptions('deleteSportConfig', $sportRef, $configKey);
     }
 
     /**
-     * Reset sport configurations to defaults
+     * Redirect legacy reset-config URL to SiteOptions reset action.
      *
-     * @param string $id Sport ID
+     * @param string|null $sportRef Sport key or legacy sport ID
      * @return \Cake\Http\Response Redirects
      */
-    public function resetConfigs(string $id): Response
+    public function resetConfigs(?string $sportRef = null): Response
     {
-        $this->request->allowMethod(['post']);
+        return $this->redirectToSiteOptions('resetSportConfigs', $sportRef);
+    }
 
-        try {
-            // Verify sport exists (throws RecordNotFoundException if not)
-            $this->sportsAdminService->getViewEntity($id);
+    /**
+     * Build a redirect to canonical SiteOptions actions for sport configuration.
+     *
+     * @param string $action SiteOptions action name
+     * @param string|null $sportRef Legacy route ref
+     * @param string|null $configKey Optional config key for delete action
+     * @return \Cake\Http\Response
+     */
+    private function redirectToSiteOptions(
+        string $action,
+        ?string $sportRef = null,
+        ?string $configKey = null,
+    ): Response {
+        $target = [
+            'prefix' => 'Admin',
+            'controller' => 'SiteOptions',
+            'action' => $action,
+        ];
 
-            $success = $this->sportConfigAdminService->resetToDefaults((int)$id);
-
-            if ($success) {
-                $this->Flash->success(__('Sport configurations have been reset to defaults.'));
-            } else {
-                $this->Flash->error(__('Unable to reset configurations. Please try again.'));
-            }
-        } catch (RecordNotFoundException $e) {
-            $this->Flash->error(__('Sport not found.'));
+        if ($sportRef !== null && trim($sportRef) !== '') {
+            $target[] = trim($sportRef);
         }
 
-        return $this->redirect(['action' => 'editConfigs', $id]);
+        if ($configKey !== null && trim($configKey) !== '') {
+            $target[] = trim($configKey);
+        }
+
+        return $this->redirect($target);
     }
 }

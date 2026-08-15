@@ -158,7 +158,13 @@ class BlogPostsAdminService
         $games = (new GameService())->getRecentGamesForSelect(200);
         $sites = (new SiteService())->getSitesForSelect();
         $opponents = (new OpponentService())->getOpponentsForSelect();
-        $sports = (new SportService())->getSportsForSelect();
+        $sports = [];
+        foreach ((new TeamSportContextService())->getLegacySportOptions() as $sportId => $label) {
+            $sports[] = [
+                'id' => (int)$sportId,
+                'label' => (string)$label,
+            ];
+        }
 
         $currentTags = $post->blog_tags ?? [];
         $formattedTags = [];

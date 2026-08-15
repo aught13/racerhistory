@@ -29,6 +29,7 @@ class TeamsFixture extends TestFixture
             [
                 'id' => 1,
                 'sport_id' => 1,
+                'sport_key' => 'basketball',
                 'team_name' => 'Los Angeles Lakers',
                 'team_description' => 'Professional basketball team',
                 'abbr' => 'LAL',
@@ -41,6 +42,7 @@ class TeamsFixture extends TestFixture
             [
                 'id' => 2,
                 'sport_id' => 1,
+                'sport_key' => 'basketball',
                 'team_name' => 'Boston Celtics',
                 'team_description' => 'Historic basketball franchise',
                 'abbr' => 'BOS',
@@ -53,6 +55,7 @@ class TeamsFixture extends TestFixture
             [
                 'id' => 3,
                 'sport_id' => 2,
+                'sport_key' => 'football',
                 'team_name' => 'New York Giants',
                 'team_description' => 'Professional football team',
                 'abbr' => 'NYG',

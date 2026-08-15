@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Team;
+use App\Model\Table\TeamsTable;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -13,26 +14,26 @@ use Cake\ORM\TableRegistry;
  */
 class TeamService
 {
-    private SportService $sportService;
+    private TeamSportContextService $teamSportContextService;
 
     /**
      * Constructor.
      *
-     * @param \App\Service\SportService|null $sportService Sport service instance
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context service
      */
-    public function __construct(?SportService $sportService = null)
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
     {
-        $this->sportService = $sportService ?? new SportService();
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
     }
 
     /**
-     * Get sport service instance.
+     * Get team sport context service instance.
      *
-     * @return \App\Service\SportService
+     * @return \App\Service\TeamSportContextService
      */
-    public function getSportService(): SportService
+    public function getTeamSportContextService(): TeamSportContextService
     {
-        return $this->sportService;
+        return $this->teamSportContextService;
     }
 
     /**
@@ -47,8 +48,11 @@ class TeamService
 
         $team = $teams->find()
             ->where(['Teams.id' => $teamId])
-            ->contain(['Sports'])
             ->first();
+
+        if ($team instanceof Team) {
+            $this->teamSportContextService->attachSportContextToTeam($team);
+        }
 
         return $team instanceof Team ? $team : null;
     }
@@ -86,16 +90,30 @@ class TeamService
      */
     public function getAllTeams(?int $sportId = null): array
     {
+        /** @var \App\Model\Table\TeamsTable $teams */
         $teams = TableRegistry::getTableLocator()->get('Teams');
         $query = $teams->find()
-            ->contain(['Sports'])
             ->orderBy(['Teams.team_name' => 'ASC']);
 
         if ($sportId) {
-            $query->where(['Teams.sport_id' => $sportId]);
+            $sportKey = $this->teamSportContextService->resolveSportKeyFromId($sportId);
+            if ($sportKey !== null) {
+                $query->where($this->teamSportContextService->buildSportFilterConditions($sportKey));
+            } elseif ($teams->getSchema()->hasColumn('sport_id')) {
+                $query->where(['Teams.sport_id' => $sportId]);
+            } else {
+                $query->where(['Teams.id' => -1]);
+            }
         }
 
-        return $query->all()->toArray();
+        $rows = $query->all()->toArray();
+        foreach ($rows as $row) {
+            if ($row instanceof Team) {
+                $this->teamSportContextService->attachSportContextToTeam($row);
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -106,7 +124,9 @@ class TeamService
      */
     public function createTeam(array $data): Team|false
     {
+        /** @var \App\Model\Table\TeamsTable $teams */
         $teams = TableRegistry::getTableLocator()->get('Teams');
+        $data = $this->normalizeSportPayload($teams, $data);
         $team = $teams->newEntity($data);
 
         return $teams->save($team);
@@ -121,8 +141,10 @@ class TeamService
      */
     public function updateTeam(int $teamId, array $data): Team|false
     {
+        /** @var \App\Model\Table\TeamsTable $teams */
         $teams = TableRegistry::getTableLocator()->get('Teams');
         $team = $teams->get($teamId);
+        $data = $this->normalizeSportPayload($teams, $data);
         $teams->patchEntity($team, $data);
 
         return $teams->save($team);
@@ -154,13 +176,58 @@ class TeamService
         $results = [];
 
         foreach ($teams as $team) {
+            if (!($team instanceof Team)) {
+                continue;
+            }
+
+            $sportName = $this->teamSportContextService->resolveSportNameFromTeam($team);
             $results[] = [
                 'id' => $team->id,
                 'label' => $this->getDisplayLabel($team->id, true),
-                'sport' => $team->sport->sport_name ?? null,
+                'sport' => $sportName,
             ];
         }
 
         return $results;
+    }
+
+    /**
+     * @param \App\Model\Table\TeamsTable $teamsTable
+     * @param array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    private function normalizeSportPayload(TeamsTable $teamsTable, array $data): array
+    {
+        $sportKey = strtolower(trim((string)($data['sport_key'] ?? '')));
+        $sportId = isset($data['sport_id']) ? (int)$data['sport_id'] : 0;
+
+        if ($sportKey !== '' && ctype_digit($sportKey)) {
+            $resolved = $this->teamSportContextService->resolveSportKeyFromId((int)$sportKey);
+            if ($resolved !== null) {
+                $sportKey = $resolved;
+                $data['sport_key'] = $sportKey;
+            }
+        }
+
+        if ($sportKey === '' && $sportId > 0) {
+            $resolved = $this->teamSportContextService->resolveSportKeyFromId($sportId);
+            if ($resolved !== null) {
+                $sportKey = $resolved;
+                $data['sport_key'] = $sportKey;
+            }
+        }
+
+        if ($sportKey !== '' && $teamsTable->getSchema()->hasColumn('sport_id') && $sportId <= 0) {
+            $resolvedId = $this->teamSportContextService->resolveSportIdFromKey($sportKey);
+            if ($resolvedId !== null) {
+                $data['sport_id'] = $resolvedId;
+            }
+        }
+
+        if (!$teamsTable->getSchema()->hasColumn('sport_id') && array_key_exists('sport_id', $data)) {
+            unset($data['sport_id']);
+        }
+
+        return $data;
     }
 }

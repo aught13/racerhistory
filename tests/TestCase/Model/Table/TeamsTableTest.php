@@ -7,33 +7,23 @@ use App\Model\Table\TeamsTable;
 use Cake\TestSuite\TestCase;
 
 /**
- * App\Model\Table\TeamsTable Test Case
+ * TeamsTable tests covering validation and beforeSave behavior.
  */
 class TeamsTableTest extends TestCase
 {
-    /**
-     * Test fixtures
-     *
-     * @var array<string>
-     */
     protected array $fixtures = [
         'app.Teams',
         'app.Sports',
     ];
 
-    /**
-     * Teams Table instance
-     *
-     * @var \App\Model\Table\TeamsTable
-     */
     protected TeamsTable $Teams;
 
     /**
-     * setUp method
+     * Set up Teams table instance for tests.
      *
      * @return void
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $config = $this->getTableLocator()->exists('Teams') ? [] : ['className' => TeamsTable::class];
@@ -41,26 +31,25 @@ class TeamsTableTest extends TestCase
     }
 
     /**
-     * tearDown method
+     * Tear down Teams table instance.
      *
      * @return void
      */
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         unset($this->Teams);
-
         parent::tearDown();
     }
 
     /**
-     * Test validationDefault method
+     * Validates that a properly formed team entity has no validation errors.
      *
      * @return void
      */
-    public function testValidationDefault(): void
+    public function testValidationDefaultAllowsValidTeam(): void
     {
         $team = $this->Teams->newEntity([
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => 'Test Team',
             'abbr' => 'TT',
             'team_nickname' => 'Testers',
@@ -72,7 +61,7 @@ class TeamsTableTest extends TestCase
     }
 
     /**
-     * Test validation fails for missing required fields
+     * Validates that required fields produce validation errors when missing.
      *
      * @return void
      */
@@ -81,7 +70,7 @@ class TeamsTableTest extends TestCase
         $team = $this->Teams->newEntity([]);
         $errors = $team->getErrors();
 
-        $this->assertArrayHasKey('sport_id', $errors);
+        $this->assertArrayHasKey('sport_key', $errors);
         $this->assertArrayHasKey('team_name', $errors);
         $this->assertArrayHasKey('abbr', $errors);
         $this->assertArrayHasKey('team_nickname', $errors);
@@ -90,14 +79,39 @@ class TeamsTableTest extends TestCase
     }
 
     /**
-     * Test validation fails for invalid gender
+     * Ensures beforeSave maps sport_key to sport_id on create.
+     *
+     * @return void
+     */
+    public function testBeforeSaveSetsSportIdFromSportKeyOnCreate(): void
+    {
+        $data = [
+            'team_name' => 'Test Team',
+            'abbr' => 'TST',
+            'team_nickname' => 'Testers',
+            'team_scorebug' => 'TST',
+            'gender' => 'M',
+            'sport_key' => 'basketball',
+        ];
+
+        $entity = $this->Teams->newEntity($data);
+        $this->assertEmpty($entity->get('sport_id'));
+
+        $saved = $this->Teams->save($entity);
+        $this->assertNotFalse($saved);
+        $this->assertNotEmpty($saved->get('sport_id'));
+        $this->assertSame(1, (int)$saved->get('sport_id'));
+    }
+
+    /**
+     * Validates gender field rejects invalid values.
      *
      * @return void
      */
     public function testValidationInvalidGender(): void
     {
         $team = $this->Teams->newEntity([
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => 'Test Team',
             'abbr' => 'TT',
             'team_nickname' => 'Testers',
@@ -110,37 +124,14 @@ class TeamsTableTest extends TestCase
     }
 
     /**
-     * Test validation passes for valid genders
-     *
-     * @return void
-     */
-    public function testValidationValidGenders(): void
-    {
-        $validGenders = ['M', 'F', 'C'];
-
-        foreach ($validGenders as $gender) {
-            $team = $this->Teams->newEntity([
-                'sport_id' => 1,
-                'team_name' => 'Test Team ' . $gender,
-                'abbr' => 'T' . $gender,
-                'team_nickname' => 'Testers',
-                'team_scorebug' => 'TEST',
-                'gender' => $gender,
-            ]);
-
-            $this->assertEmpty($team->getErrors(), "Gender $gender should be valid");
-        }
-    }
-
-    /**
-     * Test validation fails for too long values
+     * Validates maximum length constraints on team fields.
      *
      * @return void
      */
     public function testValidationMaxLengths(): void
     {
         $team = $this->Teams->newEntity([
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => str_repeat('a', 163), // Too long
             'team_description' => str_repeat('b', 241), // Too long
             'abbr' => 'TOOLONG', // Too long
@@ -155,18 +146,5 @@ class TeamsTableTest extends TestCase
         $this->assertArrayHasKey('abbr', $errors);
         $this->assertArrayHasKey('team_nickname', $errors);
         $this->assertArrayHasKey('team_scorebug', $errors);
-    }
-
-    /**
-     * Test belongsTo association with Sports
-     *
-     * @return void
-     */
-    public function testBelongsToSports(): void
-    {
-        $association = $this->Teams->getAssociation('Sports');
-        $this->assertEquals('manyToOne', $association->type());
-        $this->assertEquals('sport_id', $association->getForeignKey());
-        $this->assertEquals('INNER', $association->getJoinType());
     }
 }

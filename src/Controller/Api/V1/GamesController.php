@@ -5,6 +5,7 @@ namespace App\Controller\Api\V1;
 
 use App\Service\BasketballStatsService;
 use App\Service\GameService;
+use App\Service\TeamSportContextService;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Date;
 use DateTimeInterface;
@@ -17,6 +18,7 @@ class GamesController extends AppController
 {
     private GameService $gameService;
     private BasketballStatsService $basketballStatsService;
+    private TeamSportContextService $teamSportContextService;
 
     /**
      * @inheritDoc
@@ -26,6 +28,7 @@ class GamesController extends AppController
         parent::initialize();
         $this->gameService = new GameService();
         $this->basketballStatsService = new BasketballStatsService();
+        $this->teamSportContextService = new TeamSportContextService();
     }
 
     /**
@@ -83,6 +86,10 @@ class GamesController extends AppController
             $gameDateString = (string)$gameDate;
         }
 
+        $team = $game->team_season->team ?? null;
+        $this->teamSportContextService->attachSportContextToTeam($team);
+        $sportName = $this->teamSportContextService->resolveSportNameFromTeam($team);
+
         $payload = [
             'id' => (int)$game->id,
             'team_season_id' => $game->team_season_id !== null ? (int)$game->team_season_id : null,
@@ -118,7 +125,7 @@ class GamesController extends AppController
                 'id' => $game->team_season_id !== null ? (int)$game->team_season_id : null,
                 'team_name' => $game->team_season->team->team_name ?? null,
                 'gender' => $game->team_season->team->gender ?? null,
-                'sport' => $game->team_season->team->sport->sport_name ?? null,
+                'sport' => $sportName,
                 'season_start' => $game->team_season->season->start ?? null,
                 'season_end' => $game->team_season->season->end ?? null,
             ],

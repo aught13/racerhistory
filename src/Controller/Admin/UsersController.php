@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Service\SiteOptionService;
+use App\Service\SiteOptionsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 
@@ -19,7 +19,7 @@ use Cake\Http\Response;
  */
 class UsersController extends AppController
 {
-    private SiteOptionService $siteOptionService;
+    private SiteOptionsService $siteOptionsService;
 
     /**
      * Initialization hook method.
@@ -30,7 +30,7 @@ class UsersController extends AppController
     {
         parent::initialize();
 
-        $this->siteOptionService = new SiteOptionService();
+        $this->siteOptionsService = new SiteOptionsService();
 
         // Load UserManager component for admin-specific logic
         $this->loadComponent('UserManager');
@@ -82,7 +82,7 @@ class UsersController extends AppController
         // Get all users for search table
         $allUsers = $this->Users->find()->orderBy(['username' => 'ASC'])->all();
 
-        $registrationEnabled = $this->siteOptionService->getBooleanOption('registration', true);
+        $registrationEnabled = (bool)$this->siteOptionsService->getRuntimeSetting('registration', true);
 
         $this->set(compact('users', 'hasInactive', 'allUsers', 'registrationEnabled'));
     }
@@ -190,7 +190,14 @@ class UsersController extends AppController
      */
     public function toggleRegistration()
     {
-        $enabled = $this->siteOptionService->toggleBooleanOption('registration', true);
+        $enabled = $this->siteOptionsService->toggleBooleanSetting('registration', true);
+
+        if ($enabled === null) {
+            $this->Flash->error('Registration setting could not be updated.');
+
+            return $this->redirect(['action' => 'index']);
+        }
+
         $this->Flash->success($enabled ? 'Registration enabled.' : 'Registration disabled.');
 
         return $this->redirect(['action' => 'index']);

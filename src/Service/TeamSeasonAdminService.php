@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Season;
+use App\Model\Entity\TeamSeason;
 use App\Model\Table\GamesTable;
 use App\Model\Table\ImagesTable;
 use App\Model\Table\SeasonsTable;
-use App\Model\Table\SportsTable;
 use App\Model\Table\TeamSeasonRostersTable;
 use App\Model\Table\TeamSeasonsTable;
 use App\Model\Table\TeamsTable;
@@ -29,6 +29,16 @@ use Cake\ORM\TableRegistry;
  */
 class TeamSeasonAdminService
 {
+    private TeamSportContextService $teamSportContextService;
+
+    /**
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     */
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
+    {
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
     /**
      * Return index page data.
      *
@@ -39,6 +49,10 @@ class TeamSeasonAdminService
         $teamSeasons = $this->getTeamSeasonsTable()->find()
             ->contain(['Teams', 'Seasons'])
             ->all();
+
+        foreach ($teamSeasons as $teamSeason) {
+            $this->teamSportContextService->attachSportContextToTeam($teamSeason->team ?? null);
+        }
 
         return compact('teamSeasons');
     }
@@ -53,6 +67,7 @@ class TeamSeasonAdminService
     {
         /** @var \App\Model\Entity\TeamSeason $teamSeason */
         $teamSeason = $this->getTeamSeasonsTable()->get($id, contain: ['Teams', 'Seasons']);
+        $this->teamSportContextService->attachSportContextToTeam($teamSeason->team ?? null);
 
         $teamSeasonRosters = $this->getTeamSeasonRostersTable()->find()
             ->where(['team_season_id' => $id])
@@ -65,19 +80,23 @@ class TeamSeasonAdminService
             ->orderByAsc('game_date')
             ->all();
 
-        $currentSportId = (int)($teamSeason->team->sport_id ?? 0);
+        $currentSportId = (int)($this->teamSportContextService->resolveSportIdFromTeam($teamSeason->team ?? null) ?? 0);
+        $currentSportKey = $this->teamSportContextService->resolveSportKeyFromTeam($teamSeason->team ?? null);
         $currentSeasonEnd = (int)($teamSeason->season->end ?? 0);
+        $isBasketballSport = $currentSportKey === 'basketball';
 
         /** @var \App\Model\Entity\TeamSeason|null $previousTeamSeason */
         $previousTeamSeason = null;
         /** @var \App\Model\Entity\TeamSeason|null $nextTeamSeason */
         $nextTeamSeason = null;
 
-        if ($currentSportId > 0 && $currentSeasonEnd > 0) {
+        if ($currentSportKey !== null && $currentSeasonEnd > 0) {
+            $sportFilter = $this->teamSportContextService->buildSportFilterConditions($currentSportKey);
+
             $previousTeamSeason = $this->getTeamSeasonsTable()->find()
                 ->contain(['Teams', 'Seasons'])
-                ->matching('Teams', function ($query) use ($currentSportId) {
-                    return $query->where(['Teams.sport_id' => $currentSportId]);
+                ->matching('Teams', function ($query) use ($sportFilter) {
+                    return $query->where($sportFilter);
                 })
                 ->matching('Seasons', function ($query) use ($currentSeasonEnd) {
                     return $query->where(['Seasons.end <' => $currentSeasonEnd]);
@@ -85,16 +104,30 @@ class TeamSeasonAdminService
                 ->orderByDesc('Seasons.end')
                 ->first();
 
+            if (!$previousTeamSeason instanceof TeamSeason) {
+                $previousTeamSeason = null;
+            }
+            if ($previousTeamSeason instanceof TeamSeason) {
+                $this->teamSportContextService->attachSportContextToTeam($previousTeamSeason->team);
+            }
+
             $nextTeamSeason = $this->getTeamSeasonsTable()->find()
                 ->contain(['Teams', 'Seasons'])
-                ->matching('Teams', function ($query) use ($currentSportId) {
-                    return $query->where(['Teams.sport_id' => $currentSportId]);
+                ->matching('Teams', function ($query) use ($sportFilter) {
+                    return $query->where($sportFilter);
                 })
                 ->matching('Seasons', function ($query) use ($currentSeasonEnd) {
                     return $query->where(['Seasons.end >' => $currentSeasonEnd]);
                 })
                 ->orderByAsc('Seasons.end')
                 ->first();
+
+            if (!$nextTeamSeason instanceof TeamSeason) {
+                $nextTeamSeason = null;
+            }
+            if ($nextTeamSeason instanceof TeamSeason) {
+                $this->teamSportContextService->attachSportContextToTeam($nextTeamSeason->team);
+            }
         }
 
         $playerStats = null;
@@ -118,6 +151,7 @@ class TeamSeasonAdminService
             'playerStats',
             'teamStats',
             'opponentStats',
+            'isBasketballSport',
         );
     }
 
@@ -141,7 +175,7 @@ class TeamSeasonAdminService
 
         $teams = $this->getTeamsTable()->find('list', limit: 200)->all();
         $seasonsList = $this->getSeasonsList();
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $sports = $this->teamSportContextService->getSportOptions();
 
         return compact('teamSeason', 'teams', 'seasonsList', 'sports');
     }
@@ -182,6 +216,7 @@ class TeamSeasonAdminService
     {
         /** @var \App\Model\Entity\TeamSeason $teamSeason */
         $teamSeason = $this->getTeamSeasonsTable()->get($id, contain: ['Teams', 'Seasons']);
+        $this->teamSportContextService->attachSportContextToTeam($teamSeason->team ?? null);
         $teamSeason = $teamSeason->set('team_season_image_entity', null);
 
         if ($teamSeason->team_season_image) {
@@ -195,7 +230,7 @@ class TeamSeasonAdminService
 
         $teams = $this->getTeamsTable()->find('list', limit: 200)->all();
         $seasonsList = $this->getSeasonsList();
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $sports = $this->teamSportContextService->getSportOptions();
 
         return compact('teamSeason', 'teams', 'seasonsList', 'sports');
     }
@@ -363,17 +398,6 @@ class TeamSeasonAdminService
     {
         /** @var \App\Model\Table\SeasonsTable $table */
         $table = TableRegistry::getTableLocator()->get('Seasons');
-
-        return $table;
-    }
-
-    /**
-     * @return \App\Model\Table\SportsTable
-     */
-    private function getSportsTable(): SportsTable
-    {
-        /** @var \App\Model\Table\SportsTable $table */
-        $table = TableRegistry::getTableLocator()->get('Sports');
 
         return $table;
     }

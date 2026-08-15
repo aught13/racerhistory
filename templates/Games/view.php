@@ -33,7 +33,7 @@ $seasonLabel = $seasonStart && $seasonEnd
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
 $resultFlag = $game->result_flag ?? null;
-$sportName = $game->team_season->team->sport->sport_name ?? 'Sport';
+$sportName = $game->team_season->team->sport_name ?? $game->team_season->team->sport->sport_name ?? 'Sport';
 
 $periods = 2;
 $otPeriods = 0;

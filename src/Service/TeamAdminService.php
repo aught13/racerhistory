@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Model\Table\SportsTable;
 use App\Model\Table\TeamsTable;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -24,6 +23,16 @@ use Cake\ORM\TableRegistry;
  */
 class TeamAdminService
 {
+    private TeamSportContextService $teamSportContextService;
+
+    /**
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     */
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
+    {
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
     /**
      * Return index page data.
      *
@@ -32,8 +41,11 @@ class TeamAdminService
     public function getIndexData(): array
     {
         $teams = $this->getTeamsTable()->find()
-            ->contain(['Sports'])
             ->all();
+
+        foreach ($teams as $team) {
+            $this->teamSportContextService->attachSportContextToTeam($team);
+        }
 
         return compact('teams');
     }
@@ -47,7 +59,8 @@ class TeamAdminService
     public function getViewData(int|string $id): array
     {
         /** @var \App\Model\Entity\Team $team */
-        $team = $this->getTeamsTable()->get($id, contain: ['Sports']);
+        $team = $this->getTeamsTable()->get($id);
+        $this->teamSportContextService->attachSportContextToTeam($team);
 
         return compact('team');
     }
@@ -55,18 +68,32 @@ class TeamAdminService
     /**
      * Return add form data including optional sport pre-selection.
      *
-     * @param int|null $sportId Sport id from query string
-     * @return array{team:\App\Model\Entity\Team,sports:\Cake\Datasource\ResultSetInterface}
+     * @param string|null $sportKey Sport key from query string
+     * @return array{team:\App\Model\Entity\Team,sports:array<string,string>}
      */
-    public function getAddFormData(?int $sportId = null): array
+    public function getAddFormData(?string $sportKey = null): array
     {
         /** @var \App\Model\Entity\Team $team */
         $team = $this->getTeamsTable()->newEmptyEntity();
-        if ($sportId) {
-            $team->sport_id = $sportId;
+        if ($sportKey !== null && trim($sportKey) !== '') {
+            $normalizedKey = strtolower(trim($sportKey));
+
+            if (ctype_digit($normalizedKey)) {
+                $resolvedKey = $this->teamSportContextService->resolveSportKeyFromId((int)$normalizedKey);
+                if ($resolvedKey !== null) {
+                    $normalizedKey = $resolvedKey;
+                }
+            }
+
+            $team->sport_key = $normalizedKey;
+
+            $resolvedId = $this->teamSportContextService->resolveSportIdFromKey($normalizedKey);
+            if ($resolvedId !== null) {
+                $team->sport_id = $resolvedId;
+            }
         }
 
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $sports = $this->teamSportContextService->getSportOptions();
 
         return compact('team', 'sports');
     }
@@ -75,19 +102,25 @@ class TeamAdminService
      * Create a new team from form data.
      *
      * @param array<string,mixed> $data Request payload
-     * @param int|null $sportId Optional pre-selected sport id
+     * @param string|null $sportKey Optional pre-selected sport key
      * @return array{success:bool,team:\App\Model\Entity\Team}
      */
-    public function saveNewTeam(array $data, ?int $sportId = null): array
+    public function saveNewTeam(array $data, ?string $sportKey = null): array
     {
         /** @var \App\Model\Entity\Team $team */
         $team = $this->getTeamsTable()->newEmptyEntity();
-        if ($sportId && empty($data['sport_id'])) {
-            $data['sport_id'] = $sportId;
+        if ($sportKey !== null && trim($sportKey) !== '' && empty($data['sport_key'])) {
+            $data['sport_key'] = strtolower(trim($sportKey));
         }
+
+        $data = $this->normalizeSportData($data);
 
         $team = $this->getTeamsTable()->patchEntity($team, $data);
         $success = (bool)$this->getTeamsTable()->save($team);
+
+        if ($success) {
+            $this->teamSportContextService->attachSportContextToTeam($team);
+        }
 
         return compact('success', 'team');
     }
@@ -96,13 +129,14 @@ class TeamAdminService
      * Return edit form data.
      *
      * @param string|int $id Team identifier
-     * @return array{team:\App\Model\Entity\Team,sports:\Cake\Datasource\ResultSetInterface}
+     * @return array{team:\App\Model\Entity\Team,sports:array<string,string>}
      */
     public function getEditFormData(int|string $id): array
     {
         /** @var \App\Model\Entity\Team $team */
-        $team = $this->getTeamsTable()->get($id, contain: ['Sports']);
-        $sports = $this->getSportsTable()->find('list', limit: 200)->all();
+        $team = $this->getTeamsTable()->get($id);
+        $this->teamSportContextService->attachSportContextToTeam($team);
+        $sports = $this->teamSportContextService->getSportOptions();
 
         return compact('team', 'sports');
     }
@@ -117,9 +151,14 @@ class TeamAdminService
     public function saveExistingTeam(int|string $id, array $data): array
     {
         /** @var \App\Model\Entity\Team $team */
-        $team = $this->getTeamsTable()->get($id, contain: ['Sports']);
+        $team = $this->getTeamsTable()->get($id);
+        $data = $this->normalizeSportData($data);
         $team = $this->getTeamsTable()->patchEntity($team, $data);
         $success = (bool)$this->getTeamsTable()->save($team);
+
+        if ($success) {
+            $this->teamSportContextService->attachSportContextToTeam($team);
+        }
 
         return compact('success', 'team');
     }
@@ -190,6 +229,7 @@ class TeamAdminService
     {
         /** @var \App\Model\Entity\Team $team */
         $team = $this->getTeamsTable()->newEmptyEntity();
+        $data = $this->normalizeSportData($data);
         $team = $this->getTeamsTable()->patchEntity($team, $data);
 
         if ($this->getTeamsTable()->save($team)) {
@@ -228,23 +268,49 @@ class TeamAdminService
     }
 
     /**
+     * Normalize sport_id/sport_key payload values for transition compatibility.
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    private function normalizeSportData(array $data): array
+    {
+        $sportId = isset($data['sport_id']) ? (int)$data['sport_id'] : 0;
+        $sportKey = strtolower(trim((string)($data['sport_key'] ?? '')));
+
+        if ($sportKey !== '' && ctype_digit($sportKey)) {
+            $resolvedFromNumericKey = $this->teamSportContextService->resolveSportKeyFromId((int)$sportKey);
+            if ($resolvedFromNumericKey !== null) {
+                $sportKey = $resolvedFromNumericKey;
+                $data['sport_key'] = $sportKey;
+            }
+        }
+
+        if ($sportKey === '' && $sportId > 0) {
+            $resolvedKey = $this->teamSportContextService->resolveSportKeyFromId($sportId);
+            if ($resolvedKey !== null) {
+                $sportKey = $resolvedKey;
+                $data['sport_key'] = $sportKey;
+            }
+        }
+
+        if ($sportKey !== '' && $sportId <= 0) {
+            $resolvedId = $this->teamSportContextService->resolveSportIdFromKey($sportKey);
+            if ($resolvedId !== null) {
+                $data['sport_id'] = $resolvedId;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * @return \App\Model\Table\TeamsTable
      */
     private function getTeamsTable(): TeamsTable
     {
         /** @var \App\Model\Table\TeamsTable $table */
         $table = TableRegistry::getTableLocator()->get('Teams');
-
-        return $table;
-    }
-
-    /**
-     * @return \App\Model\Table\SportsTable
-     */
-    private function getSportsTable(): SportsTable
-    {
-        /** @var \App\Model\Table\SportsTable $table */
-        $table = TableRegistry::getTableLocator()->get('Sports');
 
         return $table;
     }

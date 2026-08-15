@@ -1,13 +1,33 @@
 <?php
 /**
  * @var \App\View\AppView $this
- * @var \App\Model\Entity\Sport $sport
  * @var array $configs
+ * @var string $sportKey
+ * @var string $sportDisplayName
+ * @var string $routeSportRef
+ * @var array<string,string> $sportOptions
+ * @var string|null $configController
  */
 
 $periodIndex = count($configs['period_names']);
 $settingIndex = count($configs['settings']);
 $periodRowIndex = 0;
+$configController = $configController ?? 'SiteOptions';
+$viewAction = $configController === 'SiteOptions' ? 'sportsConfigs' : 'configs';
+$editAction = $configController === 'SiteOptions' ? 'editSportConfigs' : 'editConfigs';
+$resetAction = $configController === 'SiteOptions' ? 'resetSportConfigs' : 'resetConfigs';
+$backRoute = $configController === 'SiteOptions'
+    ? ['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'edit']
+    : ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index'];
+$protectedSettingKeys = [
+    'sport_active',
+    'has_stats',
+    'stats_tracked',
+    'default_periods',
+    'supports_periods',
+    'overtime_name',
+    'scoring_type',
+];
 ?>
 
 <div data-controller="sports-configs-form"
@@ -17,16 +37,35 @@ $periodRowIndex = 0;
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2><?= __('Edit Sport Configurations') ?></h2>
-        <p class="text-muted">Configure period names, officials, and settings for <?= h($sport->sport_name) ?></p>
+        <p class="text-muted">Configure period names, officials, and settings for <?= h($sportDisplayName) ?></p>
     </div>
     <div>
-        <?= $this->Html->link(__('View Configurations'), ['action' => 'configs', $sport->id], ['class' => 'btn btn-info me-2']) ?>
-        <?= $this->Html->link(__('Back to Sports'), ['action' => 'index'], ['class' => 'btn btn-secondary']) ?>
+        <?= $this->Html->link(
+            __('View Configurations'),
+            ['prefix' => 'Admin', 'controller' => $configController, 'action' => $viewAction, $routeSportRef],
+            ['class' => 'btn btn-info me-2'],
+        ) ?>
+        <?= $this->Html->link(__('Back'), $backRoute, ['class' => 'btn btn-secondary']) ?>
     </div>
 </div>
 
+<?php if (!empty($sportOptions)) : ?>
+<div class="mb-3">
+    <div class="d-flex flex-wrap gap-2">
+        <?php foreach ($sportOptions as $optionKey => $optionLabel) : ?>
+            <?php $isActive = $optionKey === $sportKey; ?>
+            <?= $this->Html->link(
+                $optionLabel,
+                ['prefix' => 'Admin', 'controller' => $configController, 'action' => $editAction, $optionKey],
+                ['class' => 'btn btn-sm ' . ($isActive ? 'btn-primary' : 'btn-outline-primary')],
+            ) ?>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <?= $this->Form->create(null, [
-    'url' => ['controller' => 'Sports', 'action' => 'editConfigs', $sport->id],
+    'url' => ['prefix' => 'Admin', 'controller' => $configController, 'action' => $editAction, $routeSportRef],
     'type' => 'post',
 ]) ?>
 
@@ -141,7 +180,7 @@ $periodRowIndex = 0;
                                     'value' => $key,
                                     'class' => 'form-control form-control-sm',
                                     'placeholder' => 'Setting key',
-                                    'readonly' => in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type']),
+                                    'readonly' => in_array($key, $protectedSettingKeys, true),
                                 ]) ?>
                             </div>
                             <div class="col-6">
@@ -150,19 +189,27 @@ $periodRowIndex = 0;
                                         'label' => false,
                                         'value' => is_array($config['value']) ? implode(', ', $config['value']) : $config['value'],
                                         'class' => 'form-control form-control-sm',
-                                        'placeholder' => 'Comma-separated numbers (e.g., 2, 4)',
+                                        'placeholder' => 'Any or comma-separated numbers (e.g., any or 2, 4)',
                                     ]) ?>
                                 <?php else : ?>
+                                    <?php
+                                    $settingValue = is_array($config['value'])
+                                        ? json_encode($config['value'], JSON_UNESCAPED_SLASHES)
+                                        : $config['value'];
+                                    if (is_bool($settingValue)) {
+                                        $settingValue = $settingValue ? 'true' : 'false';
+                                    }
+                                    ?>
                                     <?= $this->Form->control("configs.{$key}.value", [
                                         'label' => false,
-                                        'value' => $config['value'],
+                                        'value' => $settingValue,
                                         'class' => 'form-control form-control-sm',
                                         'placeholder' => 'Setting value',
                                     ]) ?>
                                 <?php endif; ?>
                             </div>
                             <div class="col-2">
-                                <?php if (!in_array($key, ['default_periods', 'supports_periods', 'overtime_name', 'scoring_type'])) : ?>
+                                <?php if (!in_array($key, $protectedSettingKeys, true)) : ?>
                                 <button type="button" class="btn btn-sm btn-outline-danger"
                                     data-action="click->sports-configs-form#removeSetting">
                                     <i class="fas fa-trash"></i>
@@ -192,12 +239,16 @@ $periodRowIndex = 0;
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <?= $this->Form->button(__('Save Configurations'), ['class' => 'btn btn-success me-2']) ?>
-        <?= $this->Html->link(__('Cancel'), ['action' => 'configs', $sport->id], ['class' => 'btn btn-secondary']) ?>
+        <?= $this->Html->link(
+            __('Cancel'),
+            ['prefix' => 'Admin', 'controller' => $configController, 'action' => $viewAction, $routeSportRef],
+            ['class' => 'btn btn-secondary'],
+        ) ?>
     </div>
     <div>
         <?= $this->Form->postLink(
             __('Reset to Defaults'),
-            ['action' => 'resetConfigs', $sport->id],
+            ['prefix' => 'Admin', 'controller' => $configController, 'action' => $resetAction, $routeSportRef],
             [
                 'class' => 'btn btn-outline-warning',
                 'confirm' => __('Are you sure you want to reset all configurations to defaults? This action cannot be undone.'),

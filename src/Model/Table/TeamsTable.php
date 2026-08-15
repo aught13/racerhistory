@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Service\SportConfigService;
+use ArrayObject;
+use Cake\Datasource\EntityInterface;
+use Cake\Event\EventInterface;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
@@ -29,7 +33,8 @@ use Cake\Validation\Validator;
  *
  * Table Fields:
  * - id: Primary key, auto-increment integer
- * - sport_id: Foreign key to sports table (required)
+ * - sport_id: Legacy numeric sport reference (transitional)
+ * - sport_key: Canonical sport key from configured defaults
  * - team_name: Short display name of the team (max 162 chars, required)
  * - team_description: Full official name including institution and sport (max 240 chars)
  * - abbr: Team abbreviation for display (max 5 chars, required)
@@ -38,7 +43,6 @@ use Cake\Validation\Validator;
  * - gender: Gender classification - M (Male), F (Female), C (Co-ed) (required)
  * - created_at: Timestamp when record was created
  * - updated_at: Timestamp when record was last modified
- * @property \App\Model\Table\SportsTable&\Cake\ORM\Association\BelongsTo $Sports
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
  */
@@ -60,10 +64,6 @@ class TeamsTable extends Table
             'created' => 'created_at',
             'modified' => 'updated_at',
         ]);
-        $this->belongsTo('Sports', [
-            'foreignKey' => 'sport_id',
-            'joinType' => 'INNER',
-        ]);
     }
 
     /**
@@ -74,14 +74,37 @@ class TeamsTable extends Table
      */
     public function validationDefault(Validator $validator): Validator
     {
+        $hasSportIdColumn = $this->getSchema()->hasColumn('sport_id');
+        $hasSportKeyColumn = $this->getSchema()->hasColumn('sport_key');
+
         $validator
             ->integer('id')
             ->allowEmptyString('id', null, 'create');
 
-        $validator
-            ->integer('sport_id')
-            ->requirePresence('sport_id', 'create')
-            ->notEmptyString('sport_id');
+        if ($hasSportIdColumn) {
+            $validator
+                ->integer('sport_id')
+                ->allowEmptyString('sport_id');
+
+            if (!$hasSportKeyColumn) {
+                $validator
+                    ->requirePresence('sport_id', 'create')
+                    ->notEmptyString('sport_id');
+            }
+        }
+
+        if ($hasSportKeyColumn) {
+            $validator
+                ->scalar('sport_key')
+                ->maxLength('sport_key', 64)
+                ->requirePresence('sport_key', 'create')
+                ->notEmptyString('sport_key');
+        } else {
+            $validator
+                ->scalar('sport_key')
+                ->maxLength('sport_key', 64)
+                ->allowEmptyString('sport_key');
+        }
 
         $validator
             ->scalar('team_name')
@@ -120,5 +143,49 @@ class TeamsTable extends Table
             ->inList('gender', ['M', 'F', 'C'], 'Gender must be M (Male), F (Female), or C (Co-ed)');
 
         return $validator;
+    }
+
+    /**
+     * Keep sport_id and sport_key synchronized while both columns coexist.
+     *
+     * @param \Cake\Event\EventInterface<\Cake\Datasource\EntityInterface> $event Event object
+     * @param \Cake\Datasource\EntityInterface $entity Pending team entity
+     * @param \ArrayObject<string,mixed> $options Save options
+     * @return void
+     */
+    public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
+    {
+        $sportConfigService = new SportConfigService();
+        $hasSportKeyColumn = $this->getSchema()->hasColumn('sport_key');
+        $hasSportIdColumn = $this->getSchema()->hasColumn('sport_id');
+
+        if (!$hasSportKeyColumn && !$hasSportIdColumn) {
+            return;
+        }
+
+        $sportKey = trim((string)($entity->get('sport_key') ?? ''));
+        $sportId = $hasSportIdColumn ? (int)($entity->get('sport_id') ?? 0) : 0;
+
+        if ($hasSportKeyColumn && $sportKey === '' && $hasSportIdColumn && $sportId > 0) {
+            $resolvedKey = $sportConfigService->getKeyById($sportId);
+            if ($resolvedKey !== null) {
+                $entity->set('sport_key', $resolvedKey);
+            }
+        }
+
+        if ($hasSportIdColumn && $sportKey !== '' && $sportId <= 0) {
+            $resolvedId = $sportConfigService->getIdByKey($sportKey);
+            if ($resolvedId !== null) {
+                $entity->set('sport_id', $resolvedId);
+            }
+        }
+
+        if (!$hasSportKeyColumn && $entity->isDirty('sport_key')) {
+            $entity->unset('sport_key');
+        }
+
+        if (!$hasSportIdColumn && $entity->isDirty('sport_id')) {
+            $entity->unset('sport_id');
+        }
     }
 }

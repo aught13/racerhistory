@@ -19,6 +19,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 ### Changed
 
 - **Minimum PHP version raised to 8.2+** across project requirements and docs to match the current dependency graph.
+ - **Admin sports retirement**: Admin sports CRUD has been retired as a table-backed entity. Sport configuration and defaults are now managed via `SiteOptions` (SiteOptionsService) and the runtime uses `sport_key` as the canonical identifier. DB migrations retire the `sports` table and `teams.sport_id` in favor of `teams.sport_key` with snapshot-based rollback support.
 - **CI testsuite matrix updated** to remove the incompatible PHP 8.1/lowest-dependencies lane and run coverage on PHP 8.2.
 - **Deployment asset audits modernized** to require Vite build artifacts (`webroot/dist/manifest.json`) and validate the `js/main.js` manifest entry.
 - **Admin interface migrated to AdminLTE 4 layout patterns** with a dedicated admin shell, desktop collapse persistence, mobile overlay behavior, and Stimulus-powered sidebar controls.

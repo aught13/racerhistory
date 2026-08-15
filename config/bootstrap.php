@@ -43,6 +43,7 @@ use Cake\Http\ServerRequest;
 use Cake\Log\Log;
 use Cake\Mailer\Mailer;
 use Cake\Mailer\TransportFactory;
+use Cake\ORM\TableRegistry;
 use Cake\Routing\Router;
 use Cake\Utility\Security;
 use function Cake\Core\env;
@@ -187,6 +188,116 @@ TransportFactory::setConfig(Configure::consume('EmailTransport'));
 Mailer::setConfig(Configure::consume('Email'));
 Log::setConfig(Configure::consume('Log'));
 Security::setSalt(Configure::consume('Security.salt'));
+
+/*
+ * Build runtime site options by layering DB overrides over configured defaults.
+ *
+ * Read order:
+ * 1) config defaults from SiteOptionsDefaults
+ * 2) cached merged values (global_site_options)
+ * 3) DB values on cache miss (SiteOptions table)
+ */
+$siteOptionDefinitions = Configure::read('SiteOptionsDefaults');
+if (!is_array($siteOptionDefinitions)) {
+    $siteOptionDefinitions = [];
+}
+
+/**
+ * @param mixed $value
+ * @param string $type
+ * @param mixed $default
+ * @return mixed
+ */
+$castSiteOptionValue = static function (mixed $value, string $type, mixed $default): mixed {
+    if ($type === 'checkbox') {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value)) {
+            return $value === 1;
+        }
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if (in_array($normalized, ['1', 'true', 'on', 'yes'], true)) {
+                return true;
+            }
+            if (in_array($normalized, ['0', 'false', 'off', 'no'], true)) {
+                return false;
+            }
+        }
+
+        return (bool)$default;
+    }
+
+    if ($type === 'number') {
+        if (is_numeric((string)$value)) {
+            return (int)$value;
+        }
+
+        return (int)$default;
+    }
+
+    if ($value === null || $value === '') {
+        return (string)$default;
+    }
+
+    return (string)$value;
+};
+
+$siteOptionDefaults = [];
+foreach ($siteOptionDefinitions as $optionKey => $definition) {
+    if (!is_string($optionKey) || !is_array($definition)) {
+        continue;
+    }
+
+    $siteOptionDefaults[$optionKey] = $definition['default'] ?? null;
+}
+
+$siteOptions = $siteOptionDefaults;
+$cachedSiteOptions = Cache::read('global_site_options');
+
+if (is_array($cachedSiteOptions)) {
+    foreach ($siteOptionDefinitions as $optionKey => $definition) {
+        if (!is_string($optionKey) || !is_array($definition)) {
+            continue;
+        }
+        if (!array_key_exists($optionKey, $cachedSiteOptions)) {
+            continue;
+        }
+
+        $type = isset($definition['type']) ? (string)$definition['type'] : 'text';
+        $default = $definition['default'] ?? null;
+        $siteOptions[$optionKey] = $castSiteOptionValue($cachedSiteOptions[$optionKey], $type, $default);
+    }
+} elseif ($siteOptionDefinitions !== []) {
+    try {
+        $siteOptionsTable = TableRegistry::getTableLocator()->get('SiteOptions');
+        $rows = $siteOptionsTable
+            ->find()
+            ->where(['option_key IN' => array_keys($siteOptionDefinitions)])
+            ->all();
+
+        foreach ($rows as $row) {
+            $optionKey = (string)$row->get('option_key');
+            if (!isset($siteOptionDefinitions[$optionKey]) || !is_array($siteOptionDefinitions[$optionKey])) {
+                continue;
+            }
+
+            $definition = $siteOptionDefinitions[$optionKey];
+            $type = isset($definition['type']) ? (string)$definition['type'] : 'text';
+            $default = $definition['default'] ?? null;
+            $siteOptions[$optionKey] = $castSiteOptionValue($row->get('value'), $type, $default);
+        }
+
+        Cache::write('global_site_options', $siteOptions);
+    } catch (\Throwable) {
+        // During early bootstrap phases (e.g., test DB setup), the table may
+        // not yet exist. In that case, keep configured defaults only.
+        $siteOptions = $siteOptionDefaults;
+    }
+}
+
+Configure::write('SiteOptions', $siteOptions);
 
 /*
  * Setup detectors for mobile and tablet.

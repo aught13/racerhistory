@@ -8,13 +8,6 @@
  * The `nav-accordion` Stimulus controller auto-expands the section group
  * that matches the current URL so the correct group is always open.
  *
- * Structure:
- *   - Dashboard (top-level direct link)
- *   - SPORTS group: Sports, Teams, Seasons, Team Seasons,
- *       Games, Game Types, Opponents, Persons, Places, Sites
- *   - CONTENT group: Blog Posts, Images
- *   - ADMINISTRATION group: Users
- *
  * @var \App\View\AppView $this
  */
 
@@ -50,9 +43,9 @@ $u = fn(array $r): string => $this->Url->build($r);
 
         <li class="nav-item w-100">
             <button type="button"
-                    class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Sports', 'Users') ?>"
+                    class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Sports', 'SiteOptions', 'Users') ?>"
                     data-nav-accordion-target="toggle"
-                    data-nav-accordion-prefix="/admin/sports|/admin/users"
+                    data-nav-accordion-prefix="/admin/sports|/admin/site-options|/admin/users"
                     aria-expanded="false"
                     data-action="click->nav-accordion#toggle">
                 <i class="nav-icon bi bi-check-square"></i>
@@ -62,11 +55,19 @@ $u = fn(array $r): string => $this->Url->build($r);
             </button>
             <ul class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
                     <li class="nav-item">
-                        <a class="nav-link ps-4<?= $isActive('Sports') ?>"
-                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>"
+                        <a class="nav-link ps-4<?= $isActive('SiteOptions') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'edit']) ?>"
                            data-turbo-frame="admin-content">
-                            <i class="nav-icon bi bi-trophy-fill"></i>
-                            <p>Sports</p>
+                            <i class="nav-icon bi bi-sliders"></i>
+                            <p>Site Options</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('SiteOptions') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'sportsConfigs']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-gear-wide-connected"></i>
+                            <p>Sport Configs</p>
                         </a>
                     </li>
                     <li class="nav-item">

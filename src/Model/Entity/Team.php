@@ -14,6 +14,7 @@ use Cake\ORM\Entity;
  *
  * @property int $id Unique identifier
  * @property int $sport_id Foreign key to sports table
+ * @property string|null $sport_key Canonical sport key (basketball, football, etc.)
  * @property string $team_name Short display name (max 162 chars)
  * @property string|null $team_description Full official name including institution and sport (max 240 chars)
  * @property string $abbr Team abbreviation for compact display (max 5 chars)
@@ -38,6 +39,7 @@ class Team extends Entity
      */
     protected array $_accessible = [
         'sport_id' => true,
+        'sport_key' => true,
         'team_name' => true,
         'team_description' => true,
         'abbr' => true,
@@ -89,7 +91,17 @@ class Team extends Entity
      */
     public function getFullDisplayName(): string
     {
-        $sportName = $this->sport->sport_name ?? 'Unknown Sport';
+        $sportName = $this->sport->sport_name ?? null;
+        if ($sportName === null || $sportName === '') {
+            $sportKey = trim((string)($this->sport_key ?? ''));
+            if ($sportKey !== '') {
+                $sportName = ucwords(str_replace('_', ' ', $sportKey));
+            }
+        }
+
+        if ($sportName === null || $sportName === '') {
+            $sportName = 'Unknown Sport';
+        }
 
         return sprintf('%s (%s)', $this->team_name ?? 'Unknown Team', $sportName);
     }

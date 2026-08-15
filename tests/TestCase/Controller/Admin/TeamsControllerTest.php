@@ -94,8 +94,8 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams/add');
         $this->assertResponseOk();
-        $this->assertResponseContains('Add New Sport');
-        $this->assertResponseContains('hidden-sport-form');
+        $this->assertResponseContains('Select the sport for this team.');
+        $this->assertResponseNotContains('add-sport-modal');
         $this->assertResponseContains('_Token');
     }
 
@@ -111,7 +111,7 @@ class TeamsControllerTest extends TestCase
         $this->enableSecurityToken();
 
         $data = [
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => 'Test Team',
             'team_description' => 'Test description',
             'abbr' => 'TEST',
@@ -160,6 +160,7 @@ class TeamsControllerTest extends TestCase
         // Check that the sport_id is pre-populated in the view variable
         $viewVars = $this->viewVariable('team');
         $this->assertNotNull($viewVars);
+        $this->assertEquals('basketball', $viewVars->sport_key);
         $this->assertEquals(1, $viewVars->sport_id);
     }
 
@@ -187,7 +188,7 @@ class TeamsControllerTest extends TestCase
         $this->enableSecurityToken();
 
         $data = [
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
             'team_name' => 'Updated Team Name',
             'team_description' => 'Updated description',
             'abbr' => 'UPD',

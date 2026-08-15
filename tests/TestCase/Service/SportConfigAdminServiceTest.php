@@ -14,7 +14,7 @@ class SportConfigAdminServiceTest extends TestCase
      */
     protected array $fixtures = [
         'app.Sports',
-        'app.SportConfigs',
+        'app.SiteOptions',
     ];
 
     private SportConfigAdminService $service;
@@ -42,6 +42,8 @@ class SportConfigAdminServiceTest extends TestCase
      */
     public function testGetFormattedConfigsForSportReturnsExpectedStructure(): void
     {
+        // Ensure a known default state to avoid order-dependent mutations from other tests
+        $this->service->resetToDefaults(1);
         $configs = $this->service->getFormattedConfigsForSport(1);
 
         $this->assertIsArray($configs);
@@ -114,10 +116,10 @@ class SportConfigAdminServiceTest extends TestCase
         $this->assertSame('Quarter', $configs['period_names']['4']['value']);
 
         $this->assertIsArray($configs['officials']['value']);
-        $this->assertContains('Official 1', $configs['officials']['value']);
+        $this->assertContains('Referee 1', $configs['officials']['value']);
 
         // default template includes these keys under settings
-        $this->assertSame(2, $configs['settings']['default_periods']['value']);
+        $this->assertSame(4, $configs['settings']['default_periods']['value']);
         $this->assertSame('cumulative', $configs['settings']['scoring_type']['value']);
     }
 
@@ -143,11 +145,16 @@ class SportConfigAdminServiceTest extends TestCase
         $configs = $this->service->getFormattedConfigsForSport(1);
         $this->assertSame('Inning', $configs['period_names']['7']['value']);
 
-        // Note: SportConfigsTable stores strings literally here; controller/template decides how to display.
-        $this->assertSame('Home Plate, First Base', $configs['officials']['value']);
+        $this->assertSame(['Home Plate', 'First Base'], $configs['officials']['value']);
+        $this->assertSame('baseball-style', $configs['officials']['description']);
 
-        /** @var \App\Model\Table\SportConfigsTable $table */
-        $table = TableRegistry::getTableLocator()->get('SportConfigs');
-        $this->assertNotNull($table->find()->where(['sport_id' => 1, 'config_key' => 'period_name_7'])->first());
+        /** @var \App\Model\Table\SiteOptionsTable $table */
+        $table = TableRegistry::getTableLocator()->get('SiteOptions');
+        $row = $table->find()->where(['option_key' => 'sports.override.basketball'])->first();
+
+        $this->assertNotNull($row);
+        $decoded = json_decode((string)$row->value, true);
+        $this->assertIsArray($decoded);
+        $this->assertSame('Inning', $decoded['period_names']['7'] ?? null);
     }
 }
