@@ -35,6 +35,13 @@ class GameService
     protected ?SportConfigService $sportConfigService = null;
 
     /**
+     * Team sport context helper.
+     *
+     * @var \App\Service\TeamSportContextService
+     */
+    protected TeamSportContextService $teamSportContextService;
+
+    /**
      * Constructor
      *
      * @param \App\Service\SportConfigService|null $sportConfigService Sport config service
@@ -42,6 +49,7 @@ class GameService
     public function __construct(?SportConfigService $sportConfigService = null)
     {
         $this->sportConfigService = $sportConfigService ?? $this->loadService('SportConfig', [], false);
+        $this->teamSportContextService = new TeamSportContextService($this->sportConfigService);
     }
 
     /**
@@ -59,7 +67,7 @@ class GameService
         /** @var \App\Model\Entity\Game $game */
         $game = $gamesTable->find()
             ->contain([
-                'TeamSeason' => ['Teams' => ['Sports'], 'Seasons'],
+                'TeamSeason' => ['Teams', 'Seasons'],
                 'GameTypes',
                 'Opponents',
                 'Sites' => ['Places'],
@@ -67,6 +75,8 @@ class GameService
             ])
             ->where(['Games.id' => $gameId])
             ->firstOrFail();
+
+        $this->teamSportContextService->attachSportContextToTeam($game->team_season->team);
 
         return $game;
     }
@@ -121,9 +131,10 @@ class GameService
 
             /** @var \App\Model\Entity\TeamSeason|null $teamSeasonAssoc */
             $teamSeasonAssoc = $game->get('team_season');
-            if ($teamSeasonAssoc && $teamSeasonAssoc->team && $teamSeasonAssoc->team->sport) {
-                $sportId = $teamSeasonAssoc->team->sport->id;
-                $sportName = $teamSeasonAssoc->team->sport->sport_name;
+            if ($teamSeasonAssoc && $teamSeasonAssoc->team) {
+                $this->teamSportContextService->attachSportContextToTeam($teamSeasonAssoc->team);
+                $sportId = $this->teamSportContextService->resolveSportIdFromTeam($teamSeasonAssoc->team);
+                $sportName = $this->teamSportContextService->resolveSportNameFromTeam($teamSeasonAssoc->team);
             }
 
             $existingValues = $this->loadGameEavValues($gameId);
@@ -133,13 +144,14 @@ class GameService
         if (!$sportId && $teamSeasonId) {
             /** @var \App\Model\Entity\TeamSeason $teamSeason */
             $teamSeason = $this->fetchTable('TeamSeasons')->find()
-                ->contain(['Teams' => ['Sports']])
+                ->contain(['Teams'])
                 ->where(['TeamSeasons.id' => $teamSeasonId])
                 ->firstOrFail();
 
-            if ($teamSeason->team && $teamSeason->team->sport) {
-                $sportId = $teamSeason->team->sport->id;
-                $sportName = $teamSeason->team->sport->sport_name;
+            if ($teamSeason->team) {
+                $this->teamSportContextService->attachSportContextToTeam($teamSeason->team);
+                $sportId = $this->teamSportContextService->resolveSportIdFromTeam($teamSeason->team);
+                $sportName = $this->teamSportContextService->resolveSportNameFromTeam($teamSeason->team);
             }
         }
 
@@ -147,10 +159,11 @@ class GameService
             throw new RecordNotFoundException('Cannot determine sport from provided game or team season');
         }
 
-        // Get sport configs
-        /** @var \App\Model\Table\SportConfigsTable $sportConfigsTable */
-        $sportConfigsTable = $this->fetchTable('SportConfigs');
-        $configs = $sportConfigsTable->getFormattedConfigsForSport($sportId);
+        // Get sport configs from file defaults + SiteOptions overrides
+        $sportConfigService = $this->sportConfigService ?? new SportConfigService();
+        $sportKey = $sportConfigService->getKeyById((int)$sportId)
+            ?? $sportConfigService->getDefaultSportKey();
+        $configs = $sportConfigService->getFormattedConfigsForSport($sportKey);
 
         // Get EAV template
         /** @var \App\Model\Table\GameEavTable $gameEavTable */
@@ -169,6 +182,7 @@ class GameService
         return [
             'sportId' => $sportId,
             'sportName' => $sportName,
+            'sportKey' => $sportKey,
             'configs' => $configs,
             'eavTemplate' => $eavTemplate,
             'values' => $existingValues,
@@ -452,13 +466,17 @@ class GameService
         // Get sport information for this game
         /** @var \App\Model\Entity\Game $game */
         $game = $this->fetchTable('Games')->find()
-            ->contain(['TeamSeason' => ['Teams' => ['Sports']]])
+            ->contain(['TeamSeason' => ['Teams']])
             ->where(['Games.id' => $gameId])
             ->first();
 
         /** @var \App\Model\Entity\TeamSeason|null $ts */
         $ts = $game->team_season;
-        $sportId = $ts?->team->sport->id ?? null;
+        if ($ts && $ts->team) {
+            $this->teamSportContextService->attachSportContextToTeam($ts->team);
+        }
+        $team = $ts ? $ts->team : null;
+        $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
 
         if ($sportId) {
             /** @var \App\Model\Table\GameEavTable $gameEavTable */
@@ -565,7 +583,7 @@ class GameService
         $gamesTable = $this->fetchTable('Games');
         $query = $gamesTable->find()
             ->contain([
-                'TeamSeason' => ['Teams' => ['Sports'], 'Seasons'],
+                'TeamSeason' => ['Teams', 'Seasons'],
                 'GameTypes', 'Opponents', 'Places',
             ]);
 
@@ -827,7 +845,7 @@ class GameService
     public function getTeamSeasonAndSportsLists(): array
     {
         $teamSeasonList = (new TeamSeasonService())->getTeamSeasonsDetailedList();
-        $sports = (new SportService())->getSportsList();
+        $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonList', 'sports');
     }

@@ -29,13 +29,13 @@ Instead of disabling FormProtection (which reduces security), we:
 #### Hidden Form in Template (`templates/Admin/Teams/add.php`)
 
 ```php
-<!-- Hidden form to generate FormProtection tokens for AJAX sport creation -->
+<!-- Hidden form to generate FormProtection tokens for AJAX endpoints (e.g. team creation or SiteOptions actions) -->
 <div style="display: none;">
     <?= $this->Form->create(null, [
-        'url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd'],
-        'id' => 'hidden-sport-form'
+        'url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'ajaxAdd'],
+        'id' => 'hidden-ajax-form'
     ]) ?>
-    <?= $this->Form->control('sport_name', ['type' => 'text']) ?>
+    <?= $this->Form->control('team_name', ['type' => 'text']) ?>
     <?= $this->Form->end() ?>
 </div>
 ```

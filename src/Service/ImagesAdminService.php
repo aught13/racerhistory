@@ -211,7 +211,7 @@ class ImagesAdminService
         $siteLabels = (new SiteService())->getSitesForSelect();
         $opponents = (new OpponentService())->getOpponentsForSelect();
         $teams = (new TeamService())->getTeamsForSelect();
-        $sports = (new SportService())->getSportsForSelect();
+        $sports = $this->getSportsForSelect();
 
         return compact(
             'teamSeasonLabels',
@@ -268,14 +268,14 @@ class ImagesAdminService
             ],
             'sport_select' => [
                 'prefix' => 'sport-',
-                'table' => 'Sports',
-                'label' => fn($row) => $row->sport_name ?? 'sport',
+                'service' => 'sport',
             ],
         ];
 
         $personService = new PersonService();
         $teamSeasonService = new TeamSeasonService();
         $rosterService = new TeamSeasonRosterService();
+        $teamSportContextService = new TeamSportContextService();
 
         $hasRoster = !empty($data['roster_select']) && (int)$data['roster_select'] > 0;
 
@@ -311,6 +311,10 @@ class ImagesAdminService
                     } elseif ($meta['service'] === 'roster') {
                         $rosterData = $rosterService->getRosterDisplayData($id);
                         $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
+                    } elseif ($meta['service'] === 'sport') {
+                        $display = $teamSportContextService->resolveSportNameFromTeam(
+                            (object)['sport_id' => $id],
+                        ) ?? '';
                     }
                 } else {
                     $table = TableRegistry::getTableLocator()->get((string)$meta['table']);
@@ -398,7 +402,7 @@ class ImagesAdminService
         $games = (new GameService())->getRecentGamesForSelect(200);
         $sites = (new SiteService())->getSitesForSelect();
         $opponents = (new OpponentService())->getOpponentsForSelect();
-        $sports = (new SportService())->getSportsForSelect();
+        $sports = $this->getSportsForSelect();
 
         $ui = (new ImageTagUiService())->formatTagsForUi($image->image_tags ?? []);
         $currentTags = $ui['currentTags'];
@@ -415,6 +419,22 @@ class ImagesAdminService
             'sports',
             'tagString',
         );
+    }
+
+    /**
+     * @return array<int,array{id:int,label:string}>
+     */
+    private function getSportsForSelect(): array
+    {
+        $sports = [];
+        foreach ((new TeamSportContextService())->getLegacySportOptions() as $sportId => $label) {
+            $sports[] = [
+                'id' => (int)$sportId,
+                'label' => (string)$label,
+            ];
+        }
+
+        return $sports;
     }
 
     /**

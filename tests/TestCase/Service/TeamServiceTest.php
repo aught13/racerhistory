@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
-use App\Service\SportService;
 use App\Service\TeamService;
+use App\Service\TeamSportContextService;
 use Cake\TestSuite\TestCase;
 
 class TeamServiceTest extends TestCase
@@ -99,7 +99,11 @@ class TeamServiceTest extends TestCase
     {
         $data = [
             'team_name' => 'Test Team',
-            'sport_id' => 1,
+            'sport_key' => 'basketball',
+            'abbr' => 'TST',
+            'team_nickname' => 'Testers',
+            'team_scorebug' => 'TEST',
+            'gender' => 'M',
         ];
         $team = $this->service->createTeam($data);
         if ($team) {
@@ -150,9 +154,9 @@ class TeamServiceTest extends TestCase
     /**
      * Tests get sport service.
      */
-    public function testGetSportService(): void
+    public function testGetTeamSportContextService(): void
     {
-        $sportService = $this->service->getSportService();
-        $this->assertInstanceOf(SportService::class, $sportService);
+        $teamSportContextService = $this->service->getTeamSportContextService();
+        $this->assertInstanceOf(TeamSportContextService::class, $teamSportContextService);
     }
 }

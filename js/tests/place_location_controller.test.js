@@ -40,6 +40,9 @@ const CSC_FIXTURE = [
 describe("place-location controller", () => {
     let application;
 
+    const getController = () =>
+        application.controllers.find((c) => c.identifier === "place-location");
+
     beforeEach(() => {
         __resetPlaceLocationCacheForTests();
 
@@ -261,6 +264,109 @@ describe("place-location controller", () => {
         expect(countryMeta.textContent).toContain(
             "Could not resolve country code",
         );
+    });
+
+    test("loadCountryLocations handles unknown countries and dataset failures", async () => {
+        const controller = getController();
+        const locationMeta = document.querySelector(
+            "[data-place-location-target='locationMeta']",
+        );
+
+        await controller.loadCountryLocations("ZZZ");
+        expect(locationMeta.textContent).toContain(
+            "No subdivisions/localities found",
+        );
+        expect(controller.stateRecords).toEqual([]);
+        expect(controller.cityRecords).toEqual([]);
+
+        __resetPlaceLocationCacheForTests();
+        globalThis.fetch = jest.fn((url) => {
+            if (String(url).includes("countries+states+cities.json")) {
+                return Promise.resolve({ ok: false, status: 500 });
+            }
+
+            return Promise.resolve({
+                ok: true,
+                json: async () => [],
+            });
+        });
+
+        await controller.loadCountryLocations("USA");
+        expect(locationMeta.textContent).toContain(
+            "Failed to load subdivision/locality data.",
+        );
+        expect(controller.stateRecords).toEqual([]);
+        expect(controller.cityRecords).toEqual([]);
+    });
+
+    test("refreshFilteredOptions applies state/city filters", async () => {
+        const controller = getController();
+        const stateInput = document.getElementById("place-state");
+        const cityInput = document.getElementById("place-city");
+        const stateList = document.getElementById("place-state-options");
+        const cityList = document.getElementById("place-city-options");
+
+        controller.stateRecords = [
+            { name: "California", cities: ["Los Angeles", "San Diego"] },
+            { name: "Tennessee", cities: ["Nashville"] },
+        ];
+        controller.cityRecords = [
+            { name: "Los Angeles", stateName: "California" },
+            { name: "San Diego", stateName: "California" },
+            { name: "Nashville", stateName: "Tennessee" },
+        ];
+
+        cityInput.value = "Nash";
+        stateInput.value = "";
+        controller.refreshFilteredOptions();
+
+        const stateOptionsFromCity = Array.from(
+            stateList.querySelectorAll("option"),
+        ).map((option) => option.value);
+        expect(stateOptionsFromCity).toEqual(["Tennessee"]);
+
+        stateInput.value = "tenn";
+        cityInput.value = "";
+        controller.refreshFilteredOptions();
+
+        const cityOptionsFromPartialState = Array.from(
+            cityList.querySelectorAll("option"),
+        ).map((option) => option.value);
+        expect(cityOptionsFromPartialState).toEqual(["Nashville"]);
+
+        stateInput.value = "Tennessee";
+        controller.refreshFilteredOptions();
+
+        const cityOptionsFromExactState = Array.from(
+            cityList.querySelectorAll("option"),
+        ).map((option) => option.value);
+        expect(cityOptionsFromExactState).toEqual(["Nashville"]);
+    });
+
+    test("document click handler and meta helpers are safe without targets", async () => {
+        const controller = getController();
+        const countrySearch = document.getElementById("place-country-search");
+        const countryResults = document.querySelector(
+            "[data-place-location-target='countryResults']",
+        );
+        const countryMeta = document.querySelector(
+            "[data-place-location-target='countryMeta']",
+        );
+        const locationMeta = document.querySelector(
+            "[data-place-location-target='locationMeta']",
+        );
+
+        countryResults.innerHTML = '<button type="button">Result</button>';
+        controller.handleDocumentClick({ target: countrySearch });
+        expect(countryResults.innerHTML).not.toBe("");
+
+        controller.handleDocumentClick({ target: document.body });
+        expect(countryResults.innerHTML).toBe("");
+
+        countryMeta.removeAttribute("data-place-location-target");
+        locationMeta.removeAttribute("data-place-location-target");
+        expect(() => controller.setCountryMeta("ignored", true)).not.toThrow();
+        expect(() => controller.setLocationMeta("ignored", true)).not.toThrow();
     });
 
     test("onStateBlur with exact match sets state value", async () => {

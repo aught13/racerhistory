@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\SportConfigService;
 use App\Service\StatsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
@@ -51,6 +52,11 @@ class StatsController extends AppController
     protected StatsService $statsService;
 
     /**
+     * @var \App\Service\SportConfigService
+     */
+    protected SportConfigService $sportConfigService;
+
+    /**
      * Allowed stat types and their labels.
      *
      * @var array<string, string>
@@ -74,6 +80,7 @@ class StatsController extends AppController
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
         $this->statsService = new StatsService();
+        $this->sportConfigService = new SportConfigService();
     }
 
     /**
@@ -169,10 +176,38 @@ class StatsController extends AppController
      */
     protected function resolveSportId(): int
     {
-        $sport = $this->getRequest()->getQuery('sport', 'basketball');
+        $sport = $this->resolveCurrentSport();
         $sportId = $this->statsService->getSportIdByName((string)$sport);
 
-        return $sportId ?? 1;
+        if ($sportId !== null) {
+            return $sportId;
+        }
+
+        $defaultSportName = $this->sportConfigService->getSportDisplayName(
+            $this->sportConfigService->getDefaultSportKey(),
+        );
+        $fallbackSportId = $this->statsService->getSportIdByName($defaultSportName);
+
+        if ($fallbackSportId !== null) {
+            return $fallbackSportId;
+        }
+
+        $defaultSportId = $this->sportConfigService->getIdByKey($this->sportConfigService->getDefaultSportKey());
+
+        return $defaultSportId ?? 0;
+    }
+
+    /**
+     * Resolve current sport query param with configured default fallback.
+     */
+    protected function resolveCurrentSport(): string
+    {
+        $sport = $this->getRequest()->getQuery('sport');
+        if (is_string($sport) && trim($sport) !== '') {
+            return trim($sport);
+        }
+
+        return $this->sportConfigService->getDefaultSportKey();
     }
 
     /**
@@ -180,7 +215,7 @@ class StatsController extends AppController
      */
     public function index(): void
     {
-        $this->set('currentSport', $this->getRequest()->getQuery('sport', 'basketball'));
+        $this->set('currentSport', $this->resolveCurrentSport());
     }
 
     /**
@@ -191,7 +226,7 @@ class StatsController extends AppController
     public function playerSeason(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchPlayerSeasonStats($sportId, ['limit' => 0]);
@@ -214,7 +249,7 @@ class StatsController extends AppController
     public function teamSeason(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamSeasonStats($sportId, ['limit' => 0]);
@@ -237,7 +272,7 @@ class StatsController extends AppController
     public function teamSeasonOpponent(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamSeasonOpponentStats($sportId, ['limit' => 0]);
@@ -260,7 +295,7 @@ class StatsController extends AppController
     public function playerCareer(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchPlayerCareerStats($sportId, ['limit' => 0]);
@@ -283,7 +318,7 @@ class StatsController extends AppController
     public function playerGame(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchPlayerGameStats($sportId, ['limit' => 0]);
@@ -306,7 +341,7 @@ class StatsController extends AppController
     public function teamGame(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchTeamGameStats($sportId, ['limit' => 0]);
@@ -329,7 +364,7 @@ class StatsController extends AppController
     public function opponentTeamGame(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchOpponentTeamGameStats($sportId, ['limit' => 0]);
@@ -352,7 +387,7 @@ class StatsController extends AppController
     public function opponentPlayerGame(): ?Response
     {
         $sportId = $this->resolveSportId();
-        $currentSport = (string)$this->getRequest()->getQuery('sport', 'basketball');
+        $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
             $results = $this->statsService->searchOpponentPlayerGameStats($sportId, ['limit' => 0]);

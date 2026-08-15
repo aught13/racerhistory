@@ -22,7 +22,6 @@ class GamesTableValidationTest extends TestCase
         'app.Teams',
         'app.Sports',
         'app.Seasons',
-        'app.SportConfigs',
         'app.GameEav',
     ];
 
@@ -63,19 +62,19 @@ class GamesTableValidationTest extends TestCase
     }
 
     /**
-     * Test validateSportSpecificPeriods with invalid periods
+     * Test validateSportSpecificPeriods accepts non-standard period counts.
      */
-    public function testValidateSportSpecificPeriodsInvalid(): void
+    public function testValidateSportSpecificPeriodsAcceptsAnyConfiguredPeriodCount(): void
     {
         $context = [
             'data' => [
                 'team_season_id' => 1,
-                'periods' => 7, // Invalid for basketball
+                'periods' => 7,
             ],
         ];
 
         $result = $this->Games->validateSportSpecificPeriods(7, $context);
-        $this->assertFalse($result);
+        $this->assertTrue($result);
     }
 
     /**

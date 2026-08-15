@@ -1,20 +1,49 @@
 <?php
 /**
  * @var \App\View\AppView $this
- * @var \App\Model\Entity\Sport $sport
  * @var array $configs
+ * @var string $sportKey
+ * @var string $sportDisplayName
+ * @var string $routeSportRef
+ * @var array<string,string> $sportOptions
+ * @var string|null $configController
  */
+$configController = $configController ?? 'SiteOptions';
+$viewAction = $configController === 'SiteOptions' ? 'sportsConfigs' : 'configs';
+$editAction = $configController === 'SiteOptions' ? 'editSportConfigs' : 'editConfigs';
+$backRoute = $configController === 'SiteOptions'
+    ? ['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'edit']
+    : ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index'];
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2><?= __('Sport Configurations') ?></h2>
-        <p class="text-muted">Configure period names, officials, and settings for <?= h($sport->sport_name) ?></p>
+        <p class="text-muted">Configure period names, officials, and settings for <?= h($sportDisplayName) ?></p>
     </div>
     <div>
-        <?= $this->Html->link(__('Edit Configurations'), ['action' => 'editConfigs', $sport->id], ['class' => 'btn btn-primary me-2']) ?>
-        <?= $this->Html->link(__('Back to Sports'), ['action' => 'index'], ['class' => 'btn btn-secondary']) ?>
+        <?= $this->Html->link(
+            __('Edit Configurations'),
+            ['prefix' => 'Admin', 'controller' => $configController, 'action' => $editAction, $routeSportRef],
+            ['class' => 'btn btn-primary me-2'],
+        ) ?>
+        <?= $this->Html->link(__('Back'), $backRoute, ['class' => 'btn btn-secondary']) ?>
     </div>
 </div>
+
+<?php if (!empty($sportOptions)) : ?>
+<div class="mb-3">
+    <div class="d-flex flex-wrap gap-2">
+        <?php foreach ($sportOptions as $optionKey => $optionLabel) : ?>
+            <?php $isActive = $optionKey === $sportKey; ?>
+            <?= $this->Html->link(
+                $optionLabel,
+                ['prefix' => 'Admin', 'controller' => $configController, 'action' => $viewAction, $optionKey],
+                ['class' => 'btn btn-sm ' . ($isActive ? 'btn-primary' : 'btn-outline-primary')],
+            ) ?>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="row">
     <!-- Period Names -->
@@ -108,9 +137,23 @@
                                 <td><code><?= h($key) ?></code></td>
                                 <td>
                                     <?php if (is_array($config['value'])) : ?>
-                                        <span class="badge bg-info"><?= implode(', ', $config['value']) ?></span>
+                                        <?php
+                                        $renderedValues = [];
+                                        foreach ($config['value'] as $settingValue) {
+                                            $renderedValues[] = is_scalar($settingValue) || $settingValue === null
+                                                ? (string)$settingValue
+                                                : (string)json_encode($settingValue, JSON_UNESCAPED_SLASHES);
+                                        }
+                                        ?>
+                                        <span class="badge bg-info"><?= h(implode(', ', $renderedValues)) ?></span>
                                     <?php else : ?>
-                                        <span class="badge bg-secondary"><?= h($config['value']) ?></span>
+                                        <?php
+                                        $settingValue = $config['value'];
+                                        if (is_bool($settingValue)) {
+                                            $settingValue = $settingValue ? 'true' : 'false';
+                                        }
+                                        ?>
+                                        <span class="badge bg-secondary"><?= h((string)$settingValue) ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-muted small"><?= h($config['description']) ?></td>
@@ -158,9 +201,12 @@
                     <div class="col-md-4">
                         <h6><?= __('Settings') ?></h6>
                         <p class="small text-muted">
-                            Other sport-specific configurations:<br>
+                            Core sport behavior settings:<br>
+                            • <strong>sport_active</strong>: Enable sport in team/game forms<br>
+                            • <strong>has_stats</strong>: Toggle stat tracking for the sport<br>
+                            • <strong>stats_tracked</strong>: Comma list of stat fields<br>
                             • <strong>default_periods</strong>: Default period count<br>
-                            • <strong>supports_periods</strong>: Valid period counts<br>
+                            • <strong>supports_periods</strong>: Any or valid period counts<br>
                             • <strong>scoring_type</strong>: cumulative or by_period
                         </p>
                     </div>

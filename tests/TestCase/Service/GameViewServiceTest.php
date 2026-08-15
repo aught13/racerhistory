@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Model\Entity\Game;
-use App\Model\Entity\Sport;
 use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 use App\Service\GameEavUiService;
@@ -23,8 +22,7 @@ class GameViewServiceTest extends TestCase
     {
         $gameId = 123;
 
-        $sport = new Sport(['id' => 1, 'sport_name' => 'Basketball']);
-        $team = new Team(['id' => 10, 'sport_id' => 1, 'sport' => $sport]);
+        $team = new Team(['id' => 10, 'sport_id' => 1, 'sport_key' => 'basketball']);
         $teamSeason = new TeamSeason(['id' => 20, 'team' => $team]);
         $game = new Game(['id' => $gameId, 'team_season' => $teamSeason]);
 

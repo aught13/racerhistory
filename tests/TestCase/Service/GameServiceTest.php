@@ -28,9 +28,7 @@ class GameServiceTest extends TestCase
         'app.Opponents',
         'app.Places',
         'app.Sites',
-        'app.SportConfigs',
         'app.GameEav',
-        'app.SportStatRegistry',
     ];
 
     protected GameService $service;

@@ -285,7 +285,12 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                 </div>
             </div>
 
-            <?php if (isset($teamSeason->team) && isset($teamSeason->team->sport)) : ?>
+            <?php
+            $legacySport = $teamSeason->team->sport ?? null;
+            $sportRef = $teamSeason->team->sport_key ?? ($legacySport->id ?? null);
+            $sportName = $teamSeason->team->sport_name ?? ($legacySport->sport_name ?? null);
+            ?>
+            <?php if (isset($teamSeason->team) && !empty($sportName)) : ?>
             <div class="card mt-3">
                 <div class="card-header">
                     <h4 class="card-title mb-0">Related Information</h4>
@@ -294,10 +299,14 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Sport:</dt>
                         <dd class="col-sm-8">
-                            <a
-                                href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'view', $teamSeason->team->sport->id]) ?>">
-                                <?= h($teamSeason->team->sport->sport_name) ?>
-                            </a>
+                            <?php if (!empty($sportRef)) : ?>
+                                <a
+                                    href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'sportsConfigs', $sportRef]) ?>">
+                                    <?= h($sportName) ?>
+                                </a>
+                            <?php else : ?>
+                                <?= h($sportName) ?>
+                            <?php endif; ?>
                         </dd>
 
                         <dt class="col-sm-4">Team Gender:</dt>
@@ -323,7 +332,7 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
 
     <?= $this->element('Admin/games_management', ['teamSeason' => $teamSeason, 'teamSeasonGames' => $teamSeasonGames]) ?>
 
-    <?php if ((int)$teamSeason->team->sport_id === 1) : // Basketball ?>
+    <?php if (!empty($isBasketballSport)) : ?>
         <?= $this->element('Admin/basketball_season_stats', [
             'teamSeason' => $teamSeason,
             'playerStats' => $playerStats,

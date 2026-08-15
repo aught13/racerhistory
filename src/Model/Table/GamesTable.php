@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Service\SportConfigService;
+use App\Service\TeamSportContextService;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
@@ -102,10 +104,11 @@ class GamesTable extends Table
             if ($teamSeasonId) {
                 try {
                     $ts = $this->fetchTable('TeamSeasons');
+                    $teamSportContextService = new TeamSportContextService();
                     /** @var \App\Model\Entity\TeamSeason $teamSeason */
-                    $teamSeason = $ts->get((int)$teamSeasonId, contain: ['Teams' => ['Sports']]);
-                    if (!empty($teamSeason->team) && !empty($teamSeason->team->sport)) {
-                        $sportId = $teamSeason->team->sport->id;
+                    $teamSeason = $ts->get((int)$teamSeasonId, contain: ['Teams']);
+                    if (!empty($teamSeason->team)) {
+                        $sportId = $teamSportContextService->resolveSportIdFromTeam($teamSeason->team);
                     }
                 } catch (Throwable $e) {
                     // ignore and continue
@@ -117,11 +120,9 @@ class GamesTable extends Table
         $scoringType = null;
         if ($sportResolved) {
             try {
-                /** @var \App\Model\Table\SportConfigsTable $sportConfigs */
-                $sportConfigs = $this->getTableLocator()->get('SportConfigs');
-                $configs = $sportConfigs->getConfigsForSport((int)$sportId);
-                $scoringType = $configs['scoring_type'] ?? null;
-                if ($scoringType !== 'cumulative') {
+                $configs = $this->getMergedSportConfig((int)$sportId);
+                $scoringType = strtolower((string)($configs['scoring_type'] ?? ''));
+                if ($scoringType !== '' && $scoringType !== 'cumulative') {
                     return true;
                 }
             } catch (Throwable $e) {
@@ -364,27 +365,47 @@ class GamesTable extends Table
             // Get sport from team season
             /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
             $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+            $teamSportContextService = new TeamSportContextService();
             /** @var \App\Model\Entity\TeamSeason|null $teamSeason */
             $teamSeason = $teamSeasonsTable->find()
-                ->contain(['Teams' => ['Sports']])
+                ->contain(['Teams'])
                 ->where(['TeamSeasons.id' => $teamSeasonId])
                 ->first();
 
-            if (!$teamSeason->team || !$teamSeason->team->sport) {
+            if (!$teamSeason || !$teamSeason->team) {
                 return true; // Allow if sport not found
             }
 
-            $sportId = $teamSeason->team->sport->id;
-
-            // Get sport configuration
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigsTable */
-            $sportConfigsTable = $this->fetchTable('SportConfigs');
-            $configs = $sportConfigsTable->getFormattedConfigsForSport($sportId);
+            $sportId = $teamSportContextService->resolveSportIdFromTeam($teamSeason->team);
+            if ($sportId === null) {
+                return true;
+            }
 
             // Check if periods value is valid for this sport
             $periodsInt = (int)$value;
-            // Default valid periods fallback (e.g., basketball)
-            $validPeriods = $configs['valid_periods'] ?? [2, 4];
+            $configs = $this->getMergedSportConfig((int)$sportId);
+
+            $validPeriodsRaw = $configs['supports_periods'] ?? $configs['periods'] ?? [2, 4];
+            if (is_string($validPeriodsRaw)) {
+                $normalized = strtolower(trim($validPeriodsRaw));
+                if (in_array($normalized, ['any', '*', 'all'], true)) {
+                    return $periodsInt > 0;
+                }
+            }
+
+            $validPeriods = [];
+            if (is_array($validPeriodsRaw)) {
+                foreach ($validPeriodsRaw as $periodCount) {
+                    if (!is_numeric((string)$periodCount)) {
+                        continue;
+                    }
+                    $validPeriods[] = (int)$periodCount;
+                }
+            }
+
+            if ($validPeriods === []) {
+                $validPeriods = [2, 4];
+            }
 
             return in_array($periodsInt, $validPeriods, true);
         } catch (Exception $e) {
@@ -407,23 +428,24 @@ class GamesTable extends Table
             // Get sport from team season
             /** @var \App\Model\Table\TeamSeasonsTable $teamSeasonsTable */
             $teamSeasonsTable = $this->fetchTable('TeamSeasons');
+            $teamSportContextService = new TeamSportContextService();
             /** @var \App\Model\Entity\TeamSeason|null $teamSeason */
             $teamSeason = $teamSeasonsTable->find()
-                ->contain(['Teams' => ['Sports']])
+                ->contain(['Teams'])
                 ->where(['TeamSeasons.id' => $teamSeasonId])
                 ->first();
 
-            if (!$teamSeason || !$teamSeason->team || !$teamSeason->team->sport) {
+            if (!$teamSeason || !$teamSeason->team) {
                 return $errors; // No validation if sport not found
             }
 
-            $sportId = $teamSeason->team->sport->id;
+            $sportId = $teamSportContextService->resolveSportIdFromTeam($teamSeason->team);
+            if ($sportId === null) {
+                return $errors;
+            }
 
             // Get sport configuration and EAV template
-            /** @var \App\Model\Table\SportConfigsTable $sportConfigsTable */
-            $sportConfigsTable = $this->fetchTable('SportConfigs');
-            // Use the simpler key=>value API so tests and validators read raw config values
-            $configs = $sportConfigsTable->getConfigsForSport((int)$sportId);
+            $configs = $this->getMergedSportConfig((int)$sportId);
 
             /** @var \App\Model\Table\GameEavTable $gameEavTable */
             $gameEavTable = $this->fetchTable('GameEav');
@@ -501,5 +523,24 @@ class GamesTable extends Table
         }
 
         return $errors;
+    }
+
+    /**
+     * Resolve merged sport config from static defaults + SiteOptions overrides.
+     * Falls back to the configured default sport when ID mapping is unavailable.
+     *
+     * @param int $sportId Sport ID
+     * @return array<string,mixed>
+     */
+    private function getMergedSportConfig(int $sportId): array
+    {
+        $sportConfigService = new SportConfigService();
+
+        $config = $sportConfigService->getMergedConfigById($sportId);
+        if ($config !== []) {
+            return $config;
+        }
+
+        return $sportConfigService->getMergedConfig($sportConfigService->getDefaultSportKey());
     }
 }

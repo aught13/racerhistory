@@ -93,7 +93,12 @@ class GamesAdminService
             return false;
         }
 
-        return !empty($this->sportConfigService->getAllStatTables($sportId));
+        $hasStats = $this->sportConfigService->getConfig($sportId, 'has_stats', null);
+        if (is_bool($hasStats)) {
+            return $hasStats;
+        }
+
+        return !empty($this->sportConfigService->getStatFields($sportId, 'player'));
     }
 
     /**

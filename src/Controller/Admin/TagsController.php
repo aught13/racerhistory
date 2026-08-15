@@ -8,10 +8,10 @@ use App\Service\GameService;
 use App\Service\ImagesAdminService;
 use App\Service\OpponentService;
 use App\Service\SiteService;
-use App\Service\SportService;
 use App\Service\TaggingService;
 use App\Service\TeamSeasonService;
 use App\Service\TeamService;
+use App\Service\TeamSportContextService;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
 
@@ -90,7 +90,13 @@ class TagsController extends AppController
         $games = (new GameService())->getRecentGamesForSelect(200);
         $sites = (new SiteService())->getSitesForSelect();
         $opponents = (new OpponentService())->getOpponentsForSelect();
-        $sports = (new SportService())->getSportsForSelect();
+        $sports = [];
+        foreach ((new TeamSportContextService())->getLegacySportOptions() as $sportId => $label) {
+            $sports[] = [
+                'id' => (int)$sportId,
+                'label' => (string)$label,
+            ];
+        }
 
         $this->set(compact('teams', 'teamSeasons', 'games', 'sites', 'opponents', 'sports'));
         $this->set('currentTags', []);

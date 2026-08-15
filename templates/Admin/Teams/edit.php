@@ -37,11 +37,11 @@ $this->assign('title', 'Edit Team'); ?>
                     <?= $this->Form->create($team, ['novalidate' => true]) ?>
 
                     <div class="mb-3">
-                        <?= $this->Form->control('sport_id', [
+                        <?= $this->Form->control('sport_key', [
                             'type' => 'select',
                             'options' => $sports,
                             'empty' => 'Select a Sport',
-                            'class' => 'form-control',
+                            'class' => 'form-select',
                             'label' => ['class' => 'form-label', 'text' => 'Sport *'],
                             'required' => true,
                         ]) ?>

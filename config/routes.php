@@ -51,6 +51,40 @@ return function (RouteBuilder $routes): void {
         // Blog admin shortcut
         $routes->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
 
+        // Global site options admin panel
+        $routes->connect('/site-options/edit', ['controller' => 'SiteOptions', 'action' => 'edit']);
+        $routes->connect('/site-options/sports-configs', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs']);
+        $routes->connect('/site-options/sports-configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs'])
+            ->setPass(['sportRef']);
+        $routes->connect('/site-options/edit-sport-configs', ['controller' => 'SiteOptions', 'action' => 'editSportConfigs']);
+        $routes->connect('/site-options/edit-sport-configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'editSportConfigs'])
+            ->setPass(['sportRef']);
+        $routes->connect('/site-options/add-sport-config/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'addSportConfig'])
+            ->setPass(['sportRef']);
+        $routes->connect('/site-options/delete-sport-config/{sportRef}/{configKey}', ['controller' => 'SiteOptions', 'action' => 'deleteSportConfig'])
+            ->setPass(['sportRef', 'configKey'])
+            ->setPatterns(['configKey' => '[^/]+' ]);
+        $routes->connect('/site-options/reset-sport-configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'resetSportConfigs'])
+            ->setPass(['sportRef']);
+
+        // Legacy sports URLs now route directly to SiteOptions-backed sport config actions.
+        $routes->connect('/sports', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs']);
+        $routes->connect('/sports/view/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs'])
+            ->setPass(['sportRef']);
+        $routes->connect('/sports/configs', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs']);
+        $routes->connect('/sports/configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs'])
+            ->setPass(['sportRef']);
+        $routes->connect('/sports/edit-configs', ['controller' => 'SiteOptions', 'action' => 'editSportConfigs']);
+        $routes->connect('/sports/edit-configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'editSportConfigs'])
+            ->setPass(['sportRef']);
+        $routes->connect('/sports/add-config/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'addSportConfig'])
+            ->setPass(['sportRef']);
+        $routes->connect('/sports/delete-config/{sportRef}/{configKey}', ['controller' => 'SiteOptions', 'action' => 'deleteSportConfig'])
+            ->setPass(['sportRef', 'configKey'])
+            ->setPatterns(['configKey' => '[^/]+' ]);
+        $routes->connect('/sports/reset-configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'resetSportConfigs'])
+            ->setPass(['sportRef']);
+
         // Sport stats filterable index: /admin/sport-stats/1
         $routes->connect('/sport-stats/{sportId}', ['controller' => 'SportStats', 'action' => 'index'])
             ->setPass(['sportId'])

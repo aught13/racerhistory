@@ -5,6 +5,7 @@ namespace App\Controller\Api\V1;
 
 use App\Service\SeasonViewService;
 use App\Service\TeamSeasonService;
+use App\Service\TeamSportContextService;
 
 /**
  * @property \App\Model\Table\TeamSeasonsTable $TeamSeasons
@@ -13,6 +14,7 @@ class TeamSeasonsController extends AppController
 {
     private TeamSeasonService $teamSeasonService;
     private SeasonViewService $seasonViewService;
+    private TeamSportContextService $teamSportContextService;
 
     /**
      * @inheritDoc
@@ -22,6 +24,7 @@ class TeamSeasonsController extends AppController
         parent::initialize();
         $this->teamSeasonService = new TeamSeasonService();
         $this->seasonViewService = new SeasonViewService($this->teamSeasonService);
+        $this->teamSportContextService = new TeamSportContextService();
     }
 
     /**
@@ -45,15 +48,7 @@ class TeamSeasonsController extends AppController
                     'label' => $this->teamSeasonService->getSportDisplayLabel((int)$ts->id),
                     'team_id' => $ts->team_id ?? null,
                     'season_id' => $ts->season_id ?? null,
-                    'team' => [
-                        'id' => $ts->team->id ?? null,
-                        'team_name' => $ts->team->team_name ?? null,
-                        'gender' => $ts->team->gender ?? null,
-                        'sport' => [
-                            'id' => $ts->team->sport->id ?? null,
-                            'sport_name' => $ts->team->sport->sport_name ?? null,
-                        ],
-                    ],
+                    'team' => $this->formatTeam($ts->team ?? null),
                     'season' => [
                         'id' => $ts->season->id ?? null,
                         'start' => $ts->season->start ?? null,
@@ -111,15 +106,7 @@ class TeamSeasonsController extends AppController
                     'sport_label' => $this->teamSeasonService->getSportDisplayLabel((int)$teamSeason->id),
                     'team_id' => $teamSeason->team_id ?? null,
                     'season_id' => $teamSeason->season_id ?? null,
-                    'team' => [
-                        'id' => $teamSeason->team->id ?? null,
-                        'team_name' => $teamSeason->team->team_name ?? null,
-                        'gender' => $teamSeason->team->gender ?? null,
-                        'sport' => [
-                            'id' => $teamSeason->team->sport->id ?? null,
-                            'sport_name' => $teamSeason->team->sport->sport_name ?? null,
-                        ],
-                    ],
+                    'team' => $this->formatTeam($teamSeason->team ?? null),
                     'season' => [
                         'id' => $teamSeason->season->id ?? null,
                         'start' => $teamSeason->season->start ?? null,
@@ -153,15 +140,7 @@ class TeamSeasonsController extends AppController
                 'sport_label' => $this->teamSeasonService->getSportDisplayLabel((int)$ts->id),
                 'team_id' => $ts->team_id ?? null,
                 'season_id' => $ts->season_id ?? null,
-                'team' => [
-                    'id' => $ts->team->id ?? null,
-                    'team_name' => $ts->team->team_name ?? null,
-                    'gender' => $ts->team->gender ?? null,
-                    'sport' => [
-                        'id' => $ts->team->sport->id ?? null,
-                        'sport_name' => $ts->team->sport->sport_name ?? null,
-                    ],
-                ],
+                'team' => $this->formatTeam($ts->team ?? null),
                 'season' => [
                     'id' => $ts->season->id ?? null,
                     'start' => $ts->season->start ?? null,
@@ -249,5 +228,38 @@ class TeamSeasonsController extends AppController
                 'tags' => $tags,
             ];
         }, $posts);
+    }
+
+    /**
+     * @param object|null $team
+     * @return array<string,mixed>
+     */
+    private function formatTeam(?object $team): array
+    {
+        if ($team === null) {
+            return [
+                'id' => null,
+                'team_name' => null,
+                'gender' => null,
+                'sport' => [
+                    'id' => null,
+                    'sport_name' => null,
+                ],
+            ];
+        }
+
+        $this->teamSportContextService->attachSportContextToTeam($team);
+        $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
+        $sportName = $this->teamSportContextService->resolveSportNameFromTeam($team);
+
+        return [
+            'id' => $team->id ?? null,
+            'team_name' => $team->team_name ?? null,
+            'gender' => $team->gender ?? null,
+            'sport' => [
+                'id' => $sportId,
+                'sport_name' => $sportName,
+            ],
+        ];
     }
 }
