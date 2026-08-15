@@ -37,6 +37,16 @@ class BasketballStatsService
     use LocatorAwareTrait;
     use ServiceAwareTrait;
 
+    protected TeamSportContextService $teamSportContextService;
+
+    /**
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     */
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
+    {
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
     /**
      * Get basketball game statistics for display in game view
      *
@@ -58,7 +68,7 @@ class BasketballStatsService
         /** @var \App\Model\Entity\Game $game */
         $game = $gamesTable->find()
             ->contain([
-                'TeamSeason' => ['Teams' => ['Sports'], 'Seasons'],
+                'TeamSeason' => ['Teams', 'Seasons'],
                 'GameTypes',
                 'Opponents',
                 'Sites' => ['Places'],
@@ -67,11 +77,14 @@ class BasketballStatsService
             ->where(['Games.id' => $gameId])
             ->first();
 
-        if (!$game || !$game->team_season || !$game->team_season->team || !$game->team_season->team->sport) {
+        if (!$game || !$game->team_season || !$game->team_season->team) {
             return null;
         }
 
-        $sportName = strtolower($game->team_season->team->sport->sport_name);
+        $this->teamSportContextService->attachSportContextToTeam($game->team_season->team);
+        $sportName = strtolower((string)$this->teamSportContextService->resolveSportNameFromTeam(
+            $game->team_season->team,
+        ));
         if ($sportName !== 'basketball') {
             return null;
         }
@@ -212,15 +225,16 @@ class BasketballStatsService
         $teamSeasonsTable = $this->fetchTable('TeamSeasons');
 
         $teamSeason = $teamSeasonsTable->find()
-            ->contain(['Teams' => ['Sports']])
+            ->contain(['Teams'])
             ->where(['TeamSeasons.id' => $teamSeasonId])
             ->first();
 
-        if (!($teamSeason instanceof TeamSeason) || !$teamSeason->team || !$teamSeason->team->sport) {
+        if (!($teamSeason instanceof TeamSeason) || !$teamSeason->team) {
             return null;
         }
 
-        $sportName = strtolower($teamSeason->team->sport->sport_name);
+        $this->teamSportContextService->attachSportContextToTeam($teamSeason->team);
+        $sportName = strtolower((string)$this->teamSportContextService->resolveSportNameFromTeam($teamSeason->team));
         if ($sportName !== 'basketball') {
             return null;
         }
@@ -1108,9 +1122,7 @@ class BasketballStatsService
 
         $teamsTable = $this->fetchTable('Teams');
         $teams = $teamsTable->find()
-            ->matching('Sports', function ($q) {
-                return $q->where(['Sports.sport_name' => 'Basketball']);
-            })
+            ->where($this->teamSportContextService->buildSportFilterConditions('basketball'))
             ->orderBy(['Teams.team_name' => 'ASC'])
             ->all()
             ->combine('id', 'team_name')

@@ -312,7 +312,7 @@ $this->assign('title', 'Add Team Season'); ?>
         'url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'ajaxAdd'],
         'id' => 'hidden-team-form',
     ]) ?>
-    <?= $this->Form->control('sport_id', ['type' => 'select']) ?>
+    <?= $this->Form->control('sport_key', ['type' => 'select']) ?>
     <?= $this->Form->control('team_name', ['type' => 'text']) ?>
     <?= $this->Form->control('abbr', ['type' => 'text']) ?>
     <?= $this->Form->control('gender', ['type' => 'text']) ?>
@@ -337,7 +337,7 @@ $this->assign('title', 'Add Team Season'); ?>
     'hiddenFormId' => 'hidden-team-form',
     'fields' => [
         [
-            'name' => 'sport_id',
+            'name' => 'sport_key',
             'type' => 'select',
             'label' => 'Sport',
             'required' => true,

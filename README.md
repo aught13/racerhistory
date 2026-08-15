@@ -31,7 +31,7 @@ This project powers the racerhistory.com website, providing features for:
 
 - **User Authentication** - Registration, login, logout, password reset
 - **Admin Dashboard** - Administrative interface for site data management
-- **Historical Game Data** - Sports/team/season/game management with sport-aware configuration
+- **Historical Game Data** - Team/season/game management with sport-aware configuration; sport configuration is managed via the Admin Site Options panel (`/admin/site-options`).
 - **Blog Engine** - Public blog with an admin editor, tagging, and hero images
 - **Responsive Design** - Mobile-first Bootstrap 5.3.2 public interface with an AdminLTE 4 admin shell
 
@@ -52,7 +52,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **User Management** - Add, edit, approve users with first_name/last_name support
 - **Policy-Based Authorization** - Fine-grained access control via UserPolicy
 - Role-based admin dashboard
-- Sports management (add, edit, delete, bulk operations with configurable sport settings)
+- Sports configuration — Sport settings are managed via the Admin Site Options panel (SiteOptions).
 - Teams management (add, edit, delete, bulk operations with sport associations)
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
 - Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)

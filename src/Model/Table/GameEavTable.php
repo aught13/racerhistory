@@ -4,11 +4,9 @@ declare(strict_types=1);
 namespace App\Model\Table;
 
 use App\Model\Entity\GameEav;
-use App\Model\Entity\SportStatRegistry;
 use App\Service\SportConfigService;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
-use Cake\ORM\TableRegistry;
 
 /**
  * @method \App\Model\Entity\GameEav newEmptyEntity()
@@ -27,13 +25,6 @@ use Cake\ORM\TableRegistry;
  */
 class GameEavTable extends Table
 {
-    /**
-     * SportStatRegistry table instance
-     *
-     * @var \App\Model\Table\SportStatRegistryTable
-     */
-    protected SportStatRegistryTable $sportStatRegistry;
-
     /**
      * SportConfigService instance
      *
@@ -58,24 +49,8 @@ class GameEavTable extends Table
         $connection = $this->getConnection();
         $connection->getDriver()->enableAutoQuoting(true);
 
-        // Initialize dependencies with defaults that can be overridden in tests
-        /** @var \App\Model\Table\SportStatRegistryTable $sportStatRegistry */
-        $sportStatRegistry = TableRegistry::getTableLocator()->get('SportStatRegistry');
-        $this->sportStatRegistry = $sportStatRegistry;
+        // Initialize dependency with default that can be overridden in tests.
         $this->sportConfigService = new SportConfigService();
-    }
-
-    /**
-     * Set SportStatRegistry table instance - used for dependency injection in tests
-     *
-     * @param \App\Model\Table\SportStatRegistryTable $sportStatRegistry The SportStatRegistry table
-     * @return self
-     */
-    public function setSportStatRegistry(SportStatRegistryTable $sportStatRegistry): self
-    {
-        $this->sportStatRegistry = $sportStatRegistry;
-
-        return $this;
     }
 
     /**
@@ -263,37 +238,19 @@ class GameEavTable extends Table
     }
 
     /**
-     * Get sport configuration from sport_configs table
+     * Get merged sport configuration from SportConfigService.
      *
      * @param int $sportId Sport ID
      * @return array Sport configuration
      */
     private function getSportConfig(int $sportId): array
     {
-        // Get sport configs from database using raw SQL
-        $connection = $this->getConnection();
-        $query = 'SELECT config_key, config_value FROM sport_configs WHERE sport_id = ?';
-        $statement = $connection->execute($query, [$sportId]);
-        $results = $statement->fetchAll('assoc');
-        $config = [];
-        foreach ($results as $row) {
-            $value = $row['config_value'];
-            // Try to decode JSON values
-            $decoded = json_decode($value, true);
-            $config[$row['config_key']] = $decoded ?? $value;
+        $config = $this->sportConfigService->getMergedConfigById($sportId);
+        if ($config !== []) {
+            return $config;
         }
 
-        // Fallback defaults if no config found
-        if (empty($config)) {
-            $config = [
-                'period_name_2' => 'Half',
-                'period_name_4' => 'Quarter',
-                'overtime_name' => 'OT',
-                'officials' => ['Official 1', 'Official 2'],
-            ];
-        }
-
-        return $config;
+        return $this->sportConfigService->getMergedConfig($this->sportConfigService->getDefaultSportKey());
     }
 
     /**
@@ -433,43 +390,6 @@ class GameEavTable extends Table
         ?string $context = null,
         ?string $entityType = null,
     ): array {
-        // First check SportStatRegistry for database configuration
-        $query = $this->sportStatRegistry->find(
-            'bySport',
-            ['sport_id' => $sportId],
-        );
-
-        // Apply optional filters
-        if ($context !== null) {
-            $query = $query->find('byContext', ['context' => $context]);
-        }
-
-        if ($entityType !== null) {
-            $query = $query->find('byEntityType', ['entity_type' => $entityType]);
-        }
-
-        $statTablesFromDb = $query->toArray();
-
-        if (!empty($statTablesFromDb)) {
-            $result = [];
-            foreach ($statTablesFromDb as $registry) {
-                if (!($registry instanceof SportStatRegistry)) {
-                    continue;
-                }
-                $key = "{$registry->context}.{$registry->entity_type}";
-                $result[$key] = [
-                    'table_name' => $registry->table_name,
-                    'display_name' => $registry->display_name,
-                    'field_mapping' => $registry->mapped_fields,
-                    'primary_key' => $registry->primary_key ?: 'id',
-                    'registry_id' => $registry->id,
-                ];
-            }
-
-            return $result;
-        }
-
-        // Fallback to SportConfigService for hardcoded defaults
         $allTables = $this->sportConfigService->getAllStatTables($sportId);
 
         // Format the result similar to database version
@@ -487,8 +407,9 @@ class GameEavTable extends Table
                 }
 
                 $key = "{$contextKey}.{$entityKey}";
-                // Get sport name for display purposes
-                $sportName = 'Basketball'; // Default sport name
+                $sportKey = $this->sportConfigService->getKeyById($sportId)
+                    ?? $this->sportConfigService->getDefaultSportKey();
+                $sportName = $this->sportConfigService->getSportDisplayName($sportKey);
                 // Build display name
                 $contextUpper = ucfirst($contextKey);
                 $entityUpper = ucfirst($entityKey);

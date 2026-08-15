@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\SportConfigService;
+use Cake\Cache\Cache;
 use Cake\TestSuite\TestCase;
 
 /**
@@ -18,7 +19,7 @@ class SportConfigServiceTest extends TestCase
      */
     protected array $fixtures = [
         'app.Sports',
-        'app.SportConfigs',
+        'app.SiteOptions',
     ];
 
     /**
@@ -36,6 +37,7 @@ class SportConfigServiceTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
+        Cache::clear('default');
         $this->sportConfigService = new SportConfigService();
     }
 

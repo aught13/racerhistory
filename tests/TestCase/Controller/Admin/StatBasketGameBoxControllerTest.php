@@ -38,7 +38,6 @@ class StatBasketGameBoxControllerTest extends TestCase
         'app.StatBasketGameOpponent',
         'app.StatBasketSeasonTeam',
         'app.StatBasketSeasonOpponent',
-        'app.SportConfigs',
     ];
 
     /**

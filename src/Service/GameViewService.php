@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Game;
-use App\Model\Entity\Sport;
-use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 
 /**
@@ -19,6 +17,7 @@ class GameViewService
     private SportConfigService $sportConfigService;
     private StatsService $statsService;
     private GameEavUiService $gameEavUi;
+    private TeamSportContextService $teamSportContextService;
 
     /**
      * Constructor.
@@ -38,6 +37,7 @@ class GameViewService
         $this->sportConfigService = $sportConfigService ?? new SportConfigService();
         $this->statsService = $statsService ?? new StatsService($this->sportConfigService);
         $this->gameEavUi = $gameEavUi ?? new GameEavUiService();
+        $this->teamSportContextService = new TeamSportContextService($this->sportConfigService);
     }
 
     /**
@@ -72,6 +72,9 @@ class GameViewService
         ];
 
         $sportId = $this->resolveSportId($game);
+        $teamSeason = $game->get('team_season');
+        $team = $teamSeason instanceof TeamSeason ? $teamSeason->get('team') : null;
+        $sportName = $this->teamSportContextService->resolveSportNameFromTeam($team);
         if ($sportId) {
             $viewData['hasSportConfig'] = true;
 
@@ -91,6 +94,8 @@ class GameViewService
             $viewData['fieldLabels'] = $this->sportConfigService->getAllFieldLabels((int)$sportId);
         }
 
+        $viewData['sportName'] = $sportName;
+
         return $viewData;
     }
 
@@ -108,15 +113,12 @@ class GameViewService
         }
 
         $team = $teamSeason->get('team');
-        if (!$team instanceof Team) {
+        if ($team === null) {
             return null;
         }
 
-        $sport = $team->get('sport');
-        if (!$sport instanceof Sport) {
-            return null;
-        }
+        $this->teamSportContextService->attachSportContextToTeam($team);
 
-        return isset($sport->id) ? (int)$sport->id : null;
+        return $this->teamSportContextService->resolveSportIdFromTeam($team);
     }
 }

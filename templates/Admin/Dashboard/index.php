@@ -52,10 +52,10 @@ foreach ($audit['results'] as $r) {
                     <p>Sports</p>
                 </div>
                 <i class="small-box-icon bi bi-trophy-fill"></i>
-                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'index']) ?>"
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'sportsConfigs']) ?>"
                    class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover"
                    data-turbo-frame="admin-content">
-                    Manage Sports <i class="bi bi-arrow-right-circle ms-1"></i>
+                    Manage Sport Configs <i class="bi bi-arrow-right-circle ms-1"></i>
                 </a>
             </div>
         </div>

@@ -1,13 +1,68 @@
 <?php
 declare(strict_types=1);
 
+namespace App\Controller\Admin;
+
+use Exception;
+
+/**
+ * Set stub state for namespaced countries lookup HTTP calls.
+ *
+ * @param string|false|null $response Mocked HTTP response body.
+ * @param bool $throw Whether the stub should throw an exception.
+ */
+function __setPlacesLookupStub(string|false|null $response, bool $throw = false): void
+{
+    $GLOBALS['__places_lookup_stub_response'] = $response;
+    $GLOBALS['__places_lookup_stub_throw'] = $throw;
+}
+
+/**
+ * Reset countries lookup HTTP stub state.
+ */
+function __resetPlacesLookupStub(): void
+{
+    $GLOBALS['__places_lookup_stub_response'] = null;
+    $GLOBALS['__places_lookup_stub_throw'] = false;
+}
+
+if (!function_exists(__NAMESPACE__ . '\\file_get_contents')) {
+    /**
+     * Test stub for PlacesController network calls.
+     *
+     * @param string $filename
+     * @param bool $use_include_path
+     * @param mixed $context
+     * @param int $offset
+     * @param int|null $length
+     * @return string|false
+     */
+    function file_get_contents(
+        string $filename,
+        bool $use_include_path = false,
+        mixed $context = null,
+        int $offset = 0,
+        ?int $length = null,
+    ): string|false {
+        if (($GLOBALS['__places_lookup_stub_throw'] ?? false) === true) {
+            restore_error_handler();
+            throw new Exception('mock countries lookup failure');
+        }
+
+        return $GLOBALS['__places_lookup_stub_response'] ?? false;
+    }
+}
+
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 use Exception;
+use function App\Controller\Admin\__resetPlacesLookupStub;
+use function App\Controller\Admin\__setPlacesLookupStub;
 
 /**
  * @link \App\Controller\Admin\PlacesController
@@ -22,6 +77,26 @@ class PlacesControllerTest extends TestCase
         'app.Places',
         'app.Sites',
     ];
+
+    /**
+     * @inheritDoc
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        __resetPlacesLookupStub();
+        Configure::delete('Api.RestCountries.key');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function tearDown(): void
+    {
+        __resetPlacesLookupStub();
+        Configure::delete('Api.RestCountries.key');
+        parent::tearDown();
+    }
 
     /**
      * Tests index.
@@ -73,6 +148,21 @@ class PlacesControllerTest extends TestCase
             $rowText = strtolower($row['country'] . ' ' . $row['city'] . ' ' . $row['state']);
             $this->assertStringContainsString('murray', $rowText);
         }
+    }
+
+    /**
+     * Tests datatables accepts explicit order params.
+     */
+    public function testDatatablesAcceptsOrderParams(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/datatables?draw=3&start=0&length=10&order[0][column]=2&order[0][dir]=desc');
+        $this->assertResponseOk();
+
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(3, $body['draw']);
+        $this->assertArrayHasKey('data', $body);
+        $this->assertIsArray($body['data']);
     }
 
     /**
@@ -309,6 +399,46 @@ class PlacesControllerTest extends TestCase
     }
 
     /**
+     * Tests add post validation failure shows generic save error.
+     */
+    public function testAddPostValidationShowsGenericError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $this->post('/admin/places/add', [
+            'place_country' => '',
+            'place_city' => '',
+            'place_state' => '',
+        ]);
+
+        $this->assertNoRedirect();
+        $this->assertFlashMessage('The place could not be saved.');
+    }
+
+    /**
+     * Tests edit validation failure shows generic save error.
+     */
+    public function testEditPostValidationShowsGenericError(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $this->post('/admin/places/edit/1', [
+            'place_country' => '',
+            'place_city' => '',
+            'place_state' => '',
+        ]);
+
+        $this->assertNoRedirect();
+        $this->assertFlashMessage('The place could not be saved.');
+    }
+
+    /**
      * Test that Place add/edit forms are NOT wrapped in a nested turbo-frame.
      *
      * A nested frame without target="_top" causes "Content missing" after redirect
@@ -335,5 +465,79 @@ class PlacesControllerTest extends TestCase
             substr_count($body, '<turbo-frame id="'),
             'Place edit form must not be wrapped in a nested turbo-frame',
         );
+    }
+
+    /**
+     * Tests countries lookup returns empty payload for short queries.
+     */
+    public function testCountriesLookupShortQueryReturnsEmpty(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/places/countries-lookup?q=U');
+        $this->assertResponseOk();
+        $this->assertSame([], json_decode((string)$this->_response->getBody(), true));
+    }
+
+    /**
+     * Tests countries lookup returns empty payload when API key is missing.
+     */
+    public function testCountriesLookupWithoutApiKeyReturnsEmpty(): void
+    {
+        $this->mockIdentity();
+        Configure::delete('Api.RestCountries.key');
+
+        $this->get('/admin/places/countries-lookup?q=United');
+        $this->assertResponseOk();
+        $this->assertSame([], json_decode((string)$this->_response->getBody(), true));
+    }
+
+    /**
+     * Tests countries lookup transforms REST Countries payload.
+     */
+    public function testCountriesLookupTransformsPayload(): void
+    {
+        $this->mockIdentity();
+        Configure::write('Api.RestCountries.key', 'test-key');
+        __setPlacesLookupStub(json_encode([
+            'data' => [
+                'objects' => [
+                    [
+                        'names' => ['common' => 'United States'],
+                        'codes' => ['alpha_3' => 'usa'],
+                    ],
+                    [
+                        'names' => ['common' => ''],
+                        'codes' => ['alpha_3' => ''],
+                    ],
+                ],
+            ],
+        ]));
+
+        $this->get('/admin/places/countries-lookup?q=United');
+        $this->assertResponseOk();
+
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertCount(1, $payload);
+        $this->assertSame('United States', $payload[0]['name']['common']);
+        $this->assertSame('USA', $payload[0]['cca3']);
+    }
+
+    /**
+     * Tests countries lookup handles false and invalid payload responses.
+     */
+    public function testCountriesLookupHandlesFalseAndInvalidPayloadResponses(): void
+    {
+        $this->mockIdentity();
+        Configure::write('Api.RestCountries.key', 'test-key');
+
+        __setPlacesLookupStub(false);
+        $this->get('/admin/places/countries-lookup?q=United');
+        $this->assertResponseOk();
+        $this->assertSame([], json_decode((string)$this->_response->getBody(), true));
+
+        __setPlacesLookupStub(json_encode(['data' => ['objects' => []]]));
+        $this->get('/admin/places/countries-lookup?q=United');
+        $this->assertResponseOk();
+        $this->assertSame([], json_decode((string)$this->_response->getBody(), true));
     }
 }

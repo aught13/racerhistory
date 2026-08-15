@@ -14,6 +14,16 @@ use Cake\ORM\TableRegistry;
  */
 class TeamSeasonService
 {
+    private TeamSportContextService $teamSportContextService;
+
+    /**
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     */
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
+    {
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
     /**
      * Get a team season by ID with related data.
      *
@@ -26,8 +36,12 @@ class TeamSeasonService
 
         $teamSeason = $teamSeasons->find()
             ->where(['TeamSeasons.id' => $teamSeasonId])
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->contain(['Teams', 'Seasons'])
             ->first();
+
+        if ($teamSeason instanceof TeamSeason) {
+            $this->teamSportContextService->attachSportContextToTeam($teamSeason->team ?? null);
+        }
 
         return $teamSeason instanceof TeamSeason ? $teamSeason : null;
     }
@@ -78,7 +92,6 @@ class TeamSeasonService
         }
 
         $team = $ts->team ?? null;
-        $sport = $team->sport ?? null;
         $gender = $team->gender ?? null;
 
         $prefix = '';
@@ -88,7 +101,7 @@ class TeamSeasonService
             $prefix = "Women's ";
         }
 
-        $sportName = $sport->sport_name ?? null;
+        $sportName = $this->teamSportContextService->resolveSportNameFromTeam($team);
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
@@ -121,11 +134,19 @@ class TeamSeasonService
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
 
-        return $teamSeasons->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
+        $rows = $teamSeasons->find()
+            ->contain(['Teams', 'Seasons'])
             ->orderBy(['Seasons.start' => 'DESC', 'Teams.team_name' => 'ASC'])
             ->all()
             ->toArray();
+
+        foreach ($rows as $row) {
+            if ($row instanceof TeamSeason) {
+                $this->teamSportContextService->attachSportContextToTeam($row->team ?? null);
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -184,6 +205,9 @@ class TeamSeasonService
         $results = [];
 
         foreach ($teamSeasons as $ts) {
+            if ($ts instanceof TeamSeason) {
+                $this->teamSportContextService->attachSportContextToTeam($ts->team ?? null);
+            }
             $results[] = [
                 'id' => $ts->id,
                 'label' => $this->getSportDisplayLabel($ts->id),
@@ -204,7 +228,7 @@ class TeamSeasonService
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
 
         $rows = $teamSeasons->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->contain(['Teams', 'Seasons'])
             ->orderBy(['Seasons.start' => 'DESC', 'Teams.team_name' => 'ASC'])
             ->limit($limit)
             ->all();
@@ -214,6 +238,7 @@ class TeamSeasonService
             if (!($ts instanceof TeamSeason)) {
                 continue;
             }
+            $this->teamSportContextService->attachSportContextToTeam($ts->team ?? null);
             $list[(int)$ts->id] = $this->getSportDisplayLabel((int)$ts->id);
         }
 
@@ -267,7 +292,7 @@ class TeamSeasonService
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
 
         $rows = $teamSeasons->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
+            ->contain(['Teams', 'Seasons'])
             ->orderByDesc('Seasons.start')
             ->limit($limit)
             ->all();
@@ -275,7 +300,8 @@ class TeamSeasonService
         $list = [];
         foreach ($rows as $ts) {
             /** @var \App\Model\Entity\TeamSeason $ts */
-            $sportName = $ts->team->sport->sport_name ?? 'Unknown';
+            $this->teamSportContextService->attachSportContextToTeam($ts->team ?? null);
+            $sportName = $this->teamSportContextService->resolveSportNameFromTeam($ts->team ?? null) ?? 'Unknown';
             $list[(int)$ts->id] = sprintf(
                 '%s (%s) — %s-%s',
                 ($ts->team->team_name ?? 'Team'),
@@ -553,15 +579,27 @@ class TeamSeasonService
     public function getTeamSeasonsForSport(string $sportName): array
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
+        $sportKey = $this->teamSportContextService->resolveSportKey($sportName);
+        if ($sportKey === null) {
+            return [];
+        }
+
+        $sportFilter = $this->teamSportContextService->buildSportFilterConditions($sportKey);
 
         $rows = $teamSeasons->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons'])
-            ->matching('Teams.Sports', function ($q) use ($sportName) {
-                return $q->where(['Sports.sport_name' => $sportName]);
+            ->contain(['Teams', 'Seasons'])
+            ->matching('Teams', function ($q) use ($sportFilter) {
+                return $q->where($sportFilter);
             })
             ->orderByDesc('Seasons.start')
             ->all()
             ->toArray();
+
+        foreach ($rows as $row) {
+            if ($row instanceof TeamSeason) {
+                $this->teamSportContextService->attachSportContextToTeam($row->team ?? null);
+            }
+        }
 
         /** @var array<int,\App\Model\Entity\TeamSeason> $result */
         $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof TeamSeason));
@@ -580,12 +618,16 @@ class TeamSeasonService
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
         $query = $teamSeasons->find()
-            ->contain(['Teams' => ['Sports'], 'Seasons']);
+            ->contain(['Teams', 'Seasons']);
 
         if ($sport !== '') {
-            $query->matching('Teams.Sports', function ($q) use ($sport) {
-                return $q->where(['Sports.sport_name' => $sport]);
-            });
+            $sportKey = $this->teamSportContextService->resolveSportKey($sport);
+            if ($sportKey !== null) {
+                $sportFilter = $this->teamSportContextService->buildSportFilterConditions($sportKey);
+                $query->matching('Teams', function ($q) use ($sportFilter) {
+                    return $q->where($sportFilter);
+                });
+            }
         }
 
         if ($gender !== '') {
@@ -595,6 +637,12 @@ class TeamSeasonService
         }
 
         $rows = $query->orderByDesc('Seasons.start')->all()->toArray();
+
+        foreach ($rows as $row) {
+            if ($row instanceof TeamSeason) {
+                $this->teamSportContextService->attachSportContextToTeam($row->team ?? null);
+            }
+        }
 
         /** @var array<int,\App\Model\Entity\TeamSeason> $result */
         $result = array_values(array_filter($rows, static fn($row): bool => $row instanceof TeamSeason));

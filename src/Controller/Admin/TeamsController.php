@@ -70,13 +70,20 @@ class TeamsController extends AppController
      */
     public function add(): ?Response
     {
-        $sportId = $this->request->getQuery('sport_id')
-            ? (int)$this->request->getQuery('sport_id')
-            : null;
-        $viewData = $this->teamAdminService->getAddFormData($sportId);
+        $sportRef = $this->request->getQuery('sport_key');
+        if (!is_string($sportRef) || trim($sportRef) === '') {
+            $legacySportId = $this->request->getQuery('sport_id');
+            if (is_scalar($legacySportId) && trim((string)$legacySportId) !== '') {
+                $sportRef = trim((string)$legacySportId);
+            } else {
+                $sportRef = null;
+            }
+        }
+
+        $viewData = $this->teamAdminService->getAddFormData($sportRef);
 
         if ($this->request->is('post')) {
-            $result = $this->teamAdminService->saveNewTeam((array)$this->request->getData(), $sportId);
+            $result = $this->teamAdminService->saveNewTeam((array)$this->request->getData(), $sportRef);
             $viewData['team'] = $result['team'];
 
             if ($result['success']) {

@@ -3,9 +3,11 @@
  * @var \App\View\AppView $this
  * @var array $configs
  * @var \App\Model\Entity\Sport $sport
+ * @var string|null $sportKey
  */
 ?>
 <?php $this->assign('title', 'View Sport'); ?>
+<?php $sportConfigRef = $sportKey ?? (string)$sport->id; ?>
 <div class="container py-4">
     <div class="row">
         <div class="col-md-8 offset-md-2">
@@ -14,7 +16,7 @@
                     <h2 class="mb-0"><?= h($sport->sport_name) ?> Details</h2>
                     <div class="btn-group" role="group">
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id]) ?>" class="btn btn-primary btn-sm">Edit</a>
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'editConfigs', $sport->id]) ?>" class="btn btn-warning btn-sm" title="Configure period names, officials, and settings">
+                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'editConfigs', $sportConfigRef]) ?>" class="btn btn-warning btn-sm" title="Configure period names, officials, and settings">
                             <i class="fas fa-cog"></i> Config
                         </a>
                         <?php $teamCount = isset($sport->teams) ? count($sport->teams) : 0; ?>
@@ -45,11 +47,11 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h4 class="mb-0">Sport Configurations</h4>
                             <div>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'configs', $sport->id]) ?>"
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'configs', $sportConfigRef]) ?>"
                                     class="btn btn-info btn-sm me-2">
                                     <i class="fas fa-eye"></i> View All Configs
                                 </a>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'editConfigs', $sport->id]) ?>"
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'editConfigs', $sportConfigRef]) ?>"
                                     class="btn btn-warning btn-sm">
                                     <i class="fas fa-cog"></i> Edit Configurations
                                 </a>
@@ -132,7 +134,15 @@
                                                         <div class="d-flex align-items-center">
                                                             <code class="me-2"><?= h($key) ?>:</code>
                                                             <?php if (is_array($config['value'])) : ?>
-                                                                <span class="badge bg-info"><?= implode(', ', $config['value']) ?></span>
+                                                                <?php
+                                                                $renderedValues = [];
+                                                                foreach ($config['value'] as $settingValue) {
+                                                                    $renderedValues[] = is_scalar($settingValue) || $settingValue === null
+                                                                        ? (string)$settingValue
+                                                                        : (string)json_encode($settingValue, JSON_UNESCAPED_SLASHES);
+                                                                }
+                                                                ?>
+                                                                <span class="badge bg-info"><?= h(implode(', ', $renderedValues)) ?></span>
                                                             <?php else : ?>
                                                                 <span class="badge bg-secondary"><?= h($config['value']) ?></span>
                                                             <?php endif; ?>
@@ -153,7 +163,7 @@
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>No configurations found.</strong>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'editConfigs', $sport->id]) ?>" class="alert-link">
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'editConfigs', $sportConfigRef]) ?>" class="alert-link">
                                     Click here to add sport configurations
                                 </a>
                             </div>

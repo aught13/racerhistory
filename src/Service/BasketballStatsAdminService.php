@@ -59,9 +59,11 @@ class BasketballStatsAdminService extends BasketballStatsService
 
         /** @var \App\Model\Entity\Game $game */
         $game = $gamesTable->find()
-            ->contain(['TeamSeason' => ['Teams' => ['Sports']], 'Opponents'])
+            ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
             ->where(['Games.id' => $gameId])
             ->firstOrFail();
+
+        $this->teamSportContextService->attachSportContextToTeam($game->team_season->team);
 
         return $game;
     }
@@ -905,7 +907,9 @@ class BasketballStatsAdminService extends BasketballStatsService
             ->where(['game_id' => $gameId, 'opponent_id' => $opponentId, 'period' => 'Z'])
             ->first();
         $hasPeriodStats = $boxTable->find()->where(['game_id' => $gameId, 'period !=' => 'Z'])->count() > 0;
-        $sportId = (int)$game->team_season->team->sport->id;
+        $team = $game->team_season->team;
+        $sportId = (int)($this->teamSportContextService->resolveSportIdFromTeam($team) ?? 0);
+        $sportName = strtolower((string)$this->teamSportContextService->resolveSportNameFromTeam($team));
 
         return [
             'game' => $game,
@@ -913,7 +917,7 @@ class BasketballStatsAdminService extends BasketballStatsService
             'opponentBox' => $opponentBox,
             'fieldLabels' => $this->getBasketballFieldLabels($sportId),
             'hasPeriodStats' => $hasPeriodStats,
-            'isBasketball' => strtolower((string)$game->team_season->team->sport->sport_name) === 'basketball',
+            'isBasketball' => $sportName === 'basketball',
         ];
     }
 
@@ -1003,12 +1007,15 @@ class BasketballStatsAdminService extends BasketballStatsService
             $existingStats[$key] = $stat;
         }
 
+        $team = $game->team_season->team;
+        $sportId = (int)($this->teamSportContextService->resolveSportIdFromTeam($team) ?? 0);
+
         return [
             'game' => $game,
             'numPeriods' => (int)($game->periods ?? 2),
             'numOT' => (int)($game->ot ?? 0),
             'existingStats' => $existingStats,
-            'fieldLabels' => $this->getBasketballFieldLabels((int)$game->team_season->team->sport->id),
+            'fieldLabels' => $this->getBasketballFieldLabels($sportId),
         ];
     }
 

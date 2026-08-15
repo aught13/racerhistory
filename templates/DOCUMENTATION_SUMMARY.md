@@ -14,25 +14,9 @@
 
 ## Admin Interface Templates
 
-- ✅ `Admin/Dashboard/index.php` - Main admin dashboard with authentication status (fixed namespace issue)
-- ✅ `Admin/Sports/index.php` - Sports listing with bulk & modal deletion
-- ✅ `Admin/Sports/view.php` - Sport detail with associated teams table
-- ✅ `Admin/Sports/edit.php` - Edit sport form with modal delete trigger
-- ✅ `Admin/Teams/add.php` - Add team form with popup sport creation
-- ✅ `Admin/Teams/edit.php` - Edit team with modal delete trigger
-- ✅ `Admin/Teams/index.php` - Teams listing with bulk & modal deletion
-- ✅ `Admin/Teams/view.php` - Team detail view
-- ✅ `Admin/Users/index.php` - User management with bulk activate/delete & modal confirm
-- ✅ `Admin/Seasons/index.php` - Seasons listing with bulk delete, DataTables integration, and accessible delete confirmations
-- ✅ `Admin/Seasons/view.php` - Season detail view showing associated team seasons and quick actions
-- ✅ `Admin/Seasons/add.php` - Add season form with hidden FormProtection form for AJAX popup creation
-- ✅ `Admin/Seasons/edit.php` - Edit season form with associated record warnings and timestamps
-
-- ✅ `Admin/TeamSeasons/index.php` - TeamSeasons listing with bulk actions and DataTables
-- ✅ `Admin/TeamSeasons/view.php` - TeamSeason detail view with league information, preview, and recap sections
-- ✅ `Admin/TeamSeasons/add.php` - Add team season form with popup helpers for creating teams/seasons via AJAX
-- ✅ `Admin/TeamSeasons/edit.php` - Edit team season form with validation-friendly inputs
-
+ ✅ `Admin/Dashboard/index.php` - Main admin dashboard with authentication status (fixed namespace issue)
+ ✅ `Admin/SiteOptions/sportsConfigs.php` - Sport configuration UI (replaces legacy Admin/Sports CRUD; managed via SiteOptions)
+ ✅ `Admin/Teams/add.php` - Add team form with sport selection using SiteOptions-backed `sport_key` (popup sport creation removed)
 - ✅ `Admin/BlogPosts/index.php` - Blog post listing (draft/published) with basic actions
 - ✅ `Admin/BlogPosts/edit.php` - Add/edit blog post form with TinyMCE, hero/inline images, and tags
 

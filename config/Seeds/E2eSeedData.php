@@ -22,6 +22,21 @@ class E2eSeedData extends BaseSeed
     }
 
     /**
+     * Check if a table exists in the current connection.
+     */
+    private function tableExists(string $table): bool
+    {
+        try {
+            // A simple select will throw when the table does not exist.
+            $this->execute(sprintf('SELECT 1 FROM `%s` LIMIT 1', $table));
+
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * Insert a row with idempotent behavior.
      *
      * @param array<string, int|string> $row
@@ -80,20 +95,28 @@ class E2eSeedData extends BaseSeed
         }
         $this->upsert('places', $place);
 
-        // 2. Sport
-        $this->upsert('sports', [
-            'id' => 1,
-            'sport_name' => 'Basketball',
-        ]);
+        // 2. Sport (legacy table may be retired — be tolerant)
+        $sportsTablePresent = $this->tableExists('sports');
+        if ($sportsTablePresent) {
+            $this->upsert('sports', [
+                'id' => 1,
+                'sport_name' => 'Basketball',
+            ]);
+        }
 
-        // 3. Team (references sport)
+        // 3. Team (references sport). Prefer `sport_key` when available.
         $team = [
             'id' => 1,
-            'sport_id' => 1,
             'team_name' => 'Test Racers',
             'abbr' => 'TRH',
             'gender' => 'M',
         ];
+        if ($sportsTablePresent && $this->hasColumn('teams', 'sport_id')) {
+            $team['sport_id'] = 1;
+        }
+        if ($this->hasColumn('teams', 'sport_key')) {
+            $team['sport_key'] = 'basketball';
+        }
         if ($this->hasColumn('teams', 'team_nickname')) {
             $team['team_nickname'] = 'Racers';
         }

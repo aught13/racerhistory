@@ -35,26 +35,17 @@
                     <?= $this->Form->create($team, ['novalidate' => true]) ?>
 
                     <div class="mb-3">
-                        <label for="sport-id" class="form-label">Sport *</label>
-                        <div class="input-group d-flex align-items-stretch">
-                            <div class="flex-grow-1">
-                                <?= $this->Form->control('sport_id', [
-                                    'type' => 'select',
-                                    'options' => $sports,
-                                    'empty' => 'Select a Sport',
-                                    // Use Bootstrap 5 select sizing so it matches buttons in input-group
-                                    'class' => 'form-select h-100',
-                                    'label' => false,
-                                    'required' => true,
-                                    'id' => 'sport-id',
-                                ]) ?>
-                            </div>
-                            <button type="button" class="btn btn-success h-100 border-0" data-bs-toggle="modal"
-                                data-bs-target="#add-sport-modal" title="Add New Sport" aria-label="Add new sport">
-                                <i class="bi bi-plus-circle"></i>
-                            </button>
-                        </div>
-                        <div class="form-text">Select the sport for this team or add a new sport.</div>
+                        <label for="sport-key" class="form-label">Sport *</label>
+                        <?= $this->Form->control('sport_key', [
+                            'type' => 'select',
+                            'options' => $sports,
+                            'empty' => 'Select a Sport',
+                            'class' => 'form-select',
+                            'label' => false,
+                            'required' => true,
+                            'id' => 'sport-key',
+                        ]) ?>
+                        <div class="form-text">Select the sport for this team.</div>
                     </div>
 
                     <div class="mb-3">
@@ -174,35 +165,3 @@
         </div>
     </div>
 </div>
-
-<!-- Hidden form to generate FormProtection tokens for AJAX sport creation -->
-<div style="display: none;">
-    <?= $this->Form->create(null, [
-        'url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd'],
-        'id' => 'hidden-sport-form',
-    ]) ?>
-    <?= $this->Form->control('sport_name', ['type' => 'text']) ?>
-    <?= $this->Form->end() ?>
-</div>
-
-<?php
-// Add Sport Popup Form
-echo $this->element('Admin/popup_form', [
-    'popupId' => 'add-sport-modal',
-    'title' => 'Add New Sport',
-    'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'ajaxAdd']),
-    'targetSelectId' => 'sport-id',
-    'fields' => [
-        [
-            'name' => 'sport_name',
-            'type' => 'text',
-            'label' => 'Sport Name',
-            'placeholder' => 'Enter sport name (e.g., Basketball)',
-            'required' => true,
-            'attributes' => [
-                'maxlength' => 162,
-            ],
-        ],
-    ],
-]);
-?>
