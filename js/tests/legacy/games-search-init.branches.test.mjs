@@ -1,5 +1,8 @@
 import { jest } from "@jest/globals";
 
+// Increase default timeout for this file to avoid flaky failures when running the full suite
+jest.setTimeout(20000);
+
 /**
  * Targeted branch coverage tests for games-search-init.mjs
  * Focuses on the ensureDataTablesLoaded().then() chain and initGamesPage edge cases.

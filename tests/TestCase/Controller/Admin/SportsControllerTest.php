@@ -193,4 +193,20 @@ class SportsControllerTest extends TestCase
             $response['errors'],
         );
     }
+
+    /**
+     * Ensure non-delete bulk actions show a retirement warning and redirect.
+     *
+     * @return void
+     */
+    public function testBulkActionNonDeleteShowsWarning(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $this->post('/admin/sports/bulk', ['bulk_action' => 'archive']);
+
+        $this->assertRedirectContains('/admin/site-options/sports-configs');
+        $this->assertFlashMessage('Sport records are retired and bulk actions are no longer available.');
+    }
 }

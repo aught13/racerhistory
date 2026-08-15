@@ -42,6 +42,8 @@ class SportConfigAdminServiceTest extends TestCase
      */
     public function testGetFormattedConfigsForSportReturnsExpectedStructure(): void
     {
+        // Ensure a known default state to avoid order-dependent mutations from other tests
+        $this->service->resetToDefaults(1);
         $configs = $this->service->getFormattedConfigsForSport(1);
 
         $this->assertIsArray($configs);
