@@ -36,7 +36,6 @@
                 <div class="rh-head-logo">
                     <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="RacerHistory" class="rh-hero-logo-img">
                 </div>
-                <div class="rh-ad-slot rh-ad-slot--header">Ad</div>
             </div>
         </div>
         <?php endif; ?>
@@ -58,7 +57,6 @@
 
     <footer class="rh-footer">
         <div class="rh-footer-inner">
-            <div class="rh-footer-ad">Ad</div>
             <div class="rh-footer-copy">
                 <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory</span>
             </div>
