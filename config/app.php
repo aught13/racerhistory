@@ -119,6 +119,149 @@ return [
             'type' => 'email',
             'default' => 'admin@example.com',
         ],
+
+        // Ad Management
+        'ad_script' => [
+            'label' => 'Ads - Global Script',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_publisher_id' => [
+            'label' => 'Ads - Publisher ID (AdSense Publisher ID)',
+            'type' => 'text',
+            'default' => '',
+        ],
+
+        // Global placements
+        'ad_below_nav_active' => [
+            'label' => 'Ads - Below Nav (Display Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_below_nav_html' => [
+            'label' => 'Ads - Below Nav (Display Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_below_nav_google_mode' => [
+            'label' => 'Ads - Below Nav (Display Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        'ad_below_content_active' => [
+            'label' => 'Ads - Below Content (Display Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_below_content_html' => [
+            'label' => 'Ads - Below Content (Display Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_below_content_google_mode' => [
+            'label' => 'Ads - Below Content (Display Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        'ad_footer_active' => [
+            'label' => 'Ads - Footer (Display Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_footer_html' => [
+            'label' => 'Ads - Footer (Display Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_footer_google_mode' => [
+            'label' => 'Ads - Footer (Display Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        // Home placement
+        'ad_homepage_mid_active' => [
+            'label' => 'Ads - Homepage Mid (Display Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_homepage_mid_html' => [
+            'label' => 'Ads - Homepage Mid (Display Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_homepage_mid_google_mode' => [
+            'label' => 'Ads - Homepage Mid (Display Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        // News / Blog placements
+        'ad_news_after_first_active' => [
+            'label' => 'Ads - News After 1st Post (Display Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_news_after_first_html' => [
+            'label' => 'Ads - News After 1st Post (Display Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_news_after_first_google_mode' => [
+            'label' => 'Ads - News After 1st Post (Display Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        'ad_news_every_fifth_active' => [
+            'label' => 'Ads - News Every 5th Post (In-Feed Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_news_every_fifth_html' => [
+            'label' => 'Ads - News Every 5th Post (In-Feed Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_news_every_fifth_google_mode' => [
+            'label' => 'Ads - News Every 5th Post (In-Feed Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        'ad_news_sidebar_1_active' => [
+            'label' => 'Ads - News Sidebar 1 (Multiplex Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_news_sidebar_1_html' => [
+            'label' => 'Ads - News Sidebar 1 (Multiplex Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_news_sidebar_1_google_mode' => [
+            'label' => 'Ads - News Sidebar 1 (Multiplex Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+
+        'ad_news_sidebar_2_active' => [
+            'label' => 'Ads - News Sidebar 2 (Multiplex Ad): Active',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
+        'ad_news_sidebar_2_html' => [
+            'label' => 'Ads - News Sidebar 2 (Multiplex Ad): HTML Block',
+            'type' => 'textarea',
+            'default' => '',
+        ],
+        'ad_news_sidebar_2_google_mode' => [
+            'label' => 'Ads - News Sidebar 2 (Multiplex Ad): Google AdSense Mode',
+            'type' => 'checkbox',
+            'default' => false,
+        ],
     ],
 
     /*
