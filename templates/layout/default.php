@@ -84,6 +84,12 @@ $flash = $this->Flash->render();
     <?php endif; ?>
 
     <?= $this->fetch('script') ?>
+
+    <?php
+    // Load global ad script in the head so provider scripts (e.g. adsbygoogle)
+    // are available before body ad slots render.
+    echo $this->element('Ads/global_script');
+    ?>
 </head>
 
 <?php
@@ -110,7 +116,7 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         'content' => $content,
         'flash' => $flash,
     ]) ?>
-    <?= $this->element('Ads/global_script') ?>
+    
 </body>
 
 </html>
