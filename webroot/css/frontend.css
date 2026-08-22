@@ -101,6 +101,13 @@
   padding: 0.75rem 0;
   margin: 1rem 0;
   box-sizing: border-box;
+  min-height: 80px;
+  min-width: 240px;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
 }
 
 .rh-ad-slot__inner {
@@ -751,17 +758,8 @@ body.rh-layout--mobile {
   animation: fadeInScale 0.6s ease-out;
 }
 
-.rh-ad-slot {
-  min-height: 80px;
-  min-width: 240px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px dashed rgba(255, 255, 255, 0.3);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-}
+/* placeholder/legacy visual styles removed to avoid duplicate selector;
+   use modifiers like `.rh-ad-slot--placeholder` if needed */
 
 .rh-ad-slot--nav {
   display: none;
