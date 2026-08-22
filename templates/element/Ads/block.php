@@ -30,13 +30,8 @@ if (!$active || $htmlBlock === '') {
 
 $slotClass = str_replace('_', '-', $slot);
 ?>
-<section class="rh-ad-slot rh-ad-slot--<?= h($slotClass) ?><?= $googleMode ? ' rh-ad-slot--google' : '' ?> my-4" data-ad-slot="<?= h($slot) ?>" data-google-mode="<?= $googleMode ? '1' : '0' ?>">
+<section class="rh-ad-slot rh-ad-slot--<?= h($slotClass) ?><?= $googleMode ? ' rh-ad-slot--google' : '' ?>" data-ad-slot="<?= h($slot) ?>" data-google-mode="<?= $googleMode ? '1' : '0' ?>">
     <div class="rh-ad-slot__inner text-center">
         <?= $htmlBlock ?>
     </div>
-    <?php if ($googleMode) : ?>
-        <script>
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
-    <?php endif; ?>
 </section>
