@@ -285,8 +285,15 @@ class SiteOptionsService
             }
 
             $ts = date('YmdHis');
-            @file_put_contents($backupDir . "site_options_pre_save_{$ts}.json", json_encode($backupData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        } catch (\Throwable) {
+            $filePath = $backupDir . "site_options_pre_save_{$ts}.json";
+            $encoded = json_encode($backupData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            if ($encoded !== false) {
+                $result = file_put_contents($filePath, $encoded);
+                if ($result === false) {
+                    // Non-fatal: continue even if backup fails due to permissions.
+                }
+            }
+        } catch (Throwable) {
             // Non-fatal: continue even if backup fails due to permissions.
         }
         $storageValues = [];
