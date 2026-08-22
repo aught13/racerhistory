@@ -137,6 +137,25 @@
   }
 }
 
+/* Reduce surrounding space for primary placements that were too roomy. */
+.rh-ad-slot--below-nav,
+.rh-ad-slot--homepage-mid,
+.rh-ad-slot--news-after-first,
+.rh-ad-slot--below-content {
+  padding: 0.25rem 0;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 992px) {
+  .rh-ad-slot--below-nav,
+  .rh-ad-slot--homepage-mid,
+  .rh-ad-slot--news-after-first,
+  .rh-ad-slot--below-content {
+    padding: 0.5rem 0;
+    margin: 0.75rem 0;
+  }
+}
+
 :root[data-theme="light"] {
   --rh-bg: #444444;
 
