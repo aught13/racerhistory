@@ -54,6 +54,8 @@ test("initializes DataTable and shows placeholder when SearchBuilder missing", a
     controls.id = "seasons-controls";
     document.body.appendChild(controls);
 
+    let capturedOptions = null;
+
     // mock jQuery + DataTable without SearchBuilder
     window.$ = function (sel) {
         const isTableSel =
@@ -63,6 +65,7 @@ test("initializes DataTable and shows placeholder when SearchBuilder missing", a
                 length: 1,
                 get: (i) => (typeof i === "number" ? table : [table]),
                 DataTable: function (options) {
+                    capturedOptions = options;
                     // simulate DataTable init lifecycle by calling initComplete
                     const apiObj = {
                         columns: { adjust: () => ({ draw: () => {} }) },
@@ -99,6 +102,11 @@ test("initializes DataTable and shows placeholder when SearchBuilder missing", a
     expect(res.table).not.toBeNull();
     // filter button should have been created
     expect(document.getElementById("seasons-filter-btn")).toBeTruthy();
+    expect(capturedOptions.scrollX).toBe(true);
+    expect(capturedOptions.scrollY).toBe("60vh");
+    expect(capturedOptions.scrollCollapse).toBe(true);
+    expect(capturedOptions.deferRender).toBe(true);
+    expect(capturedOptions.processing).toBe(true);
     // placeholder text added to panel
     const ph = document.querySelector("#searchbuilder-panel .p-3");
     expect(ph).toBeTruthy();

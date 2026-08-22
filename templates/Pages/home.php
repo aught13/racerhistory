@@ -12,6 +12,8 @@ $this->assign('title', 'Home');
     <!-- Inject the new WordPress-style Hero + 3-Grid Array -->
     <?= $this->cell('BlogWidget::homeFeed') ?>
 
+    <?= $this->element('Ads/block', ['slot' => 'homepage_mid']) ?>
+
     <hr class="my-5" />
 
     <div class="row g-4 mb-5">

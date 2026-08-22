@@ -247,11 +247,20 @@ export default function initSeasons(opts = {}) {
         {
             paging: false,
             info: false,
+            searching: true,
+            processing: true,
             autoWidth: false,
             order: [[2, "desc"]],
             responsive: false,
             scrollX: true,
+            scrollY: "60vh",
+            scrollCollapse: true,
+            deferRender: true,
             dom: "rtip",
+            language: {
+                processing:
+                    '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading\u2026',
+            },
             initComplete: function () {
                 renumberRows();
                 trySetupSearchBuilder(this);

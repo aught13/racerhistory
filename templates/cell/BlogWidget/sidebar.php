@@ -1,3 +1,12 @@
+<?php
+/**
+ * @var array<\App\Model\Entity\BlogPost> $recentPosts
+ * @var array<\App\Model\Entity\BlogTag> $popularTags
+ */
+
+$recentPosts = $recentPosts ?? [];
+$popularTags = $popularTags ?? [];
+?>
 <aside class="blog-sidebar">
     <!-- Search Widget -->
     <div class="card border-0 shadow-sm mb-4">
@@ -29,6 +38,8 @@
     </div>
     <?php endif; ?>
 
+    <?= $this->element('Ads/block', ['slot' => 'news_sidebar_1']) ?>
+
     <!-- Recent Posts Widget -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
@@ -50,4 +61,6 @@
             </ul>
         </div>
     </div>
+
+    <?= $this->element('Ads/block', ['slot' => 'news_sidebar_2']) ?>
 </aside>

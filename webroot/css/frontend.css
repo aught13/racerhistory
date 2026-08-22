@@ -90,6 +90,79 @@
   --bs-border-color: var(--rh-border);
 }
 
+/* ==========================================================================
+   Responsive Ad Slot Styles
+   - Remove dotted borders and let ad blocks inherit surrounding backgrounds
+   - Make images/iframes/ins scale to container width for responsiveness
+   ========================================================================== */
+.rh-ad-slot {
+  background: inherit;
+  border: none !important;
+  padding: 0.75rem 0;
+  margin: 1rem 0;
+  box-sizing: border-box;
+  min-height: 80px;
+  min-width: 240px;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+.rh-ad-slot__inner {
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  background: inherit;
+}
+
+.rh-ad-slot__inner img,
+.rh-ad-slot__inner iframe,
+.rh-ad-slot__inner ins,
+.rh-ad-slot__inner > div {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.rh-ad-slot--google ins.adsbygoogle {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.rh-ad-slot--google iframe {
+  width: 100% !important;
+  height: auto !important;
+}
+
+@media (min-width: 992px) {
+  .rh-ad-slot__inner {
+    max-width: var(--rh-shell-max-desktop);
+  }
+}
+
+/* Reduce surrounding space for primary placements that were too roomy. */
+.rh-ad-slot--below-nav,
+.rh-ad-slot--homepage-mid,
+.rh-ad-slot--news-after-first,
+.rh-ad-slot--below-content {
+  padding: 0.25rem 0;
+  margin: 0.5rem 0;
+}
+
+@media (min-width: 992px) {
+  .rh-ad-slot--below-nav,
+  .rh-ad-slot--homepage-mid,
+  .rh-ad-slot--news-after-first,
+  .rh-ad-slot--below-content {
+    padding: 0.5rem 0;
+    margin: 0.75rem 0;
+  }
+}
+
 :root[data-theme="light"] {
   --rh-bg: #444444;
 
@@ -685,17 +758,8 @@ body.rh-layout--mobile {
   animation: fadeInScale 0.6s ease-out;
 }
 
-.rh-ad-slot {
-  min-height: 80px;
-  min-width: 240px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px dashed rgba(255, 255, 255, 0.3);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-}
+/* placeholder/legacy visual styles removed to avoid duplicate selector;
+   use modifiers like `.rh-ad-slot--placeholder` if needed */
 
 .rh-ad-slot--nav {
   display: none;

@@ -64,6 +64,8 @@ if ($page === 1 && !empty($paginatedPosts)) {
                         </div>
                     </a>
                 </div>
+
+                    <?= $this->element('Ads/block', ['slot' => 'news_after_first']) ?>
                 <?php endif; ?>
 
                 <!-- Paginated Posts List -->

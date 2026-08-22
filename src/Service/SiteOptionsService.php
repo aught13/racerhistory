@@ -270,8 +270,32 @@ class SiteOptionsService
         if ($this->definitions === []) {
             return false;
         }
-
         $existingRows = $this->loadExistingRows();
+
+        // Create a timestamped JSON backup of current option values before overwriting.
+        try {
+            $backupDir = TMP . 'backups' . DS;
+            if (!is_dir($backupDir)) {
+                mkdir($backupDir, 0775, true);
+            }
+
+            $backupData = [];
+            foreach ($existingRows as $k => $row) {
+                $backupData[$k] = $row->value ?? null;
+            }
+
+            $ts = date('YmdHis');
+            $filePath = $backupDir . "site_options_pre_save_{$ts}.json";
+            $encoded = json_encode($backupData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            if ($encoded !== false) {
+                $result = file_put_contents($filePath, $encoded);
+                if ($result === false) {
+                    // Non-fatal: continue even if backup fails due to permissions.
+                }
+            }
+        } catch (Throwable) {
+            // Non-fatal: continue even if backup fails due to permissions.
+        }
         $storageValues = [];
 
         foreach ($this->definitions as $optionKey => $definition) {
