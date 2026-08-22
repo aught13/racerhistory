@@ -8,13 +8,13 @@
 $this->assign('title', 'Home');
 ?>
 
-<div class="rh-home-content pt-4">
+<div class="rh-home-content">
     <!-- Inject the new WordPress-style Hero + 3-Grid Array -->
     <?= $this->cell('BlogWidget::homeFeed') ?>
 
     <?= $this->element('Ads/block', ['slot' => 'homepage_mid']) ?>
 
-    <hr class="my-5" />
+    <hr class="my-3" />
 
     <div class="row g-4 mb-5">
         <div class="col-md-6">
@@ -109,7 +109,7 @@ $this->assign('title', 'Home');
 
 <style>
 .rh-home-content {
-    padding-top: 2rem;
+    padding-top: 0;
 }
 
 .rh-home-content .card {

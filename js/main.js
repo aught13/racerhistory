@@ -8,6 +8,7 @@ import {
 } from "./lib/admin_runtime.js";
 import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
+import { initGoogleAdSlots } from "./lib/google_ads.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
 import { initTinyMceLoader } from "./lib/tinymce_loader.js";
 import { initializeLegacyModules } from "./lib/legacy_loader_registry.js";
@@ -19,6 +20,14 @@ const isAdminPath =
 
 const hasWindow = typeof window !== "undefined";
 const runtimeAlreadyBooted = hasWindow && window.__RH_RUNTIME_BOOTED__ === true;
+
+function isElementNode(value) {
+    return (
+        typeof globalThis !== "undefined" &&
+        typeof globalThis.Element === "function" &&
+        value instanceof globalThis.Element
+    );
+}
 
 function isAdminUrl(urlLike) {
     if (typeof window === "undefined" || !urlLike) {
@@ -78,6 +87,7 @@ if (!runtimeAlreadyBooted) {
     startNativeBridge();
     // Service worker registration is async but non-blocking for the app
     void registerServiceWorker();
+    initGoogleAdSlots(document);
     initTurboScrollBehavior();
     initTinyMceLoader();
     const stimulus = Application.start();
@@ -158,6 +168,15 @@ if (hasWindow && !window.__RH_ADMIN_PATH_THEME_WATCHER_INIT__) {
         ensureAdminThemeLifecycleForCurrentPath();
     }
 }
+
+document.addEventListener("turbo:load", () => {
+    initGoogleAdSlots(document);
+});
+
+document.addEventListener("turbo:frame-load", (event) => {
+    const frame = event?.target;
+    initGoogleAdSlots(isElementNode(frame) ? frame : document);
+});
 
 // Eagerly load the admin stats entry module when the multi-add markup is
 // present so we avoid a race where deferred loading leaves no handler
