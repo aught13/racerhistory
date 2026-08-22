@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Cache\Cache;
+use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -184,8 +186,8 @@ class SiteOptionsControllerTest extends TestCase
         }
 
         // Clear runtime cache/config so controller reads fresh DB state
-        \Cake\Cache\Cache::delete('global_site_options');
-        \Cake\Core\Configure::delete('SiteOptions');
+        Cache::delete('global_site_options');
+        Configure::delete('SiteOptions');
 
         $adsPath = WWW_ROOT . 'ads.txt';
         if (file_exists($adsPath)) {

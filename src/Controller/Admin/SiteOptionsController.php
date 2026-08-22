@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 use App\Service\SiteOptionsService;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Throwable;
 
 /**
  * Admin Site Options Controller
@@ -281,7 +282,7 @@ class SiteOptionsController extends AppController
         try {
             file_put_contents($adsFile, $line, LOCK_EX);
             $this->Flash->success('ads.txt has been written to webroot.');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->Flash->error('Unable to write ads.txt. Check filesystem permissions.');
         }
 
