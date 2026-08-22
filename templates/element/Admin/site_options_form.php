@@ -10,6 +10,50 @@ declare(strict_types=1);
 <turbo-frame id="site_options_frame">
     <?= $this->Flash->render() ?>
 
+    <?php
+    // If any ad slot is in Google AdSense mode, verify ads.txt contains the configured Publisher ID.
+    $googleEnabled = false;
+    foreach ($siteOptionDefinitions as $optKey => $def) {
+        if (is_string($optKey) && str_ends_with($optKey, '_google_mode')) {
+            if (!empty($siteOptions[$optKey])) {
+                $googleEnabled = true;
+                break;
+            }
+        }
+    }
+
+    if ($googleEnabled) {
+        $publisherId = trim((string)($siteOptions['ad_publisher_id'] ?? ''));
+        $adScript = trim((string)($siteOptions['ad_script'] ?? ''));
+
+        // Try to extract publisher id from script if admin didn't fill the field.
+        if ($publisherId === '' && $adScript !== '') {
+            if (preg_match('/(ca-pub-\d+|pub-\d+)/i', $adScript, $m)) {
+                $publisherId = $m[1] ?? $m[0];
+            }
+        }
+
+        $adsFilename = 'ads.txt';
+        $adsFullPath = WWW_ROOT . $adsFilename;
+
+        if ($publisherId === '') {
+            echo $this->Html->div('alert alert-warning mb-3', 'Google-mode ads are enabled but no Publisher ID is configured. Please set the Publisher ID in Site Options (Ads - Publisher ID).');
+        } else {
+            if (!file_exists($adsFullPath)) {
+                echo $this->Html->div('alert alert-warning mb-3', 'Google-mode ads are enabled but ' . h($adsFilename) . ' is missing from the webroot. Upload an ads.txt that contains your Publisher ID (' . h($publisherId) . ').');
+            } else {
+                $contents = (string)file_get_contents($adsFullPath);
+                if (stripos($contents, $publisherId) !== false) {
+                    echo $this->Html->div('alert alert-success mb-3', "Authorized: Your publisher ID was found in the site's ads.txt file.");
+                } else {
+                    echo $this->Html->div('alert alert-warning mb-3', h($adsFilename) . ' found but Publisher ID ' . h($publisherId) . ' was not present. Please add a line like: google.com, ' . h($publisherId) . ', DIRECT, f08c47fec0942fa0');
+                }
+            }
+        }
+    }
+
+    ?>
+
     <div class="card shadow-sm">
         <div class="card-header">
             <h3 class="card-title mb-0">Global Site Settings</h3>
@@ -48,7 +92,7 @@ declare(strict_types=1);
                     ]) ?>
                 <?php else : ?>
                     <?php
-                    $inputType = in_array($type, ['number', 'email'], true) ? $type : 'text';
+                    $inputType = in_array($type, ['number', 'email', 'textarea'], true) ? $type : 'text';
                     $controlOptions = [
                         'type' => $inputType,
                         'label' => $label,
@@ -60,6 +104,10 @@ declare(strict_types=1);
                     if ($inputType === 'number') {
                         $controlOptions['step'] = 1;
                         $controlOptions['min'] = 1;
+                    }
+
+                    if ($inputType === 'textarea') {
+                        $controlOptions['rows'] = 4;
                     }
                     ?>
                     <?= $this->Form->control($optionKey, $controlOptions) ?>
@@ -76,6 +124,21 @@ declare(strict_types=1);
             </div>
 
             <?= $this->Form->end() ?>
+            <?php
+            // Offer a one-click write of ads.txt when a Publisher ID is configured.
+            $publisherIdBtn = trim((string)($siteOptions['ad_publisher_id'] ?? ''));
+            if ($publisherIdBtn === '') {
+                // try to extract from script as a fallback
+                $scriptFallback = trim((string)($siteOptions['ad_script'] ?? ''));
+                if ($scriptFallback !== '' && preg_match('/(ca-pub-\d+|pub-\d+)/i', $scriptFallback, $m)) {
+                    $publisherIdBtn = $m[1] ?? $m[0];
+                }
+            }
+
+            if ($publisherIdBtn !== '') :
+                echo $this->Form->postButton('Write ads.txt', ['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'writeAdsTxt'], ['class' => 'btn btn-outline-secondary mt-3', 'data-turbo-frame' => 'site_options_frame']);
+            endif;
+            ?>
         </div>
     </div>
 </turbo-frame>

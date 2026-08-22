@@ -49,13 +49,17 @@
     <main id="main-content" class="rh-main">
         <div class="rh-main-bg">
             <div class="rh-main-inner">
+                <?= $this->element('Ads/block', ['slot' => 'below_nav']) ?>
                 <?= $flash ?>
                 <?= $content ?>
+
+                <?= $this->element('Ads/block', ['slot' => 'below_content']) ?>
             </div>
         </div>
     </main>
 
     <footer class="rh-footer">
+        <?= $this->element('Ads/block', ['slot' => 'footer']) ?>
         <div class="rh-footer-inner">
             <div class="rh-footer-copy">
                 <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory</span>

@@ -90,6 +90,53 @@
   --bs-border-color: var(--rh-border);
 }
 
+/* ==========================================================================
+   Responsive Ad Slot Styles
+   - Remove dotted borders and let ad blocks inherit surrounding backgrounds
+   - Make images/iframes/ins scale to container width for responsiveness
+   ========================================================================== */
+.rh-ad-slot {
+  background: inherit;
+  border: none !important;
+  padding: 0.75rem 0;
+  margin: 1rem 0;
+  box-sizing: border-box;
+}
+
+.rh-ad-slot__inner {
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  background: inherit;
+}
+
+.rh-ad-slot__inner img,
+.rh-ad-slot__inner iframe,
+.rh-ad-slot__inner ins,
+.rh-ad-slot__inner > div {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.rh-ad-slot--google ins.adsbygoogle {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.rh-ad-slot--google iframe {
+  width: 100% !important;
+  height: auto !important;
+}
+
+@media (min-width: 992px) {
+  .rh-ad-slot__inner {
+    max-width: var(--rh-shell-max-desktop);
+  }
+}
+
 :root[data-theme="light"] {
   --rh-bg: #444444;
 

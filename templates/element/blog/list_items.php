@@ -14,7 +14,15 @@ declare(strict_types=1);
  * @var \App\View\AppView $this
  */
 ?>
-<?php foreach ($paginatedPosts as $post) : ?>
+<?php
+$indexOffset = max(0, ($page - 1) * $limit);
+
+// Page 1 list starts after the featured post, so global feed positions shift by one.
+if ($page === 1) {
+    $indexOffset += 1;
+}
+?>
+<?php foreach ($paginatedPosts as $index => $post) : ?>
 <div class="blog-list-item-wrapper mb-3 pb-3 border-bottom">
     <a href="<?= $this->Url->build(['controller' => 'Blog', 'action' => 'view', $post->slug]) ?>" class="text-decoration-none text-body">
         <article class="blog-list-item d-flex gap-3">
@@ -47,5 +55,9 @@ declare(strict_types=1);
         </article>
     </a>
 </div>
+
+    <?php if (($indexOffset + $index + 1) % 5 === 0) : ?>
+        <?= $this->element('Ads/block', ['slot' => 'news_every_fifth']) ?>
+    <?php endif; ?>
 <?php endforeach; ?>
 

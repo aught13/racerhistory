@@ -110,6 +110,7 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         'content' => $content,
         'flash' => $flash,
     ]) ?>
+    <?= $this->element('Ads/global_script') ?>
 </body>
 
 </html>
