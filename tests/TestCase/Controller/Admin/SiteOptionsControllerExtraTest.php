@@ -147,6 +147,34 @@ class SiteOptionsControllerExtraTest extends TestCase
     }
 
     /**
+     * Invalid ref should fail fast for edit-sport-configs as well.
+     */
+    public function testEditSportConfigsInvalidSportRefRedirectsToEdit(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $this->get('/admin/site-options/edit-sport-configs/not-a-sport');
+
+        $this->assertRedirect('/admin/site-options/edit');
+        $this->assertFlashMessage('Sport not found.');
+    }
+
+    /**
+     * Invalid sport refs should short-circuit delete config action.
+     */
+    public function testDeleteSportConfigInvalidSportRefRedirectsToEdit(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $this->delete('/admin/site-options/delete-sport-config/not-a-sport/officials');
+
+        $this->assertRedirect('/admin/site-options/edit');
+        $this->assertFlashMessage('Sport not found.');
+    }
+
+    /**
      * Role-privilege editor should render and persist posted matrix changes.
      */
     public function testEditRolePrivilegesGetAndPost(): void

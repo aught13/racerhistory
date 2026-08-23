@@ -108,4 +108,37 @@ class TeamSeasonAdminServiceTest extends TestCase
         $deleted = $this->service->bulkDeleteTeamSeasons(['1', '2'], $contributorIdentity);
         $this->assertSame(0, $deleted);
     }
+
+    /**
+     * Bulk delete should remove allowed IDs for admin identities.
+     */
+    public function testBulkDeleteTeamSeasonsDeletesAllowedIdsForAdmin(): void
+    {
+        $adminIdentity = [
+            'id' => 1,
+            'role' => 'admin',
+            'role_id' => 1,
+            'status' => 'active',
+            'active' => true,
+        ];
+
+        $deleted = $this->service->bulkDeleteTeamSeasons(['1', '2', 'bad'], $adminIdentity);
+        $this->assertSame(2, $deleted);
+    }
+
+    /**
+     * Save-new flow should normalize numeric image IDs for ORM type safety.
+     */
+    public function testSaveNewTeamSeasonNormalizesImageInput(): void
+    {
+        $result = $this->service->saveNewTeamSeason([
+            'team_id' => 1,
+            'season_id' => 1,
+            'semester' => 1,
+            'team_season_image' => '1',
+        ]);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, (int)$result['teamSeason']->team_season_image);
+    }
 }
