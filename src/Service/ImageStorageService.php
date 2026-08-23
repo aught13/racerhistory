@@ -47,10 +47,15 @@ class ImageStorageService
      * @param \Psr\Http\Message\UploadedFileInterface $file
      * @param array<int|string,string|array>          $tags
      * @param array<string,mixed>                     $manipulations
+     * @param int|null                                $ownerId    Optional user id to set as image owner
      * @return array<string,mixed>
      */
-    public function upload(UploadedFileInterface $file, array $tags = [], array $manipulations = []): array
-    {
+    public function upload(
+        UploadedFileInterface $file,
+        array $tags = [],
+        array $manipulations = [],
+        ?int $ownerId = null,
+    ): array {
         $this->lastError = null;
 
         $validation = $this->validateUpload($file);
@@ -74,7 +79,7 @@ class ImageStorageService
             return ['success' => true, 'image' => $existing, 'existing' => true];
         }
 
-        $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename());
+        $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename(), $ownerId);
         if ($image) {
             $this->tagging->attachTags((int)$image->id, $tags);
 
@@ -152,6 +157,7 @@ class ImageStorageService
      * @param string $mime
      * @param string $ext
      * @param string|null $originalName
+     * @param int|null $ownerId
      */
     public function persistNewImage(
         ImagesTable $images,
@@ -160,6 +166,7 @@ class ImageStorageService
         string $mime,
         string $ext,
         ?string $originalName,
+        ?int $ownerId = null,
     ): ?Image {
         $uuid = Text::uuid();
         $subdir = date('Y') . '/' . date('m');
@@ -194,6 +201,7 @@ class ImageStorageService
             'variants' => json_encode($variantMeta),
             'hash' => $hash,
             'status' => 'active',
+            'user_id' => $ownerId !== null && $ownerId > 0 ? $ownerId : null,
         ];
         $image = $images->newEntity($data);
         if ($images->save($image)) {

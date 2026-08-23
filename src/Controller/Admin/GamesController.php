@@ -353,7 +353,8 @@ class GamesController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
-        if ($this->gamesAdminService->delete((int)$id)) {
+        $identity = $this->request->getAttribute('identity');
+        if ($this->gamesAdminService->delete((int)$id, $identity)) {
             $this->Flash->success(__('The game has been deleted.'));
         } else {
             $this->Flash->error(__('The game could not be deleted. Please, try again.'));
@@ -384,7 +385,8 @@ class GamesController extends AppController
     {
         $this->request->allowMethod(['post']);
         $ids = (array)$this->request->getData('game_ids');
-        $result = $this->gamesAdminService->bulkDelete($ids);
+        $identity = $this->request->getAttribute('identity');
+        $result = $this->gamesAdminService->bulkDelete($ids, $identity);
         if ($result['deleted'] > 0) {
             $this->Flash->success(__('Deleted {0} game(s).', $result['deleted']));
         } else {

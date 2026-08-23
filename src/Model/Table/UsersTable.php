@@ -11,7 +11,9 @@ use Cake\Event\EventInterface;
 use Cake\I18n\DateTime;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
+use Throwable;
 
 /**
  * Users Model
@@ -54,6 +56,22 @@ class UsersTable extends Table
             'created' => 'created', // Fixed: use 'created' not 'created_at'
             'modified' => 'modified', // Fixed: use 'modified' not 'updated_at'
         ]);
+
+        $this->belongsTo('ProfileImages', [
+            'className' => 'Images',
+            'foreignKey' => 'profile_image_id',
+        ]);
+        $this->belongsTo('Roles', [
+            'foreignKey' => 'role_id',
+            'propertyName' => 'role_record',
+        ]);
+        $this->hasMany('BlogPosts', [
+            'foreignKey' => 'user_id',
+        ]);
+        $this->hasMany('Uploads', [
+            'className' => 'Images',
+            'foreignKey' => 'user_id',
+        ]);
     }
 
     /**
@@ -88,7 +106,15 @@ class UsersTable extends Table
 
             ->requirePresence('password', 'create')
             ->notEmptyString('password')
-            ->minLength('password', 8, 'Password must be at least 8 characters');
+            ->minLength('password', 8, 'Password must be at least 8 characters')
+
+            ->allowEmptyString('display_name')
+            ->allowEmptyString('bio')
+            ->allowEmptyString('website_url')
+            ->integer('role_id')
+            ->allowEmptyString('role_id')
+            ->allowEmptyString('role')
+            ->allowEmptyArray('social_links');
 
         return $validator;
     }
@@ -125,6 +151,40 @@ class UsersTable extends Table
         // Set is_superuser based on role
         if ($entity->isDirty('role')) {
             $entity->is_superuser = ($entity->role === 'admin');
+        }
+
+        // Keep legacy string role and new role_id in sync during migration to
+        // database-backed RBAC. If the roles table is not available yet (tests,
+        // partial migrations), fail soft and preserve current behavior.
+        try {
+            $rolesTable = TableRegistry::getTableLocator()->get('Roles');
+
+            if ($entity->isDirty('role_id') && $entity->role_id) {
+                $roleRow = $rolesTable->find()
+                    ->select(['name'])
+                    ->where(['id' => (int)$entity->role_id])
+                    ->disableHydration()
+                    ->first();
+                if (is_array($roleRow) && !empty($roleRow['name'])) {
+                    $entity->role = strtolower((string)$roleRow['name']);
+                    $entity->is_superuser = ($entity->role === 'admin');
+                }
+            } elseif ($entity->isDirty('role') && !empty($entity->role) && !$entity->role_id) {
+                $normalizedRole = match (strtolower((string)$entity->role)) {
+                    'author' => 'blogger',
+                    default => strtolower((string)$entity->role),
+                };
+                $roleRow = $rolesTable->find()
+                    ->select(['id'])
+                    ->where(['LOWER(name)' => $normalizedRole])
+                    ->disableHydration()
+                    ->first();
+                if (is_array($roleRow) && !empty($roleRow['id'])) {
+                    $entity->role_id = (int)$roleRow['id'];
+                }
+            }
+        } catch (Throwable) {
+            // Preserve existing save flow when the RBAC schema is not yet present.
         }
 
         // Set activation_date when user becomes active

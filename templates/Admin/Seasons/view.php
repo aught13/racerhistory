@@ -5,6 +5,12 @@
  * @var object $previousSeason
  * @var \App\Model\Entity\Season $season
  */
+
+$canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
+$canCreateTeamSeasons = $this->Rbac->can('TeamSeasons', 'create');
+$canUpdateTeamSeasons = $this->Rbac->can('TeamSeasons', 'update');
+$canUpdateSeasons = $this->Rbac->can('Seasons', 'update');
+$canDeleteSeasons = $this->Rbac->can('Seasons', 'delete');
 ?>
 <?php $this->assign('title', 'Season Details'); ?>
 <div class="container py-4">
@@ -47,14 +53,18 @@
                     <h1 class="mb-0">Season: <?= h($season->start . '-' . $season->end) ?></h1>
                 </div>
                 <div class="btn-group">
-                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
-                        class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> Edit Season
-                    </a>
-                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'add', '?' => ['season_id' => $season->id]]) ?>"
-                        class="btn btn-success">
-                        <i class="bi bi-plus-circle"></i> Add Team Season
-                    </a>
+                    <?php if ($canUpdateSeasons) : ?>
+                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
+                            class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Edit Season
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($canCreateTeamSeasons) : ?>
+                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'add', '?' => ['season_id' => $season->id]]) ?>"
+                            class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Add Team Season
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -136,10 +146,17 @@
                                     <td><?= h($teamSeason->league ?: '-') ?></td>
                                     <td><?= h($teamSeason->league_finish ?: '-') ?></td>
                                     <td>
-                                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>"
-                                            class="btn btn-sm btn-info">View</a>
-                                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
-                                            class="btn btn-sm btn-primary">Edit</a>
+                                        <?php if ($canReadTeamSeasons) : ?>
+                                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>"
+                                                class="btn btn-sm btn-info">View</a>
+                                        <?php endif; ?>
+                                        <?php if ($canUpdateTeamSeasons) : ?>
+                                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
+                                                class="btn btn-sm btn-primary">Edit</a>
+                                        <?php endif; ?>
+                                        <?php if (!$canReadTeamSeasons && !$canUpdateTeamSeasons) : ?>
+                                            <span class="text-muted">No actions</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -182,14 +199,18 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
-                            class="btn btn-primary">
-                            <i class="bi bi-pencil"></i> Edit Season
-                        </a>
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'add', '?' => ['season_id' => $season->id]]) ?>"
-                            class="btn btn-success">
-                            <i class="bi bi-plus-circle"></i> Add Team Season
-                        </a>
+                        <?php if ($canUpdateSeasons) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
+                                class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> Edit Season
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($canCreateTeamSeasons) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'add', '?' => ['season_id' => $season->id]]) ?>"
+                                class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> Add Team Season
+                            </a>
+                        <?php endif; ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'index']) ?>"
                             class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Back to Seasons
@@ -201,15 +222,17 @@
                                 ['label' => 'Team Seasons', 'count' => $teamSeasonCount],
                             ]);
                             ?>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
-                            data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id]) ?>"
-                            data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
-                            data-item-type="season" data-associated='<?= $associated ?>'
-                            data-form-id="delete-form-season-<?= $season->id ?>">
-                            <i class="bi bi-trash"></i> Delete Season
-                        </button>
-                        <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id], 'id' => 'delete-form-season-' . $season->id, 'style' => 'display:none']) ?>
-                        <?= $this->Form->end() ?>
+                        <?php if ($canDeleteSeasons) : ?>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                                data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id]) ?>"
+                                data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
+                                data-item-type="season" data-associated='<?= $associated ?>'
+                                data-form-id="delete-form-season-<?= $season->id ?>">
+                                <i class="bi bi-trash"></i> Delete Season
+                            </button>
+                            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id], 'id' => 'delete-form-season-' . $season->id, 'style' => 'display:none']) ?>
+                            <?= $this->Form->end() ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

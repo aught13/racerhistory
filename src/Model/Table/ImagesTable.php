@@ -46,6 +46,9 @@ class ImagesTable extends Table
             'targetForeignKey' => 'image_tag_id',
             'joinTable' => 'images_image_tags',
         ]);
+        $this->belongsTo('Users', [
+            'foreignKey' => 'user_id',
+        ]);
     }
 
     /**
@@ -66,7 +69,8 @@ class ImagesTable extends Table
             ->integer('width')->allowEmptyString('width')
             ->integer('height')->allowEmptyString('height')
             ->scalar('hash')->maxLength('hash', 64)->notEmptyString('hash')
-            ->scalar('status')->maxLength('status', 20)->notEmptyString('status');
+            ->scalar('status')->maxLength('status', 20)->notEmptyString('status')
+            ->scalar('photo_credit')->maxLength('photo_credit', 255)->allowEmptyString('photo_credit');
 
         return $validator;
     }

@@ -94,7 +94,7 @@ class PersonsController extends AppController
             'length' => (int)$this->request->getQuery('length'),
             'searchValue' => trim((string)($this->request->getQuery('search')['value'] ?? '')),
             'orderDir' => $orderDir,
-        ]);
+        ], $this->request->getAttribute('identity'));
 
         return $this->response
             ->withType('application/json')
@@ -181,8 +181,9 @@ class PersonsController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $identity = $this->request->getAttribute('identity');
 
-        if ($this->personAdminService->delete($id)) {
+        if ($this->personAdminService->delete($id, $identity)) {
             $this->Flash->success(__('The person has been deleted.'));
         } else {
             $this->Flash->error(__('The person could not be deleted. Please, try again.'));
@@ -199,6 +200,7 @@ class PersonsController extends AppController
     public function bulkDelete(): Response
     {
         $this->request->allowMethod(['post']);
+        $identity = $this->request->getAttribute('identity');
         $ids = (array)$this->request->getData('person_ids');
         $ids = array_values(array_filter($ids, fn($v) => $v !== '' && $v !== null && ctype_digit((string)$v)));
 
@@ -208,7 +210,7 @@ class PersonsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $deleted = $this->personAdminService->bulkDelete($ids);
+        $deleted = $this->personAdminService->bulkDelete($ids, $identity);
 
         if ($deleted > 0) {
             $this->Flash->success(__('Deleted {0} person(s).', $deleted));

@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace App\Policy;
 
-use ArrayAccess;
+use App\Service\RbacPermissionService;
 use Authorization\IdentityInterface;
 use Cake\Http\ServerRequest;
-use Throwable;
 
 /**
  * Request Policy
@@ -16,6 +15,16 @@ use Throwable;
  */
 class RequestPolicy
 {
+    private RbacPermissionService $rbacPermissionService;
+
+    /**
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService Optional RBAC service override.
+     */
+    public function __construct(?RbacPermissionService $rbacPermissionService = null)
+    {
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
+    }
+
     /**
      * Check if user can access a given request.
      *
@@ -56,68 +65,11 @@ class RequestPolicy
      */
     public function canAccessAdmin(?IdentityInterface $identity, ServerRequest $request): bool
     {
-        if ($identity === null) {
-            return false;
-        }
-
-        // Get user data from identity
-        $user = $identity->getOriginalData();
-
-        // Check if user has admin role
-        $role = $this->extractUserField($user, 'role');
-        if ($role !== 'admin') {
-            return false;
-        }
-
-        // Check if user is active (either status='active' or active=true)
-        $status = $this->extractUserField($user, 'status');
-        $active = $this->extractUserField($user, 'active');
-
-        // Accept if status is 'active' OR active boolean is true
-        // (for backward compatibility during transition)
-        if ($status === 'active' || $active === true || $active === 1) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Safely extract field from various user data formats
-     *
-     * @param mixed $data User data (array, object, entity)
-     * @param string $field Field name
-     * @return mixed|null
-     */
-    private function extractUserField(mixed $data, string $field): mixed
-    {
-        if (is_array($data)) {
-            return $data[$field] ?? null;
-        }
-
-        if ($data instanceof ArrayAccess && isset($data[$field])) {
-            return $data[$field];
-        }
-
-        if (is_object($data)) {
-            if (method_exists($data, 'get')) {
-                try {
-                    return $data->get($field);
-                } catch (Throwable $e) {
-                    // Fall through
-                }
-            }
-
-            if (property_exists($data, $field)) {
-                return $data->{$field};
-            }
-
-            $accessor = 'get' . ucfirst($field);
-            if (method_exists($data, $accessor)) {
-                return $data->{$accessor}();
-            }
-        }
-
-        return null;
+        return $this->rbacPermissionService->canAccessAdminRequest(
+            $identity,
+            (string)$request->getParam('controller'),
+            (string)$request->getParam('action'),
+            $request->getUri()->getPath(),
+        );
     }
 }

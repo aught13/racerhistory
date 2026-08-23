@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Support;
 
+use Authentication\Identity;
+
 /**
  * AuthTestTrait
  *
@@ -35,5 +37,12 @@ trait AuthTestTrait
         $data = $overrides + $defaults;
 
         $this->session(['Auth' => $data]);
+
+        // Also inject a proper Authentication\Identity instance into the
+        // request attributes so the Authentication middleware recognizes
+        // the request as authenticated during the request cycle (POSTs).
+        // This mirrors how the Authentication plugin represents identities.
+        $identity = new Identity($data);
+        $this->configRequest(['attributes' => ['identity' => $identity]]);
     }
 }

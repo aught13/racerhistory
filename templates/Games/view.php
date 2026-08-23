@@ -243,17 +243,25 @@ $this->start('css'); ?>
                         <div class="game-photos-grid" data-game-image-gallery>
                             <?php foreach ($images as $image) : ?>
                                 <div class="game-photo-thumb">
-                                    <?= $this->ImageServe->picture(
+                                    <?php
+                                    $imgContent = $this->ImageServe->picture(
                                         $image,
                                         [],
                                         [
                                             'alt' => (string)$image->filename,
                                             'data-image-url' => $this->ImageServe->urlForImage($image),
                                             'data-image-filename' => (string)$image->filename,
+                                            'data-photo-credit' => (string)($image->photo_credit ?? ''),
                                             'class' => 'game-photo-thumb-img',
                                             'style' => 'width: 240px; height: 180px; object-fit: cover;',
                                         ],
-                                    ) ?>
+                                    );
+
+                                    echo $this->element('image_with_credit', [
+                                        'image' => $image,
+                                        'imgContent' => $imgContent,
+                                    ]);
+                                    ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -262,10 +270,13 @@ $this->start('css'); ?>
 
                 <div class="game-image-modal" data-game-image-modal style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1050; align-items: center; justify-content: center;">
                     <button type="button" class="game-image-modal-close" aria-label="Close" data-modal-close style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; z-index: 1051;">x</button>
-                    <picture class="game-image-modal-container" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center;">
-                        <source type="image/webp" data-modal-image-webp>
-                        <img src="" alt="" data-modal-image data-modal-image-fallback style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
-                    </picture>
+                    <div class="game-image-modal-inner" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <picture class="game-image-modal-container" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center;">
+                            <source type="image/webp" data-modal-image-webp>
+                            <img src="" alt="" data-modal-image data-modal-image-fallback style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
+                        </picture>
+                        <div data-modal-photo-credit class="position-absolute bottom-0 end-0 p-2 m-3 rounded text-white" style="background-color: rgba(0,0,0,0.6); font-size: 0.9rem; z-index: 1052; display: none;"></div>
+                    </div>
                 </div>
             <?php endif; ?>
 

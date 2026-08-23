@@ -14,6 +14,12 @@
 $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
     ? $this->ImageServe->url((int)$teamSeason->team_season_image)
     : '';
+
+$canReadTeams = $this->Rbac->can('Teams', 'read');
+$canReadSeasons = $this->Rbac->can('Seasons', 'read');
+$canUpdateTeamSeasons = $this->Rbac->can('TeamSeasons', 'update');
+$canDeleteTeamSeasons = $this->Rbac->can('TeamSeasons', 'delete');
+$canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
 ?>
 <?php $this->assign('title', 'Team Season Details'); ?>
 <div class="container py-4">
@@ -70,16 +76,18 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                         <?php endif; ?>
                     </h1>
                 </div>
-                <div class="btn-group">
-                    <a href="<?= $this->Url->build([
-                            'prefix' => 'Admin',
-                            'controller' => 'TeamSeasons',
-                            'action' => 'edit',
-                            $teamSeason->id,
-                        ]) ?>" class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> Edit Team Season
-                    </a>
-                </div>
+                <?php if ($canUpdateTeamSeasons) : ?>
+                    <div class="btn-group">
+                        <a href="<?= $this->Url->build([
+                                'prefix' => 'Admin',
+                                'controller' => 'TeamSeasons',
+                                'action' => 'edit',
+                                $teamSeason->id,
+                            ]) ?>" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Edit Team Season
+                        </a>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -97,25 +105,33 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                                 <dt class="col-sm-4">Team:</dt>
                                 <dd class="col-sm-8">
                                     <?php if (isset($teamSeason->team)) : ?>
-                                    <a
-                                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $teamSeason->team->id]) ?>">
-                                        <?= h($teamSeason->team->team_name) ?>
-                                    </a>
-                                    <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
+                                        <?php if ($canReadTeams) : ?>
+                                            <a
+                                                href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $teamSeason->team->id]) ?>">
+                                                <?= h($teamSeason->team->team_name) ?>
+                                            </a>
+                                        <?php else : ?>
+                                            <?= h($teamSeason->team->team_name) ?>
+                                        <?php endif; ?>
+                                        <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
                                     <?php else : ?>
-                                    <em>Team not loaded</em>
+                                        <em>Team not loaded</em>
                                     <?php endif; ?>
                                 </dd>
 
                                 <dt class="col-sm-4">Season:</dt>
                                 <dd class="col-sm-8">
                                     <?php if (isset($teamSeason->season)) : ?>
-                                    <a
-                                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'view', $teamSeason->season->id]) ?>">
-                                        <?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>
-                                    </a>
+                                        <?php if ($canReadSeasons) : ?>
+                                            <a
+                                                href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'view', $teamSeason->season->id]) ?>">
+                                                <?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>
+                                            </a>
+                                        <?php else : ?>
+                                            <?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>
+                                        <?php endif; ?>
                                     <?php else : ?>
-                                    <em>Season not loaded</em>
+                                        <em>Season not loaded</em>
                                     <?php endif; ?>
                                 </dd>
 
@@ -247,19 +263,21 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
-                            class="btn btn-primary">
-                            <i class="bi bi-pencil"></i> Edit Team Season
-                        </a>
+                        <?php if ($canUpdateTeamSeasons) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
+                                class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> Edit Team Season
+                            </a>
+                        <?php endif; ?>
 
-                        <?php if (isset($teamSeason->team)) : ?>
+                        <?php if (isset($teamSeason->team) && $canReadTeams) : ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $teamSeason->team->id]) ?>"
                             class="btn btn-outline-info">
                             <i class="bi bi-eye"></i> View Team
                         </a>
                         <?php endif; ?>
 
-                        <?php if (isset($teamSeason->season)) : ?>
+                        <?php if (isset($teamSeason->season) && $canReadSeasons) : ?>
                         <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'view', $teamSeason->season->id]) ?>"
                             class="btn btn-outline-info">
                             <i class="bi bi-eye"></i> View Season
@@ -271,16 +289,18 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                             <i class="bi bi-arrow-left"></i> Back to Team Seasons
                         </a>
 
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal"
-                            data-bs-target="#confirm-delete-modal"
-                            data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id]) ?>"
-                            data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
-                            data-item-type="team season" data-associated='[]'
-                            data-form-id="delete-form-team-season-<?= $teamSeason->id ?>">
-                            <i class="bi bi-trash"></i> Delete Team Season
-                        </button>
-                        <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id], 'id' => 'delete-form-team-season-' . $teamSeason->id, 'style' => 'display:none']) ?>
-                        <?= $this->Form->end() ?>
+                        <?php if ($canDeleteTeamSeasons) : ?>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                                data-bs-target="#confirm-delete-modal"
+                                data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id]) ?>"
+                                data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
+                                data-item-type="team season" data-associated='[]'
+                                data-form-id="delete-form-team-season-<?= $teamSeason->id ?>">
+                                <i class="bi bi-trash"></i> Delete Team Season
+                            </button>
+                            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id], 'id' => 'delete-form-team-season-' . $teamSeason->id, 'style' => 'display:none']) ?>
+                            <?= $this->Form->end() ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -300,10 +320,14 @@ $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
                         <dt class="col-sm-4">Sport:</dt>
                         <dd class="col-sm-8">
                             <?php if (!empty($sportRef)) : ?>
-                                <a
-                                    href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'sportsConfigs', $sportRef]) ?>">
+                                <?php if ($canReadSiteOptions) : ?>
+                                    <a
+                                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'SiteOptions', 'action' => 'sportsConfigs', $sportRef]) ?>">
+                                        <?= h($sportName) ?>
+                                    </a>
+                                <?php else : ?>
                                     <?= h($sportName) ?>
-                                </a>
+                                <?php endif; ?>
                             <?php else : ?>
                                 <?= h($sportName) ?>
                             <?php endif; ?>

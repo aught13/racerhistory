@@ -53,13 +53,17 @@ class PersonAdminService
      */
     private TeamSportContextService $teamSportContextService;
 
+    private RbacPermissionService $rbacPermissionService;
+
     /**
      * @param \App\Model\Table\PersonsTable|null $personsTable
      * @param \App\Service\StatsService|null $statsService
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService
      */
     public function __construct(
         ?PersonsTable $personsTable = null,
         ?StatsService $statsService = null,
+        ?RbacPermissionService $rbacPermissionService = null,
     ) {
         /** @var \App\Model\Table\PersonsTable $table */
         $table = $personsTable ?? TableRegistry::getTableLocator()->get('Persons');
@@ -67,6 +71,7 @@ class PersonAdminService
 
         $this->statsService = $statsService ?? new StatsService();
         $this->teamSportContextService = new TeamSportContextService();
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
     }
 
     /**
@@ -90,9 +95,10 @@ class PersonAdminService
      *  - orderDir ('asc'|'desc', default 'asc')
      *
      * @param array<string,mixed> $params DataTables request parameters
+     * @param mixed $identity Current authenticated identity
      * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
      */
-    public function buildDataTablesResponse(array $params): array
+    public function buildDataTablesResponse(array $params, mixed $identity = null): array
     {
         $draw = (int)($params['draw'] ?? 1);
         $start = max(0, (int)($params['start'] ?? 0));
@@ -133,6 +139,10 @@ class PersonAdminService
         /** @var array<\App\Model\Entity\Person> $persons */
         $persons = $query->limit($length)->offset($start)->all()->toArray();
 
+        $canReadPersons = $this->rbacPermissionService->can($identity, 'Persons', 'read');
+        $canUpdatePersons = $this->rbacPermissionService->can($identity, 'Persons', 'update');
+        $canDeletePersons = $this->rbacPermissionService->can($identity, 'Persons', 'delete');
+
         $data = [];
         foreach ($persons as $person) {
             $displayName = h($person->display ?? trim($person->first . ' ' . $person->last));
@@ -155,13 +165,23 @@ class PersonAdminService
                 $person->id,
             ]);
 
-            $actions = '<a href="' . $viewUrl . '" class="btn btn-sm btn-info">View</a> ' .
-                '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a> ' .
-                '<button type="button" class="btn btn-sm btn-danger" ' .
+            $actionParts = [];
+            if ($canReadPersons) {
+                $actionParts[] = '<a href="' . $viewUrl . '" class="btn btn-sm btn-info">View</a>';
+            }
+            if ($canUpdatePersons) {
+                $actionParts[] = '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>';
+            }
+            if ($canDeletePersons) {
+                $actionParts[] = '<button type="button" class="btn btn-sm btn-danger" ' .
                     'data-bs-toggle="modal" data-bs-target="#confirm-delete-modal" ' .
                     'data-delete-url="' . $deleteUrl . '" ' .
                     'data-edit-url="' . $editUrl . '" ' .
                     'data-item-type="person">Delete</button>';
+            }
+            $actions = $actionParts !== []
+                ? implode(' ', $actionParts)
+                : '<span class="text-muted">No actions</span>';
 
             $data[] = [
                 'id' => $person->id,
@@ -338,12 +358,23 @@ class PersonAdminService
      * Delete a single person.
      *
      * @param string $id Person ID
+     * @param mixed $identity Current authenticated identity
      * @return bool
      * @throws \Cake\Datasource\Exception\RecordNotFoundException
      */
-    public function delete(string $id): bool
+    public function delete(string $id, mixed $identity = null): bool
     {
-        $person = $this->personsTable->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Persons',
+            $this->personsTable->find(),
+            'delete',
+            'id',
+        );
+        $person = $scoped->where(['Persons.id' => (int)$id])->first();
+        if ($person === null) {
+            return false;
+        }
 
         return (bool)$this->personsTable->delete($person);
     }
@@ -352,12 +383,32 @@ class PersonAdminService
      * Delete multiple persons by ID, silently skipping missing records.
      *
      * @param array<int|string> $ids Sanitized numeric IDs
+     * @param mixed $identity Current authenticated identity
      * @return int Count of successfully deleted records
      */
-    public function bulkDelete(array $ids): int
+    public function bulkDelete(array $ids, mixed $identity = null): int
     {
+        $allowed = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Persons',
+            $this->personsTable->find(),
+            'delete',
+            'id',
+        )
+            ->select(['Persons.id'])
+            ->where(['Persons.id IN' => array_map('intval', $ids)])
+            ->enableHydration(false)
+            ->all()
+            ->extract('id')
+            ->toList();
+
+        $allowedIds = array_values(array_map('intval', $allowed));
+        if ($allowedIds === []) {
+            return 0;
+        }
+
         $deleted = 0;
-        foreach ($ids as $id) {
+        foreach ($allowedIds as $id) {
             try {
                 $person = $this->personsTable->get($id);
                 if ($this->personsTable->delete($person)) {

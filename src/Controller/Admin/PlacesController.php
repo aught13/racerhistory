@@ -108,7 +108,7 @@ class PlacesController extends AppController
             'searchValue' => trim((string)($this->request->getQuery('search')['value'] ?? '')),
             'orderColumn' => $orderColumn,
             'orderDir' => $orderDir,
-        ]);
+        ], $this->request->getAttribute('identity'));
 
         return $this->response
             ->withType('application/json')
@@ -187,8 +187,9 @@ class PlacesController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $identity = $this->request->getAttribute('identity');
 
-        if ($this->placeAdminService->deletePlace($id)) {
+        if ($this->placeAdminService->deletePlace($id, $identity)) {
             $this->Flash->success('The place has been deleted.');
         } else {
             $this->Flash->error('The place could not be deleted.');

@@ -23,6 +23,12 @@ use Cake\ORM\Entity;
  * @property string|null $first_name
  * @property string|null $last_name
  * @property string $role
+ * @property int|null $role_id
+ * @property string|null $display_name
+ * @property string|null $bio
+ * @property int|null $profile_image_id
+ * @property string|null $website_url
+ * @property array|null $social_links
  * @property string $status
  * @property bool $active
  * @property bool $is_superuser
@@ -37,6 +43,7 @@ use Cake\ORM\Entity;
  * @property string|null $secret
  * @property bool|null $secret_verified
  * @property string|null $additional_data
+ * @property \App\Model\Entity\Role|null $role_record
  */
 class User extends Entity implements AuthenticationIdentity
 {

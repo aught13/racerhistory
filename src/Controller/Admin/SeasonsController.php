@@ -124,7 +124,9 @@ class SeasonsController extends AppController
     {
         $this->request->allowMethod(['post', 'delete']);
 
-        if ($this->seasonAdminService->deleteSeason($id)) {
+        $identity = $this->request->getAttribute('identity');
+
+        if ($this->seasonAdminService->deleteSeason($id, $identity)) {
             $this->Flash->success(__('The season has been deleted.'));
         } else {
             $this->Flash->error(__('The season could not be deleted. Please, try again.'));
@@ -142,6 +144,7 @@ class SeasonsController extends AppController
     {
         $this->request->allowMethod(['post']);
         $seasonIds = $this->seasonAdminService->sanitizeIdentifierList((array)$this->request->getData('season_ids'));
+        $identity = $this->request->getAttribute('identity');
 
         if (empty($seasonIds)) {
             $this->Flash->error('No seasons selected for deletion.');
@@ -149,7 +152,7 @@ class SeasonsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $deletedCount = $this->seasonAdminService->bulkDeleteSeasons($seasonIds);
+        $deletedCount = $this->seasonAdminService->bulkDeleteSeasons($seasonIds, $identity);
 
         if ($deletedCount > 0) {
             $this->Flash->success(__('Deleted {0} season(s).', $deletedCount));

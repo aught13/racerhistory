@@ -16,6 +16,8 @@ use Throwable;
  */
 class UserPolicy
 {
+    use RbacPolicyTrait;
+
     /**
      * Check if user can view another user
      *
@@ -104,14 +106,7 @@ class UserPolicy
      */
     protected function isAdmin(?IdentityInterface $identity): bool
     {
-        if ($identity === null) {
-            return false;
-        }
-
-        $user = $identity->getOriginalData();
-        $role = $this->extractField($user, 'role');
-
-        return $role === 'admin';
+        return $this->rbacPermissionService()->isAdmin($identity);
     }
 
     /**
@@ -134,10 +129,10 @@ class UserPolicy
     }
 
     /**
-     * Extract field from user data
+     * Extract a field from the underlying identity data.
      *
-     * @param mixed $data User data
-     * @param string $field Field name
+     * @param mixed $data Identity payload.
+     * @param string $field Field name to read.
      * @return mixed
      */
     protected function extractField(mixed $data, string $field): mixed
@@ -153,8 +148,8 @@ class UserPolicy
         if (is_object($data) && method_exists($data, 'get')) {
             try {
                 return $data->get($field);
-            } catch (Throwable $e) {
-                // Fall through
+            } catch (Throwable) {
+                return null;
             }
         }
 

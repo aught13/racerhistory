@@ -6,6 +6,7 @@
 
 $this->assign('title', 'Opponents');
 $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'datatables']);
+$canCreateOpponents = $this->Rbac->can('Opponents', 'create');
 ?>
 
 <div class="container-fluid py-4" data-controller="admin-index-table">
@@ -13,9 +14,11 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Opponen
         <div class="col">
             <h1 class="mb-1">Opponents</h1>
             <p class="text-muted mb-3">Manage opponent records. <?= (int)$opponentCount ?> total.</p>
-            <a href="<?= $this->Url->build(['action' => 'add']) ?>" class="btn btn-success mb-3">
-                <i class="bi bi-plus-circle"></i> Add New Opponent
-            </a>
+            <?php if ($canCreateOpponents) : ?>
+                <a href="<?= $this->Url->build(['action' => 'add']) ?>" class="btn btn-success mb-3">
+                    <i class="bi bi-plus-circle"></i> Add New Opponent
+                </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="row">

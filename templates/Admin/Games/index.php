@@ -13,6 +13,8 @@ $ajaxUrl = $this->Url->build([
 ]);
 
 $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk']);
+$canCreateGames = $this->Rbac->can('Games', 'create');
+$canDeleteGames = $this->Rbac->can('Games', 'delete');
 ?>
 <?php $this->assign('title', 'Manage Games'); ?>
 <div
@@ -52,10 +54,12 @@ $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games'
             <?php endif; ?>
 
             <div class="d-flex gap-2 mb-3">
-                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'add'] + (isset($teamSeason) ? ['?' => ['team_season_id' => $teamSeason->id]] : [])) ?>"
-                   class="btn btn-success" aria-label="Add new game">
-                    <i class="bi bi-plus-circle"></i> Add New Game
-                </a>
+                <?php if ($canCreateGames) : ?>
+                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'add'] + (isset($teamSeason) ? ['?' => ['team_season_id' => $teamSeason->id]] : [])) ?>"
+                       class="btn btn-success" aria-label="Add new game">
+                        <i class="bi bi-plus-circle"></i> Add New Game
+                    </a>
+                <?php endif; ?>
                 <?php if (isset($teamSeason)) : ?>
                     <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>"
                        class="btn btn-outline-secondary">
@@ -73,15 +77,17 @@ $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games'
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
                     <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto" data-admin-games-index-target="actionSelect">
                         <option value="">Choose...</option>
-                        <option value="delete">Delete</option>
+                        <?php if ($canDeleteGames) : ?>
+                            <option value="delete">Delete</option>
+                        <?php endif; ?>
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-games-index-target="actionButton">Go</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-games-index-target="actionButton"<?= $canDeleteGames ? '' : ' aria-disabled="true"' ?>>Go</button>
                 </div>
 
                 <table class="table table-striped table-bordered" id="games-table" data-admin-games-index-target="table">
                     <thead class="table-dark">
                     <tr>
-                        <th><input type="checkbox" id="select-all-games" aria-label="Select all games" data-admin-games-index-target="selectAll"></th>
+                        <th><input type="checkbox" id="select-all-games" aria-label="Select all games" data-admin-games-index-target="selectAll"<?= $canDeleteGames ? '' : ' disabled' ?>></th>
                         <th>Date</th>
                         <th>Team Season</th>
                         <th>H/R/N</th>

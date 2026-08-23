@@ -6,6 +6,7 @@
 
 $this->assign('title', 'Sites');
 $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'datatables']);
+$canCreateSites = $this->Rbac->can('Sites', 'create');
 ?>
 
 <div class="container-fluid py-4" data-controller="admin-index-table">
@@ -13,9 +14,11 @@ $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites',
         <div class="col">
             <h1 class="mb-1">Sites</h1>
             <p class="text-muted mb-3">Manage site records and their places. <?= (int)$siteCount ?> total.</p>
-            <a href="<?= $this->Url->build(['action' => 'add']) ?>" class="btn btn-success mb-3">
-                <i class="bi bi-plus-circle"></i> Add New Site
-            </a>
+            <?php if ($canCreateSites) : ?>
+                <a href="<?= $this->Url->build(['action' => 'add']) ?>" class="btn btn-success mb-3">
+                    <i class="bi bi-plus-circle"></i> Add New Site
+                </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="row">

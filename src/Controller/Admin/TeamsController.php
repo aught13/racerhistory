@@ -135,8 +135,9 @@ class TeamsController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $identity = $this->request->getAttribute('identity');
 
-        if ($this->teamAdminService->deleteTeam($id)) {
+        if ($this->teamAdminService->deleteTeam($id, $identity)) {
             $this->Flash->success(__('The team has been deleted.'));
         } else {
             $this->Flash->error(__('The team could not be deleted. Please, try again.'));
@@ -154,6 +155,7 @@ class TeamsController extends AppController
     {
         $this->request->allowMethod(['post']);
         $teamIds = $this->teamAdminService->sanitizeIdentifierList((array)$this->request->getData('team_ids'));
+        $identity = $this->request->getAttribute('identity');
 
         if (empty($teamIds)) {
             $this->Flash->error('No teams selected for deletion.');
@@ -161,7 +163,7 @@ class TeamsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $deletedCount = $this->teamAdminService->bulkDeleteTeams($teamIds);
+        $deletedCount = $this->teamAdminService->bulkDeleteTeams($teamIds, $identity);
 
         if ($deletedCount > 0) {
             $this->Flash->success(__('Deleted {0} team(s).', $deletedCount));
