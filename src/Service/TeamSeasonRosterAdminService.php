@@ -23,12 +23,15 @@ class TeamSeasonRosterAdminService
 {
     private TeamSportContextService $teamSportContextService;
 
+    private RbacPermissionService $rbacPermissionService;
+
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
      */
     public function __construct(?TeamSportContextService $teamSportContextService = null)
     {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+        $this->rbacPermissionService = new RbacPermissionService();
     }
 
     /**
@@ -255,12 +258,24 @@ class TeamSeasonRosterAdminService
      * Delete single roster row.
      *
      * @param string|int $id Team season roster identifier
+     * @param mixed $identity Current authenticated identity
      * @return array{success:bool,teamSeasonId:int}
      */
-    public function deleteRoster(int|string $id): array
+    public function deleteRoster(int|string $id, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
-        $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'TeamSeasonRosters',
+            $this->getTeamSeasonRostersTable()->find(),
+            'delete',
+            'id',
+        );
+        /** @var \App\Model\Entity\TeamSeasonRosters|null $teamSeasonRoster */
+        $teamSeasonRoster = $scoped->where(['TeamSeasonRosters.id' => (int)$id])->first();
+        if ($teamSeasonRoster === null) {
+            return ['success' => false, 'teamSeasonId' => 0];
+        }
+
         $teamSeasonId = (int)$teamSeasonRoster->get('team_season_id');
         $success = (bool)$this->getTeamSeasonRostersTable()->delete($teamSeasonRoster);
 
@@ -286,9 +301,10 @@ class TeamSeasonRosterAdminService
      * Bulk delete roster rows.
      *
      * @param array<mixed> $rawIds Raw identifier list
+     * @param mixed $identity Current authenticated identity
      * @return array{validSelection:bool,validRosters:bool,deletedCount:int,teamSeasonId:int|null}
      */
-    public function bulkDeleteRosters(array $rawIds): array
+    public function bulkDeleteRosters(array $rawIds, mixed $identity = null): array
     {
         $teamSeasonRosterIds = $this->sanitizeIdentifierList($rawIds);
         if ($teamSeasonRosterIds === []) {
@@ -300,9 +316,33 @@ class TeamSeasonRosterAdminService
             ];
         }
 
+        $allowedIds = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'TeamSeasonRosters',
+            $this->getTeamSeasonRostersTable()->find(),
+            'delete',
+            'id',
+        )
+            ->select(['TeamSeasonRosters.id'])
+            ->where(['TeamSeasonRosters.id IN' => $teamSeasonRosterIds])
+            ->enableHydration(false)
+            ->all()
+            ->extract('id')
+            ->toList();
+
+        $allowedIds = array_values(array_map('intval', $allowedIds));
+        if ($allowedIds === []) {
+            return [
+                'validSelection' => true,
+                'validRosters' => false,
+                'deletedCount' => 0,
+                'teamSeasonId' => null,
+            ];
+        }
+
         /** @var \App\Model\Entity\TeamSeasonRosters|null $firstRoster */
         $firstRoster = $this->getTeamSeasonRostersTable()->find()
-            ->where(['id IN' => $teamSeasonRosterIds])
+            ->where(['id IN' => $allowedIds])
             ->first();
 
         if (!$firstRoster) {
@@ -315,7 +355,7 @@ class TeamSeasonRosterAdminService
         }
 
         $teamSeasonId = (int)$firstRoster->get('team_season_id');
-        $deletedCount = $this->getTeamSeasonRostersTable()->deleteAll(['id IN' => $teamSeasonRosterIds]);
+        $deletedCount = $this->getTeamSeasonRostersTable()->deleteAll(['id IN' => $allowedIds]);
 
         return [
             'validSelection' => true,

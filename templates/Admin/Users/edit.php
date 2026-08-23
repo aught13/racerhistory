@@ -7,7 +7,7 @@
 <?php $this->assign('title', 'Edit User'); ?>
 <div class="container py-4" data-controller="password-toggle">
     <h1 class="mb-4">Edit User</h1>
-    <?= $this->Form->create($user) ?>
+    <?= $this->Form->create($user, ['type' => 'file']) ?>
     <div class="row">
         <div class="col-md-6">
             <?= $this->Form->control('username', ['class' => 'form-control']) ?>
@@ -24,14 +24,39 @@
             <?= $this->Form->control('last_name', ['label' => 'Last Name', 'class' => 'form-control']) ?>
         </div>
     </div>
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <?= $this->Form->control('display_name', ['label' => 'Display Name', 'class' => 'form-control']) ?>
+        </div>
+        <div class="col-md-6">
+            <?= $this->Form->control('website_url', ['label' => 'Website', 'class' => 'form-control']) ?>
+        </div>
+    </div>
+    <div class="mb-3 mt-3">
+        <?= $this->Form->control('bio', ['type' => 'textarea', 'rows' => 4, 'class' => 'form-control']) ?>
+    </div>
+    <div class="mb-3">
+        <?= $this->Form->control('social_links', ['type' => 'textarea', 'rows' => 3, 'class' => 'form-control', 'label' => 'Social Links (one URL per line)', 'placeholder' => 'https://twitter.com/yourhandle']) ?>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Profile Image</label>
+        <?php if (!empty($user->profile_image_id)) : ?>
+            <div class="mb-2">
+                <img src="<?= h($this->Url->build(['controller' => 'Images', 'action' => 'serve', $user->profile_image_id, '?' => ['profile' => 'roster_avatar']])) ?>" alt="<?= h($user->display_name ?: $user->username) ?>" class="img-thumbnail" style="max-width:150px;">
+            </div>
+        <?php endif; ?>
+        <?= $this->Form->control('profile_image_id', ['type' => 'select', 'options' => $imagesList ?? [], 'empty' => 'Select existing image (or leave)', 'label' => 'Choose existing image', 'class' => 'form-select mb-2']) ?>
+
+        <?= $this->Form->control('avatar', ['type' => 'file', 'label' => 'Upload Avatar', 'class' => 'form-control']) ?>
+    </div>
     <div class="row">
         <div class="col-md-6">
-            <?= $this->Form->control('role', [
+            <?= $this->Form->control('role_id', [
                 'type' => 'select',
-                'options' => [
-                    'user' => 'User',
-                    'admin' => 'Admin',
-                ],
+                'options' => $roleOptions ?? [],
+                'empty' => 'No RBAC role',
+                'label' => 'RBAC Role',
                 'class' => 'form-select',
             ]) ?>
         </div>

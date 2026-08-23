@@ -9,19 +9,28 @@
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Game> $teamSeasonGames
  * @var \App\View\AppView $this
  */
+
+$canReadGames = $this->Rbac->can('Games', 'read');
+$canCreateGames = $this->Rbac->can('Games', 'create');
+$canUpdateGames = $this->Rbac->can('Games', 'update');
+$canDeleteGames = $this->Rbac->can('Games', 'delete');
 ?>
 <div class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Games for this Season</h3>
         <div class="btn-group">
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-               class="btn btn-success btn-sm">
-                <i class="bi bi-plus-circle"></i> Add Game
-            </a>
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-               class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-list"></i> Manage All Games
-            </a>
+            <?php if ($canCreateGames) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                   class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle"></i> Add Game
+                </a>
+            <?php endif; ?>
+            <?php if ($canReadGames) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-list"></i> Manage All Games
+                </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="card-body">
@@ -32,9 +41,11 @@
                     <label for="bulk-action-select-games" class="form-label mb-0">With Selected:</label>
                     <select id="bulk-action-select-games" name="action" class="form-select form-select-sm w-auto">
                         <option value="">Choose...</option>
-                        <option value="delete">Delete</option>
+                        <?php if ($canDeleteGames) : ?>
+                            <option value="delete">Delete</option>
+                        <?php endif; ?>
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn-games" disabled>Go</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn-games"<?= $canDeleteGames ? ' disabled' : ' disabled aria-disabled="true"' ?>>Go</button>
                 </div>
 
                 <div class="table-responsive">
@@ -42,7 +53,7 @@
                         <thead class="table-dark">
                         <tr>
                             <th style="width: 30px;">
-                                <input type="checkbox" id="select-all-games" aria-label="Select all games">
+                                <input type="checkbox" id="select-all-games" aria-label="Select all games"<?= $canDeleteGames ? '' : ' disabled' ?>>
                             </th>
                             <th>Date</th>
                             <th>Opponent</th>
@@ -57,7 +68,7 @@
                             <tr>
                                 <td>
                                     <input type="checkbox" name="game_ids[]" value="<?= $game->id ?>"
-                                           class="game-checkbox" aria-label="Select game">
+                                           class="game-checkbox" aria-label="Select game"<?= $canDeleteGames ? '' : ' disabled' ?>>
                                 </td>
                                 <td>
                                     <?php if ($game->game_date instanceof DateTimeInterface) : ?>
@@ -93,14 +104,21 @@
                                 </td>
                                 <td class="text-nowrap">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'view', $game->id]) ?>"
-                                           class="btn btn-outline-secondary" aria-label="View game" title="View">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'edit', $game->id]) ?>"
-                                           class="btn btn-primary" aria-label="Edit game" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+                                        <?php if ($canReadGames) : ?>
+                                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'view', $game->id]) ?>"
+                                               class="btn btn-outline-secondary" aria-label="View game" title="View">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if ($canUpdateGames) : ?>
+                                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'edit', $game->id]) ?>"
+                                               class="btn btn-primary" aria-label="Edit game" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (!$canReadGames && !$canUpdateGames) : ?>
+                                            <span class="text-muted">No actions</span>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -129,8 +147,10 @@
                     <i class="bi bi-info-circle me-2"></i>
                     <div>
                         No games have been created for this team season yet.
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-                           class="alert-link">Add the first game</a>.
+                        <?php if ($canCreateGames) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                               class="alert-link">Add the first game</a>.
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -23,6 +23,7 @@
 <?php
 $content = $this->fetch('content');
 $flash = $this->Flash->render();
+$rbacUiPayload = $this->Rbac->uiPayload();
 ?>
 <html data-bs-theme="light" data-theme="light">
 
@@ -32,6 +33,9 @@ $flash = $this->Flash->render();
     <meta name="turbo-refresh-method" content="morph">
     <meta name="turbo-refresh-scroll" content="reset">
     <meta name="csrfToken" content="<?= $this->request->getAttribute('csrfToken') ?>">
+    <script>
+        window.__RH_RBAC_UI__ = <?= json_encode($rbacUiPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    </script>
     <title><?= $this->fetch('title') ?> | RacerHistory Admin</title>
     <?= $this->Html->meta('icon') ?>
     <!-- 1. Bootstrap 5 — required peer for AdminLTE 4 -->

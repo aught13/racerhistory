@@ -9,6 +9,8 @@ use Cake\ORM\Entity;
  * BlogPost Entity
  *
  * @property int $id
+ * @property int|null $user_id
+ * @property \App\Model\Entity\User|null $user
  * @property string $title
  * @property string $slug
  * @property string|null $excerpt

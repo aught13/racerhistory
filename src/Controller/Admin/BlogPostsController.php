@@ -44,7 +44,7 @@ class BlogPostsController extends AppController
     public function index(): void
     {
         $this->request->allowMethod(['get']);
-        $posts = $this->blogPostsAdminService->getIndexPosts();
+        $posts = $this->blogPostsAdminService->getIndexPosts($this->request->getAttribute('identity'));
         $this->set(compact('posts'));
     }
 
@@ -55,10 +55,11 @@ class BlogPostsController extends AppController
     {
         $this->request->allowMethod(['get', 'post']);
         $post = $this->blogPostsAdminService->newEntity();
+        $identity = $this->request->getAttribute('identity');
 
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
-            $result = $this->blogPostsAdminService->add($data);
+            $result = $this->blogPostsAdminService->add($data, $identity);
             if ($result['success']) {
                 $this->Flash->success('The blog post has been saved.');
 
@@ -68,7 +69,7 @@ class BlogPostsController extends AppController
             $post = $result['post'];
         }
 
-        $this->set($this->blogPostsAdminService->buildFormViewData($post));
+        $this->set($this->blogPostsAdminService->buildFormViewData($post, $identity));
         $this->viewBuilder()->setTemplate('edit');
 
         return null;
@@ -82,11 +83,12 @@ class BlogPostsController extends AppController
     public function edit(int $id): ?Response
     {
         $this->request->allowMethod(['get', 'post', 'put', 'patch']);
-        $post = $this->blogPostsAdminService->getEditEntity($id);
+        $identity = $this->request->getAttribute('identity');
+        $post = $this->blogPostsAdminService->getEditEntity($id, $identity);
 
         if ($this->request->is(['post', 'put', 'patch'])) {
             $data = (array)$this->request->getData();
-            $result = $this->blogPostsAdminService->edit($id, $data);
+            $result = $this->blogPostsAdminService->edit($id, $data, $identity);
             if ($result['success']) {
                 $this->Flash->success('The blog post has been saved.');
 
@@ -96,7 +98,7 @@ class BlogPostsController extends AppController
             $post = $result['post'];
         }
 
-        $this->set($this->blogPostsAdminService->buildFormViewData($post));
+        $this->set($this->blogPostsAdminService->buildFormViewData($post, $identity));
 
         return null;
     }
@@ -111,7 +113,7 @@ class BlogPostsController extends AppController
     {
         $this->request->allowMethod(['post', 'delete']);
 
-        if ($this->blogPostsAdminService->delete($id)) {
+        if ($this->blogPostsAdminService->delete($id, $this->request->getAttribute('identity'))) {
             $this->Flash->success('The blog post has been deleted.');
         } else {
             $this->Flash->error('The blog post could not be deleted. Please, try again.');

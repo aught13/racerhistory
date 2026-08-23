@@ -132,8 +132,9 @@ class TeamSeasonsController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $identity = $this->request->getAttribute('identity');
 
-        if ($this->teamSeasonAdminService->deleteTeamSeason($id)) {
+        if ($this->teamSeasonAdminService->deleteTeamSeason($id, $identity)) {
             $this->Flash->success(__('The team season has been deleted.'));
         } else {
             $this->Flash->error(__('The team season could not be deleted. Please, try again.'));

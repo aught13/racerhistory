@@ -23,6 +23,16 @@ use Cake\Routing\Router;
  */
 class SiteAdminService
 {
+    private RbacPermissionService $rbacPermissionService;
+
+    /**
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService
+     */
+    public function __construct(?RbacPermissionService $rbacPermissionService = null)
+    {
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
+    }
+
     /**
      * Return total number of sites for index page summary.
      *
@@ -37,9 +47,10 @@ class SiteAdminService
      * Build DataTables server-side payload.
      *
      * @param array<string,mixed> $params
+     * @param mixed $identity Current authenticated identity
      * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
      */
-    public function buildDataTablesResponse(array $params): array
+    public function buildDataTablesResponse(array $params, mixed $identity = null): array
     {
         $sitesTable = $this->getSitesTable();
         $siteSchema = $sitesTable->getSchema();
@@ -104,6 +115,8 @@ class SiteAdminService
         /** @var array<\App\Model\Entity\Site> $sites */
         $sites = $query->limit($length)->offset($start)->all()->toArray();
 
+        $canUpdateSites = $this->rbacPermissionService->can($identity, 'Sites', 'update');
+
         $data = [];
         foreach ($sites as $site) {
             $editUrl = Router::url([
@@ -121,7 +134,9 @@ class SiteAdminService
                 'name' => h($site->site_name ?? ''),
                 'place' => h($placeLabel !== '' ? $placeLabel : '-'),
                 'capacity' => h((string)($hasCapacityColumn ? ($site->capacity ?? '') : '')),
-                'actions' => '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>',
+                'actions' => $canUpdateSites
+                    ? '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>'
+                    : '<span class="text-muted">No actions</span>',
                 'DT_RowId' => 'site-row-' . $site->id,
             ];
         }
@@ -209,11 +224,22 @@ class SiteAdminService
      * Delete a site.
      *
      * @param string|int $id Site identifier
+     * @param mixed $identity Current authenticated identity
      * @return bool
      */
-    public function deleteSite(int|string $id): bool
+    public function deleteSite(int|string $id, mixed $identity = null): bool
     {
-        $site = $this->getSitesTable()->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Sites',
+            $this->getSitesTable()->find(),
+            'delete',
+            'id',
+        );
+        $site = $scoped->where(['Sites.id' => (int)$id])->first();
+        if ($site === null) {
+            return false;
+        }
 
         return (bool)$this->getSitesTable()->delete($site);
     }

@@ -83,7 +83,7 @@ class OpponentsController extends AppController
             'searchValue' => trim((string)($this->request->getQuery('search')['value'] ?? '')),
             'orderColumn' => $orderColumn,
             'orderDir' => $orderDir,
-        ]);
+        ], $this->request->getAttribute('identity'));
 
         return $this->response
             ->withType('application/json')
@@ -153,8 +153,9 @@ class OpponentsController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $identity = $this->request->getAttribute('identity');
 
-        if ($this->opponentAdminService->deleteOpponent($id)) {
+        if ($this->opponentAdminService->deleteOpponent($id, $identity)) {
             $this->Flash->success('The opponent has been deleted.');
         } else {
             $this->Flash->error('The opponent could not be deleted.');

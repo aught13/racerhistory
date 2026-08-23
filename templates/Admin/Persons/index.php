@@ -10,6 +10,8 @@
 $this->assign('title', 'Manage Persons');
 $datatableUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'datatables']);
 $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'bulkDelete']);
+$canCreatePersons = $this->Rbac->can('Persons', 'create');
+$canDeletePersons = $this->Rbac->can('Persons', 'delete');
 ?>
 
 <div class="container-fluid py-4">
@@ -17,10 +19,12 @@ $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Person
         <div class="col">
             <h1 class="mb-1">Persons Management</h1>
             <p class="text-muted mb-3">Manage people records (athletes, coaches, etc.). <?= $personCount ?> total.</p>
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'add']) ?>"
-               class="btn btn-success mb-3">
-                <i class="bi bi-plus-circle"></i> Add New Person
-            </a>
+            <?php if ($canCreatePersons) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'add']) ?>"
+                   class="btn btn-success mb-3">
+                    <i class="bi bi-plus-circle"></i> Add New Person
+                </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="row">
@@ -29,9 +33,11 @@ $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Person
                 <label for="bulk-action-select-persons" class="form-label mb-0">With Selected:</label>
                 <select id="bulk-action-select-persons" name="action" class="form-select form-select-sm w-auto" data-persons-index-target="actionSelect">
                     <option value="">Choose...</option>
-                    <option value="delete">Delete</option>
+                    <?php if ($canDeletePersons) : ?>
+                        <option value="delete">Delete</option>
+                    <?php endif; ?>
                 </select>
-                <button type="button" class="btn btn-primary btn-sm" id="bulk-action-btn-persons" disabled data-persons-index-target="bulkButton">Go</button>
+                <button type="button" class="btn btn-primary btn-sm" id="bulk-action-btn-persons" disabled data-persons-index-target="bulkButton"<?= $canDeletePersons ? '' : ' aria-disabled="true"' ?>>Go</button>
             </div>
 
             <div class="d-flex align-items-center gap-2 mb-2">
@@ -45,7 +51,7 @@ $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Person
                    data-persons-index-target="table">
                 <thead class="table-dark">
                     <tr>
-                        <th class="col-check" style="width:2rem;"><input type="checkbox" id="select-all-persons" title="Select all" data-persons-index-target="selectAll"></th>
+                        <th class="col-check" style="width:2rem;"><input type="checkbox" id="select-all-persons" title="Select all" data-persons-index-target="selectAll"<?= $canDeletePersons ? '' : ' disabled' ?>></th>
                         <th>Display Name</th>
                         <th>First</th>
                         <th>Last</th>

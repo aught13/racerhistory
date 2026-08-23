@@ -136,21 +136,43 @@ $this->start('css'); ?>
     <?php if ($heroImageId !== null || $heroImageUrl !== '') : ?>
         <div class="season-hero-media mb-4">
             <?php if ($heroImageId !== null) : ?>
-                <?= $this->ImageServe->picture(
-                    $heroImageId,
-                    ['profile' => 'season_billboard'],
-                    [
-                        'alt' => $teamName . ' ' . $seasonLabel . ' Season',
-                        'class' => 'img-fluid rounded season-hero-image',
-                    ],
-                ) ?>
+                        <?php
+                        // Try to locate an Image entity for the hero image in the provided $images list.
+                        $heroImageEntity = null;
+                        if (!empty($images)) {
+                            foreach ($images as $img) {
+                                if (isset($img->id) && (int)$img->id === (int)$heroImageId) {
+                                    $heroImageEntity = $img;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $imgHtml = $this->ImageServe->picture(
+                            $heroImageId,
+                            ['profile' => 'season_billboard'],
+                            [
+                                'alt' => $teamName . ' ' . $seasonLabel . ' Season',
+                                'class' => 'img-fluid rounded season-hero-image',
+                            ],
+                        );
+
+                        if ($heroImageEntity) {
+                            echo $this->element('image_with_credit', [
+                                'image' => $heroImageEntity,
+                                'imgContent' => $imgHtml,
+                            ]);
+                        } else {
+                            echo $imgHtml;
+                        }
+                        ?>
             <?php else : ?>
-                <?= $this->Html->image($heroImageUrl, [
-                    'alt' => $teamName . ' ' . $seasonLabel . ' Season',
-                    'class' => 'img-fluid rounded season-hero-image',
-                    'loading' => 'lazy',
-                    'decoding' => 'async',
-                ]) ?>
+                        <?= $this->Html->image($heroImageUrl, [
+                            'alt' => $teamName . ' ' . $seasonLabel . ' Season',
+                            'class' => 'img-fluid rounded season-hero-image',
+                            'loading' => 'lazy',
+                            'decoding' => 'async',
+                        ]) ?>
             <?php endif; ?>
         </div>
     <?php endif; ?>

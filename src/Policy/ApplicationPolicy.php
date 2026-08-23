@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Policy;
 
+use App\Service\RbacPermissionService;
 use ArrayAccess;
 use Authorization\IdentityInterface;
 use Cake\Http\ServerRequest;
@@ -16,6 +17,16 @@ use Throwable;
  */
 class ApplicationPolicy
 {
+    private RbacPermissionService $rbacPermissionService;
+
+    /**
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService Optional RBAC service override.
+     */
+    public function __construct(?RbacPermissionService $rbacPermissionService = null)
+    {
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
+    }
+
     /**
      * Check if user can access admin area
      *
@@ -25,26 +36,12 @@ class ApplicationPolicy
      */
     public function canAccessAdmin(?IdentityInterface $identity, ServerRequest $request): bool
     {
-        if ($identity === null) {
-            return false;
-        }
-
-        // Get user data from identity
-        $user = $identity->getOriginalData();
-
-        // Check if user has admin role
-        $role = $this->extractUserField($user, 'role');
-        if ($role !== 'admin') {
-            return false;
-        }
-
-        // Check if user is active
-        $active = $this->extractUserField($user, 'active');
-        if ($active === false || $active === 0) {
-            return false;
-        }
-
-        return true;
+        return $this->rbacPermissionService->canAccessAdminRequest(
+            $identity,
+            (string)$request->getParam('controller'),
+            (string)$request->getParam('action'),
+            $request->getUri()->getPath(),
+        );
     }
 
     /**

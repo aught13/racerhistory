@@ -259,6 +259,73 @@ class SiteOptionsController extends AppController
     }
 
     /**
+     * Edit dynamic RBAC role -> privileges mapping in a friendly UI.
+     *
+     * GET: render current mapping
+     * POST/PATCH/PUT: accept an array of comma-separated privileges per role
+     * and persist via SiteOptionsService::updateRolePrivileges().
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function editRolePrivileges(): ?Response
+    {
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $submitted = (array)$this->request->getData('privileges', []);
+            $toDelete = (array)$this->request->getData('delete_role', []);
+
+            $privileges = [];
+            foreach ($submitted as $role => $val) {
+                if (isset($toDelete[$role]) && $toDelete[$role]) {
+                    continue;
+                }
+
+                if (is_array($val)) {
+                    $items = array_values(
+                        array_filter(
+                            array_map('trim', $val),
+                            fn($v) => $v !== '',
+                        ),
+                    );
+                } else {
+                    $items = array_values(
+                        array_filter(
+                            array_map('trim', explode(',', (string)$val)),
+                            fn($v) => $v !== '',
+                        ),
+                    );
+                }
+
+                $privileges[(string)$role] = $items;
+            }
+
+            $newRole = trim((string)$this->request->getData('new_role', ''));
+            $newPrivileges = (string)$this->request->getData('new_privileges', '');
+            if ($newRole !== '') {
+                $items = array_values(
+                    array_filter(
+                        array_map('trim', explode(',', $newPrivileges)),
+                        fn($v) => $v !== '',
+                    ),
+                );
+                $privileges[$newRole] = $items;
+            }
+
+            if ($this->siteOptionsService->updateRolePrivileges($privileges)) {
+                $this->Flash->success('Role privileges have been updated.');
+            } else {
+                $this->Flash->error('Unable to update role privileges. Please try again.');
+            }
+
+            return $this->redirect(['action' => 'editRolePrivileges']);
+        }
+
+        $privileges = $this->siteOptionsService->getRolePrivileges();
+        $this->set(compact('privileges'));
+
+        return null;
+    }
+
+    /**
      * Write a minimal ads.txt file to webroot using the configured publisher ID.
      *
      * POST /admin/site-options/write-ads-txt

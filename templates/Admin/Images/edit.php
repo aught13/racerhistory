@@ -102,6 +102,20 @@ $this->assign('title', 'Edit Image');
         <small class="form-text text-muted">The original filename for reference</small>
       </div>
       <div class="mb-3">
+        <?= $this->Form->control('photo_credit', ['label' => 'Photo Credit', 'class' => 'form-control']) ?>
+        <small class="form-text text-muted">Photographer or source credit</small>
+      </div>
+      <div class="mb-3">
+        <?php if ($canManageImageOwner ?? false) : ?>
+            <?= $this->Form->control('user_id', ['type' => 'select', 'options' => $users ?? [], 'empty' => 'None', 'label' => 'Owner (User)', 'class' => 'form-select']) ?>
+          <small class="form-text text-muted">Associate this image with a user account</small>
+        <?php else : ?>
+          <label class="form-label">Owner (User)</label>
+          <div class="form-control-plaintext border rounded px-2 py-2 bg-body-tertiary"><?= h($ownerLabel ?? 'Unassigned') ?></div>
+          <small class="form-text text-muted">Only administrators can reassign image ownership.</small>
+        <?php endif; ?>
+      </div>
+      <div class="mb-3">
         <?= $this->Form->control('status', ['label' => 'Status', 'class' => 'form-select', 'options' => ['active' => 'Active', 'archived' => 'Archived']]) ?>
         <small class="form-text text-muted">Archived images won't be served</small>
       </div>

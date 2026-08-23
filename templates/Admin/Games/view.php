@@ -16,6 +16,10 @@
  * @var \App\Model\Entity\Game $game
  */
 $teamSportName = strtolower((string)($game->team_season->team->sport_name ?? $game->team_season->team->sport->sport_name ?? ''));
+$canUpdateGames = $this->Rbac->can('Games', 'update');
+$canUpdateOpponents = $this->Rbac->can('Opponents', 'update');
+$canUpdateSites = $this->Rbac->can('Sites', 'update');
+$canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
 ?>
 <?php $this->assign('title', 'Game Details'); ?>
 <div class="col-md-12" style="min-height: 500px;" data-controller="game-view">
@@ -23,10 +27,12 @@ $teamSportName = strtolower((string)($game->team_season->team->sport_name ?? $ga
     <div class="row mb-3">
         <div class="col-12">
             <div class="btn-group" role="group">
-                <a href="<?= $this->Url->build(['action' => 'edit', $game->id]) ?>" class="btn btn-primary">
-                    <i class="bi bi-pencil"></i> Edit Game
-                </a>
-                <?php if (!empty($game->opponent_id)) : ?>
+                <?php if ($canUpdateGames) : ?>
+                    <a href="<?= $this->Url->build(['action' => 'edit', $game->id]) ?>" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Game
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($game->opponent_id) && $canUpdateOpponents) : ?>
                     <a href="<?= $this->Url->build([
                         'controller' => 'Opponents', 'action' => 'edit', $game->opponent_id,
                     ]) ?>" class="btn btn-outline-primary">
@@ -36,11 +42,13 @@ $teamSportName = strtolower((string)($game->team_season->team->sport_name ?? $ga
                 <a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Games
                 </a>
-                <a href="<?= $this->Url->build([
-                    'controller' => 'TeamSeasons', 'action' => 'view', $game->team_season->id,
-                ]) ?>" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Season
-                </a>
+                <?php if ($canReadTeamSeasons) : ?>
+                    <a href="<?= $this->Url->build([
+                        'controller' => 'TeamSeasons', 'action' => 'view', $game->team_season->id,
+                    ]) ?>" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Season
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -174,7 +182,7 @@ $teamSportName = strtolower((string)($game->team_season->team->sport_name ?? $ga
                         }
                         ?>
                         <?= h($locationText) ?>
-                        <?php if (!empty($game->site_id)) : ?>
+                        <?php if (!empty($game->site_id) && $canUpdateSites) : ?>
                             <a href="<?= $this->Url->build([
                                 'controller' => 'Sites', 'action' => 'edit', $game->site_id,
                             ]) ?>" class="btn btn-sm btn-outline-primary" title="Edit Site">

@@ -110,31 +110,37 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
                         'class' => 'form-check-input',
                         'div' => ['class' => 'form-check form-switch mb-3'],
                     ]) ?>
-                    <?= $this->Form->control('is_pinned', [
-                        'type' => 'checkbox',
-                        'label' => ['text' => 'Pin this post', 'class' => 'form-check-label'],
-                        'class' => 'form-check-input',
-                        'div' => ['class' => 'form-check form-switch mb-3'],
-                    ]) ?>
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <?= $this->Form->control('pinned_rank', [
-                                'type' => 'number',
-                                'label' => ['text' => 'Pin Rank', 'class' => 'form-label'],
-                                'class' => 'form-control',
-                                'placeholder' => 'Higher ranks first',
-                                'min' => 0,
-                            ]) ?>
-                        </div>
-                        <div class="col-6">
-                            <?= $this->Form->control('pinned_until', [
-                                'type' => 'datetime',
-                                'label' => ['text' => 'Pin Until', 'class' => 'form-label'],
-                                'class' => 'form-control',
-                                'empty' => true,
-                            ]) ?>
-                        </div>
-                    </div>
+                    <?php if ($canPinPosts ?? false) : ?>
+                        <?= $this->Form->control('is_pinned', [
+                            'type' => 'checkbox',
+                            'label' => ['text' => 'Pin this post', 'class' => 'form-check-label'],
+                            'class' => 'form-check-input',
+                            'div' => ['class' => 'form-check form-switch mb-3'],
+                        ]) ?>
+                        <?php if ($canManagePinSettings ?? false) : ?>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <?= $this->Form->control('pinned_rank', [
+                                        'type' => 'number',
+                                        'label' => ['text' => 'Pin Rank', 'class' => 'form-label'],
+                                        'class' => 'form-control',
+                                        'placeholder' => 'Higher ranks first',
+                                        'min' => 0,
+                                    ]) ?>
+                                </div>
+                                <div class="col-6">
+                                    <?= $this->Form->control('pinned_until', [
+                                        'type' => 'datetime',
+                                        'label' => ['text' => 'Pin Until', 'class' => 'form-label'],
+                                        'class' => 'form-control',
+                                        'empty' => true,
+                                    ]) ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    <?php elseif (!empty($post->is_pinned)) : ?>
+                        <div class="alert alert-secondary py-2 small mb-3">This post is currently pinned. Your role can edit the post body, but not its pin settings.</div>
+                    <?php endif; ?>
                     <div class="form-text mb-3">Published posts are visible on the public blog. Uncheck to keep the post a draft.</div>
                     <?php if (!empty($post->slug) && ($post->is_published ?? false)) :
                         $viewUrl = '/blog/' . rawurlencode((string)$post->slug);
@@ -154,6 +160,20 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
                         'class' => 'form-control',
                         'empty' => true,
                     ]) ?>
+                    <?php if ($canManagePostOwner ?? false) : ?>
+                        <?= $this->Form->control('user_id', [
+                            'type' => 'select',
+                            'options' => $users ?? [],
+                            'empty' => 'Auto (original author)',
+                            'label' => ['text' => 'Owner', 'class' => 'form-label'],
+                            'class' => 'form-select mb-3',
+                        ]) ?>
+                    <?php else : ?>
+                        <div class="mb-3">
+                            <label class="form-label">Owner</label>
+                            <div class="form-control-plaintext border rounded px-2 py-2 bg-body-tertiary"><?= h($postOwnerLabel ?? 'Unassigned') ?></div>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

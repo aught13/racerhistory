@@ -130,6 +130,7 @@ function setupImageGallery(root) {
     const closeBtn = modal.querySelector("[data-modal-close]");
     const modalImg = modal.querySelector("[data-modal-image-fallback]");
     const modalWebp = modal.querySelector("[data-modal-image-webp]");
+    const modalCredit = modal.querySelector("[data-modal-photo-credit]");
     if (!modalImg) {
         return;
     }
@@ -170,6 +171,17 @@ function setupImageGallery(root) {
 
         modalImg.src = imageUrl;
         modalImg.alt = filename || "";
+
+        const photoCredit = img.dataset.photoCredit || "";
+        if (modalCredit) {
+            if (photoCredit) {
+                modalCredit.textContent = photoCredit;
+                modalCredit.style.display = "";
+            } else {
+                modalCredit.textContent = "";
+                modalCredit.style.display = "none";
+            }
+        }
 
         modal.setAttribute("data-modal-open", "true");
     });

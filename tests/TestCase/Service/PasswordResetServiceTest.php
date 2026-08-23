@@ -173,7 +173,7 @@ class PasswordResetServiceTest extends TestCase
      */
     public function testChangePasswordCorrectCurrentUpdatesPassword(): void
     {
-        $result = $this->service->changePassword(1, 'password', 'supersecure999');
+        $result = $this->service->changePassword(1, 'administrator', 'supersecure999');
 
         $this->assertTrue($result);
         $users = $this->getTableLocator()->get('Users');
@@ -194,7 +194,7 @@ class PasswordResetServiceTest extends TestCase
         $users = $this->getTableLocator()->get('Users');
         $user = $users->get(1);
         $hasher = new DefaultPasswordHasher();
-        $this->assertTrue($hasher->check('password', (string)$user->password));
+        $this->assertTrue($hasher->check('administrator', (string)$user->password));
     }
 
     // -----------------------------------------------------------------

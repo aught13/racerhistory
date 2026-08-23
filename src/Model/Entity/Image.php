@@ -9,6 +9,9 @@ use Cake\ORM\Entity;
  * Image Entity fields
  *
  * @property int $id
+ * @property int|null $user_id
+ * @property \App\Model\Entity\User|null $user
+ * @property string|null $photo_credit
  * @property string $filename
  * @property string|null $original_name
  * @property string $mime
@@ -31,8 +34,8 @@ class Image extends Entity
 {
     protected array $_accessible = [
         'filename' => true,
-    'storage_subdir' => true,
-    'storage_path' => true,
+        'storage_subdir' => true,
+        'storage_path' => true,
         'original_name' => true,
         'mime' => true,
         'ext' => true,
@@ -45,5 +48,7 @@ class Image extends Entity
         'created' => true,
         'modified' => true,
         'usages' => true,
+        'photo_credit' => true,
+        'user_id' => true,
     ];
 }

@@ -16,6 +16,11 @@ use Cake\TestSuite\TestCase;
  */
 class ApplicationPolicyTest extends TestCase
 {
+    protected array $fixtures = [
+        'app.Roles',
+        'app.Permissions',
+    ];
+
     /**
      * @var \App\Policy\ApplicationPolicy
      */
@@ -63,29 +68,75 @@ class ApplicationPolicyTest extends TestCase
      */
     public function testCanAccessAdminAsAdmin(): void
     {
-        $admin = new User(['id' => 1, 'username' => 'admin', 'role' => 'admin', 'active' => true]);
+        $admin = new User([
+            'id' => 1,
+            'username' => 'admin',
+            'role' => 'admin',
+            'role_id' => 1,
+            'status' => 'active',
+            'active' => true,
+        ]);
         $identity = $this->createMock(IdentityInterface::class);
         $identity->method('getOriginalData')->willReturn($admin);
-        $request = new ServerRequest();
+        $request = (new ServerRequest())
+            ->withParam('prefix', 'Admin')
+            ->withParam('controller', 'Dashboard')
+            ->withParam('action', 'index');
 
         $result = $this->policy->canAccessAdmin($identity, $request);
         $this->assertTrue($result, 'Active admin should access admin area');
     }
 
     /**
-     * Test canAccessAdmin returns false for non-admin users
+     * Test canAccessAdmin returns true for non-admin users with RBAC permissions
      *
      * @return void
      */
-    public function testCanAccessAdminAsNonAdmin(): void
+    public function testCanAccessAdminAsRbacEditor(): void
     {
-        $user = new User(['id' => 1, 'username' => 'testuser', 'role' => 'user', 'active' => true]);
+        $user = new User([
+            'id' => 4,
+            'username' => 'editor',
+            'role' => 'editor',
+            'role_id' => 3,
+            'status' => 'active',
+            'active' => true,
+        ]);
         $identity = $this->createMock(IdentityInterface::class);
         $identity->method('getOriginalData')->willReturn($user);
-        $request = new ServerRequest();
+        $request = (new ServerRequest())
+            ->withParam('prefix', 'Admin')
+            ->withParam('controller', 'Dashboard')
+            ->withParam('action', 'index');
 
         $result = $this->policy->canAccessAdmin($identity, $request);
-        $this->assertFalse($result, 'Non-admin user should not access admin area');
+        $this->assertTrue($result, 'RBAC editor with admin-area permissions should access admin area');
+    }
+
+    /**
+     * Test canAccessAdmin returns false for users without any admin permissions
+     *
+     * @return void
+     */
+    public function testCanAccessAdminWithoutPermissions(): void
+    {
+        $user = new User([
+            'id' => 7,
+            'username' => 'plain-user',
+            'role' => 'user',
+            'role_id' => null,
+            'status' => 'active',
+            'active' => true,
+        ]);
+        $identity = $this->createMock(IdentityInterface::class);
+        $identity->method('getOriginalData')->willReturn($user);
+        $request = (new ServerRequest())
+            ->withParam('prefix', 'Admin')
+            ->withParam('controller', 'Dashboard')
+            ->withParam('action', 'index');
+
+        $result = $this->policy->canAccessAdmin($identity, $request);
+        $this->assertFalse($result, 'User without admin permissions should be denied');
     }
 
     /**
@@ -95,10 +146,20 @@ class ApplicationPolicyTest extends TestCase
      */
     public function testCanAccessAdminInactiveAdmin(): void
     {
-        $admin = new User(['id' => 1, 'username' => 'admin', 'role' => 'admin', 'active' => false]);
+        $admin = new User([
+            'id' => 1,
+            'username' => 'admin',
+            'role' => 'admin',
+            'role_id' => 1,
+            'status' => 'inactive',
+            'active' => false,
+        ]);
         $identity = $this->createMock(IdentityInterface::class);
         $identity->method('getOriginalData')->willReturn($admin);
-        $request = new ServerRequest();
+        $request = (new ServerRequest())
+            ->withParam('prefix', 'Admin')
+            ->withParam('controller', 'Dashboard')
+            ->withParam('action', 'index');
 
         $result = $this->policy->canAccessAdmin($identity, $request);
         $this->assertFalse($result, 'Inactive admin should not access admin area');

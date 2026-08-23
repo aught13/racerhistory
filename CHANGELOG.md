@@ -18,6 +18,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ### Changed
 
+- **RBAC Hardening**: Centralized RBAC service, request-level policy updates, identity-scoped delete/bulk enforcement across admin services, controller plumbing to pass authenticated identity, and template/UI gating. See [docs/RBAC_HARDENING.md](docs/RBAC_HARDENING.md).
 - **Minimum PHP version raised to 8.2+** across project requirements and docs to match the current dependency graph.
  - **Admin sports retirement**: Admin sports CRUD has been retired as a table-backed entity. Sport configuration and defaults are now managed via `SiteOptions` (SiteOptionsService) and the runtime uses `sport_key` as the canonical identifier. DB migrations retire the `sports` table and `teams.sport_id` in favor of `teams.sport_key` with snapshot-based rollback support.
 - **CI testsuite matrix updated** to remove the incompatible PHP 8.1/lowest-dependencies lane and run coverage on PHP 8.2.

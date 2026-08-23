@@ -23,6 +23,8 @@ use Cake\ORM\TableRegistry;
  */
 class SeasonAdminService
 {
+    private RbacPermissionService $rbacPermissionService;
+
     /**
      * Return index page data.
      *
@@ -127,10 +129,32 @@ class SeasonAdminService
      * Delete a season.
      *
      * @param string|int $id Season identifier
+     * @param mixed $identity Current authenticated identity
      * @return bool
      */
-    public function deleteSeason(int|string $id): bool
+    public function deleteSeason(int|string $id, mixed $identity = null): bool
     {
+        // If RBAC is available and identity provided via global request, use RBAC service to guard.
+        if (!isset($this->rbacPermissionService)) {
+            $this->rbacPermissionService = new RbacPermissionService();
+        }
+
+        // Admins may delete freely
+        if ($this->rbacPermissionService->isAdmin($identity)) {
+            $season = $this->getSeasonsTable()->get($id);
+
+            return (bool)$this->getSeasonsTable()->delete($season);
+        }
+
+        // For non-admins, require an identity and explicit RBAC allow
+        if ($identity === null) {
+            return false;
+        }
+
+        if (!$this->rbacPermissionService->can($identity, 'Seasons', 'delete')) {
+            return false;
+        }
+
         $season = $this->getSeasonsTable()->get($id);
 
         return (bool)$this->getSeasonsTable()->delete($season);
@@ -140,17 +164,63 @@ class SeasonAdminService
      * Bulk delete seasons by identifier list.
      *
      * @param array<mixed> $rawIds Raw identifier list from request
+     * @param mixed $identity Current authenticated identity
      * @return int Number of deleted records
      */
-    public function bulkDeleteSeasons(array $rawIds): int
+    public function bulkDeleteSeasons(array $rawIds, mixed $identity = null): int
     {
         $seasonIds = $this->sanitizeIdentifierList($rawIds);
         if ($seasonIds === []) {
             return 0;
         }
 
+        if (!isset($this->rbacPermissionService)) {
+            $this->rbacPermissionService = new RbacPermissionService();
+        }
+
+        // Admins can delete freely
+        if ($this->rbacPermissionService->isAdmin($identity)) {
+            $deletedCount = 0;
+            foreach ($seasonIds as $id) {
+                try {
+                    $season = $this->getSeasonsTable()->get($id);
+                    if ($this->getSeasonsTable()->delete($season)) {
+                        $deletedCount++;
+                    }
+                } catch (RecordNotFoundException $exception) {
+                    continue;
+                }
+            }
+
+            return $deletedCount;
+        }
+
+        // If no identity present for non-admin, deny all deletes
+        if ($identity === null) {
+            return 0;
+        }
+
+        // Apply RBAC scope to the query to determine which seasons are deletable
+        $query = $this->getSeasonsTable()->find()
+            ->select(['id'])
+            ->where(['Seasons.id IN' => $seasonIds])
+            ->disableHydration();
+
+        $scoped = $this->rbacPermissionService->scopeQuery($identity, 'Seasons', $query, 'delete', 'user_id');
+
+        $allowed = [];
+        foreach ($scoped->all() as $row) {
+            if (is_array($row) && !empty($row['id'])) {
+                $allowed[] = (int)$row['id'];
+            }
+        }
+
+        if ($allowed === []) {
+            return 0;
+        }
+
         $deletedCount = 0;
-        foreach ($seasonIds as $id) {
+        foreach ($allowed as $id) {
             try {
                 $season = $this->getSeasonsTable()->get($id);
                 if ($this->getSeasonsTable()->delete($season)) {

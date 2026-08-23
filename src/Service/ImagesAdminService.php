@@ -5,7 +5,9 @@ namespace App\Service;
 
 use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Number;
+use Cake\ORM\Query\SelectQuery as OrmSelectQuery;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -39,38 +41,49 @@ class ImagesAdminService
      */
     private ImageEditService $imageEditService;
 
+    private RbacPermissionService $rbacPermissionService;
+
     /**
      * @param \App\Model\Table\ImagesTable|null $imagesTable
      * @param \App\Service\ImageDeleteService|null $imageDeleteService
      * @param \App\Service\ImageEditService|null $imageEditService
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService
      */
     public function __construct(
         ?ImagesTable $imagesTable = null,
         ?ImageDeleteService $imageDeleteService = null,
         ?ImageEditService $imageEditService = null,
+        ?RbacPermissionService $rbacPermissionService = null,
     ) {
         /** @var \App\Model\Table\ImagesTable $table */
         $table = $imagesTable ?? TableRegistry::getTableLocator()->get('Images');
         $this->imagesTable = $table;
         $this->imageDeleteService = $imageDeleteService ?? new ImageDeleteService();
         $this->imageEditService = $imageEditService ?? new ImageEditService();
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
     }
 
     /**
      * Total images count for index heading text.
+     *
+     * @param mixed $identity Current authenticated identity.
+     * @return int
      */
-    public function getTotalCount(): int
+    public function getTotalCount(mixed $identity = null): int
     {
-        return (int)$this->imagesTable->find()->count();
+        $query = $this->applyScope($identity, 'index', $this->imagesTable->find(), 'Images');
+
+        return (int)$query->count();
     }
 
     /**
      * Build DataTables server-side payload for admin images index.
      *
      * @param array<string,mixed> $params
+     * @param mixed $identity Current authenticated identity.
      * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
      */
-    public function buildIndexDataTablesResponse(array $params): array
+    public function buildIndexDataTablesResponse(array $params, mixed $identity = null): array
     {
         $draw = max(0, (int)($params['draw'] ?? 0));
         $start = max(0, (int)($params['start'] ?? 0));
@@ -86,9 +99,10 @@ class ImagesAdminService
         $orderColumn = (string)($params['orderColumn'] ?? 'id');
         $sortField = $this->resolveIndexSortField($orderColumn);
 
-        $total = (int)$this->imagesTable->find()->count();
+        $baseQuery = $this->applyScope($identity, 'index', $this->imagesTable->find(), 'Images');
+        $total = (int)(clone $baseQuery)->count();
 
-        $query = $this->imagesTable->find();
+        $query = clone $baseQuery;
         if ($searchValue !== '') {
             $conditions = [
                 'Images.original_name LIKE' => '%' . $searchValue . '%',
@@ -102,7 +116,7 @@ class ImagesAdminService
             $query->where(['OR' => $conditions]);
         }
 
-        $filtered = (int)$query->count();
+        $filtered = (int)(clone $query)->count();
 
         $rows = $query
             ->order([$sortField => $orderDir])
@@ -348,14 +362,26 @@ class ImagesAdminService
      * Load image edit page data.
      *
      * @param int $id
+     * @param mixed $identity Current authenticated identity.
      * @return array{image:\App\Model\Entity\Image,currentTags:array<int,mixed>}
      */
-    public function getEditPageData(int $id): array
+    public function getEditPageData(int $id, mixed $identity = null): array
     {
-        $image = $this->getImageWithTags($id);
+        $image = $this->getImageWithTags($id, $identity, 'update');
         $currentTags = $image->image_tags ?? [];
 
-        return compact('image', 'currentTags');
+        // Provide a users list for owner selection in the admin edit UI
+        $usersTable = TableRegistry::getTableLocator()->get('Users');
+        $users = $usersTable->find('list', ['keyField' => 'id', 'valueField' => 'username'])
+            ->order(['username' => 'ASC'])
+            ->toArray();
+
+        $canManageImageOwner = $this->rbacPermissionService->isAdmin($identity);
+        $ownerLabel = $image->user_id && isset($users[(int)$image->user_id])
+            ? $users[(int)$image->user_id]
+            : 'Unassigned';
+
+        return compact('image', 'currentTags', 'users', 'canManageImageOwner', 'ownerLabel');
     }
 
     /**
@@ -363,18 +389,29 @@ class ImagesAdminService
      *
      * @param int $id
      * @param array<string,mixed> $data
+     * @param mixed $identity Current authenticated identity.
      * @return array{success:bool,image:\App\Model\Entity\Image}
      */
-    public function updateMetadata(int $id, array $data): array
+    public function updateMetadata(int $id, array $data, mixed $identity = null): array
     {
-        $image = $this->getImageWithTags($id);
-
+        $image = $this->getImageWithTags($id, $identity, 'update');
         $patchData = [];
         if (array_key_exists('original_name', $data)) {
             $patchData['original_name'] = (string)$data['original_name'];
         }
         if (array_key_exists('status', $data)) {
             $patchData['status'] = (string)$data['status'];
+        }
+        if (array_key_exists('photo_credit', $data)) {
+            $patchData['photo_credit'] = $data['photo_credit'] === null ? null : (string)$data['photo_credit'];
+        }
+        if (array_key_exists('user_id', $data)) {
+            $uid = (int)$data['user_id'];
+            $patchData['user_id'] = $uid > 0 ? $uid : null;
+        }
+
+        if (!$this->rbacPermissionService->isAdmin($identity)) {
+            unset($patchData['user_id']);
         }
 
         if ($patchData === []) {
@@ -391,11 +428,12 @@ class ImagesAdminService
      * Build all view data required by the tags UI.
      *
      * @param int $id
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function getTagsPageData(int $id): array
+    public function getTagsPageData(int $id, mixed $identity = null): array
     {
-        $image = $this->getImageWithTags($id);
+        $image = $this->getImageWithTags($id, $identity, 'update');
 
         $teams = (new TeamService())->getTeamsForSelect();
         $teamSeasons = (new TeamSeasonService())->getTeamSeasonsForSelect();
@@ -442,10 +480,12 @@ class ImagesAdminService
      *
      * @param int $id
      * @param array<string,mixed> $data
+     * @param mixed $identity Current authenticated identity.
      * @return void
      */
-    public function applyTags(int $id, array $data): void
+    public function applyTags(int $id, array $data, mixed $identity = null): void
     {
+        $this->getImageWithTags($id, $identity, 'update');
         $tagging = TaggingService::forImages();
         $tagging->applyFromData($id, $data);
     }
@@ -454,10 +494,13 @@ class ImagesAdminService
      * Delete a single image and attached references.
      *
      * @param int $id
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function deleteImage(int $id): array
+    public function deleteImage(int $id, mixed $identity = null): array
     {
+        $this->getImageById($id, $identity, 'delete');
+
         return $this->imageDeleteService->deleteImageById($id);
     }
 
@@ -465,22 +508,52 @@ class ImagesAdminService
      * Delete multiple images and return summary.
      *
      * @param array<int|string,mixed> $ids
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function bulkDelete(array $ids): array
+    public function bulkDelete(array $ids, mixed $identity = null): array
     {
-        return $this->imageDeleteService->bulkDeleteImages($ids);
+        if ($this->rbacPermissionService->isAdmin($identity)) {
+            return $this->imageDeleteService->bulkDeleteImages($ids);
+        }
+
+        $normalizedIds = array_values(array_filter(array_map('intval', $ids), fn($id) => $id > 0));
+        if ($normalizedIds === []) {
+            return ['deleted' => 0];
+        }
+
+        $query = $this->applyScope($identity, 'delete', $this->imagesTable->find(), 'Images')
+            ->select(['id'])
+            ->where(['Images.id IN' => $normalizedIds])
+            ->disableHydration();
+
+        $allowedIds = [];
+        foreach ($query->all() as $row) {
+            if (is_array($row) && !empty($row['id'])) {
+                $allowedIds[] = (int)$row['id'];
+            }
+        }
+
+        return $this->imageDeleteService->bulkDeleteImages($allowedIds);
     }
 
     /**
      * Load an image entity for manipulation flows.
      *
-     * @param int $id
+     * @param int $id Image id.
+     * @param mixed $identity Current authenticated identity.
+     * @param string $ability Scope ability to apply when loading the image.
+     * @return \App\Model\Entity\Image
      */
-    public function getImageById(int $id): Image
+    public function getImageById(int $id, mixed $identity = null, string $ability = 'read'): Image
     {
-        /** @var \App\Model\Entity\Image $image */
-        $image = $this->imagesTable->get($id);
+        /** @var \App\Model\Entity\Image|null $image */
+        $image = $this->applyScope($identity, $ability, $this->imagesTable->find(), 'Images')
+            ->where(['Images.id' => $id])
+            ->first();
+        if (!$image instanceof Image) {
+            throw new RecordNotFoundException('Image not found or not accessible.');
+        }
 
         return $image;
     }
@@ -492,6 +565,7 @@ class ImagesAdminService
      * @param array<string,mixed> $manipulations
      * @param string $mode
      * @param array<string,mixed>|null $thumbCrop
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
     public function manipulateImage(
@@ -499,8 +573,9 @@ class ImagesAdminService
         array $manipulations,
         string $mode = 'apply',
         ?array $thumbCrop = null,
+        mixed $identity = null,
     ): array {
-        $image = $this->getImageById($id);
+        $image = $this->getImageById($id, $identity, 'update');
 
         return $this->imageEditService->manipulateImage(
             $this->imagesTable,
@@ -514,13 +589,14 @@ class ImagesAdminService
     /**
      * Apply a thumb crop by image id.
      *
-     * @param int $id
-     * @param array<string,int> $crop
+     * @param int $id Image id.
+     * @param array<string,int> $crop Crop coordinates.
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function cropThumb(int $id, array $crop): array
+    public function cropThumb(int $id, array $crop, mixed $identity = null): array
     {
-        $image = $this->getImageById($id);
+        $image = $this->getImageById($id, $identity, 'update');
 
         return $this->imageEditService->cropThumbVariant($this->imagesTable, $image, $crop);
     }
@@ -528,13 +604,14 @@ class ImagesAdminService
     /**
      * Apply a hero crop by image id.
      *
-     * @param int $id
-     * @param array<string,int> $crop
+     * @param int $id Image id.
+     * @param array<string,int> $crop Crop coordinates.
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function cropHero(int $id, array $crop): array
+    public function cropHero(int $id, array $crop, mixed $identity = null): array
     {
-        $image = $this->getImageById($id);
+        $image = $this->getImageById($id, $identity, 'update');
 
         return $this->imageEditService->cropHeroVariant($this->imagesTable, $image, $crop);
     }
@@ -542,14 +619,48 @@ class ImagesAdminService
     /**
      * Load image with tag associations.
      *
-     * @param int $id
+     * @param int $id Image id.
+     * @param mixed $identity Current authenticated identity.
+     * @param string $ability Scope ability to apply when loading the image.
      * @return \App\Model\Entity\Image
      */
-    private function getImageWithTags(int $id): Image
+    private function getImageWithTags(int $id, mixed $identity = null, string $ability = 'read'): Image
     {
-        /** @var \App\Model\Entity\Image $image */
-        $image = $this->imagesTable->get($id, contain: ['ImageTags']);
+        /** @var \App\Model\Entity\Image|null $image */
+        $image = $this->applyScope(
+            $identity,
+            $ability,
+            $this->imagesTable->find()->contain(['ImageTags']),
+            'Images',
+        )
+            ->where(['Images.id' => $id])
+            ->first();
+        if (!$image instanceof Image) {
+            throw new RecordNotFoundException('Image not found or not accessible.');
+        }
 
         return $image;
+    }
+
+    /**
+     * Apply either the framework policy scope or the RBAC service fallback to a query.
+     *
+     * @param mixed $identity Current authenticated identity.
+     * @param string $action Scope action name.
+     * @param \Cake\ORM\Query\SelectQuery $query Query to scope.
+     * @param string $modelName Canonical RBAC model name.
+     * @return \Cake\ORM\Query\SelectQuery
+     */
+    private function applyScope(
+        mixed $identity,
+        string $action,
+        OrmSelectQuery $query,
+        string $modelName,
+    ): OrmSelectQuery {
+        if (is_object($identity) && method_exists($identity, 'applyScope')) {
+            return $identity->applyScope($action, $query);
+        }
+
+        return $this->rbacPermissionService->scopeQuery($identity, $modelName, $query, $action, 'user_id');
     }
 }

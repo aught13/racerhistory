@@ -24,6 +24,16 @@ use Cake\Routing\Router;
  */
 class PlaceAdminService
 {
+    private RbacPermissionService $rbacPermissionService;
+
+    /**
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService
+     */
+    public function __construct(?RbacPermissionService $rbacPermissionService = null)
+    {
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
+    }
+
     /**
      * Return total number of places for index page summary.
      *
@@ -38,9 +48,10 @@ class PlaceAdminService
      * Build DataTables server-side payload.
      *
      * @param array<string,mixed> $params
+     * @param mixed $identity Current authenticated identity
      * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
      */
-    public function buildDataTablesResponse(array $params): array
+    public function buildDataTablesResponse(array $params, mixed $identity = null): array
     {
         $draw = (int)($params['draw'] ?? 1);
         $start = max(0, (int)($params['start'] ?? 0));
@@ -89,6 +100,8 @@ class PlaceAdminService
         /** @var array<\App\Model\Entity\Place> $places */
         $places = $query->limit($length)->offset($start)->all()->toArray();
 
+        $canUpdatePlaces = $this->rbacPermissionService->can($identity, 'Places', 'update');
+
         $data = [];
         foreach ($places as $place) {
             $editUrl = Router::url([
@@ -103,7 +116,9 @@ class PlaceAdminService
                 'country' => h($place->place_country ?? ''),
                 'city' => h($place->place_city ?? ''),
                 'state' => h($place->place_state ?? ''),
-                'actions' => '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>',
+                'actions' => $canUpdatePlaces
+                    ? '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>'
+                    : '<span class="text-muted">No actions</span>',
                 'DT_RowId' => 'place-row-' . $place->id,
             ];
         }
@@ -194,11 +209,22 @@ class PlaceAdminService
      * Delete a place.
      *
      * @param string|int $id Place identifier
+     * @param mixed $identity Current authenticated identity
      * @return bool
      */
-    public function deletePlace(int|string $id): bool
+    public function deletePlace(int|string $id, mixed $identity = null): bool
     {
-        $place = $this->getPlacesTable()->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Places',
+            $this->getPlacesTable()->find(),
+            'delete',
+            'id',
+        );
+        $place = $scoped->where(['Places.id' => (int)$id])->first();
+        if ($place === null) {
+            return false;
+        }
 
         return (bool)$this->getPlacesTable()->delete($place);
     }

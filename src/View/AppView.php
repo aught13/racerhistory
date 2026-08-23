@@ -29,6 +29,7 @@ use Cake\View\View;
  * @property \Cake\View\Helper\FormHelper $Form
  * @property \Cake\View\Helper\UrlHelper $Url
  * @property \Cake\View\Helper\HtmlHelper $Html
+ * @property \App\View\Helper\RbacHelper $Rbac
  */
 class AppView extends View
 {
@@ -46,6 +47,8 @@ class AppView extends View
         parent::initialize();
 
         $this->loadHelper('ImageServe');
+        $this->loadHelper('SocialLinks');
+        $this->loadHelper('Rbac');
 
         if (class_exists('CakeVite\\View\\Helper\\ViteHelper')) {
             $this->loadHelper('CakeVite.Vite');

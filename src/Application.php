@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Middleware\DebugSessionMiddleware;
 use App\Policy\RequestPolicy;
 use Authentication\AuthenticationService;
 use Authentication\AuthenticationServiceInterface;
@@ -113,6 +114,9 @@ class Application extends BaseApplication implements
         // Catch any exceptions in the lower layers,
         // and make an error page/response
             ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
+
+            // Debug middleware (CLI/tests only): expose initial session Auth
+            ->add(new DebugSessionMiddleware())
 
             // Handle plugin/theme assets like CakePHP normally does.
             ->add(new AssetMiddleware([
