@@ -131,4 +131,51 @@ class SiteOptionsControllerExtraTest extends TestCase
         $this->assertRedirectContains('/admin/site-options/edit-sport-configs/');
         $this->assertFlashMessage('Sport configurations have been reset to defaults.');
     }
+
+    /**
+     * Invalid sport refs should redirect to edit with a helpful flash.
+     */
+    public function testSportsConfigsInvalidSportRefRedirectsToEdit(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $this->get('/admin/site-options/sports-configs/not-a-sport');
+
+        $this->assertRedirect('/admin/site-options/edit');
+        $this->assertFlashMessage('Sport not found.');
+    }
+
+    /**
+     * Role-privilege editor should render and persist posted matrix changes.
+     */
+    public function testEditRolePrivilegesGetAndPost(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/site-options/edit-role-privileges');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Role Privileges');
+
+        $this->enableRetainFlashMessages();
+        $this->post('/admin/site-options/edit-role-privileges', [
+            'privileges' => [
+                'admin' => 'bypass_all, manage_users',
+                'editor' => ['view_any', 'edit_any'],
+                'author' => 'view_own',
+            ],
+            'delete_role' => [
+                'author' => '1',
+            ],
+            'new_role' => 'reviewer',
+            'new_privileges' => 'view_any,comment_moderate',
+        ]);
+
+        $this->assertRedirect('/admin/site-options/edit-role-privileges');
+        $this->assertFlashMessage('Role privileges have been updated.');
+
+        $this->get('/admin/site-options/edit-role-privileges');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Role Privileges');
+    }
 }

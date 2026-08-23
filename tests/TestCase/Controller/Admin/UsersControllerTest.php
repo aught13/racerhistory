@@ -414,4 +414,49 @@ class UsersControllerTest extends TestCase
         $refreshed = $table->get(1);
         $this->assertSame('Direct Update', $refreshed->display_name);
     }
+
+    /**
+     * Edit should persist role_id and accept social links submitted as JSON text.
+     */
+    public function testEditPostPersistsRoleIdAndJsonSocialLinks(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/users/edit/3', [
+            'display_name' => 'JSON Social User',
+            'role_id' => 3,
+            'social_links' => '["https://github.com/aught13","https://twitter.com/racerhistory"]',
+        ]);
+
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('User has been updated successfully.', 'Flash.flash.0.message');
+
+        $updated = $this->getTableLocator()->get('Users')->get(3);
+        $this->assertSame('JSON Social User', (string)$updated->display_name);
+        $this->assertSame(3, (int)$updated->role_id);
+    }
+
+    /**
+     * Empty social links should be normalized without breaking save flow.
+     */
+    public function testEditPostNormalizesEmptySocialLinks(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/users/edit/3', [
+            'display_name' => 'Empty Social User',
+            'social_links' => '',
+        ]);
+
+        $this->assertRedirect('/admin/users');
+        $this->assertSession('User has been updated successfully.', 'Flash.flash.0.message');
+
+        $updated = $this->getTableLocator()->get('Users')->get(3);
+        $this->assertSame('Empty Social User', (string)$updated->display_name);
+        $this->assertNull($updated->social_links);
+    }
 }
