@@ -57,6 +57,9 @@ declare(strict_types=1);
     <div class="card shadow-sm">
         <div class="card-header">
             <h3 class="card-title mb-0">Global Site Settings</h3>
+            <?php if ($this->Rbac->can('Roles', 'read')) : ?>
+                <?= $this->Html->link('Manage RBAC Roles', ['prefix' => 'Admin', 'controller' => 'Roles', 'action' => 'index'], ['class' => 'btn btn-sm btn-outline-secondary float-end', 'data-turbo-frame' => 'admin-content']) ?>
+            <?php endif; ?>
         </div>
 
         <div class="card-body">
@@ -77,7 +80,17 @@ declare(strict_types=1);
                 $value = $siteOptions[$optionKey] ?? ($definition['default'] ?? null);
                 ?>
 
-                <?php if ($type === 'checkbox') : ?>
+                <?php if ($optionKey === 'role_privileges') : ?>
+                    <div class="mb-3">
+                        <label class="form-label"><?= h($label) ?></label>
+                        <div class="small text-muted mb-2">Role privileges are now managed in the dedicated RBAC role matrix.</div>
+                        <?php if ($this->Rbac->can('Roles', 'read')) : ?>
+                            <div class="d-grid gap-2 col-6 p-0">
+                                <?= $this->Html->link('Manage RBAC Roles', ['prefix' => 'Admin', 'controller' => 'Roles', 'action' => 'index'], ['class' => 'btn btn-primary btn-lg', 'data-turbo-frame' => 'admin-content']) ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php elseif ($type === 'checkbox') : ?>
                     <?= $this->Form->control($optionKey, [
                         'type' => 'checkbox',
                         'label' => $label,

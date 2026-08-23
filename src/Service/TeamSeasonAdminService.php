@@ -31,12 +31,15 @@ class TeamSeasonAdminService
 {
     private TeamSportContextService $teamSportContextService;
 
+    private RbacPermissionService $rbacPermissionService;
+
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
      */
     public function __construct(?TeamSportContextService $teamSportContextService = null)
     {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+        $this->rbacPermissionService = new RbacPermissionService();
     }
 
     /**
@@ -257,11 +260,22 @@ class TeamSeasonAdminService
      * Delete a team season.
      *
      * @param string|int $id Team season identifier
+     * @param mixed $identity Current authenticated identity
      * @return bool
      */
-    public function deleteTeamSeason(int|string $id): bool
+    public function deleteTeamSeason(int|string $id, mixed $identity = null): bool
     {
-        $teamSeason = $this->getTeamSeasonsTable()->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'TeamSeasons',
+            $this->getTeamSeasonsTable()->find(),
+            'delete',
+            'id',
+        );
+        $teamSeason = $scoped->where(['TeamSeasons.id' => (int)$id])->first();
+        if ($teamSeason === null) {
+            return false;
+        }
 
         return (bool)$this->getTeamSeasonsTable()->delete($teamSeason);
     }
@@ -285,17 +299,37 @@ class TeamSeasonAdminService
      * Bulk delete team seasons.
      *
      * @param array<mixed> $rawIds Raw identifier list from request
+     * @param mixed $identity Current authenticated identity
      * @return int Number of deleted records
      */
-    public function bulkDeleteTeamSeasons(array $rawIds): int
+    public function bulkDeleteTeamSeasons(array $rawIds, mixed $identity = null): int
     {
         $teamSeasonIds = $this->sanitizeIdentifierList($rawIds);
         if ($teamSeasonIds === []) {
             return 0;
         }
 
+        $allowed = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'TeamSeasons',
+            $this->getTeamSeasonsTable()->find(),
+            'delete',
+            'id',
+        )
+            ->select(['TeamSeasons.id'])
+            ->where(['TeamSeasons.id IN' => $teamSeasonIds])
+            ->enableHydration(false)
+            ->all()
+            ->extract('id')
+            ->toList();
+
+        $allowedIds = array_values(array_map('intval', $allowed));
+        if ($allowedIds === []) {
+            return 0;
+        }
+
         $deletedCount = 0;
-        foreach ($teamSeasonIds as $id) {
+        foreach ($allowedIds as $id) {
             try {
                 $teamSeason = $this->getTeamSeasonsTable()->get($id);
                 if ($this->getTeamSeasonsTable()->delete($teamSeason)) {

@@ -2,6 +2,29 @@
 --
 -- This file provides the minimum table definitions needed for tests
 
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Permissions table
+CREATE TABLE IF NOT EXISTS permissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  role_id INTEGER NOT NULL,
+  model_name VARCHAR(100) NOT NULL,
+  can_create BOOLEAN NOT NULL DEFAULT 0,
+  can_read VARCHAR(10) NOT NULL DEFAULT 'none',
+  can_update VARCHAR(10) NOT NULL DEFAULT 'none',
+  can_delete VARCHAR(10) NOT NULL DEFAULT 'none',
+  custom_rules TEXT NULL,
+  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(role_id, model_name)
+);
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,7 +44,13 @@ CREATE TABLE IF NOT EXISTS users (
   secret_verified BOOLEAN NULL,
   additional_data TEXT NULL,
   last_login DATETIME NULL,
+  display_name VARCHAR(255) NULL,
+  bio TEXT NULL,
+  profile_image_id INTEGER NULL,
+  website_url VARCHAR(255) NULL,
+  social_links TEXT NULL,
   role VARCHAR(20) NOT NULL DEFAULT 'user',
+  role_id INTEGER NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'inactive',
   created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -182,6 +211,8 @@ CREATE TABLE IF NOT EXISTS images (
   variants TEXT NOT NULL,
   hash VARCHAR(40) NOT NULL,
   status VARCHAR(20) NOT NULL,
+  user_id INTEGER NULL,
+  photo_credit VARCHAR(255) NULL,
   created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -204,8 +235,16 @@ CREATE TABLE IF NOT EXISTS team_season (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   team_id INTEGER NOT NULL,
   season_id INTEGER NOT NULL,
-  semester VARCHAR(10) NULL,
-  team_season_image VARCHAR(255) NULL,
+  semester INTEGER NOT NULL,
+  league VARCHAR(240) NULL,
+  league_abbr VARCHAR(10) NULL,
+  league_finish VARCHAR(240) NULL,
+  league_torunament_finish VARCHAR(240) NULL,
+  last_post_game VARCHAR(240) NULL,
+  team_season_notes VARCHAR(240) NULL,
+  team_season_image VARCHAR(162) NULL,
+  team_season_preview TEXT NULL,
+  team_season_recap TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -451,8 +490,12 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   body TEXT NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'draft',
   is_published BOOLEAN NOT NULL DEFAULT 0,
+  is_pinned BOOLEAN NOT NULL DEFAULT 0,
+  pinned_rank INTEGER NULL,
+  pinned_until DATETIME NULL,
   published_at DATETIME NULL,
   hero_image_id INTEGER NULL,
+  user_id INTEGER NULL,
   created DATETIME NULL,
   modified DATETIME NULL
 );

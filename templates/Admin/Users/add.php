@@ -44,13 +44,11 @@
         </div>
         <div class="row">
             <div class="col-md-6">
-                <?= $this->Form->control('role', [
+                <?= $this->Form->control('role_id', [
                     'type' => 'select',
-                    'options' => [
-                        'user' => 'User',
-                        'admin' => 'Admin',
-                    ],
-                    'default' => 'user',
+                    'options' => $roleOptions ?? [],
+                    'empty' => 'Choose role',
+                    'label' => 'RBAC Role',
                     'class' => 'form-select',
                 ]) ?>
             </div>

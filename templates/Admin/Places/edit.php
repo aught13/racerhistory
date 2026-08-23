@@ -4,6 +4,9 @@
  * @var mixed $sites
  * @var \App\Model\Entity\Place $place
  */
+
+$canCreateSites = $this->Rbac->can('Sites', 'create');
+$canUpdateSites = $this->Rbac->can('Sites', 'update');
 ?>
 <?php $this->assign('title', 'Edit Place'); ?>
 <div class="container py-4">
@@ -64,13 +67,21 @@
     <div class="card mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Sites in this Place</h3>
-            <a class="btn btn-sm btn-success" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'add', '?' => ['place_id' => $place->id]]) ?>">Add Site</a>
+            <?php if ($canCreateSites) : ?>
+                <a class="btn btn-sm btn-success" href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'add', '?' => ['place_id' => $place->id]]) ?>">Add Site</a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
             <?php if (!empty($sites)) : ?>
                 <ul class="mb-0">
                     <?php foreach ($sites as $s) : ?>
-                        <li><a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'edit', $s->id]) ?>"><?= h($s->site_name) ?></a></li>
+                        <li>
+                            <?php if ($canUpdateSites) : ?>
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sites', 'action' => 'edit', $s->id]) ?>"><?= h($s->site_name) ?></a>
+                            <?php else : ?>
+                                <?= h($s->site_name) ?>
+                            <?php endif; ?>
+                        </li>
                     <?php endforeach; ?>
                 </ul>
             <?php else : ?>

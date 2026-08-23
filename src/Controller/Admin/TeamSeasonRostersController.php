@@ -215,7 +215,8 @@ class TeamSeasonRostersController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
-        $result = $this->teamSeasonRosterAdminService->deleteRoster($id);
+        $identity = $this->request->getAttribute('identity');
+        $result = $this->teamSeasonRosterAdminService->deleteRoster($id, $identity);
 
         if ($result['success']) {
             $this->Flash->success(__('The team season roster has been deleted.'));
@@ -223,7 +224,11 @@ class TeamSeasonRostersController extends AppController
             $this->Flash->error(__('The team season roster could not be deleted. Please, try again.'));
         }
 
-        return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $result['teamSeasonId']]);
+        if ((int)$result['teamSeasonId'] > 0) {
+            return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $result['teamSeasonId']]);
+        }
+
+        return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'index']);
     }
 
     /**
@@ -234,8 +239,10 @@ class TeamSeasonRostersController extends AppController
     public function bulkDelete(): Response
     {
         $this->request->allowMethod(['post']);
+        $identity = $this->request->getAttribute('identity');
         $result = $this->teamSeasonRosterAdminService->bulkDeleteRosters(
             (array)$this->request->getData('team_season_roster_ids'),
+            $identity,
         );
 
         if (!$result['validSelection']) {
@@ -258,7 +265,11 @@ class TeamSeasonRostersController extends AppController
             $this->Flash->error('No team season rosters could be deleted.');
         }
 
-        return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $result['teamSeasonId']]);
+        if ((int)($result['teamSeasonId'] ?? 0) > 0) {
+            return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'view', $result['teamSeasonId']]);
+        }
+
+        return $this->redirect(['controller' => 'TeamSeasons', 'action' => 'index']);
     }
 
     /**

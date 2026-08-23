@@ -179,6 +179,12 @@ return function (RouteBuilder $routes): void {
 
         // Public server-rendered blog (Hotwire-enhanced)
         $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
+
+        $builder->connect('/profile/edit', ['controller' => 'Profiles', 'action' => 'edit']);
+        $builder->connect('/profile/{username}', ['controller' => 'Profiles', 'action' => 'view'])
+                ->setPatterns(['username' => '[\w\-+]+'])
+                ->setPass(['username']);
+
         $builder->connect('/blog', ['controller' => 'Blog', 'action' => 'index']);
         $builder->connect('/blog/{slug}', ['controller' => 'Blog', 'action' => 'view'])
             ->setPass(['slug'])

@@ -26,6 +26,8 @@ class AppControllerTest extends TestCase
      */
     protected array $fixtures = [
         'app.Users',
+        'app.Roles',
+        'app.Permissions',
     ];
 
     /**
@@ -77,18 +79,41 @@ class AppControllerTest extends TestCase
     }
 
     /**
-     * Test access denied for non-admin users
+     * Test access allowed for non-admin users with RBAC admin-area permissions
      *
      * @return void
      */
-    public function testNonAdminUserAccessDenied(): void
+    public function testRbacEditorCanAccessAdmin(): void
+    {
+        $this->mockIdentity([
+            'id' => 4,
+            'username' => 'editor',
+            'role' => 'editor',
+            'role_id' => 3,
+            'email' => 'editor@example.com',
+            'status' => 'active',
+            'active' => true,
+        ]);
+
+        $this->get('/admin');
+        $this->assertResponseOk();
+    }
+
+    /**
+     * Test access denied for users without any admin permissions
+     *
+     * @return void
+     */
+    public function testUserWithoutAdminPermissionsAccessDenied(): void
     {
         $this->mockIdentity([
             'id' => 2,
             'username' => 'user',
             'role' => 'user',
+            'role_id' => null,
             'email' => 'user@example.com',
             'status' => 'active',
+            'active' => true,
         ]);
 
         $this->get('/admin');
@@ -144,8 +169,10 @@ class AppControllerTest extends TestCase
             'id' => 2,
             'username' => 'user',
             'role' => 'user',
+            'role_id' => null,
             'email' => 'user@example.com',
             'status' => 'active',
+            'active' => true,
         ]);
         $this->get('/admin');
         $this->assertFlashMessage('You do not have permission to access the admin area.');

@@ -3,6 +3,12 @@
  * @var \App\View\AppView $this
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\TeamSeason> $teamSeasons
  */
+
+$canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
+$canCreateTeamSeasons = $this->Rbac->can('TeamSeasons', 'create');
+$canUpdateTeamSeasons = $this->Rbac->can('TeamSeasons', 'update');
+$canDeleteTeamSeasons = $this->Rbac->can('TeamSeasons', 'delete');
+$canCreateRosters = $this->Rbac->can('TeamSeasonRosters', 'create');
 ?>
 <?php $this->assign('title', 'Manage Team Seasons'); ?>
 <div class="container py-4" data-controller="admin-index-table">
@@ -13,10 +19,12 @@
                 Manage team participation in specific seasons. Team seasons link teams to seasons and contain detailed
                 competition information including league participation, tournament results, and season-specific data.
             </p>
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'add']) ?>"
-                class="btn btn-success mb-3">
-                <i class="bi bi-plus-circle"></i> Add New Team Season
-            </a>
+            <?php if ($canCreateTeamSeasons) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'add']) ?>"
+                    class="btn btn-success mb-3">
+                    <i class="bi bi-plus-circle"></i> Add New Team Season
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -89,26 +97,37 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>"
-                                    class="btn btn-sm btn-info">View</a>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
-                                    class="btn btn-sm btn-primary">Edit</a>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-                                    class="btn btn-sm btn-success">Add Roster</a>
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-danger"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#confirm-delete-modal"
-                                    data-delete-url="<?= $this->Url->build([
-                                        'prefix' => 'Admin',
-                                        'controller' => 'TeamSeasons',
-                                        'action' => 'delete',
-                                        $teamSeason->id,
-                                    ]) ?>"
-                                    data-item-type="team season"
-                                    data-item-name="<?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>"
-                                    aria-label="Delete team season for <?= h($teamSeason->team->team_name) ?>">Delete</button>
+                                <?php if ($canReadTeamSeasons) : ?>
+                                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>"
+                                        class="btn btn-sm btn-info">View</a>
+                                <?php endif; ?>
+                                <?php if ($canUpdateTeamSeasons) : ?>
+                                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
+                                        class="btn btn-sm btn-primary">Edit</a>
+                                <?php endif; ?>
+                                <?php if ($canCreateRosters) : ?>
+                                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                                        class="btn btn-sm btn-success">Add Roster</a>
+                                <?php endif; ?>
+                                <?php if ($canDeleteTeamSeasons) : ?>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#confirm-delete-modal"
+                                        data-delete-url="<?= $this->Url->build([
+                                            'prefix' => 'Admin',
+                                            'controller' => 'TeamSeasons',
+                                            'action' => 'delete',
+                                            $teamSeason->id,
+                                        ]) ?>"
+                                        data-item-type="team season"
+                                        data-item-name="<?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>"
+                                        aria-label="Delete team season for <?= h($teamSeason->team->team_name) ?>">Delete</button>
+                                <?php endif; ?>
+                                <?php if (!$canReadTeamSeasons && !$canUpdateTeamSeasons && !$canCreateRosters && !$canDeleteTeamSeasons) : ?>
+                                    <span class="text-muted">No actions</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>

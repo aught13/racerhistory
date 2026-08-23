@@ -55,7 +55,7 @@ class BlogPostService
         $table = $this->posts();
         /** @var \App\Model\Entity\BlogPost|null $post */
         $post = $table->find()
-            ->contain(['BlogTags'])
+            ->contain(['BlogTags', 'Users', 'HeroImages'])
             ->where([
                 'BlogPosts.slug' => $slug,
                 'BlogPosts.is_published' => true,
@@ -137,7 +137,7 @@ class BlogPostService
     {
         $table = $this->posts();
         $query = $table->find()
-            ->contain(['BlogTags'])
+            ->contain(['BlogTags', 'Users', 'HeroImages'])
             ->where(['BlogPosts.is_published' => true]);
 
         if ($tagSlug) {

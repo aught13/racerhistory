@@ -71,6 +71,9 @@ foreach ($allColumns as $key => $label) {
 }
 
 $hasStats = $playerStats && $playerStats->count() > 0;
+$canCreateTeamSeasons = $this->Rbac->can('TeamSeasons', 'create');
+$canUpdateTeamSeasons = $this->Rbac->can('TeamSeasons', 'update');
+$canDeleteTeamSeasons = $this->Rbac->can('TeamSeasons', 'delete');
 ?>
 
 <div class="row mt-4">
@@ -79,21 +82,25 @@ $hasStats = $playerStats && $playerStats->count() > 0;
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="card-title mb-0">Season Statistics</h3>
                 <div class="btn-group">
-                    <?= $this->Html->link(
-                        '<i class="bi bi-plus-circle"></i> Add Player Stats',
-                        ['controller' => 'StatBasketSeasonPerson', 'action' => 'add', $teamSeason->id],
-                        ['class' => 'btn btn-sm btn-primary', 'escape' => false],
-                    ) ?>
-                    <?= $this->Html->link(
-                        '<i class="bi bi-pencil"></i> Edit Team Stats',
-                        ['controller' => 'StatBasketSeasonTeam', 'action' => 'edit', $teamSeason->id],
-                        ['class' => 'btn btn-sm btn-secondary', 'escape' => false],
-                    ) ?>
-                    <?= $this->Html->link(
-                        '<i class="bi bi-pencil"></i> Edit Opponent Stats',
-                        ['controller' => 'StatBasketSeasonOpponent', 'action' => 'edit', $teamSeason->id],
-                        ['class' => 'btn btn-sm btn-secondary', 'escape' => false],
-                    ) ?>
+                    <?php if ($canCreateTeamSeasons) : ?>
+                        <?= $this->Html->link(
+                            '<i class="bi bi-plus-circle"></i> Add Player Stats',
+                            ['controller' => 'StatBasketSeasonPerson', 'action' => 'add', $teamSeason->id],
+                            ['class' => 'btn btn-sm btn-primary', 'escape' => false],
+                        ) ?>
+                    <?php endif; ?>
+                    <?php if ($canUpdateTeamSeasons) : ?>
+                        <?= $this->Html->link(
+                            '<i class="bi bi-pencil"></i> Edit Team Stats',
+                            ['controller' => 'StatBasketSeasonTeam', 'action' => 'edit', $teamSeason->id],
+                            ['class' => 'btn btn-sm btn-secondary', 'escape' => false],
+                        ) ?>
+                        <?= $this->Html->link(
+                            '<i class="bi bi-pencil"></i> Edit Opponent Stats',
+                            ['controller' => 'StatBasketSeasonOpponent', 'action' => 'edit', $teamSeason->id],
+                            ['class' => 'btn btn-sm btn-secondary', 'escape' => false],
+                        ) ?>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">
@@ -128,16 +135,23 @@ $hasStats = $playerStats && $playerStats->count() > 0;
                                                 <td><?= h($stat->$key ?? '') ?></td>
                                             <?php endforeach; ?>
                                             <td class="text-end">
-                                                <?= $this->Html->link(
-                                                    '<i class="bi bi-pencil"></i>',
-                                                    ['controller' => 'StatBasketSeasonPerson', 'action' => 'edit', $stat->id],
-                                                    ['class' => 'btn btn-sm btn-outline-primary', 'escape' => false, 'title' => 'Edit'],
-                                                ) ?>
-                                                <?= $this->Form->postLink(
-                                                    '<i class="bi bi-trash"></i>',
-                                                    ['controller' => 'StatBasketSeasonPerson', 'action' => 'delete', $stat->id],
-                                                    ['class' => 'btn btn-sm btn-outline-danger', 'escape' => false, 'title' => 'Delete', 'confirm' => 'Delete this player stat?'],
-                                                ) ?>
+                                                <?php if ($canUpdateTeamSeasons) : ?>
+                                                    <?= $this->Html->link(
+                                                        '<i class="bi bi-pencil"></i>',
+                                                        ['controller' => 'StatBasketSeasonPerson', 'action' => 'edit', $stat->id],
+                                                        ['class' => 'btn btn-sm btn-outline-primary', 'escape' => false, 'title' => 'Edit'],
+                                                    ) ?>
+                                                <?php endif; ?>
+                                                <?php if ($canDeleteTeamSeasons) : ?>
+                                                    <?= $this->Form->postLink(
+                                                        '<i class="bi bi-trash"></i>',
+                                                        ['controller' => 'StatBasketSeasonPerson', 'action' => 'delete', $stat->id],
+                                                        ['class' => 'btn btn-sm btn-outline-danger', 'escape' => false, 'title' => 'Delete', 'confirm' => 'Delete this player stat?'],
+                                                    ) ?>
+                                                <?php endif; ?>
+                                                <?php if (!$canUpdateTeamSeasons && !$canDeleteTeamSeasons) : ?>
+                                                    <span class="text-muted">No actions</span>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

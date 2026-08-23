@@ -97,7 +97,34 @@ class ImagesController extends AppController
             $manipulations = $this->collectManipulations();
 
             $storage = new ImageStorageService(null, $tagging);
-            $result = $storage->upload($file, $tags, $manipulations);
+            $ownerId = null;
+            if ($this->components()->has('Authentication')) {
+                try {
+                    $identity = $this->Authentication->getIdentity();
+                } catch (Throwable $e) {
+                    $identity = null;
+                }
+                if ($identity !== null) {
+                    if (method_exists($identity, 'getIdentifier')) {
+                        $ownerId = (int)$identity->getIdentifier();
+                    } elseif (method_exists($identity, 'getOriginalData')) {
+                        $orig = $identity->getOriginalData();
+                        if (is_array($orig) && !empty($orig['id'])) {
+                            $ownerId = (int)$orig['id'];
+                        } elseif (is_object($orig) && property_exists($orig, 'id')) {
+                            $ownerId = (int)$orig->id;
+                        }
+                    }
+                }
+            }
+            if ($ownerId === null) {
+                $legacy = $this->getRequest()->getSession()->read('Auth');
+                if (is_array($legacy) && !empty($legacy['id'])) {
+                    $ownerId = (int)$legacy['id'];
+                }
+            }
+
+            $result = $storage->upload($file, $tags, $manipulations, $ownerId);
 
             if (!empty($result['success'])) {
                 /** @var \App\Model\Entity\Image $image */
@@ -133,8 +160,10 @@ class ImagesController extends AppController
     }
 
     /**
-     * Compatibility endpoint that delegates image serving to the public controller.
-     * Example: /admin/images/serve/123?variant=thumb -> /images/serve/123?variant=thumb
+     * Compatibility endpoint that delegates image serving to the public
+     * controller.
+     * Example: /admin/images/serve/123?variant=thumb
+     * redirects to /images/serve/123?variant=thumb.
      *
      * @param int $id
      */
@@ -154,7 +183,10 @@ class ImagesController extends AppController
     public function index(): void
     {
         $this->getRequest()->allowMethod(['get']);
-        $this->set('imageCount', $this->imagesAdminService->getTotalCount());
+        $this->set(
+            'imageCount',
+            $this->imagesAdminService->getTotalCount($this->getRequest()->getAttribute('identity')),
+        );
         // Let Cake render the template normally (no explicit return of Response which caused blank output)
     }
 
@@ -196,7 +228,7 @@ class ImagesController extends AppController
             'searchValue' => trim((string)($request->getQuery('search')['value'] ?? '')),
             'orderDir' => $orderDir,
             'orderColumn' => $orderColumn,
-        ]);
+        ], $request->getAttribute('identity'));
 
         return $this->json([
             'draw' => $result['draw'],
@@ -311,7 +343,35 @@ class ImagesController extends AppController
                 $fileTags = $this->collectBulkTags($tagsInput, $contextInput, (string)$index);
                 $allTags = array_merge($commonEntityTags, $fileTags);
 
-                $result = $storage->upload($file, $allTags, []);
+                // Determine uploader id (owner) similarly to single upload
+                $ownerId = null;
+                if ($this->components()->has('Authentication')) {
+                    try {
+                        $identity = $this->Authentication->getIdentity();
+                    } catch (Throwable $e) {
+                        $identity = null;
+                    }
+                    if ($identity !== null) {
+                        if (method_exists($identity, 'getIdentifier')) {
+                            $ownerId = (int)$identity->getIdentifier();
+                        } elseif (method_exists($identity, 'getOriginalData')) {
+                            $orig = $identity->getOriginalData();
+                            if (is_array($orig) && !empty($orig['id'])) {
+                                $ownerId = (int)$orig['id'];
+                            } elseif (is_object($orig) && property_exists($orig, 'id')) {
+                                $ownerId = (int)$orig->id;
+                            }
+                        }
+                    }
+                }
+                if ($ownerId === null) {
+                    $legacy = $this->getRequest()->getSession()->read('Auth');
+                    if (is_array($legacy) && !empty($legacy['id'])) {
+                        $ownerId = (int)$legacy['id'];
+                    }
+                }
+
+                $result = $storage->upload($file, $allTags, [], $ownerId);
 
                 $results[] = [
                     'index' => $index,
@@ -343,12 +403,13 @@ class ImagesController extends AppController
      */
     public function edit(int $id): ?Response
     {
-        $pageData = $this->imagesAdminService->getEditPageData($id);
+        $identity = $this->getRequest()->getAttribute('identity');
+        $pageData = $this->imagesAdminService->getEditPageData($id, $identity);
 
         // Handle basic image updates (original_name, status) only
         $request = $this->getRequest();
         if ($request->is(['post', 'put', 'patch'])) {
-            $result = $this->imagesAdminService->updateMetadata($id, (array)$request->getData());
+            $result = $this->imagesAdminService->updateMetadata($id, (array)$request->getData(), $identity);
             if ($result['success']) {
                 $this->Flash->success('Image updated');
             } else {
@@ -374,13 +435,13 @@ class ImagesController extends AppController
         $request->allowMethod(['get', 'post']);
 
         if ($request->is(['post'])) {
-            $this->imagesAdminService->applyTags($id, (array)$request->getData());
+            $this->imagesAdminService->applyTags($id, (array)$request->getData(), $request->getAttribute('identity'));
             $this->Flash->success('Tags updated');
 
             return $this->redirect(['action' => 'tags', $id]);
         }
 
-        $this->set($this->imagesAdminService->getTagsPageData($id));
+        $this->set($this->imagesAdminService->getTagsPageData($id, $request->getAttribute('identity')));
 
         $this->viewBuilder()->setTemplate('tags');
 
@@ -396,7 +457,7 @@ class ImagesController extends AppController
     {
         $this->getRequest()->allowMethod(['post', 'delete']);
 
-        $result = $this->imagesAdminService->deleteImage($id);
+        $result = $this->imagesAdminService->deleteImage($id, $this->getRequest()->getAttribute('identity'));
 
         if (!empty($result['deleted'])) {
             $this->Flash->success('Image deleted');
@@ -420,7 +481,7 @@ class ImagesController extends AppController
             $ids = [];
         }
 
-        $result = $this->imagesAdminService->bulkDelete($ids);
+        $result = $this->imagesAdminService->bulkDelete($ids, $request->getAttribute('identity'));
         $deleted = (int)($result['deleted'] ?? 0);
 
         $this->Flash->success("Deleted {$deleted} image(s)");
@@ -438,7 +499,7 @@ class ImagesController extends AppController
      */
     public function manipulate(int $id): Response
     {
-        $image = $this->imagesAdminService->getImageById($id);
+        $image = $this->imagesAdminService->getImageById($id, $this->getRequest()->getAttribute('identity'), 'update');
         /** @var \App\Model\Entity\Image $image */
 
         $request = $this->getRequest();
@@ -478,6 +539,7 @@ class ImagesController extends AppController
                     $manipulations,
                     $mode,
                     is_array($thumbCrop) ? $thumbCrop : null,
+                    $this->getRequest()->getAttribute('identity'),
                 );
 
                 if (empty($result['success']) && ($result['status'] ?? null) === 'missing_library') {
@@ -522,7 +584,7 @@ class ImagesController extends AppController
      */
     public function cropThumb(int $id): Response
     {
-        $image = $this->imagesAdminService->getImageById($id);
+        $image = $this->imagesAdminService->getImageById($id, $this->getRequest()->getAttribute('identity'), 'update');
         /** @var \App\Model\Entity\Image $image */
 
         $request = $this->getRequest();
@@ -564,7 +626,7 @@ class ImagesController extends AppController
                     'y' => $cropY,
                     'width' => $cropWidth,
                     'height' => $cropHeight,
-                ]);
+                ], $this->getRequest()->getAttribute('identity'));
 
                 $this->Flash->success('Thumbnail crop updated successfully');
 
@@ -593,7 +655,7 @@ class ImagesController extends AppController
      */
     public function cropHero(int $id): Response
     {
-        $image = $this->imagesAdminService->getImageById($id);
+        $image = $this->imagesAdminService->getImageById($id, $this->getRequest()->getAttribute('identity'), 'update');
         /** @var \App\Model\Entity\Image $image */
 
         $request = $this->getRequest();
@@ -633,7 +695,7 @@ class ImagesController extends AppController
                     'y' => $cropY,
                     'width' => $cropWidth,
                     'height' => $cropHeight,
-                ]);
+                ], $this->getRequest()->getAttribute('identity'));
 
                 $this->Flash->success('Hero crop updated successfully');
 

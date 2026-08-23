@@ -25,12 +25,15 @@ class TeamAdminService
 {
     private TeamSportContextService $teamSportContextService;
 
+    private RbacPermissionService $rbacPermissionService;
+
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
      */
     public function __construct(?TeamSportContextService $teamSportContextService = null)
     {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+        $this->rbacPermissionService = new RbacPermissionService();
     }
 
     /**
@@ -167,11 +170,22 @@ class TeamAdminService
      * Delete a team.
      *
      * @param string|int $id Team identifier
+     * @param mixed $identity Current authenticated identity
      * @return bool
      */
-    public function deleteTeam(int|string $id): bool
+    public function deleteTeam(int|string $id, mixed $identity = null): bool
     {
-        $team = $this->getTeamsTable()->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Teams',
+            $this->getTeamsTable()->find(),
+            'delete',
+            'id',
+        );
+        $team = $scoped->where(['Teams.id' => (int)$id])->first();
+        if ($team === null) {
+            return false;
+        }
 
         return (bool)$this->getTeamsTable()->delete($team);
     }
@@ -180,17 +194,37 @@ class TeamAdminService
      * Bulk delete teams by identifier list.
      *
      * @param array<mixed> $rawIds Raw identifier list from request
+     * @param mixed $identity Current authenticated identity
      * @return int Number of deleted records
      */
-    public function bulkDeleteTeams(array $rawIds): int
+    public function bulkDeleteTeams(array $rawIds, mixed $identity = null): int
     {
         $teamIds = $this->sanitizeIdentifierList($rawIds);
         if ($teamIds === []) {
             return 0;
         }
 
+        $allowed = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Teams',
+            $this->getTeamsTable()->find(),
+            'delete',
+            'id',
+        )
+            ->select(['Teams.id'])
+            ->where(['Teams.id IN' => $teamIds])
+            ->enableHydration(false)
+            ->all()
+            ->extract('id')
+            ->toList();
+
+        $allowedIds = array_values(array_map('intval', $allowed));
+        if ($allowedIds === []) {
+            return 0;
+        }
+
         $deletedCount = 0;
-        foreach ($teamIds as $id) {
+        foreach ($allowedIds as $id) {
             try {
                 $team = $this->getTeamsTable()->get($id);
                 if ($this->getTeamsTable()->delete($team)) {

@@ -84,7 +84,7 @@ class SitesController extends AppController
             'searchValue' => trim((string)($this->request->getQuery('search')['value'] ?? '')),
             'orderColumn' => $orderColumn,
             'orderDir' => $orderDir,
-        ]);
+        ], $this->request->getAttribute('identity'));
 
         return $this->response
             ->withType('application/json')
@@ -152,8 +152,9 @@ class SitesController extends AppController
     public function delete(string $id): Response
     {
         $this->request->allowMethod(['post', 'delete']);
+        $identity = $this->request->getAttribute('identity');
 
-        if ($this->siteAdminService->deleteSite($id)) {
+        if ($this->siteAdminService->deleteSite($id, $identity)) {
             $this->Flash->success('The site has been deleted.');
         } else {
             $this->Flash->error('The site could not be deleted.');

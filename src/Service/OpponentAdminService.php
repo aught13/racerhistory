@@ -22,6 +22,16 @@ use Cake\Routing\Router;
  */
 class OpponentAdminService
 {
+    private RbacPermissionService $rbacPermissionService;
+
+    /**
+     * @param \App\Service\RbacPermissionService|null $rbacPermissionService
+     */
+    public function __construct(?RbacPermissionService $rbacPermissionService = null)
+    {
+        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
+    }
+
     /**
      * Return total number of opponents for index page summary.
      *
@@ -36,9 +46,10 @@ class OpponentAdminService
      * Build DataTables server-side payload.
      *
      * @param array<string,mixed> $params
+     * @param mixed $identity Current authenticated identity
      * @return array{draw:int,total:int,filtered:int,data:array<int,array<string,mixed>>}
      */
-    public function buildDataTablesResponse(array $params): array
+    public function buildDataTablesResponse(array $params, mixed $identity = null): array
     {
         $opponentsTable = $this->getOpponentsTable();
         $schema = $opponentsTable->getSchema();
@@ -123,6 +134,8 @@ class OpponentAdminService
         /** @var array<\App\Model\Entity\Opponent> $opponents */
         $opponents = $query->limit($length)->offset($start)->all()->toArray();
 
+        $canUpdateOpponents = $this->rbacPermissionService->can($identity, 'Opponents', 'update');
+
         $data = [];
         foreach ($opponents as $opponent) {
             $editUrl = Router::url([
@@ -135,6 +148,9 @@ class OpponentAdminService
             $placeCity = (string)($opponent->place_city ?? '');
             $placeState = (string)($opponent->place_state ?? '');
             $placeLabel = trim($placeCity . ($placeState !== '' ? ', ' . $placeState : ''));
+            $actions = $canUpdateOpponents
+                ? '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>'
+                : '<span class="text-muted">No actions</span>';
 
             $data[] = [
                 'id' => (int)$opponent->id,
@@ -142,7 +158,7 @@ class OpponentAdminService
                 'short' => h($hasShortColumn ? ($opponent->opponent_short ?? '') : ''),
                 'abbr' => h($hasAbbrColumn ? ($opponent->opponent_abbr ?? '') : ''),
                 'place' => h($placeLabel !== '' ? $placeLabel : '-'),
-                'actions' => '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a>',
+                'actions' => $actions,
                 'DT_RowId' => 'opponent-row-' . $opponent->id,
             ];
         }
@@ -237,11 +253,22 @@ class OpponentAdminService
      * Delete an opponent.
      *
      * @param string|int $id Opponent identifier
+     * @param mixed $identity Current authenticated identity
      * @return bool
      */
-    public function deleteOpponent(int|string $id): bool
+    public function deleteOpponent(int|string $id, mixed $identity = null): bool
     {
-        $opponent = $this->getOpponentsTable()->get($id);
+        $scoped = $this->rbacPermissionService->scopeQuery(
+            $identity,
+            'Opponents',
+            $this->getOpponentsTable()->find(),
+            'delete',
+            'id',
+        );
+        $opponent = $scoped->where(['Opponents.id' => (int)$id])->first();
+        if ($opponent === null) {
+            return false;
+        }
 
         return (bool)$this->getOpponentsTable()->delete($opponent);
     }

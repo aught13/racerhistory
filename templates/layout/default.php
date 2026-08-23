@@ -26,6 +26,8 @@
  * @var \App\View\AppView $this
  */
 
+use App\Service\RbacPermissionService;
+
 ?>
 <!DOCTYPE html>
 <?php
@@ -94,11 +96,8 @@ $flash = $this->Flash->render();
 
 <?php
 $identity = $this->getRequest()->getAttribute('identity');
-$role = $identity && method_exists($identity, 'get') ? (string)$identity->get('role') : '';
-$isAdmin = $identity && (
-    in_array($role, ['admin', 'superadmin'], true) ||
-    (bool)($identity->get('is_superuser') ?? false)
-);
+$rbacPermissionService = new RbacPermissionService();
+$isAdmin = $rbacPermissionService->hasAnyAdminAccess($identity);
 $controller = (string)$this->request->getParam('controller');
 $action = (string)$this->request->getParam('action');
 $isMainPage = (
@@ -116,7 +115,7 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         'content' => $content,
         'flash' => $flash,
     ]) ?>
-    
+
 </body>
 
 </html>

@@ -103,7 +103,7 @@ class UsersControllerTest extends TestCase
         $this->enableSecurityToken();
         $this->post('/users/login?redirect=/admin', [
             'username' => 'admin',
-            'password' => 'password',
+            'password' => 'administrator',
         ]);
         $this->assertRedirect('/admin');
     }
@@ -301,7 +301,7 @@ class UsersControllerTest extends TestCase
         $this->enableSecurityToken();
         $this->enableRetainFlashMessages();
         $this->post('/users/change-password', [
-            'current_password' => 'password',
+            'current_password' => 'administrator',
             'password' => 'newpassword123',
             'confirm_password' => 'newpassword123',
         ]);
@@ -337,7 +337,7 @@ class UsersControllerTest extends TestCase
         $this->enableSecurityToken();
         $this->enableRetainFlashMessages();
         $this->post('/users/change-password', [
-            'current_password' => 'password',
+            'current_password' => 'administrator',
             'password' => 'newpassword123',
             'confirm_password' => 'different456',
         ]);

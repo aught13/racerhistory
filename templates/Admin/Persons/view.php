@@ -16,6 +16,8 @@ $personsViewBaseUrl = $this->Url->build([
     'controller' => 'Persons',
     'action' => 'view',
 ]);
+$canUpdatePersons = $this->Rbac->can('Persons', 'update');
+$canDeletePersons = $this->Rbac->can('Persons', 'delete');
 ?>
 <?php $this->assign('title', 'View Person'); ?>
 <div class="container-fluid py-3 py-md-4"
@@ -49,38 +51,42 @@ $personsViewBaseUrl = $this->Url->build([
                         </a>
                     </div>
                     <div class="btn-group" role="group" aria-label="Actions">
-                        <a
-                            href="<?= $this->Url->build([
-                                'prefix' => 'Admin',
-                                'controller' => 'Persons',
-                                'action' => 'edit',
-                                $person->id,
-                            ]) ?>"
-                            class="btn btn-primary btn-sm"
-                        >
-                            <i class="bi bi-pencil"></i> Edit
-                        </a>
-                        <button
-                            type="button"
-                            class="btn btn-danger btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#confirm-delete-modal"
-                            data-delete-url="<?= $this->Url->build([
-                                'prefix' => 'Admin',
-                                'controller' => 'Persons',
-                                'action' => 'delete',
-                                $person->id,
-                            ]) ?>"
-                            data-edit-url="<?= $this->Url->build([
-                                'prefix' => 'Admin',
-                                'controller' => 'Persons',
-                                'action' => 'edit',
-                                $person->id,
-                            ]) ?>"
-                            data-item-type="person"
-                        >
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
+                        <?php if ($canUpdatePersons) : ?>
+                            <a
+                                href="<?= $this->Url->build([
+                                    'prefix' => 'Admin',
+                                    'controller' => 'Persons',
+                                    'action' => 'edit',
+                                    $person->id,
+                                ]) ?>"
+                                class="btn btn-primary btn-sm"
+                            >
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($canDeletePersons) : ?>
+                            <button
+                                type="button"
+                                class="btn btn-danger btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#confirm-delete-modal"
+                                data-delete-url="<?= $this->Url->build([
+                                    'prefix' => 'Admin',
+                                    'controller' => 'Persons',
+                                    'action' => 'delete',
+                                    $person->id,
+                                ]) ?>"
+                                data-edit-url="<?= $this->Url->build([
+                                    'prefix' => 'Admin',
+                                    'controller' => 'Persons',
+                                    'action' => 'edit',
+                                    $person->id,
+                                ]) ?>"
+                                data-item-type="person"
+                            >
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </nav>

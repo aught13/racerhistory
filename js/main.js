@@ -9,6 +9,7 @@ import {
 import { startNativeBridge } from "./lib/native_bridge.js";
 import { registerServiceWorker } from "./lib/pwa.js";
 import { initGoogleAdSlots } from "./lib/google_ads.js";
+import { initAdminRbacUi } from "./lib/admin_rbac_ui.js";
 import { initTurboScrollBehavior } from "./lib/turbo_scroll.js";
 import { initTinyMceLoader } from "./lib/tinymce_loader.js";
 import { initializeLegacyModules } from "./lib/legacy_loader_registry.js";
@@ -171,12 +172,16 @@ if (hasWindow && !window.__RH_ADMIN_PATH_THEME_WATCHER_INIT__) {
 
 document.addEventListener("turbo:load", () => {
     initGoogleAdSlots(document);
+    initAdminRbacUi(document);
 });
 
 document.addEventListener("turbo:frame-load", (event) => {
     const frame = event?.target;
     initGoogleAdSlots(isElementNode(frame) ? frame : document);
+    initAdminRbacUi(isElementNode(frame) ? frame : document);
 });
+
+initAdminRbacUi(document);
 
 // Eagerly load the admin stats entry module when the multi-add markup is
 // present so we avoid a race where deferred loading leaves no handler

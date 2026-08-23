@@ -50,9 +50,10 @@ class TagsController extends AppController
         $this->request->allowMethod(['get']);
 
         $subject = strtolower((string)$subject);
+        $identity = $this->request->getAttribute('identity');
 
         if ($subject === 'images' || $subject === 'image') {
-            $data = (new ImagesAdminService())->getTagsPageData($id);
+            $data = (new ImagesAdminService())->getTagsPageData($id, $identity);
             // Provide a canonical subject for form action construction
             // Unpack the data array into view variables for the modal template
             if (!empty($data)) {
@@ -70,8 +71,8 @@ class TagsController extends AppController
 
         if ($subject === 'blogposts' || $subject === 'blog-posts' || $subject === 'blog_post' || $subject === 'post') {
             $service = new BlogPostsAdminService();
-            $post = $id > 0 ? $service->getEditEntity($id) : $service->newEntity();
-            $viewData = $service->buildFormViewData($post);
+            $post = $id > 0 ? $service->getEditEntity($id, $identity) : $service->newEntity();
+            $viewData = $service->buildFormViewData($post, $identity);
             $this->set($viewData);
             $this->set('post', $post);
             $this->set('subject', 'blogposts');

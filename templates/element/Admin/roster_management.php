@@ -14,21 +14,28 @@
  * @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRosters
  * @var \App\Model\Entity\TeamSeason $teamSeason
  */
+
+$canReadPersons = $this->Rbac->can('Persons', 'read');
+$canCreateRosters = $this->Rbac->can('TeamSeasonRosters', 'create');
+$canUpdateRosters = $this->Rbac->can('TeamSeasonRosters', 'update');
+$canDeleteRosters = $this->Rbac->can('TeamSeasonRosters', 'delete');
 ?>
 <div class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title mb-0">Team Roster</h3>
         <div class="d-flex gap-2">
-            <?php if (count($teamSeasonRosters) > 0) : ?>
+            <?php if (count($teamSeasonRosters) > 0 && $canUpdateRosters) : ?>
             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'bulkEdit', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
                 class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-pencil-square"></i> Edit All
             </a>
             <?php endif; ?>
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-                class="btn btn-success btn-sm">
-                <i class="bi bi-plus-circle"></i> Add Roster Entry
-            </a>
+            <?php if ($canCreateRosters) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                    class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle"></i> Add Roster Entry
+                </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="card-body">
@@ -40,15 +47,17 @@
                 <label for="bulk-action-select-rosters" class="form-label mb-0">With Selected:</label>
                 <select id="bulk-action-select-rosters" name="bulk_action" class="form-select form-select-sm w-auto">
                     <option value="">Choose...</option>
-                    <option value="delete">Delete</option>
+                    <?php if ($canDeleteRosters) : ?>
+                        <option value="delete">Delete</option>
+                    <?php endif; ?>
                 </select>
-                <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn-rosters" disabled>Go</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn-rosters"<?= $canDeleteRosters ? ' disabled' : ' disabled aria-disabled="true"' ?>>Go</button>
             </div>
 
             <table class="table table-striped table-bordered" id="rosters-table">
                 <thead class="table-dark">
                     <tr>
-                        <th><input type="checkbox" id="select-all-rosters"></th>
+                        <th><input type="checkbox" id="select-all-rosters"<?= $canDeleteRosters ? '' : ' disabled' ?>></th>
                         <th>Person</th>
                         <th>Year</th>
                         <th>Number</th>
@@ -62,14 +71,19 @@
                     <?php foreach ($teamSeasonRosters as $roster) : ?>
                     <tr>
                         <td><input type="checkbox" name="team_season_roster_ids[]" value="<?= $roster->id ?>"
-                                class="roster-checkbox"></td>
+                                class="roster-checkbox"<?= $canDeleteRosters ? '' : ' disabled' ?>></td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <?= $this->element('person_image', ['person' => $roster->person, 'rosterId' => $roster->id, 'size' => 'small', 'class' => 'me-2']) ?>
-                                <a
-                                    href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'view', $roster->person->id]) ?>">
-                                    <?= h($roster->person->display ?? ($roster->person->first . ' ' . $roster->person->last)) ?>
-                                </a>
+                                <?php $personLabel = $roster->person->display ?? ($roster->person->first . ' ' . $roster->person->last); ?>
+                                <?php if ($canReadPersons) : ?>
+                                    <a
+                                        href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'view', $roster->person->id]) ?>">
+                                        <?= h($personLabel) ?>
+                                    </a>
+                                <?php else : ?>
+                                    <?= h($personLabel) ?>
+                                <?php endif; ?>
                             </div>
                         </td>
                         <td><?= h($roster->roster_year) ?></td>
@@ -78,14 +92,21 @@
                         <td><?= h($roster->roster_height) ?></td>
                         <td><?= h($roster->roster_weight) ?></td>
                         <td>
-                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'edit', $roster->id]) ?>"
-                                class="btn btn-sm btn-primary">Edit</a>
-                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
-                                data-bs-target="#confirm-delete-modal"
-                                data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'delete', $roster->id]) ?>"
-                                data-item-type="roster entry"
-                                data-item-name="<?= h($roster->person->display ?? 'this roster entry') ?>"
-                                aria-label="Delete roster entry for <?= h($roster->person->display) ?>">Delete</button>
+                            <?php if ($canUpdateRosters) : ?>
+                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'edit', $roster->id]) ?>"
+                                    class="btn btn-sm btn-primary">Edit</a>
+                            <?php endif; ?>
+                            <?php if ($canDeleteRosters) : ?>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                    data-bs-target="#confirm-delete-modal"
+                                    data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'delete', $roster->id]) ?>"
+                                    data-item-type="roster entry"
+                                    data-item-name="<?= h($roster->person->display ?? 'this roster entry') ?>"
+                                    aria-label="Delete roster entry for <?= h($roster->person->display) ?>">Delete</button>
+                            <?php endif; ?>
+                            <?php if (!$canUpdateRosters && !$canDeleteRosters) : ?>
+                                <span class="text-muted">No actions</span>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -95,8 +116,10 @@
         <?php else : ?>
         <div class="alert alert-info">
             No roster entries have been created for this team season yet.
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
-                class="alert-link">Add the first roster entry</a>.
+                <?php if ($canCreateRosters) : ?>
+                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasonRosters', 'action' => 'add', '?' => ['team_season_id' => $teamSeason->id]]) ?>"
+                        class="alert-link">Add the first roster entry</a>.
+                <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>

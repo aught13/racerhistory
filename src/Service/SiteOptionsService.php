@@ -546,4 +546,39 @@ class SiteOptionsService
 
         return $settings;
     }
+
+    /**
+     * Retrieve the dynamic RBAC configuration map from Site Options.
+     *
+     * @return array<string, array<string>>
+     */
+    public function getRolePrivileges(): array
+    {
+        $raw = $this->getRuntimeSetting('role_privileges');
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [
+            'admin' => ['bypass_all'],
+            'editor' => ['view_any', 'edit_any', 'create_any'],
+            'author' => ['view_own', 'edit_own', 'create_any'],
+        ];
+    }
+
+    /**
+     * Update the dynamic RBAC configuration map.
+     *
+     * @param array<string, array<string>> $privileges
+     * @return bool
+     */
+    public function updateRolePrivileges(array $privileges): bool
+    {
+        $json = json_encode($privileges, JSON_PRETTY_PRINT) ?: '';
+
+        return $this->saveSettings(['role_privileges' => $json]);
+    }
 }

@@ -46,6 +46,13 @@ class BlogPostsTable extends Table
         $this->belongsToMany('BlogTags', [
             'joinTable' => 'blog_posts_blog_tags',
         ]);
+        $this->belongsTo('Users', [
+            'foreignKey' => 'user_id',
+        ]);
+        $this->belongsTo('HeroImages', [
+            'className' => 'Images',
+            'foreignKey' => 'hero_image_id',
+        ]);
     }
 
     /**

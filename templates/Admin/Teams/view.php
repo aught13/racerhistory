@@ -3,6 +3,9 @@
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Team $team
  */
+
+$canUpdateTeams = $this->Rbac->can('Teams', 'update');
+$canDeleteTeams = $this->Rbac->can('Teams', 'delete');
 ?>
 <?php $this->assign('title', 'Team Details'); ?>
 <div class="container py-4">
@@ -19,8 +22,10 @@
             <h1 class="mb-3">Team Details</h1>
             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>"
                 class="btn btn-secondary mb-3">Back to Teams</a>
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
-                class="btn btn-primary mb-3">Edit Team</a>
+            <?php if ($canUpdateTeams) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                    class="btn btn-primary mb-3">Edit Team</a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -124,21 +129,25 @@
                     <?php endif; ?>
 
                     <div class="mt-4">
-                        <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
-                           class="btn btn-primary">Edit Team</a>
+                        <?php if ($canUpdateTeams) : ?>
+                            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                               class="btn btn-primary">Edit Team</a>
+                        <?php endif; ?>
                         <?php
                             // Placeholder for future associations (e.g., events, seasons, athletes)
                             $associatedData = [
                                 ['label' => 'Related Records', 'count' => 0],
                             ];
                             ?>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
-                            data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
-                            data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
-                            data-item-type="team"
-                            data-associated='<?= json_encode($associatedData) ?>'>
-                            Delete Team
-                        </button>
+                        <?php if ($canDeleteTeams) : ?>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                                data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
+                                data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                                data-item-type="team"
+                                data-associated='<?= json_encode($associatedData) ?>'>
+                                Delete Team
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

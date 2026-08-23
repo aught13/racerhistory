@@ -28,15 +28,18 @@ declare(strict_types=1);
 
                 <?php if (!empty($post->hero_image_id)) : ?>
                 <figure class="mb-4 text-center">
-                    <?= $this->ImageServe->picture(
-                        $post->hero_image_id,
-                        ['profile' => 'blog_featured'],
-                        [
-                            'alt' => h($post->title),
-                            'class' => 'img-fluid rounded shadow-sm',
-                            'style' => 'object-fit: contain; max-height: 500px; width: 100%;',
-                        ],
-                    ) ?>
+                    <?= $this->element('image_with_credit', [
+                        'image' => $post->hero_image ?? null,
+                        'imgContent' => $this->ImageServe->picture(
+                            $post->hero_image_id,
+                            ['profile' => 'blog_featured'],
+                            [
+                                'alt' => h($post->title),
+                                'class' => 'img-fluid rounded shadow-sm',
+                                'style' => 'object-fit: contain; max-height: 500px; width: 100%;',
+                            ],
+                        ),
+                    ]) ?>
                 </figure>
                 <?php endif; ?>
 
@@ -55,16 +58,33 @@ declare(strict_types=1);
                 <hr class="mb-4">
 
                 <!-- Author Bio Box -->
+                <?php if ($post->user) : ?>
                 <div class="author-bio-box d-flex align-items-center gap-3 bg-light p-3 rounded mb-4 border">
-                    <div class="author-avatar bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 60px; height: 60px;">
-                        <i class="bi bi-person-fill fs-3"></i>
+                    <div class="author-avatar bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 60px; height: 60px; overflow: hidden;">
+                        <?php if ($post->user->profile_image_id) : ?>
+                            <?= $this->ImageServe->picture(
+                                $post->user->profile_image_id,
+                                ['profile' => 'roster_avatar'],
+                                [
+                                    'alt' => h($post->user->display_name ?: $post->user->username),
+                                    'class' => 'img-fluid w-100 h-100 object-fit-cover',
+                                ],
+                            ) ?>
+                        <?php else : ?>
+                            <i class="bi bi-person-fill fs-3"></i>
+                        <?php endif; ?>
                     </div>
                     <div>
-                        <h5 class="h6 mb-1 fw-bold">RacerHistory Editor</h5>
-                        <p class="small text-muted mb-0">Contributing editor delivering historical recaps, box scores, and the latest program statistics.</p>
+                        <h5 class="h6 mb-1 fw-bold"><?= h($post->user->display_name ?: $post->user->username) ?></h5>
+                        <?php if ($post->user->bio) : ?>
+                            <p class="small text-muted mb-1"><?= h($post->user->bio) ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($post->user->social_links)) : ?>
+                            <?= $this->SocialLinks->render($post->user->social_links) ?>
+                        <?php endif; ?>
                     </div>
                 </div>
-
+                <?php endif; ?>
                 <!-- Next/Prev Navigation Block Placeholder -->
                 <div class="post-navigation d-flex justify-content-between align-items-center border-top pt-4 mt-2">
                     <a href="<?= $this->Url->build(['controller' => 'Blog', 'action' => 'index']) ?>" class="btn btn-outline-secondary btn-sm" data-turbo-frame="_top">

@@ -27,6 +27,13 @@
 
             <ul class="navbar-nav ms-auto">
                 <?php if ($this->getRequest()->getAttribute('identity')) : ?>
+                    <li class="nav-item">
+                        <a class="nav-link"
+                            href="<?= $this->Url->build(['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']) ?>"
+                            data-turbo-frame="_top">
+                            <i class="bi bi-box-arrow-up-left me-1"></i>Exit Admin
+                        </a>
+                    </li>
                     <li class="nav-item d-flex align-items-center me-2">
                         <span class="navbar-text">
                             <i class="bi bi-person-circle me-1"></i>

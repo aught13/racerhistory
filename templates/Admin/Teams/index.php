@@ -3,6 +3,11 @@
  * @var \App\View\AppView $this
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Team> $teams
  */
+
+$canCreateTeams = $this->Rbac->can('Teams', 'create');
+$canReadTeams = $this->Rbac->can('Teams', 'read');
+$canUpdateTeams = $this->Rbac->can('Teams', 'update');
+$canDeleteTeams = $this->Rbac->can('Teams', 'delete');
 ?>
 <?php $this->assign('title', 'Manage Teams'); ?>
 <div
@@ -22,10 +27,12 @@
                 Manage competitive teams for all sports. Teams represent individual units that compete within a specific sport category.
                 Each team must be assigned to a sport and classified by gender (Male, Female, or Co-ed).
             </p>
-            <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'add']) ?>"
-                class="btn btn-success mb-3">
-                <i class="bi bi-plus-circle"></i> Add New Team
-            </a>
+            <?php if ($canCreateTeams) : ?>
+                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'add']) ?>"
+                    class="btn btn-success mb-3">
+                    <i class="bi bi-plus-circle"></i> Add New Team
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -38,15 +45,17 @@
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
                     <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto" data-admin-bulk-table-target="actionSelect">
                         <option value="">Choose...</option>
-                        <option value="delete">Delete</option>
+                        <?php if ($canDeleteTeams) : ?>
+                            <option value="delete">Delete</option>
+                        <?php endif; ?>
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-bulk-table-target="actionButton">Go</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" <?= $canDeleteTeams ? 'disabled' : 'disabled aria-disabled="true"' ?> data-admin-bulk-table-target="actionButton">Go</button>
                 </div>
 
                 <table class="table table-striped table-bordered" id="teams-table" data-admin-bulk-table-target="table">
                     <thead class="table-dark">
                         <tr>
-                            <th><input type="checkbox" id="select-all-teams" data-admin-bulk-table-target="selectAll"></th>
+                            <th><input type="checkbox" id="select-all-teams" data-admin-bulk-table-target="selectAll"<?= $canDeleteTeams ? '' : ' disabled' ?>></th>
                             <th>Team Name <small class="text-light">(Short Name)</small></th>
                             <th>Sport <small class="text-light">(Category)</small></th>
                             <th>Abbreviation <small class="text-light">(5 chars max)</small></th>
@@ -57,7 +66,7 @@
                     <tbody>
                         <?php foreach ($teams as $team) : ?>
                         <tr>
-                            <td><input type="checkbox" name="team_ids[]" value="<?= $team->id ?>" class="team-checkbox" data-admin-bulk-table-role="row-checkbox">
+                            <td><input type="checkbox" name="team_ids[]" value="<?= $team->id ?>" class="team-checkbox" data-admin-bulk-table-role="row-checkbox"<?= $canDeleteTeams ? '' : ' disabled' ?>>
                             </td>
                             <td><?= h($team->team_name) ?></td>
                             <td><?= h($team->sport ? $team->sport->sport_name : 'N/A') ?></td>
@@ -69,20 +78,29 @@
                                 ?>
                             </td>
                             <td>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $team->id]) ?>"
-                                    class="btn btn-sm btn-info">View</a>
-                                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
-                                    class="btn btn-sm btn-primary">Edit</a>
-                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
-                                    data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
-                                    data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
-                                    data-item-type="team"
-                                    data-associated='<?= json_encode([$team->team_name, $team->abbr]) ?>'
-                                    data-form-id="delete-form-team-<?= $team->id ?>">
-                                    Delete
-                                </button>
-                                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id], 'id' => 'delete-form-team-' . $team->id, 'style' => 'display:none']) ?>
-                                <?= $this->Form->end() ?>
+                                <?php if ($canReadTeams) : ?>
+                                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $team->id]) ?>"
+                                        class="btn btn-sm btn-info">View</a>
+                                <?php endif; ?>
+                                <?php if ($canUpdateTeams) : ?>
+                                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                                        class="btn btn-sm btn-primary">Edit</a>
+                                <?php endif; ?>
+                                <?php if ($canDeleteTeams) : ?>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
+                                        data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
+                                        data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
+                                        data-item-type="team"
+                                        data-associated='<?= json_encode([$team->team_name, $team->abbr]) ?>'
+                                        data-form-id="delete-form-team-<?= $team->id ?>">
+                                        Delete
+                                    </button>
+                                    <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id], 'id' => 'delete-form-team-' . $team->id, 'style' => 'display:none']) ?>
+                                    <?= $this->Form->end() ?>
+                                <?php endif; ?>
+                                <?php if (!$canReadTeams && !$canUpdateTeams && !$canDeleteTeams) : ?>
+                                    <span class="text-muted">No actions</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -101,8 +119,10 @@
             <?php else : ?>
             <div class="alert alert-info">
                 <p>No teams found.</p>
-                <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'add']) ?>"
-                    class="btn btn-success">Add the first team</a>
+                <?php if ($canCreateTeams) : ?>
+                    <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'add']) ?>"
+                        class="btn btn-success">Add the first team</a>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
