@@ -49,7 +49,11 @@ function queueGoogleTagDisplay(section) {
     }
 
     const slotId = getGoogleTagSlotId(section);
-    if (!slotId || !window.googletag || typeof window.googletag.cmd?.push !== "function") {
+    if (
+        !slotId ||
+        !window.googletag ||
+        typeof window.googletag.cmd?.push !== "function"
+    ) {
         return false;
     }
 
