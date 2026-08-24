@@ -123,7 +123,7 @@ class BlogPostsAdminService
             ];
         }
 
-        $data = $this->sanitizeSubmittedData($data, $identity, true);
+        $data = $this->sanitizeSubmittedData($data, $identity, true, null);
         $created = $this->blogPostService->createPost($data);
         if ($created !== false) {
             return [
@@ -152,8 +152,8 @@ class BlogPostsAdminService
      */
     public function edit(int $id, array $data, mixed $identity = null): array
     {
-        $this->getEditEntity($id, $identity);
-        $data = $this->sanitizeSubmittedData($data, $identity, false);
+        $post = $this->getEditEntity($id, $identity);
+        $data = $this->sanitizeSubmittedData($data, $identity, false, $post);
 
         $saved = $this->blogPostService->updatePost($id, $data);
         if ($saved !== false) {
@@ -287,7 +287,7 @@ class BlogPostsAdminService
             'BlogPosts',
             RbacPermissionService::BLOG_RULE_CAN_MANAGE_PIN_SETTINGS,
         );
-        $canManagePostOwner = $this->rbacPermissionService->can($identity, 'BlogPosts', 'delete');
+        $canManagePostOwner = $this->canManagePostOwner($identity, $post);
         $postOwnerLabel =
             $post->user_id && isset($users[(int)$post->user_id])
                 ? $users[(int)$post->user_id]
@@ -326,12 +326,14 @@ class BlogPostsAdminService
      * @param array<string, mixed> $data Submitted payload.
      * @param mixed $identity Current request identity.
      * @param bool $isCreate Whether this is a create operation.
+     * @param \App\Model\Entity\BlogPost|null $post Existing post when editing.
      * @return array<string, mixed>
      */
     private function sanitizeSubmittedData(
         array $data,
         mixed $identity,
         bool $isCreate,
+        ?BlogPost $post = null,
     ): array {
         $sanitized = $data;
 
@@ -353,7 +355,7 @@ class BlogPostsAdminService
         }
 
         $actingUserId = $this->extractIdentityId($identity);
-        $canManagePostOwner = $this->rbacPermissionService->can($identity, 'BlogPosts', 'delete');
+        $canManagePostOwner = $this->canManagePostOwner($identity, $post, $isCreate);
         if ($canManagePostOwner) {
             if ($isCreate && empty($sanitized['user_id']) && $actingUserId !== null) {
                 $sanitized['user_id'] = $actingUserId;
@@ -369,6 +371,41 @@ class BlogPostsAdminService
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Determine whether the current identity may reassign ownership on a concrete post.
+     *
+     * For create flows there is no resource yet, so only admins / global delete-all roles may
+     * expose owner selection; normal own-delete roles are forced to retain the creator as owner.
+     *
+     * @param mixed $identity Current request identity.
+     * @param \App\Model\Entity\BlogPost|null $post Existing post being edited.
+     * @param bool $isCreate Whether this is a create request.
+     * @return bool
+     */
+    private function canManagePostOwner(
+        mixed $identity,
+        ?BlogPost $post = null,
+        bool $isCreate = false,
+    ): bool {
+        if ($this->rbacPermissionService->isAdmin($identity)) {
+            return true;
+        }
+
+        $deleteLevel = (string)(
+            $this->rbacPermissionService->getPermissionForIdentity($identity, 'BlogPosts')['can_delete']
+            ?? 'none'
+        );
+        if ($deleteLevel === 'all') {
+            return true;
+        }
+
+        if ($isCreate || $post === null) {
+            return false;
+        }
+
+        return $this->rbacPermissionService->can($identity, 'BlogPosts', 'delete', $post, 'user_id');
     }
 
     /**

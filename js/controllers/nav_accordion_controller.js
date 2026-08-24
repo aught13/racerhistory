@@ -7,7 +7,28 @@ export default class extends Controller {
     static targets = ["toggle", "panel"];
 
     connect() {
+        this.handleTurboBeforeCache = this.handleTurboBeforeCache.bind(this);
+        document.addEventListener(
+            "turbo:before-cache",
+            this.handleTurboBeforeCache,
+        );
         this.syncToLocation();
+    }
+
+    disconnect() {
+        if (this.handleTurboBeforeCache) {
+            document.removeEventListener(
+                "turbo:before-cache",
+                this.handleTurboBeforeCache,
+            );
+        }
+    }
+
+    handleTurboBeforeCache() {
+        this.toggleTargets.forEach((button) => {
+            const panel = this.findPanel(button);
+            this.setExpanded(button, panel, false);
+        });
     }
 
     toggle(event) {

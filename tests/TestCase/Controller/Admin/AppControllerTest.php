@@ -121,6 +121,25 @@ class AppControllerTest extends TestCase
     }
 
     /**
+     * Test access denied requests keep the original admin URL so the user can return after login.
+     */
+    public function testForbiddenAdminAccessPreservesRedirectUrl(): void
+    {
+        $this->mockIdentity([
+            'id' => 2,
+            'username' => 'user',
+            'role' => 'user',
+            'role_id' => null,
+            'email' => 'user@example.com',
+            'status' => 'active',
+            'active' => true,
+        ]);
+
+        $this->get('/admin/games');
+        $this->assertRedirectContains('redirect=%2Fadmin%2Fgames');
+    }
+
+    /**
      * Test access denied for inactive users
      *
      * @return void
