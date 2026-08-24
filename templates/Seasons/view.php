@@ -179,6 +179,25 @@ $this->start('css'); ?>
 
     <div class="season-hero card shadow-sm mb-4">
         <div class="card-body">
+            <?php if (isset($previousTeamSeason) || isset($nextTeamSeason)) : ?>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <?php if (isset($previousTeamSeason)) : ?>
+                        <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $previousTeamSeason->id]) ?>"
+                            class="btn btn-outline-secondary btn-sm" title="Previous Season: <?= h($previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end) ?>">
+                            <i class="bi bi-chevron-left"></i> <?= h($previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end) ?>
+                        </a>
+                    <?php else : ?>
+                        <span></span>
+                    <?php endif; ?>
+
+                    <?php if (isset($nextTeamSeason)) : ?>
+                        <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $nextTeamSeason->id]) ?>"
+                            class="btn btn-outline-secondary btn-sm" title="Next Season: <?= h($nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end) ?>">
+                            <?= h($nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end) ?> <i class="bi bi-chevron-right"></i>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
             <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3">
                 <div class="season-hero-stats d-flex flex-wrap gap-3">
                     <h1 class="display-6 mb-2">
