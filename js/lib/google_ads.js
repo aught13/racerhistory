@@ -25,6 +25,48 @@ function ensureGoogleQueue() {
     return window.adsbygoogle;
 }
 
+function getGoogleTagSlotId(section) {
+    if (!isElement(section)) {
+        return null;
+    }
+
+    const explicit = section.dataset?.googleSlotId || section.dataset?.adSlot;
+    if (typeof explicit === "string" && explicit.trim() !== "") {
+        return explicit.trim();
+    }
+
+    const directId = section.id || section.querySelector("[id]")?.id;
+    if (typeof directId === "string" && directId.trim() !== "") {
+        return directId.trim();
+    }
+
+    return null;
+}
+
+function queueGoogleTagDisplay(section) {
+    if (!isElement(section) || typeof window === "undefined") {
+        return false;
+    }
+
+    const slotId = getGoogleTagSlotId(section);
+    if (!slotId || !window.googletag || typeof window.googletag.cmd?.push !== "function") {
+        return false;
+    }
+
+    if (section.dataset.rhGoogleTagQueued === "1") {
+        return false;
+    }
+
+    window.googletag.cmd.push(function () {
+        if (typeof window.googletag.display === "function") {
+            window.googletag.display(slotId);
+        }
+    });
+
+    section.dataset.rhGoogleTagQueued = "1";
+    return true;
+}
+
 export function syncGoogleAdSlotState(section, adElement) {
     if (!isElement(section) || !isElement(adElement)) {
         return false;
@@ -59,12 +101,17 @@ export function initGoogleAdSlots(root = document) {
         return [];
     }
 
-    const queue = ensureGoogleQueue();
     const sections = Array.from(root.querySelectorAll(GOOGLE_SLOT_SELECTOR));
     const initialized = [];
 
     sections.forEach((section) => {
         if (section.dataset.rhAdInitialized === "1") {
+            return;
+        }
+
+        if (queueGoogleTagDisplay(section)) {
+            section.setAttribute("data-rh-ad-initialized", "1");
+            initialized.push(section);
             return;
         }
 
@@ -77,6 +124,7 @@ export function initGoogleAdSlots(root = document) {
             return;
         }
 
+        const queue = ensureGoogleQueue();
         const wasRendered =
             adElement.getAttribute("data-adsbygoogle-status") === "done";
 

@@ -134,6 +134,27 @@ describe("google ad slot lifecycle", () => {
         expect(section.dataset.rhAdInitialized).toBe("1");
     });
 
+    test("initializes a GPT slot from a plain div container when googletag is available", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav" data-google-mode="1">
+                <div class="rh-ad-slot__inner">
+                    <div id="div-display-ad"></div>
+                </div>
+            </section>
+        `;
+
+        const push = jest.fn();
+        window.googletag = { cmd: { push } };
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        const section = document.querySelector(".rh-ad-slot--google");
+        expect(section.dataset.rhAdInitialized).toBe("1");
+        expect(push).toHaveBeenCalledTimes(1);
+        expect(typeof push.mock.calls[0][0]).toBe("function");
+    });
+
     test("ignores non-element inputs in state sync", async () => {
         const { syncGoogleAdSlotState } = await import("../lib/google_ads.js");
         expect(syncGoogleAdSlotState(null, null)).toBe(false);

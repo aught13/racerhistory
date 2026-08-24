@@ -38,6 +38,22 @@ class BlogPostsRbacControllerTest extends TestCase
     }
 
     /**
+     * Authenticate as the seeded editor role.
+     */
+    private function loginAsEditor(): void
+    {
+        $this->mockIdentity([
+            'id' => 4,
+            'username' => 'editor',
+            'role' => 'editor',
+            'role_id' => 3,
+            'email' => 'editor@example.com',
+            'status' => 'active',
+            'active' => true,
+        ]);
+    }
+
+    /**
      * Ensure blogger index allows read-all visibility per default role matrix.
      */
     public function testBloggerIndexShowsOwnedAndOtherPosts(): void
@@ -73,5 +89,20 @@ class BlogPostsRbacControllerTest extends TestCase
         $this->assertResponseNotContains('Pin this post');
         $this->assertResponseContains('Owner');
         $this->assertResponseContains('blogger');
+    }
+
+    /**
+     * Editors can edit foreign posts but cannot reassign ownership unless they
+     * have delete-all access for that post.
+     */
+    public function testEditorForeignEditDoesNotExposeOwnerReassignment(): void
+    {
+        $this->loginAsEditor();
+        $this->get('/admin/blog-posts/edit/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('name="user_id"');
+        $this->assertResponseContains('Owner');
+        $this->assertResponseContains('admin');
     }
 }

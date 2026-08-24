@@ -75,6 +75,7 @@ class AppController extends BaseController
                 'controller' => 'Users',
                 'action' => 'login',
                 'prefix' => false,
+                '?' => ['redirect' => $this->request->getRequestTarget()],
             ]);
             $this->setResponse($response);
 
