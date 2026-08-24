@@ -308,4 +308,48 @@ describe("nav-accordion controller", () => {
         expect(hundredToggle.getAttribute("aria-expanded")).toBe("true");
         expect(hundredPanel.hidden).toBe(false);
     });
+
+    test("resets stale accordion state during turbo cache snapshots", async () => {
+        document.body.innerHTML = `
+            <nav data-controller="nav-accordion">
+                <ul class="nav sidebar-menu flex-column">
+                    <li class="nav-item">
+                        <button
+                            id="games-toggle"
+                            type="button"
+                            class="nav-link"
+                            data-nav-accordion-target="toggle"
+                            data-nav-accordion-prefix="/games"
+                            data-action="click->nav-accordion#toggle"
+                            aria-controls="games-panel"
+                            aria-expanded="true"
+                        >
+                            Games
+                        </button>
+                        <div id="games-panel" class="nav nav-treeview" data-nav-accordion-target="panel" hidden>
+                            <a href="/games">Index</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        `;
+
+        application.stop();
+        application = Application.start();
+        application.register("nav-accordion", NavAccordionController);
+        await Promise.resolve();
+
+        const toggle = document.getElementById("games-toggle");
+        const panel = document.getElementById("games-panel");
+
+        toggle.setAttribute("aria-expanded", "true");
+        panel.hidden = false;
+        panel.classList.remove("d-none");
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(toggle.getAttribute("aria-expanded")).toBe("false");
+        expect(panel.hidden).toBe(true);
+        expect(panel.classList.contains("d-none")).toBe(true);
+    });
 });

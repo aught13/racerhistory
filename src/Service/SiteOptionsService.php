@@ -249,7 +249,12 @@ class SiteOptionsService
         $current = (bool)$this->getPersistedSetting($optionKey, $default);
         $next = !$current;
 
-        if (!$this->saveSettings([$optionKey => $next])) {
+        // Partial updates must not reset unrelated options back to defaults.
+        // Build a full payload from persisted values, then override the target key.
+        $payload = $this->buildSettingsPayloadFromPersistence();
+        $payload[$optionKey] = $next;
+
+        if (!$this->saveSettings($payload)) {
             return null;
         }
 
@@ -579,6 +584,36 @@ class SiteOptionsService
     {
         $json = json_encode($privileges, JSON_PRETTY_PRINT) ?: '';
 
-        return $this->saveSettings(['role_privileges' => $json]);
+        // Keep all existing option values intact during this targeted update.
+        $payload = $this->buildSettingsPayloadFromPersistence();
+        $payload['role_privileges'] = $json;
+
+        return $this->saveSettings($payload);
+    }
+
+    /**
+     * Build a complete save payload from persisted values, falling back to
+     * configured defaults where no row exists yet.
+     *
+     * @return array<string,mixed>
+     */
+    private function buildSettingsPayloadFromPersistence(): array
+    {
+        $existingRows = $this->loadExistingRows();
+        $payload = [];
+
+        foreach ($this->definitions as $optionKey => $definition) {
+            if (isset($existingRows[$optionKey])) {
+                $payload[$optionKey] = $this->normalizeRuntimeValue(
+                    $existingRows[$optionKey]->value,
+                    $definition,
+                );
+                continue;
+            }
+
+            $payload[$optionKey] = $definition['default'] ?? null;
+        }
+
+        return $payload;
     }
 }
