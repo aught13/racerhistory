@@ -5,6 +5,7 @@ namespace App\Service;
 
 use App\Model\Entity\Game;
 use App\Model\Entity\TeamSeason;
+use Cake\ORM\TableRegistry;
 
 /**
  * GameViewService
@@ -51,10 +52,15 @@ class GameViewService
         /** @var \App\Model\Entity\Game $game */
         $game = $this->gameService->getGameWithAssociations($gameId);
 
+        $previousGame = $this->resolveAdjacentGame($game, 'previous');
+        $nextGame = $this->resolveAdjacentGame($game, 'next');
+
         $eav = $this->gameEavUi->mapLegacyKeys($this->gameService->loadGameEavValues($gameId));
 
         $viewData = [
             'game' => $game,
+            'previousGame' => $previousGame,
+            'nextGame' => $nextGame,
             'eav' => $eav,
 
             'teamBoxStats' => [],
@@ -97,6 +103,37 @@ class GameViewService
         $viewData['sportName'] = $sportName;
 
         return $viewData;
+    }
+
+    /**
+     * @param \App\Model\Entity\Game $game
+     * @param 'previous'|'next' $direction
+     * @return \App\Model\Entity\Game|null
+     */
+    private function resolveAdjacentGame(object $game, string $direction): ?object
+    {
+        $teamSeason = $game->get('team_season');
+        $teamSeasonId = $game->team_season_id ?? ($teamSeason instanceof TeamSeason ? $teamSeason->id : null);
+        if ($teamSeasonId === null || $game->game_date === null) {
+            return null;
+        }
+
+        $gamesTable = TableRegistry::getTableLocator()->get('Games');
+        $query = $gamesTable->find()
+            ->where(['Games.team_season_id' => $teamSeasonId])
+            ->where(['Games.id !=' => $game->id]);
+
+        if ($direction === 'previous') {
+            $query->where(['Games.game_date <' => $game->game_date])
+                ->orderByDesc('Games.game_date');
+        } else {
+            $query->where(['Games.game_date >' => $game->game_date])
+                ->orderByAsc('Games.game_date');
+        }
+
+        $adjacent = $query->first();
+
+        return $adjacent instanceof Game ? $adjacent : null;
     }
 
     /**

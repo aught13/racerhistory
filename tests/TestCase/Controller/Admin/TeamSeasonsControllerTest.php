@@ -151,9 +151,8 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('data-controller="team-season-form"');
         $this->assertResponseContains('hidden-team-form');
         $this->assertResponseContains('hidden-season-form');
-        // Rich text editors textareas present
-        $this->assertResponseContains('team-season-preview');
-        $this->assertResponseContains('team-season-recap');
+        $this->assertResponseNotContains('team-season-preview');
+        $this->assertResponseNotContains('team-season-recap');
     }
 
     /**
@@ -426,6 +425,24 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('bi-chevron-left', 'Previous button icon should be present');
         $this->assertResponseContains('bi-chevron-right', 'Next button icon should be present');
         $this->assertResponseContains('2025-2026', 'Should show next season year range');
+    }
+
+    /**
+     * Test add/edit forms do not include removed preview/recap fields.
+     */
+    public function testAddAndEditFormsDoNotExposePreviewOrRecapFields(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin/team-seasons/add');
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('team_season_preview');
+        $this->assertResponseNotContains('team_season_recap');
+
+        $this->get('/admin/team-seasons/edit/1');
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('team_season_preview');
+        $this->assertResponseNotContains('team_season_recap');
     }
 
     /**

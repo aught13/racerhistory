@@ -115,6 +115,23 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * Tests public game view includes previous/next navigation within the same team season.
+     */
+    public function testViewIncludesPreviousAndNextGameNavigation(): void
+    {
+        $this->get('/games/2');
+        $this->assertResponseOk();
+
+        $previousGame = $this->viewVariable('previousGame');
+        $this->assertNotNull($previousGame);
+        $this->assertSame(1, (int)$previousGame->id);
+
+        $nextGame = $this->viewVariable('nextGame');
+        $this->assertNotNull($nextGame);
+        $this->assertSame(3, (int)$nextGame->id);
+    }
+
+    /**
      * Tests stats frame.
      */
     public function testStatsFrame(): void

@@ -80,7 +80,7 @@
     <main class="app-main">
         <div class="app-content">
             <div class="container-fluid py-3">
-                <turbo-frame id="admin-content" data-turbo-action="advance">
+                <turbo-frame id="admin-content" target="_top" data-turbo-action="advance">
                     <?= $flash ?>
                     <?= $content ?>
                 </turbo-frame>

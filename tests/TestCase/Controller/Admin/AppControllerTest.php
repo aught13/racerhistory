@@ -56,6 +56,20 @@ class AppControllerTest extends TestCase
     }
 
     /**
+     * Test admin content frame targets the top-level document so redirects recover on login.
+     *
+     * @return void
+     */
+    public function testAdminContentFrameTargetsTopLevel(): void
+    {
+        $this->mockIdentity();
+
+        $this->get('/admin');
+        $this->assertResponseOk();
+        $this->assertResponseContains('turbo-frame id="admin-content" target="_top"');
+    }
+
+    /**
      * Test access to admin area without authentication redirects to login
      *
      * @return void

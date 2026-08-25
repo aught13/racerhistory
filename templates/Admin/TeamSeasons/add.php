@@ -220,40 +220,6 @@ $this->assign('title', 'Add Team Season'); ?>
                         <div class="form-text">Upload an image; its numeric ID will be stored.</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="team-season-preview" class="form-label">Season Preview</label>
-                        <?= $this->Form->control('team_season_preview', [
-                            'type' => 'textarea',
-                            'class' => 'form-control',
-                            'label' => false,
-                            'id' => 'team-season-preview',
-                            'rows' => 8,
-                            'placeholder' => 'Preview text for the upcoming season...',
-                            'data-team-season-form-target' => 'previewEditor',
-                            'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
-                            ],
-                        ]) ?>
-                        <div class="form-text">Pre-season preview or expectations. Rich text supported.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="team-season-recap" class="form-label">Season Recap</label>
-                        <?= $this->Form->control('team_season_recap', [
-                            'type' => 'textarea',
-                            'class' => 'form-control',
-                            'label' => false,
-                            'id' => 'team-season-recap',
-                            'rows' => 8,
-                            'placeholder' => 'Summary of the completed season...',
-                            'data-team-season-form-target' => 'recapEditor',
-                            'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
-                            ],
-                        ]) ?>
-                        <div class="form-text">Post-season recap or summary. Rich text supported.</div>
-                    </div>
-
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Save Team Season'), [
                             'type' => 'submit',
@@ -286,14 +252,6 @@ $this->assign('title', 'Add Team Season'); ?>
                     <p class="small text-muted">
                         League fields are optional but help track competitive context and results.
                     </p>
-
-                    <h5>Text Fields</h5>
-                    <ul class="small text-muted">
-                        <li>Preview - Pre-season expectations</li>
-                        <li>Recap - Post-season summary</li>
-                        <li>Notes - General information</li>
-                    </ul>
-
                     <h5>Tips</h5>
                     <ul class="small text-muted">
                         <li>Use consistent league naming</li>
