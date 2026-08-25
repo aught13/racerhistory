@@ -100,6 +100,81 @@ export function syncGoogleAdSlotState(section, adElement) {
     return false;
 }
 
+function disconnectObserver(section) {
+    const observer = section?.__rhGoogleAdObserver;
+    if (!observer || typeof observer.disconnect !== "function") {
+        return;
+    }
+
+    observer.disconnect();
+    delete section.__rhGoogleAdObserver;
+}
+
+export function destroyGoogleAdSlotSection(section) {
+    if (!isElement(section)) {
+        return;
+    }
+
+    disconnectObserver(section);
+    section.classList.remove(EMPTY_SLOT_CLASS);
+    section.removeAttribute("data-rh-ad-initialized");
+    delete section.dataset.rhGoogleTagQueued;
+}
+
+export function initGoogleAdSlotSection(section) {
+    if (!isElement(section)) {
+        return false;
+    }
+
+    if (section.dataset.rhAdInitialized === "1") {
+        return false;
+    }
+
+    if (queueGoogleTagDisplay(section)) {
+        section.setAttribute("data-rh-ad-initialized", "1");
+        return true;
+    }
+
+    const adElement = section.querySelector(".adsbygoogle, ins.adsbygoogle");
+
+    if (!adElement) {
+        section.setAttribute("data-rh-ad-initialized", "1");
+        return true;
+    }
+
+    const queue = ensureGoogleQueue();
+    const wasRendered =
+        adElement.getAttribute("data-adsbygoogle-status") === "done";
+
+    if (queue && !wasRendered) {
+        queue.push({});
+    }
+
+    section.setAttribute("data-rh-ad-initialized", "1");
+
+    const canObserveStatus =
+        typeof globalThis !== "undefined" &&
+        typeof globalThis.MutationObserver === "function";
+
+    if (canObserveStatus) {
+        disconnectObserver(section);
+        const observer = new globalThis.MutationObserver(() => {
+            syncGoogleAdSlotState(section, adElement);
+        });
+
+        observer.observe(adElement, {
+            attributes: true,
+            attributeFilter: ["data-ad-status"],
+        });
+
+        section.__rhGoogleAdObserver = observer;
+    }
+
+    syncGoogleAdSlotState(section, adElement);
+
+    return true;
+}
+
 export function initGoogleAdSlots(root = document) {
     if (!root || typeof root.querySelectorAll !== "function") {
         return [];
@@ -109,52 +184,10 @@ export function initGoogleAdSlots(root = document) {
     const initialized = [];
 
     sections.forEach((section) => {
-        if (section.dataset.rhAdInitialized === "1") {
+        if (!initGoogleAdSlotSection(section)) {
             return;
         }
 
-        if (queueGoogleTagDisplay(section)) {
-            section.setAttribute("data-rh-ad-initialized", "1");
-            initialized.push(section);
-            return;
-        }
-
-        const adElement = section.querySelector(
-            ".adsbygoogle, ins.adsbygoogle",
-        );
-
-        if (!adElement) {
-            section.setAttribute("data-rh-ad-initialized", "1");
-            return;
-        }
-
-        const queue = ensureGoogleQueue();
-        const wasRendered =
-            adElement.getAttribute("data-adsbygoogle-status") === "done";
-
-        if (queue && !wasRendered) {
-            queue.push({});
-        }
-
-        section.setAttribute("data-rh-ad-initialized", "1");
-
-        const canObserveStatus =
-            typeof globalThis !== "undefined" &&
-            typeof globalThis.MutationObserver === "function";
-
-        if (canObserveStatus) {
-            const observer = new globalThis.MutationObserver(() => {
-                syncGoogleAdSlotState(section, adElement);
-            });
-
-            observer.observe(adElement, {
-                attributes: true,
-                attributeFilter: ["data-ad-status"],
-            });
-
-            section.__rhGoogleAdObserver = observer;
-        }
-        syncGoogleAdSlotState(section, adElement);
         initialized.push(section);
     });
 

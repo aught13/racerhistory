@@ -135,6 +135,7 @@ describe("Route Module Controller Registration", () => {
     describe("Public modules", () => {
         test("registerPublicCoreControllers registers public shell and navigation", () => {
             registerPublicCoreControllers(application);
+            expect(registeredControllers.has("ad-delivery")).toBe(true);
             expect(registeredControllers.has("public-shell")).toBe(true);
             expect(registeredControllers.has("nav-accordion")).toBe(true);
             expect(registeredControllers.has("theme-toggle")).toBe(true);

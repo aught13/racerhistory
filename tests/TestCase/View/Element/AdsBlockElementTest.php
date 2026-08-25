@@ -67,8 +67,10 @@ class AdsBlockElementTest extends TestCase
         $output = $this->view->element('Ads/block', ['slot' => 'below_nav']);
 
         $this->assertStringContainsString('rh-ad-slot--below-nav', $output);
+        $this->assertStringContainsString('data-controller="ad-delivery"', $output);
         $this->assertStringContainsString('data-google-mode="0"', $output);
-        $this->assertStringContainsString('<div class="ad-content">Ad</div>', $output);
+        $this->assertStringContainsString('data-ad-delivery-mode-value="custom"', $output);
+        $this->assertStringContainsString('<template data-ad-delivery-target="template"><div class="ad-content">Ad</div></template>', $output);
     }
 
     /**
@@ -77,13 +79,20 @@ class AdsBlockElementTest extends TestCase
     public function testGoogleModeRendersClassWithoutInlinePushScript(): void
     {
         Configure::write('SiteOptions.ad_below_nav_active', true);
-        Configure::write('SiteOptions.ad_below_nav_html', '<ins class="adsbygoogle"></ins>');
+        Configure::write(
+            'SiteOptions.ad_below_nav_html',
+            '<ins class="adsbygoogle" data-ad-client="ca-pub-111" data-ad-slot="1234567890"></ins>',
+        );
         Configure::write('SiteOptions.ad_below_nav_google_mode', true);
 
         $output = $this->view->element('Ads/block', ['slot' => 'below_nav']);
 
         $this->assertStringContainsString('rh-ad-slot--google', $output);
         $this->assertStringContainsString('data-google-mode="1"', $output);
+        $this->assertStringContainsString('data-ad-delivery-mode-value="google"', $output);
+        $this->assertStringContainsString('data-ad-delivery-google-slot-id-value="1234567890"', $output);
+        $this->assertStringContainsString('data-ad-delivery-google-client-value="ca-pub-111"', $output);
+        $this->assertStringNotContainsString('data-ad-delivery-target="template"', $output);
         $this->assertStringNotContainsString('(window.adsbygoogle = window.adsbygoogle || []).push({});', $output);
     }
 }

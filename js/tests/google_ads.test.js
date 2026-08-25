@@ -159,4 +159,28 @@ describe("google ad slot lifecycle", () => {
         const { syncGoogleAdSlotState } = await import("../lib/google_ads.js");
         expect(syncGoogleAdSlotState(null, null)).toBe(false);
     });
+
+    test("initializes and tears down a single google section", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav" data-google-mode="1">
+                <div class="rh-ad-slot__inner">
+                    <ins class="adsbygoogle" data-ad-status="filled"></ins>
+                </div>
+            </section>
+        `;
+
+        const { destroyGoogleAdSlotSection, initGoogleAdSlotSection } =
+            await import("../lib/google_ads.js");
+
+        const section = document.querySelector(".rh-ad-slot--google");
+        const initialized = initGoogleAdSlotSection(section);
+
+        expect(initialized).toBe(true);
+        expect(section.dataset.rhAdInitialized).toBe("1");
+
+        destroyGoogleAdSlotSection(section);
+
+        expect(section.getAttribute("data-rh-ad-initialized")).toBeNull();
+        expect(section.classList.contains("rh-ad-slot--empty")).toBe(false);
+    });
 });
