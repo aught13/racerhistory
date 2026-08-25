@@ -184,7 +184,12 @@ function processAnchor(anchor, payload) {
 }
 
 function processForm(form, payload) {
-    const target = resolveModelAbilityFromUrl(form.getAttribute("action"));
+    const action = form.getAttribute("action") || "";
+    if (!action || action.includes("/admin/users/login")) {
+        return;
+    }
+
+    const target = resolveModelAbilityFromUrl(action);
     if (!target) {
         return;
     }
@@ -200,8 +205,8 @@ function processForm(form, payload) {
 }
 
 function processButton(button, payload) {
-    const formAction = button.getAttribute("formaction");
-    if (!formAction) {
+    const formAction = button.getAttribute("formaction") || "";
+    if (!formAction || formAction.includes("/admin/users/login")) {
         return;
     }
 
