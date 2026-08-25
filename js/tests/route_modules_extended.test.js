@@ -21,6 +21,10 @@ describe("Route modules extended coverage", () => {
         test("public_core registers controllers", () => {
             registerPublicCoreControllers(mockStimulus);
             expect(mockStimulus.register).toHaveBeenCalledWith(
+                "ad-delivery",
+                expect.any(Function),
+            );
+            expect(mockStimulus.register).toHaveBeenCalledWith(
                 "public-shell",
                 expect.any(Function),
             );

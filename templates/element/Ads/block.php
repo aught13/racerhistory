@@ -1,37 +1,64 @@
 <?php
 declare(strict_types=1);
 
-use Cake\Core\Configure;
-
 /**
- * Generic ad slot renderer backed by SiteOptions.
- *
- * Expected option keys per slot:
- * - ad_{slot}_active (checkbox)
- * - ad_{slot}_html (text/textarea)
- * - ad_{slot}_google_mode (checkbox)
+ * Generic ad slot renderer backed by SiteOptions through AdHelper payloads.
  *
  * @var \App\View\AppView $this
  * @var string $slot
  */
 
-$slot = isset($slot) ? trim((string)$slot) : '';
-if ($slot === '') {
+$slotName = isset($slot) ? trim((string)$slot) : '';
+if ($slotName === '') {
     return;
 }
 
-$active = (bool)Configure::read('SiteOptions.ad_' . $slot . '_active', false);
-$htmlBlock = trim((string)Configure::read('SiteOptions.ad_' . $slot . '_html', ''));
-$googleMode = (bool)Configure::read('SiteOptions.ad_' . $slot . '_google_mode', false);
-
-if (!$active || $htmlBlock === '') {
+$slotConfig = $this->Ad->slot($slotName);
+if (!$slotConfig['active']) {
     return;
 }
 
-$slotClass = str_replace('_', '-', $slot);
+$isGoogle = $slotConfig['is_google'];
+$classes = 'rh-ad-slot rh-ad-slot--' . $slotConfig['slot_class'];
+if ($isGoogle) {
+    $classes .= ' rh-ad-slot--google';
+}
+
+$attributes = [
+    'class' => $classes,
+    'data-controller' => 'ad-delivery',
+    'data-ad-slot' => $slotConfig['slot'],
+    'data-google-mode' => $isGoogle ? '1' : '0',
+    'data-ad-delivery-mode-value' => $slotConfig['mode'],
+    'data-ad-delivery-slot-value' => $slotConfig['slot'],
+];
+
+if ($slotConfig['google_slot_id'] !== '') {
+    $attributes['data-ad-delivery-google-slot-id-value'] = $slotConfig['google_slot_id'];
+}
+if ($slotConfig['google_client'] !== '') {
+    $attributes['data-ad-delivery-google-client-value'] = $slotConfig['google_client'];
+}
+if ($slotConfig['google_format'] !== '') {
+    $attributes['data-ad-delivery-google-format-value'] = $slotConfig['google_format'];
+}
+if ($slotConfig['google_layout'] !== '') {
+    $attributes['data-ad-delivery-google-layout-value'] = $slotConfig['google_layout'];
+}
+if ($slotConfig['google_layout_key'] !== '') {
+    $attributes['data-ad-delivery-google-layout-key-value'] = $slotConfig['google_layout_key'];
+}
+if ($slotConfig['google_full_width_responsive'] !== '') {
+    $attributes['data-ad-delivery-google-full-width-responsive-value'] = $slotConfig['google_full_width_responsive'];
+}
 ?>
-<section class="rh-ad-slot rh-ad-slot--<?= h($slotClass) ?><?= $googleMode ? ' rh-ad-slot--google' : '' ?>" data-ad-slot="<?= h($slot) ?>" data-google-mode="<?= $googleMode ? '1' : '0' ?>">
-    <div class="rh-ad-slot__inner text-center">
-        <?= $htmlBlock ?>
-    </div>
+<section
+<?php foreach ($attributes as $attributeName => $attributeValue) : ?>
+    <?= h($attributeName) ?>="<?= h((string)$attributeValue) ?>"
+<?php endforeach; ?>
+>
+    <div class="rh-ad-slot__inner text-center" data-ad-delivery-target="container"></div>
+    <?php if (!$isGoogle) : ?>
+        <template data-ad-delivery-target="template"><?= $slotConfig['html'] ?></template>
+    <?php endif; ?>
 </section>
