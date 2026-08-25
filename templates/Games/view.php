@@ -100,6 +100,25 @@ $this->start('css'); ?>
 
     <div class="game-hero card shadow-sm mb-4">
         <div class="card-body">
+            <?php if (isset($previousGame) || isset($nextGame)) : ?>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <?php if (isset($previousGame)) : ?>
+                        <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $previousGame->id]) ?>"
+                            class="btn btn-outline-secondary btn-sm" title="Previous Game: <?= h($previousGame->opponent->opponent_name ?? 'Opponent') ?>">
+                            <i class="bi bi-chevron-left"></i> <?= h($previousGame->game_date?->format('M j, Y') ?? '') ?>
+                        </a>
+                    <?php else : ?>
+                        <span></span>
+                    <?php endif; ?>
+
+                    <?php if (isset($nextGame)) : ?>
+                        <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $nextGame->id]) ?>"
+                            class="btn btn-outline-secondary btn-sm" title="Next Game: <?= h($nextGame->opponent->opponent_name ?? 'Opponent') ?>">
+                            <?= h($nextGame->game_date?->format('M j, Y') ?? '') ?> <i class="bi bi-chevron-right"></i>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
             <div class="row align-items-center g-3">
                 <div class="col-lg-5 text-center text-lg-start">
                     <div class="game-scoreline">
