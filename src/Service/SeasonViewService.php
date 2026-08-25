@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\TeamSeason;
+use Cake\ORM\TableRegistry;
 use Throwable;
 
 /**
@@ -13,6 +15,7 @@ use Throwable;
 class SeasonViewService
 {
     private TeamSeasonService $teamSeasonService;
+    private TeamSportContextService $teamSportContextService;
     private ImageTagService $imageTagService;
     private StatsService $statsService;
     private BlogPostService $blogPostService;
@@ -36,6 +39,7 @@ class SeasonViewService
         ?TeamSeasonRosterService $teamSeasonRosterService = null,
     ) {
         $this->teamSeasonService = $teamSeasonService ?? new TeamSeasonService();
+        $this->teamSportContextService = new TeamSportContextService();
         $this->imageTagService = $imageTagService ?? new ImageTagService();
         $this->statsService = $statsService ?? new StatsService();
         $this->blogPostService = $blogPostService ?? new BlogPostService();
@@ -55,6 +59,9 @@ class SeasonViewService
         if (!$teamSeason) {
             return ['teamSeason' => null];
         }
+
+        $previousTeamSeason = $this->resolveAdjacentTeamSeason($teamSeason, 'previous');
+        $nextTeamSeason = $this->resolveAdjacentTeamSeason($teamSeason, 'next');
 
         $images = $this->imageTagService->getImagesForTeamSeason($teamSeasonId, 24);
         $games = $this->gameService->getGamesByTeamSeason($teamSeasonId, 'ASC');
@@ -89,6 +96,8 @@ class SeasonViewService
 
         return [
             'teamSeason' => $teamSeason,
+            'previousTeamSeason' => $previousTeamSeason,
+            'nextTeamSeason' => $nextTeamSeason,
             'images' => $images,
             'games' => $games,
             'roster' => $roster,
@@ -100,6 +109,48 @@ class SeasonViewService
             'reviewPosts' => $categorized['review'],
             'otherPosts' => $categorized['other'],
         ];
+    }
+
+    /**
+     * @param \App\Model\Entity\TeamSeason $teamSeason
+     * @param 'previous'|'next' $direction
+     * @return \App\Model\Entity\TeamSeason|null
+     */
+    private function resolveAdjacentTeamSeason(object $teamSeason, string $direction): ?object
+    {
+        $team = $teamSeason->team ?? null;
+        $sportKey = $this->teamSportContextService->resolveSportKeyFromTeam($team);
+        $seasonEnd = (int)($teamSeason->season->end ?? 0);
+
+        if ($sportKey === null || $seasonEnd <= 0) {
+            return null;
+        }
+
+        $teamSeasonsTable = TableRegistry::getTableLocator()->get('TeamSeasons');
+        $query = $teamSeasonsTable->find()
+            ->contain(['Teams', 'Seasons'])
+            ->matching('Teams', function ($teamsQuery) use ($sportKey) {
+                return $teamsQuery->where([
+                    'OR' => [
+                        ['Teams.sport_key' => $sportKey],
+                        ['Teams.sport_key IS' => null],
+                    ],
+                ]);
+            })
+            ->matching('Seasons', function ($seasonsQuery) use ($seasonEnd, $direction) {
+                if ($direction === 'previous') {
+                    return $seasonsQuery->where(['Seasons.end <' => $seasonEnd]);
+                }
+
+                return $seasonsQuery->where(['Seasons.end >' => $seasonEnd]);
+            })
+            ->where(['TeamSeasons.id !=' => $teamSeason->id]);
+
+        $query->orderBy($direction === 'previous' ? ['Seasons.end' => 'DESC'] : ['Seasons.end' => 'ASC']);
+
+        $adjacent = $query->first();
+
+        return $adjacent instanceof TeamSeason ? $adjacent : null;
     }
 
     /**

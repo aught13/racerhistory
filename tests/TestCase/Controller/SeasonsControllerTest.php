@@ -144,6 +144,42 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
+     * Tests public season view includes previous/next team-season navigation.
+     */
+    public function testViewIncludesPreviousAndNextTeamSeasonNavigation(): void
+    {
+        $seasonsTable = $this->getTableLocator()->get('Seasons');
+        $teamSeasonsTable = $this->getTableLocator()->get('TeamSeasons');
+
+        $previousSeason = $seasonsTable->newEntity(['start' => 2021, 'end' => 2022]);
+        $nextSeason = $seasonsTable->newEntity(['start' => 2025, 'end' => 2026]);
+        $seasonsTable->saveOrFail($previousSeason);
+        $seasonsTable->saveOrFail($nextSeason);
+
+        $teamSeasonsTable->saveOrFail($teamSeasonsTable->newEntity([
+            'team_id' => 1,
+            'season_id' => $previousSeason->id,
+            'semester' => 1,
+        ]));
+        $teamSeasonsTable->saveOrFail($teamSeasonsTable->newEntity([
+            'team_id' => 1,
+            'season_id' => $nextSeason->id,
+            'semester' => 1,
+        ]));
+
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+
+        $previousTeamSeason = $this->viewVariable('previousTeamSeason');
+        $this->assertNotNull($previousTeamSeason);
+        $this->assertSame(2022, (int)$previousTeamSeason->season->end);
+
+        $nextTeamSeason = $this->viewVariable('nextTeamSeason');
+        $this->assertNotNull($nextTeamSeason);
+        $this->assertSame(2026, (int)$nextTeamSeason->season->end);
+    }
+
+    /**
      * Tests authorization skipped.
      */
     public function testAuthorizationSkipped(): void

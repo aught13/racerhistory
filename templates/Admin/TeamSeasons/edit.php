@@ -209,38 +209,6 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="team-season-preview" class="form-label">Season Preview</label>
-                        <?= $this->Form->control('team_season_preview', [
-                            'type' => 'textarea',
-                            'class' => 'form-control',
-                            'label' => false,
-                            'id' => 'team-season-preview',
-                            'rows' => 8,
-                            'data-team-season-form-target' => 'previewEditor',
-                            'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
-                            ],
-                        ]) ?>
-                        <div class="form-text">Pre-season preview or expectations. Rich text supported.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="team-season-recap" class="form-label">Season Recap</label>
-                        <?= $this->Form->control('team_season_recap', [
-                            'type' => 'textarea',
-                            'class' => 'form-control',
-                            'label' => false,
-                            'id' => 'team-season-recap',
-                            'rows' => 8,
-                            'data-team-season-form-target' => 'recapEditor',
-                            'templates' => [
-                                'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
-                            ],
-                        ]) ?>
-                        <div class="form-text">Post-season recap or summary. Rich text supported.</div>
-                    </div>
-
                     <div class="d-flex gap-2">
                         <?= $this->Form->button(__('Update Team Season'), [
                             'type' => 'submit',
