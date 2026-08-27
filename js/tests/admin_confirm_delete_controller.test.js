@@ -421,7 +421,9 @@ describe("admin-confirm-delete controller", () => {
         const forms = Array.from(document.querySelectorAll("form"));
         const tempForm = forms[forms.length - 1];
         expect(tempForm.action).toContain("/admin/persons/delete/1");
-        expect(tempForm.querySelector('input[name="_Token[fields]"]')).toBeNull();
+        expect(
+            tempForm.querySelector('input[name="_Token[fields]"]'),
+        ).toBeNull();
         expect(tempForm.querySelector('input[name="_csrfToken"]').value).toBe(
             "test-token",
         );
