@@ -100,7 +100,10 @@ export function syncGoogleAdSlotState(section, adElement) {
         return false;
     }
 
-    const isUnfilled = adElement.getAttribute("data-ad-status") === "unfilled";
+    const isRendered =
+        adElement.getAttribute("data-adsbygoogle-status") === "done";
+    const isUnfilled =
+        isRendered && adElement.getAttribute("data-ad-status") === "unfilled";
     section.classList.toggle(EMPTY_SLOT_CLASS, isUnfilled);
     section.setAttribute("data-rh-ad-initialized", "1");
 
@@ -190,7 +193,7 @@ export function initGoogleAdSlotSection(section) {
 
         observer.observe(adElement, {
             attributes: true,
-            attributeFilter: ["data-ad-status"],
+            attributeFilter: ["data-ad-status", "data-adsbygoogle-status"],
         });
 
         section.__rhGoogleAdObserver = observer;
