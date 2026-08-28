@@ -1,4 +1,6 @@
 const GOOGLE_SLOT_SELECTOR = "section.rh-ad-slot--google";
+const ADSENSE_SCRIPT_SELECTOR =
+    'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]';
 const EMPTY_SLOT_CLASS = "rh-ad-slot--empty";
 
 function isElement(value) {
@@ -25,19 +27,25 @@ function ensureGoogleQueue() {
     return window.adsbygoogle;
 }
 
+export function removeDuplicateGoogleAdScripts(root = document) {
+    if (!root || typeof root.querySelectorAll !== "function") {
+        return 0;
+    }
+
+    const scripts = Array.from(root.querySelectorAll(ADSENSE_SCRIPT_SELECTOR));
+    scripts.slice(1).forEach((script) => script.remove());
+
+    return Math.max(0, scripts.length - 1);
+}
+
 function getGoogleTagSlotId(section) {
     if (!isElement(section)) {
         return null;
     }
 
-    const explicit = section.dataset?.googleSlotId || section.dataset?.adSlot;
+    const explicit = section.dataset?.googleTagSlotId;
     if (typeof explicit === "string" && explicit.trim() !== "") {
         return explicit.trim();
-    }
-
-    const directId = section.id || section.querySelector("[id]")?.id;
-    if (typeof directId === "string" && directId.trim() !== "") {
-        return directId.trim();
     }
 
     return null;
@@ -125,6 +133,8 @@ export function initGoogleAdSlotSection(section) {
     if (!isElement(section)) {
         return false;
     }
+
+    removeDuplicateGoogleAdScripts();
 
     if (section.dataset.rhAdInitialized === "1") {
         return false;

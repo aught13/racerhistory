@@ -134,9 +134,48 @@ describe("google ad slot lifecycle", () => {
         expect(section.dataset.rhAdInitialized).toBe("1");
     });
 
-    test("initializes a GPT slot from a plain div container when googletag is available", async () => {
+    test("does not treat an AdSense placement name as a GPT slot", async () => {
         document.body.innerHTML = `
             <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav" data-google-mode="1">
+                <div class="rh-ad-slot__inner">
+                    <div id="div-display-ad"></div>
+                </div>
+            </section>
+        `;
+
+        const push = jest.fn();
+        window.googletag = { cmd: { push } };
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        const section = document.querySelector(".rh-ad-slot--google");
+        expect(section.dataset.rhAdInitialized).toBe("1");
+        expect(push).not.toHaveBeenCalled();
+    });
+
+    test("removes duplicate AdSense loader scripts", async () => {
+        document.body.innerHTML = `
+            <script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123"></script>
+            <script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123"></script>
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav">
+                <div class="rh-ad-slot__inner"></div>
+            </section>
+        `;
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        expect(
+            document.querySelectorAll(
+                'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
+            ),
+        ).toHaveLength(1);
+    });
+
+    test("initializes an explicit GPT slot without treating an AdSense slot as GPT", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-google-tag-slot-id="div-display-ad">
                 <div class="rh-ad-slot__inner">
                     <div id="div-display-ad"></div>
                 </div>
