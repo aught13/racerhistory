@@ -38,6 +38,22 @@ export function removeDuplicateGoogleAdScripts(root = document) {
     return Math.max(0, scripts.length - 1);
 }
 
+export function installGoogleAdScriptCleanup() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+        return;
+    }
+
+    if (window.__RH_ADSENSE_SCRIPT_CLEANUP__) {
+        return;
+    }
+
+    window.__RH_ADSENSE_SCRIPT_CLEANUP__ = true;
+    removeDuplicateGoogleAdScripts(document);
+    document.addEventListener("turbo:load", () => {
+        removeDuplicateGoogleAdScripts(document);
+    });
+}
+
 function getGoogleTagSlotId(section) {
     if (!isElement(section)) {
         return null;

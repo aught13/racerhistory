@@ -173,6 +173,24 @@ describe("google ad slot lifecycle", () => {
         ).toHaveLength(1);
     });
 
+    test("installs one cleanup listener for Turbo head merges", async () => {
+        delete window.__RH_ADSENSE_SCRIPT_CLEANUP__;
+        const addEventListener = jest.spyOn(document, "addEventListener");
+
+        const { installGoogleAdScriptCleanup } =
+            await import("../lib/google_ads.js");
+        installGoogleAdScriptCleanup();
+        installGoogleAdScriptCleanup();
+
+        expect(
+            addEventListener.mock.calls.filter(
+                ([eventName]) => eventName === "turbo:load",
+            ),
+        ).toHaveLength(1);
+
+        addEventListener.mockRestore();
+    });
+
     test("initializes an explicit GPT slot without treating an AdSense slot as GPT", async () => {
         document.body.innerHTML = `
             <section class="rh-ad-slot rh-ad-slot--google" data-google-tag-slot-id="div-display-ad">

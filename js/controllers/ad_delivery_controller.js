@@ -2,8 +2,11 @@ import { Controller } from "@hotwired/stimulus";
 
 import {
     destroyGoogleAdSlotSection,
+    installGoogleAdScriptCleanup,
     initGoogleAdSlotSection,
 } from "../lib/google_ads.js";
+
+installGoogleAdScriptCleanup();
 
 export default class extends Controller {
     static targets = ["container", "template"];
