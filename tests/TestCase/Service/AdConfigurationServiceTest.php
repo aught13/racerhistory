@@ -69,6 +69,27 @@ class AdConfigurationServiceTest extends TestCase
     }
 
     /**
+     * Legacy AdSense snippets should use the managed Google rendering path.
+     */
+    public function testGetSlotConfigurationDetectsLegacyGoogleMarkup(): void
+    {
+        $siteOptionsService = $this->createSiteOptionsServiceMock([
+            'ad_below_nav_active' => true,
+            'ad_below_nav_google_mode' => false,
+            'ad_below_nav_html' =>
+                '<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123"></script>'
+                . '<ins class="adsbygoogle" data-ad-client="ca-pub-123" data-ad-slot="9876543210"></ins>'
+                . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>',
+        ]);
+        $service = new AdConfigurationService($siteOptionsService);
+
+        $result = $service->getSlotConfiguration('below_nav');
+
+        $this->assertSame('google', $result['mode']);
+        $this->assertSame('9876543210', $result['google_slot_id']);
+    }
+
+    /**
      * Numeric publisher ids should be normalized to ca-pub-* when client is absent.
      */
     public function testGetSlotConfigurationNormalizesPublisherIdFallback(): void
