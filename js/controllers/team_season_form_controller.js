@@ -146,6 +146,30 @@ export default class extends Controller {
                 convert_urls: false,
                 images_upload_handler: (blobInfo, progress) => {
                     return new Promise((resolve, reject) => {
+                        // Client-side preflight: reject files larger than configured max
+                        try {
+                            const maxMeta = document.querySelector(
+                                'meta[name="maxUploadBytes"]',
+                            );
+                            const maxBytes = maxMeta
+                                ? parseInt(
+                                      maxMeta.getAttribute("content") || "0",
+                                      10,
+                                  )
+                                : 0;
+                            const blob = blobInfo.blob();
+                            if (maxBytes > 0 && blob.size > maxBytes) {
+                                reject(
+                                    "File too large. Maximum allowed: " +
+                                        (maxBytes / 1024 / 1024).toFixed(1) +
+                                        "MB",
+                                );
+                                return;
+                            }
+                        } catch {
+                            // ignore and proceed
+                        }
+
                         const xhr = new window.XMLHttpRequest();
                         xhr.open("POST", this.uploadUrlValue);
                         xhr.withCredentials = true;
@@ -187,15 +211,13 @@ export default class extends Controller {
                             blobInfo.blob(),
                             blobInfo.filename(),
                         );
-                        const csrf = document.querySelector(
-                            'meta[name="csrfToken"]',
-                        );
-                        if (csrf) {
-                            xhr.setRequestHeader(
-                                "X-CSRF-Token",
-                                csrf.getAttribute("content"),
-                            );
+
+                        const csrfToken = this.resolveCsrfToken();
+                        if (csrfToken) {
+                            formData.append("_csrfToken", csrfToken);
+                            xhr.setRequestHeader("X-CSRF-Token", csrfToken);
                         }
+
                         xhr.send(formData);
                     });
                 },
@@ -268,8 +290,31 @@ export default class extends Controller {
         }
 
         const file = fileInput.files[0];
+        // Client-side preflight: check configured max upload bytes
+        try {
+            const maxMeta = document.querySelector(
+                'meta[name="maxUploadBytes"]',
+            );
+            const maxBytes = maxMeta
+                ? parseInt(maxMeta.getAttribute("content") || "0", 10)
+                : 0;
+            if (maxBytes > 0 && file.size > maxBytes) {
+                alert(
+                    "File too large. Maximum allowed: " +
+                        (maxBytes / 1024 / 1024).toFixed(1) +
+                        "MB",
+                );
+                return;
+            }
+        } catch {
+            // ignore and continue
+        }
         const formData = new FormData();
         formData.append("upload", file);
+        const csrfToken = this.resolveCsrfToken();
+        if (csrfToken) {
+            formData.append("_csrfToken", csrfToken);
+        }
 
         if (this.hasUploadButtonTarget) {
             this.uploadButtonTarget.disabled = true;
@@ -277,16 +322,16 @@ export default class extends Controller {
         }
 
         try {
+            const headers = {};
+            if (csrfToken) {
+                headers["X-CSRF-Token"] = csrfToken;
+            }
+
             const response = await fetch(this.uploadUrlValue, {
                 method: "POST",
                 body: formData,
                 credentials: "same-origin",
-                headers: {
-                    "X-CSRF-Token":
-                        document
-                            .querySelector('meta[name="csrfToken"]')
-                            ?.getAttribute("content") || "",
-                },
+                headers,
             });
 
             if (!response.ok) {
@@ -373,5 +418,38 @@ export default class extends Controller {
         }
 
         return url + (url.includes("?") ? "&" : "?") + "_ts=" + Date.now();
+    }
+
+    resolveCsrfToken() {
+        const scopedFormToken = this.element
+            ?.querySelector('input[name="_csrfToken"]')
+            ?.value?.trim();
+        if (scopedFormToken) {
+            return scopedFormToken;
+        }
+
+        const metaToken = document
+            .querySelector('meta[name="csrfToken"]')
+            ?.getAttribute("content")
+            ?.trim();
+        if (metaToken) {
+            return metaToken;
+        }
+
+        return this.readCookie("csrfToken") || this.readCookie("_csrfToken");
+    }
+
+    readCookie(name) {
+        const needle = `${name}=`;
+        const match = document.cookie
+            .split(";")
+            .map((part) => part.trim())
+            .find((part) => part.startsWith(needle));
+
+        if (!match) {
+            return "";
+        }
+
+        return decodeURIComponent(match.slice(needle.length));
     }
 }

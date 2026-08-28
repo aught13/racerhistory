@@ -12,6 +12,7 @@ export default class extends Controller {
         this.loadedImages = [];
         this.selectedFile = null;
         this.aspectRatio = null;
+        this.modalCleanupTimer = null;
 
         this.refreshConfigAndTargetField();
 
@@ -22,6 +23,10 @@ export default class extends Controller {
     disconnect() {
         this.unbindEvents();
         this.destroyCropper();
+        if (this.modalCleanupTimer) {
+            window.clearTimeout(this.modalCleanupTimer);
+            this.modalCleanupTimer = null;
+        }
     }
 
     initElements() {
@@ -222,6 +227,8 @@ export default class extends Controller {
             .forEach((card) =>
                 card.classList.remove("border", "border-primary", "border-3"),
             );
+
+        this.cleanupModalArtifacts();
     }
 
     onSelectTabShown() {
@@ -425,8 +432,7 @@ export default class extends Controller {
             );
         }
 
-        const modal = window.bootstrap?.Modal.getInstance(this.modal);
-        modal?.hide();
+        this.hideModalWithCleanup();
     }
 
     syncTargetFieldSelection() {
@@ -634,8 +640,7 @@ export default class extends Controller {
                 );
             }
 
-            const modal = window.bootstrap?.Modal.getInstance(this.modal);
-            modal?.hide();
+            this.hideModalWithCleanup();
         } catch (error) {
             console.error("Upload error:", error);
             alert("Upload failed: " + error.message);
@@ -643,5 +648,52 @@ export default class extends Controller {
             this.uploadBtn.disabled = false;
             this.uploadBtn.textContent = "Upload & Crop";
         }
+    }
+
+    hideModalWithCleanup() {
+        const modalClass = window.bootstrap?.Modal;
+        const modalInstance =
+            modalClass?.getInstance(this.modal) ||
+            modalClass?.getOrCreateInstance?.(this.modal);
+
+        if (modalInstance?.hide) {
+            modalInstance.hide();
+            this.scheduleModalArtifactCleanup();
+
+            return;
+        }
+
+        if (this.modal) {
+            this.modal.classList.remove("show");
+            this.modal.style.display = "none";
+            this.modal.setAttribute("aria-hidden", "true");
+            this.modal.removeAttribute("aria-modal");
+        }
+        this.cleanupModalArtifacts();
+    }
+
+    scheduleModalArtifactCleanup() {
+        if (this.modalCleanupTimer) {
+            window.clearTimeout(this.modalCleanupTimer);
+        }
+
+        // Fallback cleanup in case Bootstrap hide transition does not fully clean body/backdrop state.
+        this.modalCleanupTimer = window.setTimeout(() => {
+            this.modalCleanupTimer = null;
+            this.cleanupModalArtifacts();
+        }, 400);
+    }
+
+    cleanupModalArtifacts() {
+        if (document.querySelector(".modal.show")) {
+            return;
+        }
+
+        document.body.classList.remove("modal-open");
+        document.body.style.removeProperty("overflow");
+        document.body.style.removeProperty("padding-right");
+        document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+            backdrop.remove();
+        });
     }
 }

@@ -355,20 +355,22 @@ class BlogPostsAdminService
         }
 
         $actingUserId = $this->extractIdentityId($identity);
-        $canManagePostOwner = $this->canManagePostOwner($identity, $post, $isCreate);
-        if ($canManagePostOwner) {
-            if ($isCreate && empty($sanitized['user_id']) && $actingUserId !== null) {
+        if ($isCreate) {
+            if ($actingUserId !== null) {
                 $sanitized['user_id'] = $actingUserId;
+            } else {
+                unset($sanitized['user_id']);
             }
 
             return $sanitized;
         }
 
-        if ($isCreate && $actingUserId !== null) {
-            $sanitized['user_id'] = $actingUserId;
-        } else {
-            unset($sanitized['user_id']);
+        $canManagePostOwner = $this->canManagePostOwner($identity, $post, false);
+        if ($canManagePostOwner) {
+            return $sanitized;
         }
+
+        unset($sanitized['user_id']);
 
         return $sanitized;
     }

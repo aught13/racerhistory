@@ -67,10 +67,18 @@ class BlogPostsControllerTest extends TestCase
             'body' => 'Content',
             'status' => 'published',
             'is_published' => 1,
+            'user_id' => 3,
         ];
         $this->post('/admin/blog-posts/add', $data);
         $this->assertRedirectContains('/admin/blog-posts/edit/');
         $this->assertFlashMessage('The blog post has been saved.');
+
+        $created = $this->fetchTable('BlogPosts')->find()
+            ->where(['title' => 'New Blog'])
+            ->orderByDesc('id')
+            ->first();
+        $this->assertNotNull($created);
+        $this->assertSame(1, (int)$created->user_id);
     }
 
     /**

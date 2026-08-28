@@ -35,6 +35,7 @@ class BlogPost extends Entity
      * @var array<string,bool>
      */
     protected array $_accessible = [
+        'user_id' => true,
         'title' => true,
         'slug' => true,
         'excerpt' => true,
