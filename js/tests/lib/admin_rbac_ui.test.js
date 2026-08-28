@@ -62,6 +62,25 @@ describe("admin_rbac_ui", () => {
         expect(canPerformAbility(payload, "Users", "create")).toBe(false);
     });
 
+    test("does not disable the admin login form when RBAC state has not been hydrated", () => {
+        document.body.innerHTML = `
+            <form id="admin-login" action="/admin/users/login" method="post">
+                <button type="submit">Login</button>
+            </form>
+        `;
+
+        window.__RH_RBAC_UI__ = {
+            isAdmin: false,
+            permissions: {},
+        };
+
+        initAdminRbacUi(document);
+
+        const loginButton = document.querySelector("#admin-login button");
+        expect(loginButton.disabled).toBe(false);
+        expect(loginButton.classList.contains("disabled")).toBe(false);
+    });
+
     test("hides disallowed nav links and disables disallowed action links", () => {
         document.body.innerHTML = `
             <ul class="sidebar-menu">

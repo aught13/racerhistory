@@ -102,7 +102,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-games", strategy: "visible" },
         ]);
 
@@ -114,7 +114,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-users", strategy: "visible" },
         ]);
     });
@@ -140,7 +140,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-images", strategy: "visible" },
         ]);
 
@@ -152,7 +152,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-people", strategy: "visible" },
         ]);
 
@@ -164,7 +164,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-rosters", strategy: "visible" },
         ]);
 
@@ -176,7 +176,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-taxonomy", strategy: "visible" },
         ]);
 
@@ -188,7 +188,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-content", strategy: "interaction" },
         ]);
     });
@@ -213,7 +213,7 @@ describe("legacy loader registry", () => {
             }),
         ).toEqual([
             { id: "admin-core", strategy: "eager" },
-            { id: "admin-overlay", strategy: "interaction" },
+            { id: "admin-overlay", strategy: "eager" },
             { id: "admin-images", strategy: "visible" },
         ]);
     });

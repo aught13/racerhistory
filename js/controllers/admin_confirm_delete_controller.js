@@ -118,16 +118,21 @@ export default class extends Controller {
         if (this.modalContext?.formId) {
             return document.getElementById(this.modalContext.formId);
         }
-
-        if (this.hasHiddenFormTarget) {
-            return this.hiddenFormTarget;
-        }
-
+        // For single-item deletes, submit through a temporary form so the
+        // action can change to data-delete-url without inheriting URL-bound
+        // form-protection metadata from a pre-rendered page form.
         return null;
     }
 
     resolvePostAction(source) {
-        let postAction = this.modalContext?.deleteUrl || "#";
+        const deleteUrl = this.modalContext?.deleteUrl || "";
+        const usesExplicitSourceForm = Boolean(this.modalContext?.formId);
+
+        if (!usesExplicitSourceForm && deleteUrl) {
+            return deleteUrl;
+        }
+
+        let postAction = deleteUrl || "#";
 
         try {
             if (
@@ -138,7 +143,7 @@ export default class extends Controller {
                 postAction = source.action;
             }
         } catch {
-            return this.modalContext?.deleteUrl || "#";
+            return deleteUrl || "#";
         }
 
         return postAction;
@@ -177,6 +182,11 @@ export default class extends Controller {
             this.hiddenFormTarget
                 .querySelectorAll('input[type="hidden"]')
                 .forEach((input) => {
+                    // Skip Cake form-protection payloads on dynamic temp forms.
+                    // The token can be action-bound and cause URL mismatch errors.
+                    if (input.name && input.name.startsWith("_Token[")) {
+                        return;
+                    }
                     const clone = document.createElement("input");
                     clone.type = "hidden";
                     clone.name = input.name;

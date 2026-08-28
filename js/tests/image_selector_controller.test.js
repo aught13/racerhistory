@@ -60,6 +60,7 @@ describe("image-selector controller", () => {
         window.bootstrap = {
             Modal: {
                 getInstance: jest.fn(() => ({ hide: hideMock })),
+                getOrCreateInstance: jest.fn(() => ({ hide: hideMock })),
             },
         };
 
@@ -245,6 +246,65 @@ describe("image-selector controller", () => {
         );
         expect(document.getElementById("image-target").value).toBe("77");
         expect(hideMock).toHaveBeenCalledTimes(1);
+    });
+
+    test("cleans up lingering modal backdrop after programmatic hide", () => {
+        jest.useFakeTimers();
+
+        try {
+            const controller = getController(application);
+            const modal = document.getElementById("image-modal");
+
+            document.body.classList.add("modal-open");
+            document.body.style.overflow = "hidden";
+            document.body.style.paddingRight = "17px";
+
+            const backdrop = document.createElement("div");
+            backdrop.className = "modal-backdrop fade show";
+            document.body.appendChild(backdrop);
+
+            window.bootstrap.Modal.getInstance.mockReturnValueOnce({
+                hide: hideMock,
+            });
+
+            controller.modal = modal;
+            controller.hideModalWithCleanup();
+
+            expect(hideMock).toHaveBeenCalledTimes(1);
+
+            jest.runOnlyPendingTimers();
+
+            expect(document.body.classList.contains("modal-open")).toBe(false);
+            expect(document.querySelector(".modal-backdrop")).toBeNull();
+            expect(document.body.style.overflow).toBe("");
+            expect(document.body.style.paddingRight).toBe("");
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    test("skips modal artifact cleanup while another modal is visible", () => {
+        const controller = getController(application);
+
+        document.body.classList.add("modal-open");
+        const backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop fade show";
+        document.body.appendChild(backdrop);
+
+        const activeModal = document.createElement("div");
+        activeModal.className = "modal show";
+        document.body.appendChild(activeModal);
+
+        controller.cleanupModalArtifacts();
+
+        expect(document.body.classList.contains("modal-open")).toBe(true);
+        expect(document.querySelector(".modal-backdrop")).toBeTruthy();
+
+        activeModal.remove();
+        controller.cleanupModalArtifacts();
+
+        expect(document.body.classList.contains("modal-open")).toBe(false);
+        expect(document.querySelector(".modal-backdrop")).toBeNull();
     });
 
     test("handles guard and failure paths for loading, selecting, and uploading", async () => {

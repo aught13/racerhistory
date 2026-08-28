@@ -51,6 +51,21 @@ class TeamSeasonsControllerTest extends TestCase
     }
 
     /**
+     * Tests delete accepts modal-style CSRF-only payload (no FormProtection _Token fields).
+     */
+    public function testDeleteAcceptsCsrfOnlyModalPayload(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+
+        // Mirrors modal-style submit shape: no FormProtection _Token[*] payload.
+        // enableCsrfToken() injects a valid CSRF token for the request.
+        $this->post('/admin/team-seasons/delete/1', []);
+
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
+    }
+
+    /**
      * Tests view.
      */
     public function testView(): void

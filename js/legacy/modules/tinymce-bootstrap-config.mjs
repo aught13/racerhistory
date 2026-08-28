@@ -25,6 +25,40 @@ function getCsrfToken() {
 }
 
 /**
+ * Get the first matching cookie value.
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+function readCookie(name) {
+    const needle = `${name}=`;
+    const match = document.cookie
+        .split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(needle));
+
+    if (!match) {
+        return "";
+    }
+
+    return decodeURIComponent(match.slice(needle.length));
+}
+
+/**
+ * Resolve a CSRF token from form, meta, or cookie.
+ *
+ * @returns {string}
+ */
+function resolveCsrfToken() {
+    const metaToken = getCsrfToken()?.trim();
+    if (metaToken) {
+        return metaToken;
+    }
+
+    return readCookie("csrfToken") || readCookie("_csrfToken");
+}
+
+/**
  * Create the upload handler for TinyMCE images.
  * Returns a Promise-based function compatible with TinyMCE 6+.
  *
@@ -79,9 +113,10 @@ function createImageUploadHandler(uploadUrl) {
             const formData = new FormData();
             formData.append("upload", blobInfo.blob(), blobInfo.filename());
 
-            const csrf = getCsrfToken();
-            if (csrf) {
-                xhr.setRequestHeader("X-CSRF-Token", csrf);
+            const csrfToken = resolveCsrfToken();
+            if (csrfToken) {
+                formData.append("_csrfToken", csrfToken);
+                xhr.setRequestHeader("X-CSRF-Token", csrfToken);
             }
 
             xhr.send(formData);

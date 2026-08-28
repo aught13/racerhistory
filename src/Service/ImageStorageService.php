@@ -98,9 +98,33 @@ class ImageStorageService
      */
     public function validateUpload(UploadedFileInterface $file): bool|string
     {
-        if ($file->getError() !== UPLOAD_ERR_OK) {
-            return 'No file uploaded';
+        $error = $file->getError();
+        if ($error !== UPLOAD_ERR_OK) {
+            switch ($error) {
+                case UPLOAD_ERR_INI_SIZE:
+                case UPLOAD_ERR_FORM_SIZE:
+                    return 'File too large';
+                case UPLOAD_ERR_PARTIAL:
+                    return 'Upload incomplete';
+                case UPLOAD_ERR_NO_FILE:
+                    return 'No file uploaded';
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    return 'Server missing temp directory';
+                case UPLOAD_ERR_CANT_WRITE:
+                    return 'Failed to write uploaded file';
+                case UPLOAD_ERR_EXTENSION:
+                    return 'Upload stopped by extension';
+                default:
+                    return 'Upload error';
+            }
         }
+
+        // Enforce configured max upload size if present
+        $maxBytes = (int)Configure::read('Images.maxUploadBytes', 0);
+        if ($maxBytes > 0 && $file->getSize() > 0 && $file->getSize() > $maxBytes) {
+            return 'File too large (max ' . $this->humanReadableBytes($maxBytes) . ')';
+        }
+
         if ($file->getSize() === 0) {
             return 'Empty file';
         }
@@ -485,5 +509,23 @@ class ImageStorageService
         }
 
         return ROOT . DS . 'storage' . DS . 'images' . DS;
+    }
+
+    /**
+     * Format a byte count for display in an error message.
+     *
+     * @param int $bytes The byte count.
+     * @return string The formatted byte count.
+     */
+    private function humanReadableBytes(int $bytes): string
+    {
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 1) . 'MB';
+        }
+        if ($bytes >= 1024) {
+            return round($bytes / 1024, 1) . 'KB';
+        }
+
+        return $bytes . 'B';
     }
 }

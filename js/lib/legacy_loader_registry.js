@@ -75,7 +75,9 @@ const LEGACY_MODULES = [
     {
         id: "admin-overlay",
         matches: (pathname) => pathname.startsWith("/admin"),
-        mobileStrategy: "interaction",
+        // Keep delete-confirm wiring available before first tap on mobile.
+        // Deferring this to first interaction can miss the initial modal
+        // `show.bs.modal` context, causing fallback submits to wrong routes.
         load: async (stimulus) => {
             const module = await import("../route_modules/admin_overlay.js");
             module.registerAdminOverlayControllers(stimulus);
