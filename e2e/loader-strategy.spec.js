@@ -2,6 +2,64 @@ import { test, expect } from "@playwright/test";
 
 import { loginToAdmin } from "./support/auth.js";
 
+// Map of module ids to their configured mobileStrategy in source code.
+// Null means no special mobileStrategy (defaults to 'eager' on constrained clients).
+const MODULE_MOBILE_STRATEGIES = {
+    "public-blog": "interaction",
+    "public-games": "visible",
+    "public-people": "visible",
+    "admin-games": "visible",
+    "admin-stats-entry": "interaction",
+    "admin-images": "visible",
+    "admin-people": "visible",
+    "admin-rosters": "visible",
+    "admin-taxonomy": "visible",
+    "admin-content": "interaction",
+    "admin-users": "visible",
+    "admin-overlay": null,
+    "admin-core": null,
+};
+
+async function expectedStrategyForModule(page, moduleId) {
+    const mobileStrategy = MODULE_MOBILE_STRATEGIES[moduleId] ?? null;
+
+    const runtime = await page.evaluate(() => {
+        const MOBILE_VIEWPORT_MAX = 991;
+        let viewportWidth =
+            window.innerWidth ||
+            (window.visualViewport && window.visualViewport.width) ||
+            null;
+        if (viewportWidth === null && typeof window.matchMedia === "function") {
+            try {
+                const mq = window.matchMedia(`(max-width: ${MOBILE_VIEWPORT_MAX}px)`);
+                viewportWidth = mq.matches ? MOBILE_VIEWPORT_MAX : MOBILE_VIEWPORT_MAX + 1;
+            } catch {
+                viewportWidth = MOBILE_VIEWPORT_MAX + 1;
+            }
+        }
+
+        const uaIsMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isMobileViewport = viewportWidth <= MOBILE_VIEWPORT_MAX || uaIsMobile;
+
+        const connection = navigator.connection || {};
+        const effectiveType = connection.effectiveType || "";
+        const saveData = connection.saveData === true;
+        const isLowBandwidth = saveData || (effectiveType !== "" && ["slow-2g", "2g", "3g"].includes(effectiveType));
+
+        return { viewportWidth, isMobileViewport, isLowBandwidth, mobileOrConstrained: isMobileViewport || isLowBandwidth };
+    });
+
+    if (!runtime.mobileOrConstrained) {
+        return "eager";
+    }
+
+    if (mobileStrategy === "visible" || mobileStrategy === "interaction" || mobileStrategy === "idle") {
+        return mobileStrategy;
+    }
+
+    return "eager";
+}
+
 function viewportWidth(page) {
     return page.viewportSize()?.width ?? 1280;
 }

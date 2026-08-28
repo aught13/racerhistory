@@ -40,6 +40,15 @@ class TeamSeasonsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
+
+        if ($this->components()->has('FormProtection')) {
+            $current = (array)$this->FormProtection->getConfig('unlockedActions');
+            if (!in_array('delete', $current, true)) {
+                $current[] = 'delete';
+                $this->FormProtection->setConfig('unlockedActions', $current);
+            }
+        }
+
         $this->teamSeasonAdminService = new TeamSeasonAdminService();
     }
 

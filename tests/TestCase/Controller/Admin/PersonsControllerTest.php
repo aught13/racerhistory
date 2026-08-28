@@ -643,6 +643,29 @@ class PersonsControllerTest extends TestCase
     }
 
     /**
+     * Tests ajax add returns the stable payload contract expected by the popup UI.
+     */
+    public function testAjaxAddPayloadContract(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/persons/ajaxAdd', [
+            'first' => 'Payload',
+            'last' => 'Guard',
+            'display' => 'Payload Guard',
+        ]);
+
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue($body['success']);
+        $this->assertSame('The person has been saved.', $body['message']);
+        $this->assertSame('Payload Guard', $body['newOption']['text']);
+        $this->assertGreaterThan(0, (int)$body['newOption']['value']);
+    }
+
+    /**
      * Test admin persons pages include turbo-frame for SPA navigation.
      */
     public function testAdminPagesContainTurboFrame(): void

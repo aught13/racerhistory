@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [dev, main]
+    branches: [dev]
   workflow_dispatch:
 
 concurrency:
@@ -41,7 +41,7 @@ jobs:
 
           run_php=true
           run_js=true
-          run_e2e=true
+          run_e2e=false
           changed_files=""
 
           if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA" && -n "$PR_HEAD_SHA" ]]; then

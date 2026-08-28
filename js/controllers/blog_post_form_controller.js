@@ -240,61 +240,112 @@ export default class extends Controller {
             relative_urls: false,
             images_upload_handler: (blobInfo, progress) => {
                 return new Promise((resolve, reject) => {
-                    const xhr = new window.XMLHttpRequest();
-                    xhr.open("POST", uploadUrl);
-                    xhr.withCredentials = true;
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable) {
-                            progress((event.loaded / event.total) * 100);
-                        }
-                    };
-                    xhr.onload = () => {
-                        if (xhr.status < 200 || xhr.status >= 300) {
-                            reject("HTTP Error: " + xhr.status);
-                            return;
-                        }
-
-                        let json;
-                        try {
-                            json = JSON.parse(xhr.responseText);
-                        } catch {
-                            console.error(
-                                "TinyMCE upload invalid JSON response:",
-                                xhr.responseText,
-                            );
-                            reject("Invalid JSON");
-                            return;
-                        }
-
-                        if (!json.success || !json.image || !json.image.url) {
-                            console.error(
-                                "TinyMCE upload server response (error path):",
-                                json,
-                            );
-                            reject(json.error || "Upload failed");
-                            return;
-                        }
-
-                        resolve(json.image.url);
-                    };
-                    xhr.onerror = () => reject("Image upload failed");
-
-                    const formData = new FormData();
-                    formData.append(
-                        "upload",
-                        blobInfo.blob(),
-                        blobInfo.filename(),
-                    );
-                    const csrf = document.querySelector(
-                        'meta[name="csrfToken"]',
-                    );
-                    if (csrf) {
-                        xhr.setRequestHeader(
-                            "X-CSRF-Token",
-                            csrf.getAttribute("content"),
+                    // Client-side preflight: reject files larger than configured max
+                    try {
+                        const maxMeta = document.querySelector(
+                            'meta[name="maxUploadBytes"]',
                         );
+                        const maxBytes = maxMeta
+                            ? parseInt(
+                                  maxMeta.getAttribute("content") || "0",
+                                  10,
+                              )
+                            : 0;
+                        const blob = blobInfo.blob();
+                        if (maxBytes > 0 && blob.size > maxBytes) {
+                            reject(
+                                "File too large. Maximum allowed: " +
+                                    (maxBytes / 1024 / 1024).toFixed(1) +
+                                    "MB",
+                            );
+                            return;
+                        }
+                    } catch {
+                        // ignore and continue to attempt upload
                     }
-                    xhr.send(formData);
+
+                    const sendUpload = (attempt = 0) => {
+                        const xhr = new window.XMLHttpRequest();
+                        xhr.open("POST", uploadUrl);
+                        xhr.withCredentials = true;
+                        xhr.upload.onprogress = (event) => {
+                            if (event.lengthComputable) {
+                                progress((event.loaded / event.total) * 100);
+                            }
+                        };
+                        xhr.onload = async () => {
+                            const responseText = String(xhr.responseText || "");
+
+                            if (xhr.status < 200 || xhr.status >= 300) {
+                                if (
+                                    attempt === 0 &&
+                                    xhr.status === 403 &&
+                                    this.looksLikeCsrfFailure(responseText)
+                                ) {
+                                    await this.refreshCsrfContext();
+                                    sendUpload(1);
+                                    return;
+                                }
+
+                                try {
+                                    const errorJson = JSON.parse(responseText);
+                                    reject(
+                                        errorJson?.error ||
+                                            "HTTP Error: " + xhr.status,
+                                    );
+                                    return;
+                                } catch {
+                                    reject("HTTP Error: " + xhr.status);
+                                    return;
+                                }
+                            }
+
+                            let json;
+                            try {
+                                json = JSON.parse(responseText);
+                            } catch {
+                                console.error(
+                                    "TinyMCE upload invalid JSON response:",
+                                    responseText,
+                                );
+                                reject("Invalid JSON");
+                                return;
+                            }
+
+                            if (
+                                !json.success ||
+                                !json.image ||
+                                !json.image.url
+                            ) {
+                                console.error(
+                                    "TinyMCE upload server response (error path):",
+                                    json,
+                                );
+                                reject(json.error || "Upload failed");
+                                return;
+                            }
+
+                            resolve(json.image.url);
+                        };
+                        xhr.onerror = () => reject("Image upload failed");
+
+                        const formData = new FormData();
+                        formData.append(
+                            "upload",
+                            blobInfo.blob(),
+                            blobInfo.filename(),
+                        );
+
+                        const csrfToken = this.resolveCsrfToken();
+                        if (csrfToken) {
+                            formData.append("_csrfToken", csrfToken);
+                            xhr.setRequestHeader("X-CSRF-Token", csrfToken);
+                        }
+
+                        xhr.send(formData);
+                    };
+
+                    sendUpload();
                 });
             },
             table_default_styles: { width: "100%" },
@@ -429,5 +480,64 @@ export default class extends Controller {
         }
 
         return url + (url.includes("?") ? "&" : "?") + "_ts=" + Date.now();
+    }
+
+    resolveCsrfToken() {
+        const scopedFormToken = this.element
+            ?.querySelector('input[name="_csrfToken"]')
+            ?.value?.trim();
+        if (scopedFormToken) {
+            return scopedFormToken;
+        }
+
+        const metaToken = document
+            .querySelector('meta[name="csrfToken"]')
+            ?.getAttribute("content")
+            ?.trim();
+        if (metaToken) {
+            return metaToken;
+        }
+
+        return this.readCookie("csrfToken") || this.readCookie("_csrfToken");
+    }
+
+    readCookie(name) {
+        const needle = `${name}=`;
+        const match = document.cookie
+            .split(";")
+            .map((part) => part.trim())
+            .find((part) => part.startsWith(needle));
+
+        if (!match) {
+            return "";
+        }
+
+        return decodeURIComponent(match.slice(needle.length));
+    }
+
+    looksLikeCsrfFailure(responseText) {
+        return /csrf|invalidcsrftoken|token\s+did\s+not\s+match/i.test(
+            String(responseText || ""),
+        );
+    }
+
+    async refreshCsrfContext() {
+        if (typeof window.fetch !== "function") {
+            return;
+        }
+
+        try {
+            await window.fetch(window.location.href, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: {
+                    Accept: "text/html",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
+        } catch {
+            // Ignore refresh failures; caller will surface the original upload error path.
+        }
     }
 }

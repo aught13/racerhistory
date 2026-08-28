@@ -1,5 +1,6 @@
 <?php
 
+use Cake\Core\Configure;
 /**
  * Admin Layout Template — AdminLTE 4
  *
@@ -33,6 +34,7 @@ $rbacUiPayload = $this->Rbac->uiPayload();
     <meta name="turbo-refresh-method" content="morph">
     <meta name="turbo-refresh-scroll" content="reset">
     <meta name="csrfToken" content="<?= $this->request->getAttribute('csrfToken') ?>">
+    <meta name="maxUploadBytes" content="<?= (int)(Configure::read('Images.maxUploadBytes', 5242880)) ?>">
     <script>
         window.__RH_RBAC_UI__ = <?= json_encode($rbacUiPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
     </script>

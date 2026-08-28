@@ -10,6 +10,7 @@ describe("blog-post-form controller", () => {
     let tinymceRemoveMock;
     let tinymceGetMock;
     let originalXmlHttpRequest;
+    let originalFetch;
 
     const getController = async () => {
         const root = document.querySelector(
@@ -38,6 +39,7 @@ describe("blog-post-form controller", () => {
 
     beforeEach(() => {
         originalXmlHttpRequest = window.XMLHttpRequest;
+        originalFetch = window.fetch;
         document.body.innerHTML = `
             <meta name="csrfToken" content="csrf-token" />
             <div
@@ -76,6 +78,11 @@ describe("blog-post-form controller", () => {
         }
 
         window.XMLHttpRequest = originalXmlHttpRequest;
+        if (originalFetch === undefined) {
+            delete window.fetch;
+        } else {
+            window.fetch = originalFetch;
+        }
         delete window.tinymce;
         document.body.innerHTML = "";
     });
@@ -181,6 +188,13 @@ describe("blog-post-form controller", () => {
             filename: () => "hero.jpg",
         };
 
+        document
+            .querySelector('[data-controller="blog-post-form"]')
+            ?.insertAdjacentHTML(
+                "beforeend",
+                '<form><input type="hidden" name="_csrfToken" value="form-csrf-token"></form>',
+            );
+
         const successXhr = {
             upload: {},
             headers: {},
@@ -215,8 +229,9 @@ describe("blog-post-form controller", () => {
             "POST",
             "/admin/images/upload",
         );
-        expect(successXhr.headers["X-CSRF-Token"]).toBe("csrf-token");
+        expect(successXhr.headers["X-CSRF-Token"]).toBe("form-csrf-token");
         expect(successXhr.formData.get("upload")).toBeInstanceOf(Blob);
+        expect(successXhr.formData.get("_csrfToken")).toBe("form-csrf-token");
 
         const httpErrorXhr = {
             upload: {},
@@ -435,6 +450,91 @@ describe("blog-post-form controller", () => {
         ).rejects.toBe("Upload failed");
         expect(progress).not.toHaveBeenCalled();
         expect(fallbackXhr.setRequestHeader).not.toHaveBeenCalled();
+    });
+
+    test("upload handler falls back to csrf cookie when form/meta tokens are missing", async () => {
+        const initConfig = tinymceInitMock.mock.calls[0][0];
+        const blobInfo = {
+            blob: () => new Blob(["img"], { type: "image/jpeg" }),
+            filename: () => "hero.jpg",
+        };
+
+        const csrfMeta = document.querySelector('meta[name="csrfToken"]');
+        csrfMeta?.remove();
+        document.cookie = "csrfToken=cookie-csrf-token; path=/";
+
+        const successXhr = {
+            upload: {},
+            headers: {},
+            open: jest.fn(),
+            setRequestHeader: jest.fn((key, value) => {
+                successXhr.headers[key] = value;
+            }),
+            send: jest.fn((formData) => {
+                successXhr.formData = formData;
+                successXhr.onload();
+            }),
+            status: 200,
+            responseText: JSON.stringify({
+                success: true,
+                image: { url: "/img/storage/hero.jpg" },
+            }),
+        };
+
+        window.XMLHttpRequest = jest.fn(() => successXhr);
+
+        await expect(
+            initConfig.images_upload_handler(blobInfo, jest.fn()),
+        ).resolves.toBe("/img/storage/hero.jpg");
+
+        expect(successXhr.headers["X-CSRF-Token"]).toBe("cookie-csrf-token");
+        expect(successXhr.formData.get("_csrfToken")).toBe("cookie-csrf-token");
+
+        document.cookie = "csrfToken=; Max-Age=0; path=/";
+    });
+
+    test("retries once after csrf-like 403 response", async () => {
+        const initConfig = tinymceInitMock.mock.calls[0][0];
+        const blobInfo = {
+            blob: () => new Blob(["img"], { type: "image/jpeg" }),
+            filename: () => "hero.jpg",
+        };
+
+        window.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+
+        const csrfErrorXhr = {
+            upload: {},
+            open: jest.fn(),
+            setRequestHeader: jest.fn(),
+            send: jest.fn(() => csrfErrorXhr.onload()),
+            status: 403,
+            responseText:
+                "InvalidCsrfTokenException: CSRF token from either the request body or request headers did not match or is missing.",
+        };
+
+        const successXhr = {
+            upload: {},
+            open: jest.fn(),
+            setRequestHeader: jest.fn(),
+            send: jest.fn(() => successXhr.onload()),
+            status: 200,
+            responseText: JSON.stringify({
+                success: true,
+                image: { url: "/img/storage/retried.jpg" },
+            }),
+        };
+
+        window.XMLHttpRequest = jest
+            .fn()
+            .mockImplementationOnce(() => csrfErrorXhr)
+            .mockImplementationOnce(() => successXhr);
+
+        await expect(
+            initConfig.images_upload_handler(blobInfo, jest.fn()),
+        ).resolves.toBe("/img/storage/retried.jpg");
+
+        expect(window.fetch).toHaveBeenCalledTimes(1);
+        expect(window.XMLHttpRequest).toHaveBeenCalledTimes(2);
     });
 
     test("destroy, clear hero, update hero, inline guard, and cache bust utility cover fallback branches", async () => {

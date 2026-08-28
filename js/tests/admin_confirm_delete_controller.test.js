@@ -262,13 +262,14 @@ describe("admin-confirm-delete controller", () => {
         expect(controller.resolveSourceForm()).toBe(source);
 
         controller.modalContext = {};
-        expect(controller.resolveSourceForm()).toBe(
-            controller.hiddenFormTarget,
-        );
+        expect(controller.resolveSourceForm()).toBeNull();
         expect(controller.resolvePostAction(null)).toBe("#");
 
         source.setAttribute("action", "/admin/seasons/custom-action");
-        controller.modalContext = { deleteUrl: "/admin/fallback-action" };
+        controller.modalContext = {
+            deleteUrl: "/admin/fallback-action",
+            formId: "delete-form-seasons-bulk",
+        };
         expect(controller.resolvePostAction(source)).toContain(
             "/admin/seasons/custom-action",
         );
@@ -394,5 +395,60 @@ describe("admin-confirm-delete controller", () => {
             { name: "season_ids[]", value: "slug-2" },
             { name: "bulk_action", value: "delete" },
         ]);
+    });
+
+    test("single person delete submits hidden modal form to delete endpoint", async () => {
+        await Promise.resolve();
+
+        const hiddenForm = document.getElementById(
+            "confirm-delete-modal-hidden-form",
+        );
+        hiddenForm.setAttribute("action", "/admin/persons");
+        const tokenField = document.createElement("input");
+        tokenField.type = "hidden";
+        tokenField.name = "_Token[fields]";
+        tokenField.value = "some-hash";
+        hiddenForm.appendChild(tokenField);
+
+        window.__rhStimulusShowConfirmDelete({
+            deleteUrl: "/admin/persons/delete/1",
+        });
+
+        document.getElementById("confirm-delete-modal-delete-btn").click();
+
+        expect(hiddenForm.action).toContain("/admin/persons");
+
+        const forms = Array.from(document.querySelectorAll("form"));
+        const tempForm = forms[forms.length - 1];
+        expect(tempForm.action).toContain("/admin/persons/delete/1");
+        expect(
+            tempForm.querySelector('input[name="_Token[fields]"]'),
+        ).toBeNull();
+        expect(tempForm.querySelector('input[name="_csrfToken"]').value).toBe(
+            "test-token",
+        );
+        expect(requestSubmitMock).toHaveBeenCalled();
+    });
+
+    test("single team season delete submits hidden modal form to delete endpoint", async () => {
+        await Promise.resolve();
+
+        const hiddenForm = document.getElementById(
+            "confirm-delete-modal-hidden-form",
+        );
+        hiddenForm.setAttribute("action", "/admin/team-seasons");
+
+        window.__rhStimulusShowConfirmDelete({
+            deleteUrl: "/admin/team-seasons/delete/1",
+        });
+
+        document.getElementById("confirm-delete-modal-delete-btn").click();
+
+        expect(hiddenForm.action).toContain("/admin/team-seasons");
+
+        const forms = Array.from(document.querySelectorAll("form"));
+        const tempForm = forms[forms.length - 1];
+        expect(tempForm.action).toContain("/admin/team-seasons/delete/1");
+        expect(requestSubmitMock).toHaveBeenCalled();
     });
 });
