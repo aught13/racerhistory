@@ -125,7 +125,7 @@ describe("blog-post-form controller", () => {
         inlineField.dispatchEvent(new Event("change", { bubbles: true }));
 
         expect(insertContent).toHaveBeenCalledWith(
-            '<picture><img src="/img/storage/99.jpg" alt="" class="img-fluid" loading="lazy"></picture><p></p>',
+            '<picture><img src="/img/storage/99.jpg" data-image-id="99" alt="" class="img-fluid" loading="lazy"></picture><p></p>',
         );
         expect(inlineField.value).toBe("");
         expect(inlineField.dataset.selectedImageUrl).toBeUndefined();
