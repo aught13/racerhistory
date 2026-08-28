@@ -467,7 +467,7 @@ export default class extends Controller {
         }
 
         editor.insertContent(
-            `<picture><img src="${imageUrl}" alt="" class="img-fluid" loading="lazy"></picture><p></p>`,
+            `<picture><img src="${imageUrl}" data-image-id="${imageId}" alt="" class="img-fluid" loading="lazy"></picture><p></p>`,
         );
         this.inlineFieldTarget.value = "";
         delete this.inlineFieldTarget.dataset.selectedImageUrl;

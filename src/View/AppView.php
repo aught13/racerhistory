@@ -25,6 +25,7 @@ use Cake\View\View;
  *
  * @link https://book.cakephp.org/5/en/views.html#the-app-view
  * @property \App\View\Helper\AdHelper $Ad
+ * @property \App\View\Helper\BlogContentHelper $BlogContent
  * @property \App\View\Helper\ImageServeHelper $ImageServe
  * @property \CakeVite\View\Helper\ViteHelper $Vite
  * @property \Cake\View\Helper\FormHelper $Form
@@ -48,6 +49,7 @@ class AppView extends View
         parent::initialize();
 
         $this->loadHelper('Ad');
+        $this->loadHelper('BlogContent');
         $this->loadHelper('ImageServe');
         $this->loadHelper('SocialLinks');
         $this->loadHelper('Rbac');
