@@ -181,6 +181,30 @@
     margin: 0;
 }
 
+.blog-image-credit {
+    display: inline-block;
+    max-width: 100%;
+    margin: 1rem 0;
+}
+
+.blog-image-credit > picture {
+    display: block;
+    margin: 0;
+}
+
+.blog-image-credit__label {
+    margin-top: 0.35rem;
+    color: var(--rh-muted);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    text-align: left;
+}
+
+.blog-content .blog-image-credit.img-float-left,
+.blog-content .blog-image-credit.img-float-right {
+    margin-top: 0.5rem;
+}
+
 /* Float classes for images */
 .blog-content .img-float-left,
 .blog-content img[style*="float: left"],

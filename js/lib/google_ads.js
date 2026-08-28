@@ -1,4 +1,6 @@
 const GOOGLE_SLOT_SELECTOR = "section.rh-ad-slot--google";
+const ADSENSE_SCRIPT_SELECTOR =
+    'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]';
 const EMPTY_SLOT_CLASS = "rh-ad-slot--empty";
 
 function isElement(value) {
@@ -25,19 +27,41 @@ function ensureGoogleQueue() {
     return window.adsbygoogle;
 }
 
+export function removeDuplicateGoogleAdScripts(root = document) {
+    if (!root || typeof root.querySelectorAll !== "function") {
+        return 0;
+    }
+
+    const scripts = Array.from(root.querySelectorAll(ADSENSE_SCRIPT_SELECTOR));
+    scripts.slice(1).forEach((script) => script.remove());
+
+    return Math.max(0, scripts.length - 1);
+}
+
+export function installGoogleAdScriptCleanup() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+        return;
+    }
+
+    if (window.__RH_ADSENSE_SCRIPT_CLEANUP__) {
+        return;
+    }
+
+    window.__RH_ADSENSE_SCRIPT_CLEANUP__ = true;
+    removeDuplicateGoogleAdScripts(document);
+    document.addEventListener("turbo:load", () => {
+        removeDuplicateGoogleAdScripts(document);
+    });
+}
+
 function getGoogleTagSlotId(section) {
     if (!isElement(section)) {
         return null;
     }
 
-    const explicit = section.dataset?.googleSlotId || section.dataset?.adSlot;
+    const explicit = section.dataset?.googleTagSlotId;
     if (typeof explicit === "string" && explicit.trim() !== "") {
         return explicit.trim();
-    }
-
-    const directId = section.id || section.querySelector("[id]")?.id;
-    if (typeof directId === "string" && directId.trim() !== "") {
-        return directId.trim();
     }
 
     return null;
@@ -76,7 +100,10 @@ export function syncGoogleAdSlotState(section, adElement) {
         return false;
     }
 
-    const isUnfilled = adElement.getAttribute("data-ad-status") === "unfilled";
+    const isRendered =
+        adElement.getAttribute("data-adsbygoogle-status") === "done";
+    const isUnfilled =
+        isRendered && adElement.getAttribute("data-ad-status") === "unfilled";
     section.classList.toggle(EMPTY_SLOT_CLASS, isUnfilled);
     section.setAttribute("data-rh-ad-initialized", "1");
 
@@ -126,6 +153,8 @@ export function initGoogleAdSlotSection(section) {
         return false;
     }
 
+    removeDuplicateGoogleAdScripts();
+
     if (section.dataset.rhAdInitialized === "1") {
         return false;
     }
@@ -164,7 +193,7 @@ export function initGoogleAdSlotSection(section) {
 
         observer.observe(adElement, {
             attributes: true,
-            attributeFilter: ["data-ad-status"],
+            attributeFilter: ["data-ad-status", "data-adsbygoogle-status"],
         });
 
         section.__rhGoogleAdObserver = observer;

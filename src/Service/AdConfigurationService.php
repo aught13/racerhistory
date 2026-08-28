@@ -66,7 +66,11 @@ class AdConfigurationService
         $googleLayoutKey = $this->extractAttribute($html, 'data-ad-layout-key');
         $googleFullWidthResponsive = $this->extractAttribute($html, 'data-full-width-responsive');
 
-        $googleRenderable = $googleModeEnabled && $googleSlotId !== '';
+        $hasGoogleMarkup = preg_match(
+            '/<ins\b[^>]*\bclass\s*=\s*(["\'])[^"\']*\badsbygoogle\b[^"\']*\1/i',
+            $html,
+        ) === 1;
+        $googleRenderable = ($googleModeEnabled || $hasGoogleMarkup) && $googleSlotId !== '';
 
         return [
             'slot' => $normalizedSlot,

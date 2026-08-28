@@ -27,6 +27,12 @@ describe("google ad slot lifecycle", () => {
         expect(window.adsbygoogle).toBeDefined();
         expect(window.adsbygoogle.length).toBe(1);
         expect(section.dataset.rhAdInitialized).toBe("1");
+        expect(section.classList.contains("rh-ad-slot--empty")).toBe(false);
+        expect(ad.style.display).not.toBe("none");
+
+        ad.setAttribute("data-adsbygoogle-status", "done");
+        await Promise.resolve();
+
         expect(section.classList.contains("rh-ad-slot--empty")).toBe(true);
         expect(ad.style.display).toBe("none");
     });
@@ -88,6 +94,53 @@ describe("google ad slot lifecycle", () => {
         expect(section.dataset.rhAdInitialized).toBe("1");
     });
 
+    test("does not hide an unfilled slot before Google finishes processing", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav">
+                <div class="rh-ad-slot__inner">
+                    <ins class="adsbygoogle" data-ad-status="unfilled"></ins>
+                </div>
+            </section>
+        `;
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        const section = document.querySelector(".rh-ad-slot--google");
+        const ad = section.querySelector("ins.adsbygoogle");
+        expect(section.classList.contains("rh-ad-slot--empty")).toBe(false);
+        expect(ad.style.display).not.toBe("none");
+
+        ad.setAttribute("data-adsbygoogle-status", "done");
+        await Promise.resolve();
+
+        expect(section.classList.contains("rh-ad-slot--empty")).toBe(true);
+        expect(ad.style.display).toBe("none");
+    });
+
+    test("queues a slot that starts below the viewport", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="footer" style="margin-top: 5000px">
+                <div class="rh-ad-slot__inner">
+                    <ins class="adsbygoogle"></ins>
+                </div>
+            </section>
+        `;
+
+        const push = jest.fn();
+        window.adsbygoogle = { push };
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        expect(push).toHaveBeenCalledTimes(1);
+        expect(
+            document
+                .querySelector(".rh-ad-slot--google")
+                .getBoundingClientRect().top,
+        ).toBeGreaterThanOrEqual(0);
+    });
+
     test("marks slot initialized when no ins.adsbygoogle exists", async () => {
         document.body.innerHTML = `
             <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav" data-google-mode="1">
@@ -134,9 +187,66 @@ describe("google ad slot lifecycle", () => {
         expect(section.dataset.rhAdInitialized).toBe("1");
     });
 
-    test("initializes a GPT slot from a plain div container when googletag is available", async () => {
+    test("does not treat an AdSense placement name as a GPT slot", async () => {
         document.body.innerHTML = `
             <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav" data-google-mode="1">
+                <div class="rh-ad-slot__inner">
+                    <div id="div-display-ad"></div>
+                </div>
+            </section>
+        `;
+
+        const push = jest.fn();
+        window.googletag = { cmd: { push } };
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        const section = document.querySelector(".rh-ad-slot--google");
+        expect(section.dataset.rhAdInitialized).toBe("1");
+        expect(push).not.toHaveBeenCalled();
+    });
+
+    test("removes duplicate AdSense loader scripts", async () => {
+        document.body.innerHTML = `
+            <script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123"></script>
+            <script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123"></script>
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav">
+                <div class="rh-ad-slot__inner"></div>
+            </section>
+        `;
+
+        const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+        initGoogleAdSlots(document);
+
+        expect(
+            document.querySelectorAll(
+                'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]',
+            ),
+        ).toHaveLength(1);
+    });
+
+    test("installs one cleanup listener for Turbo head merges", async () => {
+        delete window.__RH_ADSENSE_SCRIPT_CLEANUP__;
+        const addEventListener = jest.spyOn(document, "addEventListener");
+
+        const { installGoogleAdScriptCleanup } =
+            await import("../lib/google_ads.js");
+        installGoogleAdScriptCleanup();
+        installGoogleAdScriptCleanup();
+
+        expect(
+            addEventListener.mock.calls.filter(
+                ([eventName]) => eventName === "turbo:load",
+            ),
+        ).toHaveLength(1);
+
+        addEventListener.mockRestore();
+    });
+
+    test("initializes an explicit GPT slot without treating an AdSense slot as GPT", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-google-tag-slot-id="div-display-ad">
                 <div class="rh-ad-slot__inner">
                     <div id="div-display-ad"></div>
                 </div>

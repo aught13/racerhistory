@@ -44,7 +44,7 @@ declare(strict_types=1);
                 <?php endif; ?>
 
                 <div class="blog-content fs-5 lh-lg mb-5">
-                    <?= $post->body ?>
+                    <?= $this->BlogContent->render((string)$post->body) ?>
                 </div>
 
                 <?php if (!empty($post->blog_tags)) : ?>

@@ -17,6 +17,6 @@ $this->assign('title', h($post->title));
 <?= $this->Html->css('blog-content') ?>
 <?php $this->end(); ?>
 
-<div class="container py-4" aria-label="Blog Post">
+<div class="blog-page blog-page--view" aria-label="Blog Post">
     <?= $this->element('blog/view_frame') ?>
 </div>
