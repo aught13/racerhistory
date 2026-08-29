@@ -124,7 +124,6 @@
 
 .rh-ad-slot__inner img,
 .rh-ad-slot__inner iframe,
-.rh-ad-slot__inner ins,
 .rh-ad-slot__inner > div {
   width: 100%;
   max-width: 100%;
@@ -161,8 +160,6 @@
   display: block !important;
   width: 100% !important;
   max-width: 100% !important;
-  height: auto !important;
-  max-height: 280px !important;
   overflow: hidden !important;
   line-height: 0;
 }

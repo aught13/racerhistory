@@ -137,12 +137,85 @@ function disconnectObserver(section) {
     delete section.__rhGoogleAdObserver;
 }
 
+function disconnectSizeObserver(section) {
+    const observer = section?.__rhGoogleAdSizeObserver;
+    if (!observer || typeof observer.disconnect !== "function") {
+        return;
+    }
+
+    observer.disconnect();
+    delete section.__rhGoogleAdSizeObserver;
+}
+
+function hasGoogleAdLayout(section, adElement) {
+    if (
+        typeof document === "undefined" ||
+        typeof document.documentElement?.getClientRects !== "function" ||
+        document.documentElement.getClientRects().length === 0
+    ) {
+        return true;
+    }
+
+    const container =
+        section.querySelector(".rh-ad-slot__inner") ||
+        adElement.parentElement ||
+        section;
+    let current = container;
+
+    while (current) {
+        const style = globalThis.getComputedStyle?.(current);
+        if (style?.display === "none" || style?.visibility === "hidden") {
+            return false;
+        }
+
+        current = current.parentElement;
+    }
+
+    return container.getBoundingClientRect().width > 0;
+}
+
+function waitForGoogleAdLayout(section, adElement) {
+    if (section.__rhGoogleAdSizeObserver) {
+        return;
+    }
+
+    const retry = () => {
+        if (!isElement(section) || section.dataset.rhAdInitialized === "1") {
+            disconnectSizeObserver(section);
+            return;
+        }
+
+        if (!hasGoogleAdLayout(section, adElement)) {
+            return;
+        }
+
+        disconnectSizeObserver(section);
+        initGoogleAdSlotSection(section);
+    };
+
+    if (typeof globalThis.ResizeObserver === "function") {
+        const observer = new globalThis.ResizeObserver(retry);
+        observer.observe(section);
+        observer.observe(
+            section.querySelector(".rh-ad-slot__inner") || section,
+        );
+        section.__rhGoogleAdSizeObserver = observer;
+    }
+
+    if (typeof globalThis.requestAnimationFrame === "function") {
+        globalThis.requestAnimationFrame(retry);
+    } else {
+        globalThis.setTimeout(retry, 0);
+    }
+}
+
 export function destroyGoogleAdSlotSection(section) {
     if (!isElement(section)) {
         return;
     }
 
     disconnectObserver(section);
+    disconnectSizeObserver(section);
     section.classList.remove(EMPTY_SLOT_CLASS);
     section.removeAttribute("data-rh-ad-initialized");
     delete section.dataset.rhGoogleTagQueued;
@@ -159,6 +232,10 @@ export function initGoogleAdSlotSection(section) {
         return false;
     }
 
+    if (section.__rhGoogleAdSizeObserver) {
+        return false;
+    }
+
     if (queueGoogleTagDisplay(section)) {
         section.setAttribute("data-rh-ad-initialized", "1");
         return true;
@@ -169,6 +246,11 @@ export function initGoogleAdSlotSection(section) {
     if (!adElement) {
         section.setAttribute("data-rh-ad-initialized", "1");
         return true;
+    }
+
+    if (!hasGoogleAdLayout(section, adElement)) {
+        waitForGoogleAdLayout(section, adElement);
+        return false;
     }
 
     const queue = ensureGoogleQueue();
