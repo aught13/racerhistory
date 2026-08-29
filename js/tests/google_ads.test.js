@@ -37,6 +37,58 @@ describe("google ad slot lifecycle", () => {
         expect(ad.style.display).toBe("none");
     });
 
+    test("waits to queue a slot until its container has a width", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav">
+                <div class="rh-ad-slot__inner">
+                    <ins class="adsbygoogle"></ins>
+                </div>
+            </section>
+        `;
+
+        const section = document.querySelector(".rh-ad-slot--google");
+        const inner = section.querySelector(".rh-ad-slot__inner");
+        const push = jest.fn();
+        const originalResizeObserver = globalThis.ResizeObserver;
+        const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+        const rootRects = jest
+            .spyOn(document.documentElement, "getClientRects")
+            .mockReturnValue([{ width: 320 }]);
+        let resizeCallback;
+        let width = 0;
+
+        class TestResizeObserver {
+            constructor(callback) {
+                resizeCallback = callback;
+            }
+
+            observe() {}
+
+            disconnect() {}
+        }
+
+        globalThis.ResizeObserver = TestResizeObserver;
+        globalThis.requestAnimationFrame = jest.fn();
+        inner.getBoundingClientRect = jest.fn(() => ({ width }));
+        window.adsbygoogle = { push };
+
+        try {
+            const { initGoogleAdSlots } = await import("../lib/google_ads.js");
+            expect(initGoogleAdSlots(document)).toHaveLength(0);
+            expect(push).not.toHaveBeenCalled();
+
+            width = 320;
+            resizeCallback();
+
+            expect(push).toHaveBeenCalledTimes(1);
+            expect(section.dataset.rhAdInitialized).toBe("1");
+        } finally {
+            rootRects.mockRestore();
+            globalThis.ResizeObserver = originalResizeObserver;
+            globalThis.requestAnimationFrame = originalRequestAnimationFrame;
+        }
+    });
+
     test("does not re-push a slot that is already initialized", async () => {
         document.body.innerHTML = `
             <section class="rh-ad-slot rh-ad-slot--google" data-ad-slot="below_nav" data-google-mode="1" data-rh-ad-initialized="1">
