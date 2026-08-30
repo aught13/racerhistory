@@ -13,6 +13,7 @@
  * @var array<int,\App\Model\Entity\BlogPost> $otherPosts
  * @var \App\View\AppView $this
  */
+use App\Service\SocialImageService;
 
 $seasonStart = $teamSeason->season->start ?? '';
 $seasonEnd = $teamSeason->season->end ?? '';
@@ -117,6 +118,36 @@ if ($heroImageId === null) {
 }
 
 $this->assign('title', $teamName . ' ' . $seasonLabel . ' Season');
+$this->assign('socialTitle', $teamName . ' ' . $seasonLabel . ' Season');
+$this->assign('socialDescription', $teamName . ' season summary, record, and game log on RacerHistory.');
+
+$seasonSocialImageCandidates = [];
+if ($heroImageId !== null) {
+    $seasonSocialImageUrl = $this->ImageServe->url($heroImageId, ['profile' => 'season_billboard']);
+    if ($seasonSocialImageUrl !== '') {
+        $seasonSocialImageCandidates[] = $seasonSocialImageUrl;
+    }
+} elseif ($heroImageUrl !== '') {
+    $seasonSocialImageCandidates[] = $heroImageUrl;
+}
+if (empty($seasonSocialImageCandidates) && !empty($images)) {
+    foreach ($images as $seasonImage) {
+        if (!isset($seasonImage->id) || (int)$seasonImage->id <= 0) {
+            continue;
+        }
+
+        $seasonSocialImageUrl = $this->ImageServe->url((int)$seasonImage->id, ['profile' => 'season_billboard']);
+        if ($seasonSocialImageUrl !== '') {
+            $seasonSocialImageCandidates[] = $seasonSocialImageUrl;
+        }
+    }
+}
+if (!empty($seasonSocialImageCandidates)) {
+    $filteredCandidates = SocialImageService::filterCandidates($seasonSocialImageCandidates);
+    if (!empty($filteredCandidates)) {
+        $this->assign('socialImageUrl', $this->Url->build($filteredCandidates[0], ['fullBase' => true]));
+    }
+}
 
 $this->start('css'); ?>
 <?php $this->end(); ?>

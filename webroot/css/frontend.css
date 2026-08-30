@@ -28,6 +28,7 @@
   --rh-main-bg: #ffffff;
   --rh-content-bg: #f5f1ed;
   --rh-searchbuilder-bg: #f5f1ed;
+  --rh-ad-slot-bg: #f5f1ed;
   --rh-user-bar-height: 0px;
 
   color-scheme: light dark;
@@ -46,6 +47,7 @@
     --rh-content-bg: #0f1a2e;
     /* SearchBuilder uses surface color in dark mode */
     --rh-searchbuilder-bg: var(--rh-surface);
+    --rh-ad-slot-bg: #0f1a2e;
     /* Bootstrap variable overrides so cards/tables adopt dark colours */
     --bs-body-bg: var(--rh-surface);
     --bs-body-color: var(--rh-text);
@@ -74,6 +76,7 @@
   --rh-content-bg: #0f1a2e;
   /* SearchBuilder uses surface color in dark mode */
   --rh-searchbuilder-bg: var(--rh-surface);
+  --rh-ad-slot-bg: #0f1a2e;
   /* Bootstrap variable overrides so cards/tables adopt dark colours */
   --bs-body-bg: var(--rh-surface);
   --bs-body-color: var(--rh-text);
@@ -92,11 +95,13 @@
 
 /* ==========================================================================
    Responsive Ad Slot Styles
+   - Use mode-aware background that matches content area (light: beige, dark: dark-blue)
+   - Remove deadspace by ensuring background fills unfilled ad slots
    - Remove dotted borders and let ad blocks inherit surrounding backgrounds
    - Make images/iframes/ins scale to container width for responsiveness
    ========================================================================== */
 .rh-ad-slot {
-  background: inherit;
+  background-color: var(--rh-ad-slot-bg);
   border: none !important;
   padding: 0;
   margin: 0.5rem 0;
@@ -116,7 +121,7 @@
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
-  background: inherit;
+  background-color: var(--rh-ad-slot-bg);
   flex: 1 1 auto;
   overflow: hidden;
   line-height: 0;
@@ -124,7 +129,6 @@
 
 .rh-ad-slot__inner img,
 .rh-ad-slot__inner iframe,
-.rh-ad-slot__inner ins,
 .rh-ad-slot__inner > div {
   width: 100%;
   max-width: 100%;
@@ -161,10 +165,9 @@
   display: block !important;
   width: 100% !important;
   max-width: 100% !important;
-  height: auto !important;
-  max-height: 280px !important;
   overflow: hidden !important;
   line-height: 0;
+  background-color: transparent !important;
 }
 
 .rh-ad-slot--news-sidebar-1,

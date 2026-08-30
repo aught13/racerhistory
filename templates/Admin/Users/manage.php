@@ -23,6 +23,22 @@ if ($identityId === null && is_object($identity) && method_exists($identity, 'ge
     }
 }
 $isSelfManage = $identityId !== null && (int)$user->id === $identityId;
+
+$socialLinksTextareaValue = '';
+if (!empty($user->social_links)) {
+    if (is_string($user->social_links)) {
+        $decoded = json_decode($user->social_links, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $socialLinksTextareaValue = implode(PHP_EOL, array_values(array_filter(array_map('trim', $decoded), static fn($value) => trim((string)$value) !== '')));
+        } else {
+            $socialLinksTextareaValue = $user->social_links;
+        }
+    } elseif (is_array($user->social_links)) {
+        $socialLinksTextareaValue = implode(PHP_EOL, array_values(array_filter(array_map('trim', $user->social_links), static fn($value) => trim((string)$value) !== '')));
+    } else {
+        $socialLinksTextareaValue = (string)$user->social_links;
+    }
+}
 ?>
 <div class="container py-4">
     <div class="row mb-3">
@@ -48,6 +64,7 @@ $isSelfManage = $identityId !== null && (int)$user->id === $identityId;
                         'url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'edit', $user->id],
                         'type' => 'file',
                         'class' => 'mb-4',
+                        'data-turbo-frame' => '_top',
                     ]) ?>
 
                     <div class="row">
@@ -86,7 +103,7 @@ $isSelfManage = $identityId !== null && (int)$user->id === $identityId;
                     </div>
 
                     <div class="mb-3">
-                        <?= $this->Form->control('social_links', ['type' => 'textarea', 'rows' => 3, 'class' => 'form-control', 'label' => 'Social Links (one URL per line)', 'placeholder' => 'https://twitter.com/yourhandle']) ?>
+                        <?= $this->Form->control('social_links', ['type' => 'textarea', 'rows' => 3, 'class' => 'form-control', 'label' => 'Social Links (one URL per line)', 'placeholder' => 'https://twitter.com/yourhandle', 'value' => $socialLinksTextareaValue]) ?>
                     </div>
 
                     <div class="mb-3">

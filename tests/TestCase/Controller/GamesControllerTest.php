@@ -78,6 +78,15 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Box Score');
         $this->assertResponseContains('data-controller="game-view"');
+        $this->assertResponseContains('property="og:image"');
+        $this->assertTrue(
+            str_contains((string)$this->_response->getBody(), '<meta property="og:image" content="/img/logo.png"')
+            || str_contains((string)$this->_response->getBody(), '<meta property="og:image" content="/img/storage/'),
+        );
+        $this->assertTrue(
+            str_contains((string)$this->_response->getBody(), '<meta property="twitter:image" content="/img/logo.png"')
+            || str_contains((string)$this->_response->getBody(), '<meta property="twitter:image" content="/img/storage/'),
+        );
     }
 
     /**

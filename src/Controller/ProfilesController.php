@@ -48,8 +48,7 @@ class ProfilesController extends AppController
         if ($this->request->is(['post', 'put', 'patch'])) {
             $data = $this->request->getData();
 
-            // Normalize `social_links` similar to admin flow to avoid empty
-            // string writes into JSON column.
+            // Normalize `social_links` to a valid JSON array string before save.
             if (array_key_exists('social_links', $data)) {
                 $sl = $data['social_links'];
                 if ($sl === '' || $sl === null) {
@@ -57,16 +56,22 @@ class ProfilesController extends AppController
                 } elseif (is_string($sl)) {
                     $decoded = json_decode((string)$sl, true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $data['social_links'] = $decoded;
+                        $arr = array_values(array_filter(
+                            array_map('trim', $decoded),
+                            static fn($v) => trim((string)$v) !== '',
+                        ));
+                        $data['social_links'] = $arr === [] ? null :
+                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                     } else {
-                        // Treat input as one-URL-per-line
                         $parts = preg_split("/\r\n|\n|\r/", (string)$sl);
-                        $arr = array_values(array_filter(array_map('trim', $parts), fn($v) => $v !== ''));
-                        $data['social_links'] = $arr === [] ? null : $arr;
+                        $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
+                        $data['social_links'] = $arr === [] ? null :
+                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                     }
                 } elseif (is_array($sl)) {
-                    // keep as-is
-                    $data['social_links'] = $sl;
+                    $arr = array_values(array_filter(array_map('trim', $sl), static fn($v) => trim((string)$v) !== ''));
+                    $data['social_links'] = $arr === [] ? null :
+                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                 } else {
                     $data['social_links'] = null;
                 }

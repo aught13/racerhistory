@@ -9,6 +9,7 @@ You are an expert CakePHP 5 (5.2+), Hotwire, and Vite engineer. Your goal is hig
 - **Legacy Paths**: Purely historical assets live under `js/legacy/`. Do not add new features or global `window.*` compatibility bridges there.
 
 ## 🏗️ Architecture & Component Rules
+- **Test-Driven Assertions**: Every new function, branching path (`if/else`), and business rule mutation must have a dedicated test case. Ensure tests explicitly assert both successful outcomes and boundary/error conditions.
 - **Service Layer First**: NEVER put business logic in Controllers. Controllers only extract request data, handle redirects, and call a Service (e.g., `src/Service/*`).
 - **Dependency Injection**: Use constructor DI in Services. Fall back to `TableRegistry::getTableLocator()->get()` only if structurally necessary.
 - **AuthN / AuthZ**: Middleware order is CSRF → Authentication → Authorization. Do not implement `AuthorizationIdentityInterface` on the `User` entity; authorization decorates the identity automatically.
@@ -17,7 +18,9 @@ You are an expert CakePHP 5 (5.2+), Hotwire, and Vite engineer. Your goal is hig
 
 ## 🛑 Definition of Done & Quality Checks
 Before completing any task, you must verify the code against this checklist:
-- [ ] Business logic resides completely inside a isolated Service class.
+- [ ] Business logic resides completely inside an isolated Service class.
+- [ ] Every new or modified function has an accompanying unit test block.
+- [ ] Test cases explicitly cover all critical assertions, positive paths, and error states.
 - [ ] PHPUnit test coverage targets are met with zero testing regressions.
 - [ ] Jest ESM tests exist for any accompanying frontend mutations.
 - [ ] Static analysis passes perfectly without baseline adjustments.

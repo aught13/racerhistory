@@ -187,6 +187,33 @@ class UsersTable extends Table
             // Preserve existing save flow when the RBAC schema is not yet present.
         }
 
+        // Normalize social links to valid JSON-array text before persisting.
+        if ($entity->isDirty('social_links')) {
+            $slVal = $entity->social_links;
+            if ($slVal === '' || $slVal === null) {
+                $entity->social_links = null;
+            } elseif (is_array($slVal)) {
+                $arr = array_values(array_filter(array_map('trim', $slVal), static fn($v) => trim((string)$v) !== ''));
+                $entity->social_links = $arr === [] ? null :
+                json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+            } elseif (is_string($slVal)) {
+                $decoded = json_decode($slVal, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $arr = array_values(array_filter(
+                        array_map('trim', $decoded),
+                        static fn($v) => trim((string)$v) !== '',
+                    ));
+                    $entity->social_links = $arr === [] ? null :
+                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+                } else {
+                    $parts = preg_split("/\r\n|\n|\r/", $slVal);
+                    $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
+                    $entity->social_links = $arr === [] ? null :
+                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+                }
+            }
+        }
+
         // Set activation_date when user becomes active
         if ($entity->isDirty('active') && $entity->active && !$entity->activation_date) {
             $entity->activation_date = new DateTime();

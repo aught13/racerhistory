@@ -134,6 +134,8 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('Game Log');
         $this->assertResponseContains('Stories');
         $this->assertResponseContains('data-controller="person-game-log-tabs"');
+        $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
+        $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
     }
 
     /**

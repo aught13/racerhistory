@@ -145,9 +145,9 @@ class UsersController extends AppController
             Log::debug('Admin Users::edit incoming data keys', ['keys' => array_keys((array)$data)]);
             Log::debug('Admin Users::edit social_links raw', ['social_links' => $data['social_links'] ?? null]);
 
-            // Normalize `social_links` so we never attempt to write an empty
-            // string into a JSON column (MySQL/MariaDB reject '') — convert
-            // to null or a proper array before patching.
+            // Normalize `social_links` to a valid JSON array string before
+            // patching. The live schema is JSON-backed (with a JSON validity check),
+            // so plain newline strings are not valid persisted values.
             if (array_key_exists('social_links', $data)) {
                 $sl = $data['social_links'];
                 if ($sl === '' || $sl === null) {
@@ -155,16 +155,22 @@ class UsersController extends AppController
                 } elseif (is_string($sl)) {
                     $decoded = json_decode((string)$sl, true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $data['social_links'] = $decoded;
+                        $arr = array_values(array_filter(
+                            array_map('trim', $decoded),
+                            static fn($v) => trim((string)$v) !== '',
+                        ));
+                        $data['social_links'] = $arr === [] ? null :
+                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                     } else {
-                        // Try newline-separated list -> array (one URL per line)
                         $parts = preg_split("/\r\n|\n|\r/", (string)$sl);
-                        $arr = array_values(array_filter(array_map('trim', $parts), fn($v) => $v !== ''));
-                        $data['social_links'] = $arr === [] ? null : $arr;
+                        $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
+                        $data['social_links'] = $arr === [] ? null :
+                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                     }
                 } elseif (is_array($sl)) {
-                    // keep as-is
-                    $data['social_links'] = $sl;
+                    $arr = array_values(array_filter(array_map('trim', $sl), static fn($v) => trim((string)$v) !== ''));
+                    $data['social_links'] = $arr === [] ? null :
+                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                 } else {
                     $data['social_links'] = null;
                 }
@@ -179,24 +185,34 @@ class UsersController extends AppController
                 'fields' => $accessibleFields,
             ]);
 
-            // Ensure social_links is normalized on the entity level as well
-            // to avoid passing an empty string into a JSON column which
-            // causes MySQL/MariaDB integrity errors.
+            // Ensure we persist only valid JSON-array data for this field.
             if ($user->isDirty('social_links')) {
+                /** @var mixed $slVal */
                 $slVal = $user->social_links;
                 if ($slVal === '' || $slVal === null) {
                     $user->social_links = null;
+                } elseif (is_array($slVal)) {
+                    $arr = array_values(array_filter(
+                        array_map('trim', $slVal),
+                        static fn($v) => trim((string)$v) !== '',
+                    ));
+                    $user->social_links = $arr === [] ? null :
+                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                 } elseif (is_string($slVal)) {
                     $decoded = json_decode($slVal, true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $user->social_links = $decoded;
+                        $arr = array_values(array_filter(
+                            array_map('trim', $decoded),
+                            static fn($v) => trim((string)$v) !== '',
+                        ));
+                        $user->social_links = $arr === [] ? null :
+                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                     } else {
                         $parts = preg_split("/\r\n|\n|\r/", $slVal);
-                        $arr = array_values(array_filter(array_map('trim', $parts), fn($v) => $v !== ''));
-                        $user->social_links = $arr === [] ? null : $arr;
+                        $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
+                        $user->social_links = $arr === [] ? null :
+                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
                     }
-                } elseif (is_array($slVal) && $slVal === []) {
-                    $user->social_links = null;
                 }
             }
 
