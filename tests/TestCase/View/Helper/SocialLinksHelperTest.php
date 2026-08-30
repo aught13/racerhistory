@@ -37,10 +37,22 @@ class SocialLinksHelperTest extends TestCase
 
         $this->assertStringContainsString('social-links', $html);
         $this->assertStringContainsString('href="https://twitter.com/racerhistory"', $html);
-        $this->assertStringContainsString('bi-twitter', $html);
-        $this->assertStringContainsString('bi-github', $html);
+        $this->assertStringContainsString('fa-brands fa-twitter', $html);
+        $this->assertStringContainsString('fa-brands fa-github', $html);
         $this->assertStringContainsString('@racerhistory', $html);
         $this->assertStringContainsString('@aught13', $html);
+    }
+
+    /**
+     * Branded hosts should map to Font Awesome brand icons and unknown hosts should fall back to the site text.
+     */
+    public function testRenderUsesBrandIconsAndFallbackDomainText(): void
+    {
+        $html = $this->helper->render('["https://www.threads.com/@racerhistory","https://example.com/hello"]');
+
+        $this->assertStringContainsString('fa-brands fa-threads', $html);
+        $this->assertStringContainsString('example.com', $html);
+        $this->assertStringContainsString('@racerhistory', $html);
     }
 
     /**
@@ -52,9 +64,9 @@ class SocialLinksHelperTest extends TestCase
 
         $this->assertStringContainsString('href="https://example.com"', $html);
         $this->assertStringContainsString('href="https://foo.bar/@bad!name"', $html);
-        $this->assertStringContainsString('bi-link-45deg', $html);
-        $this->assertStringContainsString('@example', $html);
-        $this->assertStringContainsString('@badname', $html);
+        $this->assertStringContainsString('example.com', $html);
+        $this->assertStringContainsString('foo.bar', $html);
+        $this->assertStringNotContainsString('@badname', $html);
     }
 
     /**
@@ -63,11 +75,12 @@ class SocialLinksHelperTest extends TestCase
     public function testRenderAcceptsArrayAndScalarFallback(): void
     {
         $htmlFromArray = $this->helper->render(['', 'linkedin.com/in/example-user']);
-        $this->assertStringContainsString('bi-linkedin', $htmlFromArray);
+        $this->assertStringContainsString('fa-brands fa-linkedin', $htmlFromArray);
         $this->assertStringContainsString('@example-user', $htmlFromArray);
 
         $htmlFromScalar = $this->helper->render(12345);
         $this->assertStringContainsString('href="https://12345"', $htmlFromScalar);
-        $this->assertStringContainsString('@12345', $htmlFromScalar);
+        $this->assertStringContainsString('12345', $htmlFromScalar);
+        $this->assertStringNotContainsString('@12345', $htmlFromScalar);
     }
 }

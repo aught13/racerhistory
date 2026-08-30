@@ -28,7 +28,7 @@ use Cake\ORM\Entity;
  * @property string|null $bio
  * @property int|null $profile_image_id
  * @property string|null $website_url
- * @property array|null $social_links
+ * @property string|array|null $social_links
  * @property string $status
  * @property bool $active
  * @property bool $is_superuser
