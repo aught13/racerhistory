@@ -5,43 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres (at the moment) to semantic versioning *starting with pre-release identifiers*.
 
-## [Unreleased]
+## [4.0.0] - 2026-08-30
+
+This is the official V4 release of RacerHistory, representing the fourth generation of the site: V1 was the original procedural implementation, V2 was the OOP rewrite, V3 was the FuelPHP application, and V4 is the current CakePHP 5 platform.
 
 ### Added
 
-- **Fully-Modular Frontend Architecture**: Route-based module system with lazy-loaded controllers and runtime initialization patterns replacing monolithic single-file approach.
-- **Comprehensive Jest Test Coverage**: Expanded from 789 to 1578+ tests across 159 suites; 80% branch coverage (3612/4515 branches) with systematic coverage for controllers, utilities, and runtime modules.
-- **Service Worker Registration Resilience**: Improved service worker lifecycle to handle both auto-registration via main.js and manual fallback registration; better CI compatibility.
-- **E2E Test Stabilization**: Enhanced Playwright tests with conditional skipping for CI environments and better diagnostics for service worker availability.
-- **WordPress-style Frontend Layouts**: Landing (`/`) and News (`/blog`) feeds refactored to rely on standard Bootstrap two-column flex-grid component structure.
-- **Popular Tags Filtering**: Standard backend service algorithm added to extract tags dynamically scaled by post usage count; Sidebar Tag Widget implemented to allow `/blog?tag=slug` chronological isolation natively.
+- **Official V4 release architecture**: finalized the CakePHP 5 application as the production platform for racerhistory.com.
+- **Modular frontend runtime**: route-based module system, Vite-managed asset loading, Turbo/Stimulus startup, lazy-loaded controllers, and runtime initialization patterns replacing the previous monolithic JS approach.
+- **Ad management and layout tooling**: Google Ads lifecycle handling, responsive ad slot behavior, publisher configuration via `SiteOptions`, and cleanup of legacy script/markup duplication.
+- **Social media metadata handling**: social image metadata, share-friendly previews, and JSON-normalized social links across user management and page rendering.
+- **Blog content enhancements**: content service for rendering article images with credits, tag filtering, and improved frontend layout components.
+- **Client-side validation and security improvements**: file-size validation for uploads, tighter CSRF handling, and improved deployment checks for production readiness.
+- **Expanded test coverage and diagnostics**: broader PHPUnit/Jest coverage, CI-safe E2E behavior, and targeted checks for admin, RBAC, and service lifecycle regressions.
 
 ### Changed
 
-- **RBAC Hardening**: Centralized RBAC service, request-level policy updates, identity-scoped delete/bulk enforcement across admin services, controller plumbing to pass authenticated identity, and template/UI gating. See [docs/RBAC_HARDENING.md](docs/RBAC_HARDENING.md).
-- **Minimum PHP version raised to 8.2+** across project requirements and docs to match the current dependency graph.
- - **Admin sports retirement**: Admin sports CRUD has been retired as a table-backed entity. Sport configuration and defaults are now managed via `SiteOptions` (SiteOptionsService) and the runtime uses `sport_key` as the canonical identifier. DB migrations retire the `sports` table and `teams.sport_id` in favor of `teams.sport_key` with snapshot-based rollback support.
-- **CI testsuite matrix updated** to remove the incompatible PHP 8.1/lowest-dependencies lane and run coverage on PHP 8.2.
-- **Deployment asset audits modernized** to require Vite build artifacts (`webroot/dist/manifest.json`) and validate the `js/main.js` manifest entry.
-- **Admin interface migrated to AdminLTE 4 layout patterns** with a dedicated admin shell, desktop collapse persistence, mobile overlay behavior, and Stimulus-powered sidebar controls.
-- **Admin navigation wording refreshed** to use neutral sports terminology across grouped menus and dashboard visuals.
-- **Public DataTables runtime moved fully into Vite-managed npm dependencies** for jQuery, Bootstrap JS, Luxon, and the DataTables extension stack instead of legacy CDN script injection on public pages.
-- **Frontend test suite methodology improved**: Stimulus controller lifecycle testing with proper Application.start() patterns; runtime module testing with module override patterns; better isolation with jest.resetModules().
+- **RBAC and admin hardening**: centralized request-level authorization, identity-scoped delete/bulk enforcement, improved UI gating, and more explicit admin access patterns. See [docs/RBAC_HARDENING.md](docs/RBAC_HARDENING.md).
+- **Site options and configuration modernization**: admin sports configuration moved to `SiteOptions`, with canonical `sport_key` handling and runtime compatibility protections for legacy data.
+- **Public and admin UI refresh**: AdminLTE 4 shell, sidebar behavior improvements, neutral sports terminology, mobile overlay handling, and more reliable navigation flows.
+- **DataTables and Vite migration**: public DataTables runtime moved fully to npm-managed dependencies, with SearchBuilder compatibility, layout fixes, and deterministic dependency ordering.
+- **Deployment and asset audits**: manifest validation, deployment checks for Vite outputs, stricter production readiness audits, and cleanup of obsolete frontend paths.
+- **Release documentation refresh**: README and changelog updated for the official V4 launch and the production architecture baseline.
 
 ### Fixed
 
-- **Frontend test coverage gaps eliminated**: Added systematic unit tests covering runtime initialization edge cases, Stimulus controller lifecycle scenarios, event handling with missing targets, and module state management.
-- **Service worker registration timing**: Fixed race condition where service worker registration could fail if occurring before or after page load events; now handles both scenarios gracefully with fallback registration.
-- **E2E PWA tests in CI environments**: Service worker registration tests now gracefully skip in CI when registration is unavailable (common in headless browsers) instead of hard-failing builds; includes diagnostic messaging.
-- **ESLint compliance**: Removed unused variables in test suites preventing linting pass on critical test files.
-- **Admin users add/edit failure handling** now preserves validation context and avoids invalid redirects on save failures.
-- **Dashboard layout tests** updated for the Vite runtime contract (hashed dist asset or dev entry) and legacy importmap removal.
-- **Playwright stabilization for image/admin dynamic pages** by asserting runtime behavior instead of legacy global helper existence.
-- **Admin sidebar treeview expansion reliability** by aligning grouped menu markup and `menu-open` state handling with AdminLTE expectations.
-- **Regression coverage for admin shell behavior** with expanded Dashboard integration assertions, Stimulus unit tests for sidebar/layout controllers, and Playwright coverage for Sports/Content expansion.
-- **Public stats and games DataTables compatibility restored** after the Vite migration by pinning SearchBuilder to the DataTables 1.13-compatible line and loading the public extension stack in dependency order.
-- **Public games Date column semantics corrected** so SearchBuilder date conditions and column sorting use ISO-backed `<time datetime>` metadata while preserving the long-form display string.
-- **Public games Date column width constrained during filtering** so SearchBuilder interactions no longer let the first column grow arbitrarily on desktop or mobile.
+- **Admin auth and redirect regressions**: resolved redirect flow issues, delete-route guards, and navigation regressions in the admin area.
+- **Ad lifecycle and script issues**: fixed duplicate script handling, size-observer behavior, responsive slot layout, and legacy markup cleanup.
+- **Service worker and PWA reliability**: hardened registration timing and fallback behavior across browser startup conditions, with CI-safe test handling.
+- **Frontend and test stability**: corrected DataTables date semantics, column width issues, dashboard layout assertions, and a range of Playwright/Jest regressions.
+- **Data integrity and user management**: normalized social links to valid JSON, preserved validation context during user save failures, and improved backup handling for settings changes.
+- **Page rendering and performance issues**: improved image fallback handling, blog rendering, and layout consistency across public pages.
+
+### Security
+
+- **Hardened admin authorization**: user and identity-scoped enforcement for privileged actions and bulk operations.
+- **Improved validation**: safer upload handling, stricter request checks, and better protection against partial config resets.
+- **Production hardening**: debug leakage prevention, stricter configuration checks, and safer deployment validation.
 
 ### Removed
 
@@ -261,7 +261,7 @@ First beta release — application is feature-complete for initial production de
 
 Links:
 
-- [Unreleased]: https://github.com/aught13/racerhistory/compare/v0.2.0-beta...HEAD
+- [4.0.0]: https://github.com/aught13/racerhistory/compare/v0.2.0-beta...v4.0.0
 - [0.2.0-beta]: https://github.com/aught13/racerhistory/compare/v0.1.9-alpha...v0.2.0-beta
 - [0.1.9-alpha]: https://github.com/aught13/racerhistory/compare/v0.1.6-alpha...v0.1.9-alpha
 - [0.1.6-alpha]: https://github.com/aught13/racerhistory/compare/v0.1.5-alpha...v0.1.6-alpha
