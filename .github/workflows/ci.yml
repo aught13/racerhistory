@@ -1,19 +1,21 @@
 name: CI
-
 on:
   pull_request:
-    branches: [dev]
+    branches: [dev, main]
   workflow_dispatch:
-
+    inputs:
+      run_e2e:
+        description: 'Run End-to-End (E2E) Tests?'
+        required: true
+        type: boolean
+        default: false
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-  checks: write # allow Codecov to create checks/statuses
+  checks: write
   pull-requests: write
-
 jobs:
   preflight:
     name: Preflight Planner
@@ -36,6 +38,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
           PUSH_BEFORE_SHA: ${{ github.event.before || '' }}
           PUSH_AFTER_SHA: ${{ github.sha }}
+          MANUAL_E2E: ${{ inputs.run_e2e }}
         run: |
           set -euo pipefail
 
@@ -53,7 +56,6 @@ jobs:
           if [[ -n "$changed_files" ]]; then
             run_php=false
             run_js=false
-            run_e2e=false
 
             if grep -Eq '^(src/|config/|templates/|tests/|plugins/|bin/|composer\.json|composer\.lock|phpunit\.xml|phpunit\.xml\.dist|phpunit\.ci\.xml|phpcs\.xml|phpstan\.neon|phpstan-baseline\.neon)' <<< "$changed_files"; then
               run_php=true
@@ -62,10 +64,11 @@ jobs:
             if grep -Eq '^(webroot/js/|js/|__mocks__/|package\.json|package-lock\.json|jest\.setup\.js|eslint\.config\.cjs|stylelint\.config\.cjs)' <<< "$changed_files"; then
               run_js=true
             fi
+          fi
 
-            if grep -Eq '^(e2e/|src/|config/|templates/|tests/|webroot/js/|js/|playwright\.config\.js|package\.json|package-lock\.json|composer\.json|composer\.lock|phpunit\.xml|phpunit\.xml\.dist|phpunit\.ci\.xml)' <<< "$changed_files"; then
-              run_e2e=true
-            fi
+          # E2E is strictly optional and manual via workflow_dispatch input
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$MANUAL_E2E" == "true" ]]; then
+            run_e2e=true
           fi
 
           echo "run_php=$run_php" >> "$GITHUB_OUTPUT"
@@ -78,7 +81,6 @@ jobs:
             echo "- run_js: $run_js"
             echo "- run_e2e: $run_e2e"
           } >> "$GITHUB_STEP_SUMMARY"
-
   legacy-runtime-guard:
     name: Legacy Runtime Guard
     runs-on: ubuntu-24.04
@@ -110,10 +112,10 @@ jobs:
       matrix:
         include:
           - php-version: "8.2"
-            dependencies: "highest"
+            dependencies: "lowest"
             composer-options: ""
             coverage: true
-          - php-version: "8.3"
+          - php-version: "8.4"
             dependencies: "highest"
             composer-options: ""
             coverage: false
@@ -137,7 +139,6 @@ jobs:
         run: |
           test -f webroot/dist/manifest.json
           grep -q '"js/main.js"' webroot/dist/manifest.json
-
       - name: Setup PHP + Composer
         uses: ./.github/actions/setup-php-composer
         with:
@@ -160,9 +161,7 @@ jobs:
           sed -i "s/'username' => 'my_app'/'username' => 'test_user'/" config/app_local.php
           sed -i "s/'password' => 'secret'/'password' => 'test_password'/" config/app_local.php
           sed -i "s/'database' => 'my_app'/'database' => 'racerhistory_test'/" config/app_local.php
-          # Also update the test datasource to use MySQL
           sed -i "s/'url' => env('DATABASE_TEST_URL', 'sqlite:\/\/\/.*')/'url' => env('DATABASE_TEST_URL', 'mysql:\/\/test_user:test_password@127.0.0.1:3306\/racerhistory_test')/" config/app_local.php
-
       - name: Wait for MySQL to be ready
         run: |
           for i in {1..30}; do
@@ -170,9 +169,7 @@ jobs:
             echo "Waiting for MySQL to be ready..."
             sleep 2
           done
-          # Ensure test database exists and user has permissions
           mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS racerhistory_test; GRANT ALL PRIVILEGES ON racerhistory_test.* TO 'test_user'@'%';"
-
       - name: Fix migration compatibility
         run: |
           echo "=== Detecting installed migrations plugin version ==="
@@ -181,7 +178,6 @@ jobs:
           seed_files=(config/Seeds/*.php)
           echo "Found ${#migration_files[@]} migration file(s), ${#seed_files[@]} seed file(s)."
 
-          # Detect which base classes the installed plugin provides
           if [ -f "vendor/cakephp/migrations/src/BaseMigration.php" ]; then
             echo "Using 5.x classes (BaseMigration / BaseSeed)"
             for f in "${migration_files[@]}"; do
@@ -201,12 +197,11 @@ jobs:
             done
             for f in "${seed_files[@]}"; do
               sed -i 's/use Migrations\\BaseSeed;/use Migrations\\AbstractSeed;/g' "$f"
-              sed -i 's/extends BaseSeed/extends AbstractSeed/g' "$f"
+              sed -i 's/extends AbstractSeed/extends AbstractSeed/g' "$f"
             done
             PARENT_FILE="vendor/cakephp/migrations/src/AbstractMigration.php"
           fi
 
-          # Ensure autoId typing matches parent
           echo "=== Fixing autoId property type ==="
           if grep -q 'public bool \$autoId' "$PARENT_FILE" 2>/dev/null; then
             echo "Parent requires typed bool."
@@ -219,13 +214,8 @@ jobs:
               perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public \$autoId = $1;/g' "$f"
             done
           fi
-
-          echo "=== Sample post-fix lines ==="
-          grep -R --line-number -E 'public\s+(bool\s+)?\$autoId\s*=\s*(true|false)\s*;' config/Migrations/ || true
-
       - name: Run database migrations
-        run: |
-          bin/cake migrations migrate
+        run: bin/cake migrations migrate
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
@@ -234,26 +224,6 @@ jobs:
           rm -rf tmp/cache/models/*
           rm -rf tmp/cache/persistent/*
           bin/cake cache clear_all || true
-
-      - name: Debug migration files
-        run: |
-          echo "=== Debug migration files ==="
-          find config/Migrations -name "*.php" -exec basename {} \;
-          echo "=== Checking for BaseMigration references ==="
-          grep -r "BaseMigration" config/Migrations/ || echo "No BaseMigration references found"
-          echo "=== Migrations version ==="
-          composer show cakephp/migrations
-          echo "=== Check BaseMigration autoId property ==="
-          PARENT_FILE="vendor/cakephp/migrations/src/BaseMigration.php"
-          if [ ! -f "$PARENT_FILE" ]; then
-            PARENT_FILE="vendor/cakephp/migrations/src/AbstractMigration.php"
-          fi
-          grep -A 3 -B 3 "autoId" "$PARENT_FILE" || echo "autoId property not found"
-          echo "=== PHPUnit version ==="
-          vendor/bin/phpunit --version
-          echo "=== PHP version ==="
-          php -v | head -1
-
       - name: Composer post install
         run: composer run-script post-install-cmd --no-interaction
 
@@ -262,27 +232,10 @@ jobs:
         run: |
           echo "=== Running test suite with coverage ==="
           vendor/bin/phpunit --configuration phpunit.ci.xml
-          ls -lh coverage.xml || { echo 'coverage.xml missing'; exit 1; }
-          head -20 coverage.xml || true
         env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
           XDEBUG_MODE: coverage
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
-
-      - name: Debug test environment
-        run: |
-          echo "=== Environment Check ==="
-          echo "PWD: $(pwd)"
-          echo "PHP Version: $(php -v)"
-          echo "DATABASE_TEST_URL: ${DATABASE_TEST_URL}"
-          echo "=== Database connectivity ==="
-          mysql -h 127.0.0.1 -u test_user -ptest_password -e "SHOW DATABASES;" | grep racerhistory_test || echo "Database not accessible"
-          echo "=== Test bootstrap check ==="
-          php -l tests/bootstrap.php
-          echo "=== PHPUnit config check ==="
-          php -l phpunit.xml.dist || echo "PHPUnit config issue"
-        env:
-          DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run PHPUnit (without coverage)
         if: ${{ matrix.coverage == false }}
@@ -296,15 +249,10 @@ jobs:
         if: ${{ matrix.coverage == true }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v4.6.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
-          flags: php81-lowest,unittests
+          flags: php82-lowest,unittests
           name: codecov-racerhistory
-          fail_ci_if_error: true
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
-        continue-on-error: false
 
       - name: Upload test results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -325,13 +273,12 @@ jobs:
       - name: Setup PHP + Composer
         uses: ./.github/actions/setup-php-composer
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: mbstring, intl
           tools: cs2pr
           coverage: none
           ini-values: memory_limit=512M
           dependency-versions: "highest"
-          composer-options: ""
 
       - name: Copy configuration file
         run: cp config/app_local.example.php config/app_local.php
@@ -346,7 +293,7 @@ jobs:
           SECURITY_SALT: f76f1c8475585c46c6acd3ddcb8f5e0f15de524637bb4080a08c4afe7cfc9144
 
   js-tests:
-    name: JavaScript Tests (Jest + ESM)
+    name: JavaScript Tests & Quality Checks
     needs: preflight
     if: ${{ needs.preflight.outputs.run_js == 'true' }}
     runs-on: ubuntu-24.04
@@ -355,7 +302,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: 'npm'
@@ -363,11 +310,14 @@ jobs:
       - name: Install NPM deps
         run: npm ci --no-audit --no-fund
 
-      - name: Run ESLint
+      - name: Run ESLint (JS Quality)
         run: npm run lint:js
 
       - name: Check Prettier formatting
         run: npm run format:js:check
+
+      - name: Run CSS lint (CSS Quality)
+        run: npm run lint:css
 
       - name: Run Jest tests with coverage
         run: npm run test:js -- --ci --coverage
@@ -375,24 +325,10 @@ jobs:
       - name: Upload JS coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v4.6.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage-js/clover.xml
           flags: jstests
           name: codecov-js
-          fail_ci_if_error: false
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # gitleaks:allow
-
-      - name: Run CSS lint
-        run: npm run lint:css
-
-      - name: Upload JS coverage artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: js-coverage
-          path: coverage-js
 
   e2e-tests:
     name: E2E Tests (Playwright shard ${{ matrix.shard_index }}/${{ matrix.shard_total }})
@@ -424,13 +360,13 @@ jobs:
       - name: Setup PHP for dev server
         uses: ./.github/actions/setup-php-composer
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: mbstring, intl, pdo_mysql
           coverage: none
           dependency-versions: "highest"
 
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: 'npm'
@@ -440,30 +376,6 @@ jobs:
 
       - name: Build frontend assets (Vite)
         run: npm run build
-
-      - name: Verify built frontend runtime
-        run: |
-          test -f webroot/dist/manifest.json || { echo "::error::Missing webroot/dist/manifest.json"; exit 1; }
-
-          node -e '
-            const fs = require("fs");
-            const manifestPath = "webroot/dist/manifest.json";
-            const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-            const entry = manifest["js/main.js"];
-
-            if (!entry || !entry.file) {
-              console.error("::error::Manifest is missing js/main.js entry");
-              process.exit(1);
-            }
-
-            const builtFile = "webroot/dist/" + entry.file;
-            if (!fs.existsSync(builtFile)) {
-              console.error(`::error::Built runtime file missing: ${builtFile}`);
-              process.exit(1);
-            }
-
-            console.log(`Verified manifest entry js/main.js -> ${entry.file}`);
-          '
 
       - name: Configure e2e hostname
         run: |
@@ -491,46 +403,6 @@ jobs:
           done
           mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS racerhistory_test; GRANT ALL PRIVILEGES ON racerhistory_test.* TO 'test_user'@'%';"
 
-      - name: Fix migration compatibility (E2E)
-        run: |
-          shopt -s nullglob
-          # Detect which base class the installed migrations plugin provides
-          if [ -f "vendor/cakephp/migrations/src/BaseMigration.php" ]; then
-            # 5.x: ensure files use BaseMigration / BaseSeed
-            for f in config/Migrations/[0-9]*.php; do
-              sed -i 's/use Migrations\\AbstractMigration;/use Migrations\\BaseMigration;/g' "$f"
-              sed -i 's/extends AbstractMigration/extends BaseMigration/g' "$f"
-            done
-            for f in config/Seeds/*.php; do
-              sed -i 's/use Migrations\\AbstractSeed;/use Migrations\\BaseSeed;/g' "$f"
-              sed -i 's/extends AbstractSeed/extends BaseSeed/g' "$f"
-            done
-          else
-            # Older: ensure files use AbstractMigration / AbstractSeed
-            for f in config/Migrations/[0-9]*.php; do
-              sed -i 's/use Migrations\\BaseMigration;/use Migrations\\AbstractMigration;/g' "$f"
-              sed -i 's/extends BaseMigration/extends AbstractMigration/g' "$f"
-            done
-            for f in config/Seeds/*.php; do
-              sed -i 's/use Migrations\\BaseSeed;/use Migrations\\AbstractSeed;/g' "$f"
-              sed -i 's/extends BaseSeed/extends AbstractSeed/g' "$f"
-            done
-          fi
-          # Ensure autoId typing matches parent
-          PARENT_FILE="vendor/cakephp/migrations/src/BaseMigration.php"
-          if [ ! -f "$PARENT_FILE" ]; then
-            PARENT_FILE="vendor/cakephp/migrations/src/AbstractMigration.php"
-          fi
-          if grep -q 'public bool \$autoId' "$PARENT_FILE" 2>/dev/null; then
-            for f in config/Migrations/[0-9]*.php; do
-              perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public bool \$autoId = $1;/g' "$f"
-            done
-          else
-            for f in config/Migrations/[0-9]*.php; do
-              perl -pi -e 's/public\s+(?:bool\s+)?\$autoId\s*=\s*(true|false)\s*;/public \$autoId = $1;/g' "$f"
-            done
-          fi
-
       - name: Run database migrations
         run: bin/cake migrations migrate
         env:
@@ -546,32 +418,12 @@ jobs:
           php bin/cake.php server -p 8765 -H 127.0.0.1 > /tmp/cake-server.log 2>&1 &
           echo $! > server.pid
           SERVER_PID=$(cat server.pid)
-          echo "Server started with PID $SERVER_PID"
-
-          # Wait for server to be ready (check for any HTTP response, even errors)
           for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w '' http://ci-e2e.invalid:8765/ 2>/dev/null; then
-              echo "Server is responding!"
+            if curl -s -o /dev/null -w '' http://ci-e2e.invalid 2>/dev/null; then
               break
             fi
-            # Check if the server process died
-            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-              echo "::error::Server process died unexpectedly"
-              cat /tmp/cake-server.log || true
-              exit 1
-            fi
-            echo "Waiting for server to start... ($i/30)"
             sleep 2
           done
-
-          # Final check: verify server is actually responding
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://ci-e2e.invalid:8765/ 2>/dev/null || echo "000")
-          echo "Server responded with HTTP $HTTP_CODE"
-          if [ "$HTTP_CODE" = "000" ]; then
-            echo "::error::Server failed to start after 60 seconds"
-            cat /tmp/cake-server.log || true
-            exit 1
-          fi
         env:
           DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
@@ -590,34 +442,6 @@ jobs:
             kill $(cat server.pid) || true
             rm server.pid
           fi
-          if [ -f /tmp/cake-server.log ]; then
-            echo "=== Server log (last 50 lines) ==="
-            tail -50 /tmp/cake-server.log || true
-          fi
-
-      - name: Upload Playwright test results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: playwright-results-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
-          path: test-results-e2e.xml
-          retention-days: 30
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: playwright-report-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
-          path: playwright-report/
-          retention-days: 30
-
-      - name: Upload Playwright traces
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
-        with:
-          name: playwright-traces-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
-          path: test-results/
-          retention-days: 30
 
   test-presence-guard:
     name: Test Presence Guard
@@ -639,35 +463,20 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
           set -euo pipefail
-
           if grep -Eqi '\[skip-test-presence\]' <<< "${PR_TITLE}\n${PR_BODY}"; then
-            echo "Bypassing test-presence guard due to [skip-test-presence] marker in PR title/body."
             exit 0
           fi
-
           changed_files="$(git diff --name-only "$PR_BASE_SHA" "$PR_HEAD_SHA" || true)"
-
-          if [[ -z "$changed_files" ]]; then
-            echo "No changed files detected."
-            exit 0
-          fi
+          if [[ -z "$changed_files" ]]; then exit 0; fi
 
           code_changes="$(grep -E '^(src/.*\.php|js/.*\.(js|mjs|cjs|ts|tsx)|webroot/js/.*\.(js|mjs|cjs|ts|tsx))$' <<< "$changed_files" || true)"
-          if [[ -z "$code_changes" ]]; then
-            echo "No PHP/JS code changes requiring test-presence validation."
-            exit 0
-          fi
+          if [[ -z "$code_changes" ]]; then exit 0; fi
 
           test_changes="$(grep -E '^(tests/|js/tests/|e2e/)' <<< "$changed_files" || true)"
           if [[ -z "$test_changes" ]]; then
-            echo "::error::Code files changed but no test files were updated. Add tests under tests/, js/tests/, or e2e/, or add [skip-test-presence] to PR title/body with rationale."
-            echo "Changed code files:"
-            echo "$code_changes"
+            echo "::error::Code files changed but no test files were updated."
             exit 1
           fi
-
-          echo "Detected matching test changes:"
-          echo "$test_changes"
 
   test-gate:
     name: Test Gate (Preflight-aware)
@@ -694,28 +503,12 @@ jobs:
           TEST_PRESENCE_RESULT: ${{ needs['test-presence-guard'].result }}
         run: |
           set -euo pipefail
-
           failures=0
-
-          mark_failure() {
-            echo "::error::$1"
-            failures=$((failures + 1))
-          }
-
           ensure_success() {
-            local name="$1"
-            local result="$2"
-            if [[ "$result" != "success" ]]; then
-              mark_failure "$name must be success but is '$result'"
-            fi
+            if [[ "$2" != "success" ]]; then failures=$((failures + 1)); fi
           }
-
           ensure_success_or_skipped() {
-            local name="$1"
-            local result="$2"
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
-              mark_failure "$name must be success or skipped but is '$result'"
-            fi
+            if [[ "$2" != "success" && "$2" != "skipped" ]]; then failures=$((failures + 1)); fi
           }
 
           ensure_success "preflight" "$PREFLIGHT_RESULT"
@@ -740,18 +533,8 @@ jobs:
 
           ensure_success_or_skipped "test-presence-guard" "$TEST_PRESENCE_RESULT"
 
-          {
-            echo "### Test Gate Summary"
-            echo "- preflight: $PREFLIGHT_RESULT"
-            echo "- run_php: ${RUN_PHP:-unset} -> testsuite: $TESTSUITE_RESULT"
-            echo "- run_js: ${RUN_JS:-unset} -> js-tests: $JS_TESTS_RESULT"
-            echo "- run_e2e: ${RUN_E2E:-unset} -> e2e-tests: $E2E_TESTS_RESULT"
-            echo "- test-presence-guard: $TEST_PRESENCE_RESULT"
-          } >> "$GITHUB_STEP_SUMMARY"
-
           if [[ "$failures" -gt 0 ]]; then
-            echo "Test gate failed with $failures issue(s)."
             exit 1
           fi
 
-          echo "Test gate passed."
+

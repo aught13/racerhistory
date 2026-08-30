@@ -173,6 +173,37 @@ class UsersControllerTest extends TestCase
     }
 
     /**
+     * Saved social links should render in the manage form as one value per line.
+     */
+    public function testManageFormDisplaysSocialLinksOnePerLine(): void
+    {
+        $table = $this->getTableLocator()->get('Users');
+        $user = $table->get(3);
+        $user = $table->patchEntity($user, [
+            'social_links' => '["https://github.com/aught13","https://twitter.com/racerhistory"]',
+        ], ['fields' => ['social_links']]);
+        $table->saveOrFail($user);
+
+        $this->loginAsAdmin();
+        $this->get('/admin/users/manage/3');
+        $this->assertResponseOk();
+        $this->assertResponseContains('https://github.com/aught13');
+        $this->assertResponseContains('https://twitter.com/racerhistory');
+        $this->assertResponseContains("https://github.com/aught13\nhttps://twitter.com/racerhistory");
+    }
+
+    /**
+     * The manage form must break out of the admin turbo frame so redirects work.
+     */
+    public function testManageFormUsesTopLevelTurboTarget(): void
+    {
+        $this->loginAsAdmin();
+        $this->get('/admin/users/manage/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('data-turbo-frame="_top"');
+    }
+
+    /**
      * Tests approve.
      */
     public function testApprove(): void
@@ -436,6 +467,7 @@ class UsersControllerTest extends TestCase
         $updated = $this->getTableLocator()->get('Users')->get(3);
         $this->assertSame('JSON Social User', (string)$updated->display_name);
         $this->assertSame(3, (int)$updated->role_id);
+        $this->assertSame('["https://github.com/aught13","https://twitter.com/racerhistory"]', (string)$updated->social_links);
     }
 
     /**
