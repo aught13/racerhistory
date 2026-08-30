@@ -114,10 +114,10 @@ class DeployAuditService
         $ver = $major . '.' . $minor . '.' . PHP_RELEASE_VERSION;
 
         /** @phpstan-ignore-next-line */
-        if ($major >= 8 && $minor >= 1) {
+        if ($major >= 8 && $minor >= 2) {
             $this->ok($cat, "PHP {$ver}");
         } else {
-            $this->fail($cat, "PHP {$ver} — requires 8.1+");
+            $this->fail($cat, "PHP {$ver} — requires 8.2+");
         }
     }
 
@@ -235,7 +235,6 @@ class DeployAuditService
             'tmp', 'logs', 'tmp' . DS . 'cache',
             'tmp' . DS . 'cache' . DS . 'models',
             'tmp' . DS . 'cache' . DS . 'persistent',
-            'tmp' . DS . 'sessions',
             'webroot' . DS . 'img' . DS . 'storage',
         ];
         foreach ($dirs as $dir) {
@@ -389,13 +388,6 @@ class DeployAuditService
                     $this->fail($cat, 'Vite manifest missing js/main.js entry');
                 }
             }
-        }
-
-        // TinyMCE
-        if (is_dir(ROOT . DS . 'webroot' . DS . 'js' . DS . 'tinymce')) {
-            $this->ok($cat, 'TinyMCE library present');
-        } else {
-            $this->warn($cat, 'webroot/js/tinymce/ not found', 'Admin rich text editors will fail');
         }
     }
 }
