@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use App\Service\SocialImageService;
+
 /**
  * @var \App\Model\Entity\Person $person
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
@@ -24,12 +26,40 @@ $nickname = (string)($person->nickname ?? '');
 $birth = $person->birth ?? null;
 $death = $person->death ?? null;
 $this->assign('title', $name);
+$this->assign('socialTitle', $name);
+$this->assign('socialDescription', 'Player profile for ' . $name . ' on RacerHistory.');
 
 $heroImageId = null;
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
     $heroImageId = (int)$person->person_image;
 } elseif (!empty($images) && !empty($images[0]->id)) {
     $heroImageId = (int)$images[0]->id;
+}
+
+$socialImageCandidates = [];
+if ($heroImageId) {
+    $heroImageUrl = $this->ImageServe->url($heroImageId, ['variant' => 'medium']);
+    if ($heroImageUrl !== '') {
+        $socialImageCandidates[] = $heroImageUrl;
+    }
+}
+if (empty($socialImageCandidates) && !empty($images)) {
+    foreach ($images as $personImage) {
+        if (!isset($personImage->id) || (int)$personImage->id <= 0) {
+            continue;
+        }
+
+        $personSocialImageUrl = $this->ImageServe->url((int)$personImage->id, ['variant' => 'medium']);
+        if ($personSocialImageUrl !== '') {
+            $socialImageCandidates[] = $personSocialImageUrl;
+        }
+    }
+}
+if (!empty($socialImageCandidates)) {
+    $filteredCandidates = SocialImageService::filterCandidates($socialImageCandidates);
+    if (!empty($filteredCandidates)) {
+        $this->assign('socialImageUrl', $this->Url->build($filteredCandidates[0], ['fullBase' => true]));
+    }
 }
 
 $teams = [];

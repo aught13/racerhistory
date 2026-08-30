@@ -98,6 +98,8 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Game Log');
         $this->assertResponseContains('data-controller="season-view"');
+        $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
+        $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
     }
 
     /**

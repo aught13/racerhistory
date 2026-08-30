@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use App\Service\SocialImageService;
+
 /**
  * @var \App\Model\Entity\Game $game
  * @var array<string,mixed> $eav
@@ -75,6 +77,27 @@ if (!empty($game->game_time)) {
 }
 
 $this->assign('title', sprintf('%s vs %s', $teamNickname, $opponentName));
+$this->assign('socialTitle', sprintf('%s vs %s', $teamNickname, $opponentName));
+$this->assign('socialDescription', sprintf('%s %s %s at %s on RacerHistory.', $teamNickname, $game->pts_mur ?? '', $opponentName, $gameDate ?: 'the date listed'));
+if (!empty($images)) {
+    $gameSocialImageCandidates = [];
+    foreach ($images as $gameImage) {
+        if (!isset($gameImage->id) || (int)$gameImage->id <= 0) {
+            continue;
+        }
+
+        $gameImageUrl = $this->ImageServe->url((int)$gameImage->id, []);
+        if ($gameImageUrl !== '') {
+            $gameSocialImageCandidates[] = $gameImageUrl;
+        }
+    }
+    if (!empty($gameSocialImageCandidates)) {
+        $filteredCandidates = SocialImageService::filterCandidates($gameSocialImageCandidates);
+        if (!empty($filteredCandidates)) {
+            $this->assign('socialImageUrl', $this->Url->build($filteredCandidates[0], ['fullBase' => true]));
+        }
+    }
+}
 
 $this->start('css'); ?>
 <?php $this->end(); ?>

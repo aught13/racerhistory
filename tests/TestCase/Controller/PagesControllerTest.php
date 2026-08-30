@@ -43,6 +43,8 @@ class PagesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('RacerHistory');
         $this->assertResponseContains('<html>');
+        $this->assertResponseContains('property="og:image"');
+        $this->assertResponseContains('/img/logo.png');
     }
 
     /**

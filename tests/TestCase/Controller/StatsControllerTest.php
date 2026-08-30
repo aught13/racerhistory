@@ -44,6 +44,8 @@ class StatsControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Statistics');
         $this->assertResponseContains('stats-type-cards');
+        $this->assertResponseContains('property="og:image"');
+        $this->assertResponseContains('/img/logo.png');
     }
 
     /**
