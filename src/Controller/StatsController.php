@@ -103,6 +103,7 @@ class StatsController extends AppController
     {
         parent::beforeRender($event);
         $this->set('statTypes', $this->statTypes);
+        $this->set('socialImageUrl', Router::url('/img/logo.png', true));
     }
 
     /**

@@ -12,6 +12,22 @@ declare(strict_types=1);
  */
 
 $this->assign('title', h($post->title));
+$this->assign('socialTitle', (string)$post->title);
+
+$excerpt = trim((string)($post->excerpt ?? ''));
+if ($excerpt === '') {
+    $excerpt = trim((string)preg_replace('/\s+/', ' ', strip_tags((string)($post->body ?? ''))));
+}
+if ($excerpt !== '') {
+    $this->assign('socialDescription', $excerpt);
+}
+
+if (!empty($post->hero_image_id)) {
+    $heroImageUrl = $this->ImageServe->url((int)$post->hero_image_id, ['profile' => 'blog_featured']);
+    if ($heroImageUrl !== '') {
+        $this->assign('socialImageUrl', $this->Url->build($heroImageUrl, ['fullBase' => true]));
+    }
+}
 ?>
 <?php $this->start('css'); ?>
 <?= $this->Html->css('blog-content') ?>

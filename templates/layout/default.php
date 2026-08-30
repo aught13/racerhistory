@@ -27,6 +27,7 @@
  */
 
 use App\Service\RbacPermissionService;
+use App\Service\SocialImageService;
 
 ?>
 <!DOCTYPE html>
@@ -37,6 +38,48 @@ $htmlThemeAttribute = in_array($themeCookie, ['light', 'dark'], true)
     : '';
 $content = $this->fetch('content');
 $flash = $this->Flash->render();
+$socialTitle = trim((string)$this->fetch('socialTitle'));
+if ($socialTitle === '') {
+    $socialTitle = trim((string)$this->fetch('title'));
+}
+if ($socialTitle === '') {
+    $socialTitle = 'RacerHistory';
+}
+
+$socialDescription = trim((string)$this->fetch('socialDescription'));
+if ($socialDescription === '') {
+    $socialDescription = 'RacerHistory tracks players, teams, games, and stat leaders from across the sport.';
+}
+
+$socialImageUrl = trim((string)$this->fetch('socialImageUrl'));
+if ($socialImageUrl !== '' && SocialImageService::isAdCandidate($socialImageUrl)) {
+    $socialImageUrl = '';
+}
+if ($socialImageUrl === '') {
+    $socialCandidates = $this->fetch('socialImageCandidates');
+    $candidateList = [];
+    if (is_array($socialCandidates)) {
+        $candidateList = $socialCandidates;
+    } elseif (is_string($socialCandidates) && $socialCandidates !== '') {
+        $candidateList = array_values(array_filter(array_map('trim', explode(',', $socialCandidates))));
+    }
+
+    foreach (SocialImageService::filterCandidates($candidateList) as $candidateUrl) {
+        $socialImageUrl = $candidateUrl;
+        if (!preg_match('/^https?:\/\//i', $socialImageUrl)) {
+            $socialImageUrl = $this->Url->build($socialImageUrl, ['fullBase' => true]);
+        }
+        break;
+    }
+}
+
+if ($socialImageUrl === '') {
+    $socialImageUrl = $this->Url->build('/img/logo.png', ['fullBase' => true]);
+} elseif (!preg_match('/^https?:\/\//i', $socialImageUrl)) {
+    $socialImageUrl = $this->Url->build($socialImageUrl, ['fullBase' => true]);
+}
+
+$currentUrl = $this->Url->build($this->request->getRequestTarget(), ['fullBase' => true]);
 ?>
 <html<?= $htmlThemeAttribute ?>>
 
@@ -49,6 +92,20 @@ $flash = $this->Flash->render();
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RacerHistory">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="<?= h($socialTitle) ?>">
+    <meta property="og:description" content="<?= h($socialDescription) ?>">
+    <meta property="og:url" content="<?= h($currentUrl) ?>">
+    <meta property="og:image" content="<?= h($socialImageUrl) ?>">
+    <meta property="og:image:alt" content="<?= h($socialTitle) ?>">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="<?= h($socialTitle) ?>">
+    <meta property="twitter:description" content="<?= h($socialDescription) ?>">
+    <meta property="twitter:image" content="<?= h($socialImageUrl) ?>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= h($socialTitle) ?>">
+    <meta name="twitter:description" content="<?= h($socialDescription) ?>">
+    <meta name="twitter:image" content="<?= h($socialImageUrl) ?>">
     <link rel="manifest" href="<?= $this->Url->build('/manifest.webmanifest') ?>">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $this->Url->build('/img/apple-touch-icon-180.png') ?>">
     <title>

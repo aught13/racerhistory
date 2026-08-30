@@ -63,6 +63,7 @@
         <div class="rh-footer-inner">
             <div class="rh-footer-copy">
                 <span class="text-muted">&copy; <?= date('Y') ?> RacerHistory</span>
+                <span class="text-muted">RacerHistory is in independent development and is not associated with any official sports organizations.</span>
             </div>
             <div class="rh-footer-controls">
                 <button
@@ -74,6 +75,9 @@
                     <i class="bi bi-circle-half" aria-hidden="true"></i>
                     <span class="ms-1" data-theme-toggle-target="label">System</span>
                 </button>
+            </div>
+            <div class="rh-footer-links">
+                <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'login']) ?>"><i class="fa-solid fa-arrow-right-to-bracket"></i> Login</a>
             </div>
         </div>
     </footer>

@@ -42,6 +42,8 @@ class BlogControllerTest extends TestCase
         $this->assertResponseContains('First Post');
         $this->assertResponseContains('<turbo-frame id="blog-post-view"');
         $this->assertResponseContains('/img/storage/');
+        $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
+        $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
     }
 
     /**
