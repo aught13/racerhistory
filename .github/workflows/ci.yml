@@ -231,7 +231,8 @@ jobs:
         if: ${{ matrix.coverage == true }}
         run: |
           echo "=== Running test suite with coverage ==="
-          vendor/bin/phpunit --configuration phpunit.ci.xml        env:
+          vendor/bin/phpunit --configuration phpunit.ci.xml
+        env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
           XDEBUG_MODE: coverage
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -240,7 +241,8 @@ jobs:
         if: ${{ matrix.coverage == false }}
         run: |
           echo "=== Running PHPUnit without coverage (default config) ==="
-          vendor/bin/phpunit        env:
+          vendor/bin/phpunit
+        env:
           DATABASE_TEST_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 
       - name: Upload coverage reports to Codecov
