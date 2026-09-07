@@ -2782,16 +2782,16 @@
         },
         {
             "name": "tinymce/tinymce",
-            "version": "8.8.2",
+            "version": "8.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tinymce/tinymce-dist.git",
-                "reference": "e985cd41c60ecda5b7f92cec73fe8f234a6f32ff"
+                "reference": "091dfa397f303c8330a970f52946d9a4b89ac87e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tinymce/tinymce-dist/zipball/e985cd41c60ecda5b7f92cec73fe8f234a6f32ff",
-                "reference": "e985cd41c60ecda5b7f92cec73fe8f234a6f32ff",
+                "url": "https://api.github.com/repos/tinymce/tinymce-dist/zipball/091dfa397f303c8330a970f52946d9a4b89ac87e",
+                "reference": "091dfa397f303c8330a970f52946d9a4b89ac87e",
                 "shasum": ""
             },
             "type": "component",
@@ -2835,9 +2835,9 @@
                 "wysiwyg"
             ],
             "support": {
-                "source": "https://github.com/tinymce/tinymce-dist/tree/8.8.2"
+                "source": "https://github.com/tinymce/tinymce-dist/tree/8.9.0"
             },
-            "time": "2026-07-27T04:10:15+00:00"
+            "time": "2026-08-31T03:52:44+00:00"
         }
     ],
     "packages-dev": [
