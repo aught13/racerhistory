@@ -48,6 +48,26 @@ class PagesControllerTest extends TestCase
     }
 
     /**
+     * The public privacy page contains the required Google advertising disclosures.
+     */
+    public function testPrivacyPageContainsGoogleAdvertisingDisclosures(): void
+    {
+        Configure::write('debug', true);
+        $this->get('/privacy');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Privacy Policy');
+        $this->assertResponseContains('Google AdSense and Google Ad Manager');
+        $this->assertResponseContains('prior visits to this website or other websites');
+        $this->assertResponseContains('Google Ads Settings');
+        $this->assertResponseContains('aboutads.info');
+        $this->assertResponseContains('ad technology partners');
+        $this->assertResponseContains('cc_cookie');
+        $this->assertResponseContains('Manage privacy choices');
+        $this->assertResponseContains('href="/privacy"');
+    }
+
+    /**
      * Test that missing template renders 404 page in production
      *
      * @return void

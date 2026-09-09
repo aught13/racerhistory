@@ -53,7 +53,12 @@ class SiteOptionsControllerTest extends TestCase
         $this->assertResponseContains('System Support Email Address');
         $this->assertResponseContains('Ads - Global Script');
         $this->assertResponseContains('Ads - Below Nav (Display Ad): Active');
-        $this->assertResponseContains('Ads - News Sidebar 2 (Multiplex Ad): Google AdSense Mode');
+        $this->assertResponseContains('News Sidebar 2');
+        $this->assertResponseContains('Delivery Mode');
+        $this->assertResponseContains('Enter one or more width x height presets');
+        $this->assertResponseContains('Do not enter JSON');
+        $this->assertResponseContains('970x250, 728x90');
+        $this->assertResponseNotContains('Google AdSense Mode');
     }
 
     /**

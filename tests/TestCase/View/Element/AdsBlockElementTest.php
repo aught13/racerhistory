@@ -70,6 +70,8 @@ class AdsBlockElementTest extends TestCase
         $this->assertStringContainsString('data-controller="ad-delivery"', $output);
         $this->assertStringContainsString('data-google-mode="0"', $output);
         $this->assertStringContainsString('data-ad-delivery-mode-value="custom"', $output);
+        $this->assertStringContainsString('data-ad-delivery-sizes-desktop-value="[]"', $output);
+        $this->assertStringContainsString('data-ad-delivery-sizes-mobile-value="[]"', $output);
         $this->assertStringContainsString('<template data-ad-delivery-target="template"><div class="ad-content">Ad</div></template>', $output);
     }
 

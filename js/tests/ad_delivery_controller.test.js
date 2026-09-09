@@ -6,6 +6,7 @@ import AdDeliveryController from "../controllers/ad_delivery_controller.js";
 
 describe("ad-delivery controller", () => {
     let application;
+    let checkAdBlocker;
 
     const flush = async () => {
         await Promise.resolve();
@@ -16,6 +17,10 @@ describe("ad-delivery controller", () => {
         document.body.innerHTML = "";
         delete window.adsbygoogle;
         delete window.googletag;
+        checkAdBlocker = AdDeliveryController.prototype.checkAdBlocker;
+        AdDeliveryController.prototype.checkAdBlocker = jest
+            .fn()
+            .mockResolvedValue(false);
     });
 
     afterEach(() => {
@@ -27,6 +32,7 @@ describe("ad-delivery controller", () => {
         document.body.innerHTML = "";
         delete window.adsbygoogle;
         delete window.googletag;
+        AdDeliveryController.prototype.checkAdBlocker = checkAdBlocker;
     });
 
     test("renders custom template content on connect", async () => {
@@ -151,5 +157,101 @@ describe("ad-delivery controller", () => {
         }).not.toThrow();
 
         await flush();
+    });
+
+    test("renders a fallback and skips provider markup when blocked", async () => {
+        AdDeliveryController.prototype.checkAdBlocker = jest
+            .fn()
+            .mockResolvedValue(true);
+        document.body.innerHTML = `
+            <section data-controller="ad-delivery" data-ad-delivery-mode-value="google">
+                <div data-ad-delivery-target="container"></div>
+            </section>
+        `;
+
+        application = Application.start();
+        application.register("ad-delivery", AdDeliveryController);
+        await flush();
+
+        const section = document.querySelector("section");
+        expect(section.classList.contains("rh-ad-slot--blocked")).toBe(true);
+        expect(section.querySelector("ins.adsbygoogle")).toBeNull();
+        expect(section.textContent).toContain("Advertising is unavailable");
+    });
+
+    test("defers provider rendering until a slot intersects within 200px", async () => {
+        const OriginalIntersectionObserver = window.IntersectionObserver;
+        let observerCallback;
+        let observerOptions;
+
+        class TestIntersectionObserver {
+            constructor(callback, options) {
+                observerCallback = callback;
+                observerOptions = options;
+            }
+
+            observe() {}
+
+            unobserve() {}
+
+            disconnect() {}
+        }
+
+        window.IntersectionObserver = TestIntersectionObserver;
+        document.body.innerHTML = `
+            <section data-controller="ad-delivery" data-ad-delivery-mode-value="google">
+                <div data-ad-delivery-target="container"></div>
+            </section>
+        `;
+
+        application = Application.start();
+        application.register("ad-delivery", AdDeliveryController);
+        await flush();
+
+        const section = document.querySelector("section");
+        expect(observerOptions.rootMargin).toBe("200px");
+        expect(section.querySelector("ins.adsbygoogle")).toBeNull();
+
+        observerCallback([{ isIntersecting: true }]);
+        expect(section.querySelector("ins.adsbygoogle")).not.toBeNull();
+
+        window.IntersectionObserver = OriginalIntersectionObserver;
+    });
+
+    test("applies non-personalized GPT privacy when consent is missing", async () => {
+        const privacySettings = jest.fn();
+        const slot = { addService: jest.fn() };
+        const push = jest.fn((callback) => callback());
+        window.googletag = {
+            cmd: { push },
+            defineSlot: jest.fn(() => slot),
+            display: jest.fn(),
+            pubads: jest.fn(() => ({ setPrivacySettings: privacySettings })),
+        };
+        document.body.innerHTML = `
+            <section
+                data-controller="ad-delivery"
+                data-ad-delivery-mode-value="gpt"
+                data-ad-delivery-slot-value="below_nav"
+                data-ad-delivery-gpt-unit-path-value="/1234/racerhistory/home"
+                data-ad-delivery-sizes-desktop-value="[[970,250]]"
+                data-ad-delivery-sizes-mobile-value="[[300,250]]"
+            >
+                <div data-ad-delivery-target="container"></div>
+            </section>
+        `;
+
+        application = Application.start();
+        application.register("ad-delivery", AdDeliveryController);
+        await flush();
+
+        expect(privacySettings).toHaveBeenCalledWith({
+            nonPersonalizedAds: true,
+        });
+        expect(window.googletag.defineSlot).toHaveBeenCalledWith(
+            "/1234/racerhistory/home",
+            [[970, 250]],
+            expect.stringMatching(/^rh-gpt-below_nav-/),
+        );
     });
 });

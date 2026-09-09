@@ -45,6 +45,25 @@ class SiteOptionsServiceExtraTest extends TestCase
     }
 
     /**
+     * Default definitions include the structured options required by each ad slot.
+     */
+    public function testDefaultDefinitionsIncludeAdDeliveryOptions(): void
+    {
+        $service = new SiteOptionsService(
+            $this->getMockBuilder(SiteOptionsTable::class)->disableOriginalConstructor()->getMock(),
+        );
+        $definitions = $service->getDefinitions();
+
+        $this->assertArrayHasKey('ad_below_nav_mode', $definitions);
+        $this->assertArrayHasKey('ad_below_nav_sizes_desktop', $definitions);
+        $this->assertArrayHasKey('ad_below_nav_sizes_mobile', $definitions);
+        $this->assertArrayHasKey('ad_below_nav_gpt_unit_path', $definitions);
+        $this->assertSame('text', $definitions['ad_below_nav_gpt_unit_path']['type']);
+        $this->assertStringContainsString('complete Google Publisher Tag unit path', $definitions['ad_below_nav_gpt_unit_path']['help']);
+        $this->assertStringContainsString('Do not enter JSON', $definitions['ad_below_nav_sizes_desktop']['help']);
+    }
+
+    /**
      * Ensure persisted setting retrieval respects definitions and defaults.
      *
      * @return void
