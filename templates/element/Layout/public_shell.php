@@ -77,6 +77,7 @@
                 </button>
             </div>
             <div class="rh-footer-links">
+                <a href="<?= $this->Url->build('/privacy') ?>">Privacy</a>
                 <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'login']) ?>"><i class="fa-solid fa-arrow-right-to-bracket"></i> Login</a>
             </div>
         </div>

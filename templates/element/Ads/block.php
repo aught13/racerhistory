@@ -23,6 +23,12 @@ $classes = 'rh-ad-slot rh-ad-slot--' . $slotConfig['slot_class'];
 if ($isGoogle) {
     $classes .= ' rh-ad-slot--google';
 }
+if ($slotConfig['mode'] === 'gpt') {
+    $classes .= ' rh-ad-slot--gpt';
+}
+
+$sizesDesktop = json_encode($slotConfig['sizes_desktop'], JSON_UNESCAPED_SLASHES) ?: '[]';
+$sizesMobile = json_encode($slotConfig['sizes_mobile'], JSON_UNESCAPED_SLASHES) ?: '[]';
 
 $attributes = [
     'class' => $classes,
@@ -31,11 +37,12 @@ $attributes = [
     'data-google-mode' => $isGoogle ? '1' : '0',
     'data-ad-delivery-mode-value' => $slotConfig['mode'],
     'data-ad-delivery-slot-value' => $slotConfig['slot'],
+    'data-ad-delivery-sizes-desktop-value' => $sizesDesktop,
+    'data-ad-delivery-sizes-mobile-value' => $sizesMobile,
+    'data-ad-delivery-google-slot-id-value' => $slotConfig['google_slot_id'],
+    'data-ad-delivery-gpt-unit-path-value' => $slotConfig['gpt_unit_path'],
 ];
 
-if ($slotConfig['google_slot_id'] !== '') {
-    $attributes['data-ad-delivery-google-slot-id-value'] = $slotConfig['google_slot_id'];
-}
 if ($slotConfig['google_client'] !== '') {
     $attributes['data-ad-delivery-google-client-value'] = $slotConfig['google_client'];
 }

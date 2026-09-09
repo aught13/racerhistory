@@ -3,6 +3,20 @@ const ADSENSE_SCRIPT_SELECTOR =
     'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]';
 const EMPTY_SLOT_CLASS = "rh-ad-slot--empty";
 
+function ensureGptSlots() {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    if (!(window.rhGptSlots instanceof Map)) {
+        window.rhGptSlots = new Map();
+    }
+
+    return window.rhGptSlots;
+}
+
+ensureGptSlots();
+
 function isElement(value) {
     return (
         typeof globalThis !== "undefined" &&
@@ -216,9 +230,111 @@ export function destroyGoogleAdSlotSection(section) {
 
     disconnectObserver(section);
     disconnectSizeObserver(section);
+
+    const gptSlots = ensureGptSlots();
+    const gptSlot = gptSlots?.get(section);
+    if (gptSlot && typeof window.googletag?.destroySlots === "function") {
+        window.googletag.destroySlots([gptSlot]);
+    }
+    gptSlots?.delete(section);
+
     section.classList.remove(EMPTY_SLOT_CLASS);
     section.removeAttribute("data-rh-ad-initialized");
     delete section.dataset.rhGoogleTagQueued;
+}
+
+function normalizeGptSizes(sizes) {
+    if (!Array.isArray(sizes)) {
+        return [];
+    }
+
+    return sizes.filter(
+        (size) =>
+            Array.isArray(size) &&
+            size.length >= 2 &&
+            Number(size[0]) > 0 &&
+            Number(size[1]) > 0,
+    );
+}
+
+/**
+ * Define and display a GPT slot after its section enters the viewport.
+ *
+ * @param {Element} section
+ * @param {{unitPath?: string, sizesDesktop?: Array, sizesMobile?: Array, elementId?: string}} config
+ * @returns {boolean}
+ */
+export function initGptAdSlotSection(section, config = {}) {
+    if (!isElement(section) || typeof window === "undefined") {
+        return false;
+    }
+
+    const gptSlots = ensureGptSlots();
+    if (!gptSlots || gptSlots.has(section)) {
+        return false;
+    }
+
+    const unitPath = String(config.unitPath || "").trim();
+    const sizesDesktop = normalizeGptSizes(config.sizesDesktop);
+    const sizesMobile = normalizeGptSizes(config.sizesMobile);
+    const sizes = sizesDesktop.length > 0 ? sizesDesktop : sizesMobile;
+    const elementId = String(
+        config.elementId || section.dataset.googleTagSlotId || "",
+    ).trim();
+    const googletag = window.googletag;
+
+    if (
+        unitPath === "" ||
+        sizes.length === 0 ||
+        elementId === "" ||
+        !googletag ||
+        typeof googletag.cmd?.push !== "function"
+    ) {
+        return false;
+    }
+
+    gptSlots.set(section, null);
+    googletag.cmd.push(() => {
+        if (
+            !gptSlots.has(section) ||
+            typeof googletag.defineSlot !== "function"
+        ) {
+            return;
+        }
+
+        const slot = googletag.defineSlot(unitPath, sizes, elementId);
+        if (!slot) {
+            gptSlots.delete(section);
+            return;
+        }
+
+        if (
+            sizesMobile.length > 0 &&
+            sizesDesktop.length > 0 &&
+            typeof googletag.sizeMapping === "function"
+        ) {
+            const mappingBuilder = googletag
+                .sizeMapping()
+                .addSize([0, 0], sizesMobile)
+                .addSize([768, 0], sizesDesktop);
+            const mapping = mappingBuilder.build();
+            if (typeof slot.defineSizeMapping === "function") {
+                slot.defineSizeMapping(mapping);
+            }
+        }
+
+        if (typeof googletag.pubads === "function") {
+            slot.addService?.(googletag.pubads());
+        }
+
+        gptSlots.set(section, slot);
+        if (typeof googletag.display === "function") {
+            googletag.display(elementId);
+        }
+        section.setAttribute("data-rh-ad-initialized", "1");
+    });
+
+    return true;
 }
 
 export function initGoogleAdSlotSection(section) {

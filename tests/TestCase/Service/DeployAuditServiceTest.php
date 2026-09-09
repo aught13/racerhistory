@@ -78,6 +78,25 @@ class DeployAuditServiceTest extends TestCase
     }
 
     /**
+     * Tests php version check fails below minimum supported version.
+     */
+    public function testPhpVersionCheckFailsBelowMinimum(): void
+    {
+        if (version_compare(PHP_VERSION, '8.2.0', '>=')) {
+            $this->markTestSkipped('This runtime is already PHP 8.2+; the negative-path is only valid on a lower version.');
+        }
+
+        $audit = $this->service->run();
+
+        $phpResults = array_filter($audit['results'], fn($r) => $r['category'] === 'PHP Version');
+        $this->assertNotEmpty($phpResults);
+
+        $first = array_values($phpResults)[0];
+        $this->assertSame('fail', $first['status']);
+        $this->assertStringContains('8.2+', $first['label']);
+    }
+
+    /**
      * Tests php extensions checked.
      */
     public function testPhpExtensionsChecked(): void

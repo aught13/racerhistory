@@ -30,6 +30,9 @@ class AdConfigurationService
      *   active:bool,
      *   mode:string,
      *   html:string,
+     *   sizes_desktop:array<int,array{0:int,1:int}>,
+     *   sizes_mobile:array<int,array{0:int,1:int}>,
+     *   gpt_unit_path:string,
      *   google_slot_id:string,
      *   google_client:string,
      *   google_format:string,
@@ -46,12 +49,45 @@ class AdConfigurationService
         }
 
         $settings = $this->siteOptionsService->getRuntimeSettings();
-        $active = $this->toBool($settings['ad_' . $normalizedSlot . '_active'] ?? false);
-        $html = trim((string)($settings['ad_' . $normalizedSlot . '_html'] ?? ''));
-        $googleModeEnabled = $this->toBool($settings['ad_' . $normalizedSlot . '_google_mode'] ?? false);
+        $prefix = 'ad_' . $normalizedSlot;
+        $active = $this->toBool($settings[$prefix . '_active'] ?? false);
+        $html = trim((string)($settings[$prefix . '_html'] ?? ''));
+        $configuredMode = strtolower(trim((string)($settings[$prefix . '_mode'] ?? '')));
+        $legacyGoogleMode = $this->toBool($settings[$prefix . '_google_mode'] ?? false);
+        $sizesDesktop = $this->parseSizes($settings[$prefix . '_sizes_desktop'] ?? '');
+        $sizesMobile = $this->parseSizes($settings[$prefix . '_sizes_mobile'] ?? '');
+        $gptUnitPath = trim((string)($settings[$prefix . '_gpt_unit_path'] ?? ''));
 
-        if (!$active || $html === '') {
+        if (!$active) {
             return $this->emptySlotConfiguration($normalizedSlot);
+        }
+
+        $hasExplicitMode = in_array($configuredMode, ['custom', 'google', 'gpt'], true);
+        $mode = $hasExplicitMode
+            ? $configuredMode
+            : ($legacyGoogleMode ? 'google' : 'custom');
+
+        if (in_array($mode, ['custom', 'google'], true) && $html === '') {
+            return $this->emptySlotConfiguration($normalizedSlot);
+        }
+
+        if ($mode === 'gpt' && $gptUnitPath === '') {
+            return $html === ''
+                ? $this->emptySlotConfiguration($normalizedSlot)
+                : $this->buildConfiguration(
+                    $normalizedSlot,
+                    'custom',
+                    $html,
+                    $sizesDesktop,
+                    $sizesMobile,
+                    $gptUnitPath,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                );
         }
 
         $publisherId = trim((string)($settings['ad_publisher_id'] ?? ''));
@@ -70,20 +106,41 @@ class AdConfigurationService
             '/<ins\b[^>]*\bclass\s*=\s*(["\'])[^"\']*\badsbygoogle\b[^"\']*\1/i',
             $html,
         ) === 1;
-        $googleRenderable = ($googleModeEnabled || $hasGoogleMarkup) && $googleSlotId !== '';
+        if (!$hasExplicitMode && $hasGoogleMarkup) {
+            $mode = 'google';
+        }
 
-        return [
-            'slot' => $normalizedSlot,
-            'active' => true,
-            'mode' => $googleRenderable ? 'google' : 'custom',
-            'html' => $html,
-            'google_slot_id' => $googleSlotId,
-            'google_client' => $googleClient,
-            'google_format' => $googleFormat,
-            'google_layout' => $googleLayout,
-            'google_layout_key' => $googleLayoutKey,
-            'google_full_width_responsive' => $googleFullWidthResponsive,
-        ];
+        if ($mode === 'google' && $googleSlotId === '') {
+            return $this->buildConfiguration(
+                $normalizedSlot,
+                'custom',
+                $html,
+                $sizesDesktop,
+                $sizesMobile,
+                $gptUnitPath,
+                '',
+                $googleClient,
+                $googleFormat,
+                $googleLayout,
+                $googleLayoutKey,
+                $googleFullWidthResponsive,
+            );
+        }
+
+        return $this->buildConfiguration(
+            $normalizedSlot,
+            $mode,
+            $html,
+            $sizesDesktop,
+            $sizesMobile,
+            $gptUnitPath,
+            $googleSlotId,
+            $googleClient,
+            $googleFormat,
+            $googleLayout,
+            $googleLayoutKey,
+            $googleFullWidthResponsive,
+        );
     }
 
     /**
@@ -93,6 +150,9 @@ class AdConfigurationService
      *   active:bool,
      *   mode:string,
      *   html:string,
+     *   sizes_desktop:array<int,array{0:int,1:int}>,
+     *   sizes_mobile:array<int,array{0:int,1:int}>,
+     *   gpt_unit_path:string,
      *   google_slot_id:string,
      *   google_client:string,
      *   google_format:string,
@@ -108,6 +168,9 @@ class AdConfigurationService
             'active' => false,
             'mode' => 'custom',
             'html' => '',
+            'sizes_desktop' => [],
+            'sizes_mobile' => [],
+            'gpt_unit_path' => '',
             'google_slot_id' => '',
             'google_client' => '',
             'google_format' => '',
@@ -115,6 +178,106 @@ class AdConfigurationService
             'google_layout_key' => '',
             'google_full_width_responsive' => '',
         ];
+    }
+
+    /**
+     * @param string $slot
+     * @param string $mode
+     * @param string $html
+     * @param array<int,array{0:int,1:int}> $sizesDesktop
+     * @param array<int,array{0:int,1:int}> $sizesMobile
+     * @param string $gptUnitPath
+     * @param string $googleSlotId
+     * @param string $googleClient
+     * @param string $googleFormat
+     * @param string $googleLayout
+     * @param string $googleLayoutKey
+     * @param string $googleFullWidthResponsive
+     * @return array<string,mixed>
+     */
+    private function buildConfiguration(
+        string $slot,
+        string $mode,
+        string $html,
+        array $sizesDesktop,
+        array $sizesMobile,
+        string $gptUnitPath,
+        string $googleSlotId,
+        string $googleClient,
+        string $googleFormat,
+        string $googleLayout,
+        string $googleLayoutKey,
+        string $googleFullWidthResponsive,
+    ): array {
+        return [
+            'slot' => $slot,
+            'active' => true,
+            'mode' => $mode,
+            'html' => $html,
+            'sizes_desktop' => $sizesDesktop,
+            'sizes_mobile' => $sizesMobile,
+            'gpt_unit_path' => $gptUnitPath,
+            'google_slot_id' => $googleSlotId,
+            'google_client' => $googleClient,
+            'google_format' => $googleFormat,
+            'google_layout' => $googleLayout,
+            'google_layout_key' => $googleLayoutKey,
+            'google_full_width_responsive' => $googleFullWidthResponsive,
+        ];
+    }
+
+    /**
+     * @param mixed $value
+     * @return array<int,array{0:int,1:int}>
+     */
+    private function parseSizes(mixed $value): array
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '') {
+                return [];
+            }
+
+            if (str_starts_with($value, '[')) {
+                $decoded = json_decode($value, true);
+                if (!is_array($decoded)) {
+                    return [];
+                }
+                $value = $decoded;
+            } else {
+                $value = preg_split('/\s*,\s*/', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            }
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $sizes = [];
+        foreach ($value as $size) {
+            if (is_string($size) && preg_match('/^(\d+)\s*x\s*(\d+)$/i', trim($size), $matches) === 1) {
+                $size = [$matches[1], $matches[2]];
+            }
+
+            if (!is_array($size) || count($size) < 2) {
+                continue;
+            }
+
+            $dimensions = array_values($size);
+            if (!is_numeric($dimensions[0]) || !is_numeric($dimensions[1])) {
+                continue;
+            }
+
+            $width = (int)$dimensions[0];
+            $height = (int)$dimensions[1];
+            if ($width < 1 || $height < 1) {
+                continue;
+            }
+
+            $sizes[] = [$width, $height];
+        }
+
+        return $sizes;
     }
 
     /**

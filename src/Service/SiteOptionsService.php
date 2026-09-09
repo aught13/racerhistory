@@ -23,18 +23,32 @@ class SiteOptionsService
 {
     private const CACHE_KEY = 'global_site_options';
 
+    /**
+     * @var array<string>
+     */
+    private const AD_SLOT_NAMES = [
+        'below_nav',
+        'below_content',
+        'footer',
+        'homepage_mid',
+        'news_after_first',
+        'news_every_fifth',
+        'news_sidebar_1',
+        'news_sidebar_2',
+    ];
+
     private SiteOptionsTable $siteOptionsTable;
 
     private SportConfigAdminService $sportConfigAdminService;
 
     /**
-     * @var array<string,array{label:string,type:string,default:mixed}>
+     * @var array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>
      */
     private array $definitions;
 
     /**
      * @param \App\Model\Table\SiteOptionsTable|null $siteOptionsTable
-     * @param array<string,array{label:string,type:string,default:mixed}>|null $definitions
+     * @param array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>|null $definitions
      * @param \App\Service\SportConfigAdminService|null $sportConfigAdminService
      */
     public function __construct(
@@ -51,7 +65,7 @@ class SiteOptionsService
     }
 
     /**
-     * @return array<string,array{label:string,type:string,default:mixed}>
+     * @return array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>
      */
     public function getDefinitions(): array
     {
@@ -350,7 +364,7 @@ class SiteOptionsService
     }
 
     /**
-     * @return array<string,array{label:string,type:string,default:mixed}>
+     * @return array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>
      */
     private function readDefinitionsFromConfigure(): array
     {
@@ -374,10 +388,88 @@ class SiteOptionsService
                     ? (string)$definition['type']
                     : 'text',
                 'default' => $definition['default'] ?? null,
+                'help' => isset($definition['help'])
+                    ? (string)$definition['help']
+                    : $this->defaultHelpText($optionKey),
+                ...(isset($definition['options']) && is_array($definition['options'])
+                    ? ['options' => $definition['options']]
+                    : []),
             ];
         }
 
+        return $this->addAdSlotDefinitions($definitions);
+    }
+
+    /**
+     * @param array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}> $definitions
+     * @return array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>
+     */
+    private function addAdSlotDefinitions(array $definitions): array
+    {
+        foreach (self::AD_SLOT_NAMES as $slotName) {
+            $labelName = ucwords(str_replace('_', ' ', $slotName));
+            $prefix = 'ad_' . $slotName;
+            $slotDefinitions = [
+                $prefix . '_mode' => 'Delivery Mode',
+                $prefix . '_sizes_desktop' => 'Desktop Size Presets',
+                $prefix . '_sizes_mobile' => 'Mobile Size Presets',
+                $prefix . '_gpt_unit_path' => 'GPT Unit Path',
+            ];
+
+            foreach ($slotDefinitions as $optionKey => $optionLabel) {
+                if (isset($definitions[$optionKey])) {
+                    continue;
+                }
+
+                $definitions[$optionKey] = [
+                    'label' => 'Ads - ' . $labelName . ': ' . $optionLabel,
+                    'type' => 'text',
+                    'default' => '',
+                    'help' => $this->defaultHelpText($optionKey),
+                ];
+            }
+        }
+
         return $definitions;
+    }
+
+    /**
+     * @param string $optionKey
+     * @return string
+     */
+    private function defaultHelpText(string $optionKey): string
+    {
+        if (str_ends_with($optionKey, '_sizes_desktop') || str_ends_with($optionKey, '_sizes_mobile')) {
+            $device = str_ends_with($optionKey, '_desktop') ? 'desktop' : 'mobile';
+
+            return 'Enter one or more width x height presets for ' . $device
+                . ' screens, separated by commas, for example 970x250, 728x90. '
+                . 'Do not enter JSON.';
+        }
+
+        if (str_ends_with($optionKey, '_gpt_unit_path')) {
+            return 'Enter the complete Google Publisher Tag unit path supplied by '
+                . 'your ad platform, for example /123456/racerhistory/home. '
+                . 'Leave blank unless GPT mode is selected.';
+        }
+
+        if (str_ends_with($optionKey, '_mode')) {
+            return 'Choose Custom for local HTML, Google for an AdSense snippet, '
+                . 'or GPT for a Google Publisher Tag unit.';
+        }
+
+        if (str_ends_with($optionKey, '_html')) {
+            return 'Paste the complete house-ad HTML snippet to display when '
+                . 'Custom mode is selected. Example: <a href="/blog"><img '
+                . 'src="/img/house-ad.webp" alt="Read the latest news"></a>.';
+        }
+
+        if (str_ends_with($optionKey, '_active')) {
+            return 'Turn this placement on when it should reserve space and deliver '
+                . 'an ad; turn it off to hide the placement.';
+        }
+
+        return 'Enter or choose the value used by this site setting.';
     }
 
     /**

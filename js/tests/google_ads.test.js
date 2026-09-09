@@ -2,11 +2,13 @@ describe("google ad slot lifecycle", () => {
     beforeEach(() => {
         document.body.innerHTML = "";
         delete window.adsbygoogle;
+        window.rhGptSlots = new Map();
     });
 
     afterEach(() => {
         document.body.innerHTML = "";
         delete window.adsbygoogle;
+        delete window.rhGptSlots;
     });
 
     test("initializes each Google slot once and hides unfilled ones", async () => {
@@ -344,5 +346,41 @@ describe("google ad slot lifecycle", () => {
 
         expect(section.getAttribute("data-rh-ad-initialized")).toBeNull();
         expect(section.classList.contains("rh-ad-slot--empty")).toBe(false);
+    });
+
+    test("tracks and destroys a GPT slot when its section disconnects", async () => {
+        document.body.innerHTML = `
+            <section class="rh-ad-slot rh-ad-slot--gpt" data-google-tag-slot-id="gpt-slot">
+                <div class="rh-ad-slot__inner"><div id="gpt-slot"></div></div>
+            </section>
+        `;
+        const slot = { addService: jest.fn() };
+        const destroySlots = jest.fn();
+        window.googletag = {
+            cmd: { push: jest.fn((callback) => callback()) },
+            defineSlot: jest.fn(() => slot),
+            display: jest.fn(),
+            pubads: jest.fn(() => ({})),
+            destroySlots,
+        };
+
+        const { destroyGoogleAdSlotSection, initGptAdSlotSection } =
+            await import("../lib/google_ads.js");
+        const section = document.querySelector("section");
+
+        expect(
+            initGptAdSlotSection(section, {
+                unitPath: "/1234/racerhistory/home",
+                sizesDesktop: [[970, 250]],
+                sizesMobile: [[300, 250]],
+                elementId: "gpt-slot",
+            }),
+        ).toBe(true);
+        expect(window.rhGptSlots.get(section)).toBe(slot);
+
+        destroyGoogleAdSlotSection(section);
+
+        expect(destroySlots).toHaveBeenCalledWith([slot]);
+        expect(window.rhGptSlots.has(section)).toBe(false);
     });
 });
