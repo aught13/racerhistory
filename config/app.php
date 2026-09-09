@@ -5,7 +5,6 @@ use Cake\Database\Connection;
 use Cake\Database\Driver\Mysql;
 use Cake\Log\Engine\FileLog;
 use Cake\Mailer\Transport\MailTransport;
-
 use function Cake\Core\env;
 
 return [
@@ -103,21 +102,25 @@ return [
             'label' => 'Enable User Registration',
             'type' => 'checkbox',
             'default' => true,
+            'help' => 'Turn this on to allow visitors to create accounts; turn it off to disable new registrations.',
         ],
         'site_maintenance' => [
             'label' => 'Site Maintenance Mode',
             'type' => 'checkbox',
             'default' => false,
+            'help' => 'Turn this on to place the public site in maintenance mode while you perform planned work.',
         ],
         'records_per_page' => [
             'label' => 'Default Records Per Page',
             'type' => 'number',
             'default' => 20,
+            'help' => 'Enter the number of rows shown by default in paginated tables. Use a positive whole number.',
         ],
         'support_email' => [
             'label' => 'System Support Email Address',
             'type' => 'email',
             'default' => 'admin@example.com',
+            'help' => 'Enter the email address that administrators and system messages should use for support contact.',
         ],
 
         // Ad Management
@@ -125,11 +128,17 @@ return [
             'label' => 'Ads - Global Script',
             'type' => 'textarea',
             'default' => '',
+            'help' => 'Paste a provider script only when your provider requires a '
+                . 'site-wide loader. Include the complete script tag, for example '
+                . '<script async src="https://example.com/ads.js"></script>.',
         ],
         'ad_publisher_id' => [
             'label' => 'Ads - Publisher ID (AdSense Publisher ID)',
             'type' => 'text',
             'default' => '',
+            'help' => 'Enter the publisher ID from your ad provider, such as '
+                . 'ca-pub-1234567890123456. Do not include the ads.txt row or '
+                . 'surrounding HTML.',
         ],
 
         // Global placements

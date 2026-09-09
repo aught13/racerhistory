@@ -141,7 +141,10 @@ describe("main runtime bootstrap", () => {
         const stimulus = mocks.applicationStart.mock.results[0].value;
         expect(mocks.initializeLegacyModules).toHaveBeenCalledTimes(1);
         expect(mocks.initializeLegacyModules).toHaveBeenCalledWith(stimulus);
-        expect(stimulus.register).not.toHaveBeenCalled();
+        expect(stimulus.register).toHaveBeenCalledWith(
+            "consent",
+            expect.any(Function),
+        );
 
         await import("../main.js");
         expect(mocks.applicationStart).toHaveBeenCalledTimes(1);

@@ -16,6 +16,13 @@ You are an expert CakePHP 5 (5.2+), Hotwire, and Vite engineer. Your goal is hig
 - **Admin Access Control**: Admin controllers extend `src/Controller/Admin/AppController.php`. Access uses request-level authorization evaluated via `src/Policy/RequestPolicy.php`.
 - **Frontend State**: All modern JavaScript must initialize on the `turbo:load` event. Utilize Bootstrap data-attributes before writing custom Stimulus controllers.
 
+### Form Configuration Rules
+When generating form configuration options, you must strictly adhere to the following rules:
+
+1. **Mandatory Help Text:** Every single configuration option or field must include a clear, user-friendly explanation instructing a human on how to complete it.
+2. **No Human-Entered JSON Arrays:** Never require a human user to input a JSON array into a form field. If a list or complex structure is needed, provide an alternative UI approach or a simpler input method.
+3. **Handle Code Snippets Professionally:** If a field strictly requires an HTML or JavaScript snippet, this is acceptable, but it must be accompanied by precise, step-by-step instructions and a practical example showing the user exactly what that snippet should look like.
+
 ## 🛑 Definition of Done & Quality Checks
 Before completing any task, you must verify the code against this checklist:
 - [ ] Business logic resides completely inside an isolated Service class.

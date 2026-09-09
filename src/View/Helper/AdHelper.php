@@ -43,6 +43,9 @@ class AdHelper extends Helper
      *   mode:string,
      *   is_google:bool,
      *   html:string,
+     *   sizes_desktop:array<int,array{0:int,1:int}>,
+     *   sizes_mobile:array<int,array{0:int,1:int}>,
+     *   gpt_unit_path:string,
      *   google_slot_id:string,
      *   google_client:string,
      *   google_format:string,
@@ -64,6 +67,13 @@ class AdHelper extends Helper
             'mode' => $mode,
             'is_google' => $mode === 'google',
             'html' => (string)($configuration['html'] ?? ''),
+            'sizes_desktop' => is_array($configuration['sizes_desktop'] ?? null)
+                ? $configuration['sizes_desktop']
+                : [],
+            'sizes_mobile' => is_array($configuration['sizes_mobile'] ?? null)
+                ? $configuration['sizes_mobile']
+                : [],
+            'gpt_unit_path' => (string)($configuration['gpt_unit_path'] ?? ''),
             'google_slot_id' => (string)($configuration['google_slot_id'] ?? ''),
             'google_client' => (string)($configuration['google_client'] ?? ''),
             'google_format' => (string)($configuration['google_format'] ?? ''),

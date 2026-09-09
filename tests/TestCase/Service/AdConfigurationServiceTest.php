@@ -130,6 +130,72 @@ class AdConfigurationServiceTest extends TestCase
     }
 
     /**
+     * GPT mode should retain a string unit path and normalize responsive sizes.
+     */
+    public function testGetSlotConfigurationReturnsGptPayload(): void
+    {
+        $siteOptionsService = $this->createSiteOptionsServiceMock([
+            'ad_below_nav_active' => true,
+            'ad_below_nav_mode' => 'gpt',
+            'ad_below_nav_gpt_unit_path' => '/123456/racerhistory/home',
+            'ad_below_nav_sizes_desktop' => '[[970, 250], ["728", "90"], "bad"]',
+            'ad_below_nav_sizes_mobile' => '["300x250", [0, 50]]',
+        ]);
+        $service = new AdConfigurationService($siteOptionsService);
+
+        $result = $service->getSlotConfiguration('below_nav');
+
+        $this->assertTrue($result['active']);
+        $this->assertSame('gpt', $result['mode']);
+        $this->assertSame('/123456/racerhistory/home', $result['gpt_unit_path']);
+        $this->assertSame([[970, 250], [728, 90]], $result['sizes_desktop']);
+        $this->assertSame([[300, 250]], $result['sizes_mobile']);
+        $this->assertSame('', $result['google_slot_id']);
+    }
+
+    /**
+     * Human-entered comma-separated sizes should normalize without JSON input.
+     */
+    public function testGetSlotConfigurationParsesHumanSizePresets(): void
+    {
+        $siteOptionsService = $this->createSiteOptionsServiceMock([
+            'ad_below_nav_active' => true,
+            'ad_below_nav_mode' => 'gpt',
+            'ad_below_nav_gpt_unit_path' => '/123456/racerhistory/home',
+            'ad_below_nav_sizes_desktop' => '970x250, 728x90',
+            'ad_below_nav_sizes_mobile' => '300x250',
+        ]);
+        $service = new AdConfigurationService($siteOptionsService);
+
+        $result = $service->getSlotConfiguration('below_nav');
+
+        $this->assertSame([[970, 250], [728, 90]], $result['sizes_desktop']);
+        $this->assertSame([[300, 250]], $result['sizes_mobile']);
+    }
+
+    /**
+     * Empty GPT structural options should fall back to custom HTML safely.
+     */
+    public function testGetSlotConfigurationFallsBackWhenGptPathIsEmpty(): void
+    {
+        $siteOptionsService = $this->createSiteOptionsServiceMock([
+            'ad_below_nav_active' => true,
+            'ad_below_nav_mode' => 'gpt',
+            'ad_below_nav_html' => '<div class="house-ad">House ad</div>',
+            'ad_below_nav_sizes_desktop' => '',
+            'ad_below_nav_sizes_mobile' => 'not-json',
+        ]);
+        $service = new AdConfigurationService($siteOptionsService);
+
+        $result = $service->getSlotConfiguration('below_nav');
+
+        $this->assertSame('custom', $result['mode']);
+        $this->assertSame([], $result['sizes_desktop']);
+        $this->assertSame([], $result['sizes_mobile']);
+        $this->assertStringContainsString('House ad', $result['html']);
+    }
+
+    /**
      * @param array<string,mixed> $settings
      */
     private function createSiteOptionsServiceMock(array $settings): SiteOptionsService

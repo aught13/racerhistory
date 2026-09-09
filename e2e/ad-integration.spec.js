@@ -91,6 +91,8 @@ test.describe("Ad lifecycle integration", () => {
             document.body.appendChild(frame);
         }, googleAdMarkup());
 
+        await page.locator("#ad-test-frame .rh-ad-slot").scrollIntoViewIfNeeded();
+
         await page.waitForFunction(() => {
             const section = document.querySelector("#ad-test-frame .rh-ad-slot");
             const ad = section?.querySelector("ins.adsbygoogle");

@@ -163,7 +163,7 @@ $isMainPage = (
 );
 $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-head' : ''));
 ?>
-<body class="<?= h($bodyClass) ?>" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">
+<body class="<?= h($bodyClass) ?>" data-controller="consent" data-is-main="<?= $isMainPage ? 'true' : 'false' ?>">
     <?= $this->element('Layout/public_shell', [
         'identity' => $identity,
         'isAdmin' => $isAdmin,
