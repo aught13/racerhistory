@@ -36,6 +36,16 @@ class SiteOptionsControllerTest extends TestCase
     }
 
     /**
+     * Prevent runtime option state from leaking into later integration tests.
+     */
+    public function tearDown(): void
+    {
+        Cache::delete('global_site_options');
+        Configure::delete('SiteOptions');
+        parent::tearDown();
+    }
+
+    /**
      * GET /admin/site-options/edit renders dynamic controls from definitions.
      */
     public function testEditGetRendersDynamicOptionsForm(): void
@@ -111,6 +121,54 @@ class SiteOptionsControllerTest extends TestCase
         $this->assertSame('true', $adBelowNavActive->value);
         $this->assertSame('<div class="ad-slot">Top Banner</div>', $adBelowNavHtml->value);
         $this->assertSame('true', $adBelowNavGoogleMode->value);
+    }
+
+    /**
+     * New ad-unit fields must persist, survive a fresh runtime read, and render back into the form.
+     */
+    public function testEditPostPersistsAndReloadsAdUnitConfiguration(): void
+    {
+        $this->mockIdentity();
+        $this->enableRetainFlashMessages();
+
+        $dummyHtml = '<div class="dummy-house-ad">Dummy house ad</div>';
+        $this->post('/admin/site-options/edit', [
+            'ad_below_nav_active' => '1',
+            'ad_below_nav_mode' => 'gpt',
+            'ad_below_nav_html' => $dummyHtml,
+            'ad_below_nav_sizes_desktop' => '970x250, 728x90',
+            'ad_below_nav_sizes_mobile' => '320x50',
+            'ad_below_nav_gpt_unit_path' => '/999999/racerhistory/dummy-below-nav',
+        ]);
+
+        $this->assertRedirect('/admin/site-options/edit');
+        $table = $this->getTableLocator()->get('SiteOptions');
+
+        foreach (
+            [
+                'ad_below_nav_active' => 'true',
+                'ad_below_nav_mode' => 'gpt',
+                'ad_below_nav_html' => $dummyHtml,
+                'ad_below_nav_sizes_desktop' => '970x250, 728x90',
+                'ad_below_nav_sizes_mobile' => '320x50',
+                'ad_below_nav_gpt_unit_path' => '/999999/racerhistory/dummy-below-nav',
+            ] as $optionKey => $expectedValue
+        ) {
+            $row = $table->find()->where(['option_key' => $optionKey])->first();
+            $this->assertNotNull($row, $optionKey . ' should exist in the database');
+            $this->assertSame($expectedValue, (string)$row->value, $optionKey);
+        }
+
+        Cache::delete('global_site_options');
+        Configure::delete('SiteOptions');
+        $this->get('/admin/site-options/edit');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('/999999/racerhistory/dummy-below-nav');
+        $this->assertResponseContains('970x250, 728x90');
+        $this->assertResponseContains('320x50');
+        $this->assertResponseContains('Dummy house ad');
+        $this->assertResponseContains('value="gpt" selected="selected"');
     }
 
     /**

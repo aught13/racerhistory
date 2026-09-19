@@ -397,14 +397,16 @@ class SiteOptionsService
             ];
         }
 
-        return $this->addAdSlotDefinitions($definitions);
+        return self::withAdSlotDefinitions($definitions);
     }
 
     /**
+     * Add the registered ad-unit fields used by bootstrap, admin forms, and runtime reads.
+     *
      * @param array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}> $definitions
      * @return array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>
      */
-    private function addAdSlotDefinitions(array $definitions): array
+    public static function withAdSlotDefinitions(array $definitions): array
     {
         foreach (self::AD_SLOT_NAMES as $slotName) {
             $labelName = ucwords(str_replace('_', ' ', $slotName));
@@ -425,7 +427,7 @@ class SiteOptionsService
                     'label' => 'Ads - ' . $labelName . ': ' . $optionLabel,
                     'type' => 'text',
                     'default' => '',
-                    'help' => $this->defaultHelpText($optionKey),
+                    'help' => self::defaultHelpText($optionKey),
                 ];
             }
         }
@@ -437,7 +439,7 @@ class SiteOptionsService
      * @param string $optionKey
      * @return string
      */
-    private function defaultHelpText(string $optionKey): string
+    private static function defaultHelpText(string $optionKey): string
     {
         if (str_ends_with($optionKey, '_sizes_desktop') || str_ends_with($optionKey, '_sizes_mobile')) {
             $device = str_ends_with($optionKey, '_desktop') ? 'desktop' : 'mobile';
