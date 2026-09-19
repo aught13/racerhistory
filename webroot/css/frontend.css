@@ -101,7 +101,7 @@
    - Make images/iframes/ins scale to container width for responsiveness
    ========================================================================== */
 .rh-ad-slot {
-  background-color: var(--bs-light, #f8f9fa);
+  background-color: var(--rh-ad-slot-bg, var(--bs-light, #f8f9fa));
   border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.1));
   overflow: hidden;
   transition: min-height 0.2s ease-in-out;

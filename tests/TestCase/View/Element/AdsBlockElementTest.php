@@ -48,6 +48,7 @@ class AdsBlockElementTest extends TestCase
     {
         Configure::write('SiteOptions.ad_below_nav_active', false);
         Configure::write('SiteOptions.ad_below_nav_html', '<div>Ad</div>');
+        Configure::write('SiteOptions.ad_below_nav_mode', 'custom');
         Configure::write('SiteOptions.ad_below_nav_google_mode', false);
 
         $output = $this->view->element('Ads/block', ['slot' => 'below_nav']);
@@ -62,6 +63,7 @@ class AdsBlockElementTest extends TestCase
     {
         Configure::write('SiteOptions.ad_below_nav_active', true);
         Configure::write('SiteOptions.ad_below_nav_html', '<div class="ad-content">Ad</div>');
+        Configure::write('SiteOptions.ad_below_nav_mode', 'custom');
         Configure::write('SiteOptions.ad_below_nav_google_mode', false);
 
         $output = $this->view->element('Ads/block', ['slot' => 'below_nav']);
@@ -85,6 +87,7 @@ class AdsBlockElementTest extends TestCase
             'SiteOptions.ad_below_nav_html',
             '<ins class="adsbygoogle" data-ad-client="ca-pub-111" data-ad-slot="1234567890"></ins>',
         );
+        Configure::write('SiteOptions.ad_below_nav_mode', 'google');
         Configure::write('SiteOptions.ad_below_nav_google_mode', true);
 
         $output = $this->view->element('Ads/block', ['slot' => 'below_nav']);
@@ -96,5 +99,26 @@ class AdsBlockElementTest extends TestCase
         $this->assertStringContainsString('data-ad-delivery-google-client-value="ca-pub-111"', $output);
         $this->assertStringNotContainsString('data-ad-delivery-target="template"', $output);
         $this->assertStringNotContainsString('(window.adsbygoogle = window.adsbygoogle || []).push({});', $output);
+    }
+
+    /**
+     * GPT and custom payloads should expose persisted unit data to public templates.
+     */
+    public function testElementRendersGptPayloadAndExpectedSizes(): void
+    {
+        Configure::write('SiteOptions.ad_below_nav_active', true);
+        Configure::write('SiteOptions.ad_below_nav_mode', 'gpt');
+        Configure::write('SiteOptions.ad_below_nav_html', '<div class="dummy-house-ad">Dummy house ad</div>');
+        Configure::write('SiteOptions.ad_below_nav_sizes_desktop', '970x250, 728x90');
+        Configure::write('SiteOptions.ad_below_nav_sizes_mobile', '320x50');
+        Configure::write('SiteOptions.ad_below_nav_gpt_unit_path', '/999999/racerhistory/dummy-below-nav');
+
+        $output = $this->view->element('Ads/block', ['slot' => 'below_nav']);
+
+        $this->assertStringContainsString('data-ad-delivery-mode-value="gpt"', $output);
+        $this->assertStringContainsString('data-ad-delivery-gpt-unit-path-value="/999999/racerhistory/dummy-below-nav"', $output);
+        $this->assertStringContainsString('data-ad-delivery-sizes-desktop-value="[[970,250],[728,90]]"', $output);
+        $this->assertStringContainsString('data-ad-delivery-sizes-mobile-value="[[320,50]]"', $output);
+        $this->assertStringContainsString('Dummy house ad', $output);
     }
 }
