@@ -47,7 +47,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
     </div>
 
     <div class="alert alert-info">
-        <strong>Workflow:</strong> upload the official LiveStats PDF, preview the detected rows, correct any roster mapping, then save the import. The importer currently reads final player and team totals; play-by-play and shot-chart pages are ignored.
+        <strong>Workflow:</strong> upload an official NCAA box-score PDF, preview the detected rows, correct any roster mapping, then save the import. The importer reads final player and team totals; play-by-play and shot-chart pages are ignored.
     </div>
 
     <?= $this->Form->create(null, [

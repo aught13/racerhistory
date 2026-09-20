@@ -26,6 +26,9 @@ class OfficialBasketballBoxScoreParser
     {
         $text = preg_replace('/\r\n?/', "\n", $text) ?? $text;
         $text = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $text);
+        if (str_contains($text, 'Official Basketball Box Score -- Game Totals')) {
+            return $this->parseLegacyGameTotals($text);
+        }
         $finalSection = $this->extractFinalBoxScoreSection($text);
         $blocks = $this->extractPlayerBlocks($finalSection);
         if (count($blocks) < 2) {
@@ -54,6 +57,250 @@ class OfficialBasketballBoxScoreParser
         return [
             'date' => $dateMatch[1] ?? null,
             'teams' => $teams,
+        ];
+    }
+
+    /**
+     * Parse the older NCAA Game Totals box-score layout.
+     *
+     * @param string $text Extracted PDF text
+     * @return array{
+     *     date: string|null,
+     *     teams: list<array{label: string, score: int|null, players: list<array<string, mixed>>, totals: array<string, int|null>}>}
+     */
+    private function parseLegacyGameTotals(string $text): array
+    {
+        $teams = [];
+        $current = null;
+
+        foreach (explode("\n", $text) as $line) {
+            $line = trim(preg_replace('/\s+/', ' ', $line) ?? $line);
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match('/^(.+?)\s+(\d+)\s+\S+\s+\d+-\d+$/', $line, $matches)) {
+                if ($current !== null) {
+                    $teams[] = $current;
+                }
+                $current = [
+                    'label' => trim($matches[1]),
+                    'score' => (int)$matches[2],
+                    'players' => [],
+                    'totals' => [],
+                ];
+                continue;
+            }
+
+            if ($current === null) {
+                continue;
+            }
+
+            if (str_starts_with($line, 'Totals ')) {
+                $current['totals'] = $this->parseLegacyTotalsLine($line);
+                continue;
+            }
+
+            $player = $this->parseLegacyPlayerLine($line);
+            if ($player !== null) {
+                $current['players'][] = $player;
+            }
+        }
+
+        if ($current !== null) {
+            $teams[] = $current;
+        }
+        if (count($teams) < 2) {
+            throw new InvalidArgumentException('This does not contain two NCAA Game Totals team tables.');
+        }
+
+        preg_match('/\b(\d{2}\/\d{2}\/\d{2})\b/', $text, $dateMatch);
+
+        return [
+            'date' => $dateMatch[1] ?? null,
+            'teams' => array_slice($teams, 0, 2),
+        ];
+    }
+
+    /**
+     * Parse a player row from an older NCAA Game Totals export.
+     *
+     * @param string $line Player row
+     * @return array<string, mixed>|null
+     */
+    private function parseLegacyPlayerLine(string $line): ?array
+    {
+        $pattern = '/^(\d+)\s+(.+?)(?:\s+[f-g])?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+            . '([\d\s]+)$/i';
+        if (!preg_match($pattern, $line, $matches)) {
+            return null;
+        }
+
+        $values = $this->parseLegacyTrailingValues(
+            $matches[9],
+            (int)$matches[3],
+            (int)$matches[5],
+            (int)$matches[7],
+        );
+        if ($values === null) {
+            return null;
+        }
+
+        return [
+            'jersey' => $matches[1],
+            'name' => trim($matches[2]),
+            'MIN' => (string)$values[9],
+            'FGM' => (int)$matches[3],
+            'FGA' => (int)$matches[4],
+            'TPM' => (int)$matches[5],
+            'TPA' => (int)$matches[6],
+            'FTM' => (int)$matches[7],
+            'FTA' => (int)$matches[8],
+            'ORB' => $values[0],
+            'DRB' => $values[1],
+            'RB' => $values[2],
+            'PF' => $values[3],
+            'FD' => null,
+            'PTS' => $values[4],
+            'AST' => $values[5],
+            'TRN' => $values[6],
+            'STL' => $values[8],
+            'BS' => $values[7],
+            'BD' => null,
+            'PLUS_MINUS' => null,
+        ];
+    }
+
+    /**
+     * Restore legacy trailing fields when PDF extraction has merged numbers.
+     *
+     * @param string $trailingValues Rebounds through minutes
+     * @param int $fieldGoalsMade Field goals made
+     * @param int $threePointersMade Three-pointers made
+     * @param int $freeThrowsMade Free throws made
+     * @return list<int>|null
+     */
+    private function parseLegacyTrailingValues(
+        string $trailingValues,
+        int $fieldGoalsMade,
+        int $threePointersMade,
+        int $freeThrowsMade,
+    ): ?array {
+        $parts = preg_split('/\s+/', trim($trailingValues)) ?: [];
+        if (count($parts) === 10) {
+            return array_map('intval', $parts);
+        }
+
+        $digits = implode('', $parts);
+        if (!ctype_digit($digits) || strlen($digits) < 10 || strlen($digits) > 18) {
+            return null;
+        }
+
+        $values = $this->splitLegacyTrailingValues(
+            $digits,
+            0,
+            [],
+            $fieldGoalsMade,
+            $threePointersMade,
+            $freeThrowsMade,
+        );
+
+        return $values;
+    }
+
+    /**
+     * @param string $digits Concatenated trailing stat values
+     * @param int $offset Current character offset
+     * @param list<int> $values Reconstructed values so far
+     * @param int $fieldGoalsMade Field goals made
+     * @param int $threePointersMade Three-pointers made
+     * @param int $freeThrowsMade Free throws made
+     * @return list<int>|null
+     */
+    private function splitLegacyTrailingValues(
+        string $digits,
+        int $offset,
+        array $values,
+        int $fieldGoalsMade,
+        int $threePointersMade,
+        int $freeThrowsMade,
+    ): ?array {
+        $field = count($values);
+        if ($field === 10) {
+            if ($offset !== strlen($digits)) {
+                return null;
+            }
+
+            return $values[0] + $values[1] === $values[2]
+                && $values[4] === (($fieldGoalsMade * 2) + $threePointersMade + $freeThrowsMade)
+                ? $values
+                : null;
+        }
+
+        $remainingFields = 10 - $field;
+        $remainingDigits = strlen($digits) - $offset;
+        if ($remainingDigits < $remainingFields) {
+            return null;
+        }
+
+        $maxLength = min(3, $remainingDigits - $remainingFields + 1);
+        for ($length = 1; $length <= $maxLength; $length++) {
+            $value = (int)substr($digits, $offset, $length);
+            if (($field === 3 && $value > 5) || ($field === 9 && $value > 99)) {
+                continue;
+            }
+
+            $candidate = $this->splitLegacyTrailingValues(
+                $digits,
+                $offset + $length,
+                [...$values, $value],
+                $fieldGoalsMade,
+                $threePointersMade,
+                $freeThrowsMade,
+            );
+            if ($candidate !== null) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse a totals row from an older NCAA Game Totals export.
+     *
+     * @param string $line Totals row
+     * @return array<string, int|null>
+     */
+    private function parseLegacyTotalsLine(string $line): array
+    {
+        $pattern = '/^Totals\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+            . '(\d+(?:\s+\d+){9})$/';
+        if (!preg_match($pattern, $line, $matches)) {
+            return [];
+        }
+
+        $values = array_map('intval', preg_split('/\s+/', $matches[7]) ?: []);
+
+        return [
+            'FGM' => (int)$matches[1],
+            'FGA' => (int)$matches[2],
+            'TPM' => (int)$matches[3],
+            'TPA' => (int)$matches[4],
+            'FTM' => (int)$matches[5],
+            'FTA' => (int)$matches[6],
+            'ORB' => $values[0],
+            'DRB' => $values[1],
+            'RB' => $values[2],
+            'PF' => $values[3],
+            'FD' => null,
+            'PTS' => $values[4],
+            'AST' => $values[5],
+            'TRN' => $values[6],
+            'STL' => $values[8],
+            'BS' => $values[7],
+            'BD' => null,
+            'PLUS_MINUS' => null,
         ];
     }
 

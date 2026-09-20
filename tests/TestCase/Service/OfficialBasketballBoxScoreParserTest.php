@@ -151,4 +151,44 @@ TEXT;
 
         $this->assertSame("Jermaine O'Neal, Jr.", $result['teams'][0]['players'][0]['name']);
     }
+
+    /**
+     * Test the older NCAA Game Totals layout.
+     *
+     * @return void
+     */
+    public function testParsesLegacyGameTotalsFormat(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score -- Game Totals -- Final Statistics
+Harris-Stowe vs Murray State
+11/11/11 7:45 p.m. at Murray, Ky. (CFSB Center)
+Harris-Stowe 49 • 3-1
+## Player FG-FGA FG-FGA FT-FTA Off Def Tot PF TP A TO Blk Stl Min
+22 KRAMER, Kevin f 2-5 1-3 1-2 2 2 4 2 6 0 2 0 2 27
+50 LOVELESS, Jordan f 1-2 0-0 2-2 0 2 2 3 4 0 2 0 0 14
+25 HOWARD, Lamarr 2-2 0-0 0-0 1120 40301 8
+Totals 18-52 2-15 11-18 11 16 27 14 49 11 17 1 7 200
+Murray State 76 • 1-0
+## Player FG-FGA FG-FGA FT-FTA Off Def Tot PF TP A TO Blk Stl Min
+02 DANIEL, Ed f 1-3 0-0 2-2 2 5 7 5 4 0 2 3 0 22
+42 ASKA, Ivan f 8-11 0-0 0-0 6 3 9 1 16 2 2 0 0 25
+Totals 30-62 5-16 11-15 18 25 43 18 76 19 16 3 9 200
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('11/11/11', $result['date']);
+        $this->assertSame('Harris-Stowe', $result['teams'][0]['label']);
+        $this->assertSame(49, $result['teams'][0]['score']);
+        $this->assertSame('KRAMER, Kevin', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('27', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame(6, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(2, $result['teams'][0]['players'][0]['STL']);
+        $this->assertSame('HOWARD, Lamarr', $result['teams'][0]['players'][2]['name']);
+        $this->assertSame(3, $result['teams'][0]['players'][2]['TRN']);
+        $this->assertSame('8', $result['teams'][0]['players'][2]['MIN']);
+        $this->assertSame(3, $result['teams'][1]['players'][0]['BS']);
+        $this->assertSame(76, $result['teams'][1]['totals']['PTS']);
+    }
 }
