@@ -285,6 +285,12 @@ class ImageStorageService
      */
     private function createStorageDir(string $dir, array &$errors): bool
     {
+        if (file_exists($dir) && !is_dir($dir)) {
+            $errors[] = 'Storage path is not a directory: ' . $dir;
+
+            return false;
+        }
+
         if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
             $errors[] = 'Failed to create storage directory: ' . $dir;
 
@@ -407,6 +413,11 @@ class ImageStorageService
             $variantPath = $baseDir . str_replace(['../', '..\\'], '', ltrim($variantFile, '/\\'));
 
             if (!is_file($variantPath)) {
+                if (!is_dir(dirname($variantPath))) {
+                    $this->lastError = 'Failed to restore variant ' . $name;
+
+                    return $this->lastError;
+                }
                 if (!isset($variant['data']) || !is_string($variant['data']) || $variant['data'] === '') {
                     $this->lastError = 'Missing data for variant ' . $name;
 
