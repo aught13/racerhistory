@@ -124,6 +124,9 @@ $canUpdateGames = $this->Rbac->can('Games', 'update');
                 <a href="<?= $this->Url->build(['controller' => 'StatBasketGameBox', 'action' => 'gameBox', $game->id]) ?>" class="btn btn-sm <?= $hasBoxStats ? 'btn-success' : 'btn-outline-success' ?>">
                     <i class="bi bi-clipboard-data"></i> <?= $hasBoxStats ? 'Edit' : 'Add' ?> Box Score
                 </a>
+                <a href="<?= $this->Url->build(['controller' => 'BasketballBoxScoreImport', 'action' => 'index', $game->id]) ?>" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-file-earmark-arrow-up"></i> Import LiveStats
+                </a>
             <?php endif; ?>
 
             <!-- 2. Game Box Periods (if period stats exist) -->
