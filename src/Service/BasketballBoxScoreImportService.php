@@ -10,6 +10,7 @@ use finfo;
 use InvalidArgumentException;
 use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
+use Smalot\PdfParser\Parser as PdfParser;
 use Throwable;
 
 /**
@@ -101,7 +102,6 @@ class BasketballBoxScoreImportService
         if ($size !== null && $size > self::MAX_PDF_BYTES) {
             throw new InvalidArgumentException('The PDF is too large. Please upload a file smaller than 20 MB.');
         }
-
         $filename = strtolower((string)$file->getClientFilename());
         $mediaType = strtolower((string)$file->getClientMediaType());
         if (!str_ends_with($filename, '.pdf') && $mediaType !== 'application/pdf') {
@@ -449,6 +449,15 @@ class BasketballBoxScoreImportService
             throw new InvalidArgumentException('The PDF could not be read.');
         }
 
+        try {
+            $text = trim((new PdfParser())->parseFile($temporaryPath)->getText());
+            if ($text !== '') {
+                return $text;
+            }
+        } catch (Throwable) {
+            // Fall through to the small built-in parser for simple PDF streams.
+        }
+
         $textChunks = [];
         if (preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $contents, $streamMatches)) {
             foreach ($streamMatches[1] as $stream) {
@@ -466,7 +475,7 @@ class BasketballBoxScoreImportService
         }
 
         $text = trim(implode("\n", $textChunks));
-        if ($text === '') {
+        if ($text === '' || preg_match('/[\p{L}\p{N}]{3}/u', $text) !== 1) {
             throw new InvalidArgumentException('The PDF contains no extractable text.');
         }
 
