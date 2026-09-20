@@ -150,8 +150,8 @@ class BasketballBoxScoreImportService
      */
     public function preview(int $gameId, string $text): array
     {
-        $viewData = $this->getAdminImportData($gameId);
         $parsed = $this->parser->parse($text);
+        $viewData = $this->getAdminImportData($gameId);
         $teamIndex = $this->resolveTeamIndex($parsed['teams'], $viewData['game']);
         $warnings = [];
 

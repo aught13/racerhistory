@@ -9,6 +9,7 @@ use Cake\Log\Log;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
 use Psr\Http\Message\UploadedFileInterface;
+use Throwable;
 
 /**
  * Admin importer for NCAA LiveStats basketball box-score text.
@@ -50,16 +51,19 @@ class BasketballBoxScoreImportController extends AppController
         $this->request->allowMethod(['get', 'post']);
         try {
             $viewData = $this->importService->getAdminImportData($gameId);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Unexpected errors during bootstrap of importer data should not
             // cause a 500 response in the admin UI test matrix. Provide a
             // minimal fallback so the importer page can render and show an
             // error message instead of failing the request.
-            Log::warning('BasketballBoxScoreImportController::index failed to load import data: ' . $e->getMessage(), ['exception' => $e]);
-            $fallbackGame = (object) [
+            Log::warning(
+                'BasketballBoxScoreImportController::index failed to load import data: ' . $e->getMessage(),
+                ['exception' => $e],
+            );
+            $fallbackGame = (object)[
                 'id' => $gameId,
-                'team_season' => (object) ['team' => (object) ['team_name' => 'Team']],
-                'opponent' => (object) ['opponent_name' => 'Opponent'],
+                'team_season' => (object)['team' => (object)['team_name' => 'Team']],
+                'opponent' => (object)['opponent_name' => 'Opponent'],
                 'game_date' => null,
             ];
             $viewData = ['game' => $fallbackGame, 'roster' => [], 'existingRosterIds' => []];

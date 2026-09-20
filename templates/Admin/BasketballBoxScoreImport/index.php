@@ -13,6 +13,9 @@
  * @var list<string> $warnings
  */
 $this->assign('title', 'Import Basketball Box Score');
+$teamName = (string)($game->team_season?->team?->team_name ?? 'Team');
+$opponentName = (string)($game->opponent?->opponent_name ?? 'Opponent');
+$gameDate = $game->game_date ?? null;
 $hasPreview = isset($teamRows) && $teamRows !== [];
 $playerFields = [
     'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB',
@@ -34,10 +37,10 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
         <div>
             <h1 class="mb-1">Import Basketball Box Score</h1>
             <p class="text-muted mb-0">
-                <?= h($game->team_season->team->team_name ?? 'Team') ?> vs
-                <?= h($game->opponent->opponent_name ?? 'Opponent') ?>
-                <?php if ($game->game_date) : ?>
-                    on <?= h($game->game_date->format('M j, Y')) ?>
+                <?= h($teamName) ?> vs
+                <?= h($opponentName) ?>
+                <?php if ($gameDate instanceof DateTimeInterface) : ?>
+                    on <?= h($gameDate->format('M j, Y')) ?>
                 <?php endif; ?>
             </p>
         </div>
