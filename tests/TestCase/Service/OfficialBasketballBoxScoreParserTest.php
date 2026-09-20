@@ -191,4 +191,64 @@ TEXT;
         $this->assertSame(3, $result['teams'][1]['players'][0]['BS']);
         $this->assertSame(76, $result['teams'][1]['totals']['PTS']);
     }
+
+    /**
+     * Test older visitor/home exports with dotted name and totals separators.
+     *
+     * @return void
+     */
+    public function testParsesLegacyVisitorHomeFormat(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score
+VISITORS: Tennessee Temple 3-4
+ TOT-FG 3-PT REBOUNDS
+## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
+11 MORRIS, Josh........ f 0-3 0-1 2-2 0 0 0 5 2 1 3 0 0 18
+Totals.............. 15-40 3-13 8-15 11 21 32 20 41 7 26 3 2 200
+HOME TEAM: Murray State 3-0
+ TOT-FG 3-PT REBOUNDS
+## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
+02 DANIEL, Ed.......... f 4-5 0-0 4-7 1 2 3 1 12 0 2 3 2 26
+Totals.............. 28-57 10-23 17-23 12 19 31 16 83 19 9 5 17 200
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('Tennessee Temple', $result['teams'][0]['label']);
+        $this->assertSame(41, $result['teams'][0]['score']);
+        $this->assertSame('MORRIS, Josh', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('Murray State', $result['teams'][1]['label']);
+        $this->assertSame(83, $result['teams'][1]['score']);
+    }
+
+    /**
+     * Test compacted legacy stat columns and an OCR-damaged minutes value.
+     *
+     * @return void
+     */
+    public function testRepairsCompactedLegacyColumnsAndTrailingMinutesDash(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score -- Game Totals -- Final Statistics
+Murray State vs Southern Mississippi
+11/26/11 8 pm at Anchorage, Alaska
+Murray State 90 • 7-0
+## Player FG-FGA FG-FGA FT-FTA Off Def Tot PF TP A TO Blk Stl Min
+02 DANIEL, Ed f 2-4 0-0 4-7 4 5 9 3 8 0 0 3 0 31
+Totals 31-62 10-21 18-25 15 26 41 21 90 15 18 7 8 250
+Southern Mississippi 81 • 4-2
+## Player FG-FGA FG-FGA FT-FTA Off Def Tot PF TP A TO Blk Stl Min
+10 Jenkins,Cedric 0-1 0-0 0-0 0002 00000 3
+24 Mills,Jonathan 4-8 0-0 4-5 6 2 8 4 12 0 0 0 0 40-
+Totals 25-67 7-22 24-27 16 20 36 21 81 6 15 2 9 250
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('Jenkins,Cedric', $result['teams'][1]['players'][0]['name']);
+        $this->assertSame(2, $result['teams'][1]['players'][0]['PF']);
+        $this->assertSame('3', $result['teams'][1]['players'][0]['MIN']);
+        $this->assertSame('40', $result['teams'][1]['players'][1]['MIN']);
+    }
 }

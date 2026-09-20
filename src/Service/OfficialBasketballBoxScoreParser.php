@@ -26,7 +26,7 @@ class OfficialBasketballBoxScoreParser
     {
         $text = preg_replace('/\r\n?/', "\n", $text) ?? $text;
         $text = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $text);
-        if (str_contains($text, 'Official Basketball Box Score -- Game Totals')) {
+        if ($this->isLegacyGameTotalsFormat($text)) {
             return $this->parseLegacyGameTotals($text);
         }
         $finalSection = $this->extractFinalBoxScoreSection($text);
@@ -61,6 +61,18 @@ class OfficialBasketballBoxScoreParser
     }
 
     /**
+     * Identify older StatCrew Game Totals and visitor/home table exports.
+     *
+     * @param string $text Extracted box-score text
+     * @return bool Whether the text uses a legacy table format
+     */
+    private function isLegacyGameTotalsFormat(string $text): bool
+    {
+        return str_contains($text, 'Official Basketball Box Score -- Game Totals')
+            || preg_match('/^(?:VISITORS|HOME TEAM):.+\n\s*TOT-FG\s+3-PT\s+REBOUNDS/im', $text) === 1;
+    }
+
+    /**
      * Parse the older NCAA Game Totals box-score layout.
      *
      * @param string $text Extracted PDF text
@@ -79,16 +91,12 @@ class OfficialBasketballBoxScoreParser
                 continue;
             }
 
-            if (preg_match('/^(.+?)\s+(\d+)\s+\S+\s+\d+-\d+$/', $line, $matches)) {
+            $teamHeader = $this->parseLegacyTeamHeader($line);
+            if ($teamHeader !== null) {
                 if ($current !== null) {
                     $teams[] = $current;
                 }
-                $current = [
-                    'label' => trim($matches[1]),
-                    'score' => (int)$matches[2],
-                    'players' => [],
-                    'totals' => [],
-                ];
+                $current = $teamHeader;
                 continue;
             }
 
@@ -96,8 +104,13 @@ class OfficialBasketballBoxScoreParser
                 continue;
             }
 
-            if (str_starts_with($line, 'Totals ')) {
-                $current['totals'] = $this->parseLegacyTotalsLine($line);
+            if (preg_match('/^Totals[.\s]+/', $line) === 1) {
+                $current['totals'] = $this->parseLegacyTotalsLine(
+                    preg_replace('/^Totals[.\s]+/', 'Totals ', $line) ?? $line,
+                );
+                if ($current['score'] === null) {
+                    $current['score'] = $current['totals']['PTS'] ?? null;
+                }
                 continue;
             }
 
@@ -123,6 +136,32 @@ class OfficialBasketballBoxScoreParser
     }
 
     /**
+     * Parse a legacy team heading from Game Totals or visitor/home exports.
+     *
+     * @param string $line Normalized source line
+     * @return array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}|null
+     */
+    private function parseLegacyTeamHeader(string $line): ?array
+    {
+        if (preg_match('/^(?:VISITORS|HOME TEAM):\s*(.+?)\s+\d+-\d+$/i', $line, $matches) === 1) {
+            $label = trim($matches[1]);
+            $score = null;
+        } elseif (preg_match('/^(.+?)\s+(\d+)\s+\S+\s+\d+-\d+$/', $line, $matches) === 1) {
+            $label = trim($matches[1]);
+            $score = (int)$matches[2];
+        } else {
+            return null;
+        }
+
+        return [
+            'label' => $label,
+            'score' => $score,
+                    'players' => [],
+                    'totals' => [],
+        ];
+    }
+
+    /**
      * Parse a player row from an older NCAA Game Totals export.
      *
      * @param string $line Player row
@@ -131,7 +170,7 @@ class OfficialBasketballBoxScoreParser
     private function parseLegacyPlayerLine(string $line): ?array
     {
         $pattern = '/^(\d+)\s+(.+?)(?:\s+[f-g])?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
-            . '([\d\s]+)$/i';
+            . '([\d\s-]+)$/i';
         if (!preg_match($pattern, $line, $matches)) {
             return null;
         }
@@ -148,7 +187,7 @@ class OfficialBasketballBoxScoreParser
 
         return [
             'jersey' => $matches[1],
-            'name' => trim($matches[2]),
+            'name' => rtrim(trim($matches[2]), '.'),
             'MIN' => (string)$values[9],
             'FGM' => (int)$matches[3],
             'FGA' => (int)$matches[4],
@@ -186,7 +225,7 @@ class OfficialBasketballBoxScoreParser
         int $threePointersMade,
         int $freeThrowsMade,
     ): ?array {
-        $parts = preg_split('/\s+/', trim($trailingValues)) ?: [];
+        $parts = preg_split('/\s+/', rtrim(trim($trailingValues), '-')) ?: [];
         if (count($parts) === 10) {
             return array_map('intval', $parts);
         }

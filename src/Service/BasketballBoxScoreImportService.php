@@ -10,6 +10,7 @@ use finfo;
 use InvalidArgumentException;
 use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Prepares and commits NCAA LiveStats basketball box-score imports.
@@ -22,18 +23,23 @@ class BasketballBoxScoreImportService
 
     private OfficialBasketballBoxScoreParser $parser;
 
+    private BasketballBoxScoreCsvParser $csvParser;
+
     private BasketballStatsAdminService $statsAdminService;
 
     /**
      * @param \App\Service\OfficialBasketballBoxScoreParser|null $parser Parser dependency
      * @param \App\Service\BasketballStatsAdminService|null $statsAdminService Existing stat writer
+     * @param \App\Service\BasketballBoxScoreCsvParser|null $csvParser CSV fallback parser
      */
     public function __construct(
         ?OfficialBasketballBoxScoreParser $parser = null,
         ?BasketballStatsAdminService $statsAdminService = null,
+        ?BasketballBoxScoreCsvParser $csvParser = null,
     ) {
         $this->parser = $parser ?? new OfficialBasketballBoxScoreParser();
         $this->statsAdminService = $statsAdminService ?? new BasketballStatsAdminService();
+        $this->csvParser = $csvParser ?? new BasketballBoxScoreCsvParser();
     }
 
     /**
@@ -142,6 +148,55 @@ class BasketballBoxScoreImportService
     }
 
     /**
+     * Read a structured CSV upload without storing it permanently.
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $file Uploaded CSV
+     * @return string CSV contents
+     * @throws \InvalidArgumentException When the upload is invalid or unreadable
+     */
+    public function extractCsvText(UploadedFileInterface $file): string
+    {
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            throw new InvalidArgumentException('The CSV upload did not complete successfully.');
+        }
+
+        $size = $file->getSize();
+        if ($size !== null && $size > self::MAX_PDF_BYTES) {
+            throw new InvalidArgumentException('The CSV file is too large. Please upload a file smaller than 20 MB.');
+        }
+
+        $filename = strtolower((string)$file->getClientFilename());
+        $mediaType = strtolower((string)$file->getClientMediaType());
+        $allowedMediaTypes = ['text/csv', 'application/csv', 'application/vnd.ms-excel'];
+        if (!str_ends_with($filename, '.csv') && !in_array($mediaType, $allowedMediaTypes, true)) {
+            throw new InvalidArgumentException('Please upload a CSV file.');
+        }
+
+        try {
+            $stream = $file->getStream();
+            $stream->rewind();
+            $contents = $stream->getContents();
+        } catch (Throwable) {
+            throw new InvalidArgumentException('The CSV file could not be read.');
+        }
+        if ($contents === '') {
+            throw new InvalidArgumentException('The CSV file is empty.');
+        }
+
+        return $contents;
+    }
+
+    /**
+     * Return the editable CSV fallback template.
+     *
+     * @return string CSV template contents
+     */
+    public function getCsvTemplate(): string
+    {
+        return $this->csvParser->template();
+    }
+
+    /**
      * Parse text and prepare editable rows for the importer screen.
      *
      * @param int $gameId Game ID
@@ -150,7 +205,31 @@ class BasketballBoxScoreImportService
      */
     public function preview(int $gameId, string $text): array
     {
-        $parsed = $this->parser->parse($text);
+        return $this->buildPreview($gameId, $this->parser->parse($text), $text);
+    }
+
+    /**
+     * Parse structured CSV and prepare editable rows for the importer screen.
+     *
+     * @param int $gameId Game ID
+     * @param string $contents CSV contents
+     * @return array<string,mixed>
+     */
+    public function previewCsv(int $gameId, string $contents): array
+    {
+        return $this->buildPreview($gameId, $this->csvParser->parse($contents), $contents);
+    }
+
+    /**
+     * Add roster mapping and application context to parsed box-score data.
+     *
+     * @param int $gameId Game ID
+     * @param array{date:string|null,teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>} $parsed Parsed box score
+     * @param string $rawText Source PDF text, when available
+     * @return array<string,mixed>
+     */
+    private function buildPreview(int $gameId, array $parsed, string $rawText): array
+    {
         $viewData = $this->getAdminImportData($gameId);
         $teamIndex = $this->resolveTeamIndex($parsed['teams'], $viewData['game']);
         $warnings = [];
@@ -185,7 +264,7 @@ class BasketballBoxScoreImportService
         );
 
         return $viewData + [
-            'rawText' => $text,
+            'rawText' => $rawText,
             'parsed' => $parsed,
             'team' => $team,
             'opponent' => $opponent,

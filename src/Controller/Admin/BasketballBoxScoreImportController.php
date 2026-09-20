@@ -30,7 +30,9 @@ class BasketballBoxScoreImportController extends AppController
         $this->FormProtection->unlockFields([
             'intent',
             'pdf_file',
+            'csv_file',
             'raw_text',
+            'source_type',
             'team_rows',
             'opponent_rows',
             'team_box',
@@ -38,6 +40,23 @@ class BasketballBoxScoreImportController extends AppController
             'add_to_totals',
             'team_minutes',
         ]);
+    }
+
+    /**
+     * Download the structured CSV fallback template for a game import.
+     *
+     * @param int $gameId Game ID
+     * @return \Cake\Http\Response CSV download response
+     */
+    public function csvTemplate(int $gameId): Response
+    {
+        $this->request->allowMethod(['get']);
+        $filename = 'basketball-box-score-game-' . $gameId . '-template.csv';
+
+        return $this->response
+            ->withType('text/csv')
+            ->withDownload($filename)
+            ->withStringBody($this->importService->getCsvTemplate());
     }
 
     /**
@@ -70,18 +89,11 @@ class BasketballBoxScoreImportController extends AppController
             $this->Flash->error('Could not load importer data: ' . $e->getMessage());
         }
         $rawText = (string)$this->request->getData('raw_text', '');
+        $sourceType = (string)$this->request->getData('source_type', '');
         $intent = (string)$this->request->getData('intent', '');
 
         if ($this->request->is('post')) {
             try {
-                $pdfFile = $this->normalizePdfUpload($this->request->getData('pdf_file'));
-                if ($pdfFile !== null && $pdfFile->getError() !== UPLOAD_ERR_NO_FILE) {
-                    $rawText = $this->importService->extractPdfText($pdfFile);
-                }
-                if ($rawText === '') {
-                    throw new InvalidArgumentException('Choose a PDF file or paste extracted LiveStats text.');
-                }
-
                 if ($intent === 'save') {
                     $result = $this->importService->save($gameId, (array)$this->request->getData());
                     if ($result['success']) {
@@ -96,15 +108,43 @@ class BasketballBoxScoreImportController extends AppController
                     foreach ($result['errors'] as $error) {
                         $this->Flash->error($error);
                     }
-                }
 
-                $viewData = $this->importService->preview($gameId, $rawText);
+                    $viewData = $sourceType === 'csv'
+                        ? $this->importService->previewCsv($gameId, $rawText)
+                        : $this->importService->preview($gameId, $rawText);
+                } else {
+                    $pdfFile = $this->normalizeUpload($this->request->getData('pdf_file'));
+                    $csvFile = $this->normalizeUpload($this->request->getData('csv_file'));
+                    $hasPdf = $pdfFile !== null && $pdfFile->getError() !== UPLOAD_ERR_NO_FILE;
+                    $hasCsv = $csvFile !== null && $csvFile->getError() !== UPLOAD_ERR_NO_FILE;
+                    if ($hasPdf && $hasCsv) {
+                        throw new InvalidArgumentException('Choose either a PDF or a CSV file, not both.');
+                    }
+
+                    if ($hasPdf) {
+                        $rawText = $this->importService->extractPdfText($pdfFile);
+                        $sourceType = 'pdf';
+                    } elseif ($hasCsv) {
+                        $rawText = $this->importService->extractCsvText($csvFile);
+                        $sourceType = 'csv';
+                    } elseif ($rawText !== '') {
+                        $sourceType = 'text';
+                    } else {
+                        throw new InvalidArgumentException(
+                            'Choose a PDF or CSV file, or paste extracted LiveStats text.',
+                        );
+                    }
+
+                    $viewData = $sourceType === 'csv'
+                        ? $this->importService->previewCsv($gameId, $rawText)
+                        : $this->importService->preview($gameId, $rawText);
+                }
             } catch (InvalidArgumentException $exception) {
                 $this->Flash->error($exception->getMessage());
             }
         }
 
-        $this->set($viewData + ['rawText' => $rawText]);
+        $this->set($viewData + ['rawText' => $rawText, 'sourceType' => $sourceType]);
 
         return null;
     }
@@ -115,7 +155,7 @@ class BasketballBoxScoreImportController extends AppController
      * @param mixed $value Uploaded PDF value
      * @return \Psr\Http\Message\UploadedFileInterface|null
      */
-    private function normalizePdfUpload(mixed $value): ?UploadedFileInterface
+    private function normalizeUpload(mixed $value): ?UploadedFileInterface
     {
         if ($value instanceof UploadedFileInterface) {
             return $value;

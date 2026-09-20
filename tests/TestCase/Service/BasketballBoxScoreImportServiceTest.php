@@ -63,6 +63,53 @@ class BasketballBoxScoreImportServiceTest extends TestCase
     }
 
     /**
+     * Read a valid structured CSV upload and expose the fallback template.
+     *
+     * @return void
+     */
+    public function testExtractCsvTextAndTemplate(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'rh-csv-test-');
+        self::assertNotFalse($path);
+        $csv = "row_type,side,jersey,name,MIN,FGM,FGA,TPM,TPA,FTM,FTA,ORB,DRB,RB,PF,FD,PTS,AST,TRN,STL,BS,BD\n";
+        file_put_contents($path, $csv);
+
+        try {
+            $file = new UploadedFile($path, strlen($csv), UPLOAD_ERR_OK, 'box-score.csv', 'text/csv');
+            $service = new BasketballBoxScoreImportService();
+
+            self::assertSame($csv, $service->extractCsvText($file));
+            self::assertStringStartsWith('row_type,side,jersey,name,MIN', $service->getCsvTemplate());
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Reject uploads that cannot be identified as CSV files.
+     *
+     * @return void
+     */
+    public function testRejectsNonCsvUpload(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'rh-not-csv-');
+        self::assertNotFalse($path);
+        file_put_contents($path, 'not CSV');
+
+        try {
+            $file = new UploadedFile($path, 7, UPLOAD_ERR_OK, 'score.txt', 'text/plain');
+            $this->expectException(InvalidArgumentException::class);
+            (new BasketballBoxScoreImportService())->extractCsvText($file);
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+
+    /**
      * Normalize LiveStats minutes before delegating rows to persistence.
      *
      * @return void

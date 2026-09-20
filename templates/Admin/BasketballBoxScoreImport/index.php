@@ -5,6 +5,7 @@
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Game $game
  * @var string $rawText
+ * @var string $sourceType
  * @var list<array{id: int, jersey: string, name: string, label: string}> $roster
  * @var list<array<string, mixed>> $teamRows
  * @var list<array<string, mixed>> $opponentRows
@@ -50,7 +51,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
     </div>
 
     <div class="alert alert-info">
-        <strong>Workflow:</strong> upload an official NCAA box-score PDF, preview the detected rows, correct any roster mapping, then save the import. The importer reads final player and team totals; play-by-play and shot-chart pages are ignored.
+        <strong>Workflow:</strong> upload an official NCAA box-score PDF or a completed CSV template, preview the detected rows, correct any roster mapping, then save the import. The importer reads final player and team totals; play-by-play and shot-chart pages are ignored.
     </div>
 
     <?= $this->Form->create(null, [
@@ -59,19 +60,30 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
         'data-turbo' => 'false',
         'url' => ['action' => 'index', $game->id],
     ]) ?>
+    <?= $this->Form->hidden('source_type', ['value' => $sourceType ?? '']) ?>
     <div class="card mb-4">
         <div class="card-header">
-            <h2 class="h5 mb-0">1. LiveStats PDF</h2>
+            <h2 class="h5 mb-0">1. Source File</h2>
         </div>
         <div class="card-body">
             <label for="pdf-file" class="form-label">Choose the official PDF</label>
             <input id="pdf-file" name="pdf_file" type="file" accept="application/pdf,.pdf" class="form-control">
-            <div class="form-text">Upload the original NCAA LiveStats PDF, up to 20 MB. The server extracts the text temporarily and deletes the uploaded copy after previewing.</div>
+            <div class="form-text">Upload the original NCAA LiveStats PDF, up to 20 MB. The server extracts the text temporarily and deletes the uploaded copy after previewing. Legacy Game Totals and visitor/home exports are supported.</div>
+            <div class="border-top mt-4 pt-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <label for="csv-file" class="form-label mb-0">Or choose a completed CSV template</label>
+                    <a href="<?= $this->Url->build(['action' => 'csvTemplate', $game->id]) ?>" class="btn btn-outline-secondary btn-sm" data-turbo="false">
+                        <i class="bi bi-download"></i> Download CSV Template
+                    </a>
+                </div>
+                <input id="csv-file" name="csv_file" type="file" accept="text/csv,.csv" class="form-control mt-2">
+                <div class="form-text">Download the template, replace the player and totals placeholder rows for both <code>team</code> and <code>opponent</code>, then upload it. Leave untracked stat columns blank. Do not upload a PDF and CSV together.</div>
+            </div>
             <details class="mt-3">
                 <summary>Use pasted text instead</summary>
                 <label for="raw-text" class="form-label mt-2">Extracted PDF text</label>
                 <textarea id="raw-text" name="raw_text" class="form-control font-monospace" rows="8"><?= h($rawText) ?></textarea>
-                <div class="form-text">This fallback is useful for PDFs that contain scanned images rather than selectable text.</div>
+                <div class="form-text">Paste extracted text from a PDF when the PDF upload is unavailable. Use the CSV template instead for image-only PDFs or manual entry.</div>
             </details>
         </div>
         <div class="card-footer d-flex justify-content-end">
