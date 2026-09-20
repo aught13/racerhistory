@@ -330,7 +330,7 @@ class BasketballBoxScoreImportService
         $pipes = [];
         $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         if (!is_resource($process)) {
-            throw new RuntimeException('PDF text extraction is unavailable on this server.');
+            return $this->extractTextFromPdfBytes($temporaryPath);
         }
 
         $output = stream_get_contents($pipes[1]) ?: '';
@@ -339,6 +339,10 @@ class BasketballBoxScoreImportService
         fclose($pipes[2]);
         $exitCode = proc_close($process);
         if ($exitCode !== 0) {
+            if ($exitCode === 127 || str_contains($errorOutput, 'pdftotext: not found')) {
+                return $this->extractTextFromPdfBytes($temporaryPath);
+            }
+
             throw new InvalidArgumentException(
                 'The PDF could not be read. ' . trim($errorOutput),
             );
@@ -348,6 +352,105 @@ class BasketballBoxScoreImportService
         }
 
         return $output;
+    }
+
+    /**
+     * Extract readable text from a PDF without external binaries.
+     *
+     * This fallback handles the simple text-only PDFs used in tests and any
+     * uncompressed PDF streams that store text in literal string operators.
+     *
+     * @param string $temporaryPath Temporary PDF path
+     * @return string Extracted text
+     */
+    private function extractTextFromPdfBytes(string $temporaryPath): string
+    {
+        $contents = file_get_contents($temporaryPath);
+        if ($contents === false || $contents === '') {
+            throw new InvalidArgumentException('The PDF could not be read.');
+        }
+
+        $textChunks = [];
+        if (preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $contents, $streamMatches)) {
+            foreach ($streamMatches[1] as $stream) {
+                if (!preg_match_all('/\((?:\\.|[^\\()])*\)/s', $stream, $stringMatches)) {
+                    continue;
+                }
+
+                $line = [];
+                foreach ($stringMatches[0] as $literalString) {
+                    $line[] = $this->decodePdfLiteralString($literalString);
+                }
+
+                $textChunks[] = implode(' ', $line);
+            }
+        }
+
+        $text = trim(implode("\n", $textChunks));
+        if ($text === '') {
+            throw new InvalidArgumentException('The PDF contains no extractable text.');
+        }
+
+        return $text;
+    }
+
+    /**
+     * Decode a PDF literal string token into plain text.
+     *
+     * @param string $literalString PDF literal string, including parentheses
+     * @return string Decoded text
+     */
+    private function decodePdfLiteralString(string $literalString): string
+    {
+        $literalString = substr($literalString, 1, -1);
+        $decoded = '';
+        $length = strlen($literalString);
+
+        for ($index = 0; $index < $length; $index++) {
+            $char = $literalString[$index];
+            if ($char !== '\\') {
+                $decoded .= $char;
+
+                continue;
+            }
+
+            $index++;
+            if ($index >= $length) {
+                break;
+            }
+
+            $escaped = $literalString[$index];
+            if (ctype_digit($escaped)) {
+                $octal = $escaped;
+                $octalLength = 1;
+                while (
+                    $index + 1 < $length
+                    && $octalLength < 3
+                    && ctype_digit($literalString[$index + 1])
+                ) {
+                    $index++;
+                    $octal .= $literalString[$index];
+                    $octalLength++;
+                }
+
+                $decoded .= chr(octdec($octal));
+                continue;
+            }
+
+            $decoded .= match ($escaped) {
+                'n' => "\n",
+                'r' => "\r",
+                't' => "\t",
+                'b' => "\x08",
+                'f' => "\f",
+                '(' => '(',
+                ')' => ')',
+                '\\' => '\\',
+                default => $escaped,
+            };
+        }
+
+        return $decoded;
     }
 
     /**
