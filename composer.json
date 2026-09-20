@@ -18,6 +18,7 @@
         "mobiledetect/mobiledetectlib": "^4.8.03",
         "phpmailer/phpmailer": "^7.1",
         "robmorgan/phinx": "^0.16.11",
+        "smalot/pdfparser": "^2.12",
         "tinymce/tinymce": "^8.0"
     },
     "require-dev": {

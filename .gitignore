@@ -78,3 +78,4 @@ phpdoc.dist.xml
 server.pid
 config/Migrations/schema-dump-default.lock
 webroot/ads.txt
+scripts/php82-test.sh
