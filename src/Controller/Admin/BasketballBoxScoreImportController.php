@@ -27,7 +27,7 @@ class BasketballBoxScoreImportController extends AppController
     {
         parent::initialize();
         $this->importService = new BasketballBoxScoreImportService();
-        $this->FormProtection->unlockFields([
+        $this->FormProtection->setConfig('unlockedFields', [
             'intent',
             'pdf_file',
             'csv_file',
