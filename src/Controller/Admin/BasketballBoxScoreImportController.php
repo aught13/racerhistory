@@ -161,12 +161,11 @@ class BasketballBoxScoreImportController extends AppController
     private function extractPdfTextFromUpload(UploadedFileInterface $pdfFile): string
     {
         $temporaryDirectory = WWW_ROOT . 'files' . DS . 'boxscore_temp' . DS;
-        if (
-            !is_dir($temporaryDirectory)
-            && !mkdir($temporaryDirectory, 0700, true)
-            && !is_dir($temporaryDirectory)
-        ) {
-            throw new RuntimeException('Could not create the PDF extraction directory.');
+        if (!$this->ensurePdfTemporaryDirectory($temporaryDirectory, 0770)) {
+            $temporaryDirectory = rtrim(sys_get_temp_dir(), DS) . DS . 'racerhistory-boxscore' . DS;
+            if (!$this->ensurePdfTemporaryDirectory($temporaryDirectory, 0700)) {
+                throw new RuntimeException('Could not create a writable PDF extraction directory.');
+            }
         }
 
         try {
@@ -204,6 +203,26 @@ class BasketballBoxScoreImportController extends AppController
                 unlink($temporaryPath);
             }
         }
+    }
+
+    /**
+     * Ensure a PDF extraction directory exists and is writable.
+     *
+     * @param string $directory Directory path
+     * @param int $permissions Directory permissions when created
+     * @return bool Whether the directory is ready
+     */
+    private function ensurePdfTemporaryDirectory(string $directory, int $permissions): bool
+    {
+        $parentDirectory = dirname(rtrim($directory, DS));
+        if (!is_dir($directory) && (!is_dir($parentDirectory) || !is_writable($parentDirectory))) {
+            return false;
+        }
+        if (!is_dir($directory) && !mkdir($directory, $permissions, true) && !is_dir($directory)) {
+            return false;
+        }
+
+        return is_writable($directory);
     }
 
     /**

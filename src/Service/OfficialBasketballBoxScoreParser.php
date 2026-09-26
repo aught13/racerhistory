@@ -26,8 +26,13 @@ class OfficialBasketballBoxScoreParser
     {
         $text = preg_replace('/\r\n?/', "\n", $text) ?? $text;
         $text = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $text);
+        $text = $this->normalizeCompactTraditionalRows($text);
         if ($this->isLegacyGameTotalsFormat($text)) {
             return $this->parseLegacyGameTotals($text);
+        }
+        $columnarResult = $this->parseSmalotColumnarFormat($text);
+        if ($columnarResult !== null) {
+            return $columnarResult;
         }
         $finalSection = $this->extractFinalBoxScoreSection($text);
         $blocks = $this->extractPlayerBlocks($finalSection);
@@ -132,6 +137,258 @@ class OfficialBasketballBoxScoreParser
         return [
             'date' => $dateMatch[1] ?? null,
             'teams' => array_slice($teams, 0, 2),
+        ];
+    }
+
+    /**
+     * Parse Smalot's column-oriented extraction of a traditional LiveStats table.
+     *
+     * @param string $text Extracted PDF text
+     * @return array{date:string|null,teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>}|null Parsed result or null when not columnar
+     */
+    private function parseSmalotColumnarFormat(string $text): ?array
+    {
+        if (!str_contains($text, "\n#\n") || !str_contains($text, "\nPlayer\n")) {
+            return null;
+        }
+
+        $labels = $this->extractTeamLabels($text);
+        if (count($labels) < 2) {
+            return null;
+        }
+
+        $sections = [];
+        foreach (array_slice($labels, 0, 2) as $label) {
+            $teamPattern = '/^' . preg_quote($label, '/') . '[ \t]+(\d+)$/m';
+            if (preg_match($teamPattern, $text, $match, PREG_OFFSET_CAPTURE) !== 1) {
+                return null;
+            }
+            $sections[] = [
+                'label' => $label,
+                'score' => (int)$match[1][0],
+                'offset' => $match[0][1],
+            ];
+        }
+
+        $teams = [];
+        foreach ($sections as $index => $section) {
+            $start = $section['offset'];
+            $end = $sections[$index + 1]['offset'] ?? strpos($text, '1st Half Play By Play', $start);
+            $segment = substr($text, $start, $end === false ? null : $end - $start);
+            $team = $this->parseSmalotColumnarTeam($segment, $section['label'], $section['score']);
+            if ($team === null) {
+                return null;
+            }
+            $teams[] = $team;
+        }
+
+        preg_match('/\b(\d{2}\/\d{2}\/\d{2})\b/', $text, $dateMatch);
+
+        return [
+            'date' => $dateMatch[1] ?? null,
+            'teams' => $teams,
+        ];
+    }
+
+    /**
+     * Reconstruct one team from Smalot's vertical table columns.
+     *
+     * @param string $segment Team section
+     * @param string $label Team label
+     * @param int $score Team score
+     * @return array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}|null Parsed team or null
+     */
+    private function parseSmalotColumnarTeam(string $segment, string $label, int $score): ?array
+    {
+        $lines = array_values(array_filter(
+            array_map('trim', explode("\n", $segment)),
+            static fn(string $line): bool => $line !== '',
+        ));
+        $numberHeader = array_search('#', $lines, true);
+        $playerHeader = array_search('Player', $lines, true);
+        $totalsHeader = array_search('Totals', $lines, true);
+        if (!is_int($numberHeader) || !is_int($playerHeader) || !is_int($totalsHeader)) {
+            return null;
+        }
+
+        $jerseys = array_values(array_filter(
+            array_slice($lines, $numberHeader + 1, $playerHeader - $numberHeader - 1),
+            static fn(string $line): bool => preg_match('/^(?:\d{1,2}|TM)$/', $line) === 1,
+        ));
+        $names = array_slice($lines, $playerHeader + 1, $totalsHeader - $playerHeader - 1);
+        if (count($jerseys) < 2 || count($names) !== count($jerseys)) {
+            return null;
+        }
+
+        $headers = ['MIN', 'FG', '3PT', 'FT', 'ORB-DRB', 'REB', 'PF', 'A', 'TO BLK', 'STL', 'PTS'];
+        $columnIndexes = [];
+        $searchFrom = $totalsHeader;
+        foreach ($headers as $header) {
+            $columnIndex = $this->findLineIndex($lines, $header, $searchFrom + 1);
+            if ($columnIndex === null) {
+                return null;
+            }
+            $columnIndexes[$header] = $columnIndex;
+            $searchFrom = $columnIndex;
+        }
+
+        $columns = [];
+        foreach ($headers as $header) {
+            $stop = $this->findNextColumnHeader($lines, $columnIndexes[$header] + 1, $headers);
+            $end = $stop === null ? null : $stop - $columnIndexes[$header] - 1;
+            $valuePattern = match ($header) {
+                'TO BLK' => '/^\d+$/',
+                'FG', '3PT', 'FT', 'ORB-DRB' => '/^\d+-\d+$/',
+                default => '/^\d+$/',
+            };
+            $values = $this->extractColumnValues(
+                array_slice($lines, $columnIndexes[$header] + 1, $end),
+                $valuePattern,
+            );
+            if ($header === 'TO BLK') {
+                $half = intdiv(count($values), 2);
+                $columns['TO'] = array_slice($values, 0, $half);
+                $columns['BLK'] = array_slice($values, $half);
+            } else {
+                $columns[$header] = $values;
+            }
+        }
+
+        foreach ($columns as $column) {
+            if (count($column) !== count($jerseys) + 1) {
+                return null;
+            }
+        }
+
+        $players = [];
+        $playerCount = count($jerseys) - 1;
+        for ($index = 0; $index < $playerCount; $index++) {
+            $fg = $this->splitColumnPair($columns['FG'][$index]);
+            $threePoint = $this->splitColumnPair($columns['3PT'][$index]);
+            $freeThrow = $this->splitColumnPair($columns['FT'][$index]);
+            $rebounds = $this->splitColumnPair($columns['ORB-DRB'][$index]);
+            if ($fg === null || $threePoint === null || $freeThrow === null || $rebounds === null) {
+                return null;
+            }
+            $players[] = [
+                'jersey' => $jerseys[$index],
+                'name' => preg_replace('/^\*\s*/', '', $names[$index]) ?? $names[$index],
+                'MIN' => $columns['MIN'][$index] ?? null,
+                'FGM' => $fg[0], 'FGA' => $fg[1],
+                'TPM' => $threePoint[0], 'TPA' => $threePoint[1],
+                'FTM' => $freeThrow[0], 'FTA' => $freeThrow[1],
+                'ORB' => $rebounds[0], 'DRB' => $rebounds[1],
+                'RB' => (int)$columns['REB'][$index], 'PF' => (int)$columns['PF'][$index],
+                'FD' => null, 'PTS' => (int)$columns['PTS'][$index],
+                'AST' => (int)$columns['A'][$index], 'TRN' => (int)$columns['TO'][$index],
+                'STL' => (int)$columns['STL'][$index], 'BS' => (int)$columns['BLK'][$index],
+                'BD' => null, 'PLUS_MINUS' => null,
+            ];
+        }
+
+        $totalsIndex = count($jerseys);
+        $totals = $this->buildColumnarTotals($columns, $totalsIndex);
+        if ($totals === null) {
+            return null;
+        }
+
+        return compact('label', 'score', 'players', 'totals');
+    }
+
+    /**
+     * Find an exact line after a given position.
+     *
+     * @param list<string> $lines Extracted lines
+     * @param string $needle Header text
+     * @param int $start Start index
+     * @return int|null Matching index
+     */
+    private function findLineIndex(array $lines, string $needle, int $start): ?int
+    {
+        for ($index = $start, $count = count($lines); $index < $count; $index++) {
+            if ($lines[$index] === $needle) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the next known column header.
+     *
+     * @param list<string> $lines Extracted lines
+     * @param int $start Start index
+     * @param list<string> $headers Header names
+     * @return int|null Matching index
+     */
+    private function findNextColumnHeader(array $lines, int $start, array $headers): ?int
+    {
+        $indexes = [];
+        foreach ($headers as $header) {
+            $index = $this->findLineIndex($lines, $header, $start);
+            if ($index !== null) {
+                $indexes[] = $index;
+            }
+        }
+
+        return $indexes === [] ? null : min($indexes);
+    }
+
+    /**
+     * Extract values matching a column pattern.
+     *
+     * @param list<string> $lines Column lines
+     * @param string $pattern Value pattern
+     * @return list<string> Matching values
+     */
+    private function extractColumnValues(array $lines, string $pattern): array
+    {
+        return array_values(array_filter($lines, static fn(string $line): bool => preg_match($pattern, $line) === 1));
+    }
+
+    /**
+     * Split a made-attempted pair such as 25-49.
+     *
+     * @param string $value Pair value
+     * @return array{0:int,1:int}|null Pair or null
+     */
+    private function splitColumnPair(string $value): ?array
+    {
+        if (preg_match('/^(\d+)-(\d+)$/', $value, $matches) !== 1) {
+            return null;
+        }
+
+        return [(int)$matches[1], (int)$matches[2]];
+    }
+
+    /**
+     * Build totals from the final value in each reconstructed column.
+     *
+     * @param array<string, list<string>> $columns Reconstructed columns
+     * @param int $index Totals row index
+     * @return array<string, int|null>|null Totals or null when malformed
+     */
+    private function buildColumnarTotals(array $columns, int $index): ?array
+    {
+        $fg = $this->splitColumnPair($columns['FG'][$index]);
+        $threePoint = $this->splitColumnPair($columns['3PT'][$index]);
+        $freeThrow = $this->splitColumnPair($columns['FT'][$index]);
+        $rebounds = $this->splitColumnPair($columns['ORB-DRB'][$index]);
+        if ($fg === null || $threePoint === null || $freeThrow === null || $rebounds === null) {
+            return null;
+        }
+
+        return [
+            'FGM' => $fg[0], 'FGA' => $fg[1],
+            'TPM' => $threePoint[0], 'TPA' => $threePoint[1],
+            'FTM' => $freeThrow[0], 'FTA' => $freeThrow[1],
+            'ORB' => $rebounds[0], 'DRB' => $rebounds[1],
+            'RB' => (int)$columns['REB'][$index], 'PF' => (int)$columns['PF'][$index],
+            'FD' => null, 'PTS' => (int)$columns['PTS'][$index],
+            'AST' => (int)$columns['A'][$index], 'TRN' => (int)$columns['TO'][$index],
+            'STL' => (int)$columns['STL'][$index], 'BS' => (int)$columns['BLK'][$index],
+            'BD' => null, 'PLUS_MINUS' => null,
         ];
     }
 
@@ -351,7 +608,7 @@ class OfficialBasketballBoxScoreParser
      */
     private function extractFinalBoxScoreSection(string $text): string
     {
-        foreach (['Official Basketball Play by Play', 'Quarter Starters:'] as $marker) {
+        foreach (['Official Basketball Play by Play', '1st Half Play By Play', 'Quarter Starters:'] as $marker) {
             $markerPosition = strpos($text, $marker);
             if ($markerPosition !== false) {
                 return substr($text, 0, $markerPosition);
@@ -359,6 +616,118 @@ class OfficialBasketballBoxScoreParser
         }
 
         return $text;
+    }
+
+    /**
+     * Restore separators removed by Smalot PDF Parser from traditional rows.
+     *
+     * @param string $text Extracted PDF text
+     * @return string Text with compact player and totals rows normalized
+     */
+    private function normalizeCompactTraditionalRows(string $text): string
+    {
+        $lines = [];
+        foreach (explode("\n", $text) as $line) {
+            $line = trim($line);
+            $line = preg_replace(
+                '/^(\d{1,2})([A-Za-z][A-Za-z .,\'-]*?)\s*(\*)?\s*(\d{2,3})(?=\d+-\d+)/',
+                '$1 $2 $3 $4 ',
+                $line,
+            ) ?? $line;
+            $line = preg_replace(
+                '/^Totals\s+-?\s*(\d{2,3})(?=\d{2,}-\d+)/',
+                'Totals - $1 ',
+                $line,
+            ) ?? $line;
+            $line = $this->normalizeCompactTraditionalStatTail($line);
+            $lines[] = $line;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Restore the seven traditional stat columns after ORB-DRB.
+     *
+     * @param string $line Traditional player or totals row
+     * @return string Row with the compact stat tail expanded
+     */
+    private function normalizeCompactTraditionalStatTail(string $line): string
+    {
+        $pattern = '/^(\d+\s+.+?\s+\d{2,3}\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+            . '(\d+)-(\d+)\s+(\d+)-(\d+))\s+(.+)$/';
+        if (preg_match($pattern, $line, $matches) !== 1) {
+            $pattern = '/^(Totals\s+-\s+\d+\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+                . '(\d+)-(\d+)\s+(\d+)-(\d+))\s+(.+)$/';
+            if (preg_match($pattern, $line, $matches) !== 1) {
+                return $line;
+            }
+        }
+
+        $tailTokens = preg_split('/\s+/', trim($matches[10])) ?: [];
+        if (count($tailTokens) === 7) {
+            return $line;
+        }
+
+        $fieldGoalsMade = (int)$matches[2];
+        $threePointersMade = (int)$matches[4];
+        $freeThrowsMade = (int)$matches[6];
+        $expectedPoints = (string)(($fieldGoalsMade * 2) + $threePointersMade + $freeThrowsMade);
+        $digits = preg_replace('/\D/', '', implode('', $tailTokens)) ?? '';
+        if (!str_ends_with($digits, $expectedPoints)) {
+            return $line;
+        }
+
+        $prefix = substr($digits, 0, -strlen($expectedPoints));
+        $values = $this->splitCompactTraditionalTail($prefix, 0, 6, []);
+        if ($values === null) {
+            return $line;
+        }
+
+        $rowPrefix = $matches[1];
+
+        return $rowPrefix . ' ' . implode(' ', [...$values, (int)$expectedPoints]);
+    }
+
+    /**
+     * Split compact rebound and counting stats into six values.
+     *
+     * @param string $digits Compact stat digits
+     * @param int $offset Current digit offset
+     * @param int $remainingFields Fields left to split
+     * @param list<int> $values Values already split
+     * @return list<int>|null Split values or null when invalid
+     */
+    private function splitCompactTraditionalTail(
+        string $digits,
+        int $offset,
+        int $remainingFields,
+        array $values,
+    ): ?array {
+        $remainingDigits = strlen($digits) - $offset;
+        if ($remainingFields === 0) {
+            return $remainingDigits === 0 ? $values : null;
+        }
+        if ($remainingDigits < $remainingFields || $remainingDigits > $remainingFields * 2) {
+            return null;
+        }
+
+        for ($length = 2; $length >= 1; $length--) {
+            if ($remainingDigits - $length < $remainingFields - 1) {
+                continue;
+            }
+            $candidate = $this->splitCompactTraditionalTail(
+                $digits,
+                $offset + $length,
+                $remainingFields - 1,
+                [...$values, (int)substr($digits, $offset, $length)],
+            );
+            if ($candidate !== null) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -400,6 +769,10 @@ class OfficialBasketballBoxScoreParser
                 $players = [];
                 $totals = null;
             }
+        }
+
+        if ($totals !== null && $players !== []) {
+            $blocks[] = ['players' => $players, 'totals' => $totals];
         }
 
         if (count($blocks) < 2) {
@@ -559,22 +932,52 @@ class OfficialBasketballBoxScoreParser
         $pattern = '/^(\d+)\s+(.+?)\s+(\d{1,2}:\d{2})\s+'
             . '(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
             . '(-?\d+(?:\s+-?\d+){11})$/';
-        if (!preg_match($pattern, $line, $matches)) {
+        if (preg_match($pattern, $line, $matches) === 1) {
+            return $this->buildPlayerFields(
+                $matches[1],
+                $matches[2],
+                $matches[3],
+                (int)$matches[4],
+                (int)$matches[5],
+                (int)$matches[6],
+                (int)$matches[7],
+                (int)$matches[8],
+                (int)$matches[9],
+                $matches[10],
+            );
+        }
+
+        $traditionalPattern = '/^(\d+)\s+([A-Za-z][A-Za-z .,\'-]*?)\s+\*?\s*'
+            . '(\d{1,3}(?::\d{2})?)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+            . '(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)\s+(\d+)\s+'
+            . '(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/';
+        if (preg_match($traditionalPattern, $line, $matches) !== 1) {
             return null;
         }
 
-        return $this->buildPlayerFields(
-            $matches[1],
-            $matches[2],
-            $matches[3],
-            (int)$matches[4],
-            (int)$matches[5],
-            (int)$matches[6],
-            (int)$matches[7],
-            (int)$matches[8],
-            (int)$matches[9],
-            $matches[10],
-        );
+        return [
+            'jersey' => $matches[1],
+            'name' => trim($matches[2]),
+            'MIN' => $matches[3],
+            'FGM' => (int)$matches[4],
+            'FGA' => (int)$matches[5],
+            'TPM' => (int)$matches[6],
+            'TPA' => (int)$matches[7],
+            'FTM' => (int)$matches[8],
+            'FTA' => (int)$matches[9],
+            'ORB' => (int)$matches[10],
+            'DRB' => (int)$matches[11],
+            'RB' => (int)$matches[12],
+            'PF' => (int)$matches[13],
+            'FD' => null,
+            'PTS' => (int)$matches[18],
+            'AST' => (int)$matches[14],
+            'TRN' => (int)$matches[15],
+            'STL' => (int)$matches[17],
+            'BS' => (int)$matches[16],
+            'BD' => null,
+            'PLUS_MINUS' => null,
+        ];
     }
 
     /**
@@ -691,11 +1094,37 @@ class OfficialBasketballBoxScoreParser
     {
         $pattern = '/^Totals\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
             . '(-?\d+(?:\s+-?\d+){11})$/';
-        if (!preg_match($pattern, $line, $matches)) {
-            return [];
+        if (preg_match($pattern, $line, $matches) === 1) {
+            $values = array_map('intval', preg_split('/\s+/', $matches[7]) ?: []);
+
+            return [
+                'FGM' => (int)$matches[1],
+                'FGA' => (int)$matches[2],
+                'TPM' => (int)$matches[3],
+                'TPA' => (int)$matches[4],
+                'FTM' => (int)$matches[5],
+                'FTA' => (int)$matches[6],
+                'ORB' => $values[0] ?? null,
+                'DRB' => $values[1] ?? null,
+                'RB' => $values[2] ?? null,
+                'PF' => $values[3] ?? null,
+                'FD' => $values[4] ?? null,
+                'PTS' => $values[5] ?? null,
+                'AST' => $values[6] ?? null,
+                'TRN' => $values[7] ?? null,
+                'STL' => $values[8] ?? null,
+                'BS' => $values[9] ?? null,
+                'BD' => $values[10] ?? null,
+                'PLUS_MINUS' => $values[11] ?? null,
+            ];
         }
 
-        $values = array_map('intval', preg_split('/\s+/', $matches[7]) ?: []);
+        $traditionalPattern = '/^Totals\s+-\s+\d+\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+            . '(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)\s+(\d+)\s+'
+            . '(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/';
+        if (preg_match($traditionalPattern, $line, $matches) !== 1) {
+            return [];
+        }
 
         return [
             'FGM' => (int)$matches[1],
@@ -704,18 +1133,18 @@ class OfficialBasketballBoxScoreParser
             'TPA' => (int)$matches[4],
             'FTM' => (int)$matches[5],
             'FTA' => (int)$matches[6],
-            'ORB' => $values[0] ?? null,
-            'DRB' => $values[1] ?? null,
-            'RB' => $values[2] ?? null,
-            'PF' => $values[3] ?? null,
-            'FD' => $values[4] ?? null,
-            'PTS' => $values[5] ?? null,
-            'AST' => $values[6] ?? null,
-            'TRN' => $values[7] ?? null,
-            'STL' => $values[8] ?? null,
-            'BS' => $values[9] ?? null,
-            'BD' => $values[10] ?? null,
-            'PLUS_MINUS' => $values[11] ?? null,
+            'ORB' => (int)$matches[7],
+            'DRB' => (int)$matches[8],
+            'RB' => (int)$matches[9],
+            'PF' => (int)$matches[10],
+            'FD' => null,
+            'PTS' => (int)$matches[15],
+            'AST' => (int)$matches[11],
+            'TRN' => (int)$matches[12],
+            'STL' => (int)$matches[14],
+            'BS' => (int)$matches[13],
+            'BD' => null,
+            'PLUS_MINUS' => null,
         ];
     }
 
@@ -728,6 +1157,13 @@ class OfficialBasketballBoxScoreParser
     private function extractTeamLabels(string $text): array
     {
         preg_match_all('/^(.+?)\s+-\s+\d+\s+Record:/m', $text, $matches);
+        if ($matches[1] === []) {
+            preg_match('/^(.+?)\s+\([^\n]+\)\s+-vs-\s+(.+?)\s+\([^\n]+\)$/m', $text, $matches);
+
+            return isset($matches[1], $matches[2])
+                ? [trim($matches[1]), trim($matches[2])]
+                : [];
+        }
 
         return array_values(array_unique(array_map('trim', $matches[1])));
     }

@@ -153,6 +153,199 @@ TEXT;
     }
 
     /**
+     * Test the LiveStats format with integer minutes and combined ORB-DRB.
+     *
+     * @return void
+     */
+    public function testParsesIntegerMinutesAndCombinedReboundColumns(): void
+    {
+        $text = <<<'TEXT'
+Bellarmine (4-5,0-0 ASUN) -vs- Murray St. (7-3,0-0 MVC)
+12/06/25 at CFSB Center, Murray, KY
+Bellarmine 68
+Murray St. 81
+# Player GS MIN FG 3PT FT ORB-DRB REB PF A TO BLK STL PTS
+11 Waddell,Brian * 36 8-11 2-4 7-9 0-6 6 0 5 2 0 1 25
+32 Karasinski,Jack * 34 8-12 2-4 3-5 1-3 4 1 1 2 0 2 21
+Totals - 200 25-49 6-18 12-16 2-16 18 12 14 11 0 8 68
+Murray St. 81
+11 Traynor,JJ * 27 8-12 1-5 0-0 0-6 6 0 2 0 1 0 17
+22 Jackson,Javon * 23 4-7 2-3 4-4 1-0 1 0 4 1 0 1 14
+Totals - 200 30-57 11-30 10-11 10-25 35 13 18 13 3 4 81
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('Bellarmine', $result['teams'][0]['label']);
+        $this->assertSame('Murray St.', $result['teams'][1]['label']);
+        $this->assertSame('36', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame(0, $result['teams'][0]['players'][0]['ORB']);
+        $this->assertSame(6, $result['teams'][0]['players'][0]['DRB']);
+        $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(81, $result['teams'][1]['totals']['PTS']);
+    }
+
+    /**
+     * Test compact numeric tails emitted by Smalot PDF Parser.
+     *
+     * @return void
+     */
+    public function testParsesSmalotCompactedTraditionalRows(): void
+    {
+        $text = <<<'TEXT'
+Bellarmine (4-5,0-0 ASUN) -vs- Murray St. (7-3,0-0 MVC)
+12/06/25 at CFSB Center, Murray, KY
+11Waddell,Brian * 368-11 2-4 7-9 0-6 6 0 5 2 0 125
+Totals  -20025-49 6-18 12-16 2-16 18121411 0 868
+Team Summary FG 3PT FT
+08Traynor,JJ * 278-12 1-5 0-0 0-6 6 0 2 0 1 017
+Totals  -20030-57 11-30 10-11 10-25 35131813 3 481
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame(68, $result['teams'][0]['totals']['PTS']);
+        $this->assertSame(81, $result['teams'][1]['totals']['PTS']);
+        $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(17, $result['teams'][1]['players'][0]['PTS']);
+    }
+
+    /**
+     * Test column-oriented output from pdftotext without layout preservation.
+     *
+     * @return void
+     */
+    public function testParsesColumnarPdfText(): void
+    {
+        $text = <<<'TEXT'
+Bellarmine (4-5,0-0 ASUN) -vs- Murray St. (7-3,0-0 MVC)
+12/06/25 at CFSB Center, Murray, KY
+Bellarmine 68
+#
+11
+TM
+Player
+Waddell,Brian
+TEAM
+Totals
+Team Summary
+MIN
+36
+0
+200
+FG
+8-11
+0-0
+25-49
+3PT
+2-4
+0-0
+6-18
+FG
+FT
+7-9
+0-0
+12-16
+ORB-DRB
+0-6
+1-1
+2-16
+REB
+6
+2
+18
+PF
+0
+0
+12
+A
+5
+0
+14
+TO BLK
+2
+0
+0
+0
+11
+0
+STL
+1
+0
+8
+PTS
+25
+0
+68
+Murray St. 81
+#
+08
+TM
+Player
+Traynor,JJ
+TEAM
+Totals
+Team Summary
+MIN
+27
+0
+200
+FG
+8-12
+0-0
+30-57
+3PT
+1-5
+0-0
+11-30
+FG
+FT
+0-0
+0-0
+10-11
+ORB-DRB
+0-6
+1-1
+10-25
+REB
+6
+2
+35
+PF
+0
+0
+13
+A
+2
+0
+18
+TO BLK
+0
+0
+3
+0
+4
+0
+STL
+0
+0
+4
+PTS
+17
+0
+81
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame(68, $result['teams'][0]['score']);
+        $this->assertSame(81, $result['teams'][1]['score']);
+        $this->assertSame('Waddell,Brian', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(17, $result['teams'][1]['players'][0]['PTS']);
+    }
+
+    /**
      * Test the older NCAA Game Totals layout.
      *
      * @return void
