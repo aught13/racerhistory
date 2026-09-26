@@ -27,6 +27,9 @@ class OfficialBasketballBoxScoreParser
         $text = preg_replace('/\r\n?/', "\n", $text) ?? $text;
         $text = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $text);
         $text = $this->normalizeCompactTraditionalRows($text);
+        if (str_contains($text, 'Official Box Score') && str_contains($text, 'Game Totals -- Final Statistics')) {
+            return $this->parseFinalStatisticsFormat($text);
+        }
         if ($this->isLegacyGameTotalsFormat($text)) {
             return $this->parseLegacyGameTotals($text);
         }
@@ -137,6 +140,121 @@ class OfficialBasketballBoxScoreParser
         return [
             'date' => $dateMatch[1] ?? null,
             'teams' => array_slice($teams, 0, 2),
+        ];
+    }
+
+    /**
+     * Parse the 2019 Official Box Score Game Totals format.
+     *
+     * @param string $text Extracted box-score text
+     * @return array{date:string|null,teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>} Parsed result
+     */
+    private function parseFinalStatisticsFormat(string $text): array
+    {
+        $teams = [];
+        $current = null;
+        foreach (explode("\n", $text) as $line) {
+            $line = trim(preg_replace('/\s+/', ' ', $line) ?? $line);
+            if ($line === '') {
+                continue;
+            }
+
+            if (
+                preg_match('/^([A-Za-z].+?)\s+(\d+)$/', $line, $matches) === 1
+                && !str_contains($line, 'Totals')
+                && !str_starts_with($line, 'TEAM ')
+                && !str_starts_with($line, 'TOTALS ')
+            ) {
+                if ($current !== null) {
+                    $teams[] = $current;
+                }
+                $current = [
+                    'label' => trim($matches[1]),
+                    'score' => (int)$matches[2],
+                    'players' => [],
+                    'totals' => [],
+                ];
+                continue;
+            }
+            if ($current === null) {
+                continue;
+            }
+
+            if (str_starts_with($line, 'TOTALS ')) {
+                $current['totals'] = $this->parseFinalStatisticsTotals($line);
+                continue;
+            }
+            $player = $this->parseFinalStatisticsPlayer($line);
+            if ($player !== null) {
+                $current['players'][] = $player;
+            }
+        }
+        if ($current !== null) {
+            $teams[] = $current;
+        }
+        if (count($teams) < 2) {
+            throw new InvalidArgumentException('This does not contain two final-statistics team tables.');
+        }
+
+        preg_match('/\b([A-Z][a-z]+ \d{1,2}, \d{4})\b/', $text, $dateMatch);
+
+        return [
+            'date' => $dateMatch[1] ?? null,
+            'teams' => array_slice($teams, 0, 2),
+        ];
+    }
+
+    /**
+     * Parse a player row from the final-statistics format.
+     *
+     * @param string $line Player row
+     * @return array<string,mixed>|null Parsed row or null
+     */
+    private function parseFinalStatisticsPlayer(string $line): ?array
+    {
+        $pattern = '/^(\d{1,2})\s+(.+?)\s+[GFC]\s+(\d+)\s+(\d+)-(\d+)\s+'
+            . '(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+'
+            . '(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(-?\d+)$/';
+        if (preg_match($pattern, $line, $matches) !== 1) {
+            return null;
+        }
+
+        return [
+            'jersey' => $matches[1], 'name' => trim($matches[2]), 'MIN' => $matches[18],
+            'FGM' => (int)$matches[4], 'FGA' => (int)$matches[5],
+            'TPM' => (int)$matches[6], 'TPA' => (int)$matches[7],
+            'FTM' => (int)$matches[8], 'FTA' => (int)$matches[9],
+            'ORB' => (int)$matches[10], 'DRB' => (int)$matches[11], 'RB' => (int)$matches[12],
+            'PF' => (int)$matches[13], 'FD' => null, 'PTS' => (int)$matches[3],
+            'AST' => (int)$matches[14], 'TRN' => (int)$matches[15],
+            'STL' => (int)$matches[17], 'BS' => (int)$matches[16], 'BD' => null,
+            'PLUS_MINUS' => (int)$matches[19],
+        ];
+    }
+
+    /**
+     * Parse a totals row from the final-statistics format.
+     *
+     * @param string $line Totals row
+     * @return array<string,int|null> Totals
+     */
+    private function parseFinalStatisticsTotals(string $line): array
+    {
+        if (preg_match('/^TOTALS\s+(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(.+)$/', $line, $matches) !== 1) {
+            return [];
+        }
+        $tail = array_map('intval', preg_split('/\s+/', $matches[8]) ?: []);
+        if (count($tail) !== 9) {
+            return [];
+        }
+
+        return [
+            'PTS' => (int)$matches[1], 'FGM' => (int)$matches[2], 'FGA' => (int)$matches[3],
+            'TPM' => (int)$matches[4], 'TPA' => (int)$matches[5], 'FTM' => (int)$matches[6],
+            'FTA' => (int)$matches[7], 'ORB' => $tail[0], 'DRB' => $tail[1],
+            'RB' => $tail[2], 'PF' => $tail[3], 'FD' => null,
+            'AST' => $tail[4], 'TRN' => $tail[5], 'STL' => $tail[7],
+            'BS' => null, 'BD' => null, 'PLUS_MINUS' => null,
         ];
     }
 

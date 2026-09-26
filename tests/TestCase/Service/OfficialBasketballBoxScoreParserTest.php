@@ -346,6 +346,41 @@ TEXT;
     }
 
     /**
+     * Test the 2019 Official Box Score Game Totals format.
+     *
+     * @return void
+     */
+    public function testParsesFinalStatisticsFormat(): void
+    {
+        $text = <<<'TEXT'
+Official Box Score
+Southern U. vs Murray St.
+Game Totals -- Final Statistics
+November 09, 2019 at CFSB Center - Murray, Ky.
+Southern U. 49
+01 SHIVERS, AHSANTE G 5 2-8 1-6 0-0 0 2 2 3 0 0 0 1 27 -15
+11 BLAKE, MONTESE G 13 5-9 1-2 2-3 0 1 1 1 1 2 0 1 18 -10
+TEAM 1 1 2 0 1
+TOTALS 49 19-61 3-22 8-11 9 19 28 28 6 14 8 9 200
+Murray St. 69
+01 SMITH, DAQUAN G 5 1-4 1-2 2-4 0 4 4 1 4 4 1 1 27 13
+10 BROWN, TEVIN G 17 5-10 2-6 5-6 1 4 5 1 1 2 1 0 34 21
+TEAM 1 2 3 0 0
+TOTALS 69 22-48 3-16 22-32 10 35 45 16 13 21 5 5 200
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('November 09, 2019', $result['date']);
+        $this->assertSame('Southern U.', $result['teams'][0]['label']);
+        $this->assertSame(49, $result['teams'][0]['score']);
+        $this->assertSame(69, $result['teams'][1]['score']);
+        $this->assertSame('SHIVERS, AHSANTE', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('27', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame(69, $result['teams'][1]['totals']['PTS']);
+    }
+
+    /**
      * Test the older NCAA Game Totals layout.
      *
      * @return void

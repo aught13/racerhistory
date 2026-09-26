@@ -177,7 +177,7 @@ class BasketballBoxScoreImportController extends AppController
                 : '';
             if ($pdftotextPath !== '') {
                 $text = function_exists('shell_exec')
-                    ? shell_exec('pdftotext ' . escapeshellarg($temporaryPath) . ' -')
+                    ? shell_exec('pdftotext -layout ' . escapeshellarg($temporaryPath) . ' -')
                     : null;
                 if (is_string($text) && trim($text) !== '') {
                     return $text;
