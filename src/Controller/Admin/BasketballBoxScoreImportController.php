@@ -9,6 +9,8 @@ use Cake\Log\Log;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
 use Psr\Http\Message\UploadedFileInterface;
+use RuntimeException;
+use Smalot\PdfParser\Parser;
 use Throwable;
 
 /**
@@ -122,7 +124,7 @@ class BasketballBoxScoreImportController extends AppController
                     }
 
                     if ($hasPdf) {
-                        $rawText = $this->importService->extractPdfText($pdfFile);
+                        $rawText = $this->extractPdfTextFromUpload($pdfFile);
                         $sourceType = 'pdf';
                     } elseif ($hasCsv) {
                         $rawText = $this->importService->extractCsvText($csvFile);
@@ -147,6 +149,61 @@ class BasketballBoxScoreImportController extends AppController
         $this->set($viewData + ['rawText' => $rawText, 'sourceType' => $sourceType]);
 
         return null;
+    }
+
+    /**
+     * Extract PDF text from a disk-backed upload with a system and PHP fallback.
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $pdfFile Uploaded PDF
+     * @return string Extracted PDF text
+     * @throws \InvalidArgumentException When the PDF cannot be extracted
+     */
+    private function extractPdfTextFromUpload(UploadedFileInterface $pdfFile): string
+    {
+        $temporaryDirectory = WWW_ROOT . 'files' . DS . 'boxscore_temp' . DS;
+        if (
+            !is_dir($temporaryDirectory)
+            && !mkdir($temporaryDirectory, 0700, true)
+            && !is_dir($temporaryDirectory)
+        ) {
+            throw new RuntimeException('Could not create the PDF extraction directory.');
+        }
+
+        try {
+            $temporaryPath = $temporaryDirectory . 'box-score-' . bin2hex(random_bytes(16)) . '.pdf';
+            $pdfFile->moveTo($temporaryPath);
+
+            $pdftotextPath = function_exists('shell_exec')
+                ? trim((string)shell_exec('command -v pdftotext 2>/dev/null'))
+                : '';
+            if ($pdftotextPath !== '') {
+                $text = function_exists('shell_exec')
+                    ? shell_exec('pdftotext ' . escapeshellarg($temporaryPath) . ' -')
+                    : null;
+                if (is_string($text) && trim($text) !== '') {
+                    return $text;
+                }
+            }
+
+            $text = trim((new Parser())->parseFile($temporaryPath)->getText());
+            if ($text === '') {
+                throw new InvalidArgumentException('The PDF contains no extractable text.');
+            }
+
+            return $text;
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new InvalidArgumentException(
+                'The PDF could not be extracted. Upload the original PDF or paste its final box-score text.',
+                0,
+                $exception,
+            );
+        } finally {
+            if (isset($temporaryPath) && is_file($temporaryPath)) {
+                unlink($temporaryPath);
+            }
+        }
     }
 
     /**

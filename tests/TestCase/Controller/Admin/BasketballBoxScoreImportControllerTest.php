@@ -88,6 +88,38 @@ class BasketballBoxScoreImportControllerTest extends TestCase
     }
 
     /**
+     * Test a PDF upload is extracted before preview parsing.
+     *
+     * @return void
+     */
+    public function testPreviewExtractsPdfUpload(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'rh-controller-pdf-');
+        self::assertNotFalse($path);
+        file_put_contents($path, $this->buildPdf('not a box score'));
+
+        try {
+            $this->post('/admin/basketball-box-score-import/index/1', [
+                'intent' => 'preview',
+                'pdf_file' => [
+                    'tmp_name' => $path,
+                    'size' => filesize($path),
+                    'error' => UPLOAD_ERR_OK,
+                    'name' => 'box-score.pdf',
+                    'type' => 'application/pdf',
+                ],
+            ]);
+
+            $this->assertResponseOk();
+            $this->assertResponseContains('does not look like an NCAA LiveStats box score');
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+
+    /**
      * Test the structured CSV template downloads for the selected game.
      *
      * @return void
@@ -141,5 +173,37 @@ CSV;
                 unlink($path);
             }
         }
+    }
+
+    /**
+     * Build a small text-bearing PDF without adding a binary fixture.
+     *
+     * @param string $text PDF text
+     * @return string PDF bytes
+     */
+    private function buildPdf(string $text): string
+    {
+        $stream = 'BT /F1 12 Tf 72 720 Td (' . $text . ') Tj ET';
+        $objects = [
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+            '<< /Length ' . strlen($stream) . " >>\nstream\n" . $stream . "\nendstream",
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        ];
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+        foreach ($objects as $index => $object) {
+            $offsets[] = strlen($pdf);
+            $pdf .= ($index + 1) . " 0 obj\n" . $object . "\nendobj\n";
+        }
+        $xrefOffset = strlen($pdf);
+        $pdf .= "xref\n0 6\n0000000000 65535 f \n";
+        for ($index = 1; $index <= 5; $index++) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$index]);
+        }
+        $pdf .= "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" . $xrefOffset . "\n%%EOF\n";
+
+        return $pdf;
     }
 }
