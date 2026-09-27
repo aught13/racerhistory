@@ -27,6 +27,9 @@ class OfficialBasketballBoxScoreParser
         $text = preg_replace('/\r\n?/', "\n", $text) ?? $text;
         $text = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $text);
         $text = $this->normalizeCompactTraditionalRows($text);
+        if (str_contains($text, 'orb-drb') && str_contains($text, 'Game Information')) {
+            return $this->parseHtmlBoxScoreFormat($text);
+        }
         if (str_contains($text, 'Official Box Score') && str_contains($text, 'Game Totals -- Final Statistics')) {
             return $this->parseFinalStatisticsFormat($text);
         }
@@ -77,6 +80,7 @@ class OfficialBasketballBoxScoreParser
     private function isLegacyGameTotalsFormat(string $text): bool
     {
         return str_contains($text, 'Official Basketball Box Score -- Game Totals')
+            || preg_match('/^(?:VISITORS|HOME TEAM):/im', $text) === 1
             || preg_match('/^(?:VISITORS|HOME TEAM):.+\n\s*TOT-FG\s+3-PT\s+REBOUNDS/im', $text) === 1;
     }
 
@@ -90,6 +94,13 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseLegacyGameTotals(string $text): array
     {
+        foreach (['Official Basketball Box Score -- 1st Half', 'Newspaper Box Score'] as $marker) {
+            $markerPosition = strpos($text, $marker);
+            if ($markerPosition !== false) {
+                $text = substr($text, 0, $markerPosition);
+                break;
+            }
+        }
         $teams = [];
         $current = null;
 
@@ -144,6 +155,148 @@ class OfficialBasketballBoxScoreParser
     }
 
     /**
+     * Parse the modern Murray State athletics HTML box-score text format.
+     *
+     * @param string $text Extracted HTML text
+     * @return array{date:string|null,teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>} Parsed result
+     */
+    private function parseHtmlBoxScoreFormat(string $text): array
+    {
+        $lines = array_values(array_filter(
+            array_map('trim', explode("\n", $text)),
+            static fn(string $line): bool => $line !== '',
+        ));
+        $headers = [];
+        foreach ($lines as $index => $line) {
+            if (preg_match('/^(.+?)\s+-\s+(\d+)$/', $line, $matches) === 1) {
+                $headers[] = ['label' => trim($matches[1]), 'score' => (int)$matches[2], 'index' => $index];
+            }
+        }
+        $headers = array_values(array_filter(
+            $headers,
+            static fn(array $header): bool => $header['label'] !== 'Team'
+                && $header['label'] !== 'Total'
+                && preg_match('/[A-Za-z]/', $header['label']) === 1,
+        ));
+        $headers = array_values(array_filter(
+            $headers,
+            function (array $header, int $index) use ($headers, $lines): bool {
+                $end = $headers[$index + 1]['index'] ?? count($lines);
+                $segment = implode("\n", array_slice($lines, $header['index'], $end - $header['index']));
+
+                return str_contains($segment, "\nTotals\n");
+            },
+            ARRAY_FILTER_USE_BOTH,
+        ));
+        if (count($headers) < 2) {
+            throw new InvalidArgumentException('This does not contain two HTML box-score team tables.');
+        }
+
+        $teams = [];
+        foreach (array_slice($headers, 0, 2) as $index => $header) {
+            $end = $headers[$index + 1]['index'] ?? count($lines);
+            $teams[] = $this->parseHtmlBoxScoreTeam(
+                array_slice($lines, $header['index'], $end - $header['index']),
+                $header['label'],
+                $header['score'],
+            );
+        }
+
+        preg_match('/\b(\d{2}\/\d{2}\/\d{2})\b/', $text, $dateMatch);
+
+        return ['date' => $dateMatch[1] ?? null, 'teams' => $teams];
+    }
+
+    /**
+     * Parse one HTML box-score team section.
+     *
+     * @param list<string> $lines Team section lines
+     * @param string $label Team label
+     * @param int $score Team score
+     * @return array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>} Parsed team
+     */
+    private function parseHtmlBoxScoreTeam(array $lines, string $label, int $score): array
+    {
+        $totalsIndex = array_search('Totals', $lines, true);
+        $players = [];
+        if (!is_int($totalsIndex)) {
+            throw new InvalidArgumentException('The HTML box score is missing a totals row.');
+        }
+
+        for ($index = 0; $index < $totalsIndex; $index++) {
+            if (preg_match('/^\d{1,2}$/', $lines[$index]) !== 1) {
+                continue;
+            }
+            $name = $lines[$index + 1] ?? '';
+            if ($name === '' || $name === 'Team' || $name === 'Totals') {
+                continue;
+            }
+            $cursor = $index + 2;
+            if (($lines[$cursor] ?? '') === '*') {
+                $cursor++;
+            }
+            $minutes = $lines[$cursor] ?? '';
+            $pairs = array_slice($lines, $cursor + 1, 4);
+            $tail = array_slice($lines, $cursor + 5, 7);
+            if (
+                preg_match('/^\d+$/', $minutes) !== 1
+                || count($pairs) !== 4
+                || count($tail) !== 7
+                || count(array_filter(
+                    $pairs,
+                    static fn(string $value): bool => preg_match('/^\d+\s*-\s*\d+$/', $value) === 1,
+                )) !== 4
+            ) {
+                continue;
+            }
+            $pairValues = array_map(
+                static fn(string $pair): array => array_map('intval', preg_split('/\s*-\s*/', $pair) ?: []),
+                $pairs,
+            );
+            $players[] = [
+                'jersey' => $lines[$index], 'name' => $name, 'MIN' => $minutes,
+                'FGM' => $pairValues[0][0], 'FGA' => $pairValues[0][1],
+                'TPM' => $pairValues[1][0], 'TPA' => $pairValues[1][1],
+                'FTM' => $pairValues[2][0], 'FTA' => $pairValues[2][1],
+                'ORB' => $pairValues[3][0], 'DRB' => $pairValues[3][1],
+                'RB' => (int)$tail[0], 'PF' => (int)$tail[1], 'FD' => null,
+                'AST' => (int)$tail[2], 'TRN' => (int)$tail[3], 'BS' => (int)$tail[4],
+                'STL' => (int)$tail[5], 'PTS' => (int)$tail[6], 'BD' => null, 'PLUS_MINUS' => null,
+            ];
+            $index = $cursor + 11;
+        }
+
+        $totals = $this->parseHtmlBoxScoreTotals(array_slice($lines, $totalsIndex + 1, 13));
+
+        return compact('label', 'score', 'players', 'totals');
+    }
+
+    /**
+     * Parse an HTML box-score totals row.
+     *
+     * @param list<string> $lines Totals values
+     * @return array<string,int|null> Totals
+     */
+    private function parseHtmlBoxScoreTotals(array $lines): array
+    {
+        $values = array_values(array_filter($lines, static fn(string $line): bool => $line !== ''));
+        $values = array_slice($values, 0, 13);
+        $pairs = array_map(
+            static fn(string $pair): array => array_map('intval', preg_split('/\s*-\s*/', $pair) ?: []),
+            array_slice($values, 1, 4),
+        );
+        $tail = array_slice($values, 5, 7);
+
+        return [
+            'FGM' => $pairs[0][0], 'FGA' => $pairs[0][1], 'TPM' => $pairs[1][0], 'TPA' => $pairs[1][1],
+            'FTM' => $pairs[2][0], 'FTA' => $pairs[2][1], 'ORB' => $pairs[3][0], 'DRB' => $pairs[3][1],
+            'RB' => (int)$tail[0], 'PF' => (int)$tail[1], 'FD' => null, 'AST' => (int)$tail[2],
+            'TRN' => (int)$tail[3], 'BS' => (int)$tail[4], 'STL' => (int)$tail[5],
+            'PTS' => (int)$tail[6], 'BD' => null, 'PLUS_MINUS' => null,
+        ];
+    }
+
+    /**
      * Parse the 2019 Official Box Score Game Totals format.
      *
      * @param string $text Extracted box-score text
@@ -151,6 +304,7 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseFinalStatisticsFormat(string $text): array
     {
+        $text = preg_replace('/(?<=\d)-\s*\n\s*(?=\d)/', '-', $text) ?? $text;
         $teams = [];
         $current = null;
         foreach (explode("\n", $text) as $line) {
@@ -519,6 +673,9 @@ class OfficialBasketballBoxScoreParser
     private function parseLegacyTeamHeader(string $line): ?array
     {
         if (preg_match('/^(?:VISITORS|HOME TEAM):\s*(.+?)\s+\d+-\d+$/i', $line, $matches) === 1) {
+            $label = trim($matches[1]);
+            $score = null;
+        } elseif (preg_match('/^HOME TEAM:\s*(.+)$/i', $line, $matches) === 1) {
             $label = trim($matches[1]);
             $score = null;
         } elseif (preg_match('/^(.+?)\s+(\d+)\s+\S+\s+\d+-\d+$/', $line, $matches) === 1) {

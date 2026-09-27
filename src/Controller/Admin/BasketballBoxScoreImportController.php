@@ -33,6 +33,7 @@ class BasketballBoxScoreImportController extends AppController
             'intent',
             'pdf_file',
             'csv_file',
+            'source_url',
             'raw_text',
             'source_type',
             'team_rows',
@@ -92,6 +93,7 @@ class BasketballBoxScoreImportController extends AppController
         }
         $rawText = (string)$this->request->getData('raw_text', '');
         $sourceType = (string)$this->request->getData('source_type', '');
+        $sourceUrl = (string)$this->request->getData('source_url', '');
         $intent = (string)$this->request->getData('intent', '');
 
         if ($this->request->is('post')) {
@@ -119,8 +121,9 @@ class BasketballBoxScoreImportController extends AppController
                     $csvFile = $this->normalizeUpload($this->request->getData('csv_file'));
                     $hasPdf = $pdfFile !== null && $pdfFile->getError() !== UPLOAD_ERR_NO_FILE;
                     $hasCsv = $csvFile !== null && $csvFile->getError() !== UPLOAD_ERR_NO_FILE;
-                    if ($hasPdf && $hasCsv) {
-                        throw new InvalidArgumentException('Choose either a PDF or a CSV file, not both.');
+                    $hasUrl = trim($sourceUrl) !== '';
+                    if (($hasPdf ? 1 : 0) + ($hasCsv ? 1 : 0) + ($hasUrl ? 1 : 0) > 1) {
+                        throw new InvalidArgumentException('Choose one source: a URL, PDF, or CSV file.');
                     }
 
                     if ($hasPdf) {
@@ -129,6 +132,9 @@ class BasketballBoxScoreImportController extends AppController
                     } elseif ($hasCsv) {
                         $rawText = $this->importService->extractCsvText($csvFile);
                         $sourceType = 'csv';
+                    } elseif ($hasUrl) {
+                        $rawText = $this->importService->extractHtmlText($sourceUrl);
+                        $sourceType = 'html';
                     } elseif ($rawText !== '') {
                         $sourceType = 'text';
                     } else {
@@ -146,7 +152,7 @@ class BasketballBoxScoreImportController extends AppController
             }
         }
 
-        $this->set($viewData + ['rawText' => $rawText, 'sourceType' => $sourceType]);
+        $this->set($viewData + ['rawText' => $rawText, 'sourceType' => $sourceType, 'sourceUrl' => $sourceUrl]);
 
         return null;
     }

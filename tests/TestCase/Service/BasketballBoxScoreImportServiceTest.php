@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Entity\Game;
 use App\Service\BasketballBoxScoreImportService;
 use App\Service\BasketballStatsAdminService;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class BasketballBoxScoreImportServiceTest extends TestCase
 {
@@ -152,6 +154,38 @@ class BasketballBoxScoreImportServiceTest extends TestCase
         ]);
 
         self::assertTrue($result['success']);
+    }
+
+    /**
+     * Resolve an away-game source order using the opponent short name.
+     *
+     * @return void
+     */
+    public function testResolveTeamIndexUsesOpponentShortName(): void
+    {
+        $game = new Game([
+            'team_season' => (object)[
+                'team' => (object)[
+                    'team_name' => "Men's Basketball",
+                    'team_nickname' => 'Racers',
+                    'team_scorebug' => 'MUR',
+                ],
+            ],
+            'opponent' => (object)[
+                'opponent_name' => 'Bellarmine University',
+                'opponent_short' => 'Bellarmine',
+                'opponent_abbr' => 'BELL',
+            ],
+        ]);
+        $method = (new ReflectionClass(BasketballBoxScoreImportService::class))
+            ->getMethod('resolveTeamIndex');
+
+        $index = $method->invoke(new BasketballBoxScoreImportService(), [
+            ['label' => 'Bellarmine'],
+            ['label' => 'Murray St.'],
+        ], $game);
+
+        self::assertSame(1, $index);
     }
 
     /**
