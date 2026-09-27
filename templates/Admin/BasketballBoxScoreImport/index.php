@@ -6,6 +6,7 @@
  * @var \App\Model\Entity\Game $game
  * @var string $rawText
  * @var string $sourceType
+ * @var string $sourceUrl
  * @var list<array{id: int, jersey: string, name: string, label: string}> $roster
  * @var list<array<string, mixed>> $teamRows
  * @var list<array<string, mixed>> $opponentRows
@@ -69,6 +70,11 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
             <label for="pdf-file" class="form-label">Choose the official PDF</label>
             <input id="pdf-file" name="pdf_file" type="file" accept="application/pdf,.pdf" class="form-control">
             <div class="form-text">Upload the original NCAA LiveStats PDF, up to 20 MB. The server extracts the text temporarily and deletes the uploaded copy after previewing. Legacy Game Totals and visitor/home exports are supported.</div>
+            <div class="border-top mt-3 pt-3">
+                <label for="source-url" class="form-label">Or paste the public box-score URL</label>
+                <input id="source-url" name="source_url" type="url" value="<?= h($sourceUrl ?? '') ?>" class="form-control" placeholder="https://goracers.com/sports/mens-basketball/stats/2021/...">
+                <div class="form-text">Use a public goracers.com box-score page. The server fetches the HTML directly and reads the final team tables.</div>
+            </div>
             <div class="border-top mt-4 pt-3">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <label for="csv-file" class="form-label mb-0">Or choose a completed CSV template</label>

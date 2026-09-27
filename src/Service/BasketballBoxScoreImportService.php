@@ -5,12 +5,14 @@ namespace App\Service;
 
 use App\Model\Entity\Game;
 use App\Model\Entity\Person;
+use Cake\Http\Client;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use finfo;
 use InvalidArgumentException;
 use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
 use Smalot\PdfParser\Parser as PdfParser;
+use Symfony\Component\DomCrawler\Crawler;
 use Throwable;
 
 /**
@@ -194,6 +196,100 @@ class BasketballBoxScoreImportService
     public function getCsvTemplate(): string
     {
         return $this->csvParser->template();
+    }
+
+    /**
+     * Fetch an athletics HTML box score and extract its visible text.
+     *
+     * @param string $url Public goracers.com box-score URL
+     * @return string Extracted HTML text
+     * @throws \InvalidArgumentException When the URL or response is invalid
+     */
+    public function extractHtmlText(string $url): string
+    {
+        $parts = parse_url(trim($url));
+        $host = strtolower((string)($parts['host'] ?? ''));
+        if (
+            !in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true)
+            || ($host !== 'goracers.com' && !str_ends_with($host, '.goracers.com'))
+        ) {
+            throw new InvalidArgumentException('Enter a valid goracers.com box-score URL.');
+        }
+
+        try {
+            $response = (new Client(['timeout' => 20]))->get($url);
+            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
+                throw new InvalidArgumentException('The box-score page could not be loaded.');
+            }
+            $crawler = new Crawler($response->getStringBody(), $url);
+            $text = $this->serializeHtmlBoxScoreTables($crawler);
+            if ($text === '') {
+                $text = trim($crawler->filterXPath('//body')->text(null, true));
+            }
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new InvalidArgumentException('The box-score page could not be read.', 0, $exception);
+        }
+        if ($text === '') {
+            throw new InvalidArgumentException('The box-score page did not contain readable text.');
+        }
+
+        return $text;
+    }
+
+    /**
+     * Serialize final HTML box-score tables without flattening their cells.
+     *
+     * @param \Symfony\Component\DomCrawler\Crawler $crawler Parsed page
+     * @return string Structured text for the box-score parser
+     */
+    private function serializeHtmlBoxScoreTables(Crawler $crawler): string
+    {
+        $tables = $crawler->filterXPath('//table');
+        if ($tables->count() < 4) {
+            $preformatted = $crawler->filterXPath('//pre');
+
+            return $preformatted->count() > 0
+                ? trim($preformatted->eq(0)->text(null, false))
+                : '';
+        }
+
+        $scoreRows = $this->extractHtmlTableRows($tables->eq(0));
+        if (count($scoreRows) < 3 || count($scoreRows[1]) < 4 || count($scoreRows[2]) < 4) {
+            return '';
+        }
+
+        $text = "Game Information\n";
+        foreach ([1, 3] as $teamIndex => $tableIndex) {
+            $text .= $scoreRows[$teamIndex + 1][0] . ' - ' . $scoreRows[$teamIndex + 1][3] . "\n";
+            foreach ($this->extractHtmlTableRows($tables->eq($tableIndex)) as $row) {
+                foreach ($row as $cell) {
+                    $text .= $cell . "\n";
+                }
+            }
+        }
+
+        return $text;
+    }
+
+    /**
+     * Extract table cells as row-oriented strings.
+     *
+     * @param \Symfony\Component\DomCrawler\Crawler $table Table node
+     * @return list<list<string>> Table rows and cells
+     */
+    private function extractHtmlTableRows(Crawler $table): array
+    {
+        return $table->filterXPath('.//tr')->each(
+            static fn(Crawler $row): array => $row->filterXPath('.//th|.//td')->each(
+                static fn(Crawler $cell): string => trim(str_replace(
+                    "\xC2\xA0",
+                    ' ',
+                    $cell->text(null, true),
+                )),
+            ),
+        );
     }
 
     /**
@@ -572,14 +668,27 @@ class BasketballBoxScoreImportService
     private function resolveTeamIndex(array $teams, Game $game): ?int
     {
         $teamName = (string)($game->team_season->team->team_name ?? '');
-        $opponentName = (string)($game->opponent->opponent_name ?? '');
+        $teamNames = array_filter([
+            $teamName,
+            (string)($game->team_season->team->team_nickname ?? ''),
+            (string)($game->team_season->team->team_scorebug ?? ''),
+        ]);
+        $opponentNames = array_filter([
+            (string)($game->opponent->opponent_name ?? ''),
+            (string)($game->opponent->opponent_short ?? ''),
+            (string)($game->opponent->opponent_abbr ?? ''),
+        ]);
         foreach ($teams as $index => $parsedTeam) {
             $label = $this->normalizeName((string)$parsedTeam['label']);
-            if ($this->namesMatch($label, $this->normalizeName($teamName))) {
-                return $index;
+            foreach ($teamNames as $candidate) {
+                if ($this->namesMatch($label, $this->normalizeName($candidate))) {
+                    return $index;
+                }
             }
-            if ($this->namesMatch($label, $this->normalizeName($opponentName))) {
-                return 1 - $index;
+            foreach ($opponentNames as $candidate) {
+                if ($this->namesMatch($label, $this->normalizeName($candidate))) {
+                    return 1 - $index;
+                }
             }
         }
 

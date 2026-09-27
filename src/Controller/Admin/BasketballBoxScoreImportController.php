@@ -9,6 +9,8 @@ use Cake\Log\Log;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
 use Psr\Http\Message\UploadedFileInterface;
+use RuntimeException;
+use Smalot\PdfParser\Parser;
 use Throwable;
 
 /**
@@ -31,6 +33,7 @@ class BasketballBoxScoreImportController extends AppController
             'intent',
             'pdf_file',
             'csv_file',
+            'source_url',
             'raw_text',
             'source_type',
             'team_rows',
@@ -90,6 +93,7 @@ class BasketballBoxScoreImportController extends AppController
         }
         $rawText = (string)$this->request->getData('raw_text', '');
         $sourceType = (string)$this->request->getData('source_type', '');
+        $sourceUrl = (string)$this->request->getData('source_url', '');
         $intent = (string)$this->request->getData('intent', '');
 
         if ($this->request->is('post')) {
@@ -117,16 +121,20 @@ class BasketballBoxScoreImportController extends AppController
                     $csvFile = $this->normalizeUpload($this->request->getData('csv_file'));
                     $hasPdf = $pdfFile !== null && $pdfFile->getError() !== UPLOAD_ERR_NO_FILE;
                     $hasCsv = $csvFile !== null && $csvFile->getError() !== UPLOAD_ERR_NO_FILE;
-                    if ($hasPdf && $hasCsv) {
-                        throw new InvalidArgumentException('Choose either a PDF or a CSV file, not both.');
+                    $hasUrl = trim($sourceUrl) !== '';
+                    if (($hasPdf ? 1 : 0) + ($hasCsv ? 1 : 0) + ($hasUrl ? 1 : 0) > 1) {
+                        throw new InvalidArgumentException('Choose one source: a URL, PDF, or CSV file.');
                     }
 
                     if ($hasPdf) {
-                        $rawText = $this->importService->extractPdfText($pdfFile);
+                        $rawText = $this->extractPdfTextFromUpload($pdfFile);
                         $sourceType = 'pdf';
                     } elseif ($hasCsv) {
                         $rawText = $this->importService->extractCsvText($csvFile);
                         $sourceType = 'csv';
+                    } elseif ($hasUrl) {
+                        $rawText = $this->importService->extractHtmlText($sourceUrl);
+                        $sourceType = 'html';
                     } elseif ($rawText !== '') {
                         $sourceType = 'text';
                     } else {
@@ -144,9 +152,83 @@ class BasketballBoxScoreImportController extends AppController
             }
         }
 
-        $this->set($viewData + ['rawText' => $rawText, 'sourceType' => $sourceType]);
+        $this->set($viewData + ['rawText' => $rawText, 'sourceType' => $sourceType, 'sourceUrl' => $sourceUrl]);
 
         return null;
+    }
+
+    /**
+     * Extract PDF text from a disk-backed upload with a system and PHP fallback.
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $pdfFile Uploaded PDF
+     * @return string Extracted PDF text
+     * @throws \InvalidArgumentException When the PDF cannot be extracted
+     */
+    private function extractPdfTextFromUpload(UploadedFileInterface $pdfFile): string
+    {
+        $temporaryDirectory = WWW_ROOT . 'files' . DS . 'boxscore_temp' . DS;
+        if (!$this->ensurePdfTemporaryDirectory($temporaryDirectory, 0770)) {
+            $temporaryDirectory = rtrim(sys_get_temp_dir(), DS) . DS . 'racerhistory-boxscore' . DS;
+            if (!$this->ensurePdfTemporaryDirectory($temporaryDirectory, 0700)) {
+                throw new RuntimeException('Could not create a writable PDF extraction directory.');
+            }
+        }
+
+        try {
+            $temporaryPath = $temporaryDirectory . 'box-score-' . bin2hex(random_bytes(16)) . '.pdf';
+            $pdfFile->moveTo($temporaryPath);
+
+            $pdftotextPath = function_exists('shell_exec')
+                ? trim((string)shell_exec('command -v pdftotext 2>/dev/null'))
+                : '';
+            if ($pdftotextPath !== '') {
+                $text = function_exists('shell_exec')
+                    ? shell_exec('pdftotext -layout ' . escapeshellarg($temporaryPath) . ' -')
+                    : null;
+                if (is_string($text) && trim($text) !== '') {
+                    return $text;
+                }
+            }
+
+            $text = trim((new Parser())->parseFile($temporaryPath)->getText());
+            if ($text === '') {
+                throw new InvalidArgumentException('The PDF contains no extractable text.');
+            }
+
+            return $text;
+        } catch (InvalidArgumentException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new InvalidArgumentException(
+                'The PDF could not be extracted. Upload the original PDF or paste its final box-score text.',
+                0,
+                $exception,
+            );
+        } finally {
+            if (isset($temporaryPath) && is_file($temporaryPath)) {
+                unlink($temporaryPath);
+            }
+        }
+    }
+
+    /**
+     * Ensure a PDF extraction directory exists and is writable.
+     *
+     * @param string $directory Directory path
+     * @param int $permissions Directory permissions when created
+     * @return bool Whether the directory is ready
+     */
+    private function ensurePdfTemporaryDirectory(string $directory, int $permissions): bool
+    {
+        $parentDirectory = dirname(rtrim($directory, DS));
+        if (!is_dir($directory) && (!is_dir($parentDirectory) || !is_writable($parentDirectory))) {
+            return false;
+        }
+        if (!is_dir($directory) && !mkdir($directory, $permissions, true) && !is_dir($directory)) {
+            return false;
+        }
+
+        return is_writable($directory);
     }
 
     /**
