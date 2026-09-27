@@ -143,7 +143,7 @@ jobs:
         uses: ./.github/actions/setup-php-composer
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: mbstring, intl, pdo_mysql, zip, curl, xml, json
+          extensions: mbstring, intl, pdo_mysql, zip, curl, xml, json, gd
           ini-values: zend.assertions=1
           coverage: ${{ matrix.coverage == true && 'xdebug' || 'none' }}
           dependency-versions: ${{ matrix.dependencies }}
@@ -361,7 +361,7 @@ jobs:
         uses: ./.github/actions/setup-php-composer
         with:
           php-version: "8.4"
-          extensions: mbstring, intl, pdo_mysql
+          extensions: mbstring, intl, pdo_mysql, gd
           coverage: none
           dependency-versions: "highest"
 
@@ -415,15 +415,21 @@ jobs:
 
       - name: Start CakePHP development server
         run: |
+          set -euo pipefail
           php bin/cake.php server -p 8765 -H 127.0.0.1 > /tmp/cake-server.log 2>&1 &
           echo $! > server.pid
-          SERVER_PID=$(cat server.pid)
+          ready=false
           for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w '' http://ci-e2e.invalid 2>/dev/null; then
+            if curl -s -o /dev/null -w '' http://ci-e2e.invalid:8765 2>/dev/null; then
+              ready=true
               break
             fi
             sleep 2
           done
+          if [[ "$ready" != true ]]; then
+            cat /tmp/cake-server.log
+            exit 1
+          fi
         env:
           DATABASE_URL: mysql://test_user:test_password@127.0.0.1:3306/racerhistory_test
 

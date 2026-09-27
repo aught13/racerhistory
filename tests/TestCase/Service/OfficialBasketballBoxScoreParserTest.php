@@ -153,6 +153,382 @@ TEXT;
     }
 
     /**
+     * Test the LiveStats format with integer minutes and combined ORB-DRB.
+     *
+     * @return void
+     */
+    public function testParsesIntegerMinutesAndCombinedReboundColumns(): void
+    {
+        $text = <<<'TEXT'
+Bellarmine (4-5,0-0 ASUN) -vs- Murray St. (7-3,0-0 MVC)
+12/06/25 at CFSB Center, Murray, KY
+Bellarmine 68
+Murray St. 81
+# Player GS MIN FG 3PT FT ORB-DRB REB PF A TO BLK STL PTS
+11 Waddell,Brian * 36 8-11 2-4 7-9 0-6 6 0 5 2 0 1 25
+32 Karasinski,Jack * 34 8-12 2-4 3-5 1-3 4 1 1 2 0 2 21
+Totals - 200 25-49 6-18 12-16 2-16 18 12 14 11 0 8 68
+Murray St. 81
+11 Traynor,JJ * 27 8-12 1-5 0-0 0-6 6 0 2 0 1 0 17
+22 Jackson,Javon * 23 4-7 2-3 4-4 1-0 1 0 4 1 0 1 14
+Totals - 200 30-57 11-30 10-11 10-25 35 13 18 13 3 4 81
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('Bellarmine', $result['teams'][0]['label']);
+        $this->assertSame('Murray St.', $result['teams'][1]['label']);
+        $this->assertSame('36', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame(0, $result['teams'][0]['players'][0]['ORB']);
+        $this->assertSame(6, $result['teams'][0]['players'][0]['DRB']);
+        $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(81, $result['teams'][1]['totals']['PTS']);
+    }
+
+    /**
+     * Test compact numeric tails emitted by Smalot PDF Parser.
+     *
+     * @return void
+     */
+    public function testParsesSmalotCompactedTraditionalRows(): void
+    {
+        $text = <<<'TEXT'
+Bellarmine (4-5,0-0 ASUN) -vs- Murray St. (7-3,0-0 MVC)
+12/06/25 at CFSB Center, Murray, KY
+11Waddell,Brian * 368-11 2-4 7-9 0-6 6 0 5 2 0 125
+Totals  -20025-49 6-18 12-16 2-16 18121411 0 868
+Team Summary FG 3PT FT
+08Traynor,JJ * 278-12 1-5 0-0 0-6 6 0 2 0 1 017
+Totals  -20030-57 11-30 10-11 10-25 35131813 3 481
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame(68, $result['teams'][0]['totals']['PTS']);
+        $this->assertSame(81, $result['teams'][1]['totals']['PTS']);
+        $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(17, $result['teams'][1]['players'][0]['PTS']);
+    }
+
+    /**
+     * Test column-oriented output from pdftotext without layout preservation.
+     *
+     * @return void
+     */
+    public function testParsesColumnarPdfText(): void
+    {
+        $text = <<<'TEXT'
+Bellarmine (4-5,0-0 ASUN) -vs- Murray St. (7-3,0-0 MVC)
+12/06/25 at CFSB Center, Murray, KY
+Bellarmine 68
+#
+11
+TM
+Player
+Waddell,Brian
+TEAM
+Totals
+Team Summary
+MIN
+36
+0
+200
+FG
+8-11
+0-0
+25-49
+3PT
+2-4
+0-0
+6-18
+FG
+FT
+7-9
+0-0
+12-16
+ORB-DRB
+0-6
+1-1
+2-16
+REB
+6
+2
+18
+PF
+0
+0
+12
+A
+5
+0
+14
+TO BLK
+2
+0
+0
+0
+11
+0
+STL
+1
+0
+8
+PTS
+25
+0
+68
+Murray St. 81
+#
+08
+TM
+Player
+Traynor,JJ
+TEAM
+Totals
+Team Summary
+MIN
+27
+0
+200
+FG
+8-12
+0-0
+30-57
+3PT
+1-5
+0-0
+11-30
+FG
+FT
+0-0
+0-0
+10-11
+ORB-DRB
+0-6
+1-1
+10-25
+REB
+6
+2
+35
+PF
+0
+0
+13
+A
+2
+0
+18
+TO BLK
+0
+0
+3
+0
+4
+0
+STL
+0
+0
+4
+PTS
+17
+0
+81
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame(68, $result['teams'][0]['score']);
+        $this->assertSame(81, $result['teams'][1]['score']);
+        $this->assertSame('Waddell,Brian', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame(17, $result['teams'][1]['players'][0]['PTS']);
+    }
+
+    /**
+     * Test the 2019 Official Box Score Game Totals format.
+     *
+     * @return void
+     */
+    public function testParsesFinalStatisticsFormat(): void
+    {
+        $text = <<<'TEXT'
+Official Box Score
+Southern U. vs Murray St.
+Game Totals -- Final Statistics
+November 09, 2019 at CFSB Center - Murray, Ky.
+Southern U. 49
+01 SHIVERS, AHSANTE G 5 2-8 1-6 0-0 0 2 2 3 0 0 0 1 27 -15
+11 BLAKE, MONTESE G 13 5-9 1-2 2-3 0 1 1 1 1 2 0 1 18 -10
+TEAM 1 1 2 0 1
+TOTALS 49 19-61 3-22 8-11 9 19 28 28 6 14 8 9 200
+Murray St. 69
+01 SMITH, DAQUAN G 5 1-4 1-2 2-4 0 4 4 1 4 4 1 1 27 13
+10 BROWN, TEVIN G 17 5-10 2-6 5-6 1 4 5 1 1 2 1 0 34 21
+TEAM 1 2 3 0 0
+TOTALS 69 22-48 3-16 22-32 10 35 45 16 13 21 5 5 200
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('November 09, 2019', $result['date']);
+        $this->assertSame('Southern U.', $result['teams'][0]['label']);
+        $this->assertSame(49, $result['teams'][0]['score']);
+        $this->assertSame(69, $result['teams'][1]['score']);
+        $this->assertSame('SHIVERS, AHSANTE', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('27', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame(69, $result['teams'][1]['totals']['PTS']);
+    }
+
+    /**
+     * Test visitor/home final tables without a TOT-FG marker.
+     *
+     * @return void
+     */
+    public function testParsesVisitorHomeFinalTablesWithoutTotFgMarker(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score
+VISITORS: Murray State 4-0
+## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
+13 MURRAY, Rod f 6-13 2-3 0-0 4 2 6 2 14 0 5 0 0 31
+31 SPENCER, Isaac f 5-9 0-0 3-7 4 10 14 3 13 1 3 1 1 38
+Totals.............. 25-55 5-12 13-21 18 28 46 16 68 8 24 4 6 200
+HOME TEAM: Oklahoma 2-0
+## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
+21 NAJERA, Eduardo f 8-15 1-1 3-3 4 3 7 3 20 2 2 0 2 37
+24 HUMPHREY, Ryan f 7-14 0-0 0-0 2 3 5 5 14 0 2 1 2 34
+Totals.............. 23-59 4-12 14-15 8 15 23 17 64 11 12 1 8 200
+11/28/98 at Norman, Okla.
+Official Basketball Box Score -- 1st Half
+VISITORS: Murray State 4-0
+Totals.............. 0-0 0-0 0-0 0 0 0 0 0 0 0 0 0
+HOME TEAM: Oklahoma
+Totals.............. 0-0 0-0 0-0 0 0 0 0 0 0 0 0 0
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('Murray State', $result['teams'][0]['label']);
+        $this->assertSame(68, $result['teams'][0]['score']);
+        $this->assertSame('Oklahoma', $result['teams'][1]['label']);
+        $this->assertSame(64, $result['teams'][1]['score']);
+        $this->assertSame('MURRAY, Rod', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame(64, $result['teams'][1]['totals']['PTS']);
+    }
+
+    /**
+     * Test the 2021 Murray State athletics HTML text format.
+     *
+     * @return void
+     */
+    public function testParsesAthleticsHtmlBoxScoreFormat(): void
+    {
+        $text = <<<'TEXT'
+Men's Basketball vs Cumberland (TN) on 11/09/21 - Box Score
+Game Information
+Cumberland (TN) - 77
+#
+Player
+gs
+min
+fg
+3pt
+ft
+orb-drb
+reb
+pf
+a
+to
+blk
+stl
+pts
+12
+King, Tavon
+*
+26
+6 - 11
+3 - 7
+4 - 6
+0 - 1
+1
+4
+1
+1
+0
+0
+19
+Totals
+200
+23-56
+11-27
+20-31
+6-18
+24
+23
+7
+8
+2
+7
+77
+Murray St. - 109
+#
+Player
+gs
+min
+fg
+3pt
+ft
+orb-drb
+reb
+pf
+a
+to
+blk
+stl
+pts
+00
+Williams, Kj
+*
+22
+12 - 13
+5 - 6
+3 - 4
+1 - 4
+5
+1
+0
+1
+0
+0
+32
+Totals
+200
+38-60
+13-26
+20-30
+10-33
+43
+23
+24
+9
+2
+3
+109
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('Cumberland (TN)', $result['teams'][0]['label']);
+        $this->assertSame(77, $result['teams'][0]['score']);
+        $this->assertSame(109, $result['teams'][1]['score']);
+        $this->assertSame('King, Tavon', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame(32, $result['teams'][1]['players'][0]['PTS']);
+        $this->assertNotContains('Totals', array_column($result['teams'][0]['players'], 'name'));
+        $this->assertNotContains('Totals', array_column($result['teams'][1]['players'], 'name'));
+    }
+
+    /**
      * Test the older NCAA Game Totals layout.
      *
      * @return void

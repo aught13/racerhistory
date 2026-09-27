@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Entity\Game;
 use App\Service\BasketballBoxScoreImportService;
 use App\Service\BasketballStatsAdminService;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class BasketballBoxScoreImportServiceTest extends TestCase
 {
@@ -121,7 +123,7 @@ class BasketballBoxScoreImportServiceTest extends TestCase
             ->method('saveAdminGamePersonRows')
             ->with(
                 1,
-                self::callback(static fn(array $rows): bool => $rows[0]['MIN'] === '24.15'),
+                self::callback(static fn(array $rows): bool => $rows[0]['GS'] === '1' && $rows[0]['MIN'] === '24.15'),
                 false,
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
@@ -129,7 +131,10 @@ class BasketballBoxScoreImportServiceTest extends TestCase
             ->method('saveAdminGameOpponentRows')
             ->with(
                 1,
-                self::callback(static fn(array $rows): bool => $rows[0]['MIN'] === '35.60'),
+                self::callback(static fn(array $rows): bool => count($rows) === 2
+                    && $rows[0]['GS'] === '*'
+                    && $rows[1]['GS'] === 'G'
+                    && $rows[0]['MIN'] === '35.60'),
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
         $statsService->expects(self::once())
@@ -139,19 +144,58 @@ class BasketballBoxScoreImportServiceTest extends TestCase
         $result = (new BasketballBoxScoreImportService(null, $statsService))->save(1, [
             'team_rows' => [[
                 'team_season_roster_id' => 1,
+                'GS' => '1',
                 'MIN' => '24:09',
                 'PTS' => '8',
             ]],
             'opponent_rows' => [[
                 'name' => 'Torey Alston',
+                'GS' => '*',
                 'MIN' => '35:36',
                 'PTS' => '26',
+            ], [
+                'name' => 'Second Opponent Player',
+                'GS' => 'G',
+                'MIN' => '12:00',
+                'PTS' => '4',
             ]],
             'team_box' => ['PTS' => '87'],
             'opponent_box' => ['PTS' => '90'],
         ]);
 
         self::assertTrue($result['success']);
+    }
+
+    /**
+     * Resolve an away-game source order using the opponent short name.
+     *
+     * @return void
+     */
+    public function testResolveTeamIndexUsesOpponentShortName(): void
+    {
+        $game = new Game([
+            'team_season' => (object)[
+                'team' => (object)[
+                    'team_name' => "Men's Basketball",
+                    'team_nickname' => 'Racers',
+                    'team_scorebug' => 'MUR',
+                ],
+            ],
+            'opponent' => (object)[
+                'opponent_name' => 'Bellarmine University',
+                'opponent_short' => 'Bellarmine',
+                'opponent_abbr' => 'BELL',
+            ],
+        ]);
+        $method = (new ReflectionClass(BasketballBoxScoreImportService::class))
+            ->getMethod('resolveTeamIndex');
+
+        $index = $method->invoke(new BasketballBoxScoreImportService(), [
+            ['label' => 'Bellarmine'],
+            ['label' => 'Murray St.'],
+        ], $game);
+
+        self::assertSame(1, $index);
     }
 
     /**
