@@ -20,7 +20,7 @@ $opponentName = (string)($game->opponent?->opponent_name ?? 'Opponent');
 $gameDate = $game->game_date ?? null;
 $hasPreview = isset($teamRows) && $teamRows !== [];
 $playerFields = [
-    'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB',
+    'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB',
     'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL', 'BS', 'BD',
 ];
 $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL', 'BS', 'TF'];

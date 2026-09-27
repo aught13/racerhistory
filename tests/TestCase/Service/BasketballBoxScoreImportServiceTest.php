@@ -123,7 +123,7 @@ class BasketballBoxScoreImportServiceTest extends TestCase
             ->method('saveAdminGamePersonRows')
             ->with(
                 1,
-                self::callback(static fn(array $rows): bool => $rows[0]['MIN'] === '24.15'),
+                self::callback(static fn(array $rows): bool => $rows[0]['GS'] === '1' && $rows[0]['MIN'] === '24.15'),
                 false,
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
@@ -131,7 +131,10 @@ class BasketballBoxScoreImportServiceTest extends TestCase
             ->method('saveAdminGameOpponentRows')
             ->with(
                 1,
-                self::callback(static fn(array $rows): bool => $rows[0]['MIN'] === '35.60'),
+                self::callback(static fn(array $rows): bool => count($rows) === 2
+                    && $rows[0]['GS'] === '*'
+                    && $rows[1]['GS'] === 'G'
+                    && $rows[0]['MIN'] === '35.60'),
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
         $statsService->expects(self::once())
@@ -141,13 +144,20 @@ class BasketballBoxScoreImportServiceTest extends TestCase
         $result = (new BasketballBoxScoreImportService(null, $statsService))->save(1, [
             'team_rows' => [[
                 'team_season_roster_id' => 1,
+                'GS' => '1',
                 'MIN' => '24:09',
                 'PTS' => '8',
             ]],
             'opponent_rows' => [[
                 'name' => 'Torey Alston',
+                'GS' => '*',
                 'MIN' => '35:36',
                 'PTS' => '26',
+            ], [
+                'name' => 'Second Opponent Player',
+                'GS' => 'G',
+                'MIN' => '12:00',
+                'PTS' => '4',
             ]],
             'team_box' => ['PTS' => '87'],
             'opponent_box' => ['PTS' => '90'],
