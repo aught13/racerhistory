@@ -34,7 +34,7 @@ return function (RouteBuilder $routes): void {
     // Use DashedRoute globally so dashed URLs inflect to CamelCase controllers/actions
     $routes->setRouteClass(DashedRoute::class);
 
-    $routes->prefix('Admin', function (RouteBuilder $routes) {
+    $routes->prefix('Admin', function (RouteBuilder $routes): void {
         // All routes here will be prefixed with `/admin`
         // And have the 'Admin' prefix.
         // Make sure to call `parent::beforeFilter()` in your controllers.
@@ -99,47 +99,6 @@ return function (RouteBuilder $routes): void {
         $routes->fallbacks(DashedRoute::class);
     });
 
-    // Public JSON API (no auth for now)
-    $routes->prefix('Api', function (RouteBuilder $routes) {
-        $routes->prefix('V1', function (RouteBuilder $routes) {
-            $routes->setExtensions(['json']);
-
-            // Health
-            $routes->connect('/health', ['controller' => 'Health', 'action' => 'index']);
-
-            // Persons
-            $routes->connect('/persons', ['controller' => 'Persons', 'action' => 'index']);
-            $routes->connect('/persons/{id}', ['controller' => 'Persons', 'action' => 'view'])
-                ->setPass(['id'])
-                ->setPatterns(['id' => '\\d+']);
-
-            // Team seasons
-            $routes->connect('/team-seasons', ['controller' => 'TeamSeasons', 'action' => 'index']);
-            $routes->connect('/team-seasons/{id}', ['controller' => 'TeamSeasons', 'action' => 'view'])
-                ->setPass(['id'])
-                ->setPatterns(['id' => '\\d+']);
-
-            // Games
-            $routes->connect('/games', ['controller' => 'Games', 'action' => 'index']);
-            $routes->connect('/games/{id}', ['controller' => 'Games', 'action' => 'view'])
-                ->setPass(['id'])
-                ->setPatterns(['id' => '\\d+']);
-
-            // Basketball stats (read-only)
-            $routes->connect('/basketball-stats/games/{gameId}', ['controller' => 'BasketballStats', 'action' => 'game'])
-                ->setPass(['gameId'])
-                ->setPatterns(['gameId' => '\\d+']);
-            $routes->connect('/basketball-stats/team-seasons/{teamSeasonId}', ['controller' => 'BasketballStats', 'action' => 'season'])
-                ->setPass(['teamSeasonId'])
-                ->setPatterns(['teamSeasonId' => '\\d+']);
-
-            // Blog posts (published)
-            $routes->connect('/blog-posts', ['controller' => 'BlogPosts', 'action' => 'index']);
-            $routes->connect('/blog-posts/{slug}', ['controller' => 'BlogPosts', 'action' => 'view'])
-                ->setPass(['slug'])
-                ->setPatterns(['slug' => '[a-zA-Z0-9_-]+' ]);
-        });
-    });
     /*
      * The default class to use for all routes
      *
@@ -273,20 +232,4 @@ return function (RouteBuilder $routes): void {
         // Custom 404 route for any unmatched routes
         $builder->connect('/*', ['controller' => 'Error', 'action' => 'error404']);
     });
-
-    /*
-     * If you need a different set of middleware or none at all,
-     * open new scope and define routes there.
-     *
-     * ```
-     * $routes->scope('/api', function (RouteBuilder $builder): void {
-     *     // No $builder->applyMiddleware() here.
-     *
-     *     // Parse specified extensions from URLs
-     *     // $builder->setExtensions(['json', 'xml']);
-     *
-     *     // Connect API actions here.
-     * });
-     * ```
-     */
 };
