@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres (at the moment) to semantic versioning *starting with pre-release identifiers*.
 
+## [Unreleased]
+
+### Added
+
+- **NCAA LiveStats basketball box-score importer** for admins, supporting legacy and official PDF layouts, public `goracers.com` box-score pages, pasted extracted text, and a downloadable structured CSV template. The preview allows roster matching and stat corrections before importing final player, team, and opponent totals. Play-by-play and shot-chart data are excluded.
+- **Starter (`GS`) data in game imports** for player rows, including opponent player rows.
+
+### Changed
+
+- Basketball game and season `MIN` columns now use `DECIMAL(6,2)` storage for minute values.
+- Deployment permission checks include the PDF extraction directories. CI installs GD and fails the E2E setup if the CakePHP server does not become ready.
+
+### Fixed
+
+- Image storage now rejects paths blocked by files and reports failures when missing image variants cannot be restored.
+
+### Removed
+
+- **Unauthenticated `/api/v1` JSON API** routes and controllers. Former API endpoints, including the health check, now return 404.
+
 ## [4.0.0] - 2026-08-30
 
 This is the official V4 release of RacerHistory, representing the fourth generation of the site: V1 was the original procedural implementation, V2 was the OOP rewrite, V3 was the FuelPHP application, and V4 is the current CakePHP 5 platform.

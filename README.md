@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-4.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.0.2-blue.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -60,6 +60,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
 - Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)
 - **Games Management** (add/edit/delete, bulk operations, sport-aware period/official tracking)
+- **Basketball Box-Score Importer** - Admins can import an official NCAA LiveStats PDF (up to 20 MB), a public `goracers.com` box-score page, pasted extracted text, or a completed CSV template. Preview and correct roster matches and stat rows before saving final player, team, and opponent totals. Starter status (`GS`) is included; play-by-play and shot-chart data are not imported.
 - **Basketball Statistics** (player, opponent, and team stats with comprehensive tracking)
 - Dynamic Person AJAX search & inline person creation modal (roster forms)
 - AdminLTE 4 sidebar navigation with grouped treeview sections (Sports, Content)
@@ -73,7 +74,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Multi-Sport Support** - Basketball (halves/quarters), Football, Baseball with configurable periods/officials
 - **EAV Attribute System** - Flexible storage for sport-specific game data (period scores, officials, attendance)
 - **Cumulative Scoring** - Validates period totals match game totals for supported sports
-- **Basketball Statistics** - Comprehensive player, opponent, and team statistics tracking
+- **Basketball Statistics** - Comprehensive player, opponent, and team statistics tracking; game and season minutes are stored to two decimal places.
   - Player stats with team roster linkage (GP/GS tracking)
   - Opponent player stats with name-based tracking
   - Team-level stats (rebounds, turnovers, technical fouls)
@@ -95,6 +96,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Public serving route**: `/images/serve/{id}`
 - **Variants** configured centrally (see `Application::bootstrap()`): thumb/medium plus WebP outputs
 - **Taggable** images via the tagging service layer
+- Storage paths are validated before writes, and missing image variants are restored with explicit errors when recovery is not possible.
 
 ### UI/UX
 
@@ -112,6 +114,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - HTML escaping for XSS prevention
 - Password hashing with CakePHP security
 - CDN integrity verification for external resources
+- No unauthenticated public REST API is enabled; the unfinished `/api/v1` endpoints have been removed.
 
 ## Requirements
 
@@ -332,7 +335,7 @@ bin/deploy.sh --skip-tests
 The deploy script checks:
 - PHP version and required extensions
 - Configuration (debug mode, security salt, database host)
-- Directory permissions (tmp, logs, storage)
+- Directory permissions (tmp, logs, image storage, and PDF extraction directories)
 - Dependency installation (`composer install --no-dev`)
 - Database migration status
 - Security (no debug files exposed, no credentials in webroot)
