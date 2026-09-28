@@ -36,7 +36,7 @@ describe("person_game_log_tabs_runtime", () => {
         window.$ = jquery;
 
         const root = document.createElement("div");
-        root.innerHTML = '<table data-person-game-log-table></table>';
+        root.innerHTML = "<table data-person-game-log-table></table>";
 
         const mod = await import("../../lib/person_game_log_tabs_runtime.js");
         mod.initPersonGameLogTablesRoot(root);
@@ -53,7 +53,7 @@ describe("person_game_log_tabs_runtime", () => {
         window.$ = jquery;
 
         const root = document.createElement("div");
-        root.innerHTML = '<table data-person-game-log-table></table>';
+        root.innerHTML = "<table data-person-game-log-table></table>";
 
         const mod = await import("../../lib/person_game_log_tabs_runtime.js");
         mod.initPersonGameLogTablesRoot(root);
