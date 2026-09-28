@@ -3,6 +3,7 @@
 import { Application } from "@hotwired/stimulus";
 
 import SeasonViewController from "../controllers/season_view_controller.js";
+import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
 
 describe("season-view controller", () => {
     let application;
@@ -34,6 +35,7 @@ describe("season-view controller", () => {
         application = Application.start();
         application.register("season-view", SeasonViewController);
         await Promise.resolve();
+        await publicDataTablesReady;
 
         expect(initMock).toHaveBeenCalledWith({
             root: document.getElementById("season-root"),
@@ -48,6 +50,7 @@ describe("season-view controller", () => {
         application = Application.start();
         application.register("season-view", SeasonViewController);
         await Promise.resolve();
+        await publicDataTablesReady;
 
         const frame = document.createElement("turbo-frame");
         document.body.appendChild(frame);
@@ -63,6 +66,30 @@ describe("season-view controller", () => {
         expect(initMock).toHaveBeenCalledWith({ root: frame });
     });
 
+    test("does not initialize a frame removed before dependencies are ready", async () => {
+        const initMock = jest.fn();
+        window.__SEASON_VIEW_INIT__ = initMock;
+
+        application.stop();
+        application = Application.start();
+        application.register("season-view", SeasonViewController);
+        await Promise.resolve();
+        await publicDataTablesReady;
+
+        const frame = document.createElement("turbo-frame");
+        document.body.appendChild(frame);
+        frame.dispatchEvent(
+            new CustomEvent("turbo:frame-load", {
+                bubbles: true,
+                detail: {},
+            }),
+        );
+        frame.remove();
+        await Promise.resolve();
+
+        expect(initMock).not.toHaveBeenCalledWith({ root: frame });
+    });
+
     test("ignores turbo:frame-load events with non-Element targets", async () => {
         const initMock = jest.fn();
         window.__SEASON_VIEW_INIT__ = initMock;
@@ -71,6 +98,7 @@ describe("season-view controller", () => {
         application = Application.start();
         application.register("season-view", SeasonViewController);
         await Promise.resolve();
+        await publicDataTablesReady;
 
         const callsBefore = initMock.mock.calls.length;
 

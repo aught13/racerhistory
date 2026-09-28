@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 
+import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
 import { initSeasonViewRoot } from "../lib/season_view_runtime.js";
 
 export default class extends Controller {
@@ -7,7 +8,7 @@ export default class extends Controller {
         this.onFrameLoad = this.onFrameLoad.bind(this);
 
         document.addEventListener("turbo:frame-load", this.onFrameLoad);
-        initSeasonViewRoot(this.element);
+        this.initializeWhenReady(this.element);
     }
 
     disconnect() {
@@ -17,7 +18,15 @@ export default class extends Controller {
     onFrameLoad(event) {
         const frame = event?.target;
         if (frame instanceof globalThis.Element) {
-            initSeasonViewRoot(frame);
+            this.initializeWhenReady(frame);
         }
+    }
+
+    initializeWhenReady(root) {
+        publicDataTablesReady.then(() => {
+            if (root.isConnected) {
+                initSeasonViewRoot(root);
+            }
+        });
     }
 }

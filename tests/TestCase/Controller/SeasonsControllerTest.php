@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use App\Service\TaggingService;
+use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 use DOMDocument;
@@ -100,6 +102,47 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('data-controller="season-view"');
         $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
         $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
+        $this->assertStringNotContainsString('Undefined variable $page', (string)$this->_response->getBody());
+        $this->assertStringNotContainsString('Undefined variable $limit', (string)$this->_response->getBody());
+    }
+
+    /**
+     * Tests season ad placements around recap, game log, and stats content.
+     */
+    public function testViewAdPlacements(): void
+    {
+        $originalSiteOptions = Configure::read('SiteOptions');
+        Configure::write('SiteOptions.ad_below_content_active', true);
+        Configure::write('SiteOptions.ad_below_content_mode', 'custom');
+        Configure::write('SiteOptions.ad_below_content_html', '<div>Below content test ad</div>');
+        Configure::write('SiteOptions.ad_news_after_first_active', true);
+        Configure::write('SiteOptions.ad_news_after_first_mode', 'custom');
+        Configure::write('SiteOptions.ad_news_after_first_html', '<div>News test ad</div>');
+
+        try {
+            $this->get('/seasons/1');
+            $this->assertResponseOk();
+            $html = (string)$this->_response->getBody();
+            $this->assertSame(1, substr_count($html, 'data-ad-slot="below_content"'));
+            $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
+            $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
+
+            TaggingService::forBlogPosts()->attachTags(1, [
+                ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
+                'preview',
+            ]);
+
+            $this->get('/seasons/1');
+            $this->assertResponseOk();
+            $html = (string)$this->_response->getBody();
+            $this->assertSame(1, preg_match('/Season Preview.*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
+            $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
+        } finally {
+            Configure::delete('SiteOptions');
+            if (is_array($originalSiteOptions)) {
+                Configure::write('SiteOptions', $originalSiteOptions);
+            }
+        }
     }
 
     /**

@@ -3,6 +3,7 @@
 import { Application } from "@hotwired/stimulus";
 
 import PersonGameLogTabsController from "../controllers/person_game_log_tabs_controller.js";
+import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
 
 describe("person-game-log-tabs controller", () => {
     let application;
@@ -40,6 +41,7 @@ describe("person-game-log-tabs controller", () => {
             PersonGameLogTabsController,
         );
         await Promise.resolve();
+        await publicDataTablesReady;
 
         expect(initMock).toHaveBeenCalledWith({
             root: document.getElementById("person-log-root"),
@@ -57,6 +59,7 @@ describe("person-game-log-tabs controller", () => {
             PersonGameLogTabsController,
         );
         await Promise.resolve();
+        await publicDataTablesReady;
 
         const frame = document.createElement("turbo-frame");
         document.body.appendChild(frame);
@@ -83,6 +86,7 @@ describe("person-game-log-tabs controller", () => {
             PersonGameLogTabsController,
         );
         await Promise.resolve();
+        await publicDataTablesReady;
 
         const callsBefore = initMock.mock.calls.length;
 

@@ -28,7 +28,7 @@ $formatValue = static function ($value): string {
     <p class="text-muted mb-0">No game stats available for this season.</p>
 <?php else : ?>
     <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
+        <table class="table table-striped table-hover align-middle" data-person-game-log-table>
             <thead class="table-dark">
                 <tr>
                     <th>Game</th>

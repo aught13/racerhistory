@@ -331,6 +331,10 @@ $this->start('css'); ?>
                 </section>
             <?php endif; ?>
 
+            <?php if (!empty($previewPosts) || !empty($reviewPosts)) : ?>
+                <?= $this->element('Ads/block', ['slot' => 'news_after_first']) ?>
+            <?php endif; ?>
+
             <section class="card shadow-sm season-section" id="season-games">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 mb-0">Game Log</h2>
@@ -417,6 +421,8 @@ $this->start('css'); ?>
                     <?php endif; ?>
                 </div>
             </section>
+
+            <?= $this->element('Ads/block', ['slot' => 'below_content']) ?>
 
             <section class="card shadow-sm season-section" id="season-stats">
                 <div class="card-header">

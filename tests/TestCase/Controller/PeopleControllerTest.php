@@ -190,6 +190,7 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('turbo-frame');
         $this->assertResponseContains('person-game-log-frame-1-1');
+        $this->assertResponseContains('data-person-game-log-table');
     }
 
     /**
