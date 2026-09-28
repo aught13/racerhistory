@@ -45,6 +45,17 @@ class ErrorControllerTest extends TestCase
     }
 
     /**
+     * Test that the removed public API is no longer routable.
+     *
+     * @return void
+     */
+    public function testRemovedApiIsNotRoutable(): void
+    {
+        $this->get('/api/v1/health');
+        $this->assertResponseCode(404);
+    }
+
+    /**
      * Test beforeRender sets correct template path
      *
      * @return void

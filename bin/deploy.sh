@@ -169,9 +169,12 @@ fi
 hr
 log "Checking directory permissions..."
 
-WRITABLE_DIRS=(tmp logs tmp/cache tmp/cache/models tmp/cache/persistent tmp/sessions webroot/img/storage)
+WRITABLE_DIRS=(tmp logs tmp/cache tmp/cache/models tmp/cache/persistent tmp/sessions webroot/img/storage webroot/files webroot/files/boxscore_temp)
 for d in "${WRITABLE_DIRS[@]}"; do
     if [ -d "$d" ]; then
+        if [[ "$d" == webroot/files* && $CHECK_ONLY -eq 0 ]]; then
+            chmod 0770 "$d"
+        fi
         if [ -w "$d" ]; then
             ok "$d/ is writable"
         else

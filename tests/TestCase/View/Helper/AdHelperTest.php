@@ -25,6 +25,9 @@ class AdHelperTest extends TestCase
         parent::setUp();
         $this->helper = new AdHelper(new View());
         $this->originalSiteOptions = Configure::read('SiteOptions');
+        // Ensure tests start with a clean runtime SiteOptions map so local DB
+        // persisted values do not affect assertions.
+        Configure::write('SiteOptions', []);
     }
 
     /**
