@@ -9,16 +9,21 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ### Added
 
+- Previous and next game navigation in the admin game view.
+- Sorting and search controls for basketball player game logs.
 - **NCAA LiveStats basketball box-score importer** for admins, supporting legacy and official PDF layouts, public `goracers.com` box-score pages, pasted extracted text, and a downloadable structured CSV template. The preview allows roster matching and stat corrections before importing final player, team, and opponent totals. Play-by-play and shot-chart data are excluded.
 - **Starter (`GS`) data in game imports** for player rows, including opponent player rows.
 
 ### Changed
 
+- Season-page ad placements now show the news slot before the game log when a preview or recap is available, and place the below-content slot between the game log and season statistics.
+- Season hero images display the full source image without a fixed-height crop.
 - Basketball game and season `MIN` columns now use `DECIMAL(6,2)` storage for minute values.
 - Deployment permission checks include the PDF extraction directories. CI installs GD and fails the E2E setup if the CakePHP server does not become ready.
 
 ### Fixed
 
+- Season statistics and player game-log DataTables now initialize after their dependencies load, including on direct navigation and Turbo frame loads.
 - Image storage now rejects paths blocked by files and reports failures when missing image variants cannot be restored.
 
 ### Removed

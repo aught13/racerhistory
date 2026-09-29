@@ -49,6 +49,22 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
                         <i class="bi bi-arrow-left"></i> Back to Season
                     </a>
                 <?php endif; ?>
+                <?php if (isset($previousGame)) : ?>
+                    <a href="<?= $this->Url->build([
+                        'prefix' => 'Admin', 'controller' => 'Games', 'action' => 'view', $previousGame->id,
+                    ]) ?>" class="btn btn-outline-secondary btn-sm"
+                        title="Previous Game: <?= h($previousGame->opponent->opponent_name ?? 'Opponent') ?>">
+                        <i class="bi bi-chevron-left"></i> <?= h($previousGame->game_date?->format('M j, Y') ?? '') ?>
+                    </a>
+                <?php endif; ?>
+                <?php if (isset($nextGame)) : ?>
+                    <a href="<?= $this->Url->build([
+                        'prefix' => 'Admin', 'controller' => 'Games', 'action' => 'view', $nextGame->id,
+                    ]) ?>" class="btn btn-outline-secondary btn-sm"
+                        title="Next Game: <?= h($nextGame->opponent->opponent_name ?? 'Opponent') ?>">
+                        <?= h($nextGame->game_date?->format('M j, Y') ?? '') ?> <i class="bi bi-chevron-right"></i>
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>

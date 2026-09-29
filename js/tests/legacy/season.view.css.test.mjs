@@ -30,9 +30,13 @@ describe("Season view CSS", () => {
         );
     });
 
-    test("season hero image keeps cover layout", () => {
-        expect(css).toMatch(/\.season-hero-image[\s\S]*object-fit:\s*cover/i);
-        expect(css).toMatch(/\.season-hero-image[\s\S]*max-height:\s*480px/i);
+    test("season hero image displays the full source image", () => {
+        const ruleBody =
+            css.match(/\.season-hero-image\s*\{([^}]*)\}/i)?.[1] ?? "";
+
+        expect(ruleBody).toMatch(/height:\s*auto/i);
+        expect(ruleBody).toMatch(/max-height:\s*none/i);
+        expect(ruleBody).toMatch(/object-fit:\s*contain/i);
     });
 
     test("season roster avatar image keeps circular crop", () => {
