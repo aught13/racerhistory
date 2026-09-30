@@ -704,7 +704,8 @@ class BasketballBoxScoreImportService
     {
         $jerseyMatches = array_values(array_filter(
             $roster,
-            static fn(array $row): bool => (string)$row['jersey'] === (string)$player['jersey'],
+            fn(array $row): bool => $this->normalizeJersey((string)$row['jersey'])
+                === $this->normalizeJersey((string)$player['jersey']),
         ));
         if (count($jerseyMatches) === 1) {
             return [
@@ -728,6 +729,22 @@ class BasketballBoxScoreImportService
             'label' => $nameMatches[0]['label'],
             'type' => 'name',
         ];
+    }
+
+    /**
+     * Normalize numeric jersey numbers so leading zeroes do not block a match.
+     *
+     * @param string $jersey Jersey value
+     * @return string Normalized jersey
+     */
+    private function normalizeJersey(string $jersey): string
+    {
+        $jersey = trim($jersey);
+        if ($jersey !== '' && ctype_digit($jersey)) {
+            return ltrim($jersey, '0') ?: '0';
+        }
+
+        return strtolower($jersey);
     }
 
     /**

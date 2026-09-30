@@ -179,9 +179,11 @@ TEXT;
         $this->assertSame('Bellarmine', $result['teams'][0]['label']);
         $this->assertSame('Murray St.', $result['teams'][1]['label']);
         $this->assertSame('36', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
         $this->assertSame(0, $result['teams'][0]['players'][0]['ORB']);
         $this->assertSame(6, $result['teams'][0]['players'][0]['DRB']);
         $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
         $this->assertSame(81, $result['teams'][1]['totals']['PTS']);
     }
 
@@ -376,6 +378,7 @@ TEXT;
         $this->assertSame(49, $result['teams'][0]['score']);
         $this->assertSame(69, $result['teams'][1]['score']);
         $this->assertSame('SHIVERS, AHSANTE', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
         $this->assertSame('27', $result['teams'][0]['players'][0]['MIN']);
         $this->assertSame(69, $result['teams'][1]['totals']['PTS']);
     }
@@ -389,12 +392,12 @@ TEXT;
     {
         $text = <<<'TEXT'
 Official Basketball Box Score
-VISITORS: Murray State 4-0
+VISITORS: Murray State 18-11 (13-5 OVC)
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
 13 MURRAY, Rod f 6-13 2-3 0-0 4 2 6 2 14 0 5 0 0 31
 31 SPENCER, Isaac f 5-9 0-0 3-7 4 10 14 3 13 1 3 1 1 38
 Totals.............. 25-55 5-12 13-21 18 28 46 16 68 8 24 4 6 200
-HOME TEAM: Oklahoma 2-0
+HOME TEAM: Oklahoma 19-10 (12-6 Big 12)
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
 21 NAJERA, Eduardo f 8-15 1-1 3-3 4 3 7 3 20 2 2 0 2 37
 24 HUMPHREY, Ryan f 7-14 0-0 0-0 2 3 5 5 14 0 2 1 2 34
@@ -581,6 +584,7 @@ VISITORS: Tennessee Temple 3-4
  TOT-FG 3-PT REBOUNDS
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
 11 MORRIS, Josh........ f 0-3 0-1 2-2 0 0 0 5 2 1 3 0 0 18
+12 RESERVE, Player 0-0 0-0 0-0 0 0 0 0 0 0 0 0 0 4
 Totals.............. 15-40 3-13 8-15 11 21 32 20 41 7 26 3 2 200
 HOME TEAM: Murray State 3-0
  TOT-FG 3-PT REBOUNDS
@@ -594,6 +598,8 @@ TEXT;
         $this->assertSame('Tennessee Temple', $result['teams'][0]['label']);
         $this->assertSame(41, $result['teams'][0]['score']);
         $this->assertSame('MORRIS, Josh', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
+        $this->assertNull($result['teams'][0]['players'][1]['GS']);
         $this->assertSame('Murray State', $result['teams'][1]['label']);
         $this->assertSame(83, $result['teams'][1]['score']);
     }

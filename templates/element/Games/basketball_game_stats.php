@@ -84,13 +84,15 @@ $playerColumns = [
     [
         'id' => 'GS',
         'label' => 'GS',
-        'value' => static function ($stat, ?string $position = null): string {
+        'value' => static function ($stat, ?string $position = null, string $fallback = 'GS'): string {
             $gs = (int)($stat->GS ?? 0);
             if ($gs <= 0) {
                 return '';
             }
 
-            return $position ?? 'GS';
+            $position = trim((string)$position);
+
+            return $position !== '' ? $position : $fallback;
         },
         'total' => static fn(): string => '',
     ],
@@ -492,7 +494,9 @@ foreach ($periodLabels as $periodInfo) {
                                 <td><?= h($stat->jersey ?? '') ?></td>
                                 <td><?= h($stat->name ?? '') ?></td>
                                 <?php foreach ($visibleOpponentPlayerColumns as $column) : ?>
-                                    <td><?= h($column['value']($stat, $position)) ?></td>
+                                    <td><?= h($column['id'] === 'GS'
+                                        ? $column['value']($stat, $position, '*')
+                                        : $column['value']($stat, $position)) ?></td>
                                 <?php endforeach; ?>
                             </tr>
                         <?php endforeach; ?>

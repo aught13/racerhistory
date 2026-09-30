@@ -199,6 +199,25 @@ class BasketballBoxScoreImportServiceTest extends TestCase
     }
 
     /**
+     * Match player jerseys independent of leading zeroes.
+     *
+     * @return void
+     */
+    public function testMatchesJerseyWithLeadingZeroes(): void
+    {
+        $service = new BasketballBoxScoreImportService();
+        $method = (new ReflectionClass(BasketballBoxScoreImportService::class))->getMethod('matchRoster');
+        $result = $method->invoke($service, ['jersey' => '04', 'name' => 'Player Name'], [[
+            'id' => 4,
+            'jersey' => '4',
+            'name' => 'Different Name',
+            'label' => '#4 Roster Player',
+        ]]);
+
+        self::assertSame(['id' => 4, 'label' => '#4 Roster Player', 'type' => 'jersey'], $result);
+    }
+
+    /**
      * Build a small text-bearing PDF without adding a binary fixture.
      *
      * @param string $text PDF text

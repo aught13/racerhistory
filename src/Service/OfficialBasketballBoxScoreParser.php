@@ -232,7 +232,8 @@ class OfficialBasketballBoxScoreParser
                 continue;
             }
             $cursor = $index + 2;
-            if (($lines[$cursor] ?? '') === '*') {
+            $started = ($lines[$cursor] ?? '') === '*';
+            if ($started) {
                 $cursor++;
             }
             $minutes = $lines[$cursor] ?? '';
@@ -255,6 +256,7 @@ class OfficialBasketballBoxScoreParser
             );
             $players[] = [
                 'jersey' => $lines[$index], 'name' => $name, 'MIN' => $minutes,
+                'GS' => $started ? '1' : null,
                 'FGM' => $pairValues[0][0], 'FGA' => $pairValues[0][1],
                 'TPM' => $pairValues[1][0], 'TPA' => $pairValues[1][1],
                 'FTM' => $pairValues[2][0], 'FTA' => $pairValues[2][1],
@@ -366,7 +368,7 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseFinalStatisticsPlayer(string $line): ?array
     {
-        $pattern = '/^(\d{1,2})\s+(.+?)\s+[GFC]\s+(\d+)\s+(\d+)-(\d+)\s+'
+        $pattern = '/^(\d{1,2})\s+(.+?)\s+([GFC])\s+(\d+)\s+(\d+)-(\d+)\s+'
             . '(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+'
             . '(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(-?\d+)$/';
         if (preg_match($pattern, $line, $matches) !== 1) {
@@ -374,15 +376,15 @@ class OfficialBasketballBoxScoreParser
         }
 
         return [
-            'jersey' => $matches[1], 'name' => trim($matches[2]), 'MIN' => $matches[18],
-            'FGM' => (int)$matches[4], 'FGA' => (int)$matches[5],
-            'TPM' => (int)$matches[6], 'TPA' => (int)$matches[7],
-            'FTM' => (int)$matches[8], 'FTA' => (int)$matches[9],
-            'ORB' => (int)$matches[10], 'DRB' => (int)$matches[11], 'RB' => (int)$matches[12],
-            'PF' => (int)$matches[13], 'FD' => null, 'PTS' => (int)$matches[3],
-            'AST' => (int)$matches[14], 'TRN' => (int)$matches[15],
-            'STL' => (int)$matches[17], 'BS' => (int)$matches[16], 'BD' => null,
-            'PLUS_MINUS' => (int)$matches[19],
+            'jersey' => $matches[1], 'name' => trim($matches[2]), 'GS' => '1', 'MIN' => $matches[19],
+            'FGM' => (int)$matches[5], 'FGA' => (int)$matches[6],
+            'TPM' => (int)$matches[7], 'TPA' => (int)$matches[8],
+            'FTM' => (int)$matches[9], 'FTA' => (int)$matches[10],
+            'ORB' => (int)$matches[11], 'DRB' => (int)$matches[12], 'RB' => (int)$matches[13],
+            'PF' => (int)$matches[14], 'FD' => null, 'PTS' => (int)$matches[4],
+            'AST' => (int)$matches[15], 'TRN' => (int)$matches[16],
+            'STL' => (int)$matches[18], 'BS' => (int)$matches[17], 'BD' => null,
+            'PLUS_MINUS' => (int)$matches[20],
         ];
     }
 
@@ -672,11 +674,8 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseLegacyTeamHeader(string $line): ?array
     {
-        if (preg_match('/^(?:VISITORS|HOME TEAM):\s*(.+?)\s+\d+-\d+$/i', $line, $matches) === 1) {
-            $label = trim($matches[1]);
-            $score = null;
-        } elseif (preg_match('/^HOME TEAM:\s*(.+)$/i', $line, $matches) === 1) {
-            $label = trim($matches[1]);
+        if (preg_match('/^(?:VISITORS|HOME TEAM):\s*(.+)$/i', $line, $matches) === 1) {
+            $label = preg_replace('/\s+\d+-\d+(?:\s+\([^)]*\))?$/', '', trim($matches[1])) ?? trim($matches[1]);
             $score = null;
         } elseif (preg_match('/^(.+?)\s+(\d+)\s+\S+\s+\d+-\d+$/', $line, $matches) === 1) {
             $label = trim($matches[1]);
@@ -701,17 +700,17 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseLegacyPlayerLine(string $line): ?array
     {
-        $pattern = '/^(\d+)\s+(.+?)(?:\s+[f-g])?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+        $pattern = '/^(\d+)\s+(.+?)(?:\s+([fgc]))?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
             . '([\d\s-]+)$/i';
         if (!preg_match($pattern, $line, $matches)) {
             return null;
         }
 
         $values = $this->parseLegacyTrailingValues(
-            $matches[9],
-            (int)$matches[3],
-            (int)$matches[5],
-            (int)$matches[7],
+            $matches[10],
+            (int)$matches[4],
+            (int)$matches[6],
+            (int)$matches[8],
         );
         if ($values === null) {
             return null;
@@ -720,13 +719,14 @@ class OfficialBasketballBoxScoreParser
         return [
             'jersey' => $matches[1],
             'name' => rtrim(trim($matches[2]), '.'),
+            'GS' => !empty($matches[3]) ? '1' : null,
             'MIN' => (string)$values[9],
-            'FGM' => (int)$matches[3],
-            'FGA' => (int)$matches[4],
-            'TPM' => (int)$matches[5],
-            'TPA' => (int)$matches[6],
-            'FTM' => (int)$matches[7],
-            'FTA' => (int)$matches[8],
+            'FGM' => (int)$matches[4],
+            'FGA' => (int)$matches[5],
+            'TPM' => (int)$matches[6],
+            'TPA' => (int)$matches[7],
+            'FTM' => (int)$matches[8],
+            'FTA' => (int)$matches[9],
             'ORB' => $values[0],
             'DRB' => $values[1],
             'RB' => $values[2],
@@ -1222,7 +1222,7 @@ class OfficialBasketballBoxScoreParser
             );
         }
 
-        $traditionalPattern = '/^(\d+)\s+([A-Za-z][A-Za-z .,\'-]*?)\s+\*?\s*'
+        $traditionalPattern = '/^(\d+)\s+([A-Za-z][A-Za-z .,\'-]*?)\s+(\*)?\s*'
             . '(\d{1,3}(?::\d{2})?)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
             . '(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)\s+(\d+)\s+'
             . '(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/';
@@ -1233,23 +1233,24 @@ class OfficialBasketballBoxScoreParser
         return [
             'jersey' => $matches[1],
             'name' => trim($matches[2]),
-            'MIN' => $matches[3],
-            'FGM' => (int)$matches[4],
-            'FGA' => (int)$matches[5],
-            'TPM' => (int)$matches[6],
-            'TPA' => (int)$matches[7],
-            'FTM' => (int)$matches[8],
-            'FTA' => (int)$matches[9],
-            'ORB' => (int)$matches[10],
-            'DRB' => (int)$matches[11],
-            'RB' => (int)$matches[12],
-            'PF' => (int)$matches[13],
+            'GS' => $matches[3] === '*' ? '1' : null,
+            'MIN' => $matches[4],
+            'FGM' => (int)$matches[5],
+            'FGA' => (int)$matches[6],
+            'TPM' => (int)$matches[7],
+            'TPA' => (int)$matches[8],
+            'FTM' => (int)$matches[9],
+            'FTA' => (int)$matches[10],
+            'ORB' => (int)$matches[11],
+            'DRB' => (int)$matches[12],
+            'RB' => (int)$matches[13],
+            'PF' => (int)$matches[14],
             'FD' => null,
-            'PTS' => (int)$matches[18],
-            'AST' => (int)$matches[14],
-            'TRN' => (int)$matches[15],
-            'STL' => (int)$matches[17],
-            'BS' => (int)$matches[16],
+            'PTS' => (int)$matches[19],
+            'AST' => (int)$matches[15],
+            'TRN' => (int)$matches[16],
+            'STL' => (int)$matches[18],
+            'BS' => (int)$matches[17],
             'BD' => null,
             'PLUS_MINUS' => null,
         ];
