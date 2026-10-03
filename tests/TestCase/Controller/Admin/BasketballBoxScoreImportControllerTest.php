@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller\Admin;
 
+use App\Service\BasketballBoxScoreImportService;
 use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use ReflectionClass;
 
 class BasketballBoxScoreImportControllerTest extends TestCase
 {
@@ -184,6 +186,36 @@ CSV;
     }
 
     /**
+     * Keep sparse official slots and skip periods that have no database mapping.
+     *
+     * @return void
+     */
+    public function testBuildPreviewPreservesOfficialSlotAndSkipsUnknownPeriod(): void
+    {
+        $service = new BasketballBoxScoreImportService();
+        $parsed = [
+            'date' => null,
+            'teams' => [
+                ['label' => 'Team', 'score' => null, 'players' => [], 'totals' => []],
+                ['label' => 'Opponent', 'score' => null, 'players' => [], 'totals' => []],
+            ],
+            'game_results' => [
+                'attendance' => null,
+                'officials' => ['official_2' => 'Referee B'],
+                'period_scores' => ['unsupported' => ['team' => 1, 'opponent' => 2]],
+            ],
+            'period_boxes' => [],
+        ];
+        $buildPreview = (new ReflectionClass(BasketballBoxScoreImportService::class))
+            ->getMethod('buildPreview');
+
+        $preview = $buildPreview->invoke($service, 1, $parsed, '');
+
+        self::assertSame('Referee B', $preview['gameResults']['official_2']);
+        self::assertArrayNotHasKey('period_unsupported_team', $preview['gameResults']);
+    }
+
+    /**
      * Preview optional game-result and period fields from a legacy box score.
      *
      * @return void
@@ -288,22 +320,22 @@ TEXT;
             'opponent_id' => 0,
             'period' => 'Z',
         ])->firstOrFail();
-        self::assertSame('8', (string)$finalTeam->PNT);
-        self::assertSame('28', (string)$finalTeam->FGM);
+        self::assertSame('8', (string)$finalTeam->get('PNT'));
+        self::assertSame('28', (string)$finalTeam->get('FGM'));
 
         $periodTeam = $boxTable->find()->where([
             'game_id' => 1,
             'opponent_id' => 0,
             'period' => '1',
         ])->firstOrFail();
-        self::assertSame('32', (string)$periodTeam->PTS);
-        self::assertNotSame('99', (string)$periodTeam->FGM);
+        self::assertSame('32', (string)$periodTeam->get('PTS'));
+        self::assertNotSame('99', (string)$periodTeam->get('FGM'));
 
         $eavTable = $this->fetchTable('GameEav');
-        self::assertSame('32', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_team'])->firstOrFail()->value);
-        self::assertSame('51', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_opponent'])->firstOrFail()->value);
-        self::assertSame('Imported Referee', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_1'])->firstOrFail()->value);
-        self::assertSame('Ref B', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_2'])->firstOrFail()->value);
+        self::assertSame('32', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_team'])->firstOrFail()->get('value'));
+        self::assertSame('51', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_opponent'])->firstOrFail()->get('value'));
+        self::assertSame('Imported Referee', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_1'])->firstOrFail()->get('value'));
+        self::assertSame('Ref B', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_2'])->firstOrFail()->get('value'));
     }
 
     /**
@@ -335,11 +367,11 @@ TEXT;
             'opponent_id' => 0,
             'period' => 'OT',
         ])->firstOrFail();
-        self::assertSame('5', (string)$overtimeTeam->PTS);
+        self::assertSame('5', (string)$overtimeTeam->get('PTS'));
 
         $eavTable = $this->fetchTable('GameEav');
-        self::assertSame('5', (string)$eavTable->find()->where(['game_id' => 2, 'key' => 'overtime_1_team'])->firstOrFail()->value);
-        self::assertSame('3', (string)$eavTable->find()->where(['game_id' => 2, 'key' => 'overtime_1_opponent'])->firstOrFail()->value);
+        self::assertSame('5', (string)$eavTable->find()->where(['game_id' => 2, 'key' => 'overtime_1_team'])->firstOrFail()->get('value'));
+        self::assertSame('3', (string)$eavTable->find()->where(['game_id' => 2, 'key' => 'overtime_1_opponent'])->firstOrFail()->get('value'));
     }
 
     /**
