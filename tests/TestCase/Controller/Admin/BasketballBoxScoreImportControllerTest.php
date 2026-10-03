@@ -22,6 +22,7 @@ class BasketballBoxScoreImportControllerTest extends TestCase
         'app.TeamSeasonRosters',
         'app.StatBasketGamePerson',
         'app.StatBasketGameBox',
+        'app.GameEav',
         'app.Sports',
         'app.GameTypes',
         'app.Sites',
@@ -48,6 +49,12 @@ class BasketballBoxScoreImportControllerTest extends TestCase
             'opponent_rows',
             'team_box',
             'opponent_box',
+            'team_box_selected',
+            'opponent_box_selected',
+            'period_boxes',
+            'period_boxes_selected',
+            'game_results',
+            'game_results_selected',
             'add_to_totals',
             'team_minutes',
         ]);
@@ -167,12 +174,172 @@ CSV;
             $this->assertResponseContains('Team player rows');
             $this->assertResponseContains('Player One');
             $this->assertResponseContains('Player Two');
+            $this->assertResponseContains('name="team_rows[0][import]"');
             $this->assertResponseContains('name="source_type" value="csv"');
         } finally {
             if (is_file($path)) {
                 unlink($path);
             }
         }
+    }
+
+    /**
+     * Preview optional game-result and period fields from a legacy box score.
+     *
+     * @return void
+     */
+    public function testPreviewShowsOptionalSupplementalFields(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score -- Game Totals
+VISITORS: Los Angeles Lakers
+Totals.............. 1-2 0-0 0-0 0 0 0 0 2 0 0 0 0 200
+HOME TEAM: Boston Celtics
+Totals.............. 2-4 0-0 0-0 0 0 0 0 4 0 0 0 0 200
+Officials: Referee A, Referee B, Referee C
+Attendance: 1957
+Score by Periods 1st 2nd Total
+Los Angeles Lakers........... 1 1 - 2
+Boston Celtics................ 2 2 - 4
+Points in the paint-LAL 1,BOS 2. Points off turnovers-LAL 2,BOS 3.
+PERIOD_DETAIL|0|ORB|1=2
+PERIOD_DETAIL|0|RB|1=6
+TEXT;
+        $this->post('/admin/basketball-box-score-import/index/1', [
+            'intent' => 'preview',
+            'source_type' => 'text',
+            'raw_text' => $text,
+        ]);
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('name="team_box_selected[PNT]"');
+        $this->assertResponseContains('name="period_boxes_selected[team_1][PTS]"');
+        $this->assertResponseContains('name="period_boxes[team_1][DRB]" value="4"');
+        $this->assertResponseContains('name="game_results_selected[attendance]"');
+        $this->assertResponseContains('name="game_results[official_1]"');
+    }
+
+    /**
+     * Map an HTML third period to overtime for a two-period basketball game.
+     *
+     * @return void
+     */
+    public function testPreviewMapsThirdPeriodToOvertime(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score -- Game Totals
+VISITORS: Los Angeles Lakers
+Totals.............. 10-20 1-4 5-6 3 7 10 8 40 10 10 0 1 0 200
+HOME TEAM: Boston Celtics
+Totals.............. 9-20 2-6 3-4 4 6 10 9 38 10 10 0 1 0 200
+Score by Periods 1st 2nd 3rd Total
+Los Angeles Lakers........... 20 15 5 - 40
+Boston Celtics................ 18 17 3 - 38
+TEXT;
+        $this->post('/admin/basketball-box-score-import/index/1', [
+            'intent' => 'preview',
+            'source_type' => 'text',
+            'raw_text' => $text,
+        ]);
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('name="game_results[overtime_1_team]" value="5"');
+        $this->assertResponseContains('name="game_results[overtime_1_opponent]" value="3"');
+        $this->assertResponseContains('name="period_boxes_selected[team_OT][PTS]"');
+        $this->assertResponseNotContains('name="game_results[period_4_team]"');
+    }
+
+    /**
+     * Import only selected box-score and game-result fields, preserving unchecked values.
+     *
+     * @return void
+     */
+    public function testSaveImportsPartialSelectedGameData(): void
+    {
+        $this->post('/admin/basketball-box-score-import/index/1', [
+            'intent' => 'save',
+            'team_box' => ['PNT' => '8', 'FGM' => '99'],
+            'team_box_selected' => ['PNT' => '1'],
+            'period_boxes' => ['team_1' => ['PTS' => '32', 'FGM' => '99']],
+            'period_boxes_selected' => ['team_1' => ['PTS' => '1']],
+            'game_results' => [
+                'attendance' => '1957',
+                'period_1_team' => '32',
+                'period_1_opponent' => '51',
+                'official_1' => 'Imported Referee',
+            ],
+            'game_results_selected' => [
+                'attendance' => '1',
+                'period_1_team' => '1',
+                'period_1_opponent' => '1',
+                'official_1' => '1',
+            ],
+        ]);
+
+        $this->assertResponseCode(302);
+
+        $games = $this->fetchTable('Games');
+        $game = $games->get(1);
+        self::assertSame('1957', $game->attendance);
+
+        $boxTable = $this->fetchTable('StatBasketGameBox');
+        $finalTeam = $boxTable->find()->where([
+            'game_id' => 1,
+            'opponent_id' => 0,
+            'period' => 'Z',
+        ])->firstOrFail();
+        self::assertSame('8', (string)$finalTeam->PNT);
+        self::assertSame('28', (string)$finalTeam->FGM);
+
+        $periodTeam = $boxTable->find()->where([
+            'game_id' => 1,
+            'opponent_id' => 0,
+            'period' => '1',
+        ])->firstOrFail();
+        self::assertSame('32', (string)$periodTeam->PTS);
+        self::assertNotSame('99', (string)$periodTeam->FGM);
+
+        $eavTable = $this->fetchTable('GameEav');
+        self::assertSame('32', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_team'])->firstOrFail()->value);
+        self::assertSame('51', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_opponent'])->firstOrFail()->value);
+        self::assertSame('Imported Referee', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_1'])->firstOrFail()->value);
+        self::assertSame('Ref B', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_2'])->firstOrFail()->value);
+    }
+
+    /**
+     * Import selected overtime box totals and game-result points.
+     *
+     * @return void
+     */
+    public function testSaveImportsOvertimeFields(): void
+    {
+        $this->post('/admin/basketball-box-score-import/index/2', [
+            'intent' => 'save',
+            'period_boxes' => ['team_OT' => ['PTS' => '5']],
+            'period_boxes_selected' => ['team_OT' => ['PTS' => '1']],
+            'game_results' => [
+                'overtime_1_team' => '5',
+                'overtime_1_opponent' => '3',
+            ],
+            'game_results_selected' => [
+                'overtime_1_team' => '1',
+                'overtime_1_opponent' => '1',
+            ],
+        ]);
+
+        $this->assertResponseCode(302);
+
+        $boxTable = $this->fetchTable('StatBasketGameBox');
+        $overtimeTeam = $boxTable->find()->where([
+            'game_id' => 2,
+            'opponent_id' => 0,
+            'period' => 'OT',
+        ])->firstOrFail();
+        self::assertSame('5', (string)$overtimeTeam->PTS);
+
+        $eavTable = $this->fetchTable('GameEav');
+        self::assertSame('5', (string)$eavTable->find()->where(['game_id' => 2, 'key' => 'overtime_1_team'])->firstOrFail()->value);
+        self::assertSame('3', (string)$eavTable->find()->where(['game_id' => 2, 'key' => 'overtime_1_opponent'])->firstOrFail()->value);
     }
 
     /**
