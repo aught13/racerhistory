@@ -245,6 +245,9 @@ TEXT;
 
         $this->assertResponseOk();
         $this->assertResponseContains('name="team_box_selected[PNT]"');
+        $this->assertResponseContains('data-controller="period-import-toggle"');
+        $this->assertResponseContains('data-period-import-toggle-target="master"');
+        $this->assertResponseContains('data-period-import-toggle-target="item"');
         $this->assertResponseContains('name="period_boxes_selected[team_1][PTS]"');
         $this->assertResponseContains('name="period_boxes[team_1][DRB]" value="4"');
         $this->assertResponseContains('name="game_results_selected[attendance]"');

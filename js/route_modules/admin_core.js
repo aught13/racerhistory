@@ -6,6 +6,7 @@ import NavAccordionController from "../controllers/nav_accordion_controller.js";
 import TagSelectionController from "../controllers/tag_selection_controller.js";
 import TagModalController from "../controllers/tag_modal_controller.js";
 import PlaceLocationController from "../controllers/place_location_controller.js";
+import PeriodImportToggleController from "../controllers/period_import_toggle_controller.js";
 
 export function registerAdminCoreControllers(stimulus) {
     stimulus.register("admin-layout", AdminLayoutController);
@@ -14,4 +15,5 @@ export function registerAdminCoreControllers(stimulus) {
     stimulus.register("tag-selection", TagSelectionController);
     stimulus.register("tag-modal", TagModalController);
     stimulus.register("place-location", PlaceLocationController);
+    stimulus.register("period-import-toggle", PeriodImportToggleController);
 }
