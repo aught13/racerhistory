@@ -278,10 +278,12 @@ class GamesControllerTest extends TestCase
     public function testView(): void
     {
         $this->mockIdentity();
-        $this->get('/admin/games/view/1');
+        $this->get('/admin/games/view/2');
         $this->assertResponseOk();
         $this->assertResponseContains('Game Details');
         $this->assertResponseContains('data-controller="game-view"');
+        $this->assertResponseContains('/admin/games/view/1');
+        $this->assertResponseContains('/admin/games/view/3');
     }
 
     /**

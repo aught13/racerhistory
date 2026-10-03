@@ -53,7 +53,9 @@
                 <?= $flash ?>
                 <?= $content ?>
 
-                <?= $this->element('Ads/block', ['slot' => 'below_content']) ?>
+                <?php if ($this->getRequest()->getParam('controller') !== 'Seasons' || $this->getRequest()->getParam('action') !== 'view') : ?>
+                    <?= $this->element('Ads/block', ['slot' => 'below_content']) ?>
+                <?php endif; ?>
             </div>
         </div>
     </main>

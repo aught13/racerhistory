@@ -40,6 +40,12 @@ class BasketballBoxScoreImportController extends AppController
             'opponent_rows',
             'team_box',
             'opponent_box',
+            'team_box_selected',
+            'opponent_box_selected',
+            'period_boxes',
+            'period_boxes_selected',
+            'game_results',
+            'game_results_selected',
             'add_to_totals',
             'team_minutes',
         ]);
@@ -101,7 +107,7 @@ class BasketballBoxScoreImportController extends AppController
                 if ($intent === 'save') {
                     $result = $this->importService->save($gameId, (array)$this->request->getData());
                     if ($result['success']) {
-                        $this->Flash->success(__('Imported {0} player stat rows.', $result['saved']));
+                        $this->Flash->success(__('The selected box-score data was imported.'));
                         if ($result['skipped'] > 0) {
                             $this->Flash->warning(__('Skipped {0} duplicate player rows.', $result['skipped']));
                         }

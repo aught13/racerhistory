@@ -29,6 +29,38 @@ describe("person_game_log_tabs_runtime", () => {
         expect(true).toBe(true);
     });
 
+    test("initializes game log tables with sorting and search enabled", async () => {
+        const dataTable = jest.fn();
+        const jquery = jest.fn(() => ({ DataTable: dataTable }));
+        jquery.fn = { dataTable: { isDataTable: jest.fn(() => false) } };
+        window.$ = jquery;
+
+        const root = document.createElement("div");
+        root.innerHTML = "<table data-person-game-log-table></table>";
+
+        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
+        mod.initPersonGameLogTablesRoot(root);
+
+        expect(dataTable).toHaveBeenCalledWith(
+            expect.objectContaining({ searching: true, paging: false }),
+        );
+    });
+
+    test("does not reinitialize an existing game log table", async () => {
+        const dataTable = jest.fn();
+        const jquery = jest.fn(() => ({ DataTable: dataTable }));
+        jquery.fn = { dataTable: { isDataTable: jest.fn(() => true) } };
+        window.$ = jquery;
+
+        const root = document.createElement("div");
+        root.innerHTML = "<table data-person-game-log-table></table>";
+
+        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
+        mod.initPersonGameLogTablesRoot(root);
+
+        expect(dataTable).not.toHaveBeenCalled();
+    });
+
     test("bootPersonGameLogTabs handles turbo:frame-load events", async () => {
         const mockInit = jest.fn();
         window.__PERSON_GAME_LOG_TABS_INIT__ = mockInit;

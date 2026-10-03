@@ -179,9 +179,11 @@ TEXT;
         $this->assertSame('Bellarmine', $result['teams'][0]['label']);
         $this->assertSame('Murray St.', $result['teams'][1]['label']);
         $this->assertSame('36', $result['teams'][0]['players'][0]['MIN']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
         $this->assertSame(0, $result['teams'][0]['players'][0]['ORB']);
         $this->assertSame(6, $result['teams'][0]['players'][0]['DRB']);
         $this->assertSame(25, $result['teams'][0]['players'][0]['PTS']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
         $this->assertSame(81, $result['teams'][1]['totals']['PTS']);
     }
 
@@ -376,6 +378,7 @@ TEXT;
         $this->assertSame(49, $result['teams'][0]['score']);
         $this->assertSame(69, $result['teams'][1]['score']);
         $this->assertSame('SHIVERS, AHSANTE', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
         $this->assertSame('27', $result['teams'][0]['players'][0]['MIN']);
         $this->assertSame(69, $result['teams'][1]['totals']['PTS']);
     }
@@ -389,12 +392,12 @@ TEXT;
     {
         $text = <<<'TEXT'
 Official Basketball Box Score
-VISITORS: Murray State 4-0
+VISITORS: Murray State 18-11 (13-5 OVC)
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
 13 MURRAY, Rod f 6-13 2-3 0-0 4 2 6 2 14 0 5 0 0 31
 31 SPENCER, Isaac f 5-9 0-0 3-7 4 10 14 3 13 1 3 1 1 38
 Totals.............. 25-55 5-12 13-21 18 28 46 16 68 8 24 4 6 200
-HOME TEAM: Oklahoma 2-0
+HOME TEAM: Oklahoma 19-10 (12-6 Big 12)
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
 21 NAJERA, Eduardo f 8-15 1-1 3-3 4 3 7 3 20 2 2 0 2 37
 24 HUMPHREY, Ryan f 7-14 0-0 0-0 2 3 5 5 14 0 2 1 2 34
@@ -415,6 +418,58 @@ TEXT;
         $this->assertSame(64, $result['teams'][1]['score']);
         $this->assertSame('MURRAY, Rod', $result['teams'][0]['players'][0]['name']);
         $this->assertSame(64, $result['teams'][1]['totals']['PTS']);
+    }
+
+    /**
+     * Test game results, scoring breakdown, and half totals from a legacy source.
+     *
+     * @return void
+     */
+    public function testParsesLegacyGameResultsScoringBreakdownAndPeriodTotals(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score -- Game Totals
+VISITORS: Gardner-Webb 0-3
+Totals.............. 24-74 8-26 20-26 20 23 43 16 76 16 18 3 7 200
+HOME TEAM: Murray State 1-0
+Totals.............. 41-77 8-21 13-21 19 35 54 19 103 26 14 10 12 200
+Officials: Tim Gattis, Lee Cassell, John
+Hampton
+Attendance: 1,957
+Score by Periods 1st 2nd Total
+Gardner-Webb.................. 32 44 - 76
+Murray State.................. 51 52 - 103
+Points in the paint-GWU 8,MUR 46. Points off turnovers-GWU 15,MUR 18.
+2nd chance points-GWU 26,MUR 18. Fast break points-GWU 0,MUR 2.
+Bench points-GWU 23,MUR 17. Score tied-0 times. Lead changed-0 times.
+Official Basketball Box Score -- 1st Half
+VISITORS: Gardner-Webb
+Totals.............. 9-32 5-13 9-11 6 12 18 8 32 9 11 1 5 100
+HOME TEAM: Murray State
+Totals.............. 20-35 6-15 5-8 6 19 25 8 51 14 11 6 8 100
+Official Basketball Box Score -- 2nd Half
+VISITORS: Gardner-Webb
+Totals.............. 15-42 3-13 11-15 14 11 25 8 44 7 7 2 2 100
+HOME TEAM: Murray State
+Totals.............. 21-42 2-6 8-13 13 16 29 11 52 12 3 4 4 100
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+
+        $this->assertSame('1957', $result['game_results']['attendance']);
+        $this->assertSame(['Tim Gattis', 'Lee Cassell', 'John Hampton'], $result['game_results']['officials']);
+        $this->assertSame(['team' => 32, 'opponent' => 51], $result['game_results']['period_scores']['1']);
+        $this->assertSame(['team' => 44, 'opponent' => 52], $result['game_results']['period_scores']['2']);
+        $this->assertSame(8, $result['teams'][0]['totals']['PNT']);
+        $this->assertSame(18, $result['teams'][1]['totals']['OTO']);
+        $this->assertSame(26, $result['teams'][0]['totals']['SND']);
+        $this->assertSame(2, $result['teams'][1]['totals']['FB']);
+        $this->assertSame(23, $result['teams'][0]['totals']['BN']);
+        $this->assertSame(0, $result['teams'][1]['totals']['TIED']);
+        $this->assertSame(0, $result['teams'][0]['totals']['LC']);
+        $this->assertSame(9, $result['period_boxes']['1']['team']['FGM']);
+        $this->assertSame(51, $result['period_boxes']['1']['opponent']['PTS']);
+        $this->assertSame(44, $result['period_boxes']['2']['team']['PTS']);
     }
 
     /**
@@ -467,6 +522,13 @@ Totals
 24
 23
 7
+PERIOD_SCORE_HEADERS|1st quarter1|2nd quarter2|3rd quarter3|Total
+PERIOD_SCORE|Cumberland (TN)|32|30|15|77
+PERIOD_SCORE|Murray St.|40|40|29|109
+PERIOD_BOX|0|3rd Half|5-8|1-3|3-5
+PERIOD_DETAIL|0|FG|1=12 - 27|2=15 - 33|3=32 - 68
+PERIOD_DETAIL|0|PNT|1=12|2=20|3=8
+PERIOD_DETAIL|0|RB|1=10|2=10|3=24
 8
 2
 7
@@ -515,6 +577,18 @@ Totals
 2
 3
 109
+PERIOD_DETAIL|0|FG|1=16 - 34|2=7 - 22
+PERIOD_DETAIL|0|PNT|1=14|2=2
+PERIOD_DETAIL|1|FT|1=12 - 18|2=8 - 12
+PERIOD_DETAIL|1|OTO|1=4|2=6
+PERIOD_BOX|0|1st Half|16-34|6-14|7-10
+PERIOD_BOX|1|2nd Half|21-33|4-11|8-12
+PERIOD_SCORE_HEADERS|1st half1|2nd half2|Total
+PERIOD_SCORE|Cumberland (TN)|45|32|77
+PERIOD_SCORE|Murray St.|55|54|109
+FINAL_DETAIL|0|PNT|16
+FINAL_DETAIL|1|PNT|50
+Site: Arena, ILReferees: Referee A, Referee B, Referee CView: Match History Attendance: 1,957
 TEXT;
 
         $result = (new OfficialBasketballBoxScoreParser())->parse($text);
@@ -524,6 +598,23 @@ TEXT;
         $this->assertSame(109, $result['teams'][1]['score']);
         $this->assertSame('King, Tavon', $result['teams'][0]['players'][0]['name']);
         $this->assertSame(32, $result['teams'][1]['players'][0]['PTS']);
+        $this->assertSame(['team' => 15, 'opponent' => 29], $result['game_results']['period_scores']['3']);
+        $this->assertArrayNotHasKey('4', $result['game_results']['period_scores']);
+        $this->assertSame(15, $result['period_boxes']['3']['team']['PTS']);
+        $this->assertSame(5, $result['period_boxes']['3']['team']['FGM']);
+        $this->assertSame(8, $result['period_boxes']['3']['team']['PNT']);
+        $this->assertSame(4, $result['period_boxes']['3']['team']['RB']);
+        $this->assertSame(16, $result['teams'][0]['totals']['PNT']);
+        $this->assertSame(50, $result['teams'][1]['totals']['PNT']);
+        $this->assertSame(16, $result['period_boxes']['1']['team']['FGM']);
+        $this->assertSame(34, $result['period_boxes']['1']['team']['FGA']);
+        $this->assertSame(2, $result['period_boxes']['2']['team']['PNT']);
+        $this->assertSame(8, $result['period_boxes']['2']['opponent']['FTM']);
+        $this->assertSame(4, $result['period_boxes']['1']['opponent']['OTO']);
+        $this->assertSame(7, $result['period_boxes']['1']['team']['FTM']);
+        $this->assertSame(['team' => 45, 'opponent' => 55], $result['game_results']['period_scores']['1']);
+        $this->assertSame('1957', $result['game_results']['attendance']);
+        $this->assertSame(['Referee A', 'Referee B', 'Referee C'], $result['game_results']['officials']);
         $this->assertNotContains('Totals', array_column($result['teams'][0]['players'], 'name'));
         $this->assertNotContains('Totals', array_column($result['teams'][1]['players'], 'name'));
     }
@@ -581,6 +672,7 @@ VISITORS: Tennessee Temple 3-4
  TOT-FG 3-PT REBOUNDS
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
 11 MORRIS, Josh........ f 0-3 0-1 2-2 0 0 0 5 2 1 3 0 0 18
+12 RESERVE, Player 0-0 0-0 0-0 0 0 0 0 0 0 0 0 0 4
 Totals.............. 15-40 3-13 8-15 11 21 32 20 41 7 26 3 2 200
 HOME TEAM: Murray State 3-0
  TOT-FG 3-PT REBOUNDS
@@ -594,6 +686,8 @@ TEXT;
         $this->assertSame('Tennessee Temple', $result['teams'][0]['label']);
         $this->assertSame(41, $result['teams'][0]['score']);
         $this->assertSame('MORRIS, Josh', $result['teams'][0]['players'][0]['name']);
+        $this->assertSame('1', $result['teams'][0]['players'][0]['GS']);
+        $this->assertNull($result['teams'][0]['players'][1]['GS']);
         $this->assertSame('Murray State', $result['teams'][1]['label']);
         $this->assertSame(83, $result['teams'][1]['score']);
     }

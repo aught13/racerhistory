@@ -151,6 +151,32 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * Tests opponent GS displays the manual position or a star when unset.
+     */
+    public function testStatsFrameDefaultsOpponentGsToStarWithoutPosition(): void
+    {
+        $this->get('/games/stats/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('>G</td>');
+
+        $opponentStats = $this->fetchTable('StatBasketGameOpponent');
+        $opponentStat = $opponentStats->get(1);
+        $opponentStat->position = null;
+        $opponentStats->saveOrFail($opponentStat);
+
+        $this->get('/games/stats/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('>*</td>');
+
+        $opponentStat->position = '';
+        $opponentStats->saveOrFail($opponentStat);
+
+        $this->get('/games/stats/1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('>*</td>');
+    }
+
+    /**
      * Tests authorization skipped.
      */
     public function testAuthorizationSkipped(): void

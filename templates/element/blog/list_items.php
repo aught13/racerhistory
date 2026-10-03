@@ -15,6 +15,8 @@ declare(strict_types=1);
  */
 ?>
 <?php
+$page = isset($page) ? (int)$page : 1;
+$limit = isset($limit) ? (int)$limit : count($paginatedPosts);
 $indexOffset = max(0, ($page - 1) * $limit);
 
 // Page 1 list starts after the featured post, so global feed positions shift by one.

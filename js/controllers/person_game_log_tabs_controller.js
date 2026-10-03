@@ -1,13 +1,17 @@
 import { Controller } from "@hotwired/stimulus";
 
-import { initPersonGameLogTabsRoot } from "../lib/person_game_log_tabs_runtime.js";
+import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
+import {
+    initPersonGameLogTablesRoot,
+    initPersonGameLogTabsRoot,
+} from "../lib/person_game_log_tabs_runtime.js";
 
 export default class extends Controller {
     connect() {
         this.onFrameLoad = this.onFrameLoad.bind(this);
 
         document.addEventListener("turbo:frame-load", this.onFrameLoad);
-        initPersonGameLogTabsRoot(this.element);
+        this.initializeWhenReady(this.element);
     }
 
     disconnect() {
@@ -17,7 +21,16 @@ export default class extends Controller {
     onFrameLoad(event) {
         const frame = event?.target;
         if (frame instanceof globalThis.Element) {
-            initPersonGameLogTabsRoot(frame);
+            this.initializeWhenReady(frame);
         }
+    }
+
+    initializeWhenReady(root) {
+        publicDataTablesReady.then(() => {
+            if (root.isConnected) {
+                initPersonGameLogTabsRoot(root);
+                initPersonGameLogTablesRoot(root);
+            }
+        });
     }
 }
