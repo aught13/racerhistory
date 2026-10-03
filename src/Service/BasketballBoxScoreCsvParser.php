@@ -16,7 +16,7 @@ class BasketballBoxScoreCsvParser
     private const HEADERS = [
         'row_type', 'side', 'jersey', 'name', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA',
         'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL',
-        'BS', 'BD',
+        'BS', 'BD', 'period', 'field', 'value', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
     ];
 
     /**
@@ -25,6 +25,14 @@ class BasketballBoxScoreCsvParser
     private const STAT_FIELDS = [
         'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB',
         'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL', 'BS', 'BD',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    private const BOX_FIELDS = [
+        'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF', 'PTS',
+        'AST', 'TRN', 'STL', 'BS', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
     ];
 
     /**
@@ -43,6 +51,20 @@ class BasketballBoxScoreCsvParser
             fputcsv($stream, self::HEADERS, ',', '"', '');
             foreach ([['player', 'team'], ['totals', 'team'], ['player', 'opponent'], ['totals', 'opponent']] as $row) {
                 fputcsv($stream, array_pad($row, count(self::HEADERS), ''), ',', '"', '');
+            }
+            foreach (['team', 'opponent'] as $side) {
+                $row = array_fill_keys(self::HEADERS, '');
+                $row['row_type'] = 'period';
+                $row['side'] = $side;
+                $row['period'] = '1';
+                fputcsv($stream, array_values($row), ',', '"', '');
+            }
+            foreach (['attendance', 'period_1_team', 'period_1_opponent', 'official_1'] as $field) {
+                $row = array_fill_keys(self::HEADERS, '');
+                $row['row_type'] = 'game';
+                $row['side'] = 'game';
+                $row['field'] = $field;
+                fputcsv($stream, array_values($row), ',', '"', '');
             }
             rewind($stream);
             $contents = stream_get_contents($stream);
@@ -63,7 +85,9 @@ class BasketballBoxScoreCsvParser
      * @param string $contents CSV document contents
      * @return array{
      *   date:null,
-     *   teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>
+     *   teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>,
+     *   game_results:array{attendance:string|null,officials:array<int|string,string>,period_scores:array<string,array<string,int>>},
+     *   period_boxes:array<string,array<string,array<string,int|null>>>
      * }
      */
     public function parse(string $contents): array
@@ -87,7 +111,8 @@ class BasketballBoxScoreCsvParser
                 static fn(mixed $header): string => trim(str_replace("\xEF\xBB\xBF", '', (string)$header)),
                 $headers,
             );
-            $missingHeaders = array_diff(self::HEADERS, $headers);
+            $requiredHeaders = array_slice(self::HEADERS, 0, 22);
+            $missingHeaders = array_diff($requiredHeaders, $headers);
             if ($missingHeaders !== []) {
                 throw new InvalidArgumentException(
                     'The CSV file is missing required columns: ' . implode(', ', $missingHeaders) . '.',
@@ -98,6 +123,9 @@ class BasketballBoxScoreCsvParser
                 'team' => ['label' => 'Team', 'score' => null, 'players' => [], 'totals' => []],
                 'opponent' => ['label' => 'Opponent', 'score' => null, 'players' => [], 'totals' => []],
             ];
+            $gameResults = ['attendance' => null, 'officials' => [], 'period_scores' => []];
+            $periodBoxes = [];
+            $hasData = false;
             $rowNumber = 1;
             while (($row = fgetcsv($stream, null, ',', '"', '')) !== false) {
                 $rowNumber++;
@@ -110,10 +138,31 @@ class BasketballBoxScoreCsvParser
 
                 $rowType = strtolower(trim((string)$data['row_type']));
                 $side = strtolower(trim((string)$data['side']));
-                if (!in_array($rowType, ['player', 'totals'], true)) {
+                if (!in_array($rowType, ['player', 'totals', 'period', 'game'], true)) {
                     throw new InvalidArgumentException(
-                        'CSV row ' . $rowNumber . ' must use player or totals as row_type.',
+                        'CSV row ' . $rowNumber . ' must use player, totals, period, or game as row_type.',
                     );
+                }
+                if ($rowType === 'game') {
+                    if ($side !== 'game') {
+                        throw new InvalidArgumentException('CSV game rows must use game as side.');
+                    }
+                    $gameRow = $this->parseGameRow($data, $rowNumber);
+                    if (isset($gameRow['attendance'])) {
+                        $gameResults['attendance'] = $gameRow['attendance'];
+                    }
+                    $gameResults['officials'] = array_replace(
+                        $gameResults['officials'],
+                        $gameRow['officials'] ?? [],
+                    );
+                    foreach ($gameRow['period_scores'] ?? [] as $period => $scores) {
+                        $gameResults['period_scores'][$period] = array_replace(
+                            $gameResults['period_scores'][$period] ?? [],
+                            $scores,
+                        );
+                    }
+                    $hasData = $hasData || $gameRow !== [];
+                    continue;
                 }
                 if (!isset($teams[$side])) {
                     throw new InvalidArgumentException('CSV row ' . $rowNumber . ' must use team or opponent as side.');
@@ -124,6 +173,20 @@ class BasketballBoxScoreCsvParser
 
                 if ($rowType === 'player') {
                     $teams[$side]['players'][] = $this->parsePlayer($data, $rowNumber);
+                    $hasData = true;
+                    continue;
+                }
+
+                if ($rowType === 'period') {
+                    $period = $this->normalizePeriod((string)($data['period'] ?? ''), $rowNumber);
+                    $stats = $this->parseBoxStats($data, $rowNumber);
+                    if ($stats !== []) {
+                        $periodBoxes[$period][$side] = $stats;
+                        if (isset($stats['PTS'])) {
+                            $gameResults['period_scores'][$period][$side] = (int)$stats['PTS'];
+                        }
+                        $hasData = true;
+                    }
                     continue;
                 }
 
@@ -132,23 +195,23 @@ class BasketballBoxScoreCsvParser
                 }
                 $teams[$side]['totals'] = $this->parseTotals($data, $rowNumber);
                 $teams[$side]['score'] = $teams[$side]['totals']['PTS'] ?? null;
+                $hasData = $hasData || $teams[$side]['totals'] !== [];
             }
         } finally {
             fclose($stream);
         }
 
-        foreach ($teams as $side => $team) {
-            if ($team['players'] === []) {
-                throw new InvalidArgumentException('The CSV file needs at least one player row for ' . $side . '.');
-            }
-            if ($team['totals'] === []) {
-                throw new InvalidArgumentException('The CSV file needs one totals row for ' . $side . '.');
-            }
+        if (!$hasData) {
+            throw new InvalidArgumentException(
+                'The CSV file needs at least one completed player, totals, period, or game row.',
+            );
         }
 
         return [
             'date' => null,
             'teams' => [$teams['team'], $teams['opponent']],
+            'game_results' => $gameResults,
+            'period_boxes' => $periodBoxes,
         ];
     }
 
@@ -202,7 +265,7 @@ class BasketballBoxScoreCsvParser
             'name' => $name,
         ];
         foreach (self::STAT_FIELDS as $field) {
-            $player[$field] = $this->parseStatValue((string)$data[$field], $field, $rowNumber);
+            $player[$field] = $this->parseStatValue((string)($data[$field] ?? ''), $field, $rowNumber);
         }
 
         return $player;
@@ -216,18 +279,90 @@ class BasketballBoxScoreCsvParser
     private function parseTotals(array $data, int $rowNumber): array
     {
         $totals = [];
-        foreach (self::STAT_FIELDS as $field) {
-            if ($field === 'MIN') {
-                continue;
+        foreach (self::BOX_FIELDS as $field) {
+            $value = $this->parseStatValue((string)($data[$field] ?? ''), $field, $rowNumber);
+            if ($value !== null) {
+                $totals[$field] = (int)$value;
             }
-            $value = $this->parseStatValue((string)$data[$field], $field, $rowNumber);
-            $totals[$field] = is_int($value) ? $value : null;
-        }
-        if ($totals['PTS'] === null) {
-            throw new InvalidArgumentException('CSV totals row ' . $rowNumber . ' must include PTS.');
         }
 
         return $totals;
+    }
+
+    /**
+     * Parse one optional game-result CSV row.
+     *
+     * @param array<string,string> $data CSV row keyed by header
+     * @param int $rowNumber CSV line number
+     * @return array{attendance?:string,officials?:array<int|string,string>,period_scores?:array<string,array<string,int>>} Parsed result values
+     */
+    private function parseGameRow(array $data, int $rowNumber): array
+    {
+        $field = strtolower(trim((string)($data['field'] ?? '')));
+        $value = trim((string)($data['value'] ?? ''));
+        if ($field === '' || $value === '') {
+            return [];
+        }
+        if ($field === 'attendance') {
+            return ['attendance' => str_replace(',', '', $value)];
+        }
+        if (preg_match('/^official_(\d+)$/', $field, $matches) === 1) {
+            return ['officials' => [$field => $value]];
+        }
+        if (preg_match('/^(period|overtime)_(\d+)_(team|opponent)$/', $field, $matches) === 1) {
+            if (preg_match('/^\d+$/', $value) !== 1) {
+                throw new InvalidArgumentException('CSV game row ' . $rowNumber . ' has an invalid period score.');
+            }
+            $period = $matches[1] === 'period'
+                ? (string)(int)$matches[2]
+                : 'OT' . ((int)$matches[2] > 1 ? (string)(int)$matches[2] : '');
+
+            return ['period_scores' => [$period => [$matches[3] => (int)$value]]];
+        }
+
+        throw new InvalidArgumentException('CSV game row ' . $rowNumber . ' has an unsupported field.');
+    }
+
+    /**
+     * Parse optional statistics from a period row.
+     *
+     * @param array<string,string> $data CSV row keyed by header
+     * @param int $rowNumber CSV line number
+     * @return array<string,int> Present statistics
+     */
+    private function parseBoxStats(array $data, int $rowNumber): array
+    {
+        $stats = [];
+        foreach (self::BOX_FIELDS as $field) {
+            $value = $this->parseStatValue((string)($data[$field] ?? ''), $field, $rowNumber);
+            if ($value !== null) {
+                $stats[$field] = (int)$value;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Validate and normalize a period identifier from a CSV row.
+     *
+     * @param string $period Source period value
+     * @param int $rowNumber CSV line number
+     * @return string Database period code
+     */
+    private function normalizePeriod(string $period, int $rowNumber): string
+    {
+        $period = strtoupper(trim($period));
+        if (preg_match('/^\d+$/', $period) === 1) {
+            return (string)(int)$period;
+        }
+        if (preg_match('/^OT\s*(\d*)$/', $period, $matches) === 1) {
+            $overtime = (int)$matches[1];
+
+            return $overtime > 1 ? 'OT' . $overtime : 'OT';
+        }
+
+        throw new InvalidArgumentException('CSV row ' . $rowNumber . ' has an invalid period.');
     }
 
     /**

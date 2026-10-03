@@ -143,17 +143,20 @@ class BasketballBoxScoreImportServiceTest extends TestCase
 
         $result = (new BasketballBoxScoreImportService(null, $statsService))->save(1, [
             'team_rows' => [[
+                'import' => '1',
                 'team_season_roster_id' => 1,
                 'GS' => '1',
                 'MIN' => '24:09',
                 'PTS' => '8',
             ]],
             'opponent_rows' => [[
+                'import' => '1',
                 'name' => 'Torey Alston',
                 'GS' => '*',
                 'MIN' => '35:36',
                 'PTS' => '26',
             ], [
+                'import' => '1',
                 'name' => 'Second Opponent Player',
                 'GS' => 'G',
                 'MIN' => '12:00',
@@ -161,9 +164,60 @@ class BasketballBoxScoreImportServiceTest extends TestCase
             ]],
             'team_box' => ['PTS' => '87'],
             'opponent_box' => ['PTS' => '90'],
+            'team_box_selected' => ['PTS' => '1'],
+            'opponent_box_selected' => ['PTS' => '1'],
         ]);
 
         self::assertTrue($result['success']);
+    }
+
+    /**
+     * Save only checked player, final-box, and period-box line items.
+     *
+     * @return void
+     */
+    public function testSaveAcceptsPartialSelections(): void
+    {
+        $statsService = $this->createMock(BasketballStatsAdminService::class);
+        $statsService->expects(self::once())
+            ->method('saveAdminGamePersonRows')
+            ->with(1, self::callback(static fn(array $rows): bool => count($rows) === 1
+                && $rows[0]['team_season_roster_id'] === 1
+                && !array_key_exists('import', $rows[0])), false)
+            ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
+        $statsService->expects(self::never())->method('saveAdminGameOpponentRows');
+        $statsService->expects(self::once())
+            ->method('saveAdminGameBox')
+            ->with(1, self::callback(static fn(array $box): bool => $box['team'] === ['PTS' => '70']
+                && $box['opponent'] === []))
+            ->willReturn(['success' => true, 'game' => null, 'redirectToPeriods' => false]);
+        $statsService->expects(self::once())
+            ->method('saveAdminGameBoxPeriods')
+            ->with(1, ['team_1' => ['PTS' => '32']])
+            ->willReturn(['success' => true, 'errors' => []]);
+
+        $result = (new BasketballBoxScoreImportService(null, $statsService))->save(1, [
+            'team_rows' => [[
+                'import' => '1',
+                'team_season_roster_id' => 1,
+                'PTS' => '11',
+            ], [
+                'team_season_roster_id' => '',
+                'PTS' => '99',
+            ]],
+            'opponent_rows' => [[
+                'name' => 'Unchecked Player',
+                'PTS' => '12',
+            ]],
+            'team_box' => ['PTS' => '70', 'FGM' => '21'],
+            'opponent_box' => ['PTS' => '80'],
+            'team_box_selected' => ['PTS' => '1'],
+            'period_boxes' => ['team_1' => ['PTS' => '32', 'FGM' => '9']],
+            'period_boxes_selected' => ['team_1' => ['PTS' => '1']],
+        ]);
+
+        self::assertTrue($result['success']);
+        self::assertSame(1, $result['saved']);
     }
 
     /**
@@ -215,6 +269,22 @@ class BasketballBoxScoreImportServiceTest extends TestCase
         ]]);
 
         self::assertSame(['id' => 4, 'label' => '#4 Roster Player', 'type' => 'jersey'], $result);
+    }
+
+    /**
+     * Map source periods after regulation to numbered overtime periods.
+     *
+     * @return void
+     */
+    public function testMapsSourcePeriodsToConfiguredOvertimeCodes(): void
+    {
+        $service = new BasketballBoxScoreImportService();
+        $method = (new ReflectionClass(BasketballBoxScoreImportService::class))->getMethod('mapSourcePeriod');
+
+        self::assertSame('OT', $method->invoke($service, '3', 2));
+        self::assertSame('OT2', $method->invoke($service, '4', 2));
+        self::assertSame('3', $method->invoke($service, '3', 4));
+        self::assertSame('OT', $method->invoke($service, 'OT', 2));
     }
 
     /**

@@ -12,18 +12,29 @@
  * @var list<array<string, mixed>> $opponentRows
  * @var array<string, mixed> $teamBox
  * @var array<string, mixed> $opponentBox
+ * @var array<string, mixed> $gameResults
+ * @var array<string, array<string, mixed>> $periodBoxes
  * @var list<string> $warnings
  */
 $this->assign('title', 'Import Basketball Box Score');
 $teamName = (string)($game->team_season?->team?->team_name ?? 'Team');
 $opponentName = (string)($game->opponent?->opponent_name ?? 'Opponent');
 $gameDate = $game->game_date ?? null;
-$hasPreview = isset($teamRows) && $teamRows !== [];
+$hasPreview = isset($parsed) && is_array($parsed);
+$gameResults = $gameResults ?? [];
+$periodBoxes = $periodBoxes ?? [];
 $playerFields = [
     'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB',
     'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL', 'BS', 'BD',
 ];
-$boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL', 'BS', 'TF'];
+$boxFields = [
+    'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF', 'PTS',
+    'AST', 'TRN', 'STL', 'BS', 'TF', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+];
+$boxFieldLabels = [
+    'PNT' => 'Points in Paint', 'OTO' => 'Points off Turnovers', 'SND' => 'Second-Chance Points',
+    'FB' => 'Fast Break Points', 'BN' => 'Bench Points', 'TIED' => 'Times Tied', 'LC' => 'Lead Changes',
+];
 ?>
 <div class="container-fluid py-4">
     <nav aria-label="breadcrumb">
@@ -52,7 +63,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
     </div>
 
     <div class="alert alert-info">
-        <strong>Workflow:</strong> upload an official NCAA box-score PDF or a completed CSV template, preview the detected rows, correct any roster mapping, then save the import. The importer reads final player and team totals; play-by-play and shot-chart pages are ignored.
+        <strong>Workflow:</strong> upload an official box-score PDF, paste extracted text, enter a public box-score URL, or use a completed CSV template. Review the detected values, uncheck any line you want to leave unchanged, then save. Available period totals and game-result details are included when the source provides them.
     </div>
 
     <?= $this->Form->create(null, [
@@ -83,7 +94,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                     </a>
                 </div>
                 <input id="csv-file" name="csv_file" type="file" accept="text/csv,.csv" class="form-control mt-2">
-                <div class="form-text">Download the template, replace the player and totals placeholder rows for both <code>team</code> and <code>opponent</code>, then upload it. Leave untracked stat columns blank. Do not upload a PDF and CSV together.</div>
+                <div class="form-text">Use <code>player</code> rows for individual players, <code>totals</code> rows for final team stats, <code>period</code> rows for a team/opponent and period such as 1, 2, or OT, and <code>game</code> rows with <code>side=game</code> for attendance, officials, or period-score fields. Put the game field name in <code>field</code> and its value in <code>value</code>. Leave unused rows and stat columns blank; partial imports are accepted.</div>
             </div>
             <details class="mt-3">
                 <summary>Use pasted text instead</summary>
@@ -120,6 +131,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                 <table class="table table-sm table-striped align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Import</th>
                             <th>PDF Player</th>
                             <th>Roster Mapping</th>
                             <?php foreach ($playerFields as $field) : ?>
@@ -131,6 +143,9 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                         <?php foreach ($teamRows as $index => $row) : ?>
                             <tr>
                                 <td>
+                                    <input type="checkbox" name="team_rows[<?= (int)$index ?>][import]" value="1" checked aria-label="Import stats for <?= h($row['name']) ?>">
+                                </td>
+                                <td>
                                     <input type="hidden" name="team_rows[<?= (int)$index ?>][jersey]" value="<?= h($row['jersey']) ?>">
                                     <input type="hidden" name="team_rows[<?= (int)$index ?>][name]" value="<?= h($row['name']) ?>">
                                     <strong>#<?= h($row['jersey']) ?></strong> <?= h($row['name']) ?>
@@ -140,7 +155,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                                 </td>
                                 <td>
                                     <label class="visually-hidden" for="team-roster-<?= (int)$index ?>">Roster mapping for <?= h($row['name']) ?></label>
-                                    <select id="team-roster-<?= (int)$index ?>" name="team_rows[<?= (int)$index ?>][team_season_roster_id]" class="form-select form-select-sm" required>
+                                    <select id="team-roster-<?= (int)$index ?>" name="team_rows[<?= (int)$index ?>][team_season_roster_id]" class="form-select form-select-sm">
                                         <option value="">Select roster player</option>
                                         <?php foreach ($roster as $rosterRow) : ?>
                                             <option value="<?= (int)$rosterRow['id'] ?>" <?= (string)($row['team_season_roster_id'] ?? '') === (string)$rosterRow['id'] ? 'selected' : '' ?>><?= h($rosterRow['label']) ?></option>
@@ -171,6 +186,7 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                 <table class="table table-sm table-striped align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Import</th>
                             <th>Jersey</th>
                             <th>Name</th>
                             <?php foreach ($playerFields as $field) : ?>
@@ -181,8 +197,9 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                     <tbody>
                         <?php foreach ($opponentRows as $index => $row) : ?>
                             <tr>
+                                <td><input type="checkbox" name="opponent_rows[<?= (int)$index ?>][import]" value="1" checked aria-label="Import stats for <?= h($row['name']) ?>"></td>
                                 <td><input type="text" name="opponent_rows[<?= (int)$index ?>][jersey]" value="<?= h((string)$row['jersey']) ?>" class="form-control form-control-sm" style="min-width: 4rem;"></td>
-                                <td><input type="text" name="opponent_rows[<?= (int)$index ?>][name]" value="<?= h((string)$row['name']) ?>" class="form-control form-control-sm" style="min-width: 10rem;" required></td>
+                                <td><input type="text" name="opponent_rows[<?= (int)$index ?>][name]" value="<?= h((string)$row['name']) ?>" class="form-control form-control-sm" style="min-width: 10rem;"></td>
                                 <?php foreach ($playerFields as $field) : ?>
                                     <td><input type="text" inputmode="decimal" name="opponent_rows[<?= (int)$index ?>][<?= h($field) ?>]" value="<?= h((string)($row[$field] ?? '')) ?>" class="form-control form-control-sm" style="min-width: 4.5rem;"></td>
                                 <?php endforeach; ?>
@@ -196,8 +213,9 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
         </div>
 
         <div class="card mb-4">
-            <div class="card-header"><h2 class="h5 mb-0">4. Team totals</h2></div>
+            <div class="card-header"><h2 class="h5 mb-0">4. Final team totals</h2></div>
             <div class="card-body">
+                <p class="form-text">Uncheck a statistic to leave its existing value unchanged.</p>
                 <div class="row g-2">
                     <?php foreach (['team' => $teamBox, 'opponent' => $opponentBox] as $side => $box) : ?>
                         <div class="col-lg-6">
@@ -205,7 +223,12 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                             <div class="row g-2">
                                 <?php foreach ($boxFields as $field) : ?>
                                     <div class="col-6 col-md-3">
-                                        <label class="form-label small" for="<?= h($side) ?>-box-<?= h($field) ?>"><?= h($field) ?></label>
+                                        <?php $boxValue = $box[$field] ?? ''; ?>
+                                        <?php $boxId = $side . '-box-' . $field; ?>
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="<?= h($boxId) ?>-import" name="<?= h($side) ?>_box_selected[<?= h($field) ?>]" value="1" <?= $boxValue !== '' && $boxValue !== null ? 'checked' : '' ?>>
+                                            <label class="form-check-label small" for="<?= h($boxId) ?>-import">Import <?= h($boxFieldLabels[$field] ?? $field) ?></label>
+                                        </div>
                                         <input id="<?= h($side) ?>-box-<?= h($field) ?>" type="text" inputmode="decimal" name="<?= h($side) ?>_box[<?= h($field) ?>]" value="<?= h((string)($box[$field] ?? '')) ?>" class="form-control form-control-sm">
                                     </div>
                                 <?php endforeach; ?>
@@ -215,6 +238,81 @@ $boxFields = ['FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF'
                 </div>
             </div>
         </div>
+
+        <?php if ($periodBoxes !== []) : ?>
+            <div class="card mb-4">
+                <div class="card-header"><h2 class="h5 mb-0">5. Period-by-period team totals</h2></div>
+                <div class="card-body">
+                    <p class="form-text">Each checked statistic updates only that team and period. Other period values remain unchanged.</p>
+                    <div class="row g-3">
+                        <?php foreach ($periodBoxes as $rowKey => $box) : ?>
+                            <?php
+                            [$periodSide, $periodCode] = explode('_', (string)$rowKey, 2);
+                            $periodName = str_starts_with($periodCode, 'OT')
+                                ? 'Overtime ' . (substr($periodCode, 2) !== '' ? substr($periodCode, 2) : '1')
+                                : 'Period ' . $periodCode;
+                            $periodSideName = $periodSide === 'team' ? $teamName : $opponentName;
+                            ?>
+                            <div class="col-lg-6">
+                                <h3 class="h6"><?= h($periodName) ?> - <?= h($periodSideName) ?></h3>
+                                <div class="row g-2">
+                                    <?php foreach ($boxFields as $field) : ?>
+                                        <?php $periodValue = $box[$field] ?? ''; ?>
+                                        <div class="col-6 col-md-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="<?= h($rowKey . '-' . $field) ?>-import" name="period_boxes_selected[<?= h($rowKey) ?>][<?= h($field) ?>]" value="1" <?= $periodValue !== '' && $periodValue !== null ? 'checked' : '' ?>>
+                                                <label class="form-check-label small" for="<?= h($rowKey . '-' . $field) ?>-import">Import <?= h($boxFieldLabels[$field] ?? $field) ?></label>
+                                            </div>
+                                            <input type="text" inputmode="decimal" name="period_boxes[<?= h($rowKey) ?>][<?= h($field) ?>]" value="<?= h((string)$periodValue) ?>" class="form-control form-control-sm" aria-label="<?= h($periodName . ' ' . $periodSideName . ' ' . ($boxFieldLabels[$field] ?? $field)) ?>">
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php
+        $gameResultLabels = [];
+        foreach ($gameResults as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if ($key === 'attendance') {
+                $gameResultLabels[$key] = 'Attendance';
+            } elseif (preg_match('/^period_(\d+)_(team|opponent)$/', (string)$key, $matches) === 1) {
+                $sideName = $matches[2] === 'team' ? $teamName : $opponentName;
+                $gameResultLabels[$key] = 'Period ' . $matches[1] . ' - ' . $sideName . ' points';
+            } elseif (preg_match('/^overtime_(\d+)_(team|opponent)$/', (string)$key, $matches) === 1) {
+                $sideName = $matches[2] === 'team' ? $teamName : $opponentName;
+                $gameResultLabels[$key] = 'Overtime ' . $matches[1] . ' - ' . $sideName . ' points';
+            } elseif (preg_match('/^official_(\d+)$/', (string)$key, $matches) === 1) {
+                $gameResultLabels[$key] = 'Official ' . $matches[1];
+            }
+        }
+        ?>
+        <?php if ($gameResultLabels !== []) : ?>
+            <div class="card mb-4">
+                <div class="card-header"><h2 class="h5 mb-0">6. Game results</h2></div>
+                <div class="card-body">
+                    <p class="form-text">Select the attendance, period-score, or official fields to import. Unchecked fields stay unchanged.</p>
+                    <div class="row g-2">
+                        <?php foreach ($gameResultLabels as $key => $label) : ?>
+                            <?php $resultId = 'game-result-' . $key; ?>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="<?= h($resultId) ?>-import" name="game_results_selected[<?= h($key) ?>]" value="1" checked>
+                                    <label class="form-check-label" for="<?= h($resultId) ?>-import">Import <?= h($label) ?></label>
+                                </div>
+                                <input id="<?= h($resultId) ?>" type="<?= $key === 'attendance' || str_contains((string)$key, 'period_') || str_contains((string)$key, 'overtime_') ? 'number' : 'text' ?>" name="game_results[<?= h($key) ?>]" value="<?= h((string)$gameResults[$key]) ?>" class="form-control form-control-sm" <?= $key === 'attendance' || str_contains((string)$key, 'period_') || str_contains((string)$key, 'overtime_') ? 'min="0" step="1"' : '' ?>>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="card mb-4">
             <div class="card-body">

@@ -45,6 +45,9 @@ CSV;
         self::assertStringStartsWith('row_type,side,jersey,name,MIN', $template);
         self::assertStringContainsString('player,team', $template);
         self::assertStringContainsString('totals,opponent', $template);
+        self::assertStringContainsString('period,field,value,PNT,OTO,SND,FB,BN,TIED,LC', $template);
+        self::assertStringContainsString('period,team,,,,,,,,,,,,,,,,,,,,,1', $template);
+        self::assertStringContainsString('game,game,,,,,,,,,,,,,,,,,,,,,,attendance', $template);
     }
 
     /**
@@ -55,7 +58,7 @@ CSV;
     public function testRejectsUnfilledTemplate(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('at least one player row for team');
+        $this->expectExceptionMessage('at least one completed player, totals, period, or game row');
 
         $parser = new BasketballBoxScoreCsvParser();
         $parser->parse($parser->template());
@@ -75,5 +78,46 @@ CSV;
         $this->expectExceptionMessage('team or opponent as side');
 
         (new BasketballBoxScoreCsvParser())->parse($csv);
+    }
+
+    /**
+     * Parse only the totals, period, and game-result rows supplied in a partial CSV.
+     *
+     * @return void
+     */
+    public function testParsesPartialCsvWithPeriodAndGameResults(): void
+    {
+        $headers = [
+            'row_type', 'side', 'jersey', 'name', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA',
+            'FTM', 'FTA', 'ORB', 'DRB', 'RB', 'PF', 'FD', 'PTS', 'AST', 'TRN', 'STL',
+            'BS', 'BD', 'period', 'field', 'value', 'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+        ];
+        $rows = [
+            ['row_type' => 'totals', 'side' => 'team', 'PNT' => '16'],
+            ['row_type' => 'period', 'side' => 'team', 'period' => '1', 'FGM' => '9', 'PTS' => '32'],
+            ['row_type' => 'period', 'side' => 'opponent', 'period' => '1', 'PTS' => '51'],
+            ['row_type' => 'game', 'side' => 'game', 'field' => 'attendance', 'value' => '1,957'],
+            ['row_type' => 'game', 'side' => 'game', 'field' => 'official_2', 'value' => 'Referee B'],
+            ['row_type' => 'game', 'side' => 'game', 'field' => 'period_2_team', 'value' => '10'],
+        ];
+        $stream = fopen('php://temp', 'r+');
+        self::assertNotFalse($stream);
+        fputcsv($stream, $headers, ',', '"', '');
+        foreach ($rows as $row) {
+            fputcsv($stream, array_map(static fn(string $header): string => $row[$header] ?? '', $headers), ',', '"', '');
+        }
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+        self::assertIsString($csv);
+
+        $result = (new BasketballBoxScoreCsvParser())->parse($csv);
+
+        self::assertSame(16, $result['teams'][0]['totals']['PNT']);
+        self::assertSame('1957', $result['game_results']['attendance']);
+        self::assertSame(['official_2' => 'Referee B'], $result['game_results']['officials']);
+        self::assertSame(['team' => 32, 'opponent' => 51], $result['game_results']['period_scores']['1']);
+        self::assertSame(['team' => 10], $result['game_results']['period_scores']['2']);
+        self::assertSame(9, $result['period_boxes']['1']['team']['FGM']);
     }
 }

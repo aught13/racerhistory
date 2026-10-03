@@ -20,7 +20,10 @@ class OfficialBasketballBoxScoreParser
      * @param string $text Extracted PDF text
      * @return array{
      *     date: string|null,
-     *     teams: list<array{label: string, score: int|null, players: list<array<string, mixed>>, totals: array<string, int|null>}>}
+     *     teams: list<array{label: string, score: int|null, players: list<array<string, mixed>>, totals: array<string, int|null>}>,
+     *     game_results: array{attendance: string|null, officials: list<string>, period_scores: array<string, array{team: int, opponent: int}>},
+     *     period_boxes: array<string, array{team: array<string, int|null>, opponent: array<string, int|null>}>
+     * }
      */
     public function parse(string $text): array
     {
@@ -28,17 +31,17 @@ class OfficialBasketballBoxScoreParser
         $text = str_replace(["\xE2\x88\x92", "\xE2\x80\x93", "\xE2\x80\x94"], '-', $text);
         $text = $this->normalizeCompactTraditionalRows($text);
         if (str_contains($text, 'orb-drb') && str_contains($text, 'Game Information')) {
-            return $this->parseHtmlBoxScoreFormat($text);
+            return $this->addSupplementalData($this->parseHtmlBoxScoreFormat($text), $text);
         }
         if (str_contains($text, 'Official Box Score') && str_contains($text, 'Game Totals -- Final Statistics')) {
-            return $this->parseFinalStatisticsFormat($text);
+            return $this->addSupplementalData($this->parseFinalStatisticsFormat($text), $text);
         }
         if ($this->isLegacyGameTotalsFormat($text)) {
-            return $this->parseLegacyGameTotals($text);
+            return $this->addSupplementalData($this->parseLegacyGameTotals($text), $text);
         }
         $columnarResult = $this->parseSmalotColumnarFormat($text);
         if ($columnarResult !== null) {
-            return $columnarResult;
+            return $this->addSupplementalData($columnarResult, $text);
         }
         $finalSection = $this->extractFinalBoxScoreSection($text);
         $blocks = $this->extractPlayerBlocks($finalSection);
@@ -65,10 +68,535 @@ class OfficialBasketballBoxScoreParser
 
         preg_match('/\b(\d{2}\/\d{2}\/\d{2})\b/', $text, $dateMatch);
 
-        return [
+        return $this->addSupplementalData([
             'date' => $dateMatch[1] ?? null,
             'teams' => $teams,
+        ], $text);
+    }
+
+    /**
+     * Add game-level details and period totals to the parsed box score.
+     *
+     * @param array{date:string|null,teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>} $parsed Parsed teams
+     * @param string $text Complete source text
+     * @return array{date:string|null,teams:list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}>,game_results:array{attendance:string|null,officials:list<string>,period_scores:array<string,array{team:int,opponent:int}>},period_boxes:array<string,array{team:array<string,int|null>,opponent:array<string,int|null>}>} Parsed box score and game details
+     */
+    private function addSupplementalData(array $parsed, string $text): array
+    {
+        $periodScores = $this->parsePeriodScores($text, $parsed['teams']);
+        $periodBoxes = [];
+        foreach ($periodScores as $period => $scores) {
+            $periodBoxes[$period] = [
+                'team' => ['PTS' => $scores['team']],
+                'opponent' => ['PTS' => $scores['opponent']],
+            ];
+        }
+
+        foreach ($this->parseHtmlPeriodBoxes($text) as $period => $sides) {
+            foreach (['team', 'opponent'] as $side) {
+                $periodBoxes[$period][$side] = array_replace($periodBoxes[$period][$side] ?? [], $sides[$side] ?? []);
+            }
+        }
+        foreach ($this->parsePeriodBoxSections($text) as $period => $sides) {
+            foreach (['team', 'opponent'] as $side) {
+                $periodBoxes[$period][$side] = array_replace($periodBoxes[$period][$side] ?? [], $sides[$side] ?? []);
+            }
+        }
+
+        $htmlPeriodDetails = $this->parseHtmlPeriodDetails(
+            $text,
+            $parsed['teams'],
+            array_map('strval', array_keys($periodScores)),
+        );
+        foreach ($htmlPeriodDetails['period_boxes'] as $period => $sides) {
+            foreach (['team', 'opponent'] as $side) {
+                $periodBoxes[$period][$side] = array_replace($periodBoxes[$period][$side] ?? [], $sides[$side] ?? []);
+            }
+        }
+
+        $breakdowns = $this->parseScoringBreakdown($text);
+        foreach ($parsed['teams'] as $index => &$team) {
+            foreach ($breakdowns as $field => $values) {
+                if (array_key_exists($index, $values)) {
+                    $team['totals'][$field] = $values[$index];
+                }
+            }
+            foreach ($htmlPeriodDetails['totals'][$index] ?? [] as $field => $value) {
+                $team['totals'][$field] = $value;
+            }
+        }
+        unset($team);
+
+        $parsed['game_results'] = [
+            'attendance' => $this->parseAttendance($text),
+            'officials' => $this->parseOfficials($text),
+            'period_scores' => $periodScores,
         ];
+        $parsed['period_boxes'] = $periodBoxes;
+
+        return $parsed;
+    }
+
+    /**
+     * Parse attendance from a traditional box-score footer.
+     *
+     * @param string $text Source text
+     * @return string|null Attendance, when present
+     */
+    private function parseAttendance(string $text): ?string
+    {
+        if (preg_match('/Attendance\s*:\s*([\d,]+)/i', $text, $matches) !== 1) {
+            return null;
+        }
+
+        return str_replace(',', '', $matches[1]);
+    }
+
+    /**
+     * Parse the officials listed in a traditional box-score footer.
+     *
+     * @param string $text Source text
+     * @return list<string> Officials in source order
+     */
+    private function parseOfficials(string $text): array
+    {
+        $matched = preg_match(
+            '/(?:Officials?|Referees?)\s*:\s*(.+?)'
+            . '(?=(?:\s+(?:Technical fouls?|Attendance|Score by|Points in the paint)\b|View:|Game Information\b)|$)/is',
+            $text,
+            $matches,
+        );
+        if ($matched !== 1) {
+            return [];
+        }
+
+        $normalizedNames = preg_replace('/\s+/', ' ', $matches[1]) ?? $matches[1];
+        $names = preg_split('/\s*,\s*/', trim($normalizedNames)) ?: [];
+
+        return array_values(array_filter(array_map('trim', $names), static fn(string $name): bool => $name !== ''));
+    }
+
+    /**
+     * Parse score-by-period rows from HTML markers or a legacy text table.
+     *
+     * The `team` and `opponent` keys follow source order; the import service
+     * reorients them after matching source teams to the selected game.
+     *
+     * @param string $text Source text
+     * @param list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}> $teams Parsed teams
+     * @return array<string,array{team:int,opponent:int}> Scores keyed by period
+     */
+    private function parsePeriodScores(string $text, array $teams): array
+    {
+        $headers = [];
+        if (preg_match('/^PERIOD_SCORE_HEADERS\|([^\n]+)$/mi', $text, $headerMatch) === 1) {
+            $headers = explode('|', trim($headerMatch[1]));
+        }
+
+        $periodScores = [];
+        if (preg_match_all('/^PERIOD_SCORE\|([^\n]+)$/mi', $text, $markerRows) > 0) {
+            foreach ($markerRows[1] as $rowIndex => $row) {
+                $cells = array_map('trim', explode('|', $row));
+                $label = (string)array_shift($cells);
+                $sideIndex = $this->findParsedTeamIndex($label, $teams) ?? $rowIndex;
+                $values = array_values(array_map('intval', array_filter(
+                    $cells,
+                    static fn(string $value): bool => preg_match('/^\d+$/', $value) === 1,
+                )));
+                $values = $this->removeFinalScore($values, $teams[$sideIndex]['score'] ?? null);
+                $codes = $this->periodCodes($headers, count($values));
+                $side = $sideIndex === 0 ? 'team' : 'opponent';
+                foreach ($values as $index => $value) {
+                    $code = $codes[$index] ?? null;
+                    if ($code === null) {
+                        continue;
+                    }
+                    $periodScores[$code][$side] = $value;
+                }
+            }
+        }
+
+        if ($periodScores === []) {
+            $scorePosition = stripos($text, 'Score by Periods');
+            if ($scorePosition !== false) {
+                $lines = explode("\n", substr($text, $scorePosition + strlen('Score by Periods')));
+                $sourceRow = 0;
+                foreach (array_slice($lines, 0, 16) as $line) {
+                    if (preg_match('/\b(?:\d+(?:st|nd|rd|th)|OT(?:\s*\d+)?)\b/i', $line, $headerMatch) === 1) {
+                        preg_match_all('/\b(?:\d+(?:st|nd|rd|th)|OT(?:\s*\d+)?)\b/i', $line, $matches);
+                        $headers = $matches[0];
+                    }
+                    if (preg_match('/^\s*(.+?)\.{2,}\s*(.+)$/', $line, $rowMatch) !== 1) {
+                        continue;
+                    }
+
+                    $sideIndex = $this->findParsedTeamIndex($rowMatch[1], $teams) ?? $sourceRow;
+                    $values = [];
+                    preg_match_all('/\d+/', $rowMatch[2], $numberMatches);
+                    $values = array_map('intval', $numberMatches[0]);
+                    $values = $this->removeFinalScore($values, $teams[$sideIndex]['score'] ?? null);
+                    $codes = $this->periodCodes($headers, count($values));
+                    $side = $sideIndex === 0 ? 'team' : 'opponent';
+                    foreach ($values as $index => $value) {
+                        $code = $codes[$index] ?? null;
+                        if ($code !== null) {
+                            $periodScores[$code][$side] = $value;
+                        }
+                    }
+                    $sourceRow++;
+                    if ($sourceRow >= 2) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        $completeScores = [];
+        foreach ($periodScores as $period => $scores) {
+            if (isset($scores['team'], $scores['opponent'])) {
+                $completeScores[$period] = $scores;
+            }
+        }
+
+        return $completeScores;
+    }
+
+    /**
+     * Remove a row's final score when it is repeated after the period values.
+     *
+     * @param list<int> $values Parsed score cells
+     * @param int|null $finalScore Parsed team's final score
+     * @return list<int> Period-only scores
+     */
+    private function removeFinalScore(array $values, ?int $finalScore): array
+    {
+        if (count($values) > 1 && $finalScore !== null && end($values) === $finalScore) {
+            array_pop($values);
+        }
+
+        return $values;
+    }
+
+    /**
+     * Convert period header labels to database period codes.
+     *
+     * @param list<string> $headers Source period headers
+     * @param int $scoreCount Number of score values
+     * @return list<string> Period codes
+     */
+    private function periodCodes(array $headers, int $scoreCount): array
+    {
+        $codes = [];
+        foreach ($headers as $header) {
+            $code = $this->periodCode($header);
+            if ($code !== null) {
+                $codes[] = $code;
+            }
+        }
+        if (count($codes) >= $scoreCount) {
+            return array_slice($codes, 0, $scoreCount);
+        }
+
+        $codes = [];
+        $regularPeriodCount = $scoreCount === 3 ? 2 : min($scoreCount, 4);
+        for ($index = 0; $index < $scoreCount; $index++) {
+            $codes[] = $index < $regularPeriodCount
+                ? (string)($index + 1)
+                : 'OT' . ($index === $regularPeriodCount ? '' : (string)($index - $regularPeriodCount + 1));
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Convert a source label such as "2nd Half" or "OT 2" to a period code.
+     *
+     * @param string $label Source label
+     * @return string|null Period code, or null for total/final headings
+     */
+    private function periodCode(string $label): ?string
+    {
+        if (preg_match('/^\d+$/', trim($label)) === 1) {
+            return (string)(int)$label;
+        }
+        if (preg_match('/\bOT\s*(\d*)\b/i', $label, $matches) === 1) {
+            $overtime = (int)$matches[1];
+
+            return $overtime > 1 ? 'OT' . $overtime : 'OT';
+        }
+        if (preg_match('/\b(\d+)(?:st|nd|rd|th)\b/i', $label, $matches) === 1) {
+            return (string)(int)$matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse period-by-period team stats serialized from the modern HTML page.
+     *
+     * @param string $text Source text
+     * @param list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}> $teams Parsed teams and final totals
+     * @param list<string> $sourcePeriods Period identifiers from the score table
+     * @return array{period_boxes:array<string,array<string,array<string,int>>>,totals:array<int,array<string,int>>} Period details and final totals
+     */
+    private function parseHtmlPeriodDetails(string $text, array $teams, array $sourcePeriods): array
+    {
+        $periodBoxes = [];
+        $totals = [];
+        if (preg_match_all('/^PERIOD_DETAIL\|([01])\|([A-Z0-9]+)\|([^\n]+)$/mi', $text, $matches, PREG_SET_ORDER) > 0) {
+            foreach ($matches as $match) {
+                $sideIndex = (int)$match[1];
+                $side = $sideIndex === 0 ? 'team' : 'opponent';
+                $field = strtoupper($match[2]);
+                if (in_array($field, ['FG', '3PT', 'FT'], true)) {
+                    continue;
+                }
+                $periodStats = [];
+                foreach (explode('|', $match[3]) as $periodValue) {
+                    $parts = explode('=', trim($periodValue), 2);
+                    if (count($parts) !== 2) {
+                        continue;
+                    }
+                    $period = $this->periodCode($parts[0]);
+                    if ($period === null) {
+                        continue;
+                    }
+                    $stats = $this->htmlDetailStats($field, $parts[1]);
+                    if ($stats !== []) {
+                        $periodStats[$period] = $stats;
+                    }
+                }
+
+                $orderedSourcePeriods = array_values(array_intersect($sourcePeriods, array_keys($periodStats)));
+                $finalTotal = $teams[$sideIndex]['totals'][$field] ?? null;
+                if (count($orderedSourcePeriods) > 1 && is_numeric($finalTotal)) {
+                    $lastPeriod = $orderedSourcePeriods[count($orderedSourcePeriods) - 1];
+                    $lastValue = $periodStats[$lastPeriod][$field] ?? null;
+                    $earlierValues = array_map(
+                        static fn(string $period): int => (int)($periodStats[$period][$field] ?? 0),
+                        array_slice($orderedSourcePeriods, 0, -1),
+                    );
+                    if ((int)$lastValue === (int)$finalTotal) {
+                        $overtimeValue = (int)$finalTotal - array_sum($earlierValues);
+                        if ($overtimeValue >= 0) {
+                            $periodStats[$lastPeriod][$field] = $overtimeValue;
+                        }
+                    }
+                }
+
+                foreach ($periodStats as $period => $stats) {
+                    $periodBoxes[$period][$side] = array_replace(
+                        $periodBoxes[$period][$side] ?? [],
+                        $stats,
+                    );
+                }
+            }
+        }
+
+        if (preg_match_all('/^FINAL_DETAIL\|([01])\|([A-Z0-9]+)\|([^\n]+)$/mi', $text, $matches, PREG_SET_ORDER) > 0) {
+            foreach ($matches as $match) {
+                $sideIndex = (int)$match[1];
+                $totals[$sideIndex] = array_replace(
+                    $totals[$sideIndex] ?? [],
+                    $this->htmlDetailStats(strtoupper($match[2]), $match[3]),
+                );
+            }
+        }
+
+        return ['period_boxes' => $periodBoxes, 'totals' => $totals];
+    }
+
+    /**
+     * Convert one serialized HTML stat value to basketball database fields.
+     *
+     * @param string $field Serialized stat key
+     * @param string $value Serialized stat value
+     * @return array<string,int> Parsed numeric fields
+     */
+    private function htmlDetailStats(string $field, string $value): array
+    {
+        $pairFields = [
+            'FG' => ['FGM', 'FGA'],
+            '3PT' => ['TPM', 'TPA'],
+            'FT' => ['FTM', 'FTA'],
+        ];
+        if (isset($pairFields[$field])) {
+            if (preg_match('/^(\d+)\s*-\s*(\d+)$/', trim($value), $matches) !== 1) {
+                return [];
+            }
+
+            return [
+                $pairFields[$field][0] => (int)$matches[1],
+                $pairFields[$field][1] => (int)$matches[2],
+            ];
+        }
+        if (preg_match('/^\d+$/', trim($value)) !== 1) {
+            return [];
+        }
+        $statFields = [
+            'ORB', 'RB', 'BS', 'STL', 'AST', 'TRN', 'PF', 'OTO', 'SND', 'BN', 'LC', 'PNT', 'FB', 'TIED',
+        ];
+        $statField = in_array($field, $statFields, true)
+            ? $field
+            : null;
+
+        return $statField === null ? [] : [$statField => (int)$value];
+    }
+
+    /**
+     * Find a parsed team by its source label.
+     *
+     * @param string $label Source team label
+     * @param list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}> $teams Parsed teams
+     * @return int|null Team index
+     */
+    private function findParsedTeamIndex(string $label, array $teams): ?int
+    {
+        $normalize = static fn(string $value): string => strtolower(
+            preg_replace('/[^a-z0-9]/i', '', $value) ?? $value,
+        );
+        $source = $normalize($label);
+        foreach ($teams as $index => $team) {
+            $candidate = $normalize($team['label']);
+            if (
+                $source !== ''
+                && ($source === $candidate || str_contains($source, $candidate) || str_contains($candidate, $source))
+            ) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse split-half shooting totals serialized from the modern HTML page.
+     *
+     * @param string $text Source text
+     * @return array<string,array{team:array<string,int|null>,opponent:array<string,int|null>}> Period stats
+     */
+    private function parseHtmlPeriodBoxes(string $text): array
+    {
+        $periodBoxes = [];
+        $pattern = '/^PERIOD_BOX\|([01])\|([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)$/mi';
+        if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER) === 0) {
+            return $periodBoxes;
+        }
+
+        foreach ($matches as $match) {
+            $side = (int)$match[1] === 0 ? 'team' : 'opponent';
+            $period = $this->periodCode(trim($match[2]));
+            if ($period === null) {
+                continue;
+            }
+            foreach ([['FGM', 'FGA', 3], ['TPM', 'TPA', 4], ['FTM', 'FTA', 5]] as [$made, $attempted, $group]) {
+                if (preg_match('/^(\d+)\s*-\s*(\d+)$/', trim($match[$group]), $pair) === 1) {
+                    $periodBoxes[$period][$side][$made] = (int)$pair[1];
+                    $periodBoxes[$period][$side][$attempted] = (int)$pair[2];
+                }
+            }
+        }
+
+        return $periodBoxes;
+    }
+
+    /**
+     * Parse per-period team totals from traditional first/second-half box-score sections.
+     *
+     * @param string $text Source text
+     * @return array<string,array{team:array<string,int|null>,opponent:array<string,int|null>}> Period stats
+     */
+    private function parsePeriodBoxSections(string $text): array
+    {
+        $pattern = '/Official Basketball Box Score\s*--\s*'
+            . '((?:\d+(?:st|nd|rd|th)?\s*(?:Half|Quarter|Period))|OT(?:\s*\d+)?)(.*?)'
+            . '(?=Official Basketball Box Score\s*--|Newspaper Box Score|$)/is';
+        if (preg_match_all($pattern, $text, $sections, PREG_SET_ORDER) === 0) {
+            return [];
+        }
+
+        $periodBoxes = [];
+        foreach ($sections as $section) {
+            $period = $this->periodCode($section[1]);
+            if ($period === null) {
+                continue;
+            }
+
+            $sideIndex = null;
+            foreach (explode("\n", $section[2]) as $line) {
+                $line = trim(preg_replace('/\s+/', ' ', $line) ?? $line);
+                if (preg_match('/^VISITORS:/i', $line) === 1) {
+                    $sideIndex = 0;
+                    continue;
+                }
+                if (preg_match('/^HOME TEAM:/i', $line) === 1) {
+                    $sideIndex = 1;
+                    continue;
+                }
+                if ($sideIndex === null || preg_match('/^Totals[.\s]+/i', $line) !== 1) {
+                    continue;
+                }
+
+                $normalized = preg_replace('/^Totals[.\s]+/i', 'Totals ', $line) ?? $line;
+                $totals = $this->parseLegacyTotalsLine($normalized);
+                if ($totals === []) {
+                    $normalized = preg_replace('/^Totals\s+/i', 'TOTALS ', $normalized) ?? $normalized;
+                    $totals = $this->parseFinalStatisticsTotals($normalized);
+                }
+                if ($totals !== []) {
+                    $side = $sideIndex === 0 ? 'team' : 'opponent';
+                    $periodBoxes[$period][$side] = $totals;
+                }
+            }
+        }
+
+        return $periodBoxes;
+    }
+
+    /**
+     * Parse the requested team-level scoring breakdown values.
+     *
+     * @param string $text Source text
+     * @return array<string,array<int,int>> Values in source team order
+     */
+    private function parseScoringBreakdown(string $text): array
+    {
+        $patterns = [
+            'PNT' => '/Points in the paint\s*[:\-]?\s*(?:[A-Z]{2,8}\s*)?(\d+)'
+                . '(?:\s*,\s*(?:[A-Z]{2,8}\s*)?(\d+))?/i',
+            'OTO' => '/Points off turnovers?\s*[:\-]?\s*(?:[A-Z]{2,8}\s*)?(\d+)'
+                . '(?:\s*,\s*(?:[A-Z]{2,8}\s*)?(\d+))?/i',
+            'SND' => '/(?:2nd|second) chance points?\s*[:\-]?\s*(?:[A-Z]{2,8}\s*)?(\d+)'
+                . '(?:\s*,\s*(?:[A-Z]{2,8}\s*)?(\d+))?/i',
+            'FB' => '/Fast break points?\s*[:\-]?\s*(?:[A-Z]{2,8}\s*)?(\d+)'
+                . '(?:\s*,\s*(?:[A-Z]{2,8}\s*)?(\d+))?/i',
+            'BN' => '/Bench points?\s*[:\-]?\s*(?:[A-Z]{2,8}\s*)?(\d+)'
+                . '(?:\s*,\s*(?:[A-Z]{2,8}\s*)?(\d+))?/i',
+            'TIED' => '/(?:Scores? tied|Ties)\s*[:\-]?\s*(\d+)/i',
+            'LC' => '/Lead (?:changed|changes?)\s*[:\-]?\s*(\d+)/i',
+        ];
+        $breakdowns = [];
+        foreach ($patterns as $field => $pattern) {
+            if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER) === 0) {
+                continue;
+            }
+
+            $values = [];
+            foreach ($matches as $match) {
+                $values[] = (int)$match[1];
+                if (isset($match[2])) {
+                    $values[] = (int)$match[2];
+                }
+            }
+            if (count($values) === 1 && in_array($field, ['TIED', 'LC'], true)) {
+                $values[] = $values[0];
+            }
+            if (count($values) >= 2) {
+                $breakdowns[$field] = [0 => $values[0], 1 => $values[1]];
+            }
+        }
+
+        return $breakdowns;
     }
 
     /**
