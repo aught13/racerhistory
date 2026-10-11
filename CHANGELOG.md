@@ -11,7 +11,8 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 - Previous and next game navigation in the admin game view.
 - Sorting and search controls for basketball player game logs.
-- **NCAA LiveStats basketball box-score importer** for admins, supporting legacy and official PDF layouts, public `goracers.com` box-score pages, pasted extracted text, and a downloadable structured CSV template. The preview allows roster matching and stat corrections before importing final player, team, and opponent totals. Play-by-play and shot-chart data are excluded.
+- **NCAA LiveStats basketball box-score importer** for admins, supporting legacy and modern HTML, official PDFs, pasted text, and partial CSV imports. It can import player rows, final and period team totals, scoring breakdowns, attendance, period scores, and officials; play-by-play and shot-chart data are excluded.
+- **Optional import controls** let admins select individual player rows and stat fields, with a period-wide checkbox for team and opponent totals that preserves individual selections.
 - **Starter (`GS`) data in game imports** for player rows, including opponent player rows.
 
 ### Changed
@@ -20,9 +21,11 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Season hero images display the full source image without a fixed-height crop.
 - Basketball game and season `MIN` columns now use `DECIMAL(6,2)` storage for minute values.
 - Deployment permission checks include the PDF extraction directories. CI installs GD and fails the E2E setup if the CakePHP server does not become ready.
+- Expanded basketball importer regression coverage across modern and historical HTML, overtime, partial CSV imports, and game-result fields.
 
 ### Fixed
 
+- Modern overtime periods now map to the game's configured overtime fields; cumulative detail totals are not mistaken for overtime stats, and missing period defensive rebounds are derived from total minus offensive rebounds.
 - Season statistics and player game-log DataTables now initialize after their dependencies load, including on direct navigation and Turbo frame loads.
 - Image storage now rejects paths blocked by files and reports failures when missing image variants cannot be restored.
 

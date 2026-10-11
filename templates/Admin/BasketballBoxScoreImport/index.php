@@ -240,36 +240,54 @@ $boxFieldLabels = [
         </div>
 
         <?php if ($periodBoxes !== []) : ?>
+            <?php
+            $periodGroups = [];
+            foreach ($periodBoxes as $rowKey => $box) {
+                [$periodSide, $periodCode] = explode('_', (string)$rowKey, 2);
+                $periodGroups[$periodCode][$periodSide] = $box;
+            }
+            ?>
             <div class="card mb-4">
                 <div class="card-header"><h2 class="h5 mb-0">5. Period-by-period team totals</h2></div>
                 <div class="card-body">
                     <p class="form-text">Each checked statistic updates only that team and period. Other period values remain unchanged.</p>
-                    <div class="row g-3">
-                        <?php foreach ($periodBoxes as $rowKey => $box) : ?>
+                    <?php foreach ($periodGroups as $periodCode => $sides) : ?>
                             <?php
-                            [$periodSide, $periodCode] = explode('_', (string)$rowKey, 2);
+                            $periodCode = (string)$periodCode;
                             $periodName = str_starts_with($periodCode, 'OT')
                                 ? 'Overtime ' . (substr($periodCode, 2) !== '' ? substr($periodCode, 2) : '1')
                                 : 'Period ' . $periodCode;
-                            $periodSideName = $periodSide === 'team' ? $teamName : $opponentName;
                             ?>
-                            <div class="col-lg-6">
-                                <h3 class="h6"><?= h($periodName) ?> - <?= h($periodSideName) ?></h3>
-                                <div class="row g-2">
-                                    <?php foreach ($boxFields as $field) : ?>
-                                        <?php $periodValue = $box[$field] ?? ''; ?>
-                                        <div class="col-6 col-md-3">
-                                            <div class="form-check">
-                                                <input type="checkbox" class="form-check-input" id="<?= h($rowKey . '-' . $field) ?>-import" name="period_boxes_selected[<?= h($rowKey) ?>][<?= h($field) ?>]" value="1" <?= $periodValue !== '' && $periodValue !== null ? 'checked' : '' ?>>
-                                                <label class="form-check-label small" for="<?= h($rowKey . '-' . $field) ?>-import">Import <?= h($boxFieldLabels[$field] ?? $field) ?></label>
+                            <div class="mb-4" data-controller="period-import-toggle">
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="period-<?= h($periodCode) ?>-import-all" data-period-import-toggle-target="master" data-action="change->period-import-toggle#togglePeriod">
+                                    <label class="form-check-label fw-semibold" for="period-<?= h($periodCode) ?>-import-all">Import all <?= h($periodName) ?> stats for both teams</label>
+                                </div>
+                                <div class="row g-3">
+                                    <?php foreach ($sides as $periodSide => $box) : ?>
+                                        <?php
+                                        $rowKey = $periodSide . '_' . $periodCode;
+                                        $periodSideName = $periodSide === 'team' ? $teamName : $opponentName;
+                                        ?>
+                                        <div class="col-lg-6">
+                                            <h3 class="h6"><?= h($periodName) ?> - <?= h($periodSideName) ?></h3>
+                                            <div class="row g-2">
+                                                <?php foreach ($boxFields as $field) : ?>
+                                                    <?php $periodValue = $box[$field] ?? ''; ?>
+                                                    <div class="col-6 col-md-3">
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input" id="<?= h($rowKey . '-' . $field) ?>-import" name="period_boxes_selected[<?= h($rowKey) ?>][<?= h($field) ?>]" value="1" data-period-import-toggle-target="item" data-action="change->period-import-toggle#syncMaster" <?= $periodValue !== '' && $periodValue !== null ? 'checked' : '' ?>>
+                                                            <label class="form-check-label small" for="<?= h($rowKey . '-' . $field) ?>-import">Import <?= h($boxFieldLabels[$field] ?? $field) ?></label>
+                                                        </div>
+                                                        <input type="text" inputmode="decimal" name="period_boxes[<?= h($rowKey) ?>][<?= h($field) ?>]" value="<?= h((string)$periodValue) ?>" class="form-control form-control-sm" aria-label="<?= h($periodName . ' ' . $periodSideName . ' ' . ($boxFieldLabels[$field] ?? $field)) ?>">
+                                                    </div>
+                                                <?php endforeach; ?>
                                             </div>
-                                            <input type="text" inputmode="decimal" name="period_boxes[<?= h($rowKey) ?>][<?= h($field) ?>]" value="<?= h((string)$periodValue) ?>" class="form-control form-control-sm" aria-label="<?= h($periodName . ' ' . $periodSideName . ' ' . ($boxFieldLabels[$field] ?? $field)) ?>">
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         <?php endif; ?>

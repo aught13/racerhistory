@@ -1,7 +1,7 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-4.0.2-blue.svg)](CHANGELOG.md)
-[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-blue.svg)](https://php.net)
+[![Version](https://img.shields.io/badge/Version-4.0.2_a5d9e8bcdb41dfdc92f1247e8d467fbab7236800-blue.svg)](CHANGELOG.md)
+[![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](composer.json)
@@ -19,7 +19,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/aught13/racerhistory)](https://github.com/aught13/racerhistory/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/aught13/racerhistory)](https://github.com/aught13/racerhistory/network)
 
-RacerHistory V4 is the current production application, representing the fourth generation of the site: V1 was the original procedural implementation, V2 was the OOP rewrite, V3 was the FuelPHP app, and V4 is the current CakePHP 5 platform.
+RacerHistory V4 is the current production application, representing the fourth generation of the site: V1 was a procedural php implementation, V2 was an OOP rewrite, V3 was a FuelPHP app, and V4 is the current CakePHP 5 platform.
 
 A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2, an AdminLTE 4-based admin experience, a modular Vite frontend, and production-ready deployment tooling.
 
@@ -60,7 +60,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
 - Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)
 - **Games Management** (add/edit/delete, bulk operations, sport-aware period/official tracking)
-- **Basketball Box-Score Importer** - Admins can import an official NCAA LiveStats PDF (up to 20 MB), a public `goracers.com` box-score page, pasted extracted text, or a completed CSV template. Preview and correct roster matches and stat rows before saving final player, team, and opponent totals. Starter status (`GS`) is included; play-by-play and shot-chart data are not imported.
+- **Basketball Box-Score Importer** - Admins can import an official NCAA LiveStats PDF (up to 20 MB), a public box-score page, pasted extracted text, or a completed CSV template. Preview and correct roster matches and stat rows before saving final player, team, and opponent totals. Starter status (`GS`) is included; play-by-play and shot-chart data are not imported.
 - **Basketball Statistics** (player, opponent, and team stats with comprehensive tracking)
 - Dynamic Person AJAX search & inline person creation modal (roster forms)
 - AdminLTE 4 sidebar navigation with grouped treeview sections (Sports, Content)
