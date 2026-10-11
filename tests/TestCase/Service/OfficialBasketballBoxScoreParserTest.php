@@ -671,13 +671,13 @@ Official Basketball Box Score
 VISITORS: Tennessee Temple 3-4
  TOT-FG 3-PT REBOUNDS
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
-11 MORRIS, Josh........ f 0-3 0-1 2-2 0 0 0 5 2 1 3 0 0 18
+11 MORRIS, Josh........ * 0-3 0-1 2-2 0 0 0 5 2 1 3 0 0 18
 12 RESERVE, Player 0-0 0-0 0-0 0 0 0 0 0 0 0 0 0 4
 Totals.............. 15-40 3-13 8-15 11 21 32 20 41 7 26 3 2 200
 HOME TEAM: Murray State 3-0
  TOT-FG 3-PT REBOUNDS
 ## Player Name FG-FGA FG-FGA FT-FTA OF DE TOT PF TP A TO BLK S MIN
-02 DANIEL, Ed.......... f 4-5 0-0 4-7 1 2 3 1 12 0 2 3 2 26
+02 DANIEL, Ed.......... * 4-5 0-0 4-7 1 2 3 1 12 0 2 3 2 26
 Totals.............. 28-57 10-23 17-23 12 19 31 16 83 19 9 5 17 200
 TEXT;
 
@@ -690,6 +690,8 @@ TEXT;
         $this->assertNull($result['teams'][0]['players'][1]['GS']);
         $this->assertSame('Murray State', $result['teams'][1]['label']);
         $this->assertSame(83, $result['teams'][1]['score']);
+        $this->assertSame('DANIEL, Ed', $result['teams'][1]['players'][0]['name']);
+        $this->assertSame('1', $result['teams'][1]['players'][0]['GS']);
     }
 
     /**

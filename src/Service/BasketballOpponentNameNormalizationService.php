@@ -13,17 +13,23 @@ class BasketballOpponentNameNormalizationService
 {
     private StatBasketGameOpponentTable $statsTable;
 
+    private BasketballPlayerNameNormalizer $nameNormalizer;
+
     /**
      * @param \App\Model\Table\StatBasketGameOpponentTable|null $statsTable Opponent game stats table.
+     * @param \App\Service\BasketballPlayerNameNormalizer|null $nameNormalizer Player-name normalizer.
      */
-    public function __construct(?StatBasketGameOpponentTable $statsTable = null)
-    {
+    public function __construct(
+        ?StatBasketGameOpponentTable $statsTable = null,
+        ?BasketballPlayerNameNormalizer $nameNormalizer = null,
+    ) {
         if ($statsTable === null) {
             /** @var \App\Model\Table\StatBasketGameOpponentTable $statsTable */
             $statsTable = TableRegistry::getTableLocator()->get('StatBasketGameOpponent');
         }
 
         $this->statsTable = $statsTable;
+        $this->nameNormalizer = $nameNormalizer ?? new BasketballPlayerNameNormalizer();
     }
 
     /**
@@ -79,8 +85,8 @@ class BasketballOpponentNameNormalizationService
 
         foreach ($stats as $stat) {
             $original = (string)$stat->get('name');
-            $normalized = $this->normalizeName($original);
-            if ($normalized === null || $normalized === $original) {
+            $normalized = $this->nameNormalizer->normalize($original);
+            if ($normalized === $original) {
                 continue;
             }
 
@@ -92,36 +98,5 @@ class BasketballOpponentNameNormalizationService
         }
 
         return $candidates;
-    }
-
-    /**
-     * Convert a supported comma-separated name to title-cased First Last form.
-     *
-     * @param string $name Existing name value.
-     * @return string|null Normalized name, or null when the format is ambiguous.
-     */
-    private function normalizeName(string $name): ?string
-    {
-        $parts = array_map('trim', explode(',', trim($name)));
-        $parts = array_values(array_filter(
-            $parts,
-            static fn(string $part): bool => $part !== '' && preg_match('/^jr\.?$/i', $part) !== 1,
-        ));
-
-        if (count($parts) !== 2) {
-            return null;
-        }
-
-        [$last, $first] = $parts;
-        $last = preg_replace('/\s+jr\.?$/i', '', $last) ?? $last;
-        $first = preg_replace('/\s+jr\.?$/i', '', $first) ?? $first;
-        $last = trim($last);
-        $first = trim($first);
-
-        if ($last === '' || $first === '') {
-            return null;
-        }
-
-        return ucwords(strtolower($first . ' ' . $last));
     }
 }

@@ -1228,7 +1228,7 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseLegacyPlayerLine(string $line): ?array
     {
-        $pattern = '/^(\d+)\s+(.+?)(?:\s+([fgc]))?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+        $pattern = '/^(\d+)\s+(.+?)(?:\.{2,})?(?:\s+([fgc*]))?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
             . '([\d\s-]+)$/i';
         if (!preg_match($pattern, $line, $matches)) {
             return null;
