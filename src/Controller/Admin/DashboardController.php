@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Service\BasketballOpponentNameNormalizationService;
 use App\Service\DeployAuditService;
 use App\Service\SportConfigService;
 use Cake\Cache\Cache;
@@ -107,5 +108,34 @@ class DashboardController extends AppController
         }
 
         return $this->redirect(['action' => 'index']);
+    }
+
+    /**
+     * Preview or run the one-time basketball opponent player-name cleanup.
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function normalizeOpponentNames(): ?Response
+    {
+        $service = new BasketballOpponentNameNormalizationService();
+
+        if ($this->request->is('post')) {
+            $this->request->allowMethod(['post']);
+            if ($this->request->getData('confirmation') !== 'NORMALIZE') {
+                $this->Flash->error('Enter NORMALIZE exactly to run this cleanup.');
+
+                return $this->redirect(['action' => 'normalizeOpponentNames']);
+            }
+
+            $updated = $service->normalize();
+            $this->Flash->success('Normalized ' . $updated . ' basketball opponent player name(s).');
+
+            return $this->redirect(['action' => 'normalizeOpponentNames']);
+        }
+
+        $preview = $service->preview();
+        $this->set(compact('preview'));
+
+        return null;
     }
 }
