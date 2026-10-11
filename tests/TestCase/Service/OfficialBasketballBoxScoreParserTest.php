@@ -473,6 +473,74 @@ TEXT;
     }
 
     /**
+     * Parse Play Analysis team breakdowns when that section is at the end of a legacy box score.
+     *
+     * @return void
+     */
+    public function testParsesPlayAnalysisAtEndOfLegacyBoxScore(): void
+    {
+        $text = <<<'TEXT'
+Official Basketball Box Score
+VISITORS: Virginia Tech 5-3
+Totals.............. 1-2 0-0 0-0 0 0 0 0 2 0 0 0 0 200
+HOME TEAM: Murray State 5-2
+Totals.............. 1-2 0-0 0-0 0 0 0 0 2 0 0 0 0 200
+Newspaper Box Score
+Virginia Tech vs Murray State
+Points in the paint-VT 10,MUR 28.
+Points off turnovers-VT 14,MUR 24.
+2nd chance points-VT 16,MUR 5.
+Fast break points-VT 2,MUR 10.
+Bench points-VT 27,MUR 18.
+Score tied-7 times. Lead changed-14 times.
+Play Analysis
+POINTS OFF TURNOVERS        1   2 - Tot
+VIRGINIA TECH...........    9   5 -  14
+MURRAY STATE............    9  15 -  24
+POINTS IN PAINT             1   2 - Tot
+VIRGINIA TECH...........   10   0 -  10
+MURRAY STATE............   14  14 -  28
+2ND CHANCE POINTS           1   2 - Tot
+VIRGINIA TECH...........   11   5 -  16
+MURRAY STATE............    0   5 -   5
+FAST BREAK POINTS           1   2 - Tot
+VIRGINIA TECH...........    2   0 -   2
+MURRAY STATE............    6   4 -  10
+BENCH POINTS                1   2 - Tot
+VIRGINIA TECH...........    9  18 -  27
+MURRAY STATE............   11   7 -  18
+SCORE TIED BY               1   2 - Tot
+VIRGINIA TECH...........    2   2 -   4
+MURRAY STATE............    2   1 -   3
+LEAD GAINED BY              1   2 - Tot
+VIRGINIA TECH...........    4   3 -   7
+MURRAY STATE............    3   4 -   7
+TEXT;
+
+        $result = (new OfficialBasketballBoxScoreParser())->parse($text);
+        $breakdownFields = ['PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC'];
+
+        $this->assertSame([
+            'PNT' => 10,
+            'OTO' => 14,
+            'SND' => 16,
+            'FB' => 2,
+            'BN' => 27,
+            'TIED' => 4,
+            'LC' => 7,
+        ], array_intersect_key($result['teams'][0]['totals'], array_flip($breakdownFields)));
+        $this->assertSame([
+            'PNT' => 28,
+            'OTO' => 24,
+            'SND' => 5,
+            'FB' => 10,
+            'BN' => 18,
+            'TIED' => 3,
+            'LC' => 7,
+        ], array_intersect_key($result['teams'][1]['totals'], array_flip($breakdownFields)));
+    }
+
+    /**
      * Test the 2021 Murray State athletics HTML text format.
      *
      * @return void
