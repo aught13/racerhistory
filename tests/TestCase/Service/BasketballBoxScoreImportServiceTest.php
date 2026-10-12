@@ -95,6 +95,43 @@ class BasketballBoxScoreImportServiceTest extends TestCase
     }
 
     /**
+     * Normalize opponent names in CSV preview while leaving team names unchanged.
+     *
+     * @return void
+     */
+    public function testCsvPreviewNormalizesOpponentNamesOnly(): void
+    {
+        $headers = 'row_type,side,jersey,name,MIN,FGM,FGA,TPM,TPA,FTM,FTA,ORB,DRB,RB,PF,FD,PTS,AST,TRN,STL,BS,BD';
+        $csv = $headers . "\n"
+            . "player,team,1,\"Canaan, Isaiah\"\n"
+            . "player,opponent,2,\"Smith, John Jr.\"\n";
+        $game = new Game(['id' => 1, 'periods' => 2]);
+        $service = new class ($game) extends BasketballBoxScoreImportService {
+            /**
+             * @param \App\Model\Entity\Game $game Game used by the preview.
+             */
+            public function __construct(private Game $game)
+            {
+                parent::__construct();
+            }
+
+            /**
+             * @param int $gameId Game ID.
+             * @return array<string, mixed>
+             */
+            public function getAdminImportData(int $gameId): array
+            {
+                return ['game' => $this->game, 'roster' => [], 'existingRosterIds' => []];
+            }
+        };
+
+        $preview = $service->previewCsv(1, $csv);
+
+        self::assertSame('Canaan, Isaiah', $preview['teamRows'][0]['name']);
+        self::assertSame('John Smith', $preview['opponentRows'][0]['name']);
+    }
+
+    /**
      * Serialize modern tables with regulation, overtime, and detailed team rows.
      *
      * @return void
@@ -230,8 +267,12 @@ HTML;
             ->method('saveAdminGamePersonRows')
             ->with(
                 1,
-                self::callback(static fn(array $rows): bool => $rows[0]['GS'] === '1' && $rows[0]['MIN'] === '24.15'),
+                self::callback(static fn(array $rows): bool => $rows[0]['GS'] === '1'
+                    && $rows[0]['MIN'] === '24.15'
+                    && $rows[0]['name'] === 'Canaan, Isaiah'),
                 false,
+                true,
+                true,
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
         $statsService->expects(self::once())
@@ -241,7 +282,10 @@ HTML;
                 self::callback(static fn(array $rows): bool => count($rows) === 2
                     && $rows[0]['GS'] === '*'
                     && $rows[1]['GS'] === 'G'
-                    && $rows[0]['MIN'] === '35.60'),
+                    && $rows[0]['MIN'] === '35.60'
+                    && $rows[0]['name'] === 'Torey Alston'
+                    && $rows[1]['name'] === 'Second Opponent Player'),
+                true,
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
         $statsService->expects(self::once())
@@ -252,13 +296,14 @@ HTML;
             'team_rows' => [[
                 'import' => '1',
                 'team_season_roster_id' => 1,
+                'name' => 'Canaan, Isaiah',
                 'GS' => '1',
                 'MIN' => '24:09',
                 'PTS' => '8',
             ]],
             'opponent_rows' => [[
                 'import' => '1',
-                'name' => 'Torey Alston',
+                'name' => 'Alston, Torey Jr.',
                 'GS' => '*',
                 'MIN' => '35:36',
                 'PTS' => '26',
@@ -273,6 +318,8 @@ HTML;
             'opponent_box' => ['PTS' => '90'],
             'team_box_selected' => ['PTS' => '1'],
             'opponent_box_selected' => ['PTS' => '1'],
+            'update_existing_rows' => '1',
+            'update_existing_season_totals' => '1',
         ]);
 
         self::assertTrue($result['success']);

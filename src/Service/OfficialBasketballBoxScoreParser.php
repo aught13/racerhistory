@@ -115,6 +115,7 @@ class OfficialBasketballBoxScoreParser
         }
 
         $breakdowns = $this->parseScoringBreakdown($text);
+        $playAnalysisBreakdowns = $this->parsePlayAnalysisBreakdowns($text, $parsed['teams']);
         foreach ($parsed['teams'] as $index => &$team) {
             foreach ($breakdowns as $field => $values) {
                 if (array_key_exists($index, $values)) {
@@ -123,6 +124,11 @@ class OfficialBasketballBoxScoreParser
             }
             foreach ($htmlPeriodDetails['totals'][$index] ?? [] as $field => $value) {
                 $team['totals'][$field] = $value;
+            }
+            foreach ($playAnalysisBreakdowns as $field => $values) {
+                if (array_key_exists($index, $values)) {
+                    $team['totals'][$field] = $values[$index];
+                }
             }
         }
         unset($team);
@@ -593,6 +599,64 @@ class OfficialBasketballBoxScoreParser
             }
             if (count($values) >= 2) {
                 $breakdowns[$field] = [0 => $values[0], 1 => $values[1]];
+            }
+        }
+
+        return $breakdowns;
+    }
+
+    /**
+     * Parse team-specific final values from legacy Play Analysis tables.
+     *
+     * @param string $text Source box-score text
+     * @param list<array{label:string,score:int|null,players:list<array<string,mixed>>,totals:array<string,int|null>}> $teams Parsed teams
+     * @return array<string,array<int,int>> Values keyed by field and source team index
+     */
+    private function parsePlayAnalysisBreakdowns(string $text, array $teams): array
+    {
+        $headingPatterns = [
+            'OTO' => '/^POINTS OFF TURNOVERS\b/i',
+            'PNT' => '/^POINTS IN (?:THE )?PAINT\b/i',
+            'SND' => '/^2ND CHANCE POINTS\b/i',
+            'FB' => '/^FAST BREAK POINTS\b/i',
+            'BN' => '/^BENCH POINTS\b/i',
+            'TIED' => '/^SCORE TIED BY\b/i',
+            'LC' => '/^LEAD GAINED BY\b/i',
+        ];
+        $breakdowns = [];
+        $currentField = null;
+        $matchedTeams = [];
+
+        foreach (explode("\n", $text) as $line) {
+            $line = trim($line);
+            foreach ($headingPatterns as $field => $pattern) {
+                if (preg_match($pattern, $line) === 1) {
+                    $currentField = $field;
+                    $matchedTeams = [];
+                    continue 2;
+                }
+            }
+            if ($currentField === null || preg_match('/^(.+?)\.{2,}\s+(.+)$/', $line, $matches) !== 1) {
+                continue;
+            }
+
+            $teamLabel = rtrim(trim($matches[1]), '.');
+            $teamIndex = $this->findParsedTeamIndex($teamLabel, $teams);
+            if ($teamIndex === null) {
+                continue;
+            }
+
+            preg_match_all('/\d+/', $matches[2], $numericMatches);
+            if ($numericMatches[0] === []) {
+                continue;
+            }
+
+            $numericValues = $numericMatches[0];
+            $breakdowns[$currentField][$teamIndex] = (int)end($numericValues);
+            $matchedTeams[$teamIndex] = true;
+            if (count($matchedTeams) >= count($teams)) {
+                $currentField = null;
+                $matchedTeams = [];
             }
         }
 
@@ -1228,7 +1292,7 @@ class OfficialBasketballBoxScoreParser
      */
     private function parseLegacyPlayerLine(string $line): ?array
     {
-        $pattern = '/^(\d+)\s+(.+?)(?:\s+([fgc]))?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
+        $pattern = '/^(\d+)\s+(.+?)(?:\.{2,})?(?:\s+([fgc*]))?\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+(\d+)-(\d+)\s+'
             . '([\d\s-]+)$/i';
         if (!preg_match($pattern, $line, $matches)) {
             return null;

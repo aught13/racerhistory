@@ -32,22 +32,27 @@ class BasketballBoxScoreImportService
 
     private GameService $gameService;
 
+    private BasketballPlayerNameNormalizer $nameNormalizer;
+
     /**
      * @param \App\Service\OfficialBasketballBoxScoreParser|null $parser Parser dependency
      * @param \App\Service\BasketballStatsAdminService|null $statsAdminService Existing stat writer
      * @param \App\Service\BasketballBoxScoreCsvParser|null $csvParser CSV fallback parser
      * @param \App\Service\GameService|null $gameService Game results writer
+     * @param \App\Service\BasketballPlayerNameNormalizer|null $nameNormalizer Player-name normalizer
      */
     public function __construct(
         ?OfficialBasketballBoxScoreParser $parser = null,
         ?BasketballStatsAdminService $statsAdminService = null,
         ?BasketballBoxScoreCsvParser $csvParser = null,
         ?GameService $gameService = null,
+        ?BasketballPlayerNameNormalizer $nameNormalizer = null,
     ) {
         $this->parser = $parser ?? new OfficialBasketballBoxScoreParser();
         $this->statsAdminService = $statsAdminService ?? new BasketballStatsAdminService();
         $this->csvParser = $csvParser ?? new BasketballBoxScoreCsvParser();
         $this->gameService = $gameService ?? new GameService();
+        $this->nameNormalizer = $nameNormalizer ?? new BasketballPlayerNameNormalizer();
     }
 
     /**
@@ -442,6 +447,7 @@ class BasketballBoxScoreImportService
 
         $team = $parsed['teams'][$teamIndex];
         $opponent = $parsed['teams'][1 - $teamIndex];
+        $opponent['players'] = $this->normalizeOpponentPlayerNames($opponent['players']);
         $teamRows = [];
         foreach ($team['players'] as $player) {
             $match = $this->matchRoster($player, $viewData['roster']);
@@ -449,7 +455,10 @@ class BasketballBoxScoreImportService
                 $warnings[] = sprintf('No roster match was found for #%s %s.', $player['jersey'], $player['name']);
             }
             if ($match !== null && in_array($match['id'], $viewData['existingRosterIds'], true)) {
-                $warnings[] = sprintf('%s already has game stats and will be skipped.', $match['label']);
+                $warnings[] = sprintf(
+                    '%s already has game stats. Enable Update existing final player rows to replace the final row.',
+                    $match['label'],
+                );
             }
             $teamRows[] = $player + [
                 'team_season_roster_id' => $match['id'] ?? '',
@@ -532,7 +541,9 @@ class BasketballBoxScoreImportService
     public function save(int $gameId, array $data): array
     {
         $teamRows = $this->normalizeRows($data['team_rows'] ?? []);
-        $opponentRows = $this->normalizeRows($data['opponent_rows'] ?? []);
+        $opponentRows = $this->normalizeOpponentPlayerNames(
+            $this->normalizeRows($data['opponent_rows'] ?? []),
+        );
         $errors = [];
         $unmatched = array_filter(
             $teamRows,
@@ -547,13 +558,25 @@ class BasketballBoxScoreImportService
         }
 
         $addToTotals = !empty($data['add_to_totals']);
+        $updateExistingRows = !empty($data['update_existing_rows']);
+        $updateExistingSeasonTotals = $updateExistingRows && !empty($data['update_existing_season_totals']);
         $personResult = ['saved' => 0, 'skipped' => 0, 'errors' => []];
         if ($teamRows !== []) {
-            $personResult = $this->statsAdminService->saveAdminGamePersonRows($gameId, $teamRows, $addToTotals);
+            $personResult = $this->statsAdminService->saveAdminGamePersonRows(
+                $gameId,
+                $teamRows,
+                $addToTotals,
+                $updateExistingRows,
+                $updateExistingSeasonTotals,
+            );
         }
         $opponentResult = ['saved' => 0, 'skipped' => 0, 'errors' => []];
         if ($opponentRows !== []) {
-            $opponentResult = $this->statsAdminService->saveAdminGameOpponentRows($gameId, $opponentRows);
+            $opponentResult = $this->statsAdminService->saveAdminGameOpponentRows(
+                $gameId,
+                $opponentRows,
+                $updateExistingRows,
+            );
         }
 
         $teamBox = $this->normalizeBox(
@@ -629,6 +652,25 @@ class BasketballBoxScoreImportService
         }
 
         return $normalizedRows;
+    }
+
+    /**
+     * Normalize names only for basketball opponent player rows.
+     *
+     * @param list<array<string, mixed>> $rows Opponent player rows.
+     * @return list<array<string, mixed>> Rows with supported names normalized.
+     */
+    private function normalizeOpponentPlayerNames(array $rows): array
+    {
+        foreach ($rows as $index => $row) {
+            $name = $row['name'] ?? null;
+            if (is_string($name)) {
+                $row['name'] = $this->nameNormalizer->normalize($name);
+            }
+            $rows[$index] = $row;
+        }
+
+        return $rows;
     }
 
     /**

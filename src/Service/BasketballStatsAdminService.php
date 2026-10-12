@@ -95,10 +95,11 @@ class BasketballStatsAdminService extends BasketballStatsService
     {
         /** @var \App\Model\Table\StatBasketGameOpponentTable $table */
         $table = $this->fetchTable('StatBasketGameOpponent');
+        $nameNormalizer = new BasketballPlayerNameNormalizer();
 
         $names = [];
         foreach ($table->find()->where(['game_id' => $gameId])->select(['name'])->all() as $row) {
-            $names[] = strtolower(trim((string)$row->get('name')));
+            $names[] = strtolower(trim($nameNormalizer->normalize((string)$row->get('name'))));
         }
 
         return $names;
@@ -339,10 +340,17 @@ class BasketballStatsAdminService extends BasketballStatsService
      * @param int $gameId Game ID
      * @param array<int, array<string, mixed>> $rows Posted rows
      * @param bool $addToTotals Whether to update season totals
+     * @param bool $updateExisting Whether to replace existing final rows
+     * @param bool $updateExistingSeasonTotals Whether to reconcile totals for replaced rows
      * @return array{saved: int, skipped: int, errors: array<int, string>, failedRows: array<int, array<string, mixed>>}
      */
-    public function saveAdminGamePersonRows(int $gameId, array $rows, bool $addToTotals): array
-    {
+    public function saveAdminGamePersonRows(
+        int $gameId,
+        array $rows,
+        bool $addToTotals,
+        bool $updateExisting = false,
+        bool $updateExistingSeasonTotals = false,
+    ): array {
         /** @var \App\Model\Table\StatBasketGamePersonTable $table */
         $table = $this->fetchTable('StatBasketGamePerson');
 
@@ -350,7 +358,15 @@ class BasketballStatsAdminService extends BasketballStatsService
         $skipped = 0;
         $errors = [];
         $failedRows = [];
-        $existingRosterIdSet = array_flip($this->getExistingGamePersonRosterIds($gameId));
+        $existingRosterIdSet = [];
+        $existingFinalStatsByRosterId = [];
+        foreach ($table->find()->where(['game_id' => $gameId])->all() as $existingStat) {
+            $rosterId = (int)$existingStat->get('team_season_roster_id');
+            $existingRosterIdSet[$rosterId] = true;
+            if ((string)$existingStat->get('period') === 'Z') {
+                $existingFinalStatsByRosterId[$rosterId] = $existingStat;
+            }
+        }
         $seenInBatch = [];
 
         foreach ($rows as $index => $rowData) {
@@ -359,13 +375,35 @@ class BasketballStatsAdminService extends BasketballStatsService
                 continue;
             }
 
-            if (isset($existingRosterIdSet[$rosterId]) || isset($seenInBatch[$rosterId])) {
+            if (isset($seenInBatch[$rosterId])) {
                 $skipped++;
                 continue;
             }
             $seenInBatch[$rosterId] = true;
 
-            $entity = $table->newEntity($this->buildGamePersonEntityData($gameId, $rowData));
+            $entityData = $this->buildGamePersonEntityData($gameId, $rowData);
+            $existingStat = $existingFinalStatsByRosterId[$rosterId] ?? null;
+            if (isset($existingRosterIdSet[$rosterId]) && !$updateExisting) {
+                $skipped++;
+                continue;
+            }
+            if ($existingStat !== null && $updateExisting) {
+                $result = $this->updateAdminGamePersonStat(
+                    (int)$existingStat->get('id'),
+                    $entityData,
+                    $updateExistingSeasonTotals,
+                );
+                if ($result['success']) {
+                    $saved++;
+                    continue;
+                }
+
+                $errors[] = __('Row {0}: could not save.', $index + 1);
+                $failedRows[] = $rowData;
+                continue;
+            }
+
+            $entity = $table->newEntity($entityData);
             if ($table->save($entity)) {
                 $saved++;
                 if ($addToTotals && $entity->team_season_roster_id && $entity->period === 'Z') {
@@ -505,9 +543,10 @@ class BasketballStatsAdminService extends BasketballStatsService
      *
      * @param int $gameId Game ID
      * @param array<int, array<string, mixed>> $rows Posted rows
+     * @param bool $updateExisting Whether to replace existing final rows
      * @return array{saved: int, skipped: int, errors: array<int, string>, failedRows: array<int, array<string, mixed>>}
      */
-    public function saveAdminGameOpponentRows(int $gameId, array $rows): array
+    public function saveAdminGameOpponentRows(int $gameId, array $rows, bool $updateExisting = false): array
     {
         /** @var \App\Model\Table\StatBasketGameOpponentTable $table */
         $table = $this->fetchTable('StatBasketGameOpponent');
@@ -517,6 +556,15 @@ class BasketballStatsAdminService extends BasketballStatsService
         $errors = [];
         $failedRows = [];
         $existingNameSet = array_flip($this->getExistingGameOpponentNames($gameId));
+        $nameNormalizer = new BasketballPlayerNameNormalizer();
+        $existingFinalStatsByName = [];
+        if ($updateExisting) {
+            foreach ($table->find()->where(['game_id' => $gameId, 'period' => 'Z'])->all() as $existingStat) {
+                $existingName = $nameNormalizer->normalize((string)$existingStat->get('name'));
+                $nameKey = strtolower(trim($existingName));
+                $existingFinalStatsByName[$nameKey][] = $existingStat;
+            }
+        }
         $seenInBatch = [];
 
         foreach ($rows as $index => $rowData) {
@@ -525,12 +573,38 @@ class BasketballStatsAdminService extends BasketballStatsService
                 continue;
             }
 
-            $nameKey = strtolower($name);
-            if (isset($existingNameSet[$nameKey]) || isset($seenInBatch[$nameKey])) {
+            $name = $nameNormalizer->normalize($name);
+            $nameKey = strtolower(trim($name));
+            if (isset($seenInBatch[$nameKey])) {
                 $skipped++;
                 continue;
             }
             $seenInBatch[$nameKey] = true;
+
+            if (isset($existingNameSet[$nameKey]) && !$updateExisting) {
+                $skipped++;
+                continue;
+            }
+
+            $existingMatches = $existingFinalStatsByName[$nameKey] ?? [];
+            if (isset($existingNameSet[$nameKey]) && $updateExisting && count($existingMatches) > 1) {
+                $skipped++;
+                continue;
+            }
+            if (isset($existingMatches[0]) && $updateExisting) {
+                $entity = $table->patchEntity(
+                    $existingMatches[0],
+                    $this->buildGameOpponentEntityData($gameId, $rowData, $name),
+                );
+                if ($table->save($entity)) {
+                    $saved++;
+                    continue;
+                }
+
+                $errors[] = __('Row {0}: could not save.', $index + 1);
+                $failedRows[] = $rowData;
+                continue;
+            }
 
             $entity = $table->newEntity($this->buildGameOpponentEntityData($gameId, $rowData, $name));
             if ($table->save($entity)) {

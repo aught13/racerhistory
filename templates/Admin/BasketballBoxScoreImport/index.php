@@ -335,9 +335,19 @@ $boxFieldLabels = [
         <div class="card mb-4">
             <div class="card-body">
                 <div class="form-check">
+                    <input type="checkbox" name="update_existing_rows" value="1" class="form-check-input" id="update-existing-rows">
+                    <label class="form-check-label" for="update-existing-rows"><strong>Update existing final player rows</strong></label>
+                    <div class="form-text">Replace matching final rows for team players and opponents instead of skipping them. Period-by-period rows remain unchanged. Leave unchecked to keep the current skip behavior.</div>
+                </div>
+                <div class="form-check mt-3">
+                    <input type="checkbox" name="update_existing_season_totals" value="1" class="form-check-input" id="update-existing-season-totals">
+                    <label class="form-check-label" for="update-existing-season-totals"><strong>Reconcile season totals for replaced rows</strong></label>
+                    <div class="form-text">Use with Update existing rows only when the old final rows were already included in season totals. The importer subtracts old values and adds the replacements.</div>
+                </div>
+                <div class="form-check mt-3">
                     <input type="checkbox" name="add_to_totals" value="1" class="form-check-input" id="add-to-totals">
-                    <label class="form-check-label" for="add-to-totals"><strong>Update season totals</strong></label>
-                    <div class="form-text">Check this only when these final rows have not already been added to the season totals.</div>
+                    <label class="form-check-label" for="add-to-totals"><strong>Add new team-player rows to season totals</strong></label>
+                    <div class="form-text">Applies to newly inserted team-player rows only. Check this when those rows have not yet been added to season totals.</div>
                 </div>
                 <div class="mt-3" style="max-width: 12rem;">
                     <label class="form-label" for="team-minutes">Team minutes</label>
