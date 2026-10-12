@@ -271,6 +271,8 @@ HTML;
                     && $rows[0]['MIN'] === '24.15'
                     && $rows[0]['name'] === 'Canaan, Isaiah'),
                 false,
+                true,
+                true,
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
         $statsService->expects(self::once())
@@ -283,6 +285,7 @@ HTML;
                     && $rows[0]['MIN'] === '35.60'
                     && $rows[0]['name'] === 'Torey Alston'
                     && $rows[1]['name'] === 'Second Opponent Player'),
+                true,
             )
             ->willReturn(['saved' => 1, 'skipped' => 0, 'errors' => [], 'failedRows' => []]);
         $statsService->expects(self::once())
@@ -315,6 +318,8 @@ HTML;
             'opponent_box' => ['PTS' => '90'],
             'team_box_selected' => ['PTS' => '1'],
             'opponent_box_selected' => ['PTS' => '1'],
+            'update_existing_rows' => '1',
+            'update_existing_season_totals' => '1',
         ]);
 
         self::assertTrue($result['success']);

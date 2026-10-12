@@ -455,7 +455,10 @@ class BasketballBoxScoreImportService
                 $warnings[] = sprintf('No roster match was found for #%s %s.', $player['jersey'], $player['name']);
             }
             if ($match !== null && in_array($match['id'], $viewData['existingRosterIds'], true)) {
-                $warnings[] = sprintf('%s already has game stats and will be skipped.', $match['label']);
+                $warnings[] = sprintf(
+                    '%s already has game stats. Enable Update existing final player rows to replace the final row.',
+                    $match['label'],
+                );
             }
             $teamRows[] = $player + [
                 'team_season_roster_id' => $match['id'] ?? '',
@@ -555,13 +558,25 @@ class BasketballBoxScoreImportService
         }
 
         $addToTotals = !empty($data['add_to_totals']);
+        $updateExistingRows = !empty($data['update_existing_rows']);
+        $updateExistingSeasonTotals = $updateExistingRows && !empty($data['update_existing_season_totals']);
         $personResult = ['saved' => 0, 'skipped' => 0, 'errors' => []];
         if ($teamRows !== []) {
-            $personResult = $this->statsAdminService->saveAdminGamePersonRows($gameId, $teamRows, $addToTotals);
+            $personResult = $this->statsAdminService->saveAdminGamePersonRows(
+                $gameId,
+                $teamRows,
+                $addToTotals,
+                $updateExistingRows,
+                $updateExistingSeasonTotals,
+            );
         }
         $opponentResult = ['saved' => 0, 'skipped' => 0, 'errors' => []];
         if ($opponentRows !== []) {
-            $opponentResult = $this->statsAdminService->saveAdminGameOpponentRows($gameId, $opponentRows);
+            $opponentResult = $this->statsAdminService->saveAdminGameOpponentRows(
+                $gameId,
+                $opponentRows,
+                $updateExistingRows,
+            );
         }
 
         $teamBox = $this->normalizeBox(

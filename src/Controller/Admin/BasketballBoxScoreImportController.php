@@ -48,6 +48,8 @@ class BasketballBoxScoreImportController extends AppController
             'game_results_selected',
             'add_to_totals',
             'team_minutes',
+            'update_existing_rows',
+            'update_existing_season_totals',
         ]);
     }
 
