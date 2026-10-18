@@ -27,6 +27,7 @@ class DashboardControllerTest extends TestCase
         'app.Teams',
         'app.Games',
         'app.Images',
+        'app.StatBasketGameOpponent',
     ];
 
     /**
@@ -104,6 +105,62 @@ class DashboardControllerTest extends TestCase
     {
         $this->get('/admin/dashboard/clear-cache');
         $this->assertResponseCode(405);
+    }
+
+    /**
+     * Cleanup preview lists proposed changes without modifying them.
+     *
+     * @return void
+     */
+    public function testOpponentNameCleanupPreviewDoesNotChangeRecords(): void
+    {
+        $stats = $this->fetchTable('StatBasketGameOpponent');
+        $stat = $stats->get(1);
+        $stat->set('name', 'Smith, John Jr.');
+        $stats->saveOrFail($stat);
+
+        $this->get('/admin/dashboard/normalize-opponent-names');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Records that would change:</strong> 1');
+        $this->assertResponseContains('John Smith');
+        $this->assertSame('Smith, John Jr.', $stats->get(1)->get('name'));
+    }
+
+    /**
+     * Cleanup requires the exact confirmation value.
+     *
+     * @return void
+     */
+    public function testOpponentNameCleanupRejectsMissingConfirmation(): void
+    {
+        $stats = $this->fetchTable('StatBasketGameOpponent');
+        $stat = $stats->get(1);
+        $stat->set('name', 'Smith, John Jr.');
+        $stats->saveOrFail($stat);
+
+        $this->post('/admin/dashboard/normalize-opponent-names', ['confirmation' => 'yes']);
+
+        $this->assertRedirectContains('/admin/dashboard/normalize-opponent-names');
+        $this->assertSame('Smith, John Jr.', $stats->get(1)->get('name'));
+    }
+
+    /**
+     * A confirmed POST applies the cleanup.
+     *
+     * @return void
+     */
+    public function testOpponentNameCleanupRunsAfterConfirmation(): void
+    {
+        $stats = $this->fetchTable('StatBasketGameOpponent');
+        $stat = $stats->get(1);
+        $stat->set('name', 'Smith, John Jr.');
+        $stats->saveOrFail($stat);
+
+        $this->post('/admin/dashboard/normalize-opponent-names', ['confirmation' => 'NORMALIZE']);
+
+        $this->assertRedirectContains('/admin/dashboard/normalize-opponent-names');
+        $this->assertSame('John Smith', $stats->get(1)->get('name'));
     }
 
     /**

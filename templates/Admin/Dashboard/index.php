@@ -136,6 +136,12 @@ foreach ($audit['results'] as $r) {
                             </button>
                         <?= $this->Form->end() ?>
 
+                        <a href="<?= $this->Url->build(['controller' => 'Dashboard', 'action' => 'normalizeOpponentNames', 'prefix' => 'Admin']) ?>"
+                           class="btn btn-outline-danger"
+                           data-turbo-frame="admin-content">
+                            <i class="bi bi-person-bounding-box me-2"></i>Normalize Opponent Player Names
+                        </a>
+
                         <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'index', 'prefix' => 'Admin']) ?>"
                            class="btn btn-outline-primary">
                             <i class="bi bi-people me-2"></i>Manage Users

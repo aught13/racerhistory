@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Service\BasketballStatsAdminService;
 use App\Service\BasketballStatsService;
 use Cake\TestSuite\TestCase;
 
@@ -50,6 +51,65 @@ class BasketballStatsServiceTest extends TestCase
     {
         unset($this->service);
         parent::tearDown();
+    }
+
+    /**
+     * Replace an existing final game row without changing period rows or double-counting totals.
+     *
+     * @return void
+     */
+    public function testImporterCanReplaceExistingPlayerFinalRows(): void
+    {
+        $statsAdminService = new BasketballStatsAdminService();
+        $gameStatsTable = $this->fetchTable('StatBasketGamePerson');
+        $periodStat = $gameStatsTable->newEntity([
+            'team_season_roster_id' => 1,
+            'game_id' => 1,
+            'period' => '1',
+            'PTS' => '5',
+        ]);
+        $gameStatsTable->saveOrFail($periodStat);
+
+        $row = [
+            'team_season_roster_id' => 1,
+            'period' => 'Z',
+            'GP' => '1',
+            'PTS' => '25',
+        ];
+        $skipped = $statsAdminService->saveAdminGamePersonRows(1, [$row], false);
+        $this->assertSame(1, $skipped['skipped']);
+        $this->assertSame('22', (string)$gameStatsTable->get(1)->get('PTS'));
+
+        $result = $statsAdminService->saveAdminGamePersonRows(1, [$row], false, true, true);
+
+        $this->assertSame(1, $result['saved']);
+        $this->assertSame(0, $result['skipped']);
+        $this->assertSame('25', (string)$gameStatsTable->get(1)->get('PTS'));
+        $this->assertSame(2, $gameStatsTable->find()->where(['game_id' => 1])->count());
+        $this->assertSame(123, (int)$this->fetchTable('StatBasketSeasonPerson')->get(1)->get('PTS'));
+    }
+
+    /**
+     * Replace an existing opponent final row when update mode is enabled.
+     *
+     * @return void
+     */
+    public function testImporterCanReplaceExistingOpponentRows(): void
+    {
+        $statsAdminService = new BasketballStatsAdminService();
+        $statsTable = $this->fetchTable('StatBasketGameOpponent');
+        $row = ['name' => 'John Doe', 'jersey' => '23', 'period' => 'Z', 'PTS' => '24'];
+
+        $skipped = $statsAdminService->saveAdminGameOpponentRows(1, [$row]);
+        $this->assertSame(1, $skipped['skipped']);
+        $this->assertSame('18', (string)$statsTable->get(1)->get('PTS'));
+
+        $result = $statsAdminService->saveAdminGameOpponentRows(1, [$row], true);
+
+        $this->assertSame(1, $result['saved']);
+        $this->assertSame(0, $result['skipped']);
+        $this->assertSame('24', (string)$statsTable->get(1)->get('PTS'));
+        $this->assertSame(1, $statsTable->find()->where(['game_id' => 1])->count());
     }
 
     /**
