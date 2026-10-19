@@ -36,6 +36,9 @@ class GamesControllerTest extends TestCase
         'app.StatBasketGameTeam',
         'app.StatBasketGameOpponent',
         'app.StatBasketGameBox',
+        'app.Roles',
+        'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     /**
@@ -53,6 +56,99 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * Ensure the Games DataTables endpoint counts only games under the role grant.
+     */
+    public function testAjaxListFiltersGamesToRoleGrant(): void
+    {
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+
+        $game = $this->getTableLocator()->get('Games')->newEntity([
+            'team_season_id' => (int)$teamSeason->id,
+            'game_date' => '2024-01-15',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+        ]);
+        $this->getTableLocator()->get('Games')->saveOrFail($game);
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/games/ajax-list?draw=1&start=0&length=25');
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(1, $payload['recordsTotal']);
+        $this->assertSame(1, $payload['recordsFiltered']);
+        $this->assertCount(1, $payload['data']);
+    }
+
+    /**
+     * Ensure sport/team filters narrow both the Games page context and AJAX rows.
+     */
+    public function testGamesListFiltersBySportAndTeam(): void
+    {
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+        $this->getTableLocator()->get('Games')->saveOrFail(
+            $this->getTableLocator()->get('Games')->newEntity([
+                'team_season_id' => (int)$teamSeason->id,
+                'game_date' => '2024-01-15',
+                'game_type_id' => 1,
+                'opponent_id' => 1,
+                'place_id' => 1,
+                'site_id' => 1,
+                'hrn' => 1,
+            ]),
+        );
+        $this->mockIdentity();
+
+        $this->get('/admin/games?sport_key=football&team_id=3');
+
+        $this->assertResponseOk();
+        $this->assertSame('football', $this->viewVariable('currentSportKey'));
+        $this->assertSame(3, $this->viewVariable('currentTeamId'));
+        $this->assertResponseContains('games-filter-team');
+
+        $this->get('/admin/games/ajax-list?sport_key=football&team_id=3&draw=1&start=0&length=25');
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(1, $payload['recordsTotal']);
+        $this->assertSame(1, $payload['recordsFiltered']);
+    }
+
+    /**
+     * Ensure a guessed game ID outside the role grant is not exposed.
+     */
+    public function testViewRejectsGameOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/games/view/1');
+
+        $this->assertResponseCode(404);
+    }
+
+    /**
      * Tests add get.
      */
     public function testAddGet(): void
@@ -62,6 +158,23 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Add Game');
         $this->assertResponseContains('data-controller="admin-game-form"');
+    }
+
+    /**
+     * Ensure the add form rejects an out-of-scope TeamSeason ID.
+     */
+    public function testAddGetRejectsTeamSeasonOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/games/add?team_season_id=1');
+
+        $this->assertResponseCode(404);
     }
 
     /**
@@ -543,6 +656,23 @@ class GamesControllerTest extends TestCase
             'period_2_opponent' => '35',
         ]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
+    }
+
+    /**
+     * Replace contributor's unrestricted role scope with one team grant.
+     *
+     * @param int $teamId Team identifier.
+     * @return void
+     */
+    private function setContributorTeamGrant(int $teamId): void
+    {
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => $teamId,
+        ]));
     }
 
     /**

@@ -103,6 +103,46 @@ class PeopleControllerTest extends TestCase
     }
 
     /**
+     * Ensure the directory shows each multi-sport team and scopes membership by roster.
+     */
+    public function testIndexJsonScopesMultiSportTeamMembership(): void
+    {
+        $teams = $this->getTableLocator()->get('Teams');
+        $footballTeam = $teams->get(3);
+        $footballTeam->abbr = 'LAL';
+        $teams->saveOrFail($footballTeam);
+
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+        $this->getTableLocator()->get('TeamSeasonRosters')->saveOrFail(
+            $this->getTableLocator()->get('TeamSeasonRosters')->newEntity([
+                'team_season_id' => $teamSeason->id,
+                'person_id' => 1,
+                'roster_year' => '2025',
+            ]),
+        );
+
+        $this->get('/people?format=json&sport=all&team=all&draw=1&start=0&length=50');
+        $this->assertResponseOk();
+        $allPayload = json_decode((string)$this->_response->getBody(), true);
+        $allTeamLabels = implode(', ', array_column($allPayload['data'], 1));
+        $this->assertStringContainsString('LAL (Basketball)', $allTeamLabels);
+        $this->assertStringContainsString('LAL (Football)', $allTeamLabels);
+
+        $this->get('/people?format=json&sport=football&team=3&draw=2&start=0&length=50');
+        $this->assertResponseOk();
+        $footballPayload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(1, $footballPayload['recordsTotal']);
+        $this->assertCount(1, $footballPayload['data']);
+        $this->assertSame('LAL', (string)$footballPayload['data'][0][1]);
+        $this->assertStringNotContainsString('LAL (Basketball)', (string)$footballPayload['data'][0][1]);
+    }
+
+    /**
      * Tests index json honors descending name order.
      */
     public function testIndexJsonHonorsDescendingNameOrder(): void
@@ -179,6 +219,40 @@ class PeopleControllerTest extends TestCase
 
         $gameLogGroups = $this->viewVariable('gameLogGroups');
         $this->assertIsArray($gameLogGroups);
+    }
+
+    /**
+     * Scope a multi-sport profile by default and allow full history locally.
+     */
+    public function testProfileScopeAndFullHistoryOverride(): void
+    {
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+        $this->getTableLocator()->get('TeamSeasonRosters')->saveOrFail(
+            $this->getTableLocator()->get('TeamSeasonRosters')->newEntity([
+                'team_season_id' => $teamSeason->id,
+                'person_id' => 1,
+                'roster_year' => '2025',
+            ]),
+        );
+
+        $this->get('/people/1?sport=football&team=3');
+        $this->assertResponseOk();
+        $rosterEntries = $this->viewVariable('rosterEntries');
+        $this->assertCount(1, $rosterEntries);
+        $this->assertSame(3, (int)$rosterEntries[0]->team_season->team_id);
+        $this->assertFalse($this->viewVariable('showAllHistory'));
+
+        $this->get('/people/1?sport=basketball&team=1&show_all_history=1');
+        $this->assertResponseOk();
+        $allRosterEntries = $this->viewVariable('rosterEntries');
+        $this->assertCount(2, $allRosterEntries);
+        $this->assertTrue($this->viewVariable('showAllHistory'));
+        $this->assertResponseContains('show_all_history=1');
     }
 
     /**

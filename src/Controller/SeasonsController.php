@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PublicSportScopeService;
 use App\Service\SeasonViewService;
 use App\Service\TeamSeasonService;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\NotFoundException;
 
 /**
@@ -51,6 +53,7 @@ class SeasonsController extends AppController
 {
     private TeamSeasonService $teamSeasonService;
     private SeasonViewService $seasonViewService;
+    private PublicSportScopeService $publicSportScopeService;
 
     /**
      * Initialize controller.
@@ -61,6 +64,7 @@ class SeasonsController extends AppController
         $this->loadComponent('Authorization.Authorization');
         $this->teamSeasonService = new TeamSeasonService();
         $this->seasonViewService = new SeasonViewService($this->teamSeasonService);
+        $this->publicSportScopeService = new PublicSportScopeService();
     }
 
     /**
@@ -82,10 +86,11 @@ class SeasonsController extends AppController
      */
     public function index(): void
     {
-        $teamFilter = (string)$this->request->getQuery('team', 'all');
-        $this->set($this->buildIndexData() + [
+        $data = $this->buildIndexData();
+        $scope = $data['publicScope'];
+        $this->set($data + [
             'viewMode' => 'standard',
-            'teamFilter' => $teamFilter,
+            'teamFilter' => $scope['teamId'] === null ? 'all' : (string)$scope['teamId'],
         ]);
 
         if ($this->request->getHeaderLine('Turbo-Frame') === 'seasons-table-frame') {
@@ -102,10 +107,11 @@ class SeasonsController extends AppController
      */
     public function splits(): void
     {
-        $teamFilter = (string)$this->request->getQuery('team', 'all');
-        $this->set($this->buildIndexData() + [
+        $data = $this->buildIndexData();
+        $scope = $data['publicScope'];
+        $this->set($data + [
             'viewMode' => 'splits',
-            'teamFilter' => $teamFilter,
+            'teamFilter' => $scope['teamId'] === null ? 'all' : (string)$scope['teamId'],
         ]);
 
         if ($this->request->getHeaderLine('Turbo-Frame') === 'seasons-table-frame') {
@@ -120,10 +126,17 @@ class SeasonsController extends AppController
      */
     private function buildIndexData(): array
     {
-        $sport = ucfirst(strtolower((string)$this->request->getQuery('sport', 'Basketball')));
-        $gender = (string)$this->request->getQuery('gender', 'M');
+        $scope = $this->resolvePublicScope();
+        $gender = $this->request->getQuery('gender', '');
+        if (!is_string($gender) || !in_array($gender, ['', 'M', 'F', 'C'], true)) {
+            throw new BadRequestException('Invalid gender filter.');
+        }
 
-        $teamSeasons = $this->teamSeasonService->getPublicSeasonsList($sport, $gender);
+        $teamSeasons = $this->teamSeasonService->getPublicSeasonsList(
+            $scope['sportKey'] ?? '',
+            $gender,
+            $scope['teamId'],
+        );
 
         $teamSeasonIds = array_map(static fn($ts) => (int)$ts->id, $teamSeasons);
         $seasonStats = $this->teamSeasonService->calculateSeasonStats($teamSeasonIds);
@@ -133,7 +146,22 @@ class SeasonsController extends AppController
             $recordSummaries[(int)$teamSeason->id] = $this->teamSeasonService->getRecordSummary((int)$teamSeason->id);
         }
 
-        return compact('teamSeasons', 'seasonStats', 'recordSummaries');
+        return compact('teamSeasons', 'seasonStats', 'recordSummaries', 'scope') + [
+            'publicScope' => $scope,
+        ];
+    }
+
+    /**
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    private function resolvePublicScope(): array
+    {
+        $scope = $this->publicSportScopeService->resolve($this->request->getQueryParams());
+        if (!$scope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        return $scope;
     }
 
     /**
@@ -144,13 +172,28 @@ class SeasonsController extends AppController
      */
     public function view(int $id): void
     {
+        $scope = $this->resolvePublicScope();
         $viewData = $this->seasonViewService->getViewData($id);
         $teamSeason = $viewData['teamSeason'] ?? null;
         if (!$teamSeason) {
             throw new NotFoundException('Season not found');
         }
 
+        if ($scope['teamId'] !== null && $scope['teamId'] !== (int)$teamSeason->team_id) {
+            throw new NotFoundException('Season not found');
+        }
+
+        if ($scope['sportKey'] !== null) {
+            $teamScope = $this->publicSportScopeService->resolve([
+                'sport' => $scope['sportKey'],
+                'team' => (string)$teamSeason->team_id,
+            ]);
+            if (!$teamScope['valid']) {
+                throw new NotFoundException('Season not found');
+            }
+        }
+
         unset($viewData['teamSeason']);
-        $this->set(['teamSeason' => $teamSeason] + $viewData);
+        $this->set(['teamSeason' => $teamSeason, 'publicScope' => $scope] + $viewData);
     }
 }

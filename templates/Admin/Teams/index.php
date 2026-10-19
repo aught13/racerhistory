@@ -2,6 +2,10 @@
 /**
  * @var \App\View\AppView $this
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Team> $teams
+ * @var array<string,string> $sportOptions
+ * @var array<string,string> $genderOptions
+ * @var string $currentSportKey
+ * @var string $currentGender
  */
 
 $canCreateTeams = $this->Rbac->can('Teams', 'create');
@@ -35,6 +39,30 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
             <?php endif; ?>
         </div>
     </div>
+
+    <form method="get" action="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-3">
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="teams-filter-sport">Sport</label>
+            <select class="form-select form-select-sm" id="teams-filter-sport" name="sport_key">
+                <option value="">All sports</option>
+                <?php foreach ($sportOptions as $sportKey => $sportName) : ?>
+                    <option value="<?= h($sportKey) ?>"<?= $currentSportKey === $sportKey ? ' selected' : '' ?>><?= h($sportName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="teams-filter-gender">Gender</label>
+            <select class="form-select form-select-sm" id="teams-filter-gender" name="gender">
+                <option value="">All genders</option>
+                <?php foreach ($genderOptions as $genderKey => $genderLabel) : ?>
+                    <option value="<?= h($genderKey) ?>"<?= $currentGender === $genderKey ? ' selected' : '' ?>><?= h($genderLabel) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </div>
+    </form>
 
     <div class="row">
         <div class="col">

@@ -59,7 +59,16 @@ class TeamSeasonsController extends AppController
      */
     public function index(): void
     {
-        $this->set($this->teamSeasonAdminService->getIndexData());
+        $sportKey = $this->request->getQuery('sport_key');
+        $teamIdRaw = $this->request->getQuery('team_id');
+        $teamId = is_scalar($teamIdRaw) && ctype_digit((string)$teamIdRaw) && (int)$teamIdRaw > 0
+            ? (int)$teamIdRaw
+            : null;
+        $this->set($this->teamSeasonAdminService->getIndexData(
+            $this->request->getAttribute('identity'),
+            is_string($sportKey) ? $sportKey : null,
+            $teamId,
+        ));
     }
 
     /**
@@ -70,7 +79,7 @@ class TeamSeasonsController extends AppController
      */
     public function view(string $id): void
     {
-        $this->set($this->teamSeasonAdminService->getViewData($id));
+        $this->set($this->teamSeasonAdminService->getViewData($id, $this->request->getAttribute('identity')));
     }
 
     /**
@@ -82,13 +91,15 @@ class TeamSeasonsController extends AppController
     {
         $teamId = $this->request->getQuery('team_id') ? (int)$this->request->getQuery('team_id') : null;
         $seasonId = $this->request->getQuery('season_id') ? (int)$this->request->getQuery('season_id') : null;
-        $viewData = $this->teamSeasonAdminService->getAddFormData($teamId, $seasonId);
+        $identity = $this->request->getAttribute('identity');
+        $viewData = $this->teamSeasonAdminService->getAddFormData($teamId, $seasonId, $identity);
 
         if ($this->request->is('post')) {
             $result = $this->teamSeasonAdminService->saveNewTeamSeason(
                 (array)$this->request->getData(),
                 $teamId,
                 $seasonId,
+                $identity,
             );
             $viewData['teamSeason'] = $result['teamSeason'];
 
@@ -113,10 +124,15 @@ class TeamSeasonsController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $viewData = $this->teamSeasonAdminService->getEditFormData($id);
+        $identity = $this->request->getAttribute('identity');
+        $viewData = $this->teamSeasonAdminService->getEditFormData($id, $identity);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->teamSeasonAdminService->saveExistingTeamSeason($id, (array)$this->request->getData());
+            $result = $this->teamSeasonAdminService->saveExistingTeamSeason(
+                $id,
+                (array)$this->request->getData(),
+                $identity,
+            );
             $viewData['teamSeason'] = $result['teamSeason'];
 
             if ($result['success']) {

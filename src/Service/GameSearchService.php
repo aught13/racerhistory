@@ -22,6 +22,10 @@ class GameSearchService
 
     private TeamSportContextService $teamSportContextService;
 
+    private ?string $scopeSportKey = null;
+
+    private ?int $scopeTeamId = null;
+
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
      */
@@ -31,7 +35,21 @@ class GameSearchService
     }
 
     /**
-     * Base query that loads games with full associations for basketball (sport_id=1, gender=M).
+     * Set the validated public sport/team scope for this request.
+     *
+     * @param string|null $sportKey Canonical sport key, or null for all sports.
+     * @param int|null $teamId Team identifier, or null for all teams.
+     * @return void
+     */
+    public function setPublicScope(?string $sportKey, ?int $teamId): void
+    {
+        $normalizedSportKey = $sportKey !== null ? strtolower(trim($sportKey)) : '';
+        $this->scopeSportKey = $normalizedSportKey !== '' ? $normalizedSportKey : null;
+        $this->scopeTeamId = $teamId !== null && $teamId > 0 ? $teamId : null;
+    }
+
+    /**
+     * Base query that loads games with full associations for the current public scope.
      *
      * @return \Cake\ORM\Query\SelectQuery
      */
@@ -48,7 +66,9 @@ class GameSearchService
                 'TeamSeason' => ['Teams', 'Seasons'],
             ])
             ->innerJoinWith('TeamSeason.Teams', function ($q) {
-                return $q->where($this->basketballTeamFilter());
+                $conditions = $this->publicTeamFilter();
+
+                return $conditions !== [] ? $q->where($conditions) : $q;
             })
             ->where([
                 'OR' => [
@@ -828,7 +848,9 @@ class GameSearchService
             ->select(['Games.opponent_id'])
             ->distinct(['Games.opponent_id'])
             ->matching('TeamSeason.Teams', function ($q) {
-                return $q->where($this->basketballTeamFilter());
+                $conditions = $this->publicTeamFilter();
+
+                return $conditions !== [] ? $q->where($conditions) : $q;
             })
             ->all()
             ->extract('opponent_id')
@@ -880,7 +902,9 @@ class GameSearchService
             ])
             ->innerJoinWith('Opponents')
             ->innerJoinWith('TeamSeason.Teams', function (SelectQuery $q) {
-                return $q->where($this->basketballTeamFilter());
+                $conditions = $this->publicTeamFilter();
+
+                return $conditions !== [] ? $q->where($conditions) : $q;
             })
             ->groupBy([
                 'Opponents.id',
@@ -905,7 +929,9 @@ class GameSearchService
             ->select(['opponent_id' => 'Games.opponent_id'])
             ->distinct(['Games.opponent_id'])
             ->innerJoinWith('TeamSeason.Teams', function (SelectQuery $q) {
-                return $q->where($this->basketballTeamFilter());
+                $conditions = $this->publicTeamFilter();
+
+                return $conditions !== [] ? $q->where($conditions) : $q;
             });
         $total = count($totalQuery->all()->toList());
 
@@ -972,10 +998,14 @@ class GameSearchService
     /**
      * @return array<string,mixed>
      */
-    private function basketballTeamFilter(): array
+    private function publicTeamFilter(): array
     {
-        $conditions = $this->teamSportContextService->buildSportFilterConditions('basketball');
-        $conditions['Teams.gender'] = 'M';
+        $conditions = $this->scopeSportKey !== null
+            ? $this->teamSportContextService->buildSportFilterConditions($this->scopeSportKey)
+            : [];
+        if ($this->scopeTeamId !== null) {
+            $conditions['Teams.id'] = $this->scopeTeamId;
+        }
 
         return $conditions;
     }

@@ -30,7 +30,7 @@ $filterLabels = [
 
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="btn-group" role="group" aria-label="Margin type">
-            <a href="<?= $this->Url->build([
+            <a href="<?= $this->PublicScope->url([
                 'controller' => 'Games',
                 'action' => 'margins',
                 '?' => ['type' => 'win', 'filter' => $filter],
@@ -38,7 +38,7 @@ $filterLabels = [
                class="btn btn-sm <?= $type === 'win' ? 'btn-success' : 'btn-outline-success' ?>">
                 Biggest Wins
             </a>
-            <a href="<?= $this->Url->build([
+            <a href="<?= $this->PublicScope->url([
                 'controller' => 'Games',
                 'action' => 'margins',
                 '?' => ['type' => 'loss', 'filter' => $filter],
@@ -51,7 +51,7 @@ $filterLabels = [
 
     <div class="btn-group mb-4" role="group" aria-label="Filter">
         <?php foreach ($filterLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build([
+            <a href="<?= $this->PublicScope->url([
                 'controller' => 'Games',
                 'action' => 'margins',
                 '?' => ['type' => $type, 'filter' => $key],
@@ -86,7 +86,7 @@ $filterLabels = [
                                 <tr>
                                     <td><?= (int)($game->rank ?? 0) ?></td>
                                     <td>
-                                        <a href="<?= $this->Url->build([
+                                        <a href="<?= $this->PublicScope->url([
                                             'controller' => 'Games',
                                             'action' => 'view',
                                             $game->id,
@@ -95,7 +95,7 @@ $filterLabels = [
                                         </a>
                                     </td>
                                     <td>
-                                        <a href="<?= $this->Url->build([
+                                        <a href="<?= $this->PublicScope->url([
                                             'controller' => 'Games',
                                             'action' => 'series',
                                             '?' => ['opponent_id' => $game->opponent->id ?? 0],

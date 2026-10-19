@@ -56,7 +56,7 @@ class TeamSeasonRostersController extends AppController
      */
     public function view(string $id): void
     {
-        $this->set($this->teamSeasonRosterAdminService->getViewData($id));
+        $this->set($this->teamSeasonRosterAdminService->getViewData($id, $this->request->getAttribute('identity')));
     }
 
     /**
@@ -72,7 +72,10 @@ class TeamSeasonRostersController extends AppController
         $teamSeasonId = $this->request->getQuery('team_season_id')
             ? (int)$this->request->getQuery('team_season_id')
             : null;
-        $this->set($this->teamSeasonRosterAdminService->getAddFormData($teamSeasonId));
+        $this->set($this->teamSeasonRosterAdminService->getAddFormData(
+            $teamSeasonId,
+            $this->request->getAttribute('identity'),
+        ));
 
         return null;
     }
@@ -98,7 +101,11 @@ class TeamSeasonRostersController extends AppController
             return $this->redirect(['action' => 'add', '?' => ['team_season_id' => $teamSeasonId ?: null]]);
         }
 
-        $result = $this->teamSeasonRosterAdminService->saveBulkAddRows($teamSeasonId, $rows);
+        $result = $this->teamSeasonRosterAdminService->saveBulkAddRows(
+            $teamSeasonId,
+            $rows,
+            $this->request->getAttribute('identity'),
+        );
         $saved = $result['saved'];
         $errors = $result['errors'];
 
@@ -134,7 +141,10 @@ class TeamSeasonRostersController extends AppController
             return $this->_processBulkUpdate($teamSeasonId);
         }
 
-        $this->set($this->teamSeasonRosterAdminService->getBulkEditFormData($teamSeasonId));
+        $this->set($this->teamSeasonRosterAdminService->getBulkEditFormData(
+            $teamSeasonId,
+            $this->request->getAttribute('identity'),
+        ));
 
         return null;
     }
@@ -155,7 +165,11 @@ class TeamSeasonRostersController extends AppController
 
             return $this->redirect(['action' => 'bulkEdit']);
         }
-        $result = $this->teamSeasonRosterAdminService->processBulkUpdate($teamSeasonId, $rows);
+        $result = $this->teamSeasonRosterAdminService->processBulkUpdate(
+            $teamSeasonId,
+            $rows,
+            $this->request->getAttribute('identity'),
+        );
         $saved = $result['saved'];
         $deletedCount = $result['deletedCount'];
         $errors = $result['errors'];
@@ -185,10 +199,15 @@ class TeamSeasonRostersController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $viewData = $this->teamSeasonRosterAdminService->getEditFormData($id);
+        $identity = $this->request->getAttribute('identity');
+        $viewData = $this->teamSeasonRosterAdminService->getEditFormData($id, $identity);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->teamSeasonRosterAdminService->saveExistingRoster($id, (array)$this->request->getData());
+            $result = $this->teamSeasonRosterAdminService->saveExistingRoster(
+                $id,
+                (array)$this->request->getData(),
+                $identity,
+            );
             $viewData['teamSeasonRoster'] = $result['teamSeasonRoster'];
 
             if ($result['success']) {
@@ -297,7 +316,10 @@ class TeamSeasonRostersController extends AppController
     public function ajaxAdd(): Response
     {
         if ($this->request->is('post')) {
-            $response = $this->teamSeasonRosterAdminService->createRosterFromPopup((array)$this->request->getData());
+            $response = $this->teamSeasonRosterAdminService->createRosterFromPopup(
+                (array)$this->request->getData(),
+                $this->request->getAttribute('identity'),
+            );
         } else {
             $response = [
                 'success' => false,

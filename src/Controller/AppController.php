@@ -17,8 +17,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PublicSportScopeService;
+use App\Service\StatsService;
 use Cake\Controller\Controller;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
 
 /**
  * Application Controller
@@ -82,5 +85,45 @@ class AppController extends Controller
         ) {
             $this->Authentication->allowUnauthenticated(['login', 'register']);
         }
+    }
+
+    /**
+     * Add validated public scope and selector options to the shared layout.
+     *
+     * @param \Cake\Event\EventInterface $event The before-render event.
+     * @return void
+     */
+    public function beforeRender(EventInterface $event): void
+    {
+        parent::beforeRender($event);
+
+        if ($this->getRequest()->getParam('prefix') === 'Admin' || $this instanceof ErrorController) {
+            return;
+        }
+
+        $scopeService = new PublicSportScopeService();
+        $scope = $scopeService->resolve($this->getRequest()->getQueryParams());
+        if (!$scope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        $sportOptions = $scopeService->getAvailableSportOptions();
+        $teamOptions = $scopeService->getTeamOptions($scope['sportKey']);
+        $allTeamOptions = $scopeService->getTeamOptions();
+        $isStatsController = $this->getRequest()->getParam('controller') === 'Stats';
+        if ($isStatsController) {
+            $supportedKeys = array_fill_keys((new StatsService())->getSupportedSports(), true);
+            $sportOptions = array_intersect_key($sportOptions, $supportedKeys);
+        }
+
+        $this->set([
+            'publicScope' => $scope,
+            'publicSportOptions' => $sportOptions,
+            'publicTeamOptions' => $teamOptions,
+            'showPublicSportSelector' => count($sportOptions) > 1 || $isStatsController,
+            'showPublicTeamSelector' => !$isStatsController
+                && (count($allTeamOptions) > 1 || $scope['teamId'] !== null),
+            'isStatsController' => $isStatsController,
+        ]);
     }
 }

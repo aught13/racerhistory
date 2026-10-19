@@ -16,6 +16,9 @@ class RolesControllerTest extends TestCase
         'app.Users',
         'app.Roles',
         'app.Permissions',
+        'app.RoleDataScopes',
+        'app.Sports',
+        'app.Teams',
     ];
 
     /**
@@ -38,6 +41,22 @@ class RolesControllerTest extends TestCase
         $this->assertResponseNotContains('permissions[Roles][can_update]" value="own"');
         $this->assertResponseContains('permissions[Games][can_read]" value="all"');
         $this->assertResponseContains('permissions[Games][can_read]" value="none"');
+        $this->assertResponseContains('id="data-scope-all"');
+        $this->assertResponseContains('data_scope[sport_keys][]');
+        $this->assertResponseContains('data_scope[team_ids][]');
+    }
+
+    /**
+     * Ensure the Admin role is identified as globally unrestricted.
+     */
+    public function testAdminRoleIsDisplayedAsGloballyUnrestricted(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/roles/edit/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('globally unrestricted');
+        $this->assertResponseNotContains('data_scope[team_ids][]');
     }
 
     /**
@@ -74,6 +93,9 @@ class RolesControllerTest extends TestCase
                     'can_delete' => 'own',
                 ],
             ],
+            'data_scope' => [
+                'mode' => 'all',
+            ],
         ]);
 
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Roles', 'action' => 'edit', 2]);
@@ -95,5 +117,36 @@ class RolesControllerTest extends TestCase
         $this->assertSame('none', $gamesPermission->can_update);
         $this->assertSame('none', $gamesPermission->can_delete);
         $this->assertSame(['can_pin_posts' => false, 'can_manage_pin_settings' => false], (array)$customRules);
+    }
+
+    /**
+     * Ensure selected scope grants are persisted through the role editor.
+     */
+    public function testEditMatrixPostPersistsSelectedDataScope(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $permissions = [];
+        $this->post('/admin/roles/edit/4', [
+            'permissions' => $permissions,
+            'data_scope' => [
+                'mode' => 'selected',
+                'sport_keys' => ['football'],
+                'team_ids' => ['3'],
+            ],
+        ]);
+
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Roles', 'action' => 'edit', 4]);
+        $this->assertSession('Role permissions have been updated.', 'Flash.flash.0.message');
+
+        $scopeRows = $this->getTableLocator()->get('RoleDataScopes')->find()
+            ->where(['role_id' => 4])
+            ->orderByAsc('scope_type')
+            ->all()
+            ->toArray();
+        $this->assertCount(2, $scopeRows);
+        $this->assertSame(['sport', 'team'], array_map(static fn($scope): string => (string)$scope->scope_type, $scopeRows));
     }
 }

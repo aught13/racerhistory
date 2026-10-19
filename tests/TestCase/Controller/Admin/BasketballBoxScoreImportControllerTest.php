@@ -77,6 +77,7 @@ class BasketballBoxScoreImportControllerTest extends TestCase
         $this->assertResponseContains('Choose the official PDF');
         $this->assertResponseContains('multipart/form-data');
         $this->assertResponseContains('data-turbo="false"');
+        $this->assertResponseContains('name="_Token[fields]"');
         $this->assertResponseContains('Preview Import');
     }
 

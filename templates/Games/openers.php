@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 $this->assign('title', 'Season Openers');
 $openerType = $openerType ?? 'season';
-$ajaxUrl = $this->Url->build([
+$ajaxUrl = $this->PublicScope->url([
     'controller' => 'Games',
     'action' => 'openers',
     '?' => ['format' => 'json', 'type' => $openerType],
@@ -29,7 +29,7 @@ $openerLabels = [
 
     <div class="btn-group mb-4" role="group" aria-label="Opener type">
         <?php foreach ($openerLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build([
+            <a href="<?= $this->PublicScope->url([
                 'controller' => 'Games',
                 'action' => 'openers',
                 '?' => ['type' => $key],

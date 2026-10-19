@@ -241,6 +241,34 @@ class TeamSeasonServiceTest extends TestCase
     }
 
     /**
+     * Tests public season list filters by team while allowing all sports by default.
+     */
+    public function testGetPublicSeasonsListFiltersByTeam(): void
+    {
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $teamSeasons->saveOrFail($teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]));
+
+        $all = $this->service->getPublicSeasonsList();
+        $footballTeam = $this->service->getPublicSeasonsList('', '', 3);
+
+        $this->assertCount(3, $all);
+        $this->assertCount(1, $footballTeam);
+        $this->assertSame(3, (int)$footballTeam[0]->team_id);
+    }
+
+    /**
+     * Tests unknown public sport filters return no seasons rather than all seasons.
+     */
+    public function testGetPublicSeasonsListRejectsUnknownSport(): void
+    {
+        $this->assertSame([], $this->service->getPublicSeasonsList('not-a-sport'));
+    }
+
+    /**
      * Tests calculate season stats returns expected shape.
      */
     public function testCalculateSeasonStatsReturnsExpectedShape(): void

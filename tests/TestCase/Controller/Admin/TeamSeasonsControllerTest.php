@@ -32,6 +32,9 @@ class TeamSeasonsControllerTest extends TestCase
         'app.Opponents',
         'app.Sites',
         'app.Places',
+        'app.Roles',
+        'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     /**
@@ -48,6 +51,72 @@ class TeamSeasonsControllerTest extends TestCase
         $this->assertResponseContains('data-controller="admin-confirm-delete"');
         $this->assertResponseNotContains('team-seasons-bulk-action-bar');
         $this->assertResponseNotContains('team-season-checkbox');
+    }
+
+    /**
+     * Ensure the Team Seasons list filters by sport.
+     */
+    public function testIndexFiltersBySport(): void
+    {
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail(
+            $this->getTableLocator()->get('TeamSeasons')->newEntity([
+                'team_id' => 3,
+                'season_id' => 2,
+                'semester' => 1,
+            ]),
+        );
+        $this->mockIdentity();
+
+        $this->get('/admin/team-seasons?sport_key=football');
+
+        $this->assertResponseOk();
+        $teamSeasons = $this->viewVariable('teamSeasons')->toArray();
+        $this->assertCount(1, $teamSeasons);
+        $this->assertSame(3, (int)$teamSeasons[0]->team_id);
+        $this->assertResponseContains('team-seasons-filter-sport');
+    }
+
+    /**
+     * Ensure the Team Seasons list includes only seasons under granted teams.
+     */
+    public function testIndexFiltersTeamSeasonsToRoleGrant(): void
+    {
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $teamSeasons->saveOrFail($teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+        ]));
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/team-seasons');
+
+        $this->assertResponseOk();
+        $rows = $this->viewVariable('teamSeasons')->toArray();
+        $this->assertCount(1, $rows);
+        $this->assertSame(3, (int)$rows[0]->team_id);
+    }
+
+    /**
+     * Ensure guessed Team Season detail IDs outside a grant are not exposed.
+     */
+    public function testViewRejectsTeamSeasonOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/team-seasons/view/1');
+
+        $this->assertResponseCode(404);
     }
 
     /**
@@ -199,6 +268,32 @@ class TeamSeasonsControllerTest extends TestCase
     }
 
     /**
+     * Ensure create rejects a submitted team id outside the role grant.
+     */
+    public function testAddPostRejectsOutOfScopeTeam(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->enableRetainFlashMessages();
+
+        $this->post('/admin/team-seasons/add', [
+            'team_id' => 1,
+            'season_id' => 1,
+            'semester' => 1,
+        ]);
+
+        $this->assertResponseOk();
+        $this->assertFlashMessage('The team season could not be saved. Please, try again.');
+        $this->assertSame(2, $this->getTableLocator()->get('TeamSeasons')->find()->count());
+    }
+
+    /**
      * Tests add post invalid.
      */
     public function testAddPostInvalid(): void
@@ -257,6 +352,23 @@ class TeamSeasonsControllerTest extends TestCase
         $this->post('/admin/team-seasons/bulk', ['bulk_action' => 'delete', 'team_season_ids' => ['']]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']);
         $this->assertFlashMessage('Bulk delete is no longer available for team seasons.');
+    }
+
+    /**
+     * Replace contributor's unrestricted role scope with one team grant.
+     *
+     * @param int $teamId Team identifier.
+     * @return void
+     */
+    private function setContributorTeamGrant(int $teamId): void
+    {
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => $teamId,
+        ]));
     }
 
     /**

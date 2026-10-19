@@ -3,13 +3,22 @@
  * @var \App\View\AppView $this
  * @var mixed $teamSeasonId
  * @var \App\Model\Entity\TeamSeason $teamSeason
+ * @var array<string,string> $sportOptions
+ * @var array<int,string> $teamOptions
+ * @var string $currentSportKey
+ * @var int $currentTeamId
  */
 
+$gameFilters = array_filter([
+    'team_season_id' => $teamSeasonId ?: null,
+    'sport_key' => $currentSportKey ?: null,
+    'team_id' => $currentTeamId > 0 ? $currentTeamId : null,
+]);
 $ajaxUrl = $this->Url->build([
     'prefix' => 'Admin',
     'controller' => 'Games',
     'action' => 'ajaxList',
-    '?' => $teamSeasonId ? ['team_season_id' => $teamSeasonId] : [],
+    '?' => $gameFilters,
 ]);
 
 $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk']);
@@ -69,6 +78,33 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
             </div>
         </div>
     </div>
+
+    <form method="get" action="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-3">
+        <?php if ($teamSeasonId) : ?>
+            <input type="hidden" name="team_season_id" value="<?= (int)$teamSeasonId ?>">
+        <?php endif; ?>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="games-filter-sport">Sport</label>
+            <select class="form-select form-select-sm" id="games-filter-sport" name="sport_key">
+                <option value="">All sports</option>
+                <?php foreach ($sportOptions as $sportKey => $sportName) : ?>
+                    <option value="<?= h($sportKey) ?>"<?= $currentSportKey === $sportKey ? ' selected' : '' ?>><?= h($sportName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="games-filter-team">Team</label>
+            <select class="form-select form-select-sm" id="games-filter-team" name="team_id">
+                <option value="">All teams</option>
+                <?php foreach ($teamOptions as $teamId => $teamName) : ?>
+                    <option value="<?= (int)$teamId ?>"<?= $currentTeamId === (int)$teamId ? ' selected' : '' ?>><?= h($teamName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </div>
+    </form>
 
     <div class="row">
         <div class="col">

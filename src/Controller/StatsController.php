@@ -5,7 +5,10 @@ namespace App\Controller;
 
 use App\Service\SportConfigService;
 use App\Service\StatsService;
+use App\Service\TeamSportContextService;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
+use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 use Cake\Routing\Router;
 
@@ -178,37 +181,34 @@ class StatsController extends AppController
     protected function resolveSportId(): int
     {
         $sport = $this->resolveCurrentSport();
-        $sportId = $this->statsService->getSportIdByName((string)$sport);
-
-        if ($sportId !== null) {
-            return $sportId;
+        if ($sport === null) {
+            throw new BadRequestException('Choose a sport before viewing statistics.');
         }
 
-        $defaultSportName = $this->sportConfigService->getSportDisplayName(
-            $this->sportConfigService->getDefaultSportKey(),
-        );
-        $fallbackSportId = $this->statsService->getSportIdByName($defaultSportName);
-
-        if ($fallbackSportId !== null) {
-            return $fallbackSportId;
+        $sportId = $this->statsService->getSportIdByName($sport);
+        if ($sportId === null || !$this->statsService->hasSportSupport($sportId)) {
+            throw new BadRequestException('Statistics are not available for the selected sport.');
         }
 
-        $defaultSportId = $this->sportConfigService->getIdByKey($this->sportConfigService->getDefaultSportKey());
-
-        return $defaultSportId ?? 0;
+        return $sportId;
     }
 
     /**
-     * Resolve current sport query param with configured default fallback.
+     * Resolve the selected supported sport, or null when no sport is selected.
      */
-    protected function resolveCurrentSport(): string
+    protected function resolveCurrentSport(): ?string
     {
         $sport = $this->getRequest()->getQuery('sport');
-        if (is_string($sport) && trim($sport) !== '') {
-            return trim($sport);
+        if (!is_string($sport) || trim($sport) === '' || strtolower(trim($sport)) === 'all') {
+            return null;
         }
 
-        return $this->sportConfigService->getDefaultSportKey();
+        $sportId = $this->statsService->getSportIdByName(trim($sport));
+        if ($sportId === null || !$this->statsService->hasSportSupport($sportId)) {
+            throw new BadRequestException('Statistics are not available for the selected sport.');
+        }
+
+        return $this->sportConfigService->getKeyById($sportId);
     }
 
     /**
@@ -216,7 +216,26 @@ class StatsController extends AppController
      */
     public function index(): void
     {
-        $this->set('currentSport', $this->resolveCurrentSport());
+        $this->set([
+            'currentSport' => $this->resolveCurrentSport(),
+            'supportedSports' => $this->getSupportedSportOptions(),
+        ]);
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    private function getSupportedSportOptions(): array
+    {
+        $options = [];
+        foreach ($this->statsService->getSupportedSports() as $sportKey) {
+            $sportId = $this->sportConfigService->getIdByKey((string)$sportKey);
+            if ($sportId !== null && $this->statsService->hasSportSupport($sportId)) {
+                $options[(string)$sportKey] = $this->sportConfigService->getSportDisplayName((string)$sportKey);
+            }
+        }
+
+        return $options;
     }
 
     /**
@@ -411,6 +430,7 @@ class StatsController extends AppController
      */
     public function season(int $teamSeasonId)
     {
+        $selectedSportId = $this->resolveSportId();
         $teamSeasonsTable = $this->fetchTable('TeamSeasons');
         $teamSeason = $teamSeasonsTable->find()
             ->contain(['Teams', 'Seasons'])
@@ -423,9 +443,15 @@ class StatsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
+        $teamSportId = (new TeamSportContextService())
+            ->resolveSportIdFromTeam($teamSeason->team ?? null);
+        if ($teamSportId !== $selectedSportId) {
+            throw new NotFoundException('Statistics not found for the selected sport.');
+        }
+
         $playerStats = $this->statsService->getSeasonPlayerStatsList($teamSeasonId);
 
-        $this->set(compact('teamSeason', 'playerStats'));
+        $this->set(compact('teamSeason', 'playerStats') + ['currentSport' => $this->resolveCurrentSport()]);
 
         return null;
     }

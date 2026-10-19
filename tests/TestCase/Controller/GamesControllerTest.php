@@ -40,6 +40,22 @@ class GamesControllerTest extends TestCase
     ];
 
     /**
+     * Configure legacy specialty-view tests with an explicit Basketball team scope.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->configRequest([
+            'query' => [
+                'sport' => 'basketball',
+                'team' => '1',
+            ],
+        ]);
+    }
+
+    /**
      * Tests index.
      */
     public function testIndex(): void
@@ -189,6 +205,17 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
     }
 
+    /**
+     * Ensure a Game detail page cannot escape the selected public scope.
+     */
+    public function testViewRejectsGameOutsideSelectedScope(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'football', 'team' => '3']]);
+        $this->get('/games/1?sport=football&team=3');
+
+        $this->assertResponseCode(404);
+    }
+
     // ─── New game search actions ──────────────────────────────────────
 
     public function testRankedPage(): void
@@ -196,6 +223,39 @@ class GamesControllerTest extends TestCase
         $this->get('/games/ranked');
         $this->assertResponseOk();
         $this->assertResponseContains('Ranked Games');
+    }
+
+    /**
+     * Specialty game views require an explicit team scope.
+     */
+    public function testRankedPageRequiresTeamScope(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
+        $this->get('/games/ranked?sport=all&team=all');
+
+        $this->assertRedirectContains('/games?sport=all&team=all');
+    }
+
+    /**
+     * The Series opponents endpoint also requires a selected team.
+     */
+    public function testSeriesOpponentsRequiresTeamScope(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
+        $this->get('/games/series-opponents?format=json&sport=all&team=all');
+
+        $this->assertRedirectContains('/games?sport=all&team=all');
+    }
+
+    /**
+     * The 100-point view is available only when Basketball is selected.
+     */
+    public function testHundredPointRedirectsForUnsupportedSport(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'football', 'team' => 'all']]);
+        $this->get('/games/hundred-point?sport=football&team=all');
+
+        $this->assertRedirectContains('/games?sport=football&team=all');
     }
 
     /**

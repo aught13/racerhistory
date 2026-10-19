@@ -39,11 +39,20 @@ class RolesController extends AppController
         $this->request->allowMethod(['get', 'post', 'put', 'patch']);
 
         if ($this->request->is(['post', 'put', 'patch'])) {
-            $saved = $this->rolesAdminService->savePermissions($id, (array)$this->request->getData('permissions', []));
-            if ($saved) {
+            $saved = $this->rolesAdminService->savePermissions(
+                $id,
+                (array)$this->request->getData('permissions', []),
+            );
+            $scopeSaved = $this->rolesAdminService->saveDataScope(
+                $id,
+                (array)$this->request->getData('data_scope', []),
+            );
+            if ($saved && $scopeSaved) {
                 $this->Flash->success('Role permissions have been updated.');
             } else {
-                $this->Flash->error('Role permissions could not be updated. Please review the matrix and try again.');
+                $this->Flash->error(
+                    'Role permissions or data scope could not be updated. Please review the form and try again.',
+                );
             }
 
             return $this->redirect(['action' => 'edit', $id]);

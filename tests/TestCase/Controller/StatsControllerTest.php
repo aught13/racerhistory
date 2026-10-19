@@ -36,16 +36,29 @@ class StatsControllerTest extends TestCase
         'app.Sites',
     ];
 
+    /**
+     * Configure report tests with an explicit supported sport.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->configRequest(['query' => ['sport' => 'basketball']]);
+    }
+
     // ——— Index ————————————————————————————
 
     public function testIndex(): void
     {
+        $this->replaceRequest([]);
         $this->get('/stats');
         $this->assertResponseOk();
         $this->assertResponseContains('Statistics');
-        $this->assertResponseContains('stats-type-cards');
+        $this->assertResponseContains('id="stats-sport"');
         $this->assertResponseContains('property="og:image"');
         $this->assertResponseContains('/img/logo.png');
+        $this->assertResponseContains('id="stats-sport"');
     }
 
     /**
@@ -69,11 +82,47 @@ class StatsControllerTest extends TestCase
      */
     public function testIndexSetsCurrentSport(): void
     {
+        $this->replaceRequest([]);
         $this->get('/stats');
         $this->assertResponseOk();
 
         $currentSport = $this->viewVariable('currentSport');
-        $this->assertSame('basketball', $currentSport);
+        $this->assertNull($currentSport);
+        $this->assertResponseContains('id="stats-sport"');
+    }
+
+    /**
+     * The shared Stats selector must not offer configured sports without stat support.
+     */
+    public function testStatsSelectorOmitsUnsupportedSports(): void
+    {
+        $this->get('/stats?sport=basketball');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('option value="basketball"');
+        $this->assertResponseNotContains('option value="football"');
+    }
+
+    /**
+     * Reports require an explicit supported sport.
+     */
+    public function testPlayerSeasonRequiresExplicitSport(): void
+    {
+        $this->replaceRequest([]);
+        $this->get('/stats/player-season');
+
+        $this->assertResponseCode(400);
+    }
+
+    /**
+     * Reports reject configured sports without a supported stat service.
+     */
+    public function testUnsupportedSportIsRejected(): void
+    {
+        $this->replaceRequest([]);
+        $this->get('/stats/player-season?sport=football');
+
+        $this->assertResponseCode(400);
     }
 
     // ——— Player Season ————————————————————

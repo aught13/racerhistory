@@ -7,9 +7,11 @@ use App\Model\Entity\BlogPost;
 use App\Model\Entity\TeamSeasonRosters;
 use App\Service\ImageProcessor;
 use App\Service\PersonService;
+use App\Service\PublicSportScopeService;
 use App\Service\StatsService;
 use App\Service\TeamSportContextService;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\Query\SelectQuery;
 use Cake\Routing\Router;
@@ -74,6 +76,12 @@ class PeopleController extends AppController
     private ImageProcessor $imageProcessor;
     protected StatsService $Stats;
     private TeamSportContextService $teamSportContextService;
+    private PublicSportScopeService $publicSportScopeService;
+
+    /**
+     * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    private array $publicScope = ['valid' => true, 'error' => null, 'sportKey' => null, 'teamId' => null];
 
     /**
      * Initialize controller.
@@ -86,6 +94,7 @@ class PeopleController extends AppController
         $this->personService = new PersonService();
         $this->imageProcessor = new ImageProcessor();
         $this->teamSportContextService = new TeamSportContextService();
+        $this->publicSportScopeService = new PublicSportScopeService();
     }
 
     /**
@@ -97,6 +106,11 @@ class PeopleController extends AppController
     {
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
+
+        $this->publicScope = $this->publicSportScopeService->resolve($this->request->getQueryParams());
+        if (!$this->publicScope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
     }
 
     /**
@@ -114,12 +128,18 @@ class PeopleController extends AppController
         }
 
         $table = $this->fetchTable('Persons');
-        $peopleCount = $table->find()->count();
+        $peopleQuery = $this->personService->applyPublicRosterScope(
+            $table->find(),
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        );
+        $peopleCount = $peopleQuery->count();
 
         $this->set([
             'people' => [],
             'peopleRows' => [],
             'peopleCount' => $peopleCount,
+            'publicScope' => $this->publicScope,
         ]);
     }
 
@@ -141,10 +161,17 @@ class PeopleController extends AppController
         $search = (string)($this->request->getQuery('search')['value'] ?? '');
         $search = trim($search);
 
-        $total = $table->find()->count();
+        $total = $this->personService->applyPublicRosterScope(
+            $table->find(),
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        )->count();
 
-        $query = $table->find()
-            ->select(['id', 'first', 'last', 'full', 'display']);
+        $query = $this->personService->applyPublicRosterScope(
+            $table->find()->select(['id', 'first', 'last', 'full', 'display']),
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        );
 
         $this->applyDataTablesOrderToPeopleQuery($query);
 
@@ -166,7 +193,11 @@ class PeopleController extends AppController
             ->all()
             ->toArray();
 
-        $rowsByPerson = $this->buildPeopleRows($people);
+        $rowsByPerson = $this->buildPeopleRows(
+            $people,
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        );
         $data = $this->formatPeopleRowsForDataTables($rowsByPerson);
 
         $payload = [
@@ -219,9 +250,11 @@ class PeopleController extends AppController
      * Runs the build people rows routine.
      *
      * @param array $people
+     * @param string|null $sportKey Canonical sport key to filter by.
+     * @param int|null $teamId Team identifier to filter by.
      * @return array<int,array{person:\App\Model\Entity\Person,teams:array<int,string>,years:array<int,array{id:int,label:string,start:int}>}>
      */
-    private function buildPeopleRows(array $people): array
+    private function buildPeopleRows(array $people, ?string $sportKey = null, ?int $teamId = null): array
     {
         if (empty($people)) {
             return [];
@@ -236,11 +269,7 @@ class PeopleController extends AppController
 
         $rosterMap = [];
         if (!empty($personIds)) {
-            $rosterTable = $this->fetchTable('TeamSeasonRosters');
-            $rosters = $rosterTable->find()
-                ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-                ->where(['TeamSeasonRosters.person_id IN' => $personIds])
-                ->all();
+            $rosters = $this->personService->getRosterEntriesForPeople($personIds, $sportKey, $teamId);
 
             foreach ($rosters as $roster) {
                 $pid = (int)($roster->person_id ?? 0);
@@ -257,28 +286,42 @@ class PeopleController extends AppController
             $rosters = $rosterMap[(int)$person->id] ?? [];
 
             foreach ($rosters as $roster) {
-                $teamAbbr = $roster->team_season->team->abbr ?? null;
-                if ($teamAbbr) {
-                    $teams[$teamAbbr] = true;
+                $team = $roster->team_season->team ?? null;
+                if ($team !== null) {
+                    $this->teamSportContextService->attachSportContextToTeam($team);
+                    $teamId = (int)($team->id ?? 0);
+                    $teamLabel = trim((string)($team->abbr ?? ''));
+                    if ($teamLabel === '') {
+                        $teamLabel = (string)($team->team_name ?? 'Team');
+                    }
+                    if ($sportKey === null) {
+                        $teamLabel .= ' (' . (string)($team->sport_name ?? 'Sport') . ')';
+                    }
+                    if ($teamId > 0) {
+                        $teams[$teamId] = $teamLabel;
+                    }
                 }
 
+                $teamSeason = $roster->team_season ?? null;
                 $season = $roster->team_season->season ?? null;
                 if ($season && ($season->start !== null || $season->end !== null)) {
                     $start = (string)($season->start ?? '');
                     $end = (string)($season->end ?? '');
                     $label = trim($start . '-' . ($end !== '' ? substr($end, -2) : ''), '-');
-                    $seasonId = (int)($season->id ?? 0);
-                    if ($label !== '' && $seasonId > 0) {
-                        $years[$seasonId] = [
-                            'id' => $seasonId,
+                    $teamSeasonId = (int)($teamSeason->id ?? 0);
+                    if ($label !== '' && $teamSeasonId > 0) {
+                        $years[$teamSeasonId] = [
+                            'id' => $teamSeasonId,
                             'label' => $label,
                             'start' => (int)($season->start ?? 0),
+                            'sportKey' => $this->teamSportContextService->resolveSportKeyFromTeam($team) ?? '',
+                            'teamId' => (int)($team->id ?? 0),
                         ];
                     }
                 }
             }
 
-            $teamList = array_keys($teams);
+            $teamList = array_values($teams);
             sort($teamList, SORT_NATURAL | SORT_FLAG_CASE);
 
             $yearLabels = [];
@@ -328,6 +371,7 @@ class PeopleController extends AppController
                 'controller' => 'People',
                 'action' => 'view',
                 $person->id,
+                '?' => $this->publicScopeQuery(),
             ]);
             $nameHtml = '<a href="' . $this->escape($personUrl) . '" class="fw-semibold text-decoration-none">'
                 . $this->escape($name) . '</a>';
@@ -346,6 +390,10 @@ class PeopleController extends AppController
                         'controller' => 'Seasons',
                         'action' => 'view',
                         $year['id'],
+                        '?' => [
+                            'sport' => $year['sportKey'],
+                            'team' => (string)$year['teamId'],
+                        ],
                     ]);
                     $yearLinks[] = '<a href="' . $this->escape($seasonUrl) . '">'
                         . $this->escape($year['label']) . '</a>';
@@ -389,7 +437,13 @@ class PeopleController extends AppController
         $blogPosts = $this->getBlogPostsByTag("person-{$id}");
 
         // Get roster entries (team seasons this person was on)
-        $rosterEntries = $this->getRosterEntriesForPerson($id);
+        $showAllHistory = $this->request->getQuery('show_all_history') === '1';
+        $publicScope = $this->publicScope;
+        $rosterEntries = $this->personService->getRosterEntriesForPeople(
+            [$id],
+            $showAllHistory ? null : $this->publicScope['sportKey'],
+            $showAllHistory ? null : $this->publicScope['teamId'],
+        );
 
         // Organize roster entries by sport and calculate career stats
         $rostersBySport = [];
@@ -479,6 +533,8 @@ class PeopleController extends AppController
                 'careerStatsBySport',
                 'gameLogGroups',
                 'gameStats',
+                'showAllHistory',
+                'publicScope',
             ),
         );
     }
@@ -510,6 +566,23 @@ class PeopleController extends AppController
         }
 
         $teamSeason = $roster->team_season ?? null;
+        if ($teamSeason === null) {
+            throw new NotFoundException('Roster entry not found');
+        }
+        $rosterTeamId = (int)($teamSeason->team_id ?? 0);
+        if ($this->publicScope['teamId'] !== null && $this->publicScope['teamId'] !== $rosterTeamId) {
+            throw new NotFoundException('Roster entry not found');
+        }
+        if ($this->publicScope['sportKey'] !== null) {
+            $teamScope = $this->publicSportScopeService->resolve([
+                'sport' => $this->publicScope['sportKey'],
+                'team' => (string)$rosterTeamId,
+            ]);
+            if (!$teamScope['valid']) {
+                throw new NotFoundException('Roster entry not found');
+            }
+        }
+
         $team = $teamSeason ? ($teamSeason->team ?? null) : null;
         $this->teamSportContextService->attachSportContextToTeam($team);
         $sport = $team ? ($team->sport ?? null) : null;
@@ -565,28 +638,6 @@ class PeopleController extends AppController
         $posts = array_values(array_filter($rows, static fn($post): bool => $post instanceof BlogPost));
 
         return $posts;
-    }
-
-    /**
-     * Get roster entries for a person.
-     *
-     * @param int $personId
-     * @return array<int,\App\Model\Entity\TeamSeasonRosters>
-     */
-    private function getRosterEntriesForPerson(int $personId): array
-    {
-        $table = $this->fetchTable('TeamSeasonRosters');
-        $rows = $table->find()
-            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-            ->where(['TeamSeasonRosters.person_id' => $personId])
-            ->orderByDesc('Seasons.start')
-            ->all()
-            ->toArray();
-
-        /** @var array<int,\App\Model\Entity\TeamSeasonRosters> $entries */
-        $entries = array_values(array_filter($rows, static fn($entry): bool => $entry instanceof TeamSeasonRosters));
-
-        return $entries;
     }
 
     /**
@@ -664,9 +715,25 @@ class PeopleController extends AppController
     }
 
     /**
-     * Runs the format season label routine.
+     * Build normalized public sport/team query state.
      *
-     * @param object|null $season
+     * @return array{sport:string,team:string}
+     */
+    private function publicScopeQuery(): array
+    {
+        return [
+            'sport' => $this->publicScope['sportKey'] ?? 'all',
+            'team' => $this->publicScope['teamId'] === null
+                ? 'all'
+                : (string)$this->publicScope['teamId'],
+        ];
+    }
+
+    /**
+     * Format a season label for game-log tabs.
+     *
+     * @param object|null $season Season record.
+     * @return string
      */
     private function formatSeasonLabel(?object $season): string
     {

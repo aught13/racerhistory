@@ -4,10 +4,20 @@
  * @var array<int,array<string,array<string,mixed>>> $recordSummaries
  * @var string|null $mode
  * @var string|null $teamFilter
+ * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null} $publicScope
  * @var \App\View\AppView $this
  */
 $mode = $mode ?? 'standard';
 $teamFilter = $teamFilter ?? 'all';
+$publicScope = $publicScope ?? ['sportKey' => null, 'teamId' => null];
+$scopeQuery = [
+    'sport' => $publicScope['sportKey'] ?? 'all',
+    'team' => $publicScope['teamId'] ?? 'all',
+];
+$genderFilter = $this->getRequest()->getQuery('gender');
+if (is_string($genderFilter) && in_array($genderFilter, ['M', 'F', 'C'], true)) {
+    $scopeQuery['gender'] = $genderFilter;
+}
 $isSplits = $mode === 'splits';
 
 $recordGroups = ['Overall', 'Conference', 'Conference Tournament', 'Postseason'];
@@ -104,8 +114,8 @@ if (!empty($seasonSplitRows)) {
 
 $hasSplits = !empty($seasonSplitRows);
 $toggleUrl = $isSplits
-    ? $this->Url->build(['controller' => 'Seasons', 'action' => 'index', '?' => ['team' => $teamFilter]])
-    : $this->Url->build(['controller' => 'Seasons', 'action' => 'splits', '?' => ['team' => $teamFilter]]);
+    ? $this->Url->build(['controller' => 'Seasons', 'action' => 'index', '?' => $scopeQuery])
+    : $this->Url->build(['controller' => 'Seasons', 'action' => 'splits', '?' => $scopeQuery]);
 $toggleLabel = $isSplits ? 'Show Standard' : 'Show Splits';
 $heading = $isSplits ? 'Season Splits' : 'Team Seasons';
 $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : '';
@@ -241,7 +251,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                         <td class="text-muted seasons-row-number"><?= $index + 1 ?></td>
                                         <td><?= h($teamLabel) ?></td>
                                         <td class="season-freeze-col-3" data-order="<?= h($seasonStart) ?>">
-                                            <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $teamSeason->id]) ?>"
+                                            <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $teamSeason->id, '?' => $scopeQuery]) ?>"
                                                class="text-decoration-none"
                                                data-turbo-frame="_top">
                                                 <?= h($seasonLabel) ?>

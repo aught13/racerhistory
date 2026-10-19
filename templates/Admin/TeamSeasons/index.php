@@ -2,6 +2,10 @@
 /**
  * @var \App\View\AppView $this
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\TeamSeason> $teamSeasons
+ * @var array<int,string> $teams
+ * @var array<string,string> $sportOptions
+ * @var string $currentSportKey
+ * @var int $currentTeamId
  */
 
 $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
@@ -27,6 +31,30 @@ $canCreateRosters = $this->Rbac->can('TeamSeasonRosters', 'create');
             <?php endif; ?>
         </div>
     </div>
+
+    <form method="get" action="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-3">
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="team-seasons-filter-sport">Sport</label>
+            <select class="form-select form-select-sm" id="team-seasons-filter-sport" name="sport_key">
+                <option value="">All sports</option>
+                <?php foreach ($sportOptions as $sportKey => $sportName) : ?>
+                    <option value="<?= h($sportKey) ?>"<?= $currentSportKey === $sportKey ? ' selected' : '' ?>><?= h($sportName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="team-seasons-filter-team">Team</label>
+            <select class="form-select form-select-sm" id="team-seasons-filter-team" name="team_id">
+                <option value="">All teams</option>
+                <?php foreach ($teams as $teamId => $teamName) : ?>
+                    <option value="<?= (int)$teamId ?>"<?= $currentTeamId === (int)$teamId ? ' selected' : '' ?>><?= h($teamName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </div>
+    </form>
 
     <div class="row">
         <div class="col">

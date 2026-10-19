@@ -356,8 +356,8 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
 
     <?= $this->element('Admin/games_management', ['teamSeason' => $teamSeason, 'teamSeasonGames' => $teamSeasonGames]) ?>
 
-    <?php if (!empty($isBasketballSport)) : ?>
-        <?= $this->element('Admin/basketball_season_stats', [
+    <?php if ($adminSeasonStatsElement !== null) : ?>
+        <?= $this->element($adminSeasonStatsElement, [
             'teamSeason' => $teamSeason,
             'playerStats' => $playerStats,
             'teamStats' => $teamStats,

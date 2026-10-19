@@ -7,7 +7,7 @@ declare(strict_types=1);
  * @var string $currentSearch
  */
 $this->assign('title', 'All Games');
-$ajaxUrl = $this->Url->build([
+$ajaxUrl = $this->PublicScope->url([
     'controller' => 'Games',
     'action' => 'all',
     '?' => ['format' => 'json'],

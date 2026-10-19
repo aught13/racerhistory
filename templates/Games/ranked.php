@@ -22,7 +22,7 @@ $filterLabels = [
 
     <div class="btn-group mb-4" role="group" aria-label="Ranked filter">
         <?php foreach ($filterLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'ranked', '?' => ['filter' => $key]]) ?>"
+            <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'ranked', '?' => ['filter' => $key]]) ?>"
                class="btn btn-sm <?= $rankedFilter === $key ? 'btn-primary' : 'btn-outline-primary' ?>">
                 <?= h($label) ?>
             </a>
@@ -38,7 +38,7 @@ $filterLabels = [
         <div class="card-body p-0">
             <div class="table-responsive" id="games-table-wrap">
                 <table class="table table-striped table-hover table-sm mb-0" id="games-results-table"
-                      data-ajax-url="<?= $this->Url->build(['controller' => 'Games', 'action' => 'ranked', '?' => ['format' => 'json', 'filter' => $rankedFilter]]) ?>"
+                      data-ajax-url="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'ranked', '?' => ['format' => 'json', 'filter' => $rankedFilter]]) ?>"
                       data-min-date="<?= h((string)($gamesDateBounds['min'] ?? '')) ?>"
                       data-max-date="<?= h((string)($gamesDateBounds['max'] ?? '')) ?>">
                     <thead class="table-dark">

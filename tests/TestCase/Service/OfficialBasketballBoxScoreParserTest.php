@@ -6,6 +6,7 @@ namespace App\Test\TestCase\Service;
 use App\Service\OfficialBasketballBoxScoreParser;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class OfficialBasketballBoxScoreParserTest extends TestCase
 {
@@ -685,6 +686,50 @@ TEXT;
         $this->assertSame(['Referee A', 'Referee B', 'Referee C'], $result['game_results']['officials']);
         $this->assertNotContains('Totals', array_column($result['teams'][0]['players'], 'name'));
         $this->assertNotContains('Totals', array_column($result['teams'][1]['players'], 'name'));
+    }
+
+    /**
+     * Keep final rebound totals out of missing period slots.
+     *
+     * @return void
+     */
+    public function testParsesQuarterReboundsWithoutPromotingFinalTotals(): void
+    {
+        $parser = new OfficialBasketballBoxScoreParser();
+        $method = (new ReflectionClass($parser))->getMethod('parseHtmlPeriodDetails');
+        $teams = [
+            [
+                'label' => 'Team',
+                'score' => 60,
+                'players' => [],
+                'totals' => ['ORB' => 15, 'RB' => 39],
+            ],
+            [
+                'label' => 'Opponent',
+                'score' => 91,
+                'players' => [],
+                'totals' => ['ORB' => 7, 'RB' => 44],
+            ],
+        ];
+        $text = <<<'TEXT'
+PERIOD_DETAIL|0|ORB|1=3|2=4
+FINAL_DETAIL|0|ORB|15
+PERIOD_DETAIL|0|RB|1=13|2=8
+FINAL_DETAIL|0|RB|39
+PERIOD_DETAIL|1|ORB|1=2|2=4
+FINAL_DETAIL|1|ORB|7
+PERIOD_DETAIL|1|RB|1=12|2=16
+FINAL_DETAIL|1|RB|44
+TEXT;
+
+        $result = $method->invoke($parser, $text, $teams, ['1', '2', '3', '4']);
+
+        $this->assertSame(3, $result['period_boxes']['1']['team']['ORB']);
+        $this->assertSame(4, $result['period_boxes']['2']['team']['ORB']);
+        $this->assertSame(15, $result['totals'][0]['ORB']);
+        $this->assertArrayNotHasKey('3', $result['period_boxes']);
+        $this->assertArrayNotHasKey('4', $result['period_boxes']);
+        $this->assertSame(44, $result['totals'][1]['RB']);
     }
 
     /**

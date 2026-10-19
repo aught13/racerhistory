@@ -106,11 +106,11 @@ $this->start('css'); ?>
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'index']) ?>">Games</a>
+                <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'index']) ?>">Games</a>
             </li>
             <?php if (!empty($game->team_season->id)) : ?>
                 <li class="breadcrumb-item">
-                    <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $game->team_season->id]) ?>">
+                    <a href="<?= $this->PublicScope->url(['controller' => 'Seasons', 'action' => 'view', $game->team_season->id]) ?>">
                         <?= h($seasonLabel ?: $sportName) ?> Season
                     </a>
                 </li>
@@ -126,7 +126,7 @@ $this->start('css'); ?>
             <?php if (isset($previousGame) || isset($nextGame)) : ?>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <?php if (isset($previousGame)) : ?>
-                        <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $previousGame->id]) ?>"
+                        <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'view', $previousGame->id]) ?>"
                             class="btn btn-outline-secondary btn-sm" title="Previous Game: <?= h($previousGame->opponent->opponent_name ?? 'Opponent') ?>">
                             <i class="bi bi-chevron-left"></i> <?= h($previousGame->game_date?->format('M j, Y') ?? '') ?>
                         </a>
@@ -135,7 +135,7 @@ $this->start('css'); ?>
                     <?php endif; ?>
 
                     <?php if (isset($nextGame)) : ?>
-                        <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'view', $nextGame->id]) ?>"
+                        <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'view', $nextGame->id]) ?>"
                             class="btn btn-outline-secondary btn-sm" title="Next Game: <?= h($nextGame->opponent->opponent_name ?? 'Opponent') ?>">
                             <?= h($nextGame->game_date?->format('M j, Y') ?? '') ?> <i class="bi bi-chevron-right"></i>
                         </a>
@@ -270,7 +270,7 @@ $this->start('css'); ?>
                     <h2 class="h5 mb-0">Box Score</h2>
                 </div>
                 <div class="card-body">
-                    <turbo-frame id="game-stats-frame" src="<?= $this->Url->build(['action' => 'stats', $game->id]) ?>" data-turbo-cache="false">
+                    <turbo-frame id="game-stats-frame" src="<?= $this->PublicScope->url(['action' => 'stats', $game->id]) ?>" data-turbo-cache="false">
                         <p class="text-muted mb-0">Loading game stats...</p>
                     </turbo-frame>
                 </div>

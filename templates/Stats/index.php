@@ -6,7 +6,8 @@ use Cake\Utility\Inflector;
 /**
  * @var \App\View\AppView $this
  * @var array<string, string> $statTypes
- * @var string $currentSport
+ * @var string|null $currentSport
+ * @var array<string,string> $supportedSports
  */
 $this->assign('title', 'Statistics');
 ?>
@@ -17,17 +18,38 @@ $this->assign('title', 'Statistics');
         <p class="text-muted mb-0">Search and explore statistics</p>
     </div>
 
-    <div class="row g-3" id="stats-type-cards">
-        <?php foreach ($statTypes as $slug => $label) : ?>
-            <div class="col-md-4 col-lg-4">
-                <a href="<?= $this->Url->build(['controller' => 'Stats', 'action' => Inflector::variable(str_replace('-', '_', $slug))]) ?>"
-                   class="card h-100 text-decoration-none stat-type-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title"><?= h($label) ?></h5>
-                        <p class="card-text text-muted small">View <?= h(strtolower($label)) ?> statistics</p>
-                    </div>
-                </a>
+    <?php if ($currentSport === null) : ?>
+        <form method="get" action="<?= $this->Url->build(['controller' => 'Stats', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-4">
+            <div class="col-sm-6 col-md-4">
+                <label class="form-label" for="stats-sport">Sport</label>
+                <select id="stats-sport" class="form-select" name="sport" required>
+                    <option value="" selected disabled>Choose a sport</option>
+                    <?php foreach ($supportedSports as $sportKey => $sportName) : ?>
+                        <option value="<?= h($sportKey) ?>"><?= h($sportName) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="form-text">Choose a sport to view its available statistics.</div>
             </div>
-        <?php endforeach; ?>
-    </div>
+            <div class="col-sm-auto">
+                <button type="submit" class="btn btn-primary">View statistics</button>
+            </div>
+        </form>
+    <?php else : ?>
+        <div class="row g-3" id="stats-type-cards">
+            <?php foreach ($statTypes as $slug => $label) : ?>
+                <div class="col-md-4 col-lg-4">
+                    <a href="<?= $this->PublicScope->url([
+                        'controller' => 'Stats',
+                        'action' => Inflector::variable(str_replace('-', '_', $slug)),
+                    ]) ?>"
+                       class="card h-100 text-decoration-none stat-type-card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title"><?= h($label) ?></h5>
+                            <p class="card-text text-muted small">View <?= h(strtolower($label)) ?> statistics</p>
+                        </div>
+                    </a>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 </div>

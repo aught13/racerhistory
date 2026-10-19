@@ -11,6 +11,8 @@ use App\Service\SocialImageService;
  * @var array<int,array{sport:\App\Model\Entity\Sport,rosters:array<int,array{roster:\App\Model\Entity\TeamSeasonRosters,teamSeason:\App\Model\Entity\TeamSeason}>}> $rostersBySport
  * @var array<int,array{sport:\App\Model\Entity\Sport,totals:array,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,stats:array}>,minYear:int|null,maxYear:int|null}> $careerStatsBySport
  * @var array<int,array{sportId:int,sport:\App\Model\Entity\Sport,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,rosterId:int,label:string,startYear:int}>,activeSeasonId:int|null}> $gameLogGroups
+ * @var bool $showAllHistory
+ * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null} $publicScope
  * @var \App\View\AppView $this
  */
 
@@ -28,6 +30,7 @@ $death = $person->death ?? null;
 $this->assign('title', $name);
 $this->assign('socialTitle', $name);
 $this->assign('socialDescription', 'Player profile for ' . $name . ' on RacerHistory.');
+$showAllHistory = $showAllHistory ?? false;
 
 $heroImageId = null;
 if (!empty($person->person_image) && is_numeric($person->person_image)) {
@@ -148,6 +151,22 @@ $formatSeasonLabel = static function ($season): string {
                             </div>
                         </div>
                     <?php endif; ?>
+                    <div class="mt-3">
+                        <?php if ($showAllHistory) : ?>
+                            <a class="btn btn-sm btn-outline-secondary" href="<?= h($this->PublicScope->url([
+                                'controller' => 'People',
+                                'action' => 'view',
+                                $person->id,
+                            ])) ?>">Use selected scope</a>
+                        <?php else : ?>
+                            <a class="btn btn-sm btn-outline-secondary" href="<?= h($this->PublicScope->url([
+                                'controller' => 'People',
+                                'action' => 'view',
+                                $person->id,
+                                '?' => ['show_all_history' => '1'],
+                            ])) ?>">Show all sports and teams</a>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -174,10 +193,13 @@ $formatSeasonLabel = static function ($season): string {
                                     $team = $teamSeason?->team ?? null;
                                     $seasonLabel = $season ? $formatSeasonLabel($season) : '';
                                     $teamName = $team->team_name ?? 'Team';
-                                    $seasonUrl = $this->Url->build([
+                                    $seasonUrl = $this->PublicScope->url([
                                         'controller' => 'Seasons',
                                         'action' => 'view',
                                         $teamSeason->id ?? 0,
+                                    ], [
+                                        'sportKey' => (string)($team->sport_key ?? ''),
+                                        'teamId' => (int)($team->id ?? 0),
                                     ]);
                                     $number = $entry?->jersey_number ?? $entry?->roster_number ?? null;
                                     $position = $entry?->roster_position ?? null;
@@ -308,11 +330,14 @@ $formatSeasonLabel = static function ($season): string {
                                         $tabLabelId = 'person-game-log-tab-' . $sportId . '-' . $seasonId;
                                         $frameId = 'person-game-log-frame-' . (int)$person->id . '-' . $seasonId;
                                         $isActive = $activeSeasonId === $seasonId;
-                                        $frameSrc = $this->Url->build([
+                                        $frameSrc = $this->PublicScope->url([
                                             'controller' => 'People',
                                             'action' => 'gameLog',
                                             $person->id,
                                             $seasonId,
+                                        ], [
+                                            'sportKey' => (string)($teamSeason->team->sport_key ?? ''),
+                                            'teamId' => (int)($teamSeason->team->id ?? 0),
                                         ]);
                                         ?>
                                         <li class="nav-item" role="presentation">
@@ -341,11 +366,14 @@ $formatSeasonLabel = static function ($season): string {
                                         $frameId = 'person-game-log-frame-' . (int)$person->id . '-' . $seasonId;
                                         $tabLabelId = 'person-game-log-tab-' . $sportId . '-' . $seasonId;
                                         $isActive = $activeSeasonId === $seasonId;
-                                        $frameSrc = $this->Url->build([
+                                        $frameSrc = $this->PublicScope->url([
                                             'controller' => 'People',
                                             'action' => 'gameLog',
                                             $person->id,
                                             $seasonId,
+                                        ], [
+                                            'sportKey' => (string)($teamSeason->team->sport_key ?? ''),
+                                            'teamId' => (int)($teamSeason->team->id ?? 0),
                                         ]);
                                         ?>
                                         <div

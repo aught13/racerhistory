@@ -608,31 +608,45 @@ class TeamSeasonService
     }
 
     /**
-     * Get team seasons for the public seasons index, filtered by sport name and gender.
+     * Get team seasons for the public seasons index with optional team filters.
      *
-     * @param string $sport Sport name to filter by (e.g. 'Basketball'). Empty string skips filter.
-     * @param string $gender Gender to filter by ('M', 'F', etc.). Empty string skips filter.
+     * @param string $sport Sport key or display name. Empty string skips the sport filter.
+     * @param string $gender Gender filter. Empty string includes every gender.
+     * @param int|null $teamId Team identifier. Null includes every team.
      * @return array<int,\App\Model\Entity\TeamSeason>
      */
-    public function getPublicSeasonsList(string $sport = 'Basketball', string $gender = 'M'): array
+    public function getPublicSeasonsList(string $sport = '', string $gender = '', ?int $teamId = null): array
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
         $query = $teamSeasons->find()
             ->contain(['Teams', 'Seasons']);
 
-        if ($sport !== '') {
-            $sportKey = $this->teamSportContextService->resolveSportKey($sport);
-            if ($sportKey !== null) {
-                $sportFilter = $this->teamSportContextService->buildSportFilterConditions($sportKey);
-                $query->matching('Teams', function ($q) use ($sportFilter) {
-                    return $q->where($sportFilter);
-                });
-            }
+        if ($sport !== '' && $this->teamSportContextService->resolveSportKey($sport) === null) {
+            return [];
         }
 
-        if ($gender !== '') {
-            $query->matching('Teams', function ($q) use ($gender) {
-                return $q->where(['Teams.gender' => $gender]);
+        if ($teamId !== null && $teamId <= 0) {
+            return [];
+        }
+
+        if ($sport !== '' || $gender !== '' || $teamId !== null) {
+            $sportKey = $sport !== '' ? $this->teamSportContextService->resolveSportKey($sport) : null;
+            $sportFilter = $sportKey !== null
+                ? $this->teamSportContextService->buildSportFilterConditions($sportKey)
+                : [];
+
+            $query->matching('Teams', function ($q) use ($sportFilter, $gender, $teamId) {
+                if ($sportFilter !== []) {
+                    $q->where($sportFilter);
+                }
+                if ($gender !== '') {
+                    $q->where(['Teams.gender' => $gender]);
+                }
+                if ($teamId !== null) {
+                    $q->where(['Teams.id' => $teamId]);
+                }
+
+                return $q;
             });
         }
 

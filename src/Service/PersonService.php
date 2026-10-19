@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Person;
+use App\Model\Entity\TeamSeasonRosters;
+use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -13,6 +15,16 @@ use Cake\ORM\TableRegistry;
  */
 class PersonService
 {
+    private TeamSportContextService $teamSportContextService;
+
+    /**
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService Sport compatibility resolver.
+     */
+    public function __construct(?TeamSportContextService $teamSportContextService = null)
+    {
+        $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
     /**
      * Get a person by ID.
      *
@@ -25,6 +37,70 @@ class PersonService
         $person = $persons->find()->where(['Persons.id' => $personId])->first();
 
         return $person instanceof Person ? $person : null;
+    }
+
+    /**
+     * Restrict a People directory query to people with a roster in the selected scope.
+     *
+     * @param \Cake\ORM\Query\SelectQuery $query Persons query.
+     * @param string|null $sportKey Canonical sport key.
+     * @param int|null $teamId Team identifier.
+     * @return \Cake\ORM\Query\SelectQuery
+     */
+    public function applyPublicRosterScope(
+        SelectQuery $query,
+        ?string $sportKey,
+        ?int $teamId,
+    ): SelectQuery {
+        if ($sportKey === null && $teamId === null) {
+            return $query;
+        }
+
+        $rosterTable = TableRegistry::getTableLocator()->get('TeamSeasonRosters');
+        $personIds = $rosterTable->find()
+            ->select(['TeamSeasonRosters.person_id'])
+            ->distinct(['TeamSeasonRosters.person_id']);
+        $personIds = $this->applyRosterScope($personIds, $sportKey, $teamId);
+
+        return $query->where(['Persons.id IN' => $personIds]);
+    }
+
+    /**
+     * Get roster history for selected people, optionally limited to a public scope.
+     *
+     * @param array<int> $personIds Person identifiers.
+     * @param string|null $sportKey Canonical sport key.
+     * @param int|null $teamId Team identifier.
+     * @return array<int,\App\Model\Entity\TeamSeasonRosters>
+     */
+    public function getRosterEntriesForPeople(
+        array $personIds,
+        ?string $sportKey = null,
+        ?int $teamId = null,
+    ): array {
+        $normalizedPersonIds = array_values(array_unique(array_filter(
+            array_map('intval', $personIds),
+            static fn(int $personId): bool => $personId > 0,
+        )));
+        if ($normalizedPersonIds === []) {
+            return [];
+        }
+
+        $rosters = TableRegistry::getTableLocator()->get('TeamSeasonRosters')->find()
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
+            ->where(['TeamSeasonRosters.person_id IN' => $normalizedPersonIds]);
+        $rows = $this->applyRosterScope($rosters, $sportKey, $teamId)
+            ->orderByDesc('Seasons.start')
+            ->all()
+            ->toArray();
+
+        /** @var array<int,\App\Model\Entity\TeamSeasonRosters> $entries */
+        $entries = array_values(array_filter(
+            $rows,
+            static fn($entry): bool => $entry instanceof TeamSeasonRosters,
+        ));
+
+        return $entries;
     }
 
     /**
@@ -186,6 +262,36 @@ class PersonService
         }
 
         return $out;
+    }
+
+    /**
+     * @param \Cake\ORM\Query\SelectQuery $query Roster query.
+     * @param string|null $sportKey Canonical sport key.
+     * @param int|null $teamId Team identifier.
+     * @return \Cake\ORM\Query\SelectQuery
+     */
+    private function applyRosterScope(SelectQuery $query, ?string $sportKey, ?int $teamId): SelectQuery
+    {
+        $conditions = [];
+        if ($sportKey !== null) {
+            $conditions = $this->teamSportContextService->buildSportFilterConditions($sportKey);
+            if ($conditions === []) {
+                return $query->where(['Teams.id' => -1]);
+            }
+        }
+        if ($teamId !== null) {
+            $conditions['Teams.id'] = $teamId;
+        }
+
+        if ($conditions === []) {
+            return $query;
+        }
+
+        return $query
+            ->matching('TeamSeasons.Seasons')
+            ->matching('TeamSeasons.Teams', static function ($teamsQuery) use ($conditions) {
+                return $teamsQuery->where($conditions);
+            });
     }
 
     /**

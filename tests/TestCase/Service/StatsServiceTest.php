@@ -197,6 +197,17 @@ class StatsServiceTest extends TestCase
     }
 
     /**
+     * Admin stats elements are resolved only for sports with an available stats service and view.
+     *
+     * @return void
+     */
+    public function testGetAdminSeasonStatsElementUsesSupportedSportMapping(): void
+    {
+        $this->assertSame('Admin/basketball_season_stats', $this->service->getAdminSeasonStatsElement(1));
+        $this->assertNull($this->service->getAdminSeasonStatsElement(999));
+    }
+
+    /**
      * Tests get season stats columns includes points column.
      */
     public function testGetSeasonStatsColumnsIncludesPointsColumn(): void

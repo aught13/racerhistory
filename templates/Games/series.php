@@ -19,7 +19,7 @@ $opponentName = $opponentName ?? null;
 
 $ajaxUrl = null;
 if ($selectedOpponent) {
-    $ajaxUrl = $this->Url->build([
+    $ajaxUrl = $this->PublicScope->url([
         'controller' => 'Games',
         'action' => 'series',
         '?' => ['opponent_id' => $selectedOpponent, 'format' => 'json'],
@@ -75,7 +75,7 @@ $showOpponentPicker = !$selectedOpponent;
                 <div class="table-responsive" id="series-opponents-table-wrap">
                     <table class="table table-striped table-hover table-sm mb-0" id="series-opponents-table"
                            style="width:100%"
-                           data-opponents-url="<?= h($this->Url->build([
+                           data-opponents-url="<?= h($this->PublicScope->url([
                                'controller' => 'Games',
                                'action' => 'seriesOpponents',
                                '?' => ['format' => 'json'],

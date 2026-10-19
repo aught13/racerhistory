@@ -54,6 +54,21 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="searchbuilder-panel"');
         $this->assertResponseContains('id="seasons-table-frame"');
         $this->assertResponseContains('data-controller="seasons-page"');
+        $this->assertResponseContains('id="public-scope-sport"');
+        $this->assertResponseContains('id="public-scope-team"');
+    }
+
+    /**
+     * Tests shared public navigation preserves the scope on shared page links.
+     */
+    public function testSharedNavigationPreservesScope(): void
+    {
+        $this->get('/blog?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('href="/seasons?sport=football&amp;team=3"');
+        $this->assertResponseContains('href="/?sport=football&amp;team=3"');
+        $this->assertResponseContains('href="/privacy?sport=football&amp;team=3"');
     }
 
     /**
@@ -69,6 +84,46 @@ class SeasonsControllerTest extends TestCase
         $this->assertIsArray($teamSeasons);
         $recordSummaries = $this->viewVariable('recordSummaries');
         $this->assertIsArray($recordSummaries);
+    }
+
+    /**
+     * Tests the seasons index applies a validated sport and team scope.
+     */
+    public function testIndexFiltersBySportAndTeam(): void
+    {
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $teamSeasons->saveOrFail($teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]));
+
+        $this->get('/seasons?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $rows = $this->viewVariable('teamSeasons');
+        $this->assertCount(1, $rows);
+        $this->assertSame(3, (int)$rows[0]->team_id);
+    }
+
+    /**
+     * Tests a team outside the selected sport is rejected.
+     */
+    public function testIndexRejectsMismatchedSportAndTeam(): void
+    {
+        $this->get('/seasons?sport=basketball&team=3');
+
+        $this->assertResponseCode(400);
+    }
+
+    /**
+     * Tests a season outside the selected sport is not exposed by its detail URL.
+     */
+    public function testViewRejectsSeasonOutsideSelectedSport(): void
+    {
+        $this->get('/seasons/1?sport=football');
+
+        $this->assertResponseCode(404);
     }
 
     /**

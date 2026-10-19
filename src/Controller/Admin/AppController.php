@@ -4,9 +4,11 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Controller\AppController as BaseController;
+use App\Service\AdminDataScopeService;
 use Authorization\Exception\ForbiddenException;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\NotFoundException;
 
 /**
  * Admin Application Controller
@@ -80,6 +82,19 @@ class AppController extends BaseController
             $this->setResponse($response);
 
             return;
+        }
+
+        $controller = (string)$this->request->getParam('controller');
+        if (
+            str_starts_with($controller, 'StatBasket')
+            && !(new AdminDataScopeService())->canAccessStatAdminRequest(
+                $identity,
+                $controller,
+                (string)$action,
+                (int)($this->request->getParam('pass')[0] ?? 0),
+            )
+        ) {
+            throw new NotFoundException('Stat record not found.');
         }
     }
 }

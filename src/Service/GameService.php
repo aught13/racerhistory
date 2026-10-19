@@ -568,7 +568,7 @@ class GameService
     /**
      * Build DataTables result set for Games listing (server-side processing)
      *
-     * @param array $params Parameters: start, length, searchValue, teamSeasonId, searchBuilder
+     * @param array $params Parameters: start, length, searchValue, teamSeasonId, searchBuilder, allowedTeamSeasonIds
      * @return array{recordsTotal:int,recordsFiltered:int,data:array<int,array<string,mixed>>}
      */
     public function buildGamesDataTable(array $params): array
@@ -578,6 +578,12 @@ class GameService
         $searchValue = (string)($params['searchValue'] ?? '');
         $teamSeasonId = $params['teamSeasonId'] ?? null;
         $searchBuilder = $params['searchBuilder'] ?? null;
+        $allowedTeamSeasonIds = $params['allowedTeamSeasonIds'] ?? null;
+        $allowedTeamIds = $params['allowedTeamIds'] ?? null;
+        $sportKey = $params['sportKey'] ?? null;
+        $teamId = isset($params['teamId']) && ctype_digit((string)$params['teamId'])
+            ? (int)$params['teamId']
+            : null;
 
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
@@ -586,6 +592,33 @@ class GameService
                 'TeamSeason' => ['Teams', 'Seasons'],
                 'GameTypes', 'Opponents', 'Places',
             ]);
+
+        if (is_array($allowedTeamSeasonIds)) {
+            $query->where(['Games.team_season_id IN' => $allowedTeamSeasonIds]);
+        }
+        if (is_array($allowedTeamIds) && $allowedTeamIds === []) {
+            $query->where(['Games.id' => -1]);
+        }
+        if (is_string($sportKey) && trim($sportKey) !== '') {
+            $normalizedSportKey = $this->teamSportContextService->resolveSportKey($sportKey);
+            if ($normalizedSportKey === null) {
+                $query->where(['Games.id' => -1]);
+            } else {
+                $sportConditions = $this->teamSportContextService->buildSportFilterConditions($normalizedSportKey);
+                $query->matching('TeamSeason.Teams', static function ($teamsQuery) use ($sportConditions) {
+                    return $teamsQuery->where($sportConditions);
+                });
+            }
+        }
+        if ($teamId !== null) {
+            if (is_array($allowedTeamIds) && !in_array($teamId, $allowedTeamIds, true)) {
+                $query->where(['Games.id' => -1]);
+            } else {
+                $query->matching('TeamSeason.Teams', static function ($teamsQuery) use ($teamId) {
+                    return $teamsQuery->where(['Teams.id' => $teamId]);
+                });
+            }
+        }
 
         if ($teamSeasonId) {
             $query->where(['Games.team_season_id' => $teamSeasonId]);
@@ -611,7 +644,40 @@ class GameService
             ]);
         }
 
-        $recordsTotal = $gamesTable->find()->count();
+        $totalQuery = $gamesTable->find();
+        if (is_array($allowedTeamSeasonIds)) {
+            $totalQuery->where(['Games.team_season_id IN' => $allowedTeamSeasonIds]);
+        }
+        if ($teamSeasonId) {
+            $totalQuery->where(['Games.team_season_id' => $teamSeasonId]);
+        }
+        if (is_array($allowedTeamSeasonIds)) {
+            $totalQuery->where(['Games.team_season_id IN' => $allowedTeamSeasonIds]);
+        }
+        if (is_array($allowedTeamIds) && $allowedTeamIds === []) {
+            $totalQuery->where(['Games.id' => -1]);
+        }
+        if ($teamId !== null) {
+            if (is_array($allowedTeamIds) && !in_array($teamId, $allowedTeamIds, true)) {
+                $totalQuery->where(['Games.id' => -1]);
+            } else {
+                $totalQuery->where(['Games.team_season_id IN' => $this->fetchTable('TeamSeasons')->find()
+                    ->select(['TeamSeasons.id'])
+                    ->where(['TeamSeasons.team_id' => $teamId])]);
+            }
+        }
+        if (is_string($sportKey) && trim($sportKey) !== '') {
+            $normalizedSportKey = $this->teamSportContextService->resolveSportKey($sportKey);
+            if ($normalizedSportKey === null) {
+                $totalQuery->where(['Games.id' => -1]);
+            } else {
+                $sportConditions = $this->teamSportContextService->buildSportFilterConditions($normalizedSportKey);
+                $totalQuery->matching('TeamSeason.Teams', static function ($teamsQuery) use ($sportConditions) {
+                    return $teamsQuery->where($sportConditions);
+                });
+            }
+        }
+        $recordsTotal = $totalQuery->count();
         $recordsFiltered = $query->count();
 
         $query->limit($length)->offset($start)->orderByDesc('Games.game_date');
@@ -840,11 +906,15 @@ class GameService
     /**
      * Get team season list (formatted) and sports list for form helpers.
      *
+     * @param array<int>|null $allowedTeamSeasonIds Permitted TeamSeason IDs, or null for unrestricted.
      * @return array{teamSeasonList:array<int,string>,sports:array<int,string>}
      */
-    public function getTeamSeasonAndSportsLists(): array
+    public function getTeamSeasonAndSportsLists(?array $allowedTeamSeasonIds = null): array
     {
         $teamSeasonList = (new TeamSeasonService())->getTeamSeasonsDetailedList();
+        if ($allowedTeamSeasonIds !== null) {
+            $teamSeasonList = array_intersect_key($teamSeasonList, array_fill_keys($allowedTeamSeasonIds, true));
+        }
         $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonList', 'sports');

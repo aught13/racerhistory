@@ -9,8 +9,10 @@ use App\Service\GameService;
 use App\Service\GameViewService;
 use App\Service\ImageTagService;
 use App\Service\OpponentService;
+use App\Service\PublicSportScopeService;
 use App\Service\StatsService;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 use Cake\I18n\Date;
@@ -80,6 +82,12 @@ class GamesController extends AppController
     private ImageTagService $imageTagService;
     private BlogPostService $blogPostService;
     private GameSearchService $gameSearchService;
+    private PublicSportScopeService $publicSportScopeService;
+
+    /**
+     * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    private array $publicScope = ['valid' => true, 'error' => null, 'sportKey' => null, 'teamId' => null];
 
     /**
      * Predefined search types for sub-nav.
@@ -110,6 +118,7 @@ class GamesController extends AppController
         $this->imageTagService = new ImageTagService();
         $this->blogPostService = new BlogPostService();
         $this->gameSearchService = new GameSearchService();
+        $this->publicSportScopeService = new PublicSportScopeService();
     }
 
     /**
@@ -121,6 +130,46 @@ class GamesController extends AppController
     {
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
+
+        $this->publicScope = $this->publicSportScopeService->resolve($this->request->getQueryParams());
+        if (!$this->publicScope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        $this->gameSearchService->setPublicScope(
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        );
+
+        $action = (string)$this->request->getParam('action');
+        if ($action === 'hundredPoint' && $this->publicScope['sportKey'] !== 'basketball') {
+            $this->setResponse($this->redirect([
+                'controller' => 'Games',
+                'action' => 'index',
+                '?' => $this->getPublicScopeQuery(),
+            ]));
+
+            return;
+        }
+
+        $teamScopedActions = [
+            'ranked',
+            'overtime',
+            'openers',
+            'streaks',
+            'margins',
+            'series',
+            'seriesOpponents',
+        ];
+        if (in_array($action, $teamScopedActions, true) && $this->publicScope['teamId'] === null) {
+            $this->setResponse($this->redirect([
+                'controller' => 'Games',
+                'action' => 'index',
+                '?' => $this->getPublicScopeQuery(),
+            ]));
+
+            return;
+        }
     }
 
     /**
@@ -132,6 +181,17 @@ class GamesController extends AppController
     {
         parent::beforeRender($event);
         $this->set('searchTypes', $this->searchTypes);
+    }
+
+    /**
+     * @return array{sport:string,team:string}
+     */
+    private function getPublicScopeQuery(): array
+    {
+        return [
+            'sport' => $this->publicScope['sportKey'] ?? 'all',
+            'team' => $this->publicScope['teamId'] === null ? 'all' : (string)$this->publicScope['teamId'],
+        ];
     }
 
     /**
@@ -510,6 +570,7 @@ class GamesController extends AppController
     {
         $escape = $options['escape'] ?? true;
         $display = $escape ? h($text) : $text;
+        $url['?'] = array_merge((array)($url['?'] ?? []), $this->getPublicScopeQuery());
 
         return '<a href="' . h(Router::url($url)) . '">' . $display . '</a>';
     }
@@ -924,6 +985,17 @@ class GamesController extends AppController
 
         $game = $viewData['game'] ?? null;
         if (!$game) {
+            throw new NotFoundException('Game not found');
+        }
+
+        $teamId = (int)($game->team_season->team_id ?? 0);
+        if (
+            ($this->publicScope['teamId'] !== null && $this->publicScope['teamId'] !== $teamId)
+            || ($this->publicScope['sportKey'] !== null && !$this->publicSportScopeService->resolve([
+                'sport' => $this->publicScope['sportKey'],
+                'team' => (string)$teamId,
+            ])['valid'])
+        ) {
             throw new NotFoundException('Game not found');
         }
 
