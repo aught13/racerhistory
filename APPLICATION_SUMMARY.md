@@ -1,7 +1,6 @@
-# RacerHistory Application Summary (v0.2.0-beta)
+# RacerHistory Application Summary (v4.1.1)
 
-RacerHistory is a CakePHP 5.2+ web application for managing historical sports data (teams, seasons, team seasons, rosters, games, and sport-specific stats).
-sport configuration and defaults are managed via the Admin Site Options surface (`SiteOptions`). The project also includes a small blog engine and provides both an admin area for content/data management and a public area for viewing (including public blog pages and public image serving).
+RacerHistory is a CakePHP 5.2+ web application for managing historical sports data (teams, seasons, team seasons, rosters, games, and sport-specific stats). Sport configuration and defaults are managed via the Admin Site Options surface (`SiteOptions`). The public site supports URL-backed sport/team browsing, while Admin access to team-owned data can be restricted by role. The project also includes a blog engine and public image serving.
 
 ## Primary Modules
 
@@ -41,6 +40,11 @@ Patterns used:
 - Controllers orchestrate HTTP requests and delegate business rules to services.
 - Service-layer classes (under `src/Service/`) encapsulate non-trivial domain logic and labeling for UI.
 - Frontend admin behavior is progressively enhanced through Turbo + Stimulus controllers rather than monolithic theme JS.
+
+Role data scope:
+- Role grants can allow all sports, selected sports, or selected teams. A sport grant includes every team in that sport; a team grant includes its team seasons, games, rosters, and parent-linked Basketball stats.
+- Effective access is the intersection of the role's existing model-level CRUD permission and its data scope. Lists, form choices, direct record IDs, and writes/bulk actions enforce the scope server-side; query parameters are filters, not authorization.
+- Existing roles are backfilled as unrestricted to preserve access. Admin and superuser identities remain unrestricted. Shared catalogs keep their existing model-level permissions.
 
 ## 3) Sport-aware Games + EAV metadata
 
@@ -127,6 +131,12 @@ Key patterns:
 - Initialize controllers on both `DOMContentLoaded` and `turbo:load` events for page reloads and navigation.
 - Service worker registration is non-blocking and gracefully handles CI environments.
 - Stimulus Application is exposed globally (`window.StimulusApplication`) for eager controller registration.
+
+## 8) Public sport/team browsing
+
+- The shared public selector uses `sport=all|<sport_key>` and `team=all|<team_id>`, defaulting to all/all. Choosing a team implies its sport; changing sport clears the team selection.
+- Seasons, game searches, and People roster/profile history are filtered by the resolved scope. Shared public links and Turbo frame requests preserve it. `show_all_history=1` reveals a person's full history without changing the global selector.
+- Stats requires an explicit supported sport and does not use the global team filter; report-level `team_id` remains local to the report.
 
 ## Development Workflow
 

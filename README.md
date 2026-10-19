@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-4.0.2_a5d9e8bcdb41dfdc92f1247e8d467fbab7236800-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.1.1_3c9bb1f3e2038783b91e642cbd2d4eb789e4d8af-blue.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -24,7 +24,7 @@ RacerHistory V4 is the current production application, representing the fourth g
 A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2, an AdminLTE 4-based admin experience, a modular Vite frontend, and production-ready deployment tooling.
 
 - Start here: [APPLICATION_SUMMARY.md](APPLICATION_SUMMARY.md)
-- This release: V4.0.0 official launch
+- This release: 4.1.1 ([changelog](CHANGELOG.md))
 
 ## Overview
 
@@ -56,6 +56,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Policy-Based Authorization** - Fine-grained access control via UserPolicy
 - Role-based admin dashboard
 - Sports configuration — Sport settings are managed via the Admin Site Options panel (SiteOptions).
+- **Role-scoped program data** - Admin roles can be restricted to all sports, selected sports, or selected teams; these grants are enforced alongside per-model permissions.
 - Teams management (add, edit, delete, bulk operations with sport associations)
 - Seasons & Team Seasons management (rich text preview/recap with TinyMCE, image upload & preview)
 - Team Season Rosters management (add/edit/delete, bulk delete, inline roster DataTable)
@@ -66,6 +67,12 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - AdminLTE 4 sidebar navigation with grouped treeview sections (Sports, Content)
 - Persistent desktop sidebar collapse and mobile sidebar overlay behavior
 - Comprehensive CRUD and bulk operations for all admin entities
+
+### Public Sport and Team Browsing
+
+- Public pages use `sport=all|<sport_key>` and `team=all|<team_id>` query scope, defaulting to all sports and teams. Selecting a team also selects its sport.
+- Seasons, Games, and People follow the selected scope, which is preserved in public navigation and Turbo requests. People profiles support `show_all_history=1` as a local override.
+- Stats pages require an explicit supported sport; report-level team filters remain independent from the public team scope.
 
 ### Game Management System
 

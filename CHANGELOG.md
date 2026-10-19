@@ -7,8 +7,13 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-10-18
+
 ### Added
 
+- URL-backed public sport and team browsing, defaulting to all sports and teams. The selected scope filters Seasons, Games, and People and is preserved across public navigation; a team selection implies its sport.
+- A profile-local `show_all_history=1` override for People pages and explicit supported-sport selection for Stats.
+- Normalized role grants for all sports, selected sports, or selected teams, with per-list Admin filters and server-side enforcement across team-owned records.
 - Previous and next game navigation in the admin game view.
 - Sorting and search controls for basketball player game logs.
 - **NCAA LiveStats basketball box-score importer** for admins, supporting legacy and modern HTML, official PDFs, pasted text, and partial CSV imports. It can import player rows, final and period team totals, scoring breakdowns, attendance, period scores, and officials; play-by-play and shot-chart data are excluded.
@@ -20,11 +25,16 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 - Season-page ad placements now show the news slot before the game log when a preview or recap is available, and place the below-content slot between the game log and season statistics.
 - Season hero images display the full source image without a fixed-height crop.
 - Basketball game and season `MIN` columns now use `DECIMAL(6,2)` storage for minute values.
+- Admin Teams, Team Seasons, and Games lists support sport/team filters; filters do not replace role-based authorization.
+- Team Season Admin stats visibility now follows the registered stats capability while retaining only the existing Basketball stats module.
 - Deployment permission checks include the PDF extraction directories. CI installs GD and fails the E2E setup if the CakePHP server does not become ready.
 - Expanded basketball importer regression coverage across modern and historical HTML, overtime, partial CSV imports, and game-result fields.
 
 ### Fixed
 
+- Large box-score preview saves no longer lose CakePHP FormProtection fields when PHP truncates requests at its default `max_input_vars` limit; the webroot config raises the limit for supported PHP SAPIs.
+- Modern Sidearm detail tables keep styled game totals separate from period values, so an aggregate rebound total is not presented as a quarter stat. Missing source period values remain blank.
+- Role data-scope migration now matches the unsigned team key and can recover from partial migration runs while preserving legacy role access.
 - Modern overtime periods now map to the game's configured overtime fields; cumulative detail totals are not mistaken for overtime stats, and missing period defensive rebounds are derived from total minus offensive rebounds.
 - Season statistics and player game-log DataTables now initialize after their dependencies load, including on direct navigation and Turbo frame loads.
 - Image storage now rejects paths blocked by files and reports failures when missing image variants cannot be restored.
