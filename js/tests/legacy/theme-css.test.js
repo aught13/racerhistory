@@ -50,6 +50,12 @@ describe("frontend.css variables", () => {
         expect(css).toMatch(
             /\.rh-navbar \.rh-nav-panel \.nav-link[\s\S]*?color:\s*var\(--rh-nav-panel-text\)/,
         );
+        expect(css).toMatch(
+            /\.rh-nav-scope \.form-select[\s\S]*?background-color:\s*transparent[\s\S]*?border-color:\s*transparent/,
+        );
+        expect(css).toMatch(
+            /\.rh-nav-scope \.form-select:focus-visible[\s\S]*?outline:\s*2px solid var\(--rh-navy\)/,
+        );
     });
 
     test("footer uses CSS variable for background", () => {

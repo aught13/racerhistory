@@ -118,6 +118,7 @@ class StatsControllerTest extends TestCase
         $this->assertResponseContains('value="1" data-sport-key="basketball"');
         $this->assertResponseContains('value="2" data-sport-key="basketball"');
         $this->assertResponseNotContains('data-bs-theme="dark"');
+        $this->assertResponseNotContains('>Apply</button>');
     }
 
     /**

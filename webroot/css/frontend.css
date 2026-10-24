@@ -345,29 +345,33 @@ a:hover {
 }
 
 .rh-nav-scope .form-select {
-  color-scheme: light;
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--rh-navy);
+  box-shadow: none;
+}
+
+.rh-nav-scope .form-select:hover {
+  background-color: var(--rh-nav-panel-hover-bg);
+}
+
+.rh-nav-scope .form-select:focus-visible {
+  border-color: transparent;
+  outline: 2px solid var(--rh-navy);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 0.2rem rgba(0, 33, 68, 0.2);
 }
 
 :root[data-theme="dark"] .rh-nav-scope .form-select {
   color-scheme: dark;
+  color: var(--rh-navy);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .rh-nav-scope .form-select {
     color-scheme: dark;
+    color: var(--rh-navy);
   }
-}
-
-.rh-nav-scope .btn-outline-light {
-  color: var(--rh-nav-panel-text);
-  border-color: var(--rh-nav-panel-border);
-}
-
-.rh-nav-scope .btn-outline-light:hover,
-.rh-nav-scope .btn-outline-light:focus {
-  color: var(--rh-nav-panel-hover-text);
-  background-color: var(--rh-nav-panel-hover-bg);
-  border-color: var(--rh-nav-panel-border);
 }
 
 .rh-logo-link {

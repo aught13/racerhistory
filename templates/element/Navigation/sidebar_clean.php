@@ -221,7 +221,6 @@ $marginsLosingLinks = [
                             <?php else : ?>
                                 <input type="hidden" name="team" value="<?= h($scopeTeam) ?>">
                             <?php endif; ?>
-                            <button type="submit" class="btn btn-sm btn-outline-light">Apply</button>
                         </form>
                     </li>
                 <?php else : ?>
