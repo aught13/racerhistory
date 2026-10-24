@@ -59,7 +59,7 @@ if (!empty($teamSeasons)) {
         $seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
             ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
             : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
-        $teamLabel = $teamSeason->team->team_name ?? 'Team';
+        $teamLabel = $teamSeason->team?->getDisplayName() ?? 'Team';
         $primarySummary = $recordSummaries[$teamSeason->id] ?? [];
         $overallSplits = $primarySummary['Overall']['splits'] ?? [];
         $conferenceSplits = $primarySummary['Conference']['splits'] ?? [];
@@ -244,7 +244,7 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                     $seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
                                         ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
                                         : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
-                                    $teamLabel = $teamSeason->team->team_name ?? 'Team';
+                                    $teamLabel = $teamSeason->team?->getDisplayName() ?? 'Team';
                                     $primarySummary = $recordSummaries[$teamSeason->id] ?? [];
                                     ?>
                                     <tr>

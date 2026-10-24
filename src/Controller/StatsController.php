@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\Team;
 use App\Service\PublicSportScopeService;
 use App\Service\SportConfigService;
 use App\Service\StatsService;
@@ -515,11 +516,12 @@ class StatsController extends AppController
                     ['controller' => 'People', 'action' => 'view', $person->id],
                 )
                 : '-';
+            $team = is_object($ts) ? ($ts->team ?? null) : null;
 
             $rows[] = array_merge(
                 [
                     $playerCell,
-                    h($ts->team->team_name ?? '-'),
+                    h($this->formatTeamDisplayName($team)),
                     h(($ts->season->start ?? '') . '-' . ($ts->season->end ?? '')),
                 ],
                 $this->statsService->getPlayerSeasonStatCells($sportId, $stat),
@@ -549,10 +551,11 @@ class StatsController extends AppController
                     ['controller' => 'Seasons', 'action' => 'view', $ts->id],
                 )
                 : '-';
+            $team = is_object($ts) ? ($ts->team ?? null) : null;
 
             $rows[] = array_merge(
                 [
-                    h($ts->team->team_name ?? '-'),
+                    h($this->formatTeamDisplayName($team)),
                     $seasonCell,
                 ],
                 $this->statsService->getTeamSeasonStatCells($sportId, $stat),
@@ -560,6 +563,21 @@ class StatsController extends AppController
         }
 
         return $rows;
+    }
+
+    /**
+     * Format a Team entity or legacy team-like object for a stats row.
+     *
+     * @param mixed $team Team entity or legacy object
+     * @return string
+     */
+    private function formatTeamDisplayName(mixed $team): string
+    {
+        if ($team instanceof Team) {
+            return $team->getDisplayName();
+        }
+
+        return is_object($team) ? (string)($team->team_name ?? '-') : '-';
     }
 
     /**

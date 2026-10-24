@@ -233,6 +233,10 @@ class TeamSeasonsControllerTest extends TestCase
         $this->get('/admin/team-seasons/add');
         $this->assertResponseOk();
         $this->assertResponseContains('data-controller="team-season-form"');
+        $this->assertResponseContains('data-controller="team-name-preview"');
+        $this->assertResponseContains('data-team-name-preview-target="fullTeamName"');
+        $this->assertResponseContains('Organization / Name Prefix');
+        $this->assertResponseContains('Full Team Name');
         $this->assertResponseContains('hidden-team-form');
         $this->assertResponseContains('hidden-season-form');
         $this->assertResponseNotContains('team-season-preview');

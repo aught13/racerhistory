@@ -19,7 +19,7 @@ declare(strict_types=1);
  */
 
 $teamName = $game->team_season->team->team_nickname
-    ?? $game->team_season->team->team_name
+    ?? $game->team_season->team->getDisplayName()
     ?? 'Team';
 $opponentName = $game->opponent->opponent_name ?? 'Opponent';
 

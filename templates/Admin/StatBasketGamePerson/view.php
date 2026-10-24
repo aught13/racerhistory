@@ -26,7 +26,7 @@
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">
-                <?= h($game->team_season->team->team_name ?? 'Team') ?> vs
+                <?= h($game->team_season->team?->getDisplayName() ?? 'Team') ?> vs
                 <?= h($game->opponent->opponent_name ?? 'Opponent') ?>
                 <span class="text-muted">
                     (<?= $game->game_date ? $game->game_date->format('M j, Y') : '' ?>)

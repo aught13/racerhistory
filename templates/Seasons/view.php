@@ -20,7 +20,7 @@ $seasonEnd = $teamSeason->season->end ?? '';
 $seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
-$teamName = $teamSeason->team->team_name ?? 'Team';
+$teamName = $teamSeason->team?->getDisplayName() ?? 'Team';
 $hasRecord = static function (array $record): bool {
     $wins = (int)($record['W'] ?? 0);
     $losses = (int)($record['L'] ?? 0);

@@ -94,7 +94,7 @@ $canCreateRosters = $this->Rbac->can('TeamSeasonRosters', 'create');
                                     </div>
                                     <div>
                                     <?php if (isset($teamSeason->team)) : ?>
-                                        <?= h($teamSeason->team->team_name) ?>
+                                        <?= h($teamSeason->team->getDisplayName()) ?>
                                         <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
                                     <?php else : ?>
                                         <em>Team not loaded</em>
@@ -150,8 +150,8 @@ $canCreateRosters = $this->Rbac->can('TeamSeasonRosters', 'create');
                                             $teamSeason->id,
                                         ]) ?>"
                                         data-item-type="team season"
-                                        data-item-name="<?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>"
-                                        aria-label="Delete team season for <?= h($teamSeason->team->team_name) ?>">Delete</button>
+                                        data-item-name="<?= h($teamSeason->team->getDisplayName() . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>"
+                                        aria-label="Delete team season for <?= h($teamSeason->team->getDisplayName()) ?>">Delete</button>
                                 <?php endif; ?>
                                 <?php if (!$canReadTeamSeasons && !$canUpdateTeamSeasons && !$canCreateRosters && !$canDeleteTeamSeasons) : ?>
                                     <span class="text-muted">No actions</span>

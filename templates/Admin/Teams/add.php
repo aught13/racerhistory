@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" data-controller="team-name-preview">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
@@ -52,25 +52,28 @@
                         <?= $this->Form->control('team_name', [
                             'type' => 'text',
                             'class' => 'form-control',
-                            'label' => ['class' => 'form-label', 'text' => 'Team Name *'],
-                            'placeholder' => 'Enter team name (e.g., Women\'s Basketball)',
+                            'label' => ['class' => 'form-label', 'text' => 'Base Team Name *'],
+                            'placeholder' => 'Enter a base name (e.g., Basketball)',
                             'maxlength' => 162,
                             'required' => true,
+                            'data-team-name-preview-target' => 'teamName',
+                            'data-action' => 'input->team-name-preview#update change->team-name-preview#update',
                         ]) ?>
-                        <div class="form-text">Short display name of the team (maximum 162 characters).</div>
+                        <div class="form-text">Base team/category phrase included in every display name (maximum 162 characters).</div>
                     </div>
 
                     <div class="mb-3">
                         <?= $this->Form->control('team_description', [
                             'type' => 'textarea',
                             'class' => 'form-control',
-                            'label' => ['class' => 'form-label', 'text' => 'Long Name'],
-                            'placeholder' => 'Enter full team name (e.g., Murray St Racers Women\'s Basketball)',
+                            'label' => ['class' => 'form-label', 'text' => 'Organization / Name Prefix'],
+                            'placeholder' => 'Enter organization or prefix (e.g., Murray State)',
                             'rows' => 3,
                             'maxlength' => 240,
+                            'data-team-name-preview-target' => 'teamDescription',
+                            'data-action' => 'input->team-name-preview#update change->team-name-preview#update',
                         ]) ?>
-                        <div class="form-text">Full official name including institution and sport (maximum 240
-                            characters).</div>
+                        <div class="form-text">Optional leading organization or descriptor used in Full Team Name (maximum 240 characters).</div>
                     </div>
 
                     <div class="mb-3">
@@ -94,8 +97,10 @@
                             'placeholder' => 'Enter team nickname (e.g., Racers)',
                             'maxlength' => 30,
                             'required' => true,
+                            'data-team-name-preview-target' => 'teamNickname',
+                            'data-action' => 'input->team-name-preview#update change->team-name-preview#update',
                         ]) ?>
-                        <div class="form-text">Team mascot or nickname (maximum 30 characters).</div>
+                        <div class="form-text">Mascot or nickname included in Team Name and Full Team Name (maximum 30 characters).</div>
                     </div>
 
                     <div class="mb-3">
@@ -122,9 +127,10 @@
                             'class' => 'form-control',
                             'label' => ['class' => 'form-label', 'text' => 'Gender Classification *'],
                             'required' => true,
+                            'data-team-name-preview-target' => 'gender',
+                            'data-action' => 'input->team-name-preview#update change->team-name-preview#update',
                         ]) ?>
-                        <div class="form-text">Specify whether this is a Male, Female, or Co-ed team for proper
-                            competition classification.</div>
+                        <div class="form-text">Classifies the team; Male/Female may appear in display names, while Co-ed is omitted.</div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -141,6 +147,26 @@
         </div>
 
         <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Display Previews</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Full Team Name:</strong><br>
+                        <span data-team-name-preview-target="fullTeamName"><?= h($team->getFullTeamDisplayName()) ?></span>
+                    </p>
+                    <p><strong>Team Name (default):</strong><br>
+                        <span data-team-name-preview-target="defaultTeamName"><?= h($team->getDisplayName()) ?></span>
+                    </p>
+                    <p class="mb-0"><strong>Team:</strong><br>
+                        <span data-team-name-preview-target="team"><?= h($team->getTeamDisplayName()) ?></span>
+                    </p>
+                    <small class="text-muted">
+                        Older records may contain complete names in these fields. Update them to their component meanings; previews reflect your edits.
+                    </small>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Help</h5>
@@ -149,16 +175,16 @@
                     <h6>Required Fields</h6>
                     <ul class="list-unstyled">
                         <li><strong>Sport:</strong> Select the sport this team plays</li>
-                        <li><strong>Team Name:</strong> Full name of the team</li>
+                        <li><strong>Base Team Name:</strong> Name/category included in each display value</li>
                         <li><strong>Abbreviation:</strong> Short code for the team (max 5 chars)</li>
                         <li><strong>Nickname:</strong> Team mascot or nickname (max 30 chars)</li>
                         <li><strong>Scorebug:</strong> Short name for score display (max 6 chars)</li>
-                        <li><strong>Gender:</strong> Team gender classification</li>
+                        <li><strong>Gender:</strong> Team classification; Co-ed is not shown in display values</li>
                     </ul>
 
                     <h6 class="mt-3">Optional Fields</h6>
                     <ul class="list-unstyled">
-                        <li><strong>Description:</strong> Additional information about the team</li>
+                        <li><strong>Organization / Prefix:</strong> Optional first part of Full Team Name</li>
                     </ul>
                 </div>
             </div>

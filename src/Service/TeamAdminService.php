@@ -350,7 +350,7 @@ class TeamAdminService
                 'message' => 'Team has been added successfully.',
                 'newOption' => [
                     'value' => $team->id,
-                    'text' => $team->team_name,
+                    'text' => $team->getDisplayName(),
                 ],
             ];
         }

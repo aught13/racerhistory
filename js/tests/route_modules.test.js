@@ -126,6 +126,7 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("sports-form")).toBe(true);
             expect(registeredControllers.has("sports-configs-form")).toBe(true);
             expect(registeredControllers.has("season-form")).toBe(true);
+            expect(registeredControllers.has("team-name-preview")).toBe(true);
             expect(registeredControllers.has("team-season-form")).toBe(true);
         });
 

@@ -128,14 +128,7 @@ class PublicSportScopeService
                 continue;
             }
 
-            $gender = match ((string)($team->gender ?? '')) {
-                'M' => "Men's",
-                'F' => "Women's",
-                'C' => 'Co-ed',
-                default => '',
-            };
-            $teamName = trim((string)($team->team_name ?? ''));
-            $label = trim($gender . ' ' . $teamName);
+            $label = $team->getDisplayName();
             if ($sportKey === null) {
                 $label .= ' (' . $sportOptions[$teamSportKey] . ')';
             }

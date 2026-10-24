@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\TaggingService;
+use App\Service\TeamSeasonService;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
@@ -146,7 +147,20 @@ class TaggingServiceTest extends TestCase
         $tsTag = $tagsTable->find()->where(['slug' => 'teamseason-1'])->first();
 
         $this->assertNotNull($tsTag);
-        $this->assertStringContainsString("Men's Basketball", (string)$tsTag->name);
+        $this->assertSame((new TeamSeasonService())->getDisplayLabel(1), (string)$tsTag->name);
+    }
+
+    /**
+     * Team tags use the canonical default display name.
+     */
+    public function testBuildTagsFromDataUsesTeamDisplayName(): void
+    {
+        $team = TableRegistry::getTableLocator()->get('Teams')->get(1);
+        $tags = TaggingService::forImages()->buildTagsFromData(['team_select' => 1]);
+
+        $this->assertSame([
+            ['slug' => 'team-1', 'name' => $team->getDisplayName()],
+        ], $tags);
     }
 
     /**

@@ -33,7 +33,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title mb-0"><?= h($team->team_name) ?></h3>
+                    <h3 class="card-title mb-0"><?= h($team->getDisplayName()) ?></h3>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
@@ -48,22 +48,22 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
 
                     <div class="row mb-3">
                         <div class="col-sm-3">
-                            <strong>Team Name:</strong>
+                            <strong>Team Name (default display):</strong>
                         </div>
                         <div class="col-sm-9">
-                            <?= h($team->team_name) ?>
-                            <br><small class="text-muted">Short display name (max 162 characters)</small>
+                            <?= h($team->getDisplayName()) ?>
+                            <br><small class="text-muted">Nickname, gender where applicable, and base team name</small>
                         </div>
                     </div>
 
                     <?php if (!empty($team->team_description)) : ?>
                     <div class="row mb-3">
                         <div class="col-sm-3">
-                            <strong>Long Name:</strong>
+                            <strong>Organization / Name Prefix:</strong>
                         </div>
                         <div class="col-sm-9">
                             <?= h($team->team_description) ?>
-                            <br><small class="text-muted">Full official name including institution and sport (max 240 characters)</small>
+                            <br><small class="text-muted">First component of Full Team Name (max 240 characters)</small>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -128,23 +128,28 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                     </div>
                     <?php endif; ?>
 
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Display Previews</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Full Team Name:</strong><br><?= h($team->getFullTeamDisplayName()) ?></p>
+                            <p><strong>Team Name (default):</strong><br><?= h($team->getDisplayName()) ?></p>
+                            <p class="mb-0"><strong>Team:</strong><br><?= h($team->getTeamDisplayName()) ?></p>
+                        </div>
+                    </div>
+
                     <div class="mt-4">
                         <?php if ($canUpdateTeams) : ?>
                             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                class="btn btn-primary">Edit Team</a>
                         <?php endif; ?>
-                        <?php
-                            // Placeholder for future associations (e.g., events, seasons, athletes)
-                            $associatedData = [
-                                ['label' => 'Related Records', 'count' => 0],
-                            ];
-                            ?>
                         <?php if ($canDeleteTeams) : ?>
                             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirm-delete-modal"
                                 data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
                                 data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                 data-item-type="team"
-                                data-associated='<?= json_encode($associatedData) ?>'>
+                                data-associated='<?= json_encode([$team->getDisplayName()]) ?>'>
                                 Delete Team
                             </button>
                         <?php endif; ?>

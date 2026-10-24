@@ -23,7 +23,7 @@ use App\Service\SocialImageService;
  * @var array $match
  */
 
-$teamName = $game->team_season->team->team_name ?? 'Team';
+$teamName = $game->team_season->team->getDisplayName();
 $teamNickname = $game->team_season->team->team_nickname ?? $teamName;
 $opponentName = $game->opponent->opponent_name ?? 'Opponent';
 $opponentAbbr = $game->opponent->opponent_abbr ?? $opponentName;

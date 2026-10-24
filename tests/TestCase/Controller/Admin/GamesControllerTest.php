@@ -53,6 +53,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('data-controller="admin-games-index"');
         // DataTables replaces pagination
         $this->assertResponseContains('DataTables');
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $this->assertSame($team->getDisplayName(), $this->viewVariable('teamOptions')[1]);
     }
 
     /**

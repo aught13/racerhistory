@@ -35,7 +35,7 @@ $this->assign('title', 'Period Box Scores');
         <i class="bi bi-info-circle"></i>
         <strong>Game:</strong>
         <?php if ($game->team_season && $game->team_season->team) : ?>
-            <?= h($game->team_season->team->team_name) ?>
+            <?= h($game->team_season->team->getDisplayName()) ?>
         <?php endif; ?>
         vs
         <?php if ($game->opponent) : ?>

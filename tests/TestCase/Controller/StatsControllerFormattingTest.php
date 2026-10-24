@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\StatsController;
+use App\Model\Entity\Team;
 use App\Service\StatsService;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
@@ -54,6 +55,18 @@ class StatsControllerFormattingTest extends TestCase
             {
                 return $this->formatPlayerSeasonRows($results, $sportId);
             }
+
+            /**
+             * Proxy to the protected formatTeamSeasonRows for assertions.
+             *
+             * @param array $results
+             * @param int $sportId
+             * @return array
+             */
+            public function callFormatTeamSeasonRows(array $results, int $sportId)
+            {
+                return $this->formatTeamSeasonRows($results, $sportId);
+            }
         };
 
         // stub statsService methods used by formatting; subclass StatsService so typing matches
@@ -78,6 +91,18 @@ class StatsControllerFormattingTest extends TestCase
             {
                 return [10, 20, 30];
             }
+
+            /**
+             * Provide deterministic team season cells for assertions.
+             *
+             * @param int $sportId
+             * @param object $stat
+             * @return int[]
+             */
+            public function getTeamSeasonStatCells(int $sportId, object $stat): array
+            {
+                return [40, 50];
+            }
         };
         $setter = Closure::bind(function ($svc) {
             $this->statsService = $svc;
@@ -86,14 +111,42 @@ class StatsControllerFormattingTest extends TestCase
 
         $person = (object)['id' => 5, 'display' => 'Jane Player', 'label' => 'J. Player'];
         $teamSeason = (object)['team' => (object)['team_name' => 'Lakers'], 'season' => (object)['start' => '2020', 'end' => '2021']];
+        $team = new Team([
+            'team_name' => 'Basketball',
+            'team_nickname' => 'Racers',
+            'gender' => Team::GENDER_MALE,
+        ]);
 
         $rows = $controller->callFormatPlayerSeasonRows([
             ['stat' => (object)['PTS' => 10], 'person' => $person, 'teamSeason' => $teamSeason],
+            [
+                'stat' => (object)['PTS' => 11],
+                'person' => $person,
+                'teamSeason' => (object)[
+                    'team' => $team,
+                    'season' => (object)['start' => '2021', 'end' => '2022'],
+                ],
+            ],
         ], 1);
 
         $this->assertIsArray($rows);
         $this->assertNotEmpty($rows[0]);
         $this->assertStringContainsString('Jane Player', (string)$rows[0][0]);
+        $this->assertSame('Lakers', $rows[0][1]);
+        $this->assertSame(h($team->getDisplayName()), $rows[1][1]);
+
+        $teamSeasonRows = $controller->callFormatTeamSeasonRows([
+            [
+                'stat' => (object)[],
+                'teamSeason' => (object)[
+                    'id' => 3,
+                    'team' => $team,
+                    'season' => (object)['start' => '2021', 'end' => '2022'],
+                ],
+            ],
+        ], 1);
+
+        $this->assertSame(h($team->getDisplayName()), $teamSeasonRows[0][0]);
     }
 
     /**

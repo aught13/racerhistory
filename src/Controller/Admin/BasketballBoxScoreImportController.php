@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Model\Entity\Team;
 use App\Service\BasketballBoxScoreImportService;
 use Cake\Http\Response;
 use Cake\Log\Log;
@@ -92,7 +93,7 @@ class BasketballBoxScoreImportController extends AppController
             );
             $fallbackGame = (object)[
                 'id' => $gameId,
-                'team_season' => (object)['team' => (object)['team_name' => 'Team']],
+                'team_season' => (object)['team' => new Team(['team_name' => 'Team'])],
                 'opponent' => (object)['opponent_name' => 'Opponent'],
                 'game_date' => null,
             ];

@@ -7,6 +7,7 @@ use App\Model\Entity\Game;
 use App\Model\Entity\StatBasketGameBox;
 use App\Model\Entity\StatBasketGamePerson;
 use App\Model\Entity\StatBasketSeasonPerson;
+use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Collection\CollectionInterface;
@@ -1146,12 +1147,17 @@ class BasketballStatsService
             ->toArray();
 
         $teamsTable = $this->fetchTable('Teams');
-        $teams = $teamsTable->find()
+        $teamRows = $teamsTable->find()
             ->where($this->teamSportContextService->buildSportFilterConditions('basketball'))
             ->orderBy(['Teams.team_name' => 'ASC'])
             ->all()
-            ->combine('id', 'team_name')
             ->toArray();
+        $teams = [];
+        foreach ($teamRows as $team) {
+            if ($team instanceof Team) {
+                $teams[(int)$team->id] = $team->getDisplayName();
+            }
+        }
 
         return compact('seasons', 'teams');
     }

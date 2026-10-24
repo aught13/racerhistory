@@ -39,6 +39,29 @@ class TeamSeasonAdminServiceTest extends TestCase
     }
 
     /**
+     * Team selectors on admin team-season pages use the default team display.
+     */
+    public function testTeamOptionsUseDefaultTeamDisplay(): void
+    {
+        $adminIdentity = [
+            'id' => 1,
+            'role' => 'admin',
+            'role_id' => 1,
+            'status' => 'active',
+            'active' => true,
+        ];
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+
+        $indexData = $this->service->getIndexData($adminIdentity);
+        $addData = $this->service->getAddFormData(identity: $adminIdentity);
+        $editData = $this->service->getEditFormData(1, $adminIdentity);
+
+        $this->assertSame($team->getDisplayName(), $indexData['teams'][1]);
+        $this->assertSame($team->getDisplayName(), $addData['teams'][1]);
+        $this->assertSame($team->getDisplayName(), $editData['teams'][1]);
+    }
+
+    /**
      * Identifier sanitizer should keep only positive integer-like values.
      */
     public function testSanitizeIdentifierList(): void

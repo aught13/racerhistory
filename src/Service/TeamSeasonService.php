@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Season;
+use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 use Cake\ORM\TableRegistry;
 
@@ -60,7 +61,7 @@ class TeamSeasonService
             return 'Team Season #' . $teamSeasonId;
         }
 
-        $teamName = $ts->team->team_name ?? 'Team';
+        $teamName = $ts->team instanceof Team ? $ts->team->getDisplayName() : 'Team';
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
@@ -120,7 +121,7 @@ class TeamSeasonService
         }
 
         // Fallback to team name if sport not available
-        $teamName = $team->team_name ?? 'Team Season';
+        $teamName = $team instanceof Team ? $team->getDisplayName() : 'Team Season';
 
         return trim($teamName . $seasonLabel);
     }
@@ -210,7 +211,7 @@ class TeamSeasonService
             }
             $results[] = [
                 'id' => $ts->id,
-                'label' => $this->getSportDisplayLabel($ts->id),
+                'label' => $ts->getDisplayName(),
             ];
         }
 
@@ -239,7 +240,7 @@ class TeamSeasonService
                 continue;
             }
             $this->teamSportContextService->attachSportContextToTeam($ts->team ?? null);
-            $list[(int)$ts->id] = $this->getSportDisplayLabel((int)$ts->id);
+            $list[(int)$ts->id] = $ts->getDisplayName();
         }
 
         return $list;
@@ -259,7 +260,14 @@ class TeamSeasonService
 
         $rows = $teamSeasons->find()
             ->contain(['Teams', 'Seasons'])
-            ->select(['id', 'Teams.team_name', 'Seasons.start', 'Seasons.end'])
+            ->select([
+                'id',
+                'Teams.team_name',
+                'Teams.team_nickname',
+                'Teams.gender',
+                'Seasons.start',
+                'Seasons.end',
+            ])
             ->orderByDesc('Seasons.start')
             ->limit($limit)
             ->all();
@@ -267,7 +275,7 @@ class TeamSeasonService
         $list = [];
         foreach ($rows as $ts) {
             /** @var \App\Model\Entity\TeamSeason $ts */
-            $teamName = (string)($ts->team->team_name ?? 'Team');
+            $teamName = $ts->team instanceof Team ? $ts->team->getDisplayName() : 'Team';
             $start = $ts->season->start ?? null;
             $end = $ts->season->end ?? null;
             $seasonRange = trim((string)$start . '-' . (string)$end, '-');
@@ -304,7 +312,7 @@ class TeamSeasonService
             $sportName = $this->teamSportContextService->resolveSportNameFromTeam($ts->team ?? null) ?? 'Unknown';
             $list[(int)$ts->id] = sprintf(
                 '%s (%s) — %s-%s',
-                ($ts->team->team_name ?? 'Team'),
+                ($ts->team instanceof Team ? $ts->team->getDisplayName() : 'Team'),
                 $sportName,
                 ($ts->season->start ?? ''),
                 ($ts->season->end ?? ''),

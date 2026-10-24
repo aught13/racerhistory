@@ -43,7 +43,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
                 </li>
                 <li class="breadcrumb-item">
                     <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>">
-                        <?= h($teamSeason->team->team_name) ?> (<?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>)
+                        <?= h($teamSeason->team->getDisplayName()) ?> (<?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>)
                     </a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">Games</li>
@@ -55,7 +55,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
         <div class="col">
             <?php if (isset($teamSeason)) : ?>
                 <h1 class="mb-3">
-                    Games for <?= h($teamSeason->team->team_name) ?>
+                    Games for <?= h($teamSeason->team->getDisplayName()) ?>
                     <small class="text-muted"><?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?></small>
                 </h1>
             <?php else : ?>

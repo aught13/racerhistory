@@ -35,8 +35,8 @@ use Cake\Validation\Validator;
  * - id: Primary key, auto-increment integer
  * - sport_id: Legacy numeric sport reference (transitional)
  * - sport_key: Canonical sport key from configured defaults
- * - team_name: Short display name of the team (max 162 chars, required)
- * - team_description: Full official name including institution and sport (max 240 chars)
+ * - team_name: Base team name or category (max 162 chars, required)
+ * - team_description: Organization or name prefix for the full team name (max 240 chars)
  * - abbr: Team abbreviation for display (max 5 chars, required)
  * - team_nickname: Team mascot or nickname (max 30 chars, required)
  * - team_scorebug: Shortened name for score display (max 6 chars, required)

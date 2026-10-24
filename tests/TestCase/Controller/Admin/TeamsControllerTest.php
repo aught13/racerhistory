@@ -47,6 +47,8 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams');
         $this->assertResponseOk();
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $this->assertResponseContains(h($team->getDisplayName()));
         $this->assertResponseContains('data-controller="admin-bulk-table"');
         $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
         $this->assertResponseContains('data-admin-bulk-table-target="table"');
@@ -74,6 +76,14 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams/view/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('Display Previews');
+        $this->assertResponseContains('Full Team Name');
+        $this->assertResponseContains('Team Name (default)');
+        $this->assertResponseContains('Team:');
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $this->assertResponseContains(h($team->getFullTeamDisplayName()));
+        $this->assertResponseContains(h($team->getDisplayName()));
+        $this->assertResponseContains(h($team->getTeamDisplayName()));
     }
 
     /**
@@ -151,6 +161,10 @@ class TeamsControllerTest extends TestCase
         $this->get('/admin/teams/add');
         $this->assertResponseOk();
         $this->assertResponseContains('Select the sport for this team.');
+        $this->assertResponseContains('data-controller="team-name-preview"');
+        $this->assertResponseContains('data-team-name-preview-target="fullTeamName"');
+        $this->assertResponseContains('data-team-name-preview-target="defaultTeamName"');
+        $this->assertResponseContains('data-team-name-preview-target="team"');
         $this->assertResponseNotContains('add-sport-modal');
         $this->assertResponseContains('_Token');
     }
@@ -179,6 +193,32 @@ class TeamsControllerTest extends TestCase
         $this->post('/admin/teams/add', $data);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']);
         $this->assertFlashMessage('The team has been saved.');
+    }
+
+    /**
+     * Popup team creation returns the default composed label for its new option.
+     */
+    public function testAjaxAddReturnsDefaultTeamDisplay(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/teams/ajax-add', [
+            'sport_key' => 'basketball',
+            'team_description' => 'Murray State',
+            'team_name' => 'Basketball',
+            'abbr' => 'WBB',
+            'team_nickname' => 'Racers',
+            'team_scorebug' => 'MUR',
+            'gender' => 'F',
+        ]);
+
+        $this->assertResponseOk();
+        $response = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($response);
+        $this->assertTrue($response['success']);
+        $this->assertSame("Racers Women's Basketball", $response['newOption']['text']);
     }
 
     /**
@@ -266,6 +306,8 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams/edit/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="team-name-preview"');
+        $this->assertResponseContains('Display Previews');
     }
 
     /**

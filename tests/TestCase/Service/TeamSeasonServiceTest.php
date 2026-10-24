@@ -52,9 +52,11 @@ class TeamSeasonServiceTest extends TestCase
      */
     public function testGetDisplayLabel(): void
     {
+        $teamSeason = $this->service->getTeamSeasonById(1);
         $label = $this->service->getDisplayLabel(1);
-        $this->assertIsString($label);
-        $this->assertNotEmpty($label);
+
+        $this->assertNotNull($teamSeason);
+        $this->assertStringStartsWith($teamSeason->team->getDisplayName(), $label);
     }
 
     /**
@@ -74,6 +76,23 @@ class TeamSeasonServiceTest extends TestCase
         $label = $this->service->getSportDisplayLabel(1);
         $this->assertIsString($label);
         $this->assertNotEmpty($label);
+    }
+
+    /**
+     * Sport label fallback uses the canonical team name when no sport resolves.
+     */
+    public function testGetSportDisplayLabelFallsBackToTeamDisplayName(): void
+    {
+        $teams = $this->getTableLocator()->get('Teams');
+        $teams->updateAll(['sport_key' => '', 'sport_id' => 999], ['id' => 1]);
+
+        $teamSeason = $this->service->getTeamSeasonById(1);
+        $this->assertNotNull($teamSeason);
+
+        $this->assertSame(
+            $teamSeason->team->getDisplayName() . ' 2023-2024',
+            $this->service->getSportDisplayLabel(1),
+        );
     }
 
     /**
@@ -201,6 +220,37 @@ class TeamSeasonServiceTest extends TestCase
             $this->assertArrayHasKey('id', $first);
             $this->assertArrayHasKey('label', $first);
         }
+
+        $teamSeason = $this->service->getTeamSeasonById(1);
+        $this->assertNotNull($teamSeason);
+        $labelsById = array_column($results, 'label', 'id');
+        $this->assertSame($teamSeason->getDisplayName(), $labelsById[1]);
+    }
+
+    /**
+     * Team season form options use the default team display name.
+     */
+    public function testTeamSeasonsListUsesDefaultTeamDisplay(): void
+    {
+        $teamSeason = $this->service->getTeamSeasonById(1);
+        $this->assertNotNull($teamSeason);
+
+        $list = $this->service->getTeamSeasonsList();
+
+        $this->assertSame($teamSeason->getDisplayName(), $list[1]);
+    }
+
+    /**
+     * Detailed team season options start with the default team display name.
+     */
+    public function testDetailedTeamSeasonListUsesDefaultTeamDisplay(): void
+    {
+        $teamSeason = $this->service->getTeamSeasonById(1);
+        $this->assertNotNull($teamSeason);
+
+        $list = $this->service->getTeamSeasonsDetailedList();
+
+        $this->assertStringStartsWith($teamSeason->team->getDisplayName(), $list[1]);
     }
 
     /**
@@ -211,7 +261,9 @@ class TeamSeasonServiceTest extends TestCase
         $list = $this->service->getTeamSeasonsListForRosterSelect(50);
         $this->assertIsArray($list);
         $this->assertArrayHasKey(1, $list);
-        $this->assertSame('Los Angeles Lakers (2023-2024)', $list[1]);
+        $teamSeason = $this->service->getTeamSeasonById(1);
+        $this->assertNotNull($teamSeason);
+        $this->assertSame($teamSeason->team->getDisplayName() . ' (2023-2024)', $list[1]);
     }
 
     /**

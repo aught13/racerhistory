@@ -17,7 +17,7 @@
  * @var list<string> $warnings
  */
 $this->assign('title', 'Import Basketball Box Score');
-$teamName = (string)($game->team_season?->team?->team_name ?? 'Team');
+$teamName = (string)($game->team_season?->team?->getDisplayName() ?? 'Team');
 $opponentName = (string)($game->opponent?->opponent_name ?? 'Opponent');
 $gameDate = $game->game_date ?? null;
 $hasPreview = isset($parsed) && is_array($parsed);

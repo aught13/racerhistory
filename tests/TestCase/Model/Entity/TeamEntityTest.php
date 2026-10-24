@@ -13,12 +13,16 @@ use Cake\TestSuite\TestCase;
 class TeamEntityTest extends TestCase
 {
     /**
-     * Test getDisplayName returns team name
+     * Test getDisplayName composes the default team name.
      */
     public function testGetDisplayName(): void
     {
-        $team = new Team(['team_name' => 'Lakers']);
-        $this->assertSame('Lakers', $team->getDisplayName());
+        $team = new Team([
+            'team_name' => 'Basketball',
+            'team_nickname' => 'Racers',
+            'gender' => Team::GENDER_MALE,
+        ]);
+        $this->assertSame("Racers Men's Basketball", $team->getDisplayName());
     }
 
     /**
@@ -28,6 +32,135 @@ class TeamEntityTest extends TestCase
     {
         $team = new Team();
         $this->assertSame('Unknown Team', $team->getDisplayName());
+    }
+
+    /**
+     * Test getDisplayName does not repeat a gender already present in a name.
+     */
+    public function testGetDisplayNameDoesNotRepeatGenderInName(): void
+    {
+        $team = new Team([
+            'team_name' => 'Women’s Basketball',
+            'team_nickname' => 'Racers',
+            'gender' => Team::GENDER_FEMALE,
+        ]);
+
+        $this->assertSame('Racers Women’s Basketball', $team->getDisplayName());
+    }
+
+    /**
+     * Test gender already stated in a name is not contradicted by the classification.
+     */
+    public function testGetDisplayNameDoesNotAddConflictingGenderToName(): void
+    {
+        $team = new Team([
+            'team_name' => "Women's Basketball",
+            'team_nickname' => 'Racers',
+            'gender' => Team::GENDER_MALE,
+        ]);
+
+        $this->assertSame("Racers Women's Basketball", $team->getDisplayName());
+    }
+
+    /**
+     * Test getDisplayName omits a gender prefix when there is no base team name.
+     */
+    public function testGetDisplayNameOmitsGenderWithoutTeamName(): void
+    {
+        $team = new Team([
+            'team_nickname' => 'Racers',
+            'gender' => Team::GENDER_MALE,
+        ]);
+
+        $this->assertSame('Racers', $team->getDisplayName());
+    }
+
+    /**
+     * Test an unknown gender value does not produce a made-up display prefix.
+     */
+    public function testGetDisplayNameOmitsUnknownGender(): void
+    {
+        $team = new Team([
+            'team_name' => 'Basketball',
+            'team_nickname' => 'Racers',
+            'gender' => 'X',
+        ]);
+
+        $this->assertSame('Racers Basketball', $team->getDisplayName());
+    }
+
+    /**
+     * Test getFullTeamDisplayName joins the full set of name components.
+     */
+    public function testGetFullTeamDisplayName(): void
+    {
+        $team = new Team([
+            'team_description' => 'Murray State',
+            'team_nickname' => 'Racers',
+            'team_name' => 'Basketball',
+            'gender' => Team::GENDER_FEMALE,
+        ]);
+
+        $this->assertSame("Murray State Racers Women's Basketball", $team->getFullTeamDisplayName());
+    }
+
+    /**
+     * Test getFullTeamDisplayName omits gender when the description already states it.
+     */
+    public function testGetFullTeamDisplayNameDoesNotRepeatGenderInDescription(): void
+    {
+        $team = new Team([
+            'team_description' => "Murray State Women's",
+            'team_nickname' => 'Racers',
+            'team_name' => 'Basketball',
+            'gender' => Team::GENDER_FEMALE,
+        ]);
+
+        $this->assertSame("Murray State Women's Racers Basketball", $team->getFullTeamDisplayName());
+    }
+
+    /**
+     * Test getTeamDisplayName composes the short team label.
+     */
+    public function testGetTeamDisplayName(): void
+    {
+        $team = new Team([
+            'team_name' => 'Basketball',
+            'gender' => Team::GENDER_FEMALE,
+        ]);
+
+        $this->assertSame("Women's Basketball", $team->getTeamDisplayName());
+    }
+
+    /**
+     * Test co-ed gender is omitted from each display variant.
+     */
+    public function testDisplayVariantsOmitCoedGender(): void
+    {
+        $team = new Team([
+            'team_description' => 'Murray State',
+            'team_nickname' => 'Racers',
+            'team_name' => 'Bowling',
+            'gender' => Team::GENDER_COED,
+        ]);
+
+        $this->assertSame('Racers Bowling', $team->getDisplayName());
+        $this->assertSame('Murray State Racers Bowling', $team->getFullTeamDisplayName());
+        $this->assertSame('Bowling', $team->getTeamDisplayName());
+    }
+
+    /**
+     * Test a repeated exact component is included once.
+     */
+    public function testDisplayNameOmitsRepeatedExactComponents(): void
+    {
+        $team = new Team([
+            'team_name' => 'Racers',
+            'team_nickname' => 'Racers',
+            'gender' => Team::GENDER_MALE,
+        ]);
+
+        $this->assertSame("Men's Racers", $team->getDisplayName());
     }
 
     /**

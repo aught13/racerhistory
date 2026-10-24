@@ -7,6 +7,7 @@ use App\Service\ImageDeleteService;
 use App\Service\ImageEditService;
 use App\Service\ImagesAdminService;
 use App\Service\RbacPermissionService;
+use App\Service\TeamSeasonService;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
@@ -17,6 +18,10 @@ class ImagesAdminServiceTest extends TestCase
         'app.Images',
         'app.ImageTags',
         'app.ImagesImageTags',
+        'app.Teams',
+        'app.Sports',
+        'app.TeamSeasons',
+        'app.Seasons',
         'app.Users',
         'app.Roles',
         'app.Permissions',
@@ -71,6 +76,30 @@ class ImagesAdminServiceTest extends TestCase
         ]);
 
         $this->assertSame(['alpha', 'beta', 'gamma'], $tags);
+    }
+
+    /**
+     * Common team tags use the canonical default display name.
+     */
+    public function testBuildCommonEntityTagsUsesTeamDisplayName(): void
+    {
+        $team = TableRegistry::getTableLocator()->get('Teams')->get(1);
+
+        $this->assertSame([
+            ['slug' => 'team-1', 'name' => $team->getDisplayName()],
+        ], $this->service->buildCommonEntityTags(['team_select' => 1]));
+    }
+
+    /**
+     * Common team-season tags use the canonical team-and-season label.
+     */
+    public function testBuildCommonEntityTagsUsesTeamSeasonDisplayName(): void
+    {
+        $label = (new TeamSeasonService())->getDisplayLabel(1);
+
+        $this->assertSame([
+            ['slug' => 'teamseason-1', 'name' => $label],
+        ], $this->service->buildCommonEntityTags(['teamseason_select' => 1]));
     }
 
     /**

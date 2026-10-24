@@ -292,7 +292,7 @@ class PeopleController extends AppController
                     $teamId = (int)($team->id ?? 0);
                     $teamLabel = trim((string)($team->abbr ?? ''));
                     if ($teamLabel === '') {
-                        $teamLabel = (string)($team->team_name ?? 'Team');
+                        $teamLabel = $team->getDisplayName();
                     }
                     if ($sportKey === null) {
                         $teamLabel .= ' (' . (string)($team->sport_name ?? 'Sport') . ')';

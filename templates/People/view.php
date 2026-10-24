@@ -67,7 +67,7 @@ if (!empty($socialImageCandidates)) {
 
 $teams = [];
 foreach ($rosterEntries as $entry) {
-    $teamName = $entry->team_season->team->team_name ?? null;
+    $teamName = $entry->team_season->team?->getDisplayName();
     if ($teamName) {
         $teams[$teamName] = true;
     }
@@ -192,7 +192,7 @@ $formatSeasonLabel = static function ($season): string {
                                     $season = $teamSeason?->season ?? null;
                                     $team = $teamSeason?->team ?? null;
                                     $seasonLabel = $season ? $formatSeasonLabel($season) : '';
-                                    $teamName = $team->team_name ?? 'Team';
+                                    $teamName = $team->getDisplayName();
                                     $seasonUrl = $this->PublicScope->url([
                                         'controller' => 'Seasons',
                                         'action' => 'view',

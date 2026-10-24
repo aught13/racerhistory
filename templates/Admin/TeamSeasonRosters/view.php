@@ -40,7 +40,7 @@ $this->assign('title', 'View Team Season Roster');
                                 href="<?= $this->Url->build(['prefix' => 'Admin',
                                 'controller' => 'TeamSeasons', 'action' => 'view',
                                 $teamSeasonRoster->team_season_id]) ?>">
-                                <?= h($teamSeasonRoster->team_season->team->team_name) ?>
+                                <?= h($teamSeasonRoster->team_season->team->getDisplayName()) ?>
                                 (<?= h($teamSeasonRoster->team_season->season->start . '-' .
                                 $teamSeasonRoster->team_season->season->end) ?>)
                             </a></dd>

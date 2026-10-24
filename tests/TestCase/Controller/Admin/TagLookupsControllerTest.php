@@ -94,9 +94,11 @@ class TagLookupsControllerTest extends TestCase
         $this->assertIsArray($payload['games'] ?? null);
 
         $labels = array_map(fn($g) => (string)($g['label'] ?? ''), $payload['games']);
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $teamName = $team->getDisplayName();
 
-        $this->assertContains('Los Angeles Lakers Vs Belmont (2025-01-15) 75-68', $labels);
-        $this->assertContains('Los Angeles Lakers @ Belmont (2025-01-16) 60-61', $labels);
-        $this->assertContains('Los Angeles Lakers vs Belmont (2025-01-17) 80-70', $labels);
+        $this->assertContains($teamName . ' Vs Belmont (2025-01-15) 75-68', $labels);
+        $this->assertContains($teamName . ' @ Belmont (2025-01-16) 60-61', $labels);
+        $this->assertContains($teamName . ' vs Belmont (2025-01-17) 80-70', $labels);
     }
 }

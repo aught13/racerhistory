@@ -73,7 +73,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
 
     <div class="row">
         <span class="h3 col-xl-12 text-center text-nowrap text-break">
-            <?= h($game->team_season->team->team_description ?? '') ?>
+            <?= h($game->team_season->team->getFullTeamDisplayName()) ?>
             <?= h($game->team_season->season->start ?? '') ?>-<?= h($game->team_season->season->end ?? '') ?>
         </span>
     </div>

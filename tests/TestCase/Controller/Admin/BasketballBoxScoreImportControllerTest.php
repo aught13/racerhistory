@@ -82,6 +82,18 @@ class BasketballBoxScoreImportControllerTest extends TestCase
     }
 
     /**
+     * Importer fallback uses a Team entity so the composed label can render.
+     */
+    public function testIndexFallbackRendersPlaceholderTeam(): void
+    {
+        $this->get('/admin/basketball-box-score-import/index/99999');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Import Basketball Box Score');
+        $this->assertResponseContains('Team');
+    }
+
+    /**
      * Test invalid source text returns to the importer with a message.
      *
      * @return void

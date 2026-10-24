@@ -37,7 +37,7 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">
                         <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
-                            <?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>
+                            <?= h($teamSeason->team->getDisplayName() . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>
                         <?php else : ?>
                         Team Season #<?= $teamSeason->id ?>
                         <?php endif; ?>
@@ -49,7 +49,7 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
                     <div class="btn-group me-3">
                         <?php if (isset($previousTeamSeason)) : ?>
                             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $previousTeamSeason->id]) ?>"
-                                class="btn btn-outline-secondary btn-sm" title="Previous: <?= h($previousTeamSeason->team->team_name . ' (' . $previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end . ')') ?>">
+                                class="btn btn-outline-secondary btn-sm" title="Previous: <?= h($previousTeamSeason->team->getDisplayName() . ' (' . $previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end . ')') ?>">
                                 <i class="bi bi-chevron-left"></i> <?= h($previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end) ?>
                             </a>
                         <?php else : ?>
@@ -60,7 +60,7 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
 
                         <?php if (isset($nextTeamSeason)) : ?>
                             <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $nextTeamSeason->id]) ?>"
-                                class="btn btn-outline-secondary btn-sm" title="Next: <?= h($nextTeamSeason->team->team_name . ' (' . $nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end . ')') ?>">
+                                class="btn btn-outline-secondary btn-sm" title="Next: <?= h($nextTeamSeason->team->getDisplayName() . ' (' . $nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end . ')') ?>">
                                 <?= h($nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end) ?> <i class="bi bi-chevron-right"></i>
                             </a>
                         <?php else : ?>
@@ -71,7 +71,7 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
                     </div>
                     <h1 class="mb-0">
                         <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
-                            <?= h($teamSeason->team->team_name) ?>
+                            <?= h($teamSeason->team->getDisplayName()) ?>
                         <small
                             class="text-muted"><?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?></small>
                         <?php else : ?>
@@ -111,10 +111,10 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
                                         <?php if ($canReadTeams) : ?>
                                             <a
                                                 href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'view', $teamSeason->team->id]) ?>">
-                                                <?= h($teamSeason->team->team_name) ?>
+                                                <?= h($teamSeason->team->getDisplayName()) ?>
                                             </a>
                                         <?php else : ?>
-                                            <?= h($teamSeason->team->team_name) ?>
+                                            <?= h($teamSeason->team->getDisplayName()) ?>
                                         <?php endif; ?>
                                         <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
                                     <?php else : ?>

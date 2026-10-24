@@ -137,7 +137,7 @@ $canDeleteSeasons = $this->Rbac->can('Seasons', 'delete');
                                 <tr>
                                     <td>
                                         <?php if (isset($teamSeason->team)) : ?>
-                                            <?= h($teamSeason->team->team_name) ?>
+                                            <?= h($teamSeason->team->getDisplayName()) ?>
                                         <?php else : ?>
                                             <em>Team not loaded</em>
                                         <?php endif; ?>

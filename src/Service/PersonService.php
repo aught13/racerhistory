@@ -229,7 +229,6 @@ class PersonService
 
             $extra = '';
             $latestRoster = $teamSeasonRostersTable->find()
-                ->select(['TeamSeasonRosters.id', 'TeamSeasonRosters.team_season_id'])
                 ->where(['TeamSeasonRosters.person_id' => $person->id])
                 ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
                 ->orderBy(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
@@ -239,7 +238,7 @@ class PersonService
             if ($latestRoster) {
                 $teamSeason = $latestRoster->team_season ?? null;
                 if ($teamSeason) {
-                    $teamName = $teamSeason->team->team_name ?? null;
+                    $teamName = $teamSeason->team?->getDisplayName();
                     $season = $teamSeason->season ?? null;
                     if ($teamName) {
                         $seasonLabel = '';

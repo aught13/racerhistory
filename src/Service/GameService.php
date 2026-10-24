@@ -690,7 +690,7 @@ class GameService
             $teamName = '';
             $seasonRange = '';
             if (!empty($game->team_season) && !empty($game->team_season->team)) {
-                $teamName = $game->team_season->team->team_name ?? '';
+                $teamName = $game->team_season->team->getDisplayName();
             }
             if (!empty($game->team_season) && !empty($game->team_season->season)) {
                 $seasonRange = $game->team_season->season->start . '-' . $game->team_season->season->end;
@@ -1055,7 +1055,7 @@ class GameService
      */
     private function formatGameSelectLabel(Game $game): string
     {
-        $teamName = $game->team_season->team->team_name ?? 'Team';
+        $teamName = $game->team_season->team?->getDisplayName() ?? 'Team';
         $oppName = $game->opponent->opponent_name ?? 'Opponent';
 
         $date = '';

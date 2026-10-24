@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Season;
+use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 use App\Model\Table\GamesTable;
 use App\Model\Table\ImagesTable;
@@ -54,7 +55,7 @@ class TeamSeasonAdminService
      * @param mixed $identity Current authenticated identity.
      * @param string|null $sportKey Optional sport filter.
      * @param int|null $teamId Optional team filter.
-     * @return array{teamSeasons:\Cake\Datasource\ResultSetInterface}
+     * @return array{teamSeasons:\Cake\Datasource\ResultSetInterface,teams:array<int,string>,sportOptions:array<string,string>,currentSportKey:string,currentTeamId:int}
      */
     public function getIndexData(
         mixed $identity = null,
@@ -88,13 +89,13 @@ class TeamSeasonAdminService
         }
 
         $allowedTeamIds = $this->adminDataScopeService->getAllowedTeamIds($identity);
-        $teamQuery = $this->getTeamsTable()->find('list', limit: 200);
+        $teamQuery = $this->getTeamsTable()->find()->limit(200);
         if ($allowedTeamIds === []) {
             $teamQuery->where(['Teams.id' => -1]);
         } elseif ($allowedTeamIds !== null) {
             $teamQuery->where(['Teams.id IN' => $allowedTeamIds]);
         }
-        $teams = $teamQuery->orderByAsc('Teams.team_name')->all();
+        $teams = $this->formatTeamOptions($teamQuery->orderByAsc('Teams.team_name')->all());
         $sportOptions = $this->teamSportContextService->getSportOptions();
         $currentSportKey = $normalizedSportKey ?? '';
         $currentTeamId = $teamId ?? 0;
@@ -225,11 +226,12 @@ class TeamSeasonAdminService
             $teamSeason->season_id = $seasonId;
         }
 
-        $teams = $this->adminDataScopeService->scopeTeamOwnedQuery(
+        $teamQuery = $this->adminDataScopeService->scopeTeamOwnedQuery(
             $identity,
             'Teams',
-            $this->getTeamsTable()->find('list', limit: 200),
-        )->all();
+            $this->getTeamsTable()->find()->limit(200),
+        );
+        $teams = $this->formatTeamOptions($teamQuery->orderByAsc('Teams.team_name')->all());
         $seasonsList = $this->getSeasonsList();
         $sports = $this->teamSportContextService->getSportOptions();
 
@@ -294,11 +296,12 @@ class TeamSeasonAdminService
             }
         }
 
-        $teams = $this->adminDataScopeService->scopeTeamOwnedQuery(
+        $teamQuery = $this->adminDataScopeService->scopeTeamOwnedQuery(
             $identity,
             'Teams',
-            $this->getTeamsTable()->find('list', limit: 200),
-        )->all();
+            $this->getTeamsTable()->find()->limit(200),
+        );
+        $teams = $this->formatTeamOptions($teamQuery->orderByAsc('Teams.team_name')->all());
         $seasonsList = $this->getSeasonsList();
         $sports = $this->teamSportContextService->getSportOptions();
 
@@ -512,6 +515,24 @@ class TeamSeasonAdminService
         $table = TableRegistry::getTableLocator()->get('Games');
 
         return $table;
+    }
+
+    /**
+     * @param iterable<\Cake\Datasource\EntityInterface|array<string,mixed>> $teamEntities Team query records
+     * @return array<int,string>
+     */
+    private function formatTeamOptions(iterable $teamEntities): array
+    {
+        $options = [];
+        foreach ($teamEntities as $team) {
+            if (!$team instanceof Team) {
+                continue;
+            }
+
+            $options[(int)$team->id] = $team->getDisplayName();
+        }
+
+        return $options;
     }
 
     /**

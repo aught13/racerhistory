@@ -24,7 +24,7 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
                         <a
                             href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>">
                             <?php if (isset($teamSeason->team) && isset($teamSeason->season)) : ?>
-                                <?= h($teamSeason->team->team_name . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>
+                                <?= h($teamSeason->team->getDisplayName() . ' (' . $teamSeason->season->start . '-' . $teamSeason->season->end . ')') ?>
                             <?php else : ?>
                                 Team Season #<?= $teamSeason->id ?>
                             <?php endif; ?>
@@ -235,7 +235,7 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
                         <dt class="col-sm-4">Team:</dt>
                         <dd class="col-sm-8">
                             <?php if (isset($teamSeason->team)) : ?>
-                                <?= h($teamSeason->team->team_name) ?>
+                                <?= h($teamSeason->team->getDisplayName()) ?>
                                 <br><small class="text-muted"><?= h($teamSeason->team->abbr) ?></small>
                             <?php else : ?>
                                 <em>Team not loaded</em>

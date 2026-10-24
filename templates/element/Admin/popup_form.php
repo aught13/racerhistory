@@ -1,7 +1,8 @@
 <?php
 
 /** Lightweight popup form element.
- * Variables: $popupId, $title, $formUrl, $fields (see previous doc), $successCallback, $targetSelectId.
+ * Variables: $popupId, $title, $formUrl, $fields, $successCallback, $targetSelectId.
+ * Field configs may provide help text and a team-name preview target.
  *
  * @var \App\View\AppView $this
  */
@@ -14,6 +15,7 @@ $successCallback = $successCallback ?? 'handlePopupSuccess';
 $targetSelectId = $targetSelectId ?? '';
 $hiddenFormId = $hiddenFormId ?? '';
 $extraHtml = $extraHtml ?? '';
+$teamNamePreview = !empty($teamNamePreview);
 
 $hasPlaceCountryField = false;
 $hasPlaceCityField = false;
@@ -40,6 +42,13 @@ $hasPlaceLocationBehavior =
     $hasPlaceCountryField &&
     $hasPlaceCityField &&
     $hasPlaceStateField;
+$formControllers = [];
+if ($hasPlaceLocationBehavior) {
+    $formControllers[] = 'place-location';
+}
+if ($teamNamePreview) {
+    $formControllers[] = 'team-name-preview';
+}
 ?>
 <div class="modal fade"
      id="<?= h($popupId) ?>"
@@ -60,7 +69,7 @@ $hasPlaceLocationBehavior =
                     data-url="<?= h($formUrl) ?>"
                     data-target-select="<?= h($targetSelectId) ?>"
                     data-success-callback="<?= h($successCallback) ?>"
-                    <?= $hasPlaceLocationBehavior ? 'data-controller="place-location"' : '' ?>>
+                    <?= $formControllers !== [] ? 'data-controller="' . h(implode(' ', $formControllers)) . '"' : '' ?>>
 
                     <?php if ($hasPlaceLocationBehavior) : ?>
                     <div class="mb-3">
@@ -95,6 +104,12 @@ $hasPlaceLocationBehavior =
                         $type = $f['type'] ?? 'text';
                         $label = $f['label'] ?? ucfirst($name);
                         $req = !empty($f['required']);
+                        $help = $f['help'] ?? '';
+                        $previewTarget = $f['previewTarget'] ?? null;
+                        $previewAttrs = is_string($previewTarget) && $previewTarget !== ''
+                            ? 'data-team-name-preview-target="' . h($previewTarget) .
+                                '" data-action="input->team-name-preview#update change->team-name-preview#update"'
+                            : '';
                         ?>
 
                         <?php if ($type === 'hidden') : ?>
@@ -116,14 +131,16 @@ $hasPlaceLocationBehavior =
                                 class="form-control"
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
-                                <?= $req ? 'required' : '' ?>></textarea>
+                                <?= $req ? 'required' : '' ?>
+                                <?= $previewAttrs ?>></textarea>
 
                             <?php elseif ($type === 'select') : ?>
                             <select
                                 class="form-select"
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
-                                <?= $req ? 'required' : '' ?>>
+                                <?= $req ? 'required' : '' ?>
+                                <?= $previewAttrs ?>>
                                 <option value="">Select...</option>
                                 <?php foreach (($f['options'] ?? []) as $val => $text) : ?>
                                     <option value="<?= h($val) ?>"><?= h($text) ?></option>
@@ -159,7 +176,8 @@ $hasPlaceLocationBehavior =
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?>
-                                <?= implode(' ', $inputAttrs) ?> />
+                                <?= implode(' ', $inputAttrs) ?>
+                                <?= $previewAttrs ?> />
 
                                 <?php if ($hasPlaceLocationBehavior && $name === 'place_city') : ?>
                             <datalist id="<?= h($popupId) ?>-place-city-options" data-place-location-target="cityList"></datalist>
@@ -170,10 +188,32 @@ $hasPlaceLocationBehavior =
                                 <?php endif; ?>
 
                             <?php endif; ?>
+                            <?php if (is_string($help) && $help !== '') : ?>
+                                <div class="form-text"><?= h($help) ?></div>
+                            <?php endif; ?>
                     </div>
                         <?php endif; ?>
 
                     <?php endforeach; ?>
+
+                    <?php if ($teamNamePreview) : ?>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Display Previews</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Full Team Name:</strong><br>
+                                <span data-team-name-preview-target="fullTeamName">Unknown Team</span>
+                            </p>
+                            <p><strong>Team Name (default):</strong><br>
+                                <span data-team-name-preview-target="defaultTeamName">Unknown Team</span>
+                            </p>
+                            <p class="mb-0"><strong>Team:</strong><br>
+                                <span data-team-name-preview-target="team">Unknown Team</span>
+                            </p>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($hasPlaceLocationBehavior) : ?>
                         <small class="text-muted d-block mt-1" data-place-location-target="locationMeta">Select a country to load subdivisions and localities.</small>

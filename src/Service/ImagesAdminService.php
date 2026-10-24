@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Image;
+use App\Model\Entity\Team;
 use App\Model\Table\ImagesTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Number;
@@ -278,7 +279,7 @@ class ImagesAdminService
             'team_select' => [
                 'prefix' => 'team-',
                 'table' => 'Teams',
-                'label' => fn($row) => $row->team_name ?? 'team',
+                'label' => static fn($row): string => $row instanceof Team ? $row->getDisplayName() : 'team',
             ],
             'sport_select' => [
                 'prefix' => 'sport-',
@@ -321,7 +322,7 @@ class ImagesAdminService
                     if ($meta['service'] === 'person') {
                         $display = $personService->getDisplayLabel($id);
                     } elseif ($meta['service'] === 'teamseason') {
-                        $display = $teamSeasonService->getSportDisplayLabel($id);
+                        $display = $teamSeasonService->getDisplayLabel($id);
                     } elseif ($meta['service'] === 'roster') {
                         $rosterData = $rosterService->getRosterDisplayData($id);
                         $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;

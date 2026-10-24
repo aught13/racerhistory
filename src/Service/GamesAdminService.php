@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Team;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\TableRegistry;
@@ -59,7 +60,7 @@ class GamesAdminService
      * @param mixed $identity Current authenticated identity.
      * @param string|null $sportKey Optional sport filter.
      * @param int|null $teamId Optional team filter.
-     * @return array{teamSeason:mixed,teamSeasonId:int|null}
+     * @return array<string,mixed>
      */
     public function getIndexContext(
         ?int $teamSeasonId,
@@ -81,7 +82,8 @@ class GamesAdminService
             $normalizedSportKey = $this->teamSportContextService->resolveSportKey($sportKey);
         }
         $allowedTeamIds = $this->adminDataScopeService->getAllowedTeamIds($identity);
-        $teamQuery = TableRegistry::getTableLocator()->get('Teams')->find('list', limit: 200);
+        $teamsTable = TableRegistry::getTableLocator()->get('Teams');
+        $teamQuery = $teamsTable->find()->limit(200);
         if ($allowedTeamIds === []) {
             $teamQuery->where(['Teams.id' => -1]);
         } elseif ($allowedTeamIds !== null) {
@@ -90,12 +92,21 @@ class GamesAdminService
         if ($normalizedSportKey !== null) {
             $teamQuery->where($this->teamSportContextService->buildSportFilterConditions($normalizedSportKey));
         }
-        $teams = $teamQuery->orderByAsc('Teams.team_name')->all();
+        $teamRows = $teamQuery->orderByAsc('Teams.team_name')->all();
+        $teams = [];
+        foreach ($teamRows as $team) {
+            if ($team instanceof Team) {
+                $teams[(int)$team->id] = $team->getDisplayName();
+            }
+        }
         $sportOptions = $this->teamSportContextService->getSportOptions();
         if ($allowedTeamIds !== null) {
             $allowedSportKeys = [];
-            foreach ($teams as $id => $teamName) {
-                $team = TableRegistry::getTableLocator()->get('Teams')->get((int)$id);
+            foreach ($teamRows as $team) {
+                if (!$team instanceof Team) {
+                    continue;
+                }
+
                 $key = $this->teamSportContextService->resolveSportKeyFromTeam($team);
                 if ($key !== null) {
                     $allowedSportKeys[$key] = true;

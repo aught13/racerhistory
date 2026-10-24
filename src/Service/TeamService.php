@@ -58,28 +58,19 @@ class TeamService
     }
 
     /**
-     * Get a friendly display label for a team.
-     * Format: "TeamName" or "Men's TeamName" / "Women's TeamName"
+     * Get the default display label for a team.
      *
      * @param int $teamId Team ID
-     * @param bool $includeGender Include gender prefix
      * @return string
      */
-    public function getDisplayLabel(int $teamId, bool $includeGender = false): string
+    public function getDisplayLabel(int $teamId): string
     {
         $team = $this->getTeamById($teamId);
         if (!$team) {
             return 'Team #' . $teamId;
         }
 
-        $name = $team->team_name ?? 'Team';
-
-        if ($includeGender && !empty($team->gender)) {
-            $prefix = $team->gender === 'M' ? "Men's " : ($team->gender === 'F' ? "Women's " : '');
-            $name = $prefix . $name;
-        }
-
-        return $name;
+        return $team->getDisplayName();
     }
 
     /**
@@ -183,7 +174,7 @@ class TeamService
             $sportName = $this->teamSportContextService->resolveSportNameFromTeam($team);
             $results[] = [
                 'id' => $team->id,
-                'label' => $this->getDisplayLabel($team->id, true),
+                'label' => $team->getDisplayName(),
                 'sport' => $sportName,
             ];
         }

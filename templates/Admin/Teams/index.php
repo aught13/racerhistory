@@ -84,7 +84,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                     <thead class="table-dark">
                         <tr>
                             <th><input type="checkbox" id="select-all-teams" data-admin-bulk-table-target="selectAll"<?= $canDeleteTeams ? '' : ' disabled' ?>></th>
-                            <th>Team Name <small class="text-light">(Short Name)</small></th>
+                            <th>Team Name <small class="text-light">(Default Display)</small></th>
                             <th>Sport <small class="text-light">(Category)</small></th>
                             <th>Abbreviation <small class="text-light">(5 chars max)</small></th>
                             <th>Gender <small class="text-light">(M/F/Co-ed)</small></th>
@@ -96,7 +96,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                         <tr>
                             <td><input type="checkbox" name="team_ids[]" value="<?= $team->id ?>" class="team-checkbox" data-admin-bulk-table-role="row-checkbox"<?= $canDeleteTeams ? '' : ' disabled' ?>>
                             </td>
-                            <td><?= h($team->team_name) ?></td>
+                            <td><?= h($team->getDisplayName()) ?></td>
                             <td><?= h($team->sport ? $team->sport->sport_name : 'N/A') ?></td>
                             <td><?= h($team->abbr) ?></td>
                             <td>
@@ -119,7 +119,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                                         data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
                                         data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                         data-item-type="team"
-                                        data-associated='<?= json_encode([$team->team_name, $team->abbr]) ?>'
+                                        data-associated='<?= json_encode([$team->getDisplayName(), $team->abbr]) ?>'
                                         data-form-id="delete-form-team-<?= $team->id ?>">
                                         Delete
                                     </button>

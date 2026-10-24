@@ -101,7 +101,7 @@ class PublicSportScopeServiceTest extends TestCase
         $teamOptions = $this->service->getTeamOptions();
 
         $this->assertSame([
-            'label' => "Men's New York Giants (Football)",
+            'label' => "Giants Men's New York Giants (Football)",
             'sportKey' => 'football',
         ], $teamOptions[3]);
     }
@@ -114,6 +114,6 @@ class PublicSportScopeServiceTest extends TestCase
         $teamOptions = $this->service->getTeamOptions('football');
 
         $this->assertSame([3], array_keys($teamOptions));
-        $this->assertSame("Men's New York Giants", $teamOptions[3]['label']);
+        $this->assertSame("Giants Men's New York Giants", $teamOptions[3]['label']);
     }
 }

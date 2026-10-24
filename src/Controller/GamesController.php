@@ -708,7 +708,7 @@ class GamesController extends AppController
                     ['escape' => false],
                 ),
                 (int)($g->mur_rk ?? 0) ?: '-',
-                h($g->team_season->team->team_name ?? 'Murray State'),
+                h($g->team_season->team?->getDisplayName() ?? 'Murray State'),
                 $this->link(
                     $g->opponent->opponent_name ?? '?',
                     ['controller' => 'Games', 'action' => 'series',

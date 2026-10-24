@@ -208,7 +208,7 @@ $canDeletePersons = $this->Rbac->can('Persons', 'delete');
                                             aria-controls="collapse-<?= h($accordionId) ?>"
                                         >
                                             <span class="me-2"><i class="bi bi-calendar3"></i></span>
-                                            <?= h($teamSeason->team->team_name) ?>
+                                            <?= h($teamSeason->team->getDisplayName()) ?>
                                             <span class="badge bg-info text-dark ms-2">
                                                 <?= h($teamSeason->season->start) ?>-<?= h($teamSeason->season->end) ?>
                                             </span>

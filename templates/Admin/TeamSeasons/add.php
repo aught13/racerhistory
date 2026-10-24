@@ -272,7 +272,10 @@ $this->assign('title', 'Add Team Season'); ?>
     ]) ?>
     <?= $this->Form->control('sport_key', ['type' => 'select']) ?>
     <?= $this->Form->control('team_name', ['type' => 'text']) ?>
+    <?= $this->Form->control('team_description', ['type' => 'textarea']) ?>
+    <?= $this->Form->control('team_nickname', ['type' => 'text']) ?>
     <?= $this->Form->control('abbr', ['type' => 'text']) ?>
+    <?= $this->Form->control('team_scorebug', ['type' => 'text']) ?>
     <?= $this->Form->control('gender', ['type' => 'text']) ?>
     <?= $this->Form->end() ?>
 </div>
@@ -293,6 +296,7 @@ $this->assign('title', 'Add Team Season'); ?>
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'ajaxAdd']),
     'targetSelectId' => 'team-id',
     'hiddenFormId' => 'hidden-team-form',
+    'teamNamePreview' => true,
     'fields' => [
         [
             'name' => 'sport_key',
@@ -300,18 +304,44 @@ $this->assign('title', 'Add Team Season'); ?>
             'label' => 'Sport',
             'required' => true,
             'options' => $sports ?? [],
+            'help' => 'Choose the sport this team competes in.',
         ],
         [
             'name' => 'team_name',
             'type' => 'text',
-            'label' => 'Team Name',
+            'label' => 'Base Team Name',
             'required' => true,
+            'previewTarget' => 'teamName',
+            'help' => 'Enter the base team/category phrase used in every display value, such as Basketball.',
+        ],
+        [
+            'name' => 'team_description',
+            'type' => 'textarea',
+            'label' => 'Organization / Name Prefix',
+            'previewTarget' => 'teamDescription',
+            'help' => 'Optionally enter the organization or descriptor shown first in Full Team Name.',
+        ],
+        [
+            'name' => 'team_nickname',
+            'type' => 'text',
+            'label' => 'Team Nickname / Mascot',
+            'required' => true,
+            'previewTarget' => 'teamNickname',
+            'help' => 'Enter the team nickname included in Team Name and Full Team Name.',
         ],
         [
             'name' => 'abbr',
             'type' => 'text',
             'label' => 'Abbreviation',
             'required' => true,
+            'help' => 'Enter the short code used in compact contexts, up to 5 characters.',
+        ],
+        [
+            'name' => 'team_scorebug',
+            'type' => 'text',
+            'label' => 'Scorebug Name',
+            'required' => true,
+            'help' => 'Enter the short name used on score displays, up to 6 characters.',
         ],
         [
             'name' => 'gender',
@@ -319,6 +349,8 @@ $this->assign('title', 'Add Team Season'); ?>
             'label' => 'Gender',
             'required' => true,
             'options' => ['M' => 'Male', 'F' => 'Female', 'C' => 'Co-ed'],
+            'previewTarget' => 'gender',
+            'help' => 'Select the competition classification; Co-ed is omitted from display names.',
         ],
     ],
 ]) ?>

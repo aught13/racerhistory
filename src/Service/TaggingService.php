@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Team;
 use Cake\Http\ServerRequest;
 use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Table;
@@ -235,7 +236,7 @@ class TaggingService
                 } elseif ($type === 'teamseason' && $id > 0) {
                     $tags[] = [
                         'slug' => "teamseason-{$id}",
-                        'name' => $this->teamSeasonService->getSportDisplayLabel($id),
+                        'name' => $this->teamSeasonService->getDisplayLabel($id),
                     ];
                 } elseif (in_array($type, ['blog', 'blogpost', 'post'], true) && $id > 0) {
                     $label = (new BlogPostService())->getDisplayLabel($id);
@@ -343,7 +344,7 @@ class TaggingService
                         if ($meta['service'] === 'person') {
                             $display = $this->personService->getDisplayLabel($id);
                         } else {
-                            $display = $this->teamSeasonService->getSportDisplayLabel($id);
+                            $display = $this->teamSeasonService->getDisplayLabel($id);
                         }
                     } else {
                         $table = TableRegistry::getTableLocator()->get($meta['table']);
@@ -532,7 +533,7 @@ class TaggingService
             'team_select' => [
                 'prefix' => 'team-',
                 'table' => 'Teams',
-                'label' => fn($row) => $row->team_name ?? 'team',
+                'label' => static fn($row): string => $row instanceof Team ? $row->getDisplayName() : 'team',
             ],
             'sport_select' => [
                 'prefix' => 'sport-',

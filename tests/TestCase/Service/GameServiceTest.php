@@ -61,6 +61,15 @@ class GameServiceTest extends TestCase
         $this->assertArrayHasKey('game_date', $first);
         $this->assertArrayHasKey('hrn', $first);
         $this->assertArrayHasKey('score', $first);
+        $game = $this->fetchTable('Games')->find()
+            ->contain(['TeamSeason' => ['Teams', 'Seasons']])
+            ->orderByDesc('Games.game_date')
+            ->first();
+        $this->assertNotNull($game);
+        $this->assertStringStartsWith(
+            $game->team_season->team->getDisplayName(),
+            (string)$first['team_season'],
+        );
     }
 
     /**
@@ -214,9 +223,11 @@ class GameServiceTest extends TestCase
         $this->assertNotEmpty($results);
 
         $labels = array_map(fn($g) => (string)($g['label'] ?? ''), $results);
+        $team = $this->fetchTable('Teams')->get(1);
+        $this->assertNotNull($results[0]['id']);
 
-        $this->assertContains('Los Angeles Lakers Vs Belmont (2025-01-15) 80-70', $labels);
-        $this->assertContains('Los Angeles Lakers vs Belmont (2025-01-16) 65-72', $labels);
+        $this->assertContains($team->getDisplayName() . ' Vs Belmont (2025-01-15) 80-70', $labels);
+        $this->assertContains($team->getDisplayName() . ' vs Belmont (2025-01-16) 65-72', $labels);
     }
 
     /**
@@ -336,6 +347,11 @@ class GameServiceTest extends TestCase
         $results = $this->service->getRecentGamesForSelect(2);
 
         $this->assertCount(2, $results);
+        $game = $this->service->getGameWithAssociations((int)$results[0]['id']);
+        $this->assertStringContainsString(
+            $game->team_season->team->getDisplayName(),
+            $results[0]['label'],
+        );
     }
 
     /**
