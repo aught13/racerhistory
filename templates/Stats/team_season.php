@@ -22,7 +22,7 @@ $actionMap = [
     'opponent-player-game' => 'opponentPlayerGame',
 ];
 $ajaxAction = $actionMap[$statType] ?? 'index';
-$ajaxUrl = $this->Url->build(['controller' => 'Stats', 'action' => $ajaxAction, '?' => ['sport' => $currentSport, 'format' => 'json']]);
+$ajaxUrl = $this->PublicScope->url(['controller' => 'Stats', 'action' => $ajaxAction, '?' => ['sport' => $currentSport, 'format' => 'json']]);
 ?>
 <div class="container py-4" data-controller="stats-page">
 

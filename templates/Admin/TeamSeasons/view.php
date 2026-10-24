@@ -9,7 +9,10 @@
  * @var mixed $teamSeasonRosters
  * @var mixed $teamStats
  * @var \App\Model\Entity\TeamSeason $teamSeason
+ * @var string|null $adminSeasonStatsElement
  */
+
+$adminSeasonStatsElement = $adminSeasonStatsElement ?? null;
 
 $teamSeasonImageUrl = !empty($teamSeason->team_season_image)
     ? $this->ImageServe->url((int)$teamSeason->team_season_image)

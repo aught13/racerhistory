@@ -11,6 +11,7 @@ use App\Model\Entity\TeamSeason;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Collection\CollectionInterface;
 use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\ORM\Query\SelectQuery;
 
 /**
  * BasketballStatsService
@@ -45,6 +46,22 @@ class BasketballStatsService
     public function __construct(?TeamSportContextService $teamSportContextService = null)
     {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+    }
+
+    /**
+     * Apply the shared public team scope without replacing a report-local team filter.
+     *
+     * @param \Cake\ORM\Query\SelectQuery $query Stats query.
+     * @param array<string,mixed> $filters Search filters.
+     * @param string $teamField Team identifier field in the query.
+     * @return void
+     */
+    private function applyPublicTeamScope(SelectQuery $query, array $filters, string $teamField): void
+    {
+        $teamId = (int)($filters['public_team_id'] ?? 0);
+        if ($teamId > 0) {
+            $query->where([$teamField => $teamId]);
+        }
     }
 
     /**
@@ -670,6 +687,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'TeamSeasons.team_id');
 
         $sort = $filters['sort'] ?? 'PTS';
         $direction = strtoupper($filters['direction'] ?? 'DESC');
@@ -724,6 +742,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'TeamSeasons.team_id');
 
         $sort = $filters['sort'] ?? 'PTS';
         $direction = strtoupper($filters['direction'] ?? 'DESC');
@@ -773,6 +792,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'TeamSeasons.team_id');
 
         $sort = $filters['sort'] ?? 'PTS';
         $direction = strtoupper($filters['direction'] ?? 'DESC');
@@ -829,6 +849,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'TeamSeasons.team_id');
         if (!empty($filters['game_id'])) {
             $query->where(['StatBasketGamePerson.game_id' => (int)$filters['game_id']]);
         }
@@ -883,6 +904,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['Teams.id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'Teams.id');
         if (!empty($filters['game_id'])) {
             $query->where(['StatBasketGameOpponent.game_id' => (int)$filters['game_id']]);
         }
@@ -942,6 +964,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['Teams.id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'Teams.id');
         if (!empty($filters['game_id'])) {
             $query->where(['StatBasketGameBox.game_id' => (int)$filters['game_id']]);
         }
@@ -1001,6 +1024,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['Teams.id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'Teams.id');
         if (!empty($filters['game_id'])) {
             $query->where(['StatBasketGameBox.game_id' => (int)$filters['game_id']]);
         }
@@ -1056,6 +1080,7 @@ class BasketballStatsService
         if (!empty($filters['team_id'])) {
             $query->where(['TeamSeasons.team_id' => (int)$filters['team_id']]);
         }
+        $this->applyPublicTeamScope($query, $filters, 'TeamSeasons.team_id');
 
         $rows = $query->all();
 

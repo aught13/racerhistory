@@ -109,20 +109,26 @@ class AppController extends Controller
 
         $sportOptions = $scopeService->getAvailableSportOptions();
         $teamOptions = $scopeService->getTeamOptions($scope['sportKey']);
-        $allTeamOptions = $scopeService->getTeamOptions();
         $isStatsController = $this->getRequest()->getParam('controller') === 'Stats';
         if ($isStatsController) {
             $supportedKeys = array_fill_keys((new StatsService())->getSupportedSports(), true);
             $sportOptions = array_intersect_key($sportOptions, $supportedKeys);
+            $teamOptions = array_filter(
+                $teamOptions,
+                static fn(array $teamOption): bool => isset($supportedKeys[$teamOption['sportKey']]),
+            );
         }
+
+        $showPublicTeamSelector = $isStatsController
+            ? $scope['sportKey'] !== null && (count($teamOptions) > 1 || $scope['teamId'] !== null)
+            : count($teamOptions) > 1 || $scope['teamId'] !== null;
 
         $this->set([
             'publicScope' => $scope,
             'publicSportOptions' => $sportOptions,
             'publicTeamOptions' => $teamOptions,
             'showPublicSportSelector' => count($sportOptions) > 1 || $isStatsController,
-            'showPublicTeamSelector' => !$isStatsController
-                && (count($allTeamOptions) > 1 || $scope['teamId'] !== null),
+            'showPublicTeamSelector' => $showPublicTeamSelector,
             'isStatsController' => $isStatsController,
         ]);
     }

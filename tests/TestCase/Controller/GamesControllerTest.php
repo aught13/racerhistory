@@ -63,7 +63,7 @@ class GamesControllerTest extends TestCase
         $this->get('/games');
         $this->assertResponseOk();
         $this->assertResponseContains('Games');
-        $this->assertResponseContains('Explore Men\'s Basketball game history');
+        $this->assertResponseNotContains('Explore Men\'s Basketball game history');
         $this->assertResponseContains('data-controller="nav-accordion"');
         $this->assertResponseContains('data-controller="games-search"');
         $this->assertResponseContains('/games/series-history');
@@ -83,6 +83,39 @@ class GamesControllerTest extends TestCase
         $this->assertArrayHasKey('ranked', $searchTypes);
         $this->assertArrayHasKey('overtime', $searchTypes);
         $this->assertArrayHasKey('series', $searchTypes);
+    }
+
+    /**
+     * Unscoped Games shows only the All Games view in cards and the navigation menu.
+     *
+     * @return void
+     */
+    public function testIndexWithoutSelectedTeamOnlyOffersAllGames(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => 'all']]);
+        $this->get('/games?sport=basketball&team=all');
+
+        $this->assertResponseOk();
+        $this->assertSame(['all' => 'All Games'], $this->viewVariable('searchTypes'));
+        $this->assertResponseContains('All Games');
+        $this->assertResponseNotContains('Games Home');
+        $this->assertResponseNotContains('Ranked Games');
+        $this->assertResponseNotContains('Overtime Games');
+    }
+
+    /**
+     * Basketball-only search views are hidden for a selected non-Basketball team.
+     *
+     * @return void
+     */
+    public function testFootballTeamHidesHundredPointView(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'football', 'team' => '3']]);
+        $this->get('/games?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $this->assertArrayNotHasKey('hundred-point', $this->viewVariable('searchTypes'));
+        $this->assertResponseNotContains('100 Point Games');
     }
 
     /**
@@ -237,6 +270,19 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * The 100-point view also requires a selected team.
+     *
+     * @return void
+     */
+    public function testHundredPointRequiresTeamScope(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => 'all']]);
+        $this->get('/games/hundred-point?sport=basketball&team=all');
+
+        $this->assertRedirectContains('/games?sport=basketball&team=all');
+    }
+
+    /**
      * The Series opponents endpoint also requires a selected team.
      */
     public function testSeriesOpponentsRequiresTeamScope(): void
@@ -283,7 +329,9 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('All Games');
         $this->assertResponseContains('data-controller="games-search"');
-        $this->assertResponseContains('data-weekday-column="11"');
+        $this->assertResponseContains('<th>Team</th>');
+        $this->assertResponseContains('data-result-column="3"');
+        $this->assertResponseContains('data-weekday-column="12"');
 
         $bounds = $this->viewVariable('gamesDateBounds');
         $this->assertIsArray($bounds);
@@ -313,9 +361,10 @@ class GamesControllerTest extends TestCase
         $data = json_decode($body, true);
         $this->assertArrayHasKey('data', $data);
         $this->assertNotEmpty($data['data']);
-        $this->assertSame('Conf', (string)$data['data'][0][9]);
+        $this->assertSame('LAL', (string)$data['data'][0][1]);
+        $this->assertSame('Conf', (string)$data['data'][0][10]);
         $this->assertStringContainsString('Monday, January 20, 2025', $body);
-        $this->assertSame('Monday', (string)$data['data'][0][11]);
+        $this->assertSame('Monday', (string)$data['data'][0][12]);
     }
 
     /**

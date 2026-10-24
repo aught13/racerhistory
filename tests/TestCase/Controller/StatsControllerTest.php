@@ -104,6 +104,23 @@ class StatsControllerTest extends TestCase
     }
 
     /**
+     * The shared Stats selector offers all teams in the selected sport and each team.
+     *
+     * @return void
+     */
+    public function testStatsSelectorOffersSportAllAndTeamOptions(): void
+    {
+        $this->get('/stats?sport=basketball');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('All Basketball');
+        $this->assertResponseContains('value="1" data-sport-key="basketball"');
+        $this->assertResponseContains('value="2" data-sport-key="basketball"');
+        $this->assertResponseNotContains('data-bs-theme="dark"');
+    }
+
+    /**
      * Reports require an explicit supported sport.
      */
     public function testPlayerSeasonRequiresExplicitSport(): void
@@ -165,6 +182,51 @@ class StatsControllerTest extends TestCase
         $body = (string)$this->_response->getBody();
         $json = json_decode($body, true);
         $this->assertArrayHasKey('data', $json);
+    }
+
+    /**
+     * Global team scope filters Stats and a team selection supplies its sport.
+     *
+     * @return void
+     */
+    public function testPlayerSeasonJsonUsesGlobalTeamScope(): void
+    {
+        $this->get('/stats/player-season?team=1&format=json');
+        $this->assertResponseOk();
+        $teamOne = json_decode((string)$this->_response->getBody(), true);
+        $this->assertNotEmpty($teamOne['data']);
+
+        $this->get('/stats/player-season?sport=basketball&team=2&format=json');
+        $this->assertResponseOk();
+        $teamTwo = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame([], $teamTwo['data']);
+    }
+
+    /**
+     * The global team scope intersects with the report-local team_id filter.
+     *
+     * @return void
+     */
+    public function testPlayerSeasonGlobalTeamScopeIntersectsReportTeamFilter(): void
+    {
+        $this->get('/stats/player-season?sport=basketball&team=2&team_id=1&format=json');
+
+        $this->assertResponseOk();
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame([], $json['data']);
+    }
+
+    /**
+     * Stats DataTables URLs preserve the global team selection.
+     *
+     * @return void
+     */
+    public function testPlayerSeasonAjaxUrlPreservesGlobalTeamScope(): void
+    {
+        $this->get('/stats/player-season?sport=basketball&team=2');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('team=2');
     }
 
     /**

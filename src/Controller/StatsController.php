@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PublicSportScopeService;
 use App\Service\SportConfigService;
 use App\Service\StatsService;
 use App\Service\TeamSportContextService;
@@ -49,6 +50,11 @@ use Cake\Routing\Router;
  */
 class StatsController extends AppController
 {
+    /**
+     * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}|null
+     */
+    private ?array $resolvedPublicScope = null;
+
     /**
      * @var \App\Service\StatsService
      */
@@ -129,10 +135,17 @@ class StatsController extends AppController
             $filters['team_id'] = (int)$teamId;
         }
 
+        $publicTeamId = $this->getResolvedPublicScope()['teamId'];
+        if ($publicTeamId !== null) {
+            $filters['public_team_id'] = $publicTeamId;
+        }
+
         $gameId = $request->getQuery('game_id');
         if ($gameId !== null && $gameId !== '') {
             $filters['game_id'] = (int)$gameId;
         }
+
+        $filters['limit'] = 0;
 
         return $filters;
     }
@@ -198,17 +211,38 @@ class StatsController extends AppController
      */
     protected function resolveCurrentSport(): ?string
     {
-        $sport = $this->getRequest()->getQuery('sport');
-        if (!is_string($sport) || trim($sport) === '' || strtolower(trim($sport)) === 'all') {
+        $sport = $this->getResolvedPublicScope()['sportKey'];
+        if ($sport === null) {
             return null;
         }
 
-        $sportId = $this->statsService->getSportIdByName(trim($sport));
+        $sportId = $this->statsService->getSportIdByName($sport);
         if ($sportId === null || !$this->statsService->hasSportSupport($sportId)) {
             throw new BadRequestException('Statistics are not available for the selected sport.');
         }
 
         return $this->sportConfigService->getKeyById($sportId);
+    }
+
+    /**
+     * Resolve the validated public sport/team scope once per request.
+     *
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    private function getResolvedPublicScope(): array
+    {
+        if ($this->resolvedPublicScope !== null) {
+            return $this->resolvedPublicScope;
+        }
+
+        $scope = (new PublicSportScopeService())->resolve($this->getRequest()->getQueryParams());
+        if (!$scope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        $this->resolvedPublicScope = $scope;
+
+        return $this->resolvedPublicScope;
     }
 
     /**
@@ -249,7 +283,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchPlayerSeasonStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchPlayerSeasonStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatPlayerSeasonRows($results, $sportId));
         }
@@ -272,7 +306,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchTeamSeasonStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchTeamSeasonStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatTeamSeasonRows($results, $sportId));
         }
@@ -295,7 +329,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchTeamSeasonOpponentStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchTeamSeasonOpponentStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatTeamSeasonRows($results, $sportId));
         }
@@ -318,7 +352,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchPlayerCareerStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchPlayerCareerStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatPlayerCareerRows($results, $sportId));
         }
@@ -341,7 +375,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchPlayerGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchPlayerGameStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatPlayerGameRows($results, $sportId));
         }
@@ -364,7 +398,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchTeamGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchTeamGameStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatTeamGameRows($results, $sportId, 'team-game'));
         }
@@ -387,7 +421,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchOpponentTeamGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchOpponentTeamGameStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatTeamGameRows($results, $sportId, 'opponent-team-game'));
         }
@@ -410,7 +444,7 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchOpponentPlayerGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchOpponentPlayerGameStats($sportId, $this->getFilters());
 
             return $this->jsonResponse($this->formatOpponentPlayerGameRows($results, $sportId));
         }
@@ -447,6 +481,10 @@ class StatsController extends AppController
             ->resolveSportIdFromTeam($teamSeason->team ?? null);
         if ($teamSportId !== $selectedSportId) {
             throw new NotFoundException('Statistics not found for the selected sport.');
+        }
+        $selectedTeamId = $this->getResolvedPublicScope()['teamId'];
+        if ($selectedTeamId !== null && $selectedTeamId !== (int)$teamSeason->get('team_id')) {
+            throw new NotFoundException('Statistics not found for the selected team.');
         }
 
         $playerStats = $this->statsService->getSeasonPlayerStatsList($teamSeasonId);

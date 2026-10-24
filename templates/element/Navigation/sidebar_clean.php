@@ -34,6 +34,11 @@ $showPublicTeamSelector = $showPublicTeamSelector ?? false;
 $isStatsController = $isStatsController ?? false;
 $publicSportOptions = $publicSportOptions ?? [];
 $publicTeamOptions = $publicTeamOptions ?? [];
+$allTeamsLabel = $scopeSport !== 'all'
+    && count($publicTeamOptions) > 1
+    && isset($publicSportOptions[$scopeSport])
+    ? 'All ' . $publicSportOptions[$scopeSport]
+    : 'All teams';
 $currentPath = (string)$this->getRequest()->getUri()->getPath();
 $preservedQuery = $this->getRequest()->getQueryParams();
 unset($preservedQuery['sport'], $preservedQuery['team'], $preservedQuery['gender'], $preservedQuery['show_all_history']);
@@ -155,7 +160,7 @@ $marginsLosingLinks = [
 ];
 ?>
 
-<nav class="navbar navbar-expand-lg rh-navbar" data-bs-theme="dark" aria-label="Primary navigation">
+<nav class="navbar navbar-expand-lg rh-navbar" aria-label="Primary navigation">
     <div class="navbar-container">
         <a class="navbar-brand rh-logo-link" href="<?= $this->Url->build('/?' . http_build_query(['sport' => $scopeSport, 'team' => $scopeTeam])) ?>" aria-label="RacerHistory Home">
             <img src="<?= $this->Url->build('/img/logo.png') ?>" alt="" style="max-height: 32px; object-fit: contain;" loading="eager" class="rh-nav-logo">
@@ -208,7 +213,7 @@ $marginsLosingLinks = [
                                 <select id="public-scope-team" name="team" class="form-select form-select-sm"
                                         data-public-sport-scope-target="team"
                                         data-action="change->public-sport-scope#changeTeam">
-                                    <option value="all" data-sport-key="all"<?= $scopeTeam === 'all' ? ' selected' : '' ?>>All teams</option>
+                                    <option value="all" data-sport-key="all"<?= $scopeTeam === 'all' ? ' selected' : '' ?>><?= h($allTeamsLabel) ?></option>
                                     <?php foreach ($publicTeamOptions as $teamId => $teamOption) : ?>
                                         <option value="<?= (int)$teamId ?>" data-sport-key="<?= h($teamOption['sportKey']) ?>"<?= $scopeTeam === (string)$teamId ? ' selected' : '' ?>><?= h($teamOption['label']) ?></option>
                                     <?php endforeach; ?>
@@ -261,8 +266,10 @@ $marginsLosingLinks = [
                     </button>
                     <div class="rh-nav-panel d-none ps-3 pt-2 pb-1" data-nav-accordion-target="panel" id="games-panel" hidden>
                         <div class="rh-nav-submenu-links d-flex flex-column gap-2">
-                            <?= $navLink('Games Home', '/games') ?>
                             <?= $navLink('All Games', '/games/all-games') ?>
+
+                            <?php if ($scopeTeam !== 'all') : ?>
+                                <?= $navLink('Games Home', '/games') ?>
 
                             <div class="rh-nav-subgroup rh-nav-subgroup--level2">
                                 <button
@@ -285,8 +292,9 @@ $marginsLosingLinks = [
                                 </div>
                             </div>
 
-                            <?= $navLink('Overtime Games', '/games/overtime') ?>
+                                <?= $navLink('Overtime Games', '/games/overtime') ?>
 
+                                <?php if ($scopeSport === 'basketball') : ?>
                             <div class="rh-nav-subgroup rh-nav-subgroup--level2">
                                 <button
                                     type="button"
@@ -307,6 +315,7 @@ $marginsLosingLinks = [
                                     </div>
                                 </div>
                             </div>
+                                <?php endif; ?>
 
                             <div class="rh-nav-subgroup rh-nav-subgroup--level2">
                                 <button
@@ -447,7 +456,8 @@ $marginsLosingLinks = [
                                 </div>
                             </div>
 
-                            <?= $navLink('Series History', '/games/series-history') ?>
+                                <?= $navLink('Series History', '/games/series-history') ?>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </li>

@@ -155,6 +155,7 @@ class GamesController extends AppController
         $teamScopedActions = [
             'ranked',
             'overtime',
+            'hundredPoint',
             'openers',
             'streaks',
             'margins',
@@ -180,7 +181,16 @@ class GamesController extends AppController
     public function beforeRender(EventInterface $event): void
     {
         parent::beforeRender($event);
-        $this->set('searchTypes', $this->searchTypes);
+        $searchTypes = $this->searchTypes;
+        if ($this->publicScope['teamId'] === null) {
+            $searchTypes = ['all' => $this->searchTypes['all']];
+        } elseif ($this->publicScope['sportKey'] !== 'basketball') {
+            unset($searchTypes['hundred-point']);
+        }
+        $this->set([
+            'searchTypes' => $searchTypes,
+            'selectedTeamId' => $this->publicScope['teamId'],
+        ]);
     }
 
     /**
@@ -269,7 +279,7 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->allGames();
 
-            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y', true, true));
+            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y', true, true, true));
         }
 
         $this->set('currentSearch', 'all');
@@ -727,6 +737,7 @@ class GamesController extends AppController
      * @param string $dateFormat
      * @param bool $showConferenceTypeAbr
      * @param bool $includeWeekdayColumn
+     * @param bool $includeTeamColumn
      * @return array
      */
     protected function formatOvertimeRows(
@@ -734,6 +745,7 @@ class GamesController extends AppController
         string $dateFormat = 'm/d/Y',
         bool $showConferenceTypeAbr = false,
         bool $includeWeekdayColumn = false,
+        bool $includeTeamColumn = false,
     ): array {
         $rows = [];
         foreach ($games as $g) {
@@ -753,11 +765,16 @@ class GamesController extends AppController
                     ['controller' => 'Games', 'action' => 'view', $g->id],
                     ['escape' => false],
                 ),
-                $this->link(
-                    $g->opponent->opponent_abbr ?? '?',
-                    ['controller' => 'Games', 'action' => 'series',
+            ];
+            if ($includeTeamColumn) {
+                $row[] = h($g->team_season->team->abbr ?? '-');
+            }
+            $row[] = $this->link(
+                $g->opponent->opponent_abbr ?? '?',
+                ['controller' => 'Games', 'action' => 'series',
                      '?' => ['opponent_id' => $g->opponent->id ?? 0]],
-                ),
+            );
+            $row = array_merge($row, [
                 h($result ?? '-'),
                 abs($ptsMur - $ptsOpp),
                 $ptsMur,
@@ -770,7 +787,7 @@ class GamesController extends AppController
                     $seasonLabel,
                     ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
                 ),
-            ];
+            ]);
 
             if ($includeWeekdayColumn) {
                 $row[] = $this->formatWeekday($g->game_date ?? null);

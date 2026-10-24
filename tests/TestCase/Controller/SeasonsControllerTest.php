@@ -72,6 +72,25 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
+     * A one-team sport omits a redundant all-teams selector until a team is selected.
+     *
+     * @return void
+     */
+    public function testTeamSelectorIsHiddenForSingleTeamSportUntilSelection(): void
+    {
+        $this->get('/seasons?sport=football&team=all');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('id="public-scope-team"');
+
+        $this->get('/seasons?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('New York Giants');
+    }
+
+    /**
      * Tests index displays team seasons.
      */
     public function testIndexDisplaysTeamSeasons(): void
