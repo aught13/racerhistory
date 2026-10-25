@@ -269,6 +269,33 @@ describe("tag-modal controller", () => {
         expect(window.fetch).not.toHaveBeenCalled();
     });
 
+    test("save shows server failure details and keeps the modal open", async () => {
+        const controller = getController();
+        const host = controller.element.querySelector(".tag-modal-host");
+        host.innerHTML = modalHtml();
+        const modalEl = host.querySelector(".modal");
+        document.body.appendChild(modalEl);
+        controller.modalEl = modalEl;
+
+        window.fetch = jest.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+            text: async () => "Database table missing",
+        });
+
+        await controller.save({ preventDefault: jest.fn(), target: modalEl });
+
+        expect(console.error).toHaveBeenCalledWith(
+            "Failed to apply tags",
+            500,
+            "Database table missing",
+        );
+        expect(modalEl.querySelector("[data-tag-modal-error]")?.textContent).toContain(
+            "HTTP 500",
+        );
+        expect(document.getElementById("tag-modal-images-123")).not.toBeNull();
+    });
+
     test("show/hide fallback toggles modal classes and removes element", () => {
         const controller = getController();
         const modal = document.createElement("div");

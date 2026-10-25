@@ -344,6 +344,10 @@ class TaggingService
                     if (isset($meta['service'])) {
                         if ($meta['service'] === 'person') {
                             $display = $this->personService->getDisplayLabel($id);
+                        } elseif ($meta['service'] === 'sport') {
+                            $display = (new TeamSportContextService())->resolveSportNameFromTeam(
+                                (object)['sport_id' => $id],
+                            ) ?? 'sport';
                         } else {
                             $display = $this->teamSeasonService->getDisplayLabel($id);
                         }
@@ -540,8 +544,7 @@ class TaggingService
             ],
             'sport_select' => [
                 'prefix' => 'sport-',
-                'table' => 'Sports',
-                'label' => fn($row) => $row->sport_name ?? 'sport',
+                'service' => 'sport',
             ],
         ];
     }

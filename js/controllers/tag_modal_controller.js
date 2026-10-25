@@ -161,7 +161,27 @@ export default class extends Controller {
                 headers,
             });
             if (!resp.ok) {
-                console.error("Failed to apply tags", resp.status);
+                const responseBody = await resp.text();
+                console.error(
+                    "Failed to apply tags",
+                    resp.status,
+                    responseBody,
+                );
+
+                const previousError = modalEl.querySelector(
+                    "[data-tag-modal-error]",
+                );
+                previousError?.remove();
+
+                const errorNotice = document.createElement("div");
+                errorNotice.className = "alert alert-danger";
+                errorNotice.setAttribute("role", "alert");
+                errorNotice.dataset.tagModalError = "";
+                errorNotice.textContent = `Unable to save tags (HTTP ${resp.status}). Your changes are still in the form. Check the browser console for server details.`;
+                const errorContainer =
+                    modalEl.querySelector(".modal-body") ||
+                    modalEl.querySelector(".modal-content");
+                errorContainer?.prepend(errorNotice);
 
                 return;
             }

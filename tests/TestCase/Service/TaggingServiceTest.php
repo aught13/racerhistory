@@ -5,6 +5,7 @@ namespace App\Test\TestCase\Service;
 
 use App\Service\TaggingService;
 use App\Service\TeamSeasonService;
+use App\Service\TeamSportContextService;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
@@ -160,6 +161,22 @@ class TaggingServiceTest extends TestCase
 
         $this->assertSame([
             ['slug' => 'team-1', 'name' => $team->getDisplayName()],
+        ], $tags);
+    }
+
+    /**
+     * Sport tag names resolve from configuration instead of the legacy Sports table.
+     */
+    public function testBuildTagsFromDataUsesConfiguredSportName(): void
+    {
+        $sportOptions = (new TeamSportContextService())->getLegacySportOptions();
+        $sportId = (int)array_search('Basketball', $sportOptions, true);
+        $this->assertGreaterThan(0, $sportId);
+
+        $tags = TaggingService::forBlogPosts()->buildTagsFromData(['sport_select' => $sportId]);
+
+        $this->assertSame([
+            ['slug' => 'sport-' . $sportId, 'name' => 'Basketball'],
         ], $tags);
     }
 
