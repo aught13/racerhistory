@@ -260,7 +260,7 @@ export function initGameFormLookups() {
         searchUrl: opponentSearchUrl,
         columns: ["opponent_name", "opponent_short", "opponent_mascot"],
         columnLabels: ["Name", "Short", "Mascot"],
-        displayField: "opponent_name",
+        displayField: "label",
         initialDisplay: formContainer.dataset.opponentDisplay || null,
     });
 

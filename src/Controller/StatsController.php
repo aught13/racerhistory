@@ -635,7 +635,7 @@ class StatsController extends AppController
 
             $opponentCell = $game
                 ? $this->link(
-                    $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
+                    $game->opponent?->getDisplayName() ?? 'vs ???',
                     ['controller' => 'Games', 'action' => 'view', $game->id],
                 )
                 : '-';
@@ -670,9 +670,9 @@ class StatsController extends AppController
 
             if ($statType === 'team-game') {
                 $opponentText = ($game->team_season->team->abbr ?? '???') . ' Vs ' .
-                    ($game->opponent->opponent_short ?? $game->opponent->opponent_name ?? '???');
+                    ($game->opponent?->getDisplayName() ?? '???');
             } else {
-                $opponentText = ($game->opponent->opponent_short ?? $game->opponent->opponent_name ?? '???') . ' Vs ' .
+                $opponentText = ($game->opponent?->getDisplayName() ?? '???') . ' Vs ' .
                     ($game->team_season->team->abbr ?? '???');
             }
 
@@ -711,7 +711,7 @@ class StatsController extends AppController
 
             $opponentCell = $game
                 ? $this->link(
-                    $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
+                    $game->opponent?->getDisplayName() ?? 'vs ???',
                     ['controller' => 'Games', 'action' => 'view', $game->id],
                 )
                 : '-';

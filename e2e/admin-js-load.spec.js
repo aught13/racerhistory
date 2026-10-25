@@ -256,6 +256,48 @@ test.describe("Admin JS Loading", () => {
         ).toHaveText("Women's Basketball");
     });
 
+    test("opponent add form previews the composed display names", async ({
+        page,
+    }) => {
+        await page.goto("/admin/opponents/add", {
+            waitUntil: "domcontentloaded",
+        });
+        const controllerElement = page.locator(
+            '[data-controller~="opponent-name-preview"]',
+        );
+
+        await expect(controllerElement).toBeVisible();
+        await page.waitForFunction(() => {
+            const element = document.querySelector(
+                '[data-controller~="opponent-name-preview"]',
+            );
+            if (!element) {
+                return false;
+            }
+
+            return Boolean(
+                window.StimulusApplication?.getControllerForElementAndIdentifier(
+                    element,
+                    "opponent-name-preview",
+                ),
+            );
+        });
+
+        await page.locator("#opponent-name").fill("Belmont University");
+        await page.locator("#opponent-short").fill("Belmont");
+        await page.locator("#opponent-mascot").fill("Bruins");
+
+        await expect(
+            page.locator('[data-opponent-name-preview-target="fullOpponentName"]'),
+        ).toHaveText("Belmont University Bruins");
+        await expect(
+            page.locator('[data-opponent-name-preview-target="defaultOpponentName"]'),
+        ).toHaveText("Belmont Bruins");
+        await expect(
+            page.locator('[data-opponent-name-preview-target="opponent"]'),
+        ).toHaveText("Bruins");
+    });
+
     /* ── Bootstrap re-initialisation ─────────────────────────── */
 
     test("Bootstrap is available after Turbo Drive navigation within admin", async ({

@@ -366,7 +366,7 @@ $this->start('css'); ?>
                                                     $locationPrefix = 'vs';
                                                 }
                                                 ?>
-                                                <?= h($locationPrefix) ?> <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
+                                                <?= h($locationPrefix) ?> <?= h($game->opponent?->getDisplayName() ?? 'Unknown') ?>
                                             </td>
                                             <td>
                                                 <?php $type = $game->game_type ?? null; ?>

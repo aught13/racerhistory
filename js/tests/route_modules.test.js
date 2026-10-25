@@ -63,6 +63,7 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("admin-layout")).toBe(true);
             expect(registeredControllers.has("admin-dashboard")).toBe(true);
             expect(registeredControllers.has("nav-accordion")).toBe(true);
+            expect(registeredControllers.has("opponent-name-preview")).toBe(true);
             expect(registeredControllers.has("period-import-toggle")).toBe(
                 true,
             );

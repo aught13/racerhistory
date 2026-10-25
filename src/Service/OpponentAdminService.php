@@ -154,7 +154,7 @@ class OpponentAdminService
 
             $data[] = [
                 'id' => (int)$opponent->id,
-                'name' => h($opponent->opponent_name ?? ''),
+                'name' => h($opponent->getDisplayName()),
                 'short' => h($hasShortColumn ? ($opponent->opponent_short ?? '') : ''),
                 'abbr' => h($hasAbbrColumn ? ($opponent->opponent_abbr ?? '') : ''),
                 'place' => h($placeLabel !== '' ? $placeLabel : '-'),
@@ -183,16 +183,14 @@ class OpponentAdminService
     /**
      * Return add form data.
      *
-     * @return array{opponent:\App\Model\Entity\Opponent,places:array<int,string>,opponentsList:\Cake\Datasource\ResultSetInterface}
+     * @return array{opponent:\App\Model\Entity\Opponent,places:array<int,string>,opponentsList:array<int,string>}
      */
     public function getAddFormData(): array
     {
         /** @var \App\Model\Entity\Opponent $opponent */
         $opponent = $this->getOpponentsTable()->newEmptyEntity();
         $places = (new PlaceService())->getPlacesList();
-        $opponentsList = $this->getOpponentsTable()->find('list')
-            ->orderBy(['Opponents.opponent_name' => 'ASC'])
-            ->all();
+        $opponentsList = (new OpponentService())->getOpponentsList();
 
         return compact('opponent', 'places', 'opponentsList');
     }
@@ -217,17 +215,15 @@ class OpponentAdminService
      * Return edit form data.
      *
      * @param string|int $id Opponent identifier
-     * @return array{opponent:\App\Model\Entity\Opponent,places:array<int,string>,opponentsList:\Cake\Datasource\ResultSetInterface}
+     * @return array{opponent:\App\Model\Entity\Opponent,places:array<int,string>,opponentsList:array<int,string>}
      */
     public function getEditFormData(int|string $id): array
     {
         /** @var \App\Model\Entity\Opponent $opponent */
         $opponent = $this->getOpponentsTable()->get($id);
         $places = (new PlaceService())->getPlacesList();
-        $opponentsList = $this->getOpponentsTable()->find('list')
-            ->where(['Opponents.id !=' => $id])
-            ->orderBy(['Opponents.opponent_name' => 'ASC'])
-            ->all();
+        $opponentsList = (new OpponentService())->getOpponentsList();
+        unset($opponentsList[(int)$id]);
 
         return compact('opponent', 'places', 'opponentsList');
     }
@@ -299,6 +295,7 @@ class OpponentAdminService
                 'opponent_short' => $opponent->opponent_short,
                 'opponent_abbr' => $opponent->opponent_abbr,
                 'opponent_mascot' => $opponent->opponent_mascot,
+                'label' => $opponent->getDisplayName(),
             ];
         }
 
@@ -326,7 +323,7 @@ class OpponentAdminService
                 'message' => 'The opponent has been saved.',
                 'newOption' => [
                     'value' => $opponent->id,
-                    'text' => $opponent->opponent_name,
+                    'text' => $opponent->getDisplayName(),
                 ],
             ];
         }

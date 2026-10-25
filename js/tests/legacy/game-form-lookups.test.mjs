@@ -642,6 +642,43 @@ describe("game-form-lookups", () => {
             ).toContain("None selected");
         });
 
+        test("opponent lookup selects the default display label", async () => {
+            jest.useFakeTimers();
+            setupFullFormDom();
+            initGameFormLookups();
+            global.fetch.mockResolvedValue({
+                json: () =>
+                    Promise.resolve({
+                        success: true,
+                        results: [
+                            {
+                                id: 8,
+                                opponent_name: "Belmont University",
+                                opponent_short: "Belmont",
+                                opponent_mascot: "Bruins",
+                                label: "Belmont Bruins",
+                            },
+                        ],
+                    }),
+            });
+
+            const input = document.getElementById("opponent-search");
+            input.value = "Belmont";
+            input.dispatchEvent(new Event("input"));
+            await jest.advanceTimersByTimeAsync(300);
+
+            const result = document.querySelector(
+                "#opponent-results .lookup-result-row",
+            );
+            expect(result.dataset.display).toBe("Belmont Bruins");
+            result.click();
+            expect(
+                document.getElementById("opponent-selected").textContent,
+            ).toContain("Belmont Bruins");
+
+            jest.useRealTimers();
+        });
+
         test("disables add-site button when no place is selected", () => {
             setupFullFormDom();
             initGameFormLookups();

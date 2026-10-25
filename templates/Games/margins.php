@@ -100,12 +100,7 @@ $filterLabels = [
                                             'action' => 'series',
                                             '?' => ['opponent_id' => $game->opponent->id ?? 0],
                                         ]) ?>">
-                                            <?= h(
-                                                $game->opponent->opponent_short
-                                                ?? $game->opponent->opponent_abbr
-                                                ?? $game->opponent->opponent_name
-                                                ?? '?',
-                                            ) ?>
+                                            <?= h($game->opponent?->getDisplayName() ?? '?') ?>
                                         </a>
                                     </td>
                                     <td><strong><?= (int)($game->margin ?? 0) ?></strong></td>

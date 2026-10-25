@@ -552,6 +552,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('id="add-game-type-modal"');
         $this->assertResponseContains('id="add-opponent-modal"');
+        $this->assertResponseContains('data-controller="opponent-name-preview"');
+        $this->assertResponseContains('data-opponent-name-preview-target="fullOpponentName"');
         $this->assertResponseContains('id="add-place-modal"');
         $this->assertResponseContains('id="add-site-modal"');
     }
@@ -593,6 +595,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('id="add-game-type-modal"');
         $this->assertResponseContains('id="add-opponent-modal"');
+        $this->assertResponseContains('data-controller="opponent-name-preview"');
+        $this->assertResponseContains('data-opponent-name-preview-target="fullOpponentName"');
         $this->assertResponseContains('id="add-place-modal"');
         $this->assertResponseContains('id="add-site-modal"');
         $this->assertResponseContains('id="add-opponent-place-modal"');

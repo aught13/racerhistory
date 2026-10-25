@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Image;
+use App\Model\Entity\Opponent;
 use App\Model\Entity\Team;
 use App\Model\Table\ImagesTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -264,7 +265,9 @@ class ImagesAdminService
             'game_select' => [
                 'prefix' => 'game-',
                 'table' => 'Games',
-                'label' => fn($row) => $row->opponent_name ?? 'game',
+                'label' => static fn($row): string => (int)($row->id ?? 0) > 0
+                    ? (new GameService())->getGameTagDisplayLabel((int)$row->id)
+                    : 'game',
             ],
             'site_select' => [
                 'prefix' => 'site-',
@@ -274,7 +277,9 @@ class ImagesAdminService
             'opponent_select' => [
                 'prefix' => 'opponent-',
                 'table' => 'Opponents',
-                'label' => fn($row) => $row->opponent_name ?? 'opponent',
+                'label' => static fn($row): string => $row instanceof Opponent
+                    ? $row->getDisplayName()
+                    : 'opponent',
             ],
             'team_select' => [
                 'prefix' => 'team-',

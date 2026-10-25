@@ -239,6 +239,30 @@ class GamesControllerTest extends TestCase
     }
 
     /**
+     * Opponent search returns the default composed display label.
+     */
+    public function testSearchOpponentsUsesDefaultDisplayName(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        $hasMascotColumn = $opponents->getSchema()->hasColumn('opponent_mascot');
+        if ($hasMascotColumn) {
+            $opponent->opponent_mascot = 'Bruins';
+        }
+        $opponents->saveOrFail($opponent);
+        $expectedLabel = $opponents->get(1)->getDisplayName();
+
+        $this->get('/games/search-opponents?q=' . ($hasMascotColumn ? 'Bruins' : 'Belmont'));
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame($expectedLabel, $payload['opponents'][0]['label']);
+        $this->assertSame($expectedLabel, $payload['opponents'][0]['name']);
+        $this->assertSame('Belmont', $payload['opponents'][0]['opponent_name']);
+    }
+
+    /**
      * Ensure a Game detail page cannot escape the selected public scope.
      */
     public function testViewRejectsGameOutsideSelectedScope(): void

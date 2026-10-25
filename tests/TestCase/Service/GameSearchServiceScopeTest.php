@@ -87,4 +87,41 @@ class GameSearchServiceScopeTest extends TestCase
         $this->assertCount(1, $games);
         $this->assertSame(3, (int)$games[0]->team_season->team->id);
     }
+
+    /**
+     * Opponent filter options use the default short-name and mascot display.
+     */
+    public function testOpponentOptionsUseDefaultDisplayName(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        $opponent = $opponents->get(1);
+        if ($opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $opponent->opponent_mascot = 'Bruins';
+        }
+        $opponents->saveOrFail($opponent);
+
+        $this->assertSame(
+            $opponents->get(1)->getDisplayName(),
+            $this->service->getOpponentsList()[1],
+        );
+    }
+
+    /**
+     * Series search results provide a canonical display label and search mascots.
+     */
+    public function testSeriesOpponentSearchUsesDefaultDisplayName(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $result = $this->service->searchSeriesOpponents('Bruins');
+
+        $this->assertNotEmpty($result['rows']);
+        $this->assertSame('BEL Bruins', $result['rows'][0]['opponent_display_name']);
+    }
 }

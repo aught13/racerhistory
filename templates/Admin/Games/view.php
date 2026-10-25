@@ -53,7 +53,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
                     <a href="<?= $this->Url->build([
                         'prefix' => 'Admin', 'controller' => 'Games', 'action' => 'view', $previousGame->id,
                     ]) ?>" class="btn btn-outline-secondary btn-sm"
-                        title="Previous Game: <?= h($previousGame->opponent->opponent_name ?? 'Opponent') ?>">
+                        title="Previous Game: <?= h($previousGame->opponent?->getDisplayName() ?? 'Opponent') ?>">
                         <i class="bi bi-chevron-left"></i> <?= h($previousGame->game_date?->format('M j, Y') ?? '') ?>
                     </a>
                 <?php endif; ?>
@@ -61,7 +61,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
                     <a href="<?= $this->Url->build([
                         'prefix' => 'Admin', 'controller' => 'Games', 'action' => 'view', $nextGame->id,
                     ]) ?>" class="btn btn-outline-secondary btn-sm"
-                        title="Next Game: <?= h($nextGame->opponent->opponent_name ?? 'Opponent') ?>">
+                        title="Next Game: <?= h($nextGame->opponent?->getDisplayName() ?? 'Opponent') ?>">
                         <?= h($nextGame->game_date?->format('M j, Y') ?? '') ?> <i class="bi bi-chevron-right"></i>
                     </a>
                 <?php endif; ?>
@@ -89,7 +89,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
             ?>
         </span>
         <span class="h3 col-xl-5 text-center text-nowrap">
-            <?= h($game->opponent->opponent_name ?? '') ?>
+            <?= h($game->opponent?->getFullDisplayName() ?? '') ?>
         </span>
         <span class="h3 col-sm-12 text-center text-nowrap">
             <?= h((new DateTime($game->game_date))->format('l, F jS, Y')) ?>
@@ -106,7 +106,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
                         <tr>
                             <th class="text-center h2"><?= h($game->team_season->team->team_nickname ?? 'Team') ?></th>
                             <th></th>
-                            <th class="text-center h2"><?= h($game->opponent->opponent_name ?? 'Opponent') ?></th>
+                            <th class="text-center h2"><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -519,7 +519,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
             <?php if (!empty($opponentBoxStats)) : ?>
                 <div class="row mt-4">
                     <div class="col-12">
-                        <h3><?= h($game->opponent->opponent_name ?? 'Opponent') ?> - <?= h($game->pts_opp ?? '') ?></h3>
+                        <h3><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?> - <?= h($game->pts_opp ?? '') ?></h3>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -761,7 +761,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
                                 <tr>
                                     <th><?= h($game->team_season->team->team_nickname ?? 'Murray State') ?></th>
                                     <th>Category</th>
-                                    <th><?= h($game->opponent->opponent_name ?? 'Opponent') ?></th>
+                                    <th><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?></th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -464,9 +464,10 @@ class GamesController extends AppController
         foreach ($results as $opponent) {
             $opponents[] = [
                 'id' => (int)$opponent->id,
-                'name' => (string)($opponent->opponent_name ?? ''),
+                'name' => $opponent->getDisplayName(),
                 'short' => (string)($opponent->opponent_short ?? ''),
-                'label' => (string)($opponent->opponent_name ?? 'Opponent #' . $opponent->id),
+                'label' => $opponent->getDisplayName(),
+                'opponent_name' => $opponent->opponent_name,
             ];
         }
 
@@ -507,7 +508,7 @@ class GamesController extends AppController
             );
 
             return [
-                h((string)($row['opponent_name'] ?? 'Unknown')),
+                h((string)($row['opponent_display_name'] ?? $row['opponent_name'] ?? 'Unknown')),
                 h((string)($row['opponent_short'] ?? '-')),
                 (int)($row['games_count'] ?? 0),
                 $selectLink,
@@ -710,7 +711,7 @@ class GamesController extends AppController
                 (int)($g->mur_rk ?? 0) ?: '-',
                 h($g->team_season->team?->getDisplayName() ?? 'Murray State'),
                 $this->link(
-                    $g->opponent->opponent_name ?? '?',
+                    $g->opponent?->getDisplayName() ?? '?',
                     ['controller' => 'Games', 'action' => 'series',
                      '?' => ['opponent_id' => $g->opponent->id ?? 0]],
                 ),
@@ -840,10 +841,7 @@ class GamesController extends AppController
             $gameTypeDisplay = $g->post
                 ? h((string)($g->game_type->abr ?? 'Post'))
                 : 'Regular';
-            $opponentDisplay = (string)($g->opponent->opponent_short
-                ?? $g->opponent->opponent_abbr
-                ?? $g->opponent->opponent_name
-                ?? '?');
+            $opponentDisplay = $g->opponent?->getDisplayName() ?? '?';
             $rows[] = [
                 $this->link(
                     $dateDisplay,
@@ -893,10 +891,7 @@ class GamesController extends AppController
             $gameTypeDisplay = $g->post || $isConf
                 ? h((string)($g->game_type->abr ?? ($isConf ? 'Conf' : 'Post')))
                 : 'Regular';
-            $opponentDisplay = (string)($g->opponent->opponent_short
-                ?? $g->opponent->opponent_abbr
-                ?? $g->opponent->opponent_name
-                ?? '?');
+            $opponentDisplay = $g->opponent?->getDisplayName() ?? '?';
             $rows[] = [
                 $this->link(
                     $dateDisplay,

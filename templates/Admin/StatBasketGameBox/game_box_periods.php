@@ -39,7 +39,7 @@ $this->assign('title', 'Period Box Scores');
         <?php endif; ?>
         vs
         <?php if ($game->opponent) : ?>
-            <?= h($game->opponent->opponent_name) ?>
+            <?= h($game->opponent->getMascotDisplayName()) ?>
         <?php endif; ?>
         <br>
         <small>Periods: <?= h($numPeriods) ?> | Overtime Periods: <?= h($numOT) ?></small>

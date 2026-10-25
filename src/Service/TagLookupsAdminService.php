@@ -143,7 +143,7 @@ class TagLookupsAdminService
             $id = (int)$row->id;
             $out[] = [
                 'id' => $id,
-                'label' => (string)($row->opponent_name ?? 'Opponent #' . $id),
+                'label' => $row->getDisplayName(),
             ];
         }
 

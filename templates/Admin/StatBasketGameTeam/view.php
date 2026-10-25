@@ -28,7 +28,7 @@
         <div class="card-header">
             <h5 class="mb-0">
                 <?= h($game->team_season->team?->getDisplayName() ?? 'Team') ?> vs
-                <?= h($game->opponent->opponent_name ?? 'Opponent') ?>
+                <?= h($game->opponent?->getDisplayName() ?? 'Opponent') ?>
                 <span class="text-muted">
                     (<?= $game->game_date ? $game->game_date->format('M j, Y') : '' ?>)
                 </span>
@@ -92,7 +92,7 @@
         <div class="col-md-6">
             <div class="card mb-3">
                 <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><?= h($game->opponent->opponent_name ?? 'Opponent') ?></h5>
+                    <h5 class="mb-0"><?= h($game->opponent?->getDisplayName() ?? 'Opponent') ?></h5>
                 </div>
                 <div class="card-body">
                     <?php if ($opponentStats) : ?>

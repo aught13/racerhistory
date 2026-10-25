@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Opponent;
 use App\Model\Entity\Team;
 use Cake\Http\ServerRequest;
 use Cake\ORM\Association\BelongsToMany;
@@ -508,8 +509,8 @@ class TaggingService
                     }
 
                     $opponentName = '';
-                    if (!empty($row->opponent) && !empty($row->opponent->opponent_name)) {
-                        $opponentName = (string)$row->opponent->opponent_name;
+                    if ($row->opponent instanceof Opponent) {
+                        $opponentName = $row->opponent->getDisplayName();
                     }
 
                     return (new GameService())->formatGameTagLabelFromRow(
@@ -528,7 +529,9 @@ class TaggingService
             'opponent_select' => [
                 'prefix' => 'opponent-',
                 'table' => 'Opponents',
-                'label' => fn($row) => $row->opponent_name ?? 'opponent',
+                'label' => static fn($row): string => $row instanceof Opponent
+                    ? $row->getDisplayName()
+                    : 'opponent',
             ],
             'team_select' => [
                 'prefix' => 'team-',

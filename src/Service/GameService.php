@@ -5,6 +5,7 @@ namespace App\Service;
 
 use App\Model\Entity\Game;
 use App\Model\Entity\GameEav;
+use App\Model\Entity\Opponent;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Date;
@@ -587,6 +588,9 @@ class GameService
 
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
+        $opponentsSchema = $this->fetchTable('Opponents')->getSchema();
+        $hasOpponentShortColumn = $opponentsSchema->hasColumn('opponent_short');
+        $hasOpponentMascotColumn = $opponentsSchema->hasColumn('opponent_mascot');
         $query = $gamesTable->find()
             ->contain([
                 'TeamSeason' => ['Teams', 'Seasons'],
@@ -631,17 +635,22 @@ class GameService
 
         // Global search (only if no SearchBuilder criteria)
         if ($searchValue !== '' && empty($searchBuilder['criteria'])) {
-            $query->where([
-                'OR' => [
-                    'Games.game_date LIKE' => '%' . $searchValue . '%',
-                    'Teams.team_name LIKE' => '%' . $searchValue . '%',
-                    'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
-                    'GameTypes.game_type_name LIKE' => '%' . $searchValue . '%',
-                    'Places.place_country LIKE' => '%' . $searchValue . '%',
-                    'Places.place_city LIKE' => '%' . $searchValue . '%',
-                    'Places.place_state LIKE' => '%' . $searchValue . '%',
-                ],
-            ]);
+            $searchConditions = [
+                'Games.game_date LIKE' => '%' . $searchValue . '%',
+                'Teams.team_name LIKE' => '%' . $searchValue . '%',
+                'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
+                'GameTypes.game_type_name LIKE' => '%' . $searchValue . '%',
+                'Places.place_country LIKE' => '%' . $searchValue . '%',
+                'Places.place_city LIKE' => '%' . $searchValue . '%',
+                'Places.place_state LIKE' => '%' . $searchValue . '%',
+            ];
+            if ($hasOpponentShortColumn) {
+                $searchConditions['Opponents.opponent_short LIKE'] = '%' . $searchValue . '%';
+            }
+            if ($hasOpponentMascotColumn) {
+                $searchConditions['Opponents.opponent_mascot LIKE'] = '%' . $searchValue . '%';
+            }
+            $query->where(['OR' => $searchConditions]);
         }
 
         $totalQuery = $gamesTable->find();
@@ -701,8 +710,8 @@ class GameService
             }
 
             $oppName = '-';
-            if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
-                $oppName = $game->opponent->opponent_name;
+            if ($game->opponent instanceof Opponent) {
+                $oppName = $game->opponent->getDisplayName();
             }
             if (!empty($game->opp_rk)) {
                 $oppName .= ' (#' . $game->opp_rk . ')';
@@ -968,6 +977,9 @@ class GameService
 
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
+        $opponentsSchema = $this->fetchTable('Opponents')->getSchema();
+        $hasOpponentShortColumn = $opponentsSchema->hasColumn('opponent_short');
+        $hasOpponentMascotColumn = $opponentsSchema->hasColumn('opponent_mascot');
 
         $q = $gamesTable->find()
             ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
@@ -980,12 +992,17 @@ class GameService
 
         if ($query !== '') {
             $like = '%' . str_replace('%', '\\%', $query) . '%';
-            $q->where([
-                'OR' => [
-                    ['Opponents.opponent_name LIKE' => $like],
-                    ['Teams.team_name LIKE' => $like],
-                ],
-            ]);
+            $searchConditions = [
+                ['Opponents.opponent_name LIKE' => $like],
+                ['Teams.team_name LIKE' => $like],
+            ];
+            if ($hasOpponentShortColumn) {
+                $searchConditions[] = ['Opponents.opponent_short LIKE' => $like];
+            }
+            if ($hasOpponentMascotColumn) {
+                $searchConditions[] = ['Opponents.opponent_mascot LIKE' => $like];
+            }
+            $q->where(['OR' => $searchConditions]);
         }
 
         $results = [];
@@ -1023,10 +1040,8 @@ class GameService
             return 'game-' . $gameId;
         }
 
-        $opponentName = '';
-        if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
-            $opponentName = (string)$game->opponent->opponent_name;
-        }
+        $opponent = $game->get('opponent');
+        $opponentName = $opponent instanceof Opponent ? $opponent->getDisplayName() : '';
 
         return $this->formatGameTagLabel($game->game_date ?? null, $opponentName, (int)($game->hrn ?? 0), $gameId);
     }
@@ -1056,7 +1071,7 @@ class GameService
     private function formatGameSelectLabel(Game $game): string
     {
         $teamName = $game->team_season->team?->getDisplayName() ?? 'Team';
-        $oppName = $game->opponent->opponent_name ?? 'Opponent';
+        $oppName = $game->opponent?->getDisplayName() ?? 'Opponent';
 
         $date = '';
         if (!empty($game->game_date)) {

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Service\GameService;
 use App\Service\ImageDeleteService;
 use App\Service\ImageEditService;
 use App\Service\ImagesAdminService;
@@ -18,10 +19,15 @@ class ImagesAdminServiceTest extends TestCase
         'app.Images',
         'app.ImageTags',
         'app.ImagesImageTags',
+        'app.Opponents',
+        'app.Places',
         'app.Teams',
         'app.Sports',
         'app.TeamSeasons',
         'app.Seasons',
+        'app.Games',
+        'app.GameTypes',
+        'app.Sites',
         'app.Users',
         'app.Roles',
         'app.Permissions',
@@ -88,6 +94,40 @@ class ImagesAdminServiceTest extends TestCase
         $this->assertSame([
             ['slug' => 'team-1', 'name' => $team->getDisplayName()],
         ], $this->service->buildCommonEntityTags(['team_select' => 1]));
+    }
+
+    /**
+     * Common opponent tags use the canonical default display name.
+     */
+    public function testBuildCommonEntityTagsUsesOpponentDisplayName(): void
+    {
+        $opponents = TableRegistry::getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $this->assertSame([
+            ['slug' => 'opponent-1', 'name' => 'BEL Bruins'],
+        ], $this->service->buildCommonEntityTags(['opponent_select' => 1]));
+    }
+
+    /**
+     * Common game tags use the game label with its canonical opponent display.
+     */
+    public function testBuildCommonEntityTagsUsesGameOpponentDisplayName(): void
+    {
+        $opponents = TableRegistry::getTableLocator()->get('Opponents');
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+        $expected = (new GameService())->getGameTagDisplayLabel(1);
+
+        $this->assertSame([
+            ['slug' => 'game-1', 'name' => $expected],
+        ], $this->service->buildCommonEntityTags(['game_select' => 1]));
     }
 
     /**

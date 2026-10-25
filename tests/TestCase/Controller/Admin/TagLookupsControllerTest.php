@@ -78,6 +78,28 @@ class TagLookupsControllerTest extends TestCase
     }
 
     /**
+     * Opponent lookup labels use the default short-name and mascot display.
+     */
+    public function testOpponentLookupUsesDefaultDisplayName(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $this->mockIdentity();
+        $this->get('/admin/tag-lookups/opponents?q=Bruins');
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame('Belmont Bruins', $payload['opponents'][0]['label']);
+    }
+
+    /**
      * Tests games label uses hrn punctuation.
      */
     public function testGamesLabelUsesHrnPunctuation(): void

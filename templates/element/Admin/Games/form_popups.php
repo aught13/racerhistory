@@ -82,12 +82,42 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'formUrl' => $opponentAjaxAddUrl,
     'hiddenFormId' => 'hidden-opponent-form',
     'successCallback' => 'handleOpponentAdded',
+    'opponentNamePreview' => true,
     'fields' => [
-        ['name' => 'opponent_name', 'type' => 'text', 'label' => 'Name', 'required' => true],
-        ['name' => 'opponent_mascot', 'type' => 'text', 'label' => 'Mascot'],
-        ['name' => 'opponent_short', 'type' => 'text', 'label' => 'Short Name (max 30)'],
-        ['name' => 'opponent_abbr', 'type' => 'text', 'label' => 'Abbreviation (max 6)'],
-        ['name' => 'opponent_current', 'type' => 'text', 'label' => 'Current Opponent ID (self-ref)'],
+        [
+            'name' => 'opponent_name',
+            'type' => 'text',
+            'label' => 'Official Opponent Name',
+            'required' => true,
+            'previewTarget' => 'opponentName',
+            'help' => 'Enter the official/full opponent name used in Full Opponent Name.',
+        ],
+        [
+            'name' => 'opponent_mascot',
+            'type' => 'text',
+            'label' => 'Mascot / Nickname',
+            'previewTarget' => 'opponentMascot',
+            'help' => 'Enter the mascot or nickname appended to the opponent name variants.',
+        ],
+        [
+            'name' => 'opponent_short',
+            'type' => 'text',
+            'label' => 'Short Opponent Name',
+            'previewTarget' => 'opponentShort',
+            'help' => 'Enter the short name used with the mascot in the default display (maximum 30 characters).',
+        ],
+        [
+            'name' => 'opponent_abbr',
+            'type' => 'text',
+            'label' => 'Scorebug Abbreviation',
+            'help' => 'Enter the compact scorebug code (maximum 6 characters).',
+        ],
+        [
+            'name' => 'opponent_current',
+            'type' => 'text',
+            'label' => 'Current Opponent ID (self-reference)',
+            'help' => 'Leave blank unless this opponent was renamed; otherwise enter the current opponent record ID.',
+        ],
         ['name' => 'place_id', 'type' => 'hidden', 'label' => 'Place'],
     ],
     'extraHtml' => '<div class="mb-3">'
@@ -98,6 +128,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
         . '</div>'
         . '<div id="opponent-place-selected" class="mt-1"></div>'
         . '<div id="opponent-place-results" class="position-relative"></div>'
+        . '<small class="form-text">Select or add the opponent location to distinguish similarly named records.</small>'
         . '</div>',
 ]) ?>
 

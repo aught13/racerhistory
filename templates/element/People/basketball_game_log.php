@@ -65,7 +65,7 @@ $formatValue = static function ($value): string {
                     }
 
                     $gameDate = $game?->game_date?->format('m-d-Y') ?? '';
-                    $opponentName = $game?->opponent?->opponent_name ?? 'Unknown';
+                    $opponentName = $game?->opponent?->getDisplayName() ?? 'Unknown';
                     $locationPrefix = '@';
                     if (!empty($game?->hrn) && (int)$game->hrn === 1) {
                         $locationPrefix = 'Vs';

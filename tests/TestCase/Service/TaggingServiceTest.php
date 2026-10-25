@@ -164,6 +164,26 @@ class TaggingServiceTest extends TestCase
     }
 
     /**
+     * Opponent tags use the canonical default display name.
+     */
+    public function testBuildTagsFromDataUsesOpponentDisplayName(): void
+    {
+        $opponents = TableRegistry::getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $tags = TaggingService::forImages()->buildTagsFromData(['opponent_select' => 1]);
+
+        $this->assertSame([
+            ['slug' => 'opponent-1', 'name' => 'BEL Bruins'],
+        ], $tags);
+    }
+
+    /**
      * Tests replace tags for blog post creates linkage.
      */
     public function testReplaceTagsForBlogPostCreatesLinkage(): void

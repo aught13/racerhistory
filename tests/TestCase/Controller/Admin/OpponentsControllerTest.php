@@ -55,6 +55,30 @@ class OpponentsControllerTest extends TestCase
         $this->assertArrayHasKey('data', $body);
         $this->assertIsArray($body['data']);
         $this->assertSame(1, $body['draw']);
+        $this->assertSame('Belmont', $body['data'][0]['name']);
+    }
+
+    /**
+     * DataTables opponent names use the default short-name and mascot variant.
+     */
+    public function testDatatablesUsesDefaultOpponentDisplay(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        $hasMascotColumn = $opponents->getSchema()->hasColumn('opponent_mascot');
+        if ($hasMascotColumn) {
+            $opponent->opponent_mascot = 'Bruins';
+        }
+        $opponents->saveOrFail($opponent);
+        $expectedLabel = $opponents->get(1)->getDisplayName();
+
+        $this->mockIdentity();
+        $this->get('/admin/opponents/datatables?draw=1&start=0&length=25');
+
+        $this->assertResponseOk();
+        $body = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame($expectedLabel, $body['data'][0]['name']);
     }
 
     /**
@@ -119,6 +143,31 @@ class OpponentsControllerTest extends TestCase
         $this->get('/admin/opponents/add');
         $this->assertResponseOk();
         $this->assertResponseContains('Add Opponent');
+        $this->assertResponseContains('data-controller="opponent-name-preview"');
+        $this->assertResponseContains('data-opponent-name-preview-target="fullOpponentName"');
+        $this->assertResponseContains('data-opponent-name-preview-target="defaultOpponentName"');
+        $this->assertResponseContains('data-opponent-name-preview-target="opponent"');
+    }
+
+    /**
+     * Current-opponent form options use the default opponent display.
+     */
+    public function testCurrentOpponentOptionsUseDefaultDisplay(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        if ($opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $opponent->opponent_mascot = 'Bruins';
+        }
+        $opponents->saveOrFail($opponent);
+        $expectedLabel = $opponents->get(1)->getDisplayName();
+
+        $this->mockIdentity();
+        $this->get('/admin/opponents/add');
+
+        $this->assertResponseOk();
+        $this->assertSame($expectedLabel, $this->viewVariable('opponentsList')[1]);
     }
 
     /**
@@ -142,6 +191,8 @@ class OpponentsControllerTest extends TestCase
         $this->get('/admin/opponents/edit/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Edit Opponent');
+        $this->assertResponseContains('Display Previews');
+        $this->assertResponseContains('Full Opponent Name');
     }
 
     /**
@@ -225,6 +276,7 @@ class OpponentsControllerTest extends TestCase
         $this->assertTrue($data['success']);
         $this->assertNotEmpty($data['results']);
         $this->assertEquals('Belmont', $data['results'][0]['opponent_name']);
+        $this->assertEquals('Belmont', $data['results'][0]['label']);
         $this->assertArrayHasKey('id', $data['results'][0]);
         $this->assertArrayHasKey('opponent_short', $data['results'][0]);
         $this->assertArrayHasKey('opponent_abbr', $data['results'][0]);
@@ -318,7 +370,7 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseOk();
         $data = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($data['success']);
-        $this->assertEquals('Eastern Kentucky', $data['newOption']['text']);
+        $this->assertEquals('EKU Colonels', $data['newOption']['text']);
 
         // Verify the opponent was saved with place_id
         $opponents = $this->getTableLocator()->get('Opponents');
@@ -345,7 +397,7 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseOk();
         $data = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($data['success']);
-        $this->assertEquals('Western Kentucky', $data['newOption']['text']);
+        $this->assertEquals('WKU Hilltoppers', $data['newOption']['text']);
     }
 
     /**
@@ -354,12 +406,20 @@ class OpponentsControllerTest extends TestCase
     public function testAjaxSearchSearchesMultipleFields(): void
     {
         $this->mockIdentity();
-        // Search by mascot (fixture should have at least one opponent with mascot)
+        $opponents = $this->getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        $opponent->opponent_short = 'Belmont';
+        $opponents->saveOrFail($opponent);
+
         $this->get('/admin/opponents/ajax-search?q=Bruins');
         $this->assertResponseOk();
         $data = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue($data['success']);
-        // Note: this will match if any fixture opponent has 'Bruins' in name/mascot/short/abbr
+        $this->assertSame('Belmont Bruins', $data['results'][0]['label']);
     }
 
     /**

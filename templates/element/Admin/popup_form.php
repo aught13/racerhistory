@@ -2,7 +2,7 @@
 
 /** Lightweight popup form element.
  * Variables: $popupId, $title, $formUrl, $fields, $successCallback, $targetSelectId.
- * Field configs may provide help text and a team-name preview target.
+ * Field configs may provide help text and a display-name preview target.
  *
  * @var \App\View\AppView $this
  */
@@ -16,6 +16,7 @@ $targetSelectId = $targetSelectId ?? '';
 $hiddenFormId = $hiddenFormId ?? '';
 $extraHtml = $extraHtml ?? '';
 $teamNamePreview = !empty($teamNamePreview);
+$opponentNamePreview = !empty($opponentNamePreview);
 
 $hasPlaceCountryField = false;
 $hasPlaceCityField = false;
@@ -48,6 +49,9 @@ if ($hasPlaceLocationBehavior) {
 }
 if ($teamNamePreview) {
     $formControllers[] = 'team-name-preview';
+}
+if ($opponentNamePreview) {
+    $formControllers[] = 'opponent-name-preview';
 }
 ?>
 <div class="modal fade"
@@ -106,9 +110,15 @@ if ($teamNamePreview) {
                         $req = !empty($f['required']);
                         $help = $f['help'] ?? '';
                         $previewTarget = $f['previewTarget'] ?? null;
-                        $previewAttrs = is_string($previewTarget) && $previewTarget !== ''
-                            ? 'data-team-name-preview-target="' . h($previewTarget) .
-                                '" data-action="input->team-name-preview#update change->team-name-preview#update"'
+                        $previewIdentifier = $teamNamePreview
+                            ? 'team-name-preview'
+                            : ($opponentNamePreview ? 'opponent-name-preview' : '');
+                        $previewAttrs = is_string($previewTarget)
+                            && $previewTarget !== ''
+                            && $previewIdentifier !== ''
+                            ? 'data-' . $previewIdentifier . '-target="' . h($previewTarget) .
+                                '" data-action="input->' . $previewIdentifier .
+                                '#update change->' . $previewIdentifier . '#update"'
                             : '';
                         ?>
 
@@ -211,6 +221,28 @@ if ($teamNamePreview) {
                             <p class="mb-0"><strong>Team:</strong><br>
                                 <span data-team-name-preview-target="team">Unknown Team</span>
                             </p>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if ($opponentNamePreview) : ?>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Display Previews</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Full Opponent Name:</strong><br>
+                                <span data-opponent-name-preview-target="fullOpponentName">Unknown Opponent</span>
+                            </p>
+                            <p><strong>Opponent Name (default):</strong><br>
+                                <span data-opponent-name-preview-target="defaultOpponentName">Unknown Opponent</span>
+                            </p>
+                            <p class="mb-0"><strong>Opponent:</strong><br>
+                                <span data-opponent-name-preview-target="opponent">Unknown Opponent</span>
+                            </p>
+                            <small class="text-muted">
+                                Existing records are not rewritten automatically. Update the short name and mascot as needed.
+                            </small>
                         </div>
                     </div>
                     <?php endif; ?>

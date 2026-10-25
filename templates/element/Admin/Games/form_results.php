@@ -20,7 +20,7 @@ $sportHasStats = $sportHasStats ?? false;
                 <strong>Game:</strong>
                 <?= h($game->game_date ? $game->game_date->format('M j, Y') : 'Unknown Date') ?>
                 <?php if (!empty($game->opponent)) : ?>
-                    vs <?= h($game->opponent->opponent_name ?? '') ?>
+                    vs <?= h($game->opponent?->getDisplayName() ?? '') ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

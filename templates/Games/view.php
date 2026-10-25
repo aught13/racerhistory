@@ -25,7 +25,7 @@ use App\Service\SocialImageService;
 
 $teamName = $game->team_season->team->getDisplayName();
 $teamNickname = $game->team_season->team->team_nickname ?? $teamName;
-$opponentName = $game->opponent->opponent_name ?? 'Opponent';
+$opponentName = $game->opponent?->getDisplayName() ?? 'Opponent';
 $opponentAbbr = $game->opponent->opponent_abbr ?? $opponentName;
 $gameDate = $game->game_date?->format('M j, Y') ?? '';
 $fullDate = $game->game_date?->format('l, F j, Y') ?? '';
@@ -127,7 +127,7 @@ $this->start('css'); ?>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <?php if (isset($previousGame)) : ?>
                         <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'view', $previousGame->id]) ?>"
-                            class="btn btn-outline-secondary btn-sm" title="Previous Game: <?= h($previousGame->opponent->opponent_name ?? 'Opponent') ?>">
+                            class="btn btn-outline-secondary btn-sm" title="Previous Game: <?= h($previousGame->opponent?->getDisplayName() ?? 'Opponent') ?>">
                             <i class="bi bi-chevron-left"></i> <?= h($previousGame->game_date?->format('M j, Y') ?? '') ?>
                         </a>
                     <?php else : ?>
@@ -136,7 +136,7 @@ $this->start('css'); ?>
 
                     <?php if (isset($nextGame)) : ?>
                         <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'view', $nextGame->id]) ?>"
-                            class="btn btn-outline-secondary btn-sm" title="Next Game: <?= h($nextGame->opponent->opponent_name ?? 'Opponent') ?>">
+                            class="btn btn-outline-secondary btn-sm" title="Next Game: <?= h($nextGame->opponent?->getDisplayName() ?? 'Opponent') ?>">
                             <?= h($nextGame->game_date?->format('M j, Y') ?? '') ?> <i class="bi bi-chevron-right"></i>
                         </a>
                     <?php endif; ?>

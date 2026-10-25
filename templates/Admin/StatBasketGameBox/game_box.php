@@ -37,7 +37,7 @@ $this->assign('title', 'Game Box Scores');
         <?php endif; ?>
         vs
         <?php if ($game->opponent) : ?>
-            <?= h($game->opponent->opponent_name) ?>
+            <?= h($game->opponent->getMascotDisplayName()) ?>
         <?php endif; ?>
         on <?= h($game->game_date ? $game->game_date->format('M j, Y') : 'N/A') ?>
     </div>

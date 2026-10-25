@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\StatsController;
+use App\Model\Entity\Opponent;
 use App\Model\Entity\Team;
 use App\Service\StatsService;
 use Cake\Http\ServerRequest;
@@ -226,15 +227,19 @@ class StatsControllerFormattingTest extends TestCase
             'id' => 10,
             'game_date' => '2025-01-01',
             'team_season' => (object)['team' => (object)['abbr' => 'ABC'], 'id' => 2],
-            'opponent' => (object)['opponent_short' => 'OPP', 'opponent_name' => 'Opponents'],
+            'opponent' => new Opponent([
+                'opponent_name' => 'Opponent University',
+                'opponent_short' => 'Opponent U',
+                'opponent_mascot' => 'Rivals',
+            ]),
         ];
 
         $rowsTeam = $controller->callFormatTeamGameRows([['stat' => (object)[], 'game' => $game]], 1, 'team-game');
         $this->assertIsArray($rowsTeam);
-        $this->assertStringContainsString('Vs', (string)$rowsTeam[0][0]);
+        $this->assertSame('ABC Vs Opponent U Rivals', $rowsTeam[0][0]);
 
         $rowsOpp = $controller->callFormatTeamGameRows([['stat' => (object)[], 'game' => $game]], 1, 'opponent-team-game');
         $this->assertIsArray($rowsOpp);
-        $this->assertStringContainsString('Vs', (string)$rowsOpp[0][0]);
+        $this->assertSame('Opponent U Rivals Vs ABC', $rowsOpp[0][0]);
     }
 }

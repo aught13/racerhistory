@@ -81,7 +81,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?= h($game->opponent->opponent_name ?? 'TBD') ?>
+                                    <?= h($game->opponent?->getDisplayName() ?? 'TBD') ?>
                                     <?php if (isset($game->opponent->place->place_city)) : ?>
                                         <br><small class="text-muted"><?= h($game->opponent->place->place_city) ?></small>
                                     <?php endif; ?>

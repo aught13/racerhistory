@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Game;
+use App\Model\Entity\Opponent;
 use Cake\I18n\Date;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Query\SelectQuery;
@@ -455,7 +456,7 @@ class GameSearchService
             if ($result === $resultType) {
                 if ($currentStreak === 0) {
                     $streakStart = $game;
-                    $streakStartOpp = $game->opponent->opponent_short ?? '?';
+                    $streakStartOpp = $game->opponent?->getDisplayName() ?? '?';
                 }
                 $currentStreak++;
             } else {
@@ -467,7 +468,7 @@ class GameSearchService
                         'start_date' => $streakStart->game_date ? $streakStart->game_date->format('Y-m-d') : '',
                         'end_date' => $game->game_date ? $game->game_date->format('Y-m-d') : '',
                         'start_opponent' => $streakStartOpp,
-                        'end_opponent' => $game->opponent->opponent_short ?? '?',
+                        'end_opponent' => $game->opponent?->getDisplayName() ?? '?',
                     ];
                 }
                 $currentStreak = 0;
@@ -486,7 +487,7 @@ class GameSearchService
                 'start_date' => $streakStart->game_date ? $streakStart->game_date->format('Y-m-d') : '',
                 'end_date' => $lastGame->game_date ? $lastGame->game_date->format('Y-m-d') : '',
                 'start_opponent' => $streakStartOpp,
-                'end_opponent' => $lastGame->opponent->opponent_short ?? '?',
+                'end_opponent' => $lastGame->opponent?->getDisplayName() ?? '?',
                 'active' => true,
             ];
         }
@@ -860,18 +861,18 @@ class GameSearchService
             return [];
         }
 
-        $rawList = $opponentsTable->find('list', keyField: 'id', valueField: 'opponent_name')
+        $opponents = $opponentsTable->find()
             ->where(['id IN' => $opponentIds])
             ->orderByAsc('opponent_name')
             ->all()
             ->toArray();
 
         $list = [];
-        foreach ($rawList as $id => $name) {
-            if (!is_numeric((string)$id) || !is_scalar($name)) {
+        foreach ($opponents as $opponent) {
+            if (!$opponent instanceof Opponent) {
                 continue;
             }
-            $list[(int)$id] = (string)$name;
+            $list[(int)$opponent->id] = $opponent->getDisplayName();
         }
 
         return $list;
@@ -881,7 +882,7 @@ class GameSearchService
      * Search opponents for the series DataTable list.
      *
      * Keeps the same criteria used by the existing series search:
-     * opponent name and short abbreviation.
+     * opponent name, short name, and mascot.
      *
      * @param string $query
      * @param int $start
@@ -891,35 +892,50 @@ class GameSearchService
     public function searchSeriesOpponents(string $query, int $start = 0, int $length = 50): array
     {
         $gamesTable = $this->fetchTable('Games');
+        $opponentsTable = $this->fetchTable('Opponents');
+        $opponentsSchema = $opponentsTable->getSchema();
+        $hasShortColumn = $opponentsSchema->hasColumn('opponent_short');
+        $hasMascotColumn = $opponentsSchema->hasColumn('opponent_mascot');
 
         $baseQuery = $gamesTable->find();
+        $selectFields = [
+            'opponent_id' => 'Opponents.id',
+            'opponent_name' => 'Opponents.opponent_name',
+            'games_count' => $baseQuery->func()->count('Games.id'),
+        ];
+        $groupFields = ['Opponents.id', 'Opponents.opponent_name'];
+        if ($hasShortColumn) {
+            $selectFields['opponent_short'] = 'Opponents.opponent_short';
+            $groupFields[] = 'Opponents.opponent_short';
+        }
+        if ($hasMascotColumn) {
+            $selectFields['opponent_mascot'] = 'Opponents.opponent_mascot';
+            $groupFields[] = 'Opponents.opponent_mascot';
+        }
+
         $baseQuery
-            ->select([
-                'opponent_id' => 'Opponents.id',
-                'opponent_name' => 'Opponents.opponent_name',
-                'opponent_short' => 'Opponents.opponent_short',
-                'games_count' => $baseQuery->func()->count('Games.id'),
-            ])
+            ->select($selectFields)
             ->innerJoinWith('Opponents')
             ->innerJoinWith('TeamSeason.Teams', function (SelectQuery $q) {
                 $conditions = $this->publicTeamFilter();
 
                 return $conditions !== [] ? $q->where($conditions) : $q;
             })
-            ->groupBy([
-                'Opponents.id',
-                'Opponents.opponent_name',
-                'Opponents.opponent_short',
-            ]);
+            ->groupBy($groupFields);
 
         $query = trim($query);
         if ($query !== '') {
-            $baseQuery->where([
-                'OR' => [
-                    'Opponents.opponent_name LIKE' => "%{$query}%",
-                    'Opponents.opponent_short LIKE' => "%{$query}%",
-                ],
-            ]);
+            $like = '%' . str_replace('%', '\\%', $query) . '%';
+            $searchFields = [
+                'Opponents.opponent_name LIKE' => $like,
+            ];
+            if ($hasShortColumn) {
+                $searchFields['Opponents.opponent_short LIKE'] = $like;
+            }
+            if ($hasMascotColumn) {
+                $searchFields['Opponents.opponent_mascot LIKE'] = $like;
+            }
+            $baseQuery->where(['OR' => $searchFields]);
         }
 
         $countQuery = clone $baseQuery;
@@ -945,16 +961,22 @@ class GameSearchService
 
         $rows = [];
         foreach ($rawRows as $row) {
-            if (is_array($row)) {
-                $rows[] = $row;
-                continue;
+            if (!is_array($row)) {
+                $row = [
+                    'opponent_id' => $row->get('opponent_id'),
+                    'opponent_name' => $row->get('opponent_name'),
+                    'opponent_short' => $row->get('opponent_short'),
+                    'opponent_mascot' => $row->get('opponent_mascot'),
+                    'games_count' => $row->get('games_count'),
+                ];
             }
-            $rows[] = [
-                'opponent_id' => $row->get('opponent_id'),
-                'opponent_name' => $row->get('opponent_name'),
-                'opponent_short' => $row->get('opponent_short'),
-                'games_count' => $row->get('games_count'),
-            ];
+            $opponent = new Opponent([
+                'opponent_name' => $row['opponent_name'] ?? null,
+                'opponent_short' => $row['opponent_short'] ?? null,
+                'opponent_mascot' => $row['opponent_mascot'] ?? null,
+            ]);
+            $row['opponent_display_name'] = $opponent->getDisplayName();
+            $rows[] = $row;
         }
 
         return [
