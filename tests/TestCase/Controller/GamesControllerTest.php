@@ -127,6 +127,10 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Box Score');
         $this->assertResponseContains('data-controller="game-view"');
+        $this->assertResponseContains('<p class="text-muted mb-2">Belmont</p>');
+        $this->assertResponseContains('<th scope="row" class="text-nowrap">Lakers</th>');
+        $this->assertResponseContains('<th scope="row" class="text-nowrap">Belmont</th>');
+        $this->assertResponseContains(h("Men's Los Angeles Lakers"));
         $this->assertResponseContains('property="og:image"');
         $this->assertTrue(
             str_contains((string)$this->_response->getBody(), '<meta property="og:image" content="/img/logo.png"')

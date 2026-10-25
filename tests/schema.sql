@@ -272,6 +272,7 @@ CREATE TABLE IF NOT EXISTS opponents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   opponent_name VARCHAR(255) NOT NULL,
   opponent_short VARCHAR(50) NULL,
+  opponent_abbr VARCHAR(30) NULL,
   place_id INTEGER NOT NULL,
   opponent_current VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

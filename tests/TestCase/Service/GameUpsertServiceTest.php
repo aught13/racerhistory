@@ -188,7 +188,7 @@ class GameUpsertServiceTest extends TestCase
         $sport = new Sport(['id' => 1]);
         $team = new Team(['sport' => $sport]);
         $teamSeason = new TeamSeason(['team' => $team]);
-        $game = new Game(['id' => $gameId, 'place_id' => 9, 'team_season' => $teamSeason]);
+        $game = new Game(['id' => $gameId, 'place_id' => 9, 'periods' => '4', 'team_season' => $teamSeason]);
 
         $query = $this->getMockBuilder(SelectQuery::class)
             ->disableOriginalConstructor()
@@ -200,11 +200,19 @@ class GameUpsertServiceTest extends TestCase
 
         $gamesTable = $this->getMockBuilder(GamesTable::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['find'])
+            ->onlyMethods(['find', 'patchEntity'])
             ->getMock();
         $gamesTable->expects($this->once())
             ->method('find')
             ->willReturn($query);
+        $gamesTable->expects($this->once())
+            ->method('patchEntity')
+            ->with($game, $this->isType('array'))
+            ->willReturnCallback(static function (Game $entity, array $data): Game {
+                $entity->set($data);
+
+                return $entity;
+            });
 
         $metadata = [
             'sportId' => 1,
@@ -233,7 +241,7 @@ class GameUpsertServiceTest extends TestCase
             ->getMock();
         $sportConfig->expects($this->once())
             ->method('validatePeriodScores')
-            ->with(1, $this->isType('array'))
+            ->with(1, $this->callback(static fn(array $data): bool => $data['periods'] === 4))
             ->willReturn(['Opponent period scores (10) must equal final opponent score (20)']);
 
         $eavUi = $this->getMockBuilder(GameEavUiService::class)
@@ -257,6 +265,8 @@ class GameUpsertServiceTest extends TestCase
         $this->assertNull($result['redirect']);
         $this->assertSame(9, $result['placeId']);
         $this->assertSame($game, $result['viewData']['game']);
+        $this->assertSame('35', $game->get('pts_mur'));
+        $this->assertSame(4, $game->get('periods'));
     }
 
     /**

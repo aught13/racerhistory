@@ -468,6 +468,10 @@ class StatsControllerTest extends TestCase
         $this->get('/stats/season/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Stats');
+
+        $teamSeason = $this->viewVariable('teamSeason');
+        $this->assertNotNull($teamSeason);
+        $this->assertResponseContains(h($teamSeason->team->getTeamDisplayName()));
     }
 
     /**

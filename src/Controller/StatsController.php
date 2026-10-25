@@ -574,7 +574,7 @@ class StatsController extends AppController
     private function formatTeamDisplayName(mixed $team): string
     {
         if ($team instanceof Team) {
-            return $team->getDisplayName();
+            return $team->getTeamDisplayName();
         }
 
         return is_object($team) ? (string)($team->team_name ?? '-') : '-';

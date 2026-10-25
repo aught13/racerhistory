@@ -37,9 +37,10 @@ export function composeOpponentDisplayNames({
             ? fullParts
             : [opponentShort],
     );
-    const defaultName = hasShort && hasMascot
-        ? composeDisplayName([opponentShort, opponentMascot])
-        : fullName;
+    const defaultName =
+        hasShort && hasMascot
+            ? composeDisplayName([opponentShort, opponentMascot])
+            : fullName;
     const mascotName =
         normalizeDisplayComponents([opponentMascot]).length > 0
             ? composeDisplayName([opponentMascot])

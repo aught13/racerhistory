@@ -167,7 +167,7 @@ $canReadTeamSeasons = $this->Rbac->can('TeamSeasons', 'read');
                             <td style="font-weight: <?= $murBold ?>;"><?= h($game->pts_mur ?? '') ?></td>
                         </tr>
                         <tr>
-                            <td><?= h($game->opponent->opponent_abbr ?? 'Opponent') ?></td>
+                            <td><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?></td>
                             <?php for ($i = 1; $i <= $periods; $i++) : ?>
                                 <td><?= h($eav['period_' . $i . '_opponent'] ?? '') ?></td>
                             <?php endfor; ?>

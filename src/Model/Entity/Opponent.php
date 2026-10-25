@@ -13,7 +13,7 @@ use Cake\ORM\Entity;
  * @property string|null $opponent_mascot Team mascot or nickname
  * @property int|null $opponent_current Reference to current opponent (self-reference)
  * @property string|null $opponent_short Short opponent name (max 30 chars)
- * @property string|null $opponent_abbr Scorebug abbreviation (max 6 chars)
+ * @property string|null $opponent_abbr Scorebug abbreviation (max 30 chars)
  * @property int|null $place_id
  * @property \App\Model\Entity\Place|null $place
  * @property \App\Model\Entity\Opponent|null $current_opponent
@@ -59,15 +59,41 @@ class Opponent extends Entity
     }
 
     /**
+     * Get an abbreviation-first name for compact score headings.
+     *
+     * @return string
+     */
+    public function getAbbreviatedDisplayName(): string
+    {
+        $abbr = trim((string)($this->opponent_abbr ?? ''));
+        if ($abbr === '') {
+            return $this->getDisplayName();
+        }
+
+        return $this->composeDisplayName([
+            $abbr,
+            $this->opponent_mascot ?? null,
+        ]);
+    }
+
+    /**
      * Get the opponent mascot for compact display.
+     *
+     * If no mascot is available, use the scorebug abbreviation before the
+     * composed opponent name.
      *
      * @return string
      */
     public function getMascotDisplayName(): string
     {
         $mascot = trim((string)($this->opponent_mascot ?? ''));
+        if ($mascot !== '') {
+            return $mascot;
+        }
 
-        return $mascot !== '' ? $mascot : $this->getDisplayName();
+        $abbr = trim((string)($this->opponent_abbr ?? ''));
+
+        return $abbr !== '' ? $abbr : $this->getDisplayName();
     }
 
     /**

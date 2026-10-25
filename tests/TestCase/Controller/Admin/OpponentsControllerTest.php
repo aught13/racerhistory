@@ -135,6 +135,53 @@ class OpponentsControllerTest extends TestCase
     }
 
     /**
+     * Abbreviations up to 30 characters can be saved.
+     */
+    public function testAddPostAcceptsThirtyCharacterAbbreviation(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $abbreviation = str_repeat('A', 30);
+        $this->post('/admin/opponents/add', [
+            'opponent_name' => 'Thirty Character Opponent',
+            'opponent_abbr' => $abbreviation,
+            'place_id' => 1,
+        ]);
+
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Opponents', 'action' => 'index']);
+        /** @var \App\Model\Entity\Opponent $savedOpponent */
+        $savedOpponent = $this->getTableLocator()->get('Opponents')
+            ->find()
+            ->where(['opponent_name' => 'Thirty Character Opponent'])
+            ->firstOrFail();
+        $this->assertSame($abbreviation, $savedOpponent->opponent_abbr);
+    }
+
+    /**
+     * Abbreviations longer than 30 characters are rejected.
+     */
+    public function testAddPostRejectsAbbreviationLongerThanThirtyCharacters(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+        $this->post('/admin/opponents/add', [
+            'opponent_name' => 'Too Long Opponent',
+            'opponent_abbr' => str_repeat('A', 31),
+            'place_id' => 1,
+        ]);
+
+        $this->assertResponseOk();
+        /** @var \App\Model\Entity\Opponent $opponent */
+        $opponent = $this->viewVariable('opponent');
+        $this->assertArrayHasKey('opponent_abbr', $opponent->getErrors());
+        $this->assertFalse(
+            $this->getTableLocator()->get('Opponents')->exists(['opponent_name' => 'Too Long Opponent']),
+        );
+    }
+
+    /**
      * Tests add get.
      */
     public function testAddGet(): void
@@ -147,6 +194,10 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseContains('data-opponent-name-preview-target="fullOpponentName"');
         $this->assertResponseContains('data-opponent-name-preview-target="defaultOpponentName"');
         $this->assertResponseContains('data-opponent-name-preview-target="opponent"');
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bname="opponent_abbr")(?=[^>]*\bmaxlength="30")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
     }
 
     /**
@@ -193,6 +244,10 @@ class OpponentsControllerTest extends TestCase
         $this->assertResponseContains('Edit Opponent');
         $this->assertResponseContains('Display Previews');
         $this->assertResponseContains('Full Opponent Name');
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bname="opponent_abbr")(?=[^>]*\bmaxlength="30")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
     }
 
     /**

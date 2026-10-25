@@ -51,7 +51,59 @@ class OpponentEntityTest extends TestCase
     }
 
     /**
-     * Incomplete records retain a readable existing name instead of abbreviations.
+     * The compact score heading combines the abbreviation and mascot.
+     */
+    public function testGetAbbreviatedDisplayNameUsesAbbreviationAndMascot(): void
+    {
+        $opponent = new Opponent([
+            'opponent_name' => 'Arkansas Little Rock',
+            'opponent_short' => 'The Valley',
+            'opponent_abbr' => 'UALR',
+            'opponent_mascot' => 'Trojans',
+        ]);
+
+        $this->assertSame('UALR Trojans', $opponent->getAbbreviatedDisplayName());
+    }
+
+    /**
+     * A missing abbreviation falls back to the default opponent display name.
+     */
+    public function testGetAbbreviatedDisplayNameFallsBackToDefaultName(): void
+    {
+        $opponent = new Opponent([
+            'opponent_name' => 'Arkansas Little Rock',
+            'opponent_short' => 'The Valley',
+            'opponent_mascot' => 'Trojans',
+        ]);
+
+        $this->assertSame('The Valley Trojans', $opponent->getAbbreviatedDisplayName());
+    }
+
+    /**
+     * An abbreviation remains useful when no mascot is available.
+     */
+    public function testGetAbbreviatedDisplayNameUsesAbbreviationWithoutMascot(): void
+    {
+        $opponent = new Opponent(['opponent_abbr' => 'UALR']);
+
+        $this->assertSame('UALR', $opponent->getAbbreviatedDisplayName());
+    }
+
+    /**
+     * The mascot display falls back to the scorebug abbreviation.
+     */
+    public function testMascotDisplayNameFallsBackToAbbreviation(): void
+    {
+        $opponent = new Opponent([
+            'opponent_name' => 'Belmont University',
+            'opponent_abbr' => 'BEL',
+        ]);
+
+        $this->assertSame('BEL', $opponent->getMascotDisplayName());
+    }
+
+    /**
+     * Incomplete records retain a readable name when no abbreviation exists.
      */
     public function testDisplayNamesFallBackWhenMascotIsMissing(): void
     {
@@ -83,6 +135,7 @@ class OpponentEntityTest extends TestCase
 
         $this->assertSame('Unknown Opponent', $opponent->getDisplayName());
         $this->assertSame('Unknown Opponent', $opponent->getFullDisplayName());
+        $this->assertSame('Unknown Opponent', $opponent->getAbbreviatedDisplayName());
         $this->assertSame('Unknown Opponent', $opponent->getMascotDisplayName());
     }
 

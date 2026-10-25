@@ -110,7 +110,8 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
             'name' => 'opponent_abbr',
             'type' => 'text',
             'label' => 'Scorebug Abbreviation',
-            'help' => 'Enter the compact scorebug code (maximum 6 characters).',
+            'attributes' => ['maxlength' => 30],
+            'help' => 'Enter the abbreviation used on score displays (maximum 30 characters).',
         ],
         [
             'name' => 'opponent_current',

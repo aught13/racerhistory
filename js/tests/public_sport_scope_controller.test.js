@@ -44,8 +44,12 @@ describe("public-sport-scope controller", () => {
 
     test("canonicalizes missing scope to all sports and teams", () => {
         expect(window.location.search).toBe("?sport=all&team=all");
-        expect(document.getElementById("shared-link").search).toBe("?sport=all&team=all");
-        expect(document.getElementById("explicit-link").search).toContain("sport=football");
+        expect(document.getElementById("shared-link").search).toBe(
+            "?sport=all&team=all",
+        );
+        expect(document.getElementById("explicit-link").search).toContain(
+            "sport=football",
+        );
         expect(document.getElementById("admin-link").search).toBe("");
     });
 
@@ -78,10 +82,12 @@ describe("public-sport-scope controller", () => {
     test("changing team updates a hidden sport input when only one sport is shown", async () => {
         const form = document.querySelector("form");
         const sport = document.querySelector('[name="sport"]');
-        const team = document.querySelector('[name="team"]');
         form.requestSubmit = jest.fn();
-        document.querySelectorAll('[data-public-sport-scope-target="sport"]')
-            .forEach((target) => target.removeAttribute("data-public-sport-scope-target"));
+        document
+            .querySelectorAll('[data-public-sport-scope-target="sport"]')
+            .forEach((target) =>
+                target.removeAttribute("data-public-sport-scope-target"),
+            );
         const hiddenSport = document.createElement("input");
         hiddenSport.type = "hidden";
         hiddenSport.name = "sport";
@@ -109,6 +115,8 @@ describe("public-sport-scope controller", () => {
         application.register("public-sport-scope", PublicSportScopeController);
         await Promise.resolve();
 
-        expect(document.getElementById("shared-link").search).toBe("?sport=all&team=all");
+        expect(document.getElementById("shared-link").search).toBe(
+            "?sport=all&team=all",
+        );
     });
 });

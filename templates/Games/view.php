@@ -25,8 +25,8 @@ use App\Service\SocialImageService;
 
 $teamName = $game->team_season->team->getDisplayName();
 $teamNickname = $game->team_season->team->team_nickname ?? $teamName;
-$opponentName = $game->opponent?->getDisplayName() ?? 'Opponent';
-$opponentAbbr = $game->opponent->opponent_abbr ?? $opponentName;
+$opponentName = $game->opponent?->getAbbreviatedDisplayName() ?? 'Opponent';
+$opponentOfficialName = $game->opponent?->opponent_name ?: $opponentName;
 $gameDate = $game->game_date?->format('M j, Y') ?? '';
 $fullDate = $game->game_date?->format('l, F j, Y') ?? '';
 $seasonStart = $game->team_season->season->start ?? '';
@@ -164,7 +164,7 @@ $this->start('css'); ?>
                 <div class="col-lg-5 text-center text-lg-end">
                     <div class="game-scoreline">
                         <h1 class="display-6 mb-0"><?= h($opponentName) ?></h1>
-                        <p class="text-muted mb-2"><?= h($opponentAbbr) ?></p>
+                        <p class="text-muted mb-2"><?= h($opponentOfficialName) ?></p>
                     </div>
                 </div>
             </div>
@@ -236,7 +236,7 @@ $this->start('css'); ?>
                                         <td class="text-center fw-bold"><?= h($game->pts_mur ?? '') ?></td>
                                     </tr>
                                     <tr>
-                                        <th scope="row" class="text-nowrap"><?= h($opponentAbbr) ?></th>
+                                        <th scope="row" class="text-nowrap"><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?></th>
                                         <?php for ($i = 1; $i <= $periods; $i++) : ?>
                                             <td class="text-center"><?= h($eav['period_' . $i . '_opponent'] ?? '') ?></td>
                                         <?php endfor; ?>

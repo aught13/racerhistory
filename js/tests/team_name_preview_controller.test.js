@@ -139,9 +139,8 @@ describe("team-name-preview controller", () => {
             ).textContent,
         ).toBe("Racers Women's Soccer");
         expect(
-            document.querySelector(
-                '[data-team-name-preview-target="team"]',
-            ).textContent,
+            document.querySelector('[data-team-name-preview-target="team"]')
+                .textContent,
         ).toBe("Women's Soccer");
     });
 

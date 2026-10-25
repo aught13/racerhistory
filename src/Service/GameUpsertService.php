@@ -212,8 +212,13 @@ class GameUpsertService
         $team = $game->team_season->team;
         $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
 
+        if ((!isset($data['periods']) || $data['periods'] === '') && $game->get('periods') !== null) {
+            $data['periods'] = (int)$game->get('periods');
+        }
+
         $eavErrors = $sportId ? $this->sportConfigService->validatePeriodScores((int)$sportId, $data) : [];
         if (!empty($eavErrors)) {
+            $game = $this->gamesTable->patchEntity($game, $data);
             $eav = $this->gameEavUi->mergePostedPeriodAndOvertimeFields($metadata['values'] ?? [], $data);
             $viewData = $this->buildUpsertViewData($game, $metadata, $eav);
 
@@ -252,7 +257,8 @@ class GameUpsertService
             ];
         }
 
-        $viewData = $this->buildUpsertViewData($game, $metadata, $metadata['values'] ?? []);
+        $eav = $this->gameEavUi->mergePostedPeriodAndOvertimeFields($metadata['values'] ?? [], $data);
+        $viewData = $this->buildUpsertViewData($game, $metadata, $eav);
 
         return [
             'success' => false,

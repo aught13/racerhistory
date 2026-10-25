@@ -1,9 +1,9 @@
 import { Controller } from "@hotwired/stimulus";
 
-const GENDER_PREFIXES = {
-    M: "Men's",
-    F: "Women's",
-};
+const GENDER_PREFIXES = new Map([
+    ["M", "Men's"],
+    ["F", "Women's"],
+]);
 const GENDER_DESIGNATION_PATTERN =
     /\b(?:men(?:['’]s)?|male|boys?|women(?:['’]s)?|female|girls?)\b/iu;
 
@@ -33,9 +33,7 @@ function composeDisplayName(parts) {
 }
 
 function getGenderPrefix(gender, teamName, nameParts) {
-    const genderPrefix = Object.hasOwn(GENDER_PREFIXES, gender)
-        ? GENDER_PREFIXES[gender]
-        : null;
+    const genderPrefix = GENDER_PREFIXES.get(gender);
     if (!genderPrefix || normalizeDisplayComponents([teamName]).length === 0) {
         return "";
     }

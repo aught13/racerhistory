@@ -160,6 +160,10 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Add Game');
         $this->assertResponseContains('data-controller="admin-game-form"');
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bname="opponent_abbr")(?=[^>]*\bmaxlength="30")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
     }
 
     /**
@@ -287,6 +291,82 @@ class GamesControllerTest extends TestCase
             'action' => 'gameBox',
             '1',
         ]);
+    }
+
+    /**
+     * Period score validation failures return a Turbo-compatible response and retain entered totals.
+     */
+    public function testEditWithMismatchedPeriodTotalsReturnsValidationResponse(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/games/edit/1', [
+            'team_season_id' => 1,
+            'game_date' => '2024-01-15',
+            'hrn' => 1,
+            'periods' => 2,
+            'ot' => 0,
+            'pts_mur' => '80',
+            'pts_opp' => '68',
+            'period_1_team' => '35',
+            'period_1_opponent' => '30',
+            'period_2_team' => '40',
+            'period_2_opponent' => '38',
+        ]);
+
+        $this->assertResponseCode(422);
+        $this->assertResponseContains('Team period scores (75) must equal final team score (80)');
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bid="pts-mur")(?=[^>]*\bvalue="80")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bid="pts-opp")(?=[^>]*\bvalue="68")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
+
+        $game = $this->getTableLocator()->get('Games')->get(1);
+        $this->assertSame('75', $game->pts_mur);
+        $this->assertSame('68', $game->pts_opp);
+    }
+
+    /**
+     * Uses the saved period count when editing results without a periods form field.
+     */
+    public function testEditWithFourPeriodsSavesAllPeriodScores(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $games = $this->getTableLocator()->get('Games');
+        $game = $games->get(1);
+        $game->periods = '4';
+        $games->saveOrFail($game);
+
+        $this->post('/admin/games/edit/1', [
+            'team_season_id' => 1,
+            'game_date' => '2024-01-15',
+            'hrn' => 1,
+            'pts_mur' => '96',
+            'pts_opp' => '88',
+            'period_1_team' => '22',
+            'period_1_opponent' => '18',
+            'period_2_team' => '19',
+            'period_2_opponent' => '17',
+            'period_3_team' => '17',
+            'period_3_opponent' => '23',
+            'period_4_team' => '38',
+            'period_4_opponent' => '30',
+        ]);
+
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
+        $savedGame = $games->get(1);
+        $this->assertSame('96', $savedGame->pts_mur);
+        $this->assertSame('88', $savedGame->pts_opp);
+        $this->assertSame('4', $savedGame->periods);
     }
 
     /**
@@ -484,8 +564,7 @@ class GamesControllerTest extends TestCase
             'game_date' => '2024-01-15', // Valid date
             'hrn' => 999, // Invalid hrn value
         ]);
-        // Controller may re-render with errors or redirect
-        $this->assertTrue($this->_response->getStatusCode() >= 200);
+        $this->assertResponseCode(422);
     }
 
     /**
@@ -500,7 +579,7 @@ class GamesControllerTest extends TestCase
         $this->post('/admin/games/add?team_season_id=1', [
             // Missing required fields
         ]);
-        $this->assertResponseSuccess(); // Re-renders form with errors
+        $this->assertResponseCode(422);
     }
 
     /**

@@ -10,7 +10,10 @@ export default class extends Controller {
 
     connect() {
         this.handleTurboFrameLoad = this.handleTurboFrameLoad.bind(this);
-        document.addEventListener("turbo:frame-load", this.handleTurboFrameLoad);
+        document.addEventListener(
+            "turbo:frame-load",
+            this.handleTurboFrameLoad,
+        );
 
         const url = new URL(window.location.href);
         const sport = this.hasSportTarget
@@ -34,7 +37,10 @@ export default class extends Controller {
 
     disconnect() {
         if (this.handleTurboFrameLoad) {
-            document.removeEventListener("turbo:frame-load", this.handleTurboFrameLoad);
+            document.removeEventListener(
+                "turbo:frame-load",
+                this.handleTurboFrameLoad,
+            );
         }
     }
 

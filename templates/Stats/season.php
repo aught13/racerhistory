@@ -11,7 +11,7 @@ $this->assign('title', ($teamSeason->season->start ?? '') . '-' . ($teamSeason->
 <div class="container py-4" data-controller="stats-page">
 
     <h1 class="display-6 mb-4">
-        <?= h($teamSeason->team?->getDisplayName() ?? 'Team') ?>
+        <?= h($teamSeason->team?->getTeamDisplayName() ?? 'Team') ?>
         <small class="text-muted"><?= h($teamSeason->season->start ?? '') ?>-<?= h($teamSeason->season->end ?? '') ?></small>
     </h1>
 

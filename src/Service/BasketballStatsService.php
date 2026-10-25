@@ -1155,7 +1155,7 @@ class BasketballStatsService
         $teams = [];
         foreach ($teamRows as $team) {
             if ($team instanceof Team) {
-                $teams[(int)$team->id] = $team->getDisplayName();
+                $teams[(int)$team->id] = $team->getTeamDisplayName();
             }
         }
 

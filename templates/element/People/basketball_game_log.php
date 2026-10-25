@@ -7,7 +7,7 @@ declare(strict_types=1);
  * @var \App\View\AppView $this
  */
 
-$teamName = $teamSeason?->team?->getDisplayName() ?? 'Team';
+$teamName = $teamSeason?->team?->getTeamDisplayName() ?? 'Team';
 $seasonStart = (string)($teamSeason?->season?->start ?? '');
 $seasonEnd = (string)($teamSeason?->season?->end ?? '');
 $seasonLabel = '';

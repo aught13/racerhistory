@@ -41,9 +41,9 @@
             <?= $this->Form->control('opponent_abbr', [
                 'label' => 'Scorebug Abbreviation',
                 'class' => 'form-control',
-                'maxlength' => 6,
+                'maxlength' => 30,
             ]) ?>
-            <div class="form-text">Enter the compact code used on score displays (maximum 6 characters).</div>
+            <div class="form-text">Enter the abbreviation used on score displays (maximum 30 characters).</div>
 
             <?= $this->Form->control('place_id', [
                 'type' => 'select',

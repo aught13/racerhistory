@@ -134,7 +134,7 @@ class StatsControllerFormattingTest extends TestCase
         $this->assertNotEmpty($rows[0]);
         $this->assertStringContainsString('Jane Player', (string)$rows[0][0]);
         $this->assertSame('Lakers', $rows[0][1]);
-        $this->assertSame(h($team->getDisplayName()), $rows[1][1]);
+        $this->assertSame(h($team->getTeamDisplayName()), $rows[1][1]);
 
         $teamSeasonRows = $controller->callFormatTeamSeasonRows([
             [
@@ -147,7 +147,7 @@ class StatsControllerFormattingTest extends TestCase
             ],
         ], 1);
 
-        $this->assertSame(h($team->getDisplayName()), $teamSeasonRows[0][0]);
+        $this->assertSame(h($team->getTeamDisplayName()), $teamSeasonRows[0][0]);
     }
 
     /**

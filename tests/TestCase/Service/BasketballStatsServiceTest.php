@@ -54,14 +54,14 @@ class BasketballStatsServiceTest extends TestCase
     }
 
     /**
-     * Basketball team filters use the canonical default display name.
+     * Basketball team filters use the team display variant.
      */
     public function testGetFilterOptionsUsesTeamDisplayName(): void
     {
         $options = $this->service->getFilterOptions();
         $team = $this->fetchTable('Teams')->get(1);
 
-        $this->assertSame($team->getDisplayName(), $options['teams'][1]);
+        $this->assertSame($team->getTeamDisplayName(), $options['teams'][1]);
     }
 
     /**

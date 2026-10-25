@@ -260,6 +260,7 @@ class GamesController extends AppController
 
             $this->setFormLists(null, $this->request->getAttribute('identity'));
             $this->set($result['viewData'] ?? []);
+            $this->response = $this->response->withStatus(422);
 
             return null;
         }
@@ -316,6 +317,7 @@ class GamesController extends AppController
 
             $viewData = array_merge($viewData, $result['viewData'] ?? []);
             $viewData['sportHasStats'] = $sportHasStats;
+            $this->response = $this->response->withStatus(422);
         }
 
         $this->set($viewData);
@@ -360,6 +362,7 @@ class GamesController extends AppController
             $viewData = $result['viewData'] ?? [];
             $viewData['sportHasStats'] = $this->determineSportHasStats($viewData['sportId'] ?? 0);
             $this->set($viewData);
+            $this->response = $this->response->withStatus(422);
 
             return null;
         }

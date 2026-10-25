@@ -109,6 +109,11 @@ if ($opponentNamePreview) {
                         $label = $f['label'] ?? ucfirst($name);
                         $req = !empty($f['required']);
                         $help = $f['help'] ?? '';
+                        $fieldAttributes = [];
+                        foreach (($f['attributes'] ?? []) as $attribute => $value) {
+                            $fieldAttributes[] = h((string)$attribute) . '="' . h((string)$value) . '"';
+                        }
+                        $fieldAttributes = implode(' ', $fieldAttributes);
                         $previewTarget = $f['previewTarget'] ?? null;
                         $previewIdentifier = $teamNamePreview
                             ? 'team-name-preview'
@@ -142,6 +147,7 @@ if ($opponentNamePreview) {
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?>
+                                <?= $fieldAttributes ?>
                                 <?= $previewAttrs ?>></textarea>
 
                             <?php elseif ($type === 'select') : ?>
@@ -150,6 +156,7 @@ if ($opponentNamePreview) {
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?>
+                                <?= $fieldAttributes ?>
                                 <?= $previewAttrs ?>>
                                 <option value="">Select...</option>
                                 <?php foreach (($f['options'] ?? []) as $val => $text) : ?>
@@ -187,6 +194,7 @@ if ($opponentNamePreview) {
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?>
                                 <?= implode(' ', $inputAttrs) ?>
+                                <?= $fieldAttributes ?>
                                 <?= $previewAttrs ?> />
 
                                 <?php if ($hasPlaceLocationBehavior && $name === 'place_city') : ?>

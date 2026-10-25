@@ -40,7 +40,10 @@ describe("opponent-name-preview controller", () => {
         `;
 
         application = Application.start();
-        application.register("opponent-name-preview", OpponentNamePreviewController);
+        application.register(
+            "opponent-name-preview",
+            OpponentNamePreviewController,
+        );
     }
 
     afterEach(() => {
@@ -120,7 +123,9 @@ describe("opponent-name-preview controller", () => {
             '[data-opponent-name-preview-target="opponentMascot"]',
         ).value = "Racers";
         document
-            .querySelector('[data-opponent-name-preview-target="opponentMascot"]')
+            .querySelector(
+                '[data-opponent-name-preview-target="opponentMascot"]',
+            )
             .dispatchEvent(new Event("input", { bubbles: true }));
 
         expect(
