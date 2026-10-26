@@ -9,6 +9,7 @@ use App\Service\TeamSeasonRosterService;
  * @var mixed $idPrefix
  * @var mixed $tagSelection
  * @var mixed $tagString
+ * @var array<string,string> $presetTags
  * @var array<\App\Model\Entity\Team> $teams <-- Add these
  * @var array<\App\Model\Entity\TeamSeason> $teamSeasons
  * @var array<\App\Model\Entity\Game> $games
@@ -29,8 +30,17 @@ $sites = is_iterable($sites ?? []) ? $sites : [];
 $opponents = is_iterable($opponents ?? []) ? $opponents : [];
 $sports = is_iterable($sports ?? []) ? $sports : [];
 $currentTags = is_iterable($currentTags ?? []) ? $currentTags : [];
+$presetTags = is_array($presetTags ?? null) ? $presetTags : [];
 $tagStringValue = (string)($tagString ?? '');
 $showTeamId = !empty($showTeamId);
+$selectedPresetTags = [];
+foreach ($currentTags as $tag) {
+    $slug = (string)($tag->slug ?? $tag['slug'] ?? '');
+    $presetSlug = strtolower($slug);
+    if (isset($presetTags[$presetSlug])) {
+        $selectedPresetTags[$presetSlug] = true;
+    }
+}
 
 $freeform = array_merge([
     'type' => 'textarea',
@@ -320,6 +330,29 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
 </div>
 
 <div class="mb-3">
+    <?php if ($presetTags !== []) : ?>
+        <fieldset class="mb-3">
+            <legend class="form-label">Preset tags</legend>
+            <div class="d-flex flex-wrap gap-3">
+                <?php foreach ($presetTags as $presetSlug => $presetLabel) :
+                    $presetId = $id('preset-tag-' . $presetSlug);
+                    ?>
+                    <div class="form-check">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="preset_tags[]"
+                            id="<?= h($presetId) ?>"
+                            value="<?= h($presetSlug) ?>"
+                            <?= isset($selectedPresetTags[$presetSlug]) ? 'checked' : '' ?>
+                        />
+                        <label class="form-check-label" for="<?= h($presetId) ?>"><?= h($presetLabel) ?></label>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="form-text">Select any standard category that applies; preset tags are saved alongside additional tags below.</div>
+        </fieldset>
+    <?php endif; ?>
     <label class="form-label" for="<?= h($freeform['attributes']['id']) ?>"><?= h($freeform['label']) ?></label>
     <?php if ($freeform['type'] === 'textarea') : ?>
         <textarea name="<?= h($freeform['name']) ?>" <?php foreach ($freeform['attributes'] as $attr => $value) :

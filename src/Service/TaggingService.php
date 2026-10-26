@@ -19,6 +19,12 @@ use Cake\Utility\Text;
  */
 class TaggingService
 {
+    public const BLOG_POST_PRESET_TAGS = [
+        'bio' => 'Bio',
+        'preview' => 'Preview',
+        'recap' => 'Recap',
+    ];
+
     private string $subjectTableName;
     private string $tagsTableName;
     private string $associationName;
@@ -151,9 +157,25 @@ class TaggingService
                 $existing = $tagsTable->newEntity(['name' => $name, 'slug' => $slug]);
                 $tagsTable->save($existing);
             } else {
+                $needsSave = false;
+                $existingSlug = (string)($existing->get('slug') ?? '');
+                if (
+                    $this->subjectTableName === 'BlogPosts'
+                    && isset(self::BLOG_POST_PRESET_TAGS[$slug])
+                    && strcasecmp($existingSlug, $slug) === 0
+                    && $existingSlug !== $slug
+                ) {
+                    $existing->set('slug', $slug);
+                    $needsSave = true;
+                }
+
                 $existingName = (string)($existing->get('name') ?? '');
                 if ($name !== '' && $this->shouldUpdateName($existingName)) {
                     $existing->set('name', $name);
+                    $needsSave = true;
+                }
+
+                if ($needsSave) {
                     $tagsTable->save($existing);
                 }
             }
@@ -200,8 +222,11 @@ class TaggingService
     public function applyFromData(int $subjectId, array $data): array
     {
         $tags = $this->buildTagsFromData($data);
+        if ($tags === [] && $subjectId <= 0) {
+            return [];
+        }
 
-        return $tags ? $this->replaceTags($subjectId, $tags) : [];
+        return $this->replaceTags($subjectId, $tags);
     }
 
     /**
@@ -410,6 +435,33 @@ class TaggingService
                     continue;
                 }
                 $tagsToApply[$value] = $value;
+            }
+        }
+
+        if ($this->subjectTableName === 'BlogPosts') {
+            $presetTags = $data['preset_tags'] ?? [];
+            if (!is_array($presetTags)) {
+                $presetTags = [$presetTags];
+            }
+            foreach ($presetTags as $presetTag) {
+                if (!is_scalar($presetTag)) {
+                    continue;
+                }
+
+                $slug = trim((string)$presetTag);
+                if (!isset(self::BLOG_POST_PRESET_TAGS[$slug])) {
+                    continue;
+                }
+
+                foreach ($tagsToApply as $key => $tag) {
+                    if (is_string($tag) && Text::slug($tag) === $slug) {
+                        unset($tagsToApply[$key]);
+                    }
+                }
+                $tagsToApply[$slug] = [
+                    'slug' => $slug,
+                    'name' => self::BLOG_POST_PRESET_TAGS[$slug],
+                ];
             }
         }
 

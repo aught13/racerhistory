@@ -181,6 +181,101 @@ class TaggingServiceTest extends TestCase
     }
 
     /**
+     * Blog-post preset tags use their canonical slugs and display names.
+     */
+    public function testBuildTagsFromDataAddsCanonicalBlogPostPresetTags(): void
+    {
+        $tags = TaggingService::forBlogPosts()->buildTagsFromData([
+            'preset_tags' => ['bio', 'preview', 'recap', 'unknown'],
+        ]);
+
+        $this->assertSame([
+            ['slug' => 'bio', 'name' => 'Bio'],
+            ['slug' => 'preview', 'name' => 'Preview'],
+            ['slug' => 'recap', 'name' => 'Recap'],
+        ], $tags);
+    }
+
+    /**
+     * Preset tags are only accepted in the blog-post tagging context.
+     */
+    public function testBuildTagsFromDataIgnoresBlogPostPresetsForImages(): void
+    {
+        $tags = TaggingService::forImages()->buildTagsFromData([
+            'preset_tags' => ['bio'],
+        ]);
+
+        $this->assertSame([], $tags);
+    }
+
+    /**
+     * A preset selected with a matching freeform tag is applied only once.
+     */
+    public function testBuildTagsFromDataDeduplicatesPresetFromFreeformTags(): void
+    {
+        $tags = TaggingService::forBlogPosts()->buildTagsFromData([
+            'tags' => 'bio',
+            'preset_tags' => ['bio'],
+        ]);
+
+        $this->assertSame([
+            ['slug' => 'bio', 'name' => 'Bio'],
+        ], $tags);
+    }
+
+    /**
+     * Saving a preset canonicalizes a legacy case-variant tag slug.
+     */
+    public function testApplyFromDataCanonicalizesLegacyPresetTagSlug(): void
+    {
+        $service = TaggingService::forBlogPosts();
+        $service->replaceTags(1, [
+            ['slug' => 'Bio', 'name' => 'Bio'],
+        ]);
+
+        $service->applyFromData(1, ['preset_tags' => ['bio']]);
+        $post = TableRegistry::getTableLocator()->get('BlogPosts')->get(
+            1,
+            contain: ['BlogTags'],
+        );
+        $slugs = array_map(
+            static fn($tag): string => (string)$tag->slug,
+            $post->blog_tags,
+        );
+
+        $this->assertSame(['bio'], $slugs);
+    }
+
+    /**
+     * Applying an empty tag selection clears existing tags on an existing subject.
+     */
+    public function testApplyFromDataClearsExistingTagsWhenSelectionIsEmpty(): void
+    {
+        $service = TaggingService::forBlogPosts();
+        $service->replaceTags(1, ['bio']);
+
+        $this->assertSame([], $service->applyFromData(1, [
+            'tags' => '',
+            'preset_tags' => [],
+        ]));
+        $this->assertSame(
+            0,
+            TableRegistry::getTableLocator()->get('BlogPostsBlogTags')
+                ->find()
+                ->where(['blog_post_id' => 1])
+                ->count(),
+        );
+    }
+
+    /**
+     * Empty tag data remains a no-op when no subject has been created yet.
+     */
+    public function testApplyFromDataWithNoSubjectAndNoTagsIsNoop(): void
+    {
+        $this->assertSame([], TaggingService::forBlogPosts()->applyFromData(0, []));
+    }
+
+    /**
      * Opponent tags use the canonical default display name.
      */
     public function testBuildTagsFromDataUsesOpponentDisplayName(): void

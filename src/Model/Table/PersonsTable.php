@@ -86,7 +86,6 @@ class PersonsTable extends Table
             ->maxLength('full', 162)
             ->maxLength('display', 162)
             ->maxLength('person_image', 162)
-            ->allowEmptyString('bio')
             ->integer('birth_place_id')
             ->allowEmptyString('birth_place_id')
             ->scalar('person_previous')

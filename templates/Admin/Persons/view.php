@@ -153,29 +153,6 @@ $canDeletePersons = $this->Rbac->can('Persons', 'delete');
                         </div>
                     </div>
 
-                    <?php if (!empty($person->bio)) : ?>
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <h5 class="mb-3"><i class="bi bi-file-text"></i> Biography</h5>
-                            <div class="person-bio p-3 bg-light rounded">
-                                <?php
-                                $bio = (string)($person->bio ?? '');
-                                // Basic sanitization: strip script/style tags while allowing common formatting
-                                    $bioClean = preg_replace(
-                                        '#</(script|style)>#i',
-                                        '',
-                                        preg_replace(
-                                            '#<(script|style)[^>]*>.*?</\\1>#is',
-                                            '',
-                                            $bio,
-                                        ),
-                                    );
-                                echo $bioClean;
-                                ?>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
 

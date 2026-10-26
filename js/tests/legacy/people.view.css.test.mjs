@@ -14,10 +14,8 @@ describe("People view CSS", () => {
         css = loadStyles();
     });
 
-    test("people bio text has a readable line height", () => {
-        expect(css).toMatch(
-            /\.person-view\s+\.person-bio[\s\S]*line-height:\s*[^;]+/i,
-        );
+    test("person biography styles are no longer present", () => {
+        expect(css).not.toMatch(/\.person-view\s+\.person-bio/i);
     });
 
     test("roster list items use theme borders", () => {

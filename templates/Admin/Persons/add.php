@@ -20,7 +20,7 @@
                     ]) ?>
                     <?php $this->Form->unlockField('birth_place_id'); ?>
 
-                    <div class="row g-3" data-controller="person-form" data-person-form-initial-image-id-value="" data-person-form-initial-preview-url-value="" data-person-form-images-upload-url-value="/admin/images/upload">
+                    <div class="row g-3" data-controller="person-form" data-person-form-initial-image-id-value="" data-person-form-initial-preview-url-value="">
                         <div class="col-md-6">
                             <?= $this->Form->control('first', ['class' => 'form-control', 'label' => ['text' => 'First Name', 'class' => 'form-label'], 'maxlength' => 30]); ?>
                         </div>
@@ -78,19 +78,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12"> <?= $this->Form->control('bio', [
-                                'type' => 'textarea',
-                                'rows' => 8,
-                                'class' => 'form-control',
-                                'id' => 'bio-editor',
-                                'data-person-form-target' => 'bioEditor',
-                                'label' => ['text' => 'Biography', 'class' => 'form-label'],
-                                'templates' => [
-                                    // Ensure we keep the textarea markup simple for JS replacement
-                                    'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
-                                ],
-                            ]); ?>
-                        </div>
                     </div>
 
                     <div class="mt-4 d-flex gap-2">
@@ -144,4 +131,3 @@ $uploadContext = null; // No auto-tagging on add
 $aspectRatio = 1; // Square aspect ratio for profile images
 echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
 ?>
-

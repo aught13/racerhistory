@@ -193,6 +193,7 @@ class TagsController extends AppController
                 'sport_select',
                 'roster_select',
                 'tags',
+                'preset_tags',
                 ];
             $formFields = array_intersect_key($data, array_flip($formKeys));
 
