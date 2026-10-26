@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Model\Entity\BlogPost;
 use App\Model\Entity\TeamSeasonRosters;
+use App\Service\BlogPostService;
 use App\Service\ImageProcessor;
 use App\Service\PersonService;
 use App\Service\PublicSportScopeService;
@@ -72,6 +72,7 @@ use Cake\Routing\Router;
  */
 class PeopleController extends AppController
 {
+    private BlogPostService $blogPostService;
     private PersonService $personService;
     private ImageProcessor $imageProcessor;
     protected StatsService $Stats;
@@ -90,6 +91,7 @@ class PeopleController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
+        $this->blogPostService = new BlogPostService();
         $this->Stats = new StatsService();
         $this->personService = new PersonService();
         $this->imageProcessor = new ImageProcessor();
@@ -433,8 +435,10 @@ class PeopleController extends AppController
         // Get related images via tagging
         $images = $this->imageProcessor->getImagesForPerson($id, 20);
 
-        // Get related blog posts via tagging
-        $blogPosts = $this->getBlogPostsByTag("person-{$id}");
+        // Separate the person's biography posts from other stories.
+        $personPosts = $this->blogPostService->getPublishedForPerson($id);
+        $bioPosts = $personPosts['bioPosts'];
+        $stories = $personPosts['stories'];
 
         // Get roster entries (team seasons this person was on)
         $showAllHistory = $this->request->getQuery('show_all_history') === '1';
@@ -527,7 +531,8 @@ class PeopleController extends AppController
             compact(
                 'person',
                 'images',
-                'blogPosts',
+                'bioPosts',
+                'stories',
                 'rosterEntries',
                 'rostersBySport',
                 'careerStatsBySport',
@@ -612,32 +617,6 @@ class PeopleController extends AppController
 
         $this->viewBuilder()->disableAutoLayout();
         $this->viewBuilder()->setTemplate('game_log');
-    }
-
-    /**
-     * Get blog posts by tag slug.
-     *
-     * @param string $tagSlug
-     * @return array<int,\App\Model\Entity\BlogPost>
-     */
-    private function getBlogPostsByTag(string $tagSlug): array
-    {
-        $table = $this->fetchTable('BlogPosts');
-        $rows = $table->find()
-            ->contain(['BlogTags'])
-            ->matching('BlogTags', function ($q) use ($tagSlug) {
-                return $q->where(['BlogTags.slug' => $tagSlug]);
-            })
-            ->where(['BlogPosts.is_published' => true])
-            ->orderByDesc('BlogPosts.published_at')
-            ->limit(10)
-            ->all()
-            ->toArray();
-
-        /** @var array<int,\App\Model\Entity\BlogPost> $posts */
-        $posts = array_values(array_filter($rows, static fn($post): bool => $post instanceof BlogPost));
-
-        return $posts;
     }
 
     /**

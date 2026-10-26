@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use App\Service\TaggingService;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -179,6 +181,51 @@ class PeopleControllerTest extends TestCase
     }
 
     /**
+     * Biography posts appear between the profile and seasons, and person links go to blog pages.
+     */
+    public function testViewSeparatesBiographyAndStoryLinks(): void
+    {
+        TaggingService::forBlogPosts()->replaceTags(1, ['person-1', 'bio']);
+
+        $postsTable = TableRegistry::getTableLocator()->get('BlogPosts');
+        $story = $postsTable->newEntity([
+            'title' => 'Person Story',
+            'slug' => 'person-story',
+            'excerpt' => 'A story about this person.',
+            'body' => 'Story body',
+            'status' => 'published',
+            'is_published' => true,
+            'published_at' => '2025-01-02 12:00:00',
+        ]);
+        $postsTable->saveOrFail($story);
+        TaggingService::forBlogPosts()->replaceTags((int)$story->id, ['person-1']);
+
+        $this->get('/people/1');
+
+        $this->assertResponseOk();
+        $bioPosts = $this->viewVariable('bioPosts');
+        $stories = $this->viewVariable('stories');
+        $this->assertCount(1, $bioPosts);
+        $this->assertSame('first-post', (string)$bioPosts[0]->slug);
+        $this->assertCount(1, $stories);
+        $this->assertSame('person-story', (string)$stories[0]->slug);
+
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('href="/blog/first-post"', $body);
+        $this->assertStringContainsString('href="/blog/person-story"', $body);
+        $this->assertStringNotContainsString('data-person-blog-popover', $body);
+
+        $bioPosition = strpos($body, '>Biography</h2>');
+        $seasonsPosition = strpos($body, '>Seasons ·');
+        $careerPosition = strpos($body, '>Career Statistics</h2>');
+        $this->assertNotFalse($seasonsPosition);
+        $this->assertNotFalse($bioPosition);
+        $this->assertNotFalse($careerPosition);
+        $this->assertLessThan($seasonsPosition, $bioPosition);
+        $this->assertLessThan($careerPosition, $seasonsPosition);
+    }
+
+    /**
      * Tests view with invalid id.
      */
     public function testViewWithInvalidId(): void
@@ -202,8 +249,11 @@ class PeopleControllerTest extends TestCase
         $images = $this->viewVariable('images');
         $this->assertIsArray($images);
 
-        $blogPosts = $this->viewVariable('blogPosts');
-        $this->assertIsArray($blogPosts);
+        $bioPosts = $this->viewVariable('bioPosts');
+        $this->assertIsArray($bioPosts);
+
+        $stories = $this->viewVariable('stories');
+        $this->assertIsArray($stories);
 
         $rosterEntries = $this->viewVariable('rosterEntries');
         $this->assertIsArray($rosterEntries);

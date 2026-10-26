@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\BlogPostService;
+use App\Service\TaggingService;
 use Cake\TestSuite\TestCase;
 
 class BlogPostServiceTest extends TestCase
@@ -65,5 +66,52 @@ class BlogPostServiceTest extends TestCase
         ]);
         $this->assertNotFalse($updated);
         $this->assertSame('Updated Title', $updated->title);
+    }
+
+    /**
+     * Person biography posts are separated from all published stories.
+     */
+    public function testGetPublishedForPersonSeparatesBioPostsAndStories(): void
+    {
+        TaggingService::forBlogPosts()->replaceTags(1, [
+            'person-1',
+            ['slug' => 'Bio', 'name' => 'Bio'],
+        ]);
+
+        for ($index = 1; $index <= 11; $index++) {
+            $post = $this->service->createPost([
+                'title' => 'Person Story ' . $index,
+                'slug' => 'person-story-' . $index,
+                'body' => 'Story body',
+                'is_published' => true,
+                'tags' => 'person-1',
+            ]);
+            $this->assertNotFalse($post);
+        }
+
+        $draft = $this->service->createPost([
+            'title' => 'Unpublished Person Story',
+            'slug' => 'unpublished-person-story',
+            'body' => 'Draft body',
+            'is_published' => false,
+            'tags' => 'person-1',
+        ]);
+        $this->assertNotFalse($draft);
+
+        $posts = $this->service->getPublishedForPerson(1);
+
+        $this->assertCount(1, $posts['bioPosts']);
+        $this->assertSame('first-post', (string)$posts['bioPosts'][0]->slug);
+        $this->assertCount(11, $posts['stories']);
+        $storySlugs = array_map(
+            static fn($story): string => (string)$story->slug,
+            $posts['stories'],
+        );
+        $expectedSlugs = array_map(
+            static fn(int $index): string => 'person-story-' . $index,
+            range(1, 11),
+        );
+        $this->assertEqualsCanonicalizing($expectedSlugs, $storySlugs);
+        $this->assertNotContains('unpublished-person-story', $storySlugs);
     }
 }

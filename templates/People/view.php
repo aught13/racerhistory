@@ -6,7 +6,8 @@ use App\Service\SocialImageService;
 /**
  * @var \App\Model\Entity\Person $person
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
- * @var array<int,\App\Model\Entity\BlogPost> $blogPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $bioPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $stories
  * @var array<int,\App\Model\Entity\TeamSeasonRosters> $rosterEntries
  * @var array<int,array{sport:\App\Model\Entity\Sport,rosters:array<int,array{roster:\App\Model\Entity\TeamSeasonRosters,teamSeason:\App\Model\Entity\TeamSeason}>}> $rostersBySport
  * @var array<int,array{sport:\App\Model\Entity\Sport,totals:array,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,stats:array}>,minYear:int|null,maxYear:int|null}> $careerStatsBySport
@@ -173,6 +174,22 @@ $formatSeasonLabel = static function ($season): string {
     </div>
 
     <div class="row g-4">
+        <?php if (!empty($bioPosts)) : ?>
+            <div class="col-12">
+                <section class="card shadow-sm">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Biography</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <?php foreach ($bioPosts as $post) : ?>
+                                <?= $this->element('People/blog_post_link', ['post' => $post]) ?>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        <?php endif; ?>
         <?php if (!empty($rostersBySport)) : ?>
             <?php foreach ($rostersBySport as $sportData) : ?>
                 <?php
@@ -435,58 +452,11 @@ $formatSeasonLabel = static function ($season): string {
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h5 mb-0">Stories</h2>
                 </div>
-                <div class="card-body" data-controller="person-blog-popovers" data-person-blog-popovers>
-                    <?php if (!empty($blogPosts)) : ?>
+                <div class="card-body">
+                    <?php if (!empty($stories)) : ?>
                         <div class="list-group">
-                            <?php foreach ($blogPosts as $post) : ?>
-                                <?php
-                                $viewUrl = $this->Url->build([
-                                    'controller' => 'Blog',
-                                    'action' => 'view',
-                                    $post->slug,
-                                ]);
-                                $popoverUrl = $this->Url->build([
-                                    'controller' => 'Blog',
-                                    'action' => 'popover',
-                                    $post->slug,
-                                ]);
-                                ?>
-                                <a
-                                    href="<?= h($viewUrl) ?>"
-                                    class="list-group-item list-group-item-action"
-                                    data-person-blog-popover
-                                    data-person-blog-popover-url="<?= h($popoverUrl) ?>"
-                                    data-person-blog-popover-title="<?= h($post->title) ?>">
-                                    <div class="d-flex gap-3">
-                                        <?php if (!empty($post->hero_image_id)) : ?>
-                                            <div
-                                                style="flex-shrink: 0; width: 120px; height: 90px;">
-                                                <?= $this->ImageServe->picture(
-                                                    (int)$post->hero_image_id,
-                                                    ['w' => 200, 'h' => 150, 'fit' => 'cover'],
-                                                    [
-                                                        'class' => 'img-fluid rounded',
-                                                        'alt' => (string)$post->title,
-                                                        'style' => 'object-fit: cover; width: 100%; height: 100%;',
-                                                    ],
-                                                ) ?>
-                                            </div>
-                                        <?php endif; ?>
-                                        <div class="flex-grow-1">
-                                            <h3 class="h6 mb-1"><?= h($post->title) ?></h3>
-                                            <p class="text-muted small mb-2">
-                                                <?php if ($post->published_at instanceof DateTimeInterface) : ?>
-                                                    <?= h($post->published_at->format('M j, Y')) ?>
-                                                <?php else : ?>
-                                                    <?= h($post->published_at ?? '') ?>
-                                                <?php endif; ?>
-                                            </p>
-                                            <?php if (!empty($post->excerpt)) : ?>
-                                                <p class="small mb-0"><?= h($post->excerpt) ?></p>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </a>
+                            <?php foreach ($stories as $post) : ?>
+                                <?= $this->element('People/blog_post_link', ['post' => $post]) ?>
                             <?php endforeach; ?>
                         </div>
                     <?php else : ?>

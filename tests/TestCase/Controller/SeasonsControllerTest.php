@@ -220,6 +220,36 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
+     * Recap preset posts appear in the season recap section, not season stories.
+     */
+    public function testRecapPresetAppearsInSeasonRecapSection(): void
+    {
+        TaggingService::forBlogPosts()->replaceTags(1, [
+            ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
+            ['slug' => 'Recap', 'name' => 'Recap'],
+        ]);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $reviewPosts = $this->viewVariable('reviewPosts');
+        $otherPosts = $this->viewVariable('otherPosts');
+        $this->assertCount(1, $reviewPosts);
+        $this->assertSame('first-post', (string)$reviewPosts[0]->slug);
+        $this->assertSame([], $otherPosts);
+
+        $html = (string)$this->_response->getBody();
+        $recapPosition = strpos($html, '>Season Recap</h2>');
+        $postPosition = strpos($html, 'href="/blog/first-post');
+        $gamesPosition = strpos($html, 'id="season-games"');
+        $this->assertNotFalse($recapPosition);
+        $this->assertNotFalse($postPosition);
+        $this->assertNotFalse($gamesPosition);
+        $this->assertLessThan($postPosition, $recapPosition);
+        $this->assertLessThan($gamesPosition, $postPosition);
+    }
+
+    /**
      * Tests view with invalid id.
      */
     public function testViewWithInvalidId(): void

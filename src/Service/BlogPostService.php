@@ -83,25 +83,61 @@ class BlogPostService
      * Get published posts by a tag slug.
      *
      * @param string $tagSlug
-     * @param int $limit
+     * @param int|null $limit
      * @return array<int,\App\Model\Entity\BlogPost>
      */
-    public function getPublishedByTag(string $tagSlug, int $limit = 20): array
+    public function getPublishedByTag(string $tagSlug, ?int $limit = 20): array
     {
         $table = $this->posts();
 
-        $rows = $table->find()
+        $query = $table->find()
             ->contain(['BlogTags'])
             ->matching('BlogTags', function ($q) use ($tagSlug) {
                 return $q->where(['BlogTags.slug' => $tagSlug]);
             })
             ->where(['BlogPosts.is_published' => true])
-            ->orderByDesc('BlogPosts.published_at')
-            ->limit($limit)
-            ->all()
-            ->toArray();
+            ->orderByDesc('BlogPosts.published_at');
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        $rows = $query->all()->toArray();
 
         return $this->normalizePosts($rows);
+    }
+
+    /**
+     * Get all published posts tagged for a person, separated into biography and stories.
+     *
+     * @param int $personId
+     * @return array{bioPosts:array<int,\App\Model\Entity\BlogPost>,stories:array<int,\App\Model\Entity\BlogPost>}
+     */
+    public function getPublishedForPerson(int $personId): array
+    {
+        $posts = $this->getPublishedByTag('person-' . $personId, null);
+        $bioPosts = [];
+        $stories = [];
+
+        foreach ($posts as $post) {
+            $hasBioTag = false;
+            foreach ($post->blog_tags ?? [] as $tag) {
+                if (strcasecmp((string)($tag->slug ?? ''), 'bio') === 0) {
+                    $hasBioTag = true;
+                    break;
+                }
+            }
+
+            if ($hasBioTag) {
+                $bioPosts[] = $post;
+            } else {
+                $stories[] = $post;
+            }
+        }
+
+        return [
+            'bioPosts' => $bioPosts,
+            'stories' => $stories,
+        ];
     }
 
     /**

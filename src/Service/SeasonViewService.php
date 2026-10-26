@@ -165,7 +165,7 @@ class SeasonViewService
 
         foreach ($posts as $post) {
             $hasPreview = $this->postHasTag($post, 'preview');
-            $hasReview = $this->postHasTag($post, 'review');
+            $hasReview = $this->postHasTag($post, 'recap');
 
             if ($hasPreview) {
                 $preview[] = $post;
