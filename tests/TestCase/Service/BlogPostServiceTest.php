@@ -4,11 +4,13 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\BlogPostService;
-use App\Service\TaggingService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\TestSuite\TestCase;
 
 class BlogPostServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     protected array $fixtures = [
         'app.BlogPosts',
         'app.BlogTags',
@@ -23,7 +25,7 @@ class BlogPostServiceTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        $this->service = new BlogPostService();
+        $this->service = new BlogPostService($this->taggingServiceFactory());
     }
 
     /**
@@ -73,7 +75,7 @@ class BlogPostServiceTest extends TestCase
      */
     public function testGetPublishedForPersonSeparatesBioPostsAndStories(): void
     {
-        TaggingService::forBlogPosts()->replaceTags(1, [
+        $this->blogPostTaggingService()->replaceTags(1, [
             'person-1',
             ['slug' => 'Bio', 'name' => 'Bio'],
         ]);

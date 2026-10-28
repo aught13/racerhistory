@@ -207,22 +207,23 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Person</label>
-        <div id="<?= h($id('selectedPersons')) ?>" class="d-flex flex-wrap gap-2 mb-2"></div>
+        <div id="<?= h($id('selectedPersons')) ?>" class="d-flex flex-wrap gap-2 mb-2" data-tag-selection-target="selectedPersons"></div>
         <input
             type="text"
             name="person_search"
             id="<?= h($id('person_search')) ?>"
+            data-tag-selection-target="personSearch"
             list="<?= h($id('personsList')) ?>"
             class="form-control"
             placeholder="Search person by name"
             autocomplete="off"
         />
         <div class="d-flex gap-2 mt-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="<?= h($id('add_person_btn')) ?>">Add Person</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="<?= h($id('clear_persons_btn')) ?>">Clear</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="<?= h($id('add_person_btn')) ?>" data-tag-selection-target="addPersonButton">Add Person</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="<?= h($id('clear_persons_btn')) ?>" data-tag-selection-target="clearPersonsButton">Clear</button>
         </div>
-        <datalist id="<?= h($id('personsList')) ?>"></datalist>
-        <div id="<?= h($id('person_hidden_inputs')) ?>">
+        <datalist id="<?= h($id('personsList')) ?>" data-tag-selection-target="personsList"></datalist>
+        <div id="<?= h($id('person_hidden_inputs')) ?>" data-tag-selection-target="personHiddenInputs">
             <?php foreach ($selectedPersons as $p) : ?>
                 <input type="hidden" name="person_select[]" value="<?= h((int)$p['id']) ?>" />
             <?php endforeach; ?>
@@ -246,7 +247,7 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Team Season</label>
-        <select name="teamseason_select" id="<?= h($id('teamseason_select')) ?>" class="form-select">
+        <select name="teamseason_select" id="<?= h($id('teamseason_select')) ?>" class="form-select" data-tag-selection-target="teamSeasonSelect">
             <option value="">-- select team season --</option>
             <?php foreach ($teamSeasons as $ts) : ?>
                 <option value="<?= h($ts['id']) ?>" <?= $selectedTeamSeasonId === (int)$ts['id'] ? 'selected' : '' ?>><?= h($ts['label']) ?></option>
@@ -256,11 +257,12 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
 
     <div class="col-md-6 mb-3">
         <label class="form-label">Game</label>
-        <div id="<?= h($id('selectedGame')) ?>" class="d-flex flex-wrap gap-2 mb-2"></div>
+        <div id="<?= h($id('selectedGame')) ?>" class="d-flex flex-wrap gap-2 mb-2" data-tag-selection-target="selectedGame"></div>
         <input
             type="text"
             name="game_search"
             id="<?= h($id('game_search')) ?>"
+            data-tag-selection-target="gameSearch"
             list="<?= h($id('gamesList')) ?>"
             class="form-control"
             placeholder="Search game"
@@ -268,8 +270,8 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
             value="<?= h($selectedGameLabel) ?>"
             <?= $selectedTeamSeasonId ? '' : 'disabled' ?>
         />
-        <datalist id="<?= h($id('gamesList')) ?>"></datalist>
-        <input type="hidden" name="game_select" id="<?= h($id('game_select')) ?>" value="<?= h((int)$selectedGameId) ?>" />
+        <datalist id="<?= h($id('gamesList')) ?>" data-tag-selection-target="gamesList"></datalist>
+        <input type="hidden" name="game_select" id="<?= h($id('game_select')) ?>" value="<?= h((int)$selectedGameId) ?>" data-tag-selection-target="gameSelect" />
         <div class="form-text">Must select a Team Season first.</div>
     </div>
 </div>
@@ -281,14 +283,15 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
             type="text"
             name="site_search"
             id="<?= h($id('site_search')) ?>"
+            data-tag-selection-target="siteSearch"
             list="<?= h($id('sitesList')) ?>"
             class="form-control"
             placeholder="Search site"
             autocomplete="off"
             value="<?= h($selectedSiteLabel) ?>"
         />
-        <datalist id="<?= h($id('sitesList')) ?>"></datalist>
-        <input type="hidden" name="site_select" id="<?= h($id('site_select')) ?>" value="<?= h((int)$selectedSiteId) ?>" />
+        <datalist id="<?= h($id('sitesList')) ?>" data-tag-selection-target="sitesList"></datalist>
+        <input type="hidden" name="site_select" id="<?= h($id('site_select')) ?>" value="<?= h((int)$selectedSiteId) ?>" data-tag-selection-target="siteSelect" />
     </div>
 
     <div class="col-md-6 mb-3">
@@ -297,14 +300,15 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
             type="text"
             name="opponent_search"
             id="<?= h($id('opponent_search')) ?>"
+            data-tag-selection-target="opponentSearch"
             list="<?= h($id('opponentsList')) ?>"
             class="form-control"
             placeholder="Search opponent"
             autocomplete="off"
             value="<?= h($selectedOpponentLabel) ?>"
         />
-        <datalist id="<?= h($id('opponentsList')) ?>"></datalist>
-        <input type="hidden" name="opponent_select" id="<?= h($id('opponent_select')) ?>" value="<?= h((int)$selectedOpponentId) ?>" />
+        <datalist id="<?= h($id('opponentsList')) ?>" data-tag-selection-target="opponentsList"></datalist>
+        <input type="hidden" name="opponent_select" id="<?= h($id('opponent_select')) ?>" value="<?= h((int)$selectedOpponentId) ?>" data-tag-selection-target="opponentSelect" />
     </div>
 </div>
 
@@ -322,7 +326,7 @@ $initialRosterIdVal = h((int)($initialRosterId ?? 0));
     <div class="col-md-6 mb-3">
         <label class="form-label">Team Season Roster Entry</label>
         <div id="<?= h($id('selectedRoster')) ?>" class="d-flex flex-wrap gap-2 mb-2" data-initial-label="<?= h($selectedRosterLabel) ?>"></div>
-        <select name="roster_select" id="<?= h($id('roster_select')) ?>" class="form-select" <?= $initialPersonCount === 1 ? '' : 'disabled' ?> >
+        <select name="roster_select" id="<?= h($id('roster_select')) ?>" class="form-select" data-tag-selection-target="rosterSelect" <?= $initialPersonCount === 1 ? '' : 'disabled' ?> >
             <option value="">-- select roster entry --</option>
         </select>
         <div class="form-text">Must select a Person first. Other tags cannot be set when a Roster entry is selected.</div>

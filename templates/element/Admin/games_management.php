@@ -203,17 +203,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 return date + ' vs ' + opp;
             });
 
-            if (window.__rhStimulusShowConfirmDelete) {
-                window.__rhStimulusShowConfirmDelete({
+            bulkFormGames.dispatchEvent(new CustomEvent('admin:confirm-delete', {
+                bubbles: true,
+                detail: {
                     deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk']) ?>',
                     itemType: 'games (bulk)',
                     associated: assoc,
                     ids: ids,
                     idsName: 'game_ids[]',
-                    formId: 'delete-form-games-bulk',
+                    sourceForm: document.getElementById('delete-form-games-bulk'),
                     bulkAction: 'delete'
-                });
-            }
+                }
+            }));
         });
     }
 });

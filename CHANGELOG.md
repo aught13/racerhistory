@@ -7,6 +7,28 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ## [Unreleased]
 
+### Added
+
+- Public person pages now separate published biography posts from other person-tagged stories.
+
+### Changed
+
+- Standardized team and opponent display names across game, season, roster, statistics, and admin views; opponent abbreviations now support up to 30 characters.
+- Refined navigation styling and accessibility.
+
+### Fixed
+
+- Tag-creation failures now display the server response and keep the modal open.
+- Improved frontend controller cleanup and popup-form event handling across Turbo navigation.
+
+### Removed
+
+- Removed the standalone `persons.bio` field and editor; person biographies are managed as tagged blog posts.
+
+### Documentation
+
+- Documented the reusable popup form's `admin:popup-option-added` bubbling event and configurable success events.
+
 ## [4.1.1] - 2026-10-18
 
 ### Added

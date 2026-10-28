@@ -1,6 +1,8 @@
 /*
  * Dynamic sport-aware game form enhancer
  */
+const activeInitializers = new WeakMap();
+
 function getSportFormElements() {
     const select = document.getElementById("team-season-select");
     const section = document.getElementById("sport-specific-section");
@@ -108,7 +110,7 @@ function renderEav(template, existingValues) {
     });
 }
 
-async function fetchMeta(teamSeasonId) {
+async function fetchMeta(teamSeasonId, signal) {
     const { section, indicator, loading, sportNameSpan, url, existingGameId } =
         getSportFormElements();
     if (!url) {
@@ -131,39 +133,58 @@ async function fetchMeta(teamSeasonId) {
     }
 
     try {
-        const htmlResp = await fetch(
-            url + "?" + params.toString() + "&format=html",
-            {
-                headers: { Accept: "text/html" },
-            },
-        );
-        if (htmlResp.ok) {
-            const text = await htmlResp.text();
-            if (section) {
-                section.innerHTML = text;
-            }
+        const htmlOptions = { headers: { Accept: "text/html" } };
+        if (signal) {
+            htmlOptions.signal = signal;
+        }
 
-            if (sportNameSpan) {
-                const tmp = document.createElement("div");
-                tmp.innerHTML = text;
-                const sn = tmp.querySelector("[data-sport-name]");
-                if (sn) {
-                    sportNameSpan.textContent =
-                        sn.getAttribute("data-sport-name");
+        try {
+            const htmlResponse = await fetch(
+                url + "?" + params.toString() + "&format=html",
+                htmlOptions,
+            );
+            if (signal?.aborted) {
+                return;
+            }
+            if (htmlResponse?.ok) {
+                const text = await htmlResponse.text();
+                if (signal?.aborted) {
+                    return;
                 }
-            }
+                if (section) {
+                    section.innerHTML = text;
+                }
 
+                if (sportNameSpan) {
+                    const tmp = document.createElement("div");
+                    tmp.innerHTML = text;
+                    const sn = tmp.querySelector("[data-sport-name]");
+                    if (sn) {
+                        sportNameSpan.textContent =
+                            sn.getAttribute("data-sport-name");
+                    }
+                }
+
+                return;
+            }
+        } catch (error) {
+            if (signal?.aborted || error?.name === "AbortError") {
+                return;
+            }
+        }
+
+        const jsonOptions = { headers: { Accept: "application/json" } };
+        if (signal) {
+            jsonOptions.signal = signal;
+        }
+        const resp = await fetch(url + "?" + params.toString(), jsonOptions);
+        if (signal?.aborted) {
             return;
         }
-    } catch {
-        // Fall back to JSON path below.
-    }
-
-    try {
-        const resp = await fetch(url + "?" + params.toString(), {
-            headers: { Accept: "application/json" },
-        });
         const data = await resp.json();
+        if (signal?.aborted) {
+            return;
+        }
         if (!data.success) {
             return;
         }
@@ -172,8 +193,10 @@ async function fetchMeta(teamSeasonId) {
             sportNameSpan.textContent = data.sportName || "Unknown";
         }
         renderEav(data.eavTemplate || [], data.values || {});
-    } catch {
-        console.warn("Failed to load sport meta");
+    } catch (error) {
+        if (!signal?.aborted && error?.name !== "AbortError") {
+            console.warn("Failed to load sport meta");
+        }
     } finally {
         if (loading) {
             loading.style.display = "none";
@@ -184,38 +207,65 @@ async function fetchMeta(teamSeasonId) {
 function initGamesSportDynamic() {
     const { select, section, existingGameId } = getSportFormElements();
     if (!select) {
-        return;
+        return null;
     }
 
-    if (select.dataset.gamesSportDynamicBound !== "true") {
-        select.addEventListener("change", function () {
-            const tsid = this.value;
-            if (tsid) {
-                void fetchMeta(tsid);
-            }
-        });
-        select.dataset.gamesSportDynamicBound = "true";
+    const existingCleanup = activeInitializers.get(select);
+    if (existingCleanup) {
+        return existingCleanup;
     }
 
+    let activeRequest = null;
+    function fetchForSelection(teamSeasonId) {
+        activeRequest?.abort();
+        activeRequest = new AbortController();
+        void fetchMeta(teamSeasonId, activeRequest.signal);
+    }
+
+    function handleTeamSeasonChange() {
+        if (select.value) {
+            fetchForSelection(select.value);
+        } else {
+            activeRequest?.abort();
+            activeRequest = null;
+        }
+    }
+
+    select.addEventListener("change", handleTeamSeasonChange);
+    select.dataset.gamesSportDynamicBound = "true";
     if (
         (select.value || existingGameId) &&
         section &&
         !section.querySelector(".card")
     ) {
-        void fetchMeta(select.value || "");
+        fetchForSelection(select.value || "");
     }
+
+    let disposed = false;
+    const cleanup = () => {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
+        select.removeEventListener("change", handleTeamSeasonChange);
+        delete select.dataset.gamesSportDynamicBound;
+        activeRequest?.abort();
+        activeRequest = null;
+        activeInitializers.delete(select);
+    };
+    activeInitializers.set(select, cleanup);
+
+    return cleanup;
 }
 
 if (typeof document !== "undefined") {
     initGamesSportDynamic();
 }
 
-if (typeof module !== "undefined" && module && module.exports) {
-    module.exports = {
-        buildFieldControl,
-        groupFields,
-        fetchMeta,
-        renderEav,
-        initGamesSportDynamic,
-    };
-}
+export {
+    buildFieldControl,
+    groupFields,
+    fetchMeta,
+    renderEav,
+    initGamesSportDynamic,
+};

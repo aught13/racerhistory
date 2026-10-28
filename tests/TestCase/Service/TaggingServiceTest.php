@@ -3,15 +3,17 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
-use App\Service\TaggingService;
 use App\Service\TeamSeasonService;
 use App\Service\TeamSportContextService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 class TaggingServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     protected array $fixtures = [
         'app.Teams',
         'app.Sports',
@@ -37,7 +39,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataGeneratesFriendlyLabelsForImage(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -115,7 +117,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testParseTagsFromRequestAddsFriendlyTeamSeasonLabel(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -157,7 +159,7 @@ class TaggingServiceTest extends TestCase
     public function testBuildTagsFromDataUsesTeamDisplayName(): void
     {
         $team = TableRegistry::getTableLocator()->get('Teams')->get(1);
-        $tags = TaggingService::forImages()->buildTagsFromData(['team_select' => 1]);
+        $tags = $this->imageTaggingService()->buildTagsFromData(['team_select' => 1]);
 
         $this->assertSame([
             ['slug' => 'team-1', 'name' => $team->getDisplayName()],
@@ -173,7 +175,7 @@ class TaggingServiceTest extends TestCase
         $sportId = (int)array_search('Basketball', $sportOptions, true);
         $this->assertGreaterThan(0, $sportId);
 
-        $tags = TaggingService::forBlogPosts()->buildTagsFromData(['sport_select' => $sportId]);
+        $tags = $this->blogPostTaggingService()->buildTagsFromData(['sport_select' => $sportId]);
 
         $this->assertSame([
             ['slug' => 'sport-' . $sportId, 'name' => 'Basketball'],
@@ -185,7 +187,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testBuildTagsFromDataAddsCanonicalBlogPostPresetTags(): void
     {
-        $tags = TaggingService::forBlogPosts()->buildTagsFromData([
+        $tags = $this->blogPostTaggingService()->buildTagsFromData([
             'preset_tags' => ['bio', 'preview', 'recap', 'unknown'],
         ]);
 
@@ -201,7 +203,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testBuildTagsFromDataIgnoresBlogPostPresetsForImages(): void
     {
-        $tags = TaggingService::forImages()->buildTagsFromData([
+        $tags = $this->imageTaggingService()->buildTagsFromData([
             'preset_tags' => ['bio'],
         ]);
 
@@ -213,7 +215,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testBuildTagsFromDataDeduplicatesPresetFromFreeformTags(): void
     {
-        $tags = TaggingService::forBlogPosts()->buildTagsFromData([
+        $tags = $this->blogPostTaggingService()->buildTagsFromData([
             'tags' => 'bio',
             'preset_tags' => ['bio'],
         ]);
@@ -228,7 +230,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataCanonicalizesLegacyPresetTagSlug(): void
     {
-        $service = TaggingService::forBlogPosts();
+        $service = $this->blogPostTaggingService();
         $service->replaceTags(1, [
             ['slug' => 'Bio', 'name' => 'Bio'],
         ]);
@@ -251,7 +253,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataClearsExistingTagsWhenSelectionIsEmpty(): void
     {
-        $service = TaggingService::forBlogPosts();
+        $service = $this->blogPostTaggingService();
         $service->replaceTags(1, ['bio']);
 
         $this->assertSame([], $service->applyFromData(1, [
@@ -272,7 +274,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataWithNoSubjectAndNoTagsIsNoop(): void
     {
-        $this->assertSame([], TaggingService::forBlogPosts()->applyFromData(0, []));
+        $this->assertSame([], $this->blogPostTaggingService()->applyFromData(0, []));
     }
 
     /**
@@ -288,7 +290,7 @@ class TaggingServiceTest extends TestCase
         $opponent->opponent_mascot = 'Bruins';
         $opponents->saveOrFail($opponent);
 
-        $tags = TaggingService::forImages()->buildTagsFromData(['opponent_select' => 1]);
+        $tags = $this->imageTaggingService()->buildTagsFromData(['opponent_select' => 1]);
 
         $this->assertSame([
             ['slug' => 'opponent-1', 'name' => 'BEL Bruins'],
@@ -300,7 +302,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testReplaceTagsForBlogPostCreatesLinkage(): void
     {
-        $service = TaggingService::forBlogPosts();
+        $service = $this->blogPostTaggingService();
         $service->replaceTags(1, ['team-1']);
 
         $tagsTable = TableRegistry::getTableLocator()->get('BlogTags');
@@ -317,7 +319,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataAllowsMultiplePersonsWhenNoRosterSelected(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -353,7 +355,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataIgnoresMultiplePersonsWhenRosterSelected(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -389,7 +391,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataGeneratesFriendlyGameLabel(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -427,7 +429,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testParseTagsFromRequestAddsFriendlyGameLabel(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
 
         $request = new ServerRequest([
             'post' => [

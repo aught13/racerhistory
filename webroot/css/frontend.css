@@ -2386,6 +2386,7 @@ select.dtsb-dropDown option[disabled] {
 
 .season-photo-thumb {
   position: relative;
+  width: 100%;
   overflow: hidden;
   border-radius: 0.375rem;
   aspect-ratio: 4 / 3;
@@ -2403,22 +2404,6 @@ select.dtsb-dropDown option[disabled] {
 
 .season-photo-thumb:hover .season-photo-thumb-img {
   transform: scale(1.05);
-}
-
-.season-image-modal {
-  display: none !important;
-}
-
-.season-image-modal[data-modal-open] {
-  display: flex !important;
-}
-
-.season-image-modal-close {
-  transition: color 0.2s ease;
-}
-
-.season-image-modal-close:hover {
-  color: var(--rh-gold) !important;
 }
 
 /* Game View */
@@ -2543,6 +2528,14 @@ select.dtsb-dropDown option[disabled] {
   background: var(--rh-surface);
 }
 
+.game-photo-thumb-link,
+.game-photo-thumb picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+}
+
 .game-photo-thumb-img {
   width: 100%;
   height: 100%;
@@ -2555,20 +2548,50 @@ select.dtsb-dropDown option[disabled] {
   transform: scale(1.05);
 }
 
-.game-image-modal {
-  display: none !important;
+.image-gallery-modal .modal-dialog {
+  width: 90vw;
+  max-width: 90vw;
 }
 
-.game-image-modal[data-modal-open] {
-  display: flex !important;
+.image-gallery-modal .modal-content {
+  min-height: 90vh;
+  background: rgba(0, 0, 0, 0.9);
+  border: 0;
 }
 
-.game-image-modal-close {
-  transition: color 0.2s ease;
+.image-gallery-modal .modal-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
 }
 
-.game-image-modal-close:hover {
-  color: var(--rh-gold) !important;
+.image-gallery-modal .modal-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-gallery-modal-picture {
+  display: flex;
+  max-width: 90vw;
+  max-height: 80vh;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-gallery-modal-image {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+.image-gallery-modal-credit {
+  background-color: rgba(0, 0, 0, 0.6);
+  font-size: 0.9rem;
 }
 
 /* Season games table: ensure link colour is always readable */

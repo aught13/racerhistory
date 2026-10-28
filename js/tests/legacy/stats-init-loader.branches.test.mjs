@@ -397,6 +397,7 @@ describe("stats-init-loader SearchBuilder integration", () => {
                     ]),
             };
         });
+
         const mod = await import("../../legacy/stats-init-loader.mjs");
         mod.initStatsDataTable(document.getElementById("stats-results-table"));
         await flush();
@@ -654,5 +655,43 @@ describe("stats-init-loader SearchBuilder URL state management", () => {
         const mod = await import("../../legacy/stats-init-loader.mjs");
         mod.copySearchBuilderLinkToClipboard(dtInstance);
         expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    });
+});
+
+describe("stats-init-loader lifecycle cleanup", () => {
+    test("removes transient drag and hover handlers on cleanup", async () => {
+        document.body.innerHTML = `
+            <div id="stats-root">
+                <div class="table-responsive">
+                    <table id="stats-results-table"></table>
+                </div>
+                <div id="stats-type-cards">
+                    <a class="stat-type-card"></a>
+                </div>
+            </div>
+        `;
+        const mod = await import("../../legacy/stats-init-loader.mjs");
+        const root = document.getElementById("stats-root");
+        const scrollContainer = root.querySelector(".table-responsive");
+        const card = root.querySelector(".stat-type-card");
+
+        mod.initDragScroll(scrollContainer);
+        mod.initCardHover(root.querySelector("#stats-type-cards"));
+        scrollContainer.dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true }),
+        );
+        card.dispatchEvent(new MouseEvent("mouseenter"));
+
+        expect(scrollContainer.classList.contains("is-dragging")).toBe(true);
+        expect(card.classList.contains("shadow-sm")).toBe(true);
+
+        mod.cleanupStatsPage(root);
+        scrollContainer.dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true }),
+        );
+        card.dispatchEvent(new MouseEvent("mouseenter"));
+
+        expect(scrollContainer.classList.contains("is-dragging")).toBe(false);
+        expect(card.classList.contains("shadow-sm")).toBe(false);
     });
 });

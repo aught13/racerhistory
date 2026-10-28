@@ -60,7 +60,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('id="roster-rows"');
         $this->assertResponseContains('data-roster-multi-add-target="rows"');
         $this->assertResponseContains('id="add-row-btn"');
-        $this->assertResponseContains('data-roster-multi-add-target="addButton"');
+        $this->assertResponseContains('roster-multi-add#addRow');
         $this->assertResponseContains('Add Another');
         $this->assertResponseContains('Save All');
         $this->assertResponseContains('roster-row');
@@ -206,7 +206,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('data-controller="roster-multi-add"');
         $this->assertResponseContains('data-roster-multi-add-target="rows"');
-        $this->assertResponseContains('data-roster-multi-add-target="addButton"');
+        $this->assertResponseContains('roster-multi-add#addRow');
     }
 
     /**

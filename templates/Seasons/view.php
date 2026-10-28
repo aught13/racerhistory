@@ -152,7 +152,7 @@ if (!empty($seasonSocialImageCandidates)) {
 $this->start('css'); ?>
 <?php $this->end(); ?>
 
-<div class="container py-4 season-view" data-season-view data-controller="season-view">
+<div class="container py-4 season-view" data-season-view data-controller="season-view" data-action="turbo:before-cache@document->season-view#beforeCache">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
@@ -568,7 +568,7 @@ $this->start('css'); ?>
                     <?php if (!empty($images)) : ?>
                         <div class="season-photos-grid" data-season-image-gallery>
                             <?php foreach ($images as $image) : ?>
-                                <div class="season-photo-thumb">
+                                <button type="button" class="season-photo-thumb btn p-0 border-0" data-bs-toggle="modal" data-bs-target="#seasonImageModal" aria-label="<?= h('View photo: ' . (string)$image->filename) ?>">
                                     <?php $photoThumbUrl = $this->ImageServe->urlForImage($image, ['variant' => 'thumb']); ?>
                                     <?php $photoUrl = $this->ImageServe->urlForImage($image); ?>
                                     <?= $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
@@ -576,7 +576,6 @@ $this->start('css'); ?>
                                         'class' => 'season-photo-thumb-img js-season-photo',
                                         'width' => 240,
                                         'height' => 180,
-                                        'style' => 'object-fit: cover;',
                                         'loading' => 'lazy',
                                         'decoding' => 'async',
                                         'data-image-url' => $photoUrl,
@@ -584,20 +583,28 @@ $this->start('css'); ?>
                                         'data-thumb-src' => $photoThumbUrl,
                                         'data-rh-no-retry' => '1',
                                     ]) ?>
-                                </div>
+                                </button>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>
             </section>
 
-            <!-- Image Popover Modal -->
-            <div class="season-image-modal" id="seasonImageModal" data-season-image-modal style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1050; align-items: center; justify-content: center;">
-                <button type="button" class="season-image-modal-close" aria-label="Close" data-modal-close style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; z-index: 1051;">×</button>
-                <picture class="season-image-modal-container" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center;">
-                    <source type="image/webp" data-modal-image-webp>
-                    <img src="" alt="" data-modal-image data-modal-image-fallback style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
-                </picture>
+            <div class="modal fade image-gallery-modal season-image-modal" id="seasonImageModal" tabindex="-1" aria-labelledby="seasonImageModalLabel" aria-hidden="true" data-season-image-modal data-season-view-target="imageModal">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header border-0">
+                            <h2 class="visually-hidden" id="seasonImageModalLabel">Season photo</h2>
+                            <button type="button" class="btn-close btn-close-white" aria-label="Close" data-bs-dismiss="modal" data-season-view-target="imageModalDismiss"></button>
+                        </div>
+                        <div class="modal-body">
+                            <picture class="image-gallery-modal-picture">
+                                <source type="image/webp" data-modal-image-webp>
+                                <img alt="" data-modal-image data-modal-image-fallback class="image-gallery-modal-image">
+                            </picture>
+                        </div>
+                    </div>
+                </div>
             </div>
             <?php endif; ?>
 

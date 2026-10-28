@@ -1,18 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { loginToAdmin } from "./support/auth.js";
 
-// Helper: wait for stat multi-add readiness signal from Stimulus or legacy initializer
+// Wait until the controller has attached its event listeners.
 async function waitForStatMultiAddReady(page) {
-    try {
-        await page.waitForFunction(() => !!window.__RH_STAT_MULTI_ADD_READY, null, {
-            timeout: 3000,
-        });
-        return;
-    } catch (e) {
-        // fall through to attribute-based fallback
-    }
-
-    // Fallback: wait for the add button to have the readiness data attribute
     await page.waitForSelector('#add-row-btn[data-rh-ready="1"]', {
         timeout: 2000,
     });

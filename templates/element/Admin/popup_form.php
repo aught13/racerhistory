@@ -1,7 +1,7 @@
 <?php
 
 /** Lightweight popup form element.
- * Variables: $popupId, $title, $formUrl, $fields, $successCallback, $targetSelectId.
+ * Variables: $popupId, $title, $formUrl, $fields, $successEvent, $targetSelectId.
  * Field configs may provide help text and a display-name preview target.
  *
  * @var \App\View\AppView $this
@@ -11,7 +11,7 @@ $popupId = $popupId ?? 'popup-form-modal';
 $title = $title ?? 'Add Item';
 $formUrl = $formUrl ?? '';
 $fields = $fields ?? [];
-$successCallback = $successCallback ?? 'handlePopupSuccess';
+$successEvent = $successEvent ?? '';
 $targetSelectId = $targetSelectId ?? '';
 $hiddenFormId = $hiddenFormId ?? '';
 $extraHtml = $extraHtml ?? '';
@@ -72,7 +72,7 @@ if ($opponentNamePreview) {
                     id="<?= h($popupId) ?>-form"
                     data-url="<?= h($formUrl) ?>"
                     data-target-select="<?= h($targetSelectId) ?>"
-                    data-success-callback="<?= h($successCallback) ?>"
+                    data-success-event="<?= h($successEvent) ?>"
                     <?= $formControllers !== [] ? 'data-controller="' . h(implode(' ', $formControllers)) . '"' : '' ?>>
 
                     <?php if ($hasPlaceLocationBehavior) : ?>
@@ -392,15 +392,20 @@ if ($opponentNamePreview) {
 
                 if (data.success) {
                     if (form.dataset.targetSelect && data.newOption) {
-                        var sel = document.getElementById(form.dataset.targetSelect);
-                        if (sel) {
-                            var o = new Option(data.newOption.text, data.newOption.value, true, true);
-                            sel.add(o);
-                        }
+                        form.dispatchEvent(new CustomEvent('admin:popup-option-added', {
+                            bubbles: true,
+                            detail: {
+                                targetSelectId: form.dataset.targetSelect,
+                                newOption: data.newOption
+                            }
+                        }));
                     }
 
-                    if (form.dataset.successCallback && typeof window[form.dataset.successCallback] === 'function') {
-                        window[form.dataset.successCallback](data);
+                    if (form.dataset.successEvent) {
+                        form.dispatchEvent(new CustomEvent(form.dataset.successEvent, {
+                            bubbles: true,
+                            detail: data
+                        }));
                     }
 
                     bootstrap.Modal.getOrCreateInstance(modal).hide();

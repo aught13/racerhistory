@@ -13,7 +13,9 @@
  */
 $this->assign('title', 'Edit Team Season Roster');
 ?>
-<div class="container py-4" data-controller="roster-multi-add">
+<div class="container py-4"
+    data-controller="roster-multi-add"
+    data-action="click@document->roster-multi-add#handleDocumentClick admin:person-added@document->roster-multi-add#handlePersonAdded turbo:before-cache@document->roster-multi-add#beforeCache">
     <div class="row mb-3">
         <div class="col">
             <?php
@@ -64,7 +66,7 @@ $this->assign('title', 'Edit Team Season Roster');
             </div>
 
             <div id="roster-rows" data-roster-multi-add-target="rows" data-person-search-url="<?= $this->Url->build(['prefix' => 'Admin',
-                'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>">
+                'controller' => 'Persons', 'action' => 'ajaxSearch']) ?>" data-action="click->roster-multi-add#handleRowsClick input->roster-multi-add#searchPerson">
                 <?php if (!empty($existingRosters)) : ?>
                     <?php foreach ($existingRosters as $i => $roster) : ?>
                 <div class="card mb-2 roster-row" data-row-index="<?= $i ?>">
@@ -171,7 +173,7 @@ $this->assign('title', 'Edit Team Season Roster');
             </div>
 
             <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
-                <button type="button" id="add-row-btn" data-roster-multi-add-target="addButton" class="btn btn-outline-success btn-sm">
+                <button type="button" id="add-row-btn" data-action="click->roster-multi-add#addRow" class="btn btn-outline-success btn-sm">
                     <i class="bi bi-plus-circle"></i> Add Another
                 </button>
                 <div>
@@ -231,10 +233,10 @@ echo $this->element('Admin/popup_form', [
     'title' => 'Add New Person',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxAdd']),
     'targetSelectId' => '',
-    'successCallback' => 'onRosterPersonAdded',
+    'successEvent' => 'admin:person-added',
     'fields' => $personFields,
     'hiddenFormId' => 'hidden-person-form',
-    'extraHtml' => '<div class="mb-3" data-controller="place-search" data-place-search-search-url-value="' . h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) . '"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><input type="hidden" id="add-person-modal-birth-place-id" name="birth_place_id" data-place-search-target="hidden"><div id="add-person-modal-birth-place-results" class="mt-1" data-place-search-target="results"></div><div id="add-person-modal-birth-place-selected" class="small mt-1" data-place-search-target="selected"><span class="text-muted fst-italic">None selected</span></div></div>',
+    'extraHtml' => '<div class="mb-3" data-controller="place-search" data-place-search-search-url-value="' . h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) . '" data-action="click->place-search#handleClick click@document->place-search#handleDocumentClick admin:roster-birth-place-added@document->place-search#handleBirthPlaceAdded turbo:before-cache@document->place-search#beforeCache"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><input type="hidden" id="add-person-modal-birth-place-id" name="birth_place_id" data-place-search-target="hidden"><div id="add-person-modal-birth-place-results" class="mt-1" data-place-search-target="results"></div><div id="add-person-modal-birth-place-selected" class="small mt-1" data-place-search-target="selected"><span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
 
@@ -255,7 +257,7 @@ echo $this->element('Admin/popup_form', [
     'title' => 'Add New Place',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
     'hiddenFormId' => 'hidden-roster-place-form',
-    'successCallback' => 'handleBirthPlaceAdded',
+    'successEvent' => 'admin:roster-birth-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],

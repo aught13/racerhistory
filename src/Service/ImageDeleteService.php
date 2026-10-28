@@ -4,24 +4,33 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Image;
+use App\Model\Table\ImagesImageTagsTable;
 use App\Model\Table\ImagesTable;
-use Cake\ORM\Table;
-use Cake\ORM\TableRegistry;
 
 class ImageDeleteService
 {
     private ImageStorageService $storage;
 
     private TaggingService $tagging;
+    private ImagesTable $imagesTable;
+    private ImagesImageTagsTable $imagesImageTagsTable;
 
     /**
-     * @param \App\Service\ImageStorageService|null $storage Optional storage service override.
-     * @param \App\Service\TaggingService|null      $tagging Optional tagging service override.
+     * @param \App\Service\ImageStorageService $storage Image storage dependency.
+     * @param \App\Service\TaggingServiceFactory $taggingServiceFactory Tagging context factory.
+     * @param \App\Model\Table\ImagesTable $imagesTable Image persistence dependency.
+     * @param \App\Model\Table\ImagesImageTagsTable $imagesImageTagsTable Image-tag junction dependency.
      */
-    public function __construct(?ImageStorageService $storage = null, ?TaggingService $tagging = null)
-    {
-        $this->storage = $storage ?? new ImageStorageService();
-        $this->tagging = $tagging ?? TaggingService::forImages();
+    public function __construct(
+        ImageStorageService $storage,
+        TaggingServiceFactory $taggingServiceFactory,
+        ImagesTable $imagesTable,
+        ImagesImageTagsTable $imagesImageTagsTable,
+    ) {
+        $this->storage = $storage;
+        $this->tagging = $taggingServiceFactory->forImages();
+        $this->imagesTable = $imagesTable;
+        $this->imagesImageTagsTable = $imagesImageTagsTable;
     }
 
     /**
@@ -32,28 +41,27 @@ class ImageDeleteService
      */
     public function deleteImageById(int $id): array
     {
-        $images = $this->imagesTable();
+        $images = $this->imagesTable;
         $image = $images->get($id);
 
-        return $this->deleteImage($images, $image);
+        return $this->deleteImage($image);
     }
 
     /**
      * Delete a single image entity and related data.
      *
-     * @param \App\Model\Table\ImagesTable $images
      * @param \App\Model\Entity\Image $image
      * @return array{success:bool,deleted:bool}
      */
-    public function deleteImage(ImagesTable $images, Image $image): array
+    public function deleteImage(Image $image): array
     {
         $imageId = (int)$image->id;
 
-        $this->imagesImageTagsTable()->deleteAll(['image_id' => $imageId]);
+        $this->imagesImageTagsTable->deleteAll(['image_id' => $imageId]);
 
         $this->deleteImageFiles($image);
 
-        $deleted = (bool)$images->delete($image);
+        $deleted = (bool)$this->imagesTable->delete($image);
 
         // Preserve controller behavior: always prune after deleting attachments.
         $this->tagging->pruneOrphanedTags();
@@ -81,7 +89,7 @@ class ImageDeleteService
             return ['deleted' => 0];
         }
 
-        $images = $this->imagesTable();
+        $images = $this->imagesTable;
         $imagesToDelete = $images->find()
             ->whereInList('id', array_values($imageIds))
             ->all();
@@ -89,7 +97,7 @@ class ImageDeleteService
         $deleted = 0;
         foreach ($imagesToDelete as $image) {
             /** @var \App\Model\Entity\Image $image */
-            $this->imagesImageTagsTable()->deleteAll(['image_id' => (int)$image->id]);
+            $this->imagesImageTagsTable->deleteAll(['image_id' => (int)$image->id]);
             $this->deleteImageFiles($image);
 
             if ($images->delete($image)) {
@@ -139,24 +147,5 @@ class ImageDeleteService
                 unlink($variantPath);
             }
         }
-    }
-
-    /**
-     * Lookup the Images table.
-     */
-    private function imagesTable(): ImagesTable
-    {
-        /** @var \App\Model\Table\ImagesTable $table */
-        $table = TableRegistry::getTableLocator()->get('Images');
-
-        return $table;
-    }
-
-    /**
-     * Lookup the join table that links images to tags.
-     */
-    private function imagesImageTagsTable(): Table
-    {
-        return TableRegistry::getTableLocator()->get('ImagesImageTags');
     }
 }

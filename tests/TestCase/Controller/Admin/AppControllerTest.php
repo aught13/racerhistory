@@ -4,7 +4,14 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Controller\Admin\AppController;
+use App\Controller\Component\AdminDataScopeComponent;
+use App\Controller\Component\PublicScopeComponent;
+use App\Service\AdminDataScopeService;
+use App\Service\PublicSportScopeService;
+use App\Service\StatsService;
 use App\Test\TestCase\Support\AuthTestTrait;
+use Cake\Controller\ComponentRegistry;
+use Cake\Core\Container;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -18,6 +25,35 @@ class AppControllerTest extends TestCase
 {
     use IntegrationTestTrait;
     use AuthTestTrait;
+
+    /**
+     * Create a component registry with public and admin scope dependencies.
+     *
+     * @return \Cake\Controller\ComponentRegistry
+     */
+    private function createComponentRegistry(): ComponentRegistry
+    {
+        $container = new Container();
+        $components = new ComponentRegistry(container: $container);
+        $container->addShared(ComponentRegistry::class, $components);
+        $container->addShared(
+            PublicScopeComponent::class,
+            new PublicScopeComponent(
+                $components,
+                $this->createMock(PublicSportScopeService::class),
+                $this->createMock(StatsService::class),
+            ),
+        );
+        $container->addShared(
+            AdminDataScopeComponent::class,
+            new AdminDataScopeComponent(
+                $components,
+                $this->createMock(AdminDataScopeService::class),
+            ),
+        );
+
+        return $components;
+    }
 
     /**
      * Fixtures
@@ -48,7 +84,10 @@ class AppControllerTest extends TestCase
     public function testAdminLayoutSet(): void
     {
         $request = $this->createMock(ServerRequest::class);
-        $controller = new AppController($request);
+        $controller = new AppController(
+            $request,
+            components: $this->createComponentRegistry(),
+        );
         $controller->initialize();
 
         $layout = $controller->viewBuilder()->getLayout();

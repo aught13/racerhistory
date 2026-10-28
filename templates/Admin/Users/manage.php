@@ -103,7 +103,15 @@ if (!empty($user->social_links)) {
                     </div>
 
                     <div class="mb-3">
-                        <?= $this->Form->control('social_links', ['type' => 'textarea', 'rows' => 3, 'class' => 'form-control', 'label' => 'Social Links (one URL per line)', 'placeholder' => 'https://twitter.com/yourhandle', 'value' => $socialLinksTextareaValue]) ?>
+                        <?= $this->Form->control('social_links', [
+                            'type' => 'textarea',
+                            'rows' => 3,
+                            'class' => 'form-control',
+                            'label' => 'Social Links (one URL per line)',
+                            'placeholder' => 'https://twitter.com/yourhandle',
+                            'help' => 'Enter one profile URL per line. For example: https://twitter.com/yourhandle',
+                            'value' => $socialLinksTextareaValue,
+                        ]) ?>
                     </div>
 
                     <div class="mb-3">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\BlogPost;
+use App\Model\Table\BlogPostsTable;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
@@ -11,6 +12,7 @@ use Cake\Utility\Text;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
+use LogicException;
 
 /**
  * BlogPostService
@@ -19,16 +21,16 @@ use Exception;
  */
 class BlogPostService
 {
-    private TaggingService $tagging;
+    private ?TaggingService $tagging;
 
     /**
      * Create the service with an optional tagging dependency.
      *
-     * @param \App\Service\TaggingService|null $tagging Tagging helper, defaults to BlogPosts context.
+     * @param \App\Service\TaggingServiceFactory|null $taggingServiceFactory Tagging context factory.
      */
-    public function __construct(?TaggingService $tagging = null)
+    public function __construct(?TaggingServiceFactory $taggingServiceFactory = null)
     {
-        $this->tagging = $tagging ?? TaggingService::forBlogPosts();
+        $this->tagging = $taggingServiceFactory?->forBlogPosts();
     }
 
     /**
@@ -260,7 +262,7 @@ class BlogPostService
 
         assert($saved instanceof BlogPost);
 
-        $this->tagging->applyFromData((int)$saved->id, $data);
+        $this->taggingService()->applyFromData((int)$saved->id, $data);
 
         return $this->getPostById((int)$saved->id) ?: $saved;
     }
@@ -286,7 +288,7 @@ class BlogPostService
 
         assert($saved instanceof BlogPost);
 
-        $this->tagging->applyFromData((int)$id, $data);
+        $this->taggingService()->applyFromData((int)$id, $data);
 
         return $this->getPostById($id) ?: $saved;
     }
@@ -311,15 +313,7 @@ class BlogPostService
      */
     public function getDisplayLabel(int $id): string
     {
-        $post = $this->posts()->find()->select(['id', 'title'])->where(['id' => $id])->first();
-
-        if (!$post) {
-            return 'Post #' . $id;
-        }
-
-        $title = $post->get('title');
-
-        return is_scalar($title) ? (string)$title : 'Post #' . $id;
+        return $this->posts()->getDisplayLabel($id);
     }
 
     /**
@@ -425,10 +419,27 @@ class BlogPostService
     /**
      * Resolve the BlogPosts table locator.
      *
-     * @return \Cake\ORM\Table
+     * @return \App\Model\Table\BlogPostsTable
      */
-    private function posts(): Table
+    private function posts(): BlogPostsTable
     {
-        return TableRegistry::getTableLocator()->get('BlogPosts');
+        $table = TableRegistry::getTableLocator()->get('BlogPosts');
+        assert($table instanceof BlogPostsTable);
+
+        return $table;
+    }
+
+    /**
+     * Resolve the configured tagging service for blog post mutations.
+     *
+     * @return \App\Service\TaggingService
+     */
+    private function taggingService(): TaggingService
+    {
+        if ($this->tagging === null) {
+            throw new LogicException('TaggingServiceFactory is required for blog post tag mutations.');
+        }
+
+        return $this->tagging;
     }
 }

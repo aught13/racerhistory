@@ -4,13 +4,12 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Image;
-use App\Model\Entity\Opponent;
-use App\Model\Entity\Team;
 use App\Model\Table\ImagesTable;
+use App\Model\Table\UsersTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Number;
 use Cake\ORM\Query\SelectQuery as OrmSelectQuery;
-use Cake\ORM\TableRegistry;
+use Cake\Utility\Text;
 
 /**
  * ImagesAdminService
@@ -44,25 +43,59 @@ class ImagesAdminService
     private ImageEditService $imageEditService;
 
     private RbacPermissionService $rbacPermissionService;
+    private TaggingServiceFactory $taggingServiceFactory;
+    private UsersTable $usersTable;
+    private TeamService $teamService;
+    private TeamSeasonService $teamSeasonService;
+    private GameService $gameService;
+    private SiteService $siteService;
+    private OpponentService $opponentService;
+    private TeamSportContextService $teamSportContextService;
+    private ImageTagUiService $imageTagUiService;
 
     /**
-     * @param \App\Model\Table\ImagesTable|null $imagesTable
-     * @param \App\Service\ImageDeleteService|null $imageDeleteService
-     * @param \App\Service\ImageEditService|null $imageEditService
-     * @param \App\Service\RbacPermissionService|null $rbacPermissionService
+     * @param \App\Model\Table\ImagesTable $imagesTable
+     * @param \App\Service\ImageDeleteService $imageDeleteService
+     * @param \App\Service\ImageEditService $imageEditService
+     * @param \App\Service\RbacPermissionService $rbacPermissionService
+     * @param \App\Service\TaggingServiceFactory $taggingServiceFactory
+     * @param \App\Model\Table\UsersTable $usersTable
+     * @param \App\Service\TeamService $teamService
+     * @param \App\Service\TeamSeasonService $teamSeasonService
+     * @param \App\Service\GameService $gameService
+     * @param \App\Service\SiteService $siteService
+     * @param \App\Service\OpponentService $opponentService
+     * @param \App\Service\TeamSportContextService $teamSportContextService
+     * @param \App\Service\ImageTagUiService $imageTagUiService
      */
     public function __construct(
-        ?ImagesTable $imagesTable = null,
-        ?ImageDeleteService $imageDeleteService = null,
-        ?ImageEditService $imageEditService = null,
-        ?RbacPermissionService $rbacPermissionService = null,
+        ImagesTable $imagesTable,
+        ImageDeleteService $imageDeleteService,
+        ImageEditService $imageEditService,
+        RbacPermissionService $rbacPermissionService,
+        TaggingServiceFactory $taggingServiceFactory,
+        UsersTable $usersTable,
+        TeamService $teamService,
+        TeamSeasonService $teamSeasonService,
+        GameService $gameService,
+        SiteService $siteService,
+        OpponentService $opponentService,
+        TeamSportContextService $teamSportContextService,
+        ImageTagUiService $imageTagUiService,
     ) {
-        /** @var \App\Model\Table\ImagesTable $table */
-        $table = $imagesTable ?? TableRegistry::getTableLocator()->get('Images');
-        $this->imagesTable = $table;
-        $this->imageDeleteService = $imageDeleteService ?? new ImageDeleteService();
-        $this->imageEditService = $imageEditService ?? new ImageEditService();
-        $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
+        $this->imagesTable = $imagesTable;
+        $this->imageDeleteService = $imageDeleteService;
+        $this->imageEditService = $imageEditService;
+        $this->rbacPermissionService = $rbacPermissionService;
+        $this->taggingServiceFactory = $taggingServiceFactory;
+        $this->usersTable = $usersTable;
+        $this->teamService = $teamService;
+        $this->teamSeasonService = $teamSeasonService;
+        $this->gameService = $gameService;
+        $this->siteService = $siteService;
+        $this->opponentService = $opponentService;
+        $this->teamSportContextService = $teamSportContextService;
+        $this->imageTagUiService = $imageTagUiService;
     }
 
     /**
@@ -222,11 +255,11 @@ class ImagesAdminService
      */
     public function getBulkUploadFormData(): array
     {
-        $teamSeasonLabels = (new TeamSeasonService())->getTeamSeasonsForSelect();
-        $gameLabels = (new GameService())->getRecentGamesForSelect(200);
-        $siteLabels = (new SiteService())->getSitesForSelect();
-        $opponents = (new OpponentService())->getOpponentsForSelect();
-        $teams = (new TeamService())->getTeamsForSelect();
+        $teamSeasonLabels = $this->teamSeasonService->getTeamSeasonsForSelect();
+        $gameLabels = $this->gameService->getRecentGamesForSelect(200);
+        $siteLabels = $this->siteService->getSitesForSelect();
+        $opponents = $this->opponentService->getOpponentsForSelect();
+        $teams = $this->teamService->getTeamsForSelect();
         $sports = $this->getSportsForSelect();
 
         return compact(
@@ -247,121 +280,73 @@ class ImagesAdminService
      */
     public function buildCommonEntityTags(array $data): array
     {
-        $tagsToApply = [];
+        $data['tags'] = is_string($data['common_tags'] ?? null) ? $data['common_tags'] : [];
 
-        $map = [
-            'person_select' => [
-                'prefix' => 'person-',
-                'service' => 'person',
-            ],
-            'roster_select' => [
-                'prefix' => 'team_season_roster-',
-                'service' => 'roster',
-            ],
-            'teamseason_select' => [
-                'prefix' => 'teamseason-',
-                'service' => 'teamseason',
-            ],
-            'game_select' => [
-                'prefix' => 'game-',
-                'table' => 'Games',
-                'label' => static fn($row): string => (int)($row->id ?? 0) > 0
-                    ? (new GameService())->getGameTagDisplayLabel((int)$row->id)
-                    : 'game',
-            ],
-            'site_select' => [
-                'prefix' => 'site-',
-                'table' => 'Places',
-                'label' => fn($row) => $row->place_city ?? 'site',
-            ],
-            'opponent_select' => [
-                'prefix' => 'opponent-',
-                'table' => 'Opponents',
-                'label' => static fn($row): string => $row instanceof Opponent
-                    ? $row->getDisplayName()
-                    : 'opponent',
-            ],
-            'team_select' => [
-                'prefix' => 'team-',
-                'table' => 'Teams',
-                'label' => static fn($row): string => $row instanceof Team ? $row->getDisplayName() : 'team',
-            ],
-            'sport_select' => [
-                'prefix' => 'sport-',
-                'service' => 'sport',
-            ],
-        ];
+        return $this->taggingServiceFactory->forImages()->buildTagsFromData($data);
+    }
 
-        $personService = new PersonService();
-        $teamSeasonService = new TeamSeasonService();
-        $rosterService = new TeamSeasonRosterService();
-        $teamSportContextService = new TeamSportContextService();
+    /**
+     * Normalize per-file bulk-upload tags and optional context labels.
+     *
+     * @param array|string|null $tagsInput
+     * @param array|string|null $contextInput
+     * @param string $index
+     * @return array<int,string|array{slug:string,name:string}>
+     */
+    public function buildBulkUploadTags(
+        array|string|null $tagsInput,
+        array|string|null $contextInput,
+        string $index,
+    ): array {
+        $tags = [];
 
-        $hasRoster = !empty($data['roster_select']) && (int)$data['roster_select'] > 0;
-
-        foreach ($map as $field => $meta) {
-            if ($hasRoster && $field === 'teamseason_select') {
-                continue;
+        $rawTags = null;
+        if (is_array($tagsInput)) {
+            if (array_key_exists($index, $tagsInput)) {
+                $rawTags = $tagsInput[$index];
+            } elseif (array_key_exists((int)$index, $tagsInput)) {
+                $rawTags = $tagsInput[(int)$index];
             }
-
-            $skipFields = ['game_select', 'site_select', 'opponent_select', 'team_select', 'sport_select'];
-            if ($hasRoster && in_array($field, $skipFields, true)) {
-                continue;
-            }
-
-            if (empty($data[$field])) {
-                continue;
-            }
-
-            $values = is_array($data[$field]) ? $data[$field] : [$data[$field]];
-            foreach ($values as $value) {
-                $id = (int)$value;
-                if ($id <= 0) {
-                    continue;
-                }
-
-                $slug = $meta['prefix'] . $id;
-
-                $display = '';
-                if (isset($meta['service'])) {
-                    if ($meta['service'] === 'person') {
-                        $display = $personService->getDisplayLabel($id);
-                    } elseif ($meta['service'] === 'teamseason') {
-                        $display = $teamSeasonService->getDisplayLabel($id);
-                    } elseif ($meta['service'] === 'roster') {
-                        $rosterData = $rosterService->getRosterDisplayData($id);
-                        $display = $rosterData['team_season_label'] ?? $rosterData['label'] ?? 'Roster #' . $id;
-                    } elseif ($meta['service'] === 'sport') {
-                        $display = $teamSportContextService->resolveSportNameFromTeam(
-                            (object)['sport_id' => $id],
-                        ) ?? '';
-                    }
-                } else {
-                    $table = TableRegistry::getTableLocator()->get((string)$meta['table']);
-                    $row = $table->find()->select()->where(['id' => $id])->first();
-                    $display = $row ? (string)$meta['label']($row) : '';
-                }
-
-                if ($display !== '') {
-                    $tagsToApply[] = [
-                        'slug' => $slug,
-                        'name' => $display,
-                    ];
-                }
-            }
+        } elseif (is_string($tagsInput)) {
+            $rawTags = $tagsInput;
         }
 
-        if (!empty($data['common_tags']) && is_string($data['common_tags'])) {
-            $commonTags = array_values(array_filter(
-                array_map('trim', explode(',', $data['common_tags'])),
-                fn($tag) => $tag !== '',
+        if (is_string($rawTags)) {
+            $tags = array_values(array_filter(array_map('trim', explode(',', $rawTags)), fn($tag) => $tag !== ''));
+        } elseif (is_array($rawTags)) {
+            $tags = array_values(array_filter(
+                array_map(static fn($tag): string => trim((string)$tag), $rawTags),
+                static fn(string $tag): bool => $tag !== '',
             ));
-            foreach ($commonTags as $tag) {
-                $tagsToApply[] = $tag;
+        }
+
+        $contextValue = null;
+        if (is_array($contextInput)) {
+            if (array_key_exists($index, $contextInput)) {
+                $contextValue = $contextInput[$index];
+            } elseif (array_key_exists((int)$index, $contextInput)) {
+                $contextValue = $contextInput[(int)$index];
+            }
+        } elseif (is_string($contextInput)) {
+            $contextValue = $contextInput;
+        }
+
+        if (is_string($contextValue)) {
+            $contextValue = trim($contextValue);
+            if ($contextValue !== '') {
+                $slug = strtolower(Text::slug($contextValue, '-'));
+                if ($slug === '') {
+                    $slug = strtolower(trim((string)preg_replace('/[^a-z0-9]+/i', '-', $contextValue), '-'));
+                }
+
+                $tags[] = [
+                    'slug' => 'context-' . ($slug ?: 'context'),
+                    'name' => $contextValue,
+                ];
             }
         }
 
-        return $tagsToApply;
+        return $tags;
     }
 
     /**
@@ -377,8 +362,7 @@ class ImagesAdminService
         $currentTags = $image->image_tags ?? [];
 
         // Provide a users list for owner selection in the admin edit UI
-        $usersTable = TableRegistry::getTableLocator()->get('Users');
-        $users = $usersTable->find('list', ['keyField' => 'id', 'valueField' => 'username'])
+        $users = $this->usersTable->find('list', ['keyField' => 'id', 'valueField' => 'username'])
             ->order(['username' => 'ASC'])
             ->toArray();
 
@@ -441,14 +425,14 @@ class ImagesAdminService
     {
         $image = $this->getImageWithTags($id, $identity, 'update');
 
-        $teams = (new TeamService())->getTeamsForSelect();
-        $teamSeasons = (new TeamSeasonService())->getTeamSeasonsForSelect();
-        $games = (new GameService())->getRecentGamesForSelect(200);
-        $sites = (new SiteService())->getSitesForSelect();
-        $opponents = (new OpponentService())->getOpponentsForSelect();
+        $teams = $this->teamService->getTeamsForSelect();
+        $teamSeasons = $this->teamSeasonService->getTeamSeasonsForSelect();
+        $games = $this->gameService->getRecentGamesForSelect(200);
+        $sites = $this->siteService->getSitesForSelect();
+        $opponents = $this->opponentService->getOpponentsForSelect();
         $sports = $this->getSportsForSelect();
 
-        $ui = (new ImageTagUiService())->formatTagsForUi($image->image_tags ?? []);
+        $ui = $this->imageTagUiService->formatTagsForUi($image->image_tags ?? []);
         $currentTags = $ui['currentTags'];
         $tagString = $ui['tagString'];
 
@@ -471,7 +455,7 @@ class ImagesAdminService
     private function getSportsForSelect(): array
     {
         $sports = [];
-        foreach ((new TeamSportContextService())->getLegacySportOptions() as $sportId => $label) {
+        foreach ($this->teamSportContextService->getLegacySportOptions() as $sportId => $label) {
             $sports[] = [
                 'id' => (int)$sportId,
                 'label' => (string)$label,
@@ -492,8 +476,7 @@ class ImagesAdminService
     public function applyTags(int $id, array $data, mixed $identity = null): void
     {
         $this->getImageWithTags($id, $identity, 'update');
-        $tagging = TaggingService::forImages();
-        $tagging->applyFromData($id, $data);
+        $this->taggingServiceFactory->forImages()->applyFromData($id, $data);
     }
 
     /**

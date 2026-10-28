@@ -6,9 +6,11 @@ namespace App\Controller;
 use App\Service\PublicSportScopeService;
 use App\Service\SeasonViewService;
 use App\Service\TeamSeasonService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\NotFoundException;
+use Cake\Http\ServerRequest;
 
 /**
  * Public Seasons Controller
@@ -56,15 +58,34 @@ class SeasonsController extends AppController
     private PublicSportScopeService $publicSportScopeService;
 
     /**
+     * Create the controller with its season and public-scope services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\TeamSeasonService $teamSeasonService The team season service.
+     * @param \App\Service\SeasonViewService $seasonViewService The season view service.
+     * @param \App\Service\PublicSportScopeService $publicSportScopeService The public sport scope service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        TeamSeasonService $teamSeasonService,
+        SeasonViewService $seasonViewService,
+        PublicSportScopeService $publicSportScopeService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->teamSeasonService = $teamSeasonService;
+        $this->seasonViewService = $seasonViewService;
+        $this->publicSportScopeService = $publicSportScopeService;
+    }
+
+    /**
      * Initialize controller.
      */
     public function initialize(): void
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
-        $this->teamSeasonService = new TeamSeasonService();
-        $this->seasonViewService = new SeasonViewService($this->teamSeasonService);
-        $this->publicSportScopeService = new PublicSportScopeService();
     }
 
     /**

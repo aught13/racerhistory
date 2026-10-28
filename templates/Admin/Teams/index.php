@@ -20,7 +20,6 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
     data-admin-bulk-table-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'])) ?>"
     data-admin-bulk-table-item-type-value="teams (bulk)"
     data-admin-bulk-table-ids-name-value="team_ids[]"
-    data-admin-bulk-table-form-id-value="delete-form-teams-bulk"
     data-admin-bulk-table-name-column-value="2"
     data-admin-bulk-table-order-column-value="1"
 >
@@ -120,7 +119,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                                         data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                         data-item-type="team"
                                         data-associated='<?= json_encode([$team->getDisplayName(), $team->abbr]) ?>'
-                                        data-form-id="delete-form-team-<?= $team->id ?>">
+                                        form="delete-form-team-<?= $team->id ?>">
                                         Delete
                                     </button>
                                     <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id], 'id' => 'delete-form-team-' . $team->id, 'style' => 'display:none']) ?>
@@ -135,7 +134,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                     </tbody>
                 </table>
             </form>
-                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none']) ?>
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none', 'data-admin-bulk-table-target' => 'deleteForm']) ?>
                 <?php
                 // These fields will be injected client-side; unlock them so FormProtection allows their values to change.
                 $this->Form->unlockField('team_ids');

@@ -4,6 +4,8 @@ import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
 import { initSeasonViewRoot } from "../lib/season_view_runtime.js";
 
 export default class extends Controller {
+    static targets = ["imageModal", "imageModalDismiss"];
+
     connect() {
         this.onFrameLoad = this.onFrameLoad.bind(this);
 
@@ -13,6 +15,16 @@ export default class extends Controller {
 
     disconnect() {
         document.removeEventListener("turbo:frame-load", this.onFrameLoad);
+    }
+
+    beforeCache() {
+        if (
+            this.hasImageModalTarget &&
+            this.hasImageModalDismissTarget &&
+            this.imageModalTarget.classList.contains("show")
+        ) {
+            this.imageModalDismissTarget.click();
+        }
     }
 
     onFrameLoad(event) {

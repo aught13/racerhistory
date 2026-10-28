@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\PublicSportScopeService;
-use App\Service\StatsService;
 use Cake\Controller\Controller;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\BadRequestException;
@@ -32,6 +30,7 @@ use Cake\Http\Exception\BadRequestException;
  * @property \Cake\Controller\Component\FlashComponent $Flash
  * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
  * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
+ * @property \App\Controller\Component\PublicScopeComponent $PublicScope
  * @link https://book.cakephp.org/5/en/controllers.html#the-app-controller
  */
 class AppController extends Controller
@@ -50,6 +49,12 @@ class AppController extends Controller
         parent::initialize();
 
         $this->loadComponent('Flash');
+        if (
+            $this->getRequest()->getParam('prefix') !== 'Admin'
+            && !($this instanceof ErrorController)
+        ) {
+            $this->loadComponent('PublicScope');
+        }
 
         // Only load authentication for admin controllers and the app's own UsersController.
         // CakeDC/Users manages its own auth component wiring via its SetupComponent.
@@ -101,17 +106,16 @@ class AppController extends Controller
             return;
         }
 
-        $scopeService = new PublicSportScopeService();
-        $scope = $scopeService->resolve($this->getRequest()->getQueryParams());
+        $scope = $this->PublicScope->resolve($this->getRequest()->getQueryParams());
         if (!$scope['valid']) {
             throw new BadRequestException('Invalid sport or team selection.');
         }
 
-        $sportOptions = $scopeService->getAvailableSportOptions();
-        $teamOptions = $scopeService->getTeamOptions($scope['sportKey']);
+        $sportOptions = $this->PublicScope->getAvailableSportOptions();
+        $teamOptions = $this->PublicScope->getTeamOptions($scope['sportKey']);
         $isStatsController = $this->getRequest()->getParam('controller') === 'Stats';
         if ($isStatsController) {
-            $supportedKeys = array_fill_keys((new StatsService())->getSupportedSports(), true);
+            $supportedKeys = array_fill_keys($this->PublicScope->getSupportedStatSports(), true);
             $sportOptions = array_intersect_key($sportOptions, $supportedKeys);
             $teamOptions = array_filter(
                 $teamOptions,

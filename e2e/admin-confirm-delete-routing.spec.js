@@ -1,30 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginToAdmin } from "./support/auth.js";
 
-async function ensureAdminSession(page) {
-    const loggedIn = await loginToAdmin(page, {
-        waitUntil: "domcontentloaded",
-        timeout: 10000,
-    });
-
-    if (loggedIn) {
-        await page.goto("/admin/", {
-            waitUntil: "domcontentloaded",
-            timeout: 10000,
-        });
-    }
-
-    const loginNotice = page
-        .locator("text=You must be logged in to access the admin area.")
-        .first();
-
-    return (
-        !loggedIn ||
-        (await loginNotice.count()) > 0 ||
-        page.url().includes("/login")
-    );
-}
-
 async function findDeleteTrigger(page, selector, timeoutMs = 12000) {
     const deadline = Date.now() + timeoutMs;
     const locator = page.locator(selector);
@@ -41,11 +17,11 @@ async function findDeleteTrigger(page, selector, timeoutMs = 12000) {
 
 test.describe("Admin confirm-delete routing", () => {
     test.beforeEach(async ({ page }) => {
-        const blockedFromAdmin = await ensureAdminSession(page);
+        const loggedIn = await loginToAdmin(page);
         expect(
-            blockedFromAdmin,
+            loggedIn,
             "E2E auth/session failed: expected an authenticated admin session",
-        ).toBe(false);
+        ).toBe(true);
     });
 
     test("persons delete modal posts to /admin/persons/delete/:id", async ({

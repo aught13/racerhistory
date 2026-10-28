@@ -227,7 +227,7 @@ $canDeleteSeasons = $this->Rbac->can('Seasons', 'delete');
                                 data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id]) ?>"
                                 data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
                                 data-item-type="season" data-associated='<?= $associated ?>'
-                                data-form-id="delete-form-season-<?= $season->id ?>">
+                                form="delete-form-season-<?= $season->id ?>">
                                 <i class="bi bi-trash"></i> Delete Season
                             </button>
                             <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id], 'id' => 'delete-form-season-' . $season->id, 'style' => 'display:none']) ?>

@@ -39,18 +39,21 @@ class GamesAdminService
      * @param \App\Service\SportConfigService|null $sportConfigService
      * @param \App\Service\RbacPermissionService|null $rbacPermissionService
      * @param \App\Service\AdminDataScopeService|null $adminDataScopeService
+     * @param \App\Service\TeamSportContextService|null $teamSportContextService
      */
     public function __construct(
         ?GameService $gameService = null,
         ?SportConfigService $sportConfigService = null,
         ?RbacPermissionService $rbacPermissionService = null,
         ?AdminDataScopeService $adminDataScopeService = null,
+        ?TeamSportContextService $teamSportContextService = null,
     ) {
         $this->gameService = $gameService ?? new GameService();
         $this->sportConfigService = $sportConfigService ?? new SportConfigService();
         $this->rbacPermissionService = $rbacPermissionService ?? new RbacPermissionService();
         $this->adminDataScopeService = $adminDataScopeService ?? new AdminDataScopeService();
-        $this->teamSportContextService = new TeamSportContextService($this->sportConfigService);
+        $this->teamSportContextService = $teamSportContextService
+            ?? new TeamSportContextService($this->sportConfigService);
     }
 
     /**

@@ -2,12 +2,22 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../lib/people_index_runtime.js", () => ({
+    cleanupPeopleIndexPage: jest.fn(),
+    initPeopleIndexPage: jest.fn(),
+}));
+
+import {
+    cleanupPeopleIndexPage,
+    initPeopleIndexPage,
+} from "../lib/people_index_runtime.js";
 import PeopleIndexController from "../controllers/people_index_controller.js";
 
 describe("people-index controller", () => {
     let application;
 
     beforeEach(() => {
+        jest.clearAllMocks();
         document.body.innerHTML =
             '<div id="people-root" data-controller="people-index"></div>';
 
@@ -21,84 +31,21 @@ describe("people-index controller", () => {
             application = null;
         }
 
-        delete window.__PEOPLE_INDEX_INIT__;
-        delete window.__PEOPLE_INDEX_CLEANUP__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
 
-    test("calls init override on connect", async () => {
-        const initMock = jest.fn();
-        window.__PEOPLE_INDEX_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("people-index", PeopleIndexController);
-
+    test("initializes the people runtime on connect", async () => {
         await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledTimes(1);
+        expect(initPeopleIndexPage).toHaveBeenCalledTimes(1);
     });
 
-    test("calls cleanup override on disconnect", async () => {
-        const cleanupMock = jest.fn();
-        window.__PEOPLE_INDEX_CLEANUP__ = cleanupMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("people-index", PeopleIndexController);
+    test("cleans up the people runtime on disconnect", async () => {
         await Promise.resolve();
-
         document.getElementById("people-root").remove();
         await Promise.resolve();
 
-        expect(cleanupMock).toHaveBeenCalledTimes(1);
-    });
-
-    test("calls default init when no override", async () => {
-        // Ensure no overrides exist
-        delete window.__PEOPLE_INDEX_INIT__;
-        delete window.__PEOPLE_INDEX_CLEANUP__;
-
-        application.stop();
-        application = Application.start();
-        application.register("people-index", PeopleIndexController);
-
-        await Promise.resolve();
-
-        // Should not throw even without override
-        expect(true).toBe(true);
-    });
-
-    test("calls default cleanup when no override", async () => {
-        delete window.__PEOPLE_INDEX_INIT__;
-        delete window.__PEOPLE_INDEX_CLEANUP__;
-
-        application.stop();
-        application = Application.start();
-        application.register("people-index", PeopleIndexController);
-        await Promise.resolve();
-
-        document.getElementById("people-root").remove();
-        await Promise.resolve();
-
-        // Should not throw even without override
-        expect(true).toBe(true);
-    });
-
-    test("handles override being non-function value", async () => {
-        window.__PEOPLE_INDEX_INIT__ = "not a function";
-        window.__PEOPLE_INDEX_CLEANUP__ = { obj: true };
-
-        application.stop();
-        application = Application.start();
-        application.register("people-index", PeopleIndexController);
-
-        await Promise.resolve();
-
-        document.getElementById("people-root").remove();
-        await Promise.resolve();
-
-        expect(true).toBe(true);
+        expect(cleanupPeopleIndexPage).toHaveBeenCalledTimes(1);
     });
 });

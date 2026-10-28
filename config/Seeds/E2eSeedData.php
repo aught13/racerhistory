@@ -77,6 +77,7 @@ class E2eSeedData extends BaseSeed
             'email' => 'e2e@example.com',
             'password' => '$2y$12$mkoyJKr/PZpRr0Mua8HKHuGyAj6QA3TQrwF8VvtdCOi/vme55jITy',
             'role' => 'admin',
+            'role_id' => 1,
             'status' => 'active',
             'active' => 1,
             'is_superuser' => 1,

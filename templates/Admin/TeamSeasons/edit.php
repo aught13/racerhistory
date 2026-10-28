@@ -1,4 +1,6 @@
 <?php
+use Cake\Core\Configure;
+
 /**
  * @var \App\View\AppView $this
  * @var mixed $seasonsList
@@ -11,7 +13,7 @@ $initialImageId = !empty($teamSeason->team_season_image) ? (string)(int)$teamSea
 $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initialImageId, ['variant' => 'hero']) : '';
 ?>
 <?php $this->assign('title', 'Edit Team Season'); ?>
-<div class="container py-4" data-controller="team-season-form" data-team-season-form-existing-image-id-value="<?= h($initialImageId) ?>" data-team-season-form-existing-preview-url-value="<?= h($initialPreviewUrl) ?>" data-team-season-form-upload-url-value="/admin/images/upload">
+<div class="container py-4" data-controller="team-season-form" data-action="turbo:before-cache@document->team-season-form#beforeCache turbo:before-render@document->team-season-form#beforeRender turbo:load@document->team-season-form#onTurboLoad" data-team-season-form-existing-image-id-value="<?= h($initialImageId) ?>" data-team-season-form-existing-preview-url-value="<?= h($initialPreviewUrl) ?>" data-team-season-form-csrf-token-value="<?= h((string)$this->request->getAttribute('csrfToken')) ?>" data-team-season-form-max-upload-bytes-value="<?= (int)Configure::read('Images.maxUploadBytes', 5242880) ?>" data-team-season-form-upload-url-value="/admin/images/upload">
     <div class="row mb-3">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -183,6 +185,7 @@ $initialPreviewUrl = $initialImageId !== '' ? $this->ImageServe->url((int)$initi
                                     'placeholder' => 'Image ID',
                                     'id' => 'team-season-image-field',
                                     'data-team-season-form-target' => 'imageField',
+                                    'data-action' => 'change->team-season-form#handleImageFieldChange',
                                 ]) ?>
                             </div>
                             <div class="col-md-4 d-grid gap-2">

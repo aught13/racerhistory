@@ -4,66 +4,54 @@
 
 import { describe, test, expect, beforeEach, jest } from "@jest/globals";
 
+jest.mock("../../legacy/modules/game-view-init.mjs", () => ({
+    __esModule: true,
+    default: jest.fn(),
+}));
+
+import initGameView from "../../legacy/modules/game-view-init.mjs";
+import { bootGameView, initGameViewRoot } from "../../lib/game_view_runtime.js";
+
 describe("game_view_runtime", () => {
     beforeEach(() => {
-        jest.resetModules();
-        delete window.__GAME_VIEW_INIT__;
+        jest.clearAllMocks();
     });
 
-    test("uses window override when available", async () => {
-        const mockInit = jest.fn();
-        window.__GAME_VIEW_INIT__ = mockInit;
+    test("initializes the supplied root and defaults to the document", () => {
+        const root = document.createElement("div");
 
-        const mod = await import("../../lib/game_view_runtime.js");
-        mod.initGameViewRoot();
+        initGameViewRoot(root);
+        initGameViewRoot();
 
-        expect(mockInit).toHaveBeenCalled();
+        expect(initGameView).toHaveBeenNthCalledWith(1, { root });
+        expect(initGameView).toHaveBeenNthCalledWith(2, { root: document });
     });
 
-    test("uses default when no override", async () => {
-        delete window.__GAME_VIEW_INIT__;
-
-        const mod = await import("../../lib/game_view_runtime.js");
-        mod.initGameViewRoot();
-
-        expect(true).toBe(true);
-    });
-
-    test("bootGameView handles turbo:frame-load events", async () => {
-        const mockInit = jest.fn();
-        window.__GAME_VIEW_INIT__ = mockInit;
-
-        const frame = document.createElement("div");
+    test("boots a frame root for turbo frame loads", () => {
+        const frame = document.createElement("turbo-frame");
         const event = new Event("turbo:frame-load");
         Object.defineProperty(event, "target", { value: frame });
 
-        const mod = await import("../../lib/game_view_runtime.js");
-        mod.bootGameView(event);
+        bootGameView(event);
 
-        expect(mockInit).toHaveBeenCalled();
+        expect(initGameView).toHaveBeenCalledWith({ root: frame });
     });
 
-    test("bootGameView handles non-turbo events", async () => {
-        const mockInit = jest.fn();
-        window.__GAME_VIEW_INIT__ = mockInit;
+    test.each([
+        ["custom event", new Event("custom-event")],
+        [
+            "invalid frame target",
+            (() => {
+                const event = new Event("turbo:frame-load");
+                Object.defineProperty(event, "target", {
+                    value: "not an element",
+                });
+                return event;
+            })(),
+        ],
+    ])("uses the document for a %s", (_label, event) => {
+        bootGameView(event);
 
-        const event = new Event("custom-event");
-        const mod = await import("../../lib/game_view_runtime.js");
-        mod.bootGameView(event);
-
-        expect(mockInit).toHaveBeenCalled();
-    });
-
-    test("bootGameView handles invalid frame targets", async () => {
-        const mockInit = jest.fn();
-        window.__GAME_VIEW_INIT__ = mockInit;
-
-        const event = new Event("turbo:frame-load");
-        Object.defineProperty(event, "target", { value: "not an element" });
-
-        const mod = await import("../../lib/game_view_runtime.js");
-        mod.bootGameView(event);
-
-        expect(mockInit).toHaveBeenCalled();
+        expect(initGameView).toHaveBeenCalledWith({ root: document });
     });
 });

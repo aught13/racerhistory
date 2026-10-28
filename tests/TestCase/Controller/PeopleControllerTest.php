@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
-use App\Service\TaggingService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -16,6 +16,7 @@ use Cake\TestSuite\TestCase;
 class PeopleControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Persons',
@@ -166,6 +167,21 @@ class PeopleControllerTest extends TestCase
     }
 
     /**
+     * Verify malformed DataTables filters are ignored safely.
+     *
+     * @return void
+     */
+    public function testIndexJsonIgnoresMalformedSearchAndOrderParameters(): void
+    {
+        $this->get('/people?format=json&draw=5&search=invalid&order=invalid');
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(5, $payload['draw']);
+        $this->assertSame($payload['recordsTotal'], $payload['recordsFiltered']);
+    }
+
+    /**
      * Tests view.
      */
     public function testView(): void
@@ -185,7 +201,7 @@ class PeopleControllerTest extends TestCase
      */
     public function testViewSeparatesBiographyAndStoryLinks(): void
     {
-        TaggingService::forBlogPosts()->replaceTags(1, ['person-1', 'bio']);
+        $this->blogPostTaggingService()->replaceTags(1, ['person-1', 'bio']);
 
         $postsTable = TableRegistry::getTableLocator()->get('BlogPosts');
         $story = $postsTable->newEntity([
@@ -198,7 +214,7 @@ class PeopleControllerTest extends TestCase
             'published_at' => '2025-01-02 12:00:00',
         ]);
         $postsTable->saveOrFail($story);
-        TaggingService::forBlogPosts()->replaceTags((int)$story->id, ['person-1']);
+        $this->blogPostTaggingService()->replaceTags((int)$story->id, ['person-1']);
 
         $this->get('/people/1');
 

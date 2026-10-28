@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\TeamAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Teams Admin Controller
@@ -34,12 +36,27 @@ class TeamsController extends AppController
     protected TeamAdminService $teamAdminService;
 
     /**
+     * Create the controller with its team administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\TeamAdminService $teamAdminService The team administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        TeamAdminService $teamAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->teamAdminService = $teamAdminService;
+    }
+
+    /**
      * Initialize controller dependencies.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->teamAdminService = new TeamAdminService();
     }
 
     /**

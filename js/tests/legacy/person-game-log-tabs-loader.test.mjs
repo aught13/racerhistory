@@ -4,11 +4,14 @@ import { describe, test, expect, beforeEach, jest } from "@jest/globals";
 
 async function importLoader() {
     jest.resetModules();
-    const initMock = jest.fn();
-    globalThis.__PERSON_GAME_LOG_TABS_INIT__ = (...args) => initMock(...args);
+    const bootMock = jest.fn();
+    jest.doMock("../../lib/person_game_log_tabs_runtime.js", () => ({
+        __esModule: true,
+        bootPersonGameLogTabs: bootMock,
+    }));
 
     const module = await import("../../legacy/person-game-log-tabs-loader.mjs");
-    return { initMock, boot: module.__personGameLogTabsBoot };
+    return { bootMock, boot: module.__personGameLogTabsBoot };
 }
 
 describe("person-game-log-tabs loader", () => {
@@ -20,21 +23,15 @@ describe("person-game-log-tabs loader", () => {
         });
     });
 
-    afterEach(() => {
-        delete globalThis.__PERSON_GAME_LOG_TABS_INIT__;
-    });
+    test("calls the runtime boot function on module load", async () => {
+        const { bootMock } = await importLoader();
 
-    test("calls init with document root on load", async () => {
-        const { initMock, boot } = await importLoader();
-        boot();
-        expect(initMock).toHaveBeenCalled();
-        const args = initMock.mock.calls[0][0];
-        expect(args.root).toBe(document);
+        expect(bootMock.mock.calls).toEqual([[]]);
     });
 
     test("passes turbo frame root on frame load event", async () => {
         const addSpy = jest.spyOn(document, "addEventListener");
-        const { initMock, boot } = await importLoader();
+        const { bootMock } = await importLoader();
 
         const frameHandler = addSpy.mock.calls.find(
             (call) => call[0] === "turbo:frame-load",
@@ -43,12 +40,13 @@ describe("person-game-log-tabs loader", () => {
 
         const frame = document.createElement("turbo-frame");
         document.body.appendChild(frame);
+        const event = new Event("turbo:frame-load", { bubbles: true });
+        Object.defineProperty(event, "target", { value: frame });
 
-        initMock.mockClear();
-        boot({ type: "turbo:frame-load", target: frame });
-        await Promise.resolve();
+        bootMock.mockClear();
+        frameHandler(event);
 
-        expect(initMock).toHaveBeenCalledWith({ root: frame });
+        expect(bootMock).toHaveBeenCalledWith(event);
         addSpy.mockRestore();
     });
 
@@ -59,18 +57,18 @@ describe("person-game-log-tabs loader", () => {
         });
 
         const addSpy = jest.spyOn(document, "addEventListener");
-        const { initMock, boot } = await importLoader();
+        const { bootMock } = await importLoader();
 
         const domHandler = addSpy.mock.calls.find(
             (call) => call[0] === "DOMContentLoaded",
         )?.[1];
         expect(domHandler).toBeTruthy();
 
-        initMock.mockClear();
-        boot(new Event("DOMContentLoaded", { bubbles: true }));
-        await Promise.resolve();
+        const event = new Event("DOMContentLoaded", { bubbles: true });
+        bootMock.mockClear();
+        domHandler(event);
 
-        expect(initMock).toHaveBeenCalled();
+        expect(bootMock).toHaveBeenCalledWith(event);
         Object.defineProperty(document, "readyState", {
             value: "complete",
             configurable: true,

@@ -13,7 +13,6 @@
     data-controller="admin-users-index"
     data-admin-users-index-bulk-activate-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkActivate'])) ?>"
     data-admin-users-index-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete'])) ?>"
-    data-admin-users-index-delete-form-id-value="delete-form-users-bulk"
 >
     <div class="row mb-3">
         <div class="col">
@@ -32,22 +31,23 @@
             <?php if ($hasInactive) : ?>
             <h2 class="mb-3">Pending Users</h2>
             <form id="bulk-action-form" method="post" data-admin-users-index-target="bulkForm">
-                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete'], 'id' => 'delete-form-users-bulk', 'style' => 'display:none']) ?>
+            </form>
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'bulkDelete'], 'id' => 'delete-form-users-bulk', 'style' => 'display:none', 'data-admin-users-index-target' => 'deleteForm']) ?>
                 <?php
-                    $this->Form->unlockField('user_ids');
-                    $this->Form->unlockField('bulk_action');
+                $this->Form->unlockField('user_ids');
+                $this->Form->unlockField('bulk_action');
                 ?>
                 <?= $this->Form->hidden('user_ids[]', ['value' => '']) ?>
                 <?= $this->Form->hidden('bulk_action', ['value' => '']) ?>
                 <?= $this->Form->end() ?>
                 <div class="mb-2 d-flex align-items-center gap-2">
                     <label for="bulk-action-select" class="form-label mb-0">With Selected:</label>
-                    <select id="bulk-action-select" name="action" class="form-select form-select-sm w-auto" data-admin-users-index-target="actionSelect">
+                    <select id="bulk-action-select" name="action" form="bulk-action-form" class="form-select form-select-sm w-auto" data-admin-users-index-target="actionSelect">
                         <option value="">Choose...</option>
                         <option value="approve">Approve</option>
                         <option value="delete">Delete</option>
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-users-index-target="actionButton">Go</button>
+                    <button type="submit" form="bulk-action-form" class="btn btn-primary btn-sm" id="bulk-action-btn" disabled data-admin-users-index-target="actionButton">Go</button>
                 </div>
                 <table class="table table-striped table-bordered" id="users-table" data-admin-users-index-target="pendingTable">
                     <thead class="table-dark">
@@ -64,7 +64,7 @@
                     <tbody>
                         <?php foreach ($users as $user) : ?>
                         <tr>
-                            <td><input type="checkbox" name="user_ids[]" value="<?= $user->id ?>" class="user-checkbox" data-admin-users-index-role="row-checkbox">
+                            <td><input type="checkbox" name="user_ids[]" form="bulk-action-form" value="<?= $user->id ?>" class="user-checkbox" data-admin-users-index-role="row-checkbox">
                             </td>
                             <td><?= h($user->username) ?></td>
                             <td><?= h(trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))) ?: '<em>N/A</em>' ?></td>
@@ -85,7 +85,7 @@
                                     data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'manage', $user->id]) ?>"
                                     data-item-type="user"
                                     data-associated='<?= json_encode([['label' => $user->username, 'detail' => $user->email, 'id' => $user->id]]) ?>'
-                                    data-form-id="delete-form-user-<?= $user->id ?>">
+                                    form="delete-form-user-<?= $user->id ?>">
                                     Delete
                                 </button>
                                 <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'delete', $user->id], 'id' => 'delete-form-user-' . $user->id, 'style' => 'display:none']) ?>
@@ -95,7 +95,6 @@
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-            </form>
             <?php else : ?>
             <div class="alert alert-info">There are no inactive users to approve.</div>
             <?php endif; ?>

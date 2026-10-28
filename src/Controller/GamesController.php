@@ -4,20 +4,19 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\BlogPostService;
+use App\Service\GameListViewService;
 use App\Service\GameSearchService;
 use App\Service\GameService;
 use App\Service\GameViewService;
 use App\Service\ImageTagService;
 use App\Service\OpponentService;
-use App\Service\PublicSportScopeService;
 use App\Service\StatsService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
-use Cake\I18n\Date;
-use Cake\Routing\Router;
-use DateTimeInterface;
+use Cake\Http\ServerRequest;
 use Throwable;
 
 /**
@@ -82,12 +81,50 @@ class GamesController extends AppController
     private ImageTagService $imageTagService;
     private BlogPostService $blogPostService;
     private GameSearchService $gameSearchService;
-    private PublicSportScopeService $publicSportScopeService;
+    private GameListViewService $gameListViewService;
+    private OpponentService $opponentService;
 
     /**
      * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
      */
     private array $publicScope = ['valid' => true, 'error' => null, 'sportKey' => null, 'teamId' => null];
+
+    /**
+     * Create the controller with its game and view services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\GameService $gameService The game service.
+     * @param \App\Service\GameViewService $gameViewService The game view service.
+     * @param \App\Service\StatsService $statsService The statistics service.
+     * @param \App\Service\ImageTagService $imageTagService The image tag service.
+     * @param \App\Service\BlogPostService $blogPostService The blog post service.
+     * @param \App\Service\GameSearchService $gameSearchService The game search service.
+     * @param \App\Service\GameListViewService $gameListViewService The game list view service.
+     * @param \App\Service\OpponentService $opponentService The opponent service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        GameService $gameService,
+        GameViewService $gameViewService,
+        StatsService $statsService,
+        ImageTagService $imageTagService,
+        BlogPostService $blogPostService,
+        GameSearchService $gameSearchService,
+        GameListViewService $gameListViewService,
+        OpponentService $opponentService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->gameService = $gameService;
+        $this->gameViewService = $gameViewService;
+        $this->statsService = $statsService;
+        $this->imageTagService = $imageTagService;
+        $this->blogPostService = $blogPostService;
+        $this->gameSearchService = $gameSearchService;
+        $this->gameListViewService = $gameListViewService;
+        $this->opponentService = $opponentService;
+    }
 
     /**
      * Predefined search types for sub-nav.
@@ -112,13 +149,6 @@ class GamesController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
-        $this->gameService = new GameService();
-        $this->gameViewService = new GameViewService($this->gameService);
-        $this->statsService = new StatsService();
-        $this->imageTagService = new ImageTagService();
-        $this->blogPostService = new BlogPostService();
-        $this->gameSearchService = new GameSearchService();
-        $this->publicSportScopeService = new PublicSportScopeService();
     }
 
     /**
@@ -131,7 +161,7 @@ class GamesController extends AppController
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
 
-        $this->publicScope = $this->publicSportScopeService->resolve($this->request->getQueryParams());
+        $this->publicScope = $this->PublicScope->resolve($this->request->getQueryParams());
         if (!$this->publicScope['valid']) {
             throw new BadRequestException('Invalid sport or team selection.');
         }
@@ -257,7 +287,7 @@ class GamesController extends AppController
             }
 
             return $this->jsonResponse(
-                $this->formatRankedRows($games),
+                $this->gameListViewService->rankedRows($games, $this->getPublicScopeQuery()),
                 ['record' => "$wins-$losses"],
             );
         }
@@ -279,7 +309,14 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->allGames();
 
-            return $this->jsonResponse($this->formatOvertimeRows($games, 'l, F j, Y', true, true, true));
+            return $this->jsonResponse($this->gameListViewService->overtimeRows(
+                $games,
+                $this->getPublicScopeQuery(),
+                'l, F j, Y',
+                true,
+                true,
+                true,
+            ));
         }
 
         $this->set('currentSearch', 'all');
@@ -298,7 +335,10 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->overtimeGames();
 
-            return $this->jsonResponse($this->formatOvertimeRows($games));
+            return $this->jsonResponse($this->gameListViewService->overtimeRows(
+                $games,
+                $this->getPublicScopeQuery(),
+            ));
         }
 
         $this->set('currentSearch', 'overtime');
@@ -323,7 +363,10 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->hundredPointGames($filter);
 
-            return $this->jsonResponse($this->formatHundredPointRows($games));
+            return $this->jsonResponse($this->gameListViewService->hundredPointRows(
+                $games,
+                $this->getPublicScopeQuery(),
+            ));
         }
 
         $this->set('currentSearch', 'hundred-point');
@@ -354,7 +397,10 @@ class GamesController extends AppController
         if ($this->isJsonRequest()) {
             $games = $this->gameSearchService->openers($type);
 
-            return $this->jsonResponse($this->formatOpenersRows($games));
+            return $this->jsonResponse($this->gameListViewService->openerRows(
+                $games,
+                $this->getPublicScopeQuery(),
+            ));
         }
 
         $this->set('currentSearch', 'openers');
@@ -405,7 +451,7 @@ class GamesController extends AppController
         }
 
         $games = $this->gameSearchService->margins($type, $filter);
-        $this->enrichGames($games);
+        $games = $this->gameListViewService->enrichGames($games);
 
         $this->set('currentSearch', 'margins');
         $this->set(compact('games', 'type', 'filter'));
@@ -426,7 +472,10 @@ class GamesController extends AppController
             $seriesData = $this->gameSearchService->seriesHistory($opponentId);
 
             if ($this->isJsonRequest()) {
-                return $this->jsonResponse($this->formatSeriesRows($seriesData['games']));
+                return $this->jsonResponse($this->gameListViewService->seriesRows(
+                    $seriesData['games'],
+                    $this->getPublicScopeQuery(),
+                ));
             }
 
             $this->set('record', $seriesData['record']);
@@ -457,8 +506,7 @@ class GamesController extends AppController
                 ->withStringBody(json_encode(['success' => true, 'opponents' => []]));
         }
 
-        $opponentService = new OpponentService();
-        $results = $opponentService->searchOpponents($q, 25);
+        $results = $this->opponentService->searchOpponents($q, 25);
 
         $opponents = [];
         foreach ($results as $opponent) {
@@ -499,21 +547,10 @@ class GamesController extends AppController
 
         $result = $this->gameSearchService->searchSeriesOpponents($search, $start, $length);
 
-        $rows = array_map(function (array $row): array {
-            $opponentId = (int)($row['opponent_id'] ?? 0);
-            $selectLink = $this->link(
-                'View Series',
-                ['controller' => 'Games', 'action' => 'series-history', '?' => ['opponent_id' => $opponentId]],
-                ['escape' => true],
-            );
-
-            return [
-                h((string)($row['opponent_display_name'] ?? $row['opponent_name'] ?? 'Unknown')),
-                h((string)($row['opponent_short'] ?? '-')),
-                (int)($row['games_count'] ?? 0),
-                $selectLink,
-            ];
-        }, $result['rows']);
+        $rows = $this->gameListViewService->seriesOpponentRows(
+            $result['rows'],
+            $this->getPublicScopeQuery(),
+        );
 
         return $this->jsonResponse($rows, [
             'draw' => $draw,
@@ -569,387 +606,6 @@ class GamesController extends AppController
         );
     }
 
-    /**
-     * Build a safe HTML link.
-     *
-     * @param string $text
-     * @param array $url
-     * @param array $options
-     * @return string
-     */
-    protected function link(string $text, array $url, array $options = []): string
-    {
-        $escape = $options['escape'] ?? true;
-        $display = $escape ? h($text) : $text;
-        $url['?'] = array_merge((array)($url['?'] ?? []), $this->getPublicScopeQuery());
-
-        return '<a href="' . h(Router::url($url)) . '">' . $display . '</a>';
-    }
-
-    /**
-     * Enrich games with computed display fields.
-     *
-     * @param array $games
-     * @return void
-     */
-    protected function enrichGames(array &$games): void
-    {
-        foreach ($games as $g) {
-            try {
-                $g->set('result_flag', $this->gameService->getResultFlag($g));
-                $g->set('place_city', $this->gameService->getPlaceName($g));
-                $g->set('place_state', $this->gameService->getPlaceState($g));
-                $g->set('site_name', $this->gameService->getSiteName($g));
-                $prefix = '@';
-                if (!empty($g->hrn) && (int)$g->hrn === 1) {
-                    $prefix = 'Vs';
-                } elseif (!empty($g->hrn) && (int)$g->hrn === 3) {
-                    $prefix = 'vs';
-                }
-                $g->set('opponent_prefix', $prefix);
-                $ptsMur = (int)($g->pts_mur ?? 0);
-                $ptsOpp = (int)($g->pts_opp ?? 0);
-                if (!$g->has('margin')) {
-                    $g->set('margin', abs($ptsMur - $ptsOpp));
-                }
-            } catch (Throwable $e) {
-            }
-        }
-    }
-
-    /**
-     * HRN label.
-     *
-     * @param int|null $hrn
-     * @return string
-     */
-    protected function hrnLabel(?int $hrn): string
-    {
-        return GameSearchService::hrnLabel($hrn);
-    }
-
-    /**
-     * Format score string.
-     *
-     * @param object $game
-     * @return string
-     */
-    protected function scoreStr(object $game): string
-    {
-        $ptsMur = $game->pts_mur ?? '-';
-        $ptsOpp = $game->pts_opp ?? '-';
-
-        return $ptsMur . '-' . $ptsOpp;
-    }
-
-    /**
-     * Format OT display value.
-     *
-     * @param mixed $ot
-     * @return string
-     */
-    protected function otDisplay(mixed $ot): string
-    {
-        if ($ot === null) {
-            return '-';
-        }
-
-        $value = trim((string)$ot);
-        if ($value === '' || $value === '0') {
-            return '-';
-        }
-
-        return h($value);
-    }
-
-    /**
-     * Format a game date with semantic ISO metadata for DataTables display.
-     *
-     * @param mixed $date
-     * @param string $displayFormat
-     * @return string
-     */
-    protected function formatDate(mixed $date, string $displayFormat = 'm/d/Y'): string
-    {
-        if ($date === null) {
-            return '-';
-        }
-        if ($date instanceof Date || $date instanceof DateTimeInterface) {
-            $iso = $date->format('Y-m-d');
-            $display = $date->format($displayFormat);
-        } else {
-            $iso = (string)$date;
-            $ts = strtotime($iso);
-            $display = $ts ? date($displayFormat, $ts) : $iso;
-        }
-
-        return '<time class="rh-game-date" datetime="' . h($iso) . '">' . h($display) . '</time>';
-    }
-
-    /**
-     * Format ranked game rows for DataTables.
-     *
-     * @param array $games
-     * @return array
-     */
-    protected function formatRankedRows(array $games): array
-    {
-        $rows = [];
-        foreach ($games as $g) {
-            $result = $this->gameService->getResultFlag($g);
-            $ptsMur = (int)($g->pts_mur ?? 0);
-            $ptsOpp = (int)($g->pts_opp ?? 0);
-            $seasonLabel = ($g->team_season->season->start ?? '') . '-'
-                . ($g->team_season->season->end ?? '');
-            $dateDisplay = $this->formatDate($g->game_date);
-            $rows[] = [
-                $this->link(
-                    $dateDisplay,
-                    ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false],
-                ),
-                (int)($g->mur_rk ?? 0) ?: '-',
-                h($g->team_season->team?->getDisplayName() ?? 'Murray State'),
-                $this->link(
-                    $g->opponent?->getDisplayName() ?? '?',
-                    ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
-                ),
-                (int)($g->opp_rk ?? 0) ?: '-',
-                $this->hrnLabel((int)($g->hrn ?? 0)),
-                h($result ?? '-'),
-                abs($ptsMur - $ptsOpp),
-                $ptsMur,
-                $ptsOpp,
-                $this->link(
-                    $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
-                ),
-            ];
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format overtime game rows for DataTables.
-     *
-     * @param array $games
-     * @param string $dateFormat
-     * @param bool $showConferenceTypeAbr
-     * @param bool $includeWeekdayColumn
-     * @param bool $includeTeamColumn
-     * @return array
-     */
-    protected function formatOvertimeRows(
-        array $games,
-        string $dateFormat = 'm/d/Y',
-        bool $showConferenceTypeAbr = false,
-        bool $includeWeekdayColumn = false,
-        bool $includeTeamColumn = false,
-    ): array {
-        $rows = [];
-        foreach ($games as $g) {
-            $result = $this->gameService->getResultFlag($g);
-            $ptsMur = (int)($g->pts_mur ?? 0);
-            $ptsOpp = (int)($g->pts_opp ?? 0);
-            $isConf = (bool)($g->game_type->conf ?? false);
-            $seasonLabel = ($g->team_season->season->start ?? '') . '-'
-                . ($g->team_season->season->end ?? '');
-            $dateDisplay = $this->formatDate($g->game_date, $dateFormat);
-            $gameTypeDisplay = $g->post || ($showConferenceTypeAbr && $isConf)
-                ? h((string)($g->game_type->abr ?? ($isConf ? 'Conf' : 'Post')))
-                : 'Regular';
-            $row = [
-                $this->link(
-                    $dateDisplay,
-                    ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false],
-                ),
-            ];
-            if ($includeTeamColumn) {
-                $row[] = h($g->team_season->team->abbr ?? '-');
-            }
-            $row[] = $this->link(
-                $g->opponent->opponent_abbr ?? '?',
-                ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
-            );
-            $row = array_merge($row, [
-                h($result ?? '-'),
-                abs($ptsMur - $ptsOpp),
-                $ptsMur,
-                $ptsOpp,
-                $this->otDisplay($g->ot ?? null),
-                $this->hrnLabel((int)($g->hrn ?? 0)),
-                $isConf ? 'Y' : 'N',
-                $gameTypeDisplay,
-                $this->link(
-                    $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
-                ),
-            ]);
-
-            if ($includeWeekdayColumn) {
-                $row[] = $this->formatWeekday($g->game_date ?? null);
-            }
-
-            $rows[] = $row;
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format weekday label for SearchBuilder filtering.
-     *
-     * @param mixed $date
-     * @return string
-     */
-    protected function formatWeekday(mixed $date): string
-    {
-        if ($date instanceof Date || $date instanceof DateTimeInterface) {
-            return $date->format('l');
-        }
-
-        if ($date === null || $date === '') {
-            return '-';
-        }
-
-        $timestamp = strtotime((string)$date);
-
-        return $timestamp !== false ? date('l', $timestamp) : (string)$date;
-    }
-
-    /**
-     * Format 100-point game rows for DataTables.
-     *
-     * @param array $games
-     * @return array
-     */
-    protected function formatHundredPointRows(array $games): array
-    {
-        $rows = [];
-        foreach ($games as $g) {
-            $result = $this->gameService->getResultFlag($g);
-            $ptsMur = (int)($g->pts_mur ?? 0);
-            $ptsOpp = (int)($g->pts_opp ?? 0);
-            $isConf = (bool)($g->game_type->conf ?? false);
-            $seasonLabel = ($g->team_season->season->start ?? '') . '-'
-                . ($g->team_season->season->end ?? '');
-            $dateDisplay = $this->formatDate($g->game_date);
-            $gameTypeDisplay = $g->post
-                ? h((string)($g->game_type->abr ?? 'Post'))
-                : 'Regular';
-            $opponentDisplay = $g->opponent?->getDisplayName() ?? '?';
-            $rows[] = [
-                $this->link(
-                    $dateDisplay,
-                    ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false],
-                ),
-                $this->link(
-                    $opponentDisplay,
-                    ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
-                ),
-                h($result ?? '-'),
-                abs($ptsMur - $ptsOpp),
-                $ptsMur,
-                $ptsOpp,
-                $this->otDisplay($g->ot ?? null),
-                $this->hrnLabel((int)($g->hrn ?? 0)),
-                $isConf ? 'Y' : 'N',
-                $gameTypeDisplay,
-                $this->link(
-                    $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
-                ),
-            ];
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format opener game rows for DataTables.
-     *
-     * @param array $games
-     * @return array
-     */
-    protected function formatOpenersRows(array $games): array
-    {
-        $rows = [];
-        foreach ($games as $g) {
-            $result = $this->gameService->getResultFlag($g);
-            $ptsMur = (int)($g->pts_mur ?? 0);
-            $ptsOpp = (int)($g->pts_opp ?? 0);
-            $isConf = (bool)($g->game_type->conf ?? false);
-            $seasonLabel = ($g->team_season->season->start ?? '') . '-'
-                . ($g->team_season->season->end ?? '');
-            $dateDisplay = $this->formatDate($g->game_date);
-            $gameTypeDisplay = $g->post || $isConf
-                ? h((string)($g->game_type->abr ?? ($isConf ? 'Conf' : 'Post')))
-                : 'Regular';
-            $opponentDisplay = $g->opponent?->getDisplayName() ?? '?';
-            $rows[] = [
-                $this->link(
-                    $dateDisplay,
-                    ['controller' => 'Games', 'action' => 'view', $g->id],
-                    ['escape' => false],
-                ),
-                $this->link(
-                    $opponentDisplay,
-                    ['controller' => 'Games', 'action' => 'series',
-                     '?' => ['opponent_id' => $g->opponent->id ?? 0]],
-                ),
-                h($result ?? '-'),
-                abs($ptsMur - $ptsOpp),
-                $ptsMur,
-                $ptsOpp,
-                $this->otDisplay($g->ot ?? null),
-                $this->hrnLabel((int)($g->hrn ?? 0)),
-                $isConf ? 'Y' : 'N',
-                $gameTypeDisplay,
-                $this->link(
-                    $seasonLabel,
-                    ['controller' => 'Seasons', 'action' => 'view', $g->team_season->id ?? 0],
-                ),
-            ];
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format series history game rows for DataTables.
-     *
-     * @param array $games
-     * @return array
-     */
-    protected function formatSeriesRows(array $games): array
-    {
-        $rows = [];
-        foreach ($games as $g) {
-            $result = $g->result_flag ?? $this->gameService->getResultFlag($g);
-            $ptsMur = (int)($g->pts_mur ?? 0);
-            $ptsOpp = (int)($g->pts_opp ?? 0);
-            $rows[] = [
-                $this->formatDate($g->game_date),
-                h($result ?? '-'),
-                $this->scoreStr($g),
-                $this->hrnLabel((int)($g->hrn ?? 0)),
-                abs($ptsMur - $ptsOpp),
-                $ptsMur,
-                $ptsOpp,
-                h(($g->team_season->season->start ?? '') . '-' . ($g->team_season->season->end ?? '')),
-                $this->link('View', ['controller' => 'Games', 'action' => 'view', $g->id]),
-            ];
-        }
-
-        return $rows;
-    }
-
     // ─── Existing game view/stats actions ─────────────────────────────
 
     /**
@@ -1003,7 +659,7 @@ class GamesController extends AppController
         $teamId = (int)($game->team_season->team_id ?? 0);
         if (
             ($this->publicScope['teamId'] !== null && $this->publicScope['teamId'] !== $teamId)
-            || ($this->publicScope['sportKey'] !== null && !$this->publicSportScopeService->resolve([
+            || ($this->publicScope['sportKey'] !== null && !$this->PublicScope->resolve([
                 'sport' => $this->publicScope['sportKey'],
                 'team' => (string)$teamId,
             ])['valid'])
@@ -1011,37 +667,12 @@ class GamesController extends AppController
             throw new NotFoundException('Game not found');
         }
 
-        $this->enrichGameDisplay($game);
+        $this->gameListViewService->enrichGameDisplay($game);
 
         $statsElement = $this->statsService->getGameStatsElement($id);
         $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 12);
         $blogPosts = $this->blogPostService->getPublishedByTag("game-{$id}", 12);
 
         return $viewData + compact('game', 'statsElement', 'images', 'blogPosts');
-    }
-
-    /**
-     * Runs the enrich game display routine.
-     *
-     * @param object $game
-     * @return void
-     */
-    private function enrichGameDisplay(object $game): void
-    {
-        try {
-            $game->set('result_flag', $this->gameService->getResultFlag($game));
-            $game->set('place_city', $this->gameService->getPlaceName($game));
-            $game->set('place_state', $this->gameService->getPlaceState($game));
-            $game->set('site_name', $this->gameService->getSiteName($game));
-            $prefix = '@';
-            if (!empty($game->hrn) && (int)$game->hrn === 1) {
-                $prefix = 'Vs';
-            } elseif (!empty($game->hrn) && (int)$game->hrn === 3) {
-                $prefix = 'vs';
-            }
-            $game->set('opponent_prefix', $prefix);
-        } catch (Throwable $e) {
-            // ignore enrichment errors
-        }
     }
 }

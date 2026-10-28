@@ -1,10 +1,40 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
+    static targets = [
+        "selectTab",
+        "uploadTab",
+        "searchInput",
+        "gallery",
+        "fileInput",
+        "cropContainer",
+        "cropImage",
+        "cropPreview",
+        "noPreview",
+        "cropControls",
+        "tagForm",
+        "skipCropToggle",
+        "selectButton",
+        "uploadButton",
+        "rotateLeftButton",
+        "rotateRightButton",
+        "resetCropButton",
+        "dismissButton",
+    ];
+
+    static values = {
+        targetFieldId: String,
+        tagFilter: String,
+        uploadContext: Object,
+        aspectRatio: String,
+        csrfToken: String,
+    };
+
     connect() {
         this.modalId = this.element.id;
         this.modal = this.element;
         this.config = {};
+        this.targetForm = null;
         this.targetField = null;
         this.selectedImageId = null;
         this.selectedImage = null;
@@ -12,64 +42,79 @@ export default class extends Controller {
         this.loadedImages = [];
         this.selectedFile = null;
         this.aspectRatio = null;
-        this.modalCleanupTimer = null;
+        this.searchDebounce = null;
+        this.loadRequest = null;
+        this.searchRequest = null;
+        this.reader = null;
+        this.isActive = true;
+        this.isCaching = false;
 
+        this.boundBeforeCache = () => this.resetModalForCache();
+        this.element.ownerDocument.addEventListener(
+            "turbo:before-cache",
+            this.boundBeforeCache,
+        );
         this.refreshConfigAndTargetField();
-
         this.initElements();
         this.bindEvents();
     }
 
     disconnect() {
+        this.isActive = false;
+        this.element.ownerDocument.removeEventListener(
+            "turbo:before-cache",
+            this.boundBeforeCache,
+        );
         this.unbindEvents();
-        this.destroyCropper();
-        if (this.modalCleanupTimer) {
-            window.clearTimeout(this.modalCleanupTimer);
-            this.modalCleanupTimer = null;
-        }
+        this.resetModalForCache();
     }
 
     initElements() {
-        this.selectTab = document.getElementById(`${this.modalId}-select-tab`);
-        this.uploadTab = document.getElementById(`${this.modalId}-upload-tab`);
-
-        this.searchInput = document.getElementById(`${this.modalId}-search`);
-        this.gallery = document.getElementById(`${this.modalId}-gallery`);
-
-        this.fileInput = document.getElementById(`${this.modalId}-file-input`);
-        this.cropContainer = document.getElementById(
-            `${this.modalId}-crop-container`,
-        );
-        this.cropImage = document.getElementById(`${this.modalId}-crop-image`);
-        this.cropPreview = document.getElementById(
-            `${this.modalId}-crop-preview`,
-        );
-        this.noPreview = document.getElementById(`${this.modalId}-no-preview`);
-        this.cropControls = document.getElementById(
-            `${this.modalId}-crop-controls`,
-        );
-        this.tagForm = document.getElementById(`${this.modalId}-tag-form`);
-        this.skipCropToggle = document.getElementById(
-            `${this.modalId}-skip-crop`,
-        );
-
-        this.searchDebounce = null;
-
-        this.selectBtn = document.getElementById(`${this.modalId}-select-btn`);
-        this.uploadBtn = document.getElementById(`${this.modalId}-upload-btn`);
-        this.rotateLeftBtn = document.getElementById(
-            `${this.modalId}-rotate-left`,
-        );
-        this.rotateRightBtn = document.getElementById(
-            `${this.modalId}-rotate-right`,
-        );
-        this.resetCropBtn = document.getElementById(
-            `${this.modalId}-reset-crop`,
-        );
+        this.selectTab = this.hasSelectTabTarget ? this.selectTabTarget : null;
+        this.uploadTab = this.hasUploadTabTarget ? this.uploadTabTarget : null;
+        this.searchInput = this.hasSearchInputTarget
+            ? this.searchInputTarget
+            : null;
+        this.gallery = this.hasGalleryTarget ? this.galleryTarget : null;
+        this.fileInput = this.hasFileInputTarget ? this.fileInputTarget : null;
+        this.cropContainer = this.hasCropContainerTarget
+            ? this.cropContainerTarget
+            : null;
+        this.cropImage = this.hasCropImageTarget ? this.cropImageTarget : null;
+        this.cropPreview = this.hasCropPreviewTarget
+            ? this.cropPreviewTarget
+            : null;
+        this.noPreview = this.hasNoPreviewTarget ? this.noPreviewTarget : null;
+        this.cropControls = this.hasCropControlsTarget
+            ? this.cropControlsTarget
+            : null;
+        this.tagForm = this.hasTagFormTarget ? this.tagFormTarget : null;
+        this.skipCropToggle = this.hasSkipCropToggleTarget
+            ? this.skipCropToggleTarget
+            : null;
+        this.selectBtn = this.hasSelectButtonTarget
+            ? this.selectButtonTarget
+            : null;
+        this.uploadBtn = this.hasUploadButtonTarget
+            ? this.uploadButtonTarget
+            : null;
+        this.rotateLeftBtn = this.hasRotateLeftButtonTarget
+            ? this.rotateLeftButtonTarget
+            : null;
+        this.rotateRightBtn = this.hasRotateRightButtonTarget
+            ? this.rotateRightButtonTarget
+            : null;
+        this.resetCropBtn = this.hasResetCropButtonTarget
+            ? this.resetCropButtonTarget
+            : null;
+        this.dismissBtn = this.hasDismissButtonTarget
+            ? this.dismissButtonTarget
+            : null;
     }
 
     bindEvents() {
         this.listeners = {
+            showModal: (event) => this.onModalShow(event),
             shownModal: () => this.onModalShown(),
             hiddenModal: () => this.onModalHidden(),
             shownSelectTab: () => this.onSelectTabShown(),
@@ -89,6 +134,7 @@ export default class extends Controller {
             },
         };
 
+        this.modal.addEventListener("show.bs.modal", this.listeners.showModal);
         this.modal.addEventListener(
             "shown.bs.modal",
             this.listeners.shownModal,
@@ -126,6 +172,10 @@ export default class extends Controller {
             return;
         }
 
+        this.modal?.removeEventListener(
+            "show.bs.modal",
+            this.listeners.showModal,
+        );
         this.modal?.removeEventListener(
             "shown.bs.modal",
             this.listeners.shownModal,
@@ -174,20 +224,36 @@ export default class extends Controller {
     }
 
     refreshConfigAndTargetField() {
-        this.config =
-            window.imageSelectorConfig?.[this.modalId] || this.config || {};
-
-        if (this.config?.targetFieldId) {
-            this.targetField = document.getElementById(
-                this.config.targetFieldId,
-            );
+        this.config = {};
+        if (this.hasTargetFieldIdValue && this.targetFieldIdValue) {
+            this.config.targetFieldId = this.targetFieldIdValue;
+        }
+        if (this.hasTagFilterValue && this.tagFilterValue) {
+            this.config.tagFilter = this.tagFilterValue;
+        }
+        if (this.hasUploadContextValue) {
+            this.config.uploadContext = this.uploadContextValue;
         }
 
-        this.aspectRatio =
-            typeof this.config?.aspectRatio === "number" &&
-            isFinite(this.config.aspectRatio)
-                ? this.config.aspectRatio
+        const aspectRatio =
+            this.hasAspectRatioValue && this.aspectRatioValue !== ""
+                ? Number(this.aspectRatioValue)
                 : null;
+        this.aspectRatio = Number.isFinite(aspectRatio) ? aspectRatio : null;
+        if (this.aspectRatio !== null) {
+            this.config.aspectRatio = this.aspectRatio;
+        }
+
+        const formElements = this.targetForm?.elements || [];
+        this.targetField = Array.from(formElements).find(
+            (field) => field.id === this.config.targetFieldId,
+        );
+        this.targetField ||= null;
+    }
+
+    onModalShow(event) {
+        this.targetForm = event?.relatedTarget?.form || null;
+        this.refreshConfigAndTargetField();
     }
 
     onModalShown() {
@@ -197,6 +263,7 @@ export default class extends Controller {
     }
 
     onModalHidden() {
+        this.cancelPendingRequests();
         this.selectedImageId = null;
         this.selectedImage = null;
         this.selectedFile = null;
@@ -210,16 +277,20 @@ export default class extends Controller {
         this.destroyCropper();
 
         if (this.cropContainer) {
-            this.cropContainer.style.display = "none";
+            this.cropContainer.classList.add("d-none");
         }
         if (this.cropPreview) {
-            this.cropPreview.style.display = "none";
+            this.cropPreview.classList.add("d-none");
+            this.cropPreview.replaceChildren();
+        }
+        if (this.cropImage) {
+            this.cropImage.removeAttribute("src");
         }
         if (this.noPreview) {
-            this.noPreview.style.display = "block";
+            this.noPreview.classList.remove("d-none");
         }
         if (this.cropControls) {
-            this.cropControls.style.display = "none";
+            this.cropControls.classList.add("d-none");
         }
 
         this.gallery
@@ -228,6 +299,12 @@ export default class extends Controller {
                 card.classList.remove("border", "border-primary", "border-3"),
             );
 
+        if (this.searchDebounce) {
+            window.clearTimeout(this.searchDebounce);
+            this.searchDebounce = null;
+        }
+        this.targetForm = null;
+        this.targetField = null;
         this.cleanupModalArtifacts();
     }
 
@@ -244,10 +321,10 @@ export default class extends Controller {
 
     toggleActionButtons(showSelect) {
         if (this.selectBtn) {
-            this.selectBtn.style.display = showSelect ? "inline-block" : "none";
+            this.selectBtn.classList.toggle("d-none", !showSelect);
         }
         if (this.uploadBtn) {
-            this.uploadBtn.style.display = showSelect ? "none" : "inline-block";
+            this.uploadBtn.classList.toggle("d-none", showSelect);
         }
     }
 
@@ -256,6 +333,9 @@ export default class extends Controller {
             return;
         }
 
+        this.loadRequest?.abort();
+        const request = new AbortController();
+        this.loadRequest = request;
         this.gallery.innerHTML =
             '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 
@@ -273,6 +353,7 @@ export default class extends Controller {
 
             const response = await fetch(url, {
                 credentials: "same-origin",
+                signal: request.signal,
             });
 
             if (!response.ok) {
@@ -280,13 +361,23 @@ export default class extends Controller {
             }
 
             const data = await response.json();
+            if (request.signal.aborted || !this.isActive) {
+                return;
+            }
             this.loadedImages = data.images || [];
             this.syncTargetFieldSelection();
             this.renderGallery(this.loadedImages);
         } catch (error) {
+            if (error?.name === "AbortError") {
+                return;
+            }
             console.error("Error loading images:", error);
             this.gallery.innerHTML =
                 '<div class="col-12"><div class="alert alert-danger">Failed to load images</div></div>';
+        } finally {
+            if (this.loadRequest === request) {
+                this.loadRequest = null;
+            }
         }
     }
 
@@ -301,34 +392,60 @@ export default class extends Controller {
             return;
         }
 
-        this.gallery.innerHTML = images
-            .map(
-                (img) => `
-            <div class="col-6 col-md-4 col-lg-3">
-                <div class="card image-card" data-image-id="${img.id}" style="cursor: pointer;">
-                    <img src="${img.thumbnail_url || img.url}" class="card-img-top" alt="Image ${img.id}" style="height: 150px; object-fit: cover;">
-                    <div class="card-body p-2">
-                        <small class="text-muted">#${img.id}</small>
-                        ${
-                            img.tags
-                                ? `<div class="mt-1">${img.tags
-                                      .slice(0, 2)
-                                      .map(
-                                          (tag) =>
-                                              `<span class="badge bg-secondary badge-sm">${tag}</span>`,
-                                      )
-                                      .join(" ")}</div>`
-                                : ""
-                        }
-                    </div>
-                </div>
-            </div>
-        `,
-            )
-            .join("");
+        const document = this.gallery.ownerDocument;
+        const cards = images.map((image) => {
+            const column = document.createElement("div");
+            column.className = "col-6 col-md-4 col-lg-3";
+
+            const card = document.createElement("div");
+            card.className = "card image-card image-selector-gallery-card";
+            card.dataset.imageId = String(image.id);
+
+            const preview = document.createElement("img");
+            preview.src = image.thumbnail_url || image.url || "";
+            preview.className =
+                "card-img-top image-selector-gallery-preview object-fit-cover";
+            preview.alt = `Image ${image.id}`;
+            card.appendChild(preview);
+
+            const body = document.createElement("div");
+            body.className = "card-body p-2";
+
+            const idLabel = document.createElement("small");
+            idLabel.className = "text-muted";
+            idLabel.textContent = `#${image.id}`;
+            body.appendChild(idLabel);
+
+            if (Array.isArray(image.tags) && image.tags.length > 0) {
+                const tagList = document.createElement("div");
+                tagList.className = "mt-1";
+                image.tags.slice(0, 2).forEach((tag) => {
+                    const badge = document.createElement("span");
+                    badge.className = "badge bg-secondary badge-sm";
+                    badge.textContent = String(tag);
+                    tagList.appendChild(badge);
+                });
+                body.appendChild(tagList);
+            }
+
+            card.appendChild(body);
+            column.appendChild(card);
+
+            return column;
+        });
+
+        this.gallery.replaceChildren(...cards);
     }
 
     onSearch(query) {
+        if (this.searchDebounce) {
+            window.clearTimeout(this.searchDebounce);
+            this.searchDebounce = null;
+        }
+        this.loadRequest?.abort();
+        this.searchRequest?.abort();
+        this.searchRequest = null;
+
         const q = (query || "").trim();
 
         if (q === "") {
@@ -360,16 +477,20 @@ export default class extends Controller {
         this.lastLocalFiltered = localFiltered;
         this.renderGallery(localFiltered);
 
-        if (this.searchDebounce) clearTimeout(this.searchDebounce);
-        this.searchDebounce = setTimeout(
-            () => this.performServerSearch(q),
-            300,
-        );
+        this.searchDebounce = window.setTimeout(() => {
+            this.searchDebounce = null;
+            this.performServerSearch(q);
+        }, 300);
     }
 
     async performServerSearch(q) {
-        if (!this.gallery) return;
+        if (!this.gallery) {
+            return;
+        }
 
+        this.searchRequest?.abort();
+        const request = new AbortController();
+        this.searchRequest = request;
         try {
             let url = "/admin/images/browse";
             const params = new URLSearchParams();
@@ -380,16 +501,29 @@ export default class extends Controller {
             params.append("limit", "500");
             url += "?" + params.toString();
 
-            const response = await fetch(url, { credentials: "same-origin" });
+            const response = await fetch(url, {
+                credentials: "same-origin",
+                signal: request.signal,
+            });
             if (!response.ok) throw new Error("Failed to search images");
             const data = await response.json();
+            if (request.signal.aborted || !this.isActive) {
+                return;
+            }
             this.loadedImages = data.images || [];
             this.syncTargetFieldSelection();
             this.renderGallery(this.loadedImages);
         } catch (err) {
+            if (err?.name === "AbortError") {
+                return;
+            }
             console.error("Search error:", err);
             if (this.lastLocalFiltered) {
                 this.renderGallery(this.lastLocalFiltered);
+            }
+        } finally {
+            if (this.searchRequest === request) {
+                this.searchRequest = null;
             }
         }
     }
@@ -484,6 +618,7 @@ export default class extends Controller {
             return;
         }
 
+        this.reader?.abort();
         this.selectedFile = file;
         if (this.skipCropToggle) {
             this.skipCropToggle.checked = false;
@@ -492,21 +627,26 @@ export default class extends Controller {
         this.destroyCropper();
 
         const reader = new FileReader();
+        this.reader = reader;
         reader.onload = (readerEvent) => {
+            this.reader = null;
+            if (!this.isActive || this.isCaching) {
+                return;
+            }
             if (this.cropImage) {
                 this.cropImage.src = readerEvent.target.result;
             }
             if (this.cropContainer) {
-                this.cropContainer.style.display = "block";
+                this.cropContainer.classList.remove("d-none");
             }
             if (this.cropPreview) {
-                this.cropPreview.style.display = "block";
+                this.cropPreview.classList.remove("d-none");
             }
             if (this.noPreview) {
-                this.noPreview.style.display = "none";
+                this.noPreview.classList.add("d-none");
             }
             if (this.cropControls) {
-                this.cropControls.style.display = "block";
+                this.cropControls.classList.remove("d-none");
             }
 
             if (!window.Cropper) {
@@ -607,13 +747,12 @@ export default class extends Controller {
                 );
             }
 
-            const csrf = document.querySelector('meta[name="csrfToken"]');
             const response = await fetch("/admin/images/upload", {
                 method: "POST",
                 body: formData,
                 credentials: "same-origin",
                 headers: {
-                    "X-CSRF-Token": csrf?.content || "",
+                    "X-CSRF-Token": this.csrfTokenValue || "",
                 },
             });
 
@@ -622,6 +761,9 @@ export default class extends Controller {
             }
 
             const data = await response.json();
+            if (!this.isActive || this.isCaching) {
+                return;
+            }
 
             if (!data.success) {
                 throw new Error(data.error || "Upload failed");
@@ -642,49 +784,75 @@ export default class extends Controller {
 
             this.hideModalWithCleanup();
         } catch (error) {
+            if (!this.isActive || this.isCaching) {
+                return;
+            }
             console.error("Upload error:", error);
             alert("Upload failed: " + error.message);
         } finally {
-            this.uploadBtn.disabled = false;
-            this.uploadBtn.textContent = "Upload & Crop";
+            if (this.isActive && !this.isCaching && this.uploadBtn) {
+                this.uploadBtn.disabled = false;
+                this.uploadBtn.textContent = "Upload & Crop";
+            }
         }
     }
 
     hideModalWithCleanup() {
-        const modalClass = window.bootstrap?.Modal;
-        const modalInstance =
-            modalClass?.getInstance(this.modal) ||
-            modalClass?.getOrCreateInstance?.(this.modal);
-
-        if (modalInstance?.hide) {
-            modalInstance.hide();
-            this.scheduleModalArtifactCleanup();
-
-            return;
+        this.dismissBtn?.click();
+        if (
+            !window.bootstrap?.Modal ||
+            !this.modal.classList.contains("show")
+        ) {
+            this.forceCloseModal();
         }
+    }
 
+    forceCloseModal() {
         if (this.modal) {
             this.modal.classList.remove("show");
             this.modal.style.display = "none";
             this.modal.setAttribute("aria-hidden", "true");
             this.modal.removeAttribute("aria-modal");
         }
+
         this.cleanupModalArtifacts();
     }
 
-    scheduleModalArtifactCleanup() {
-        if (this.modalCleanupTimer) {
-            window.clearTimeout(this.modalCleanupTimer);
+    cancelPendingRequests() {
+        if (this.searchDebounce) {
+            window.clearTimeout(this.searchDebounce);
+            this.searchDebounce = null;
         }
+        this.loadRequest?.abort();
+        this.loadRequest = null;
+        this.searchRequest?.abort();
+        this.searchRequest = null;
+    }
 
-        // Fallback cleanup in case Bootstrap hide transition does not fully clean body/backdrop state.
-        this.modalCleanupTimer = window.setTimeout(() => {
-            this.modalCleanupTimer = null;
-            this.cleanupModalArtifacts();
-        }, 400);
+    resetModalForCache() {
+        this.isCaching = true;
+        this.cancelPendingRequests();
+        this.reader?.abort();
+        this.reader = null;
+        this.destroyCropper();
+        this.forceCloseModal();
+        this.onModalHidden();
+
+        this.loadedImages = [];
+        this.lastSearchQuery = "";
+        this.lastLocalFiltered = [];
+        if (this.searchInput) {
+            this.searchInput.value = "";
+        }
+        this.gallery?.replaceChildren();
+        if (this.uploadBtn) {
+            this.uploadBtn.disabled = false;
+            this.uploadBtn.textContent = "Upload & Crop";
+        }
     }
 
     cleanupModalArtifacts() {
+        const document = this.element.ownerDocument;
         if (document.querySelector(".modal.show")) {
             return;
         }

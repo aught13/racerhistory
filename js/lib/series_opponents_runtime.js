@@ -1,3 +1,9 @@
+let initializationGeneration = 0;
+
+function resolveRoot(root) {
+    return typeof root?.querySelector === "function" ? root : document;
+}
+
 function hasJquery() {
     return typeof window.$ === "function" && typeof window.$.fn === "object";
 }
@@ -68,8 +74,8 @@ function ensureDataTablesLoaded() {
     });
 }
 
-function bindOpponentSearchInput(dtApi) {
-    const input = document.getElementById("series-opponents-search");
+function bindOpponentSearchInput(dtApi, root) {
+    const input = root.querySelector("#series-opponents-search");
     if (!input) {
         return;
     }
@@ -94,8 +100,8 @@ function bindOpponentSearchInput(dtApi) {
     input._seriesOpponentsSearchHandler = handler;
 }
 
-function bindOpponentPickerToggle() {
-    const toggle = document.getElementById("series-opponents-picker-toggle");
+function bindOpponentPickerToggle(root) {
+    const toggle = root.querySelector("#series-opponents-picker-toggle");
     if (!toggle) {
         return;
     }
@@ -109,14 +115,14 @@ function bindOpponentPickerToggle() {
 
     const handler = () => {
         // Re-fetch elements on each click to avoid stale references
-        const panel = document.getElementById("series-opponents-picker-panel");
+        const panel = root.querySelector("#series-opponents-picker-panel");
         if (!panel) {
             console.warn("Series opponents picker panel not found");
             return;
         }
 
-        const currentToggle = document.getElementById(
-            "series-opponents-picker-toggle",
+        const currentToggle = root.querySelector(
+            "#series-opponents-picker-toggle",
         );
         if (!currentToggle) {
             console.warn("Series opponents picker toggle not found");
@@ -137,8 +143,8 @@ function bindOpponentPickerToggle() {
         if (isHidden) {
             panel.classList.remove("d-none");
             setExpandedState(true);
-            initSeriesOpponentsTable();
-            document.getElementById("series-opponents-search")?.focus();
+            initSeriesOpponentsTable(root);
+            root.querySelector("#series-opponents-search")?.focus();
 
             return;
         }
@@ -148,9 +154,7 @@ function bindOpponentPickerToggle() {
     };
 
     // Set initial expanded state based on current panel visibility
-    const initialPanel = document.getElementById(
-        "series-opponents-picker-panel",
-    );
+    const initialPanel = root.querySelector("#series-opponents-picker-panel");
     if (initialPanel) {
         const setExpandedState = (expanded) => {
             toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
@@ -165,10 +169,12 @@ function bindOpponentPickerToggle() {
     toggle._seriesOpponentsToggleHandler = handler;
 }
 
-export function initSeriesOpponentsTable() {
-    bindOpponentPickerToggle();
+export function initSeriesOpponentsTable(root = document) {
+    root = resolveRoot(root);
+    const generation = ++initializationGeneration;
+    bindOpponentPickerToggle(root);
 
-    const table = document.getElementById("series-opponents-table");
+    const table = root.querySelector("#series-opponents-table");
     if (!table) {
         return;
     }
@@ -191,7 +197,7 @@ export function initSeriesOpponentsTable() {
                 if (typeof existing.columns?.adjust === "function") {
                     existing.columns.adjust();
                 }
-                bindOpponentSearchInput(existing);
+                bindOpponentSearchInput(existing, root);
 
                 return;
             }
@@ -229,7 +235,7 @@ export function initSeriesOpponentsTable() {
                     zeroRecords: "No matching opponents found",
                 },
                 initComplete: function () {
-                    bindOpponentSearchInput(this.api());
+                    bindOpponentSearchInput(this.api(), root);
                 },
                 drawCallback: function () {
                     if (typeof this.api === "function") {
@@ -238,21 +244,29 @@ export function initSeriesOpponentsTable() {
                 },
             });
 
-            bindOpponentSearchInput(dt);
+            bindOpponentSearchInput(dt, root);
         } catch (err) {
             console.warn("Series opponents DataTable init failed", err);
         }
     };
 
     ensureDataTablesLoaded()
-        .then(init)
+        .then(() => {
+            if (generation === initializationGeneration && table.isConnected) {
+                init();
+            }
+        })
         .catch((err) => {
-            console.warn("Series opponents DataTables load failed", err);
+            if (generation === initializationGeneration) {
+                console.warn("Series opponents DataTables load failed", err);
+            }
         });
 }
 
-export function cleanupSeriesOpponentsTable() {
-    const table = document.getElementById("series-opponents-table");
+export function cleanupSeriesOpponentsTable(root = document) {
+    root = resolveRoot(root);
+    initializationGeneration += 1;
+    const table = root.querySelector("#series-opponents-table");
     if (table && hasDataTables() && window.$.fn.dataTable.isDataTable(table)) {
         try {
             window.$(table).DataTable().destroy(false);
@@ -261,22 +275,18 @@ export function cleanupSeriesOpponentsTable() {
         }
     }
 
-    const input = document.getElementById("series-opponents-search");
-    if (!input) {
-        return;
-    }
-
-    if (input._seriesOpponentsSearchTimer) {
+    const input = root.querySelector("#series-opponents-search");
+    if (input && input._seriesOpponentsSearchTimer !== undefined) {
         window.clearTimeout(input._seriesOpponentsSearchTimer);
-        input._seriesOpponentsSearchTimer = null;
+        input._seriesOpponentsSearchTimer = undefined;
     }
 
-    if (typeof input._seriesOpponentsSearchHandler === "function") {
+    if (typeof input?._seriesOpponentsSearchHandler === "function") {
         input.removeEventListener("input", input._seriesOpponentsSearchHandler);
         input._seriesOpponentsSearchHandler = null;
     }
 
-    const toggle = document.getElementById("series-opponents-picker-toggle");
+    const toggle = root.querySelector("#series-opponents-picker-toggle");
     if (typeof toggle?._seriesOpponentsToggleHandler === "function") {
         toggle.removeEventListener(
             "click",

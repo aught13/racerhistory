@@ -102,7 +102,7 @@ if (!empty($images)) {
 $this->start('css'); ?>
 <?php $this->end(); ?>
 
-<div class="container py-4 game-view" data-game-view data-controller="game-view">
+<div class="container py-4 game-view" data-game-view data-controller="game-view" data-action="turbo:before-cache@document->game-view#beforeCache">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
@@ -286,38 +286,53 @@ $this->start('css'); ?>
                             <?php foreach ($images as $image) : ?>
                                 <div class="game-photo-thumb">
                                     <?php
+                                    $photoUrl = $this->ImageServe->urlForImage($image);
                                     $imgContent = $this->ImageServe->picture(
                                         $image,
                                         [],
                                         [
                                             'alt' => (string)$image->filename,
-                                            'data-image-url' => $this->ImageServe->urlForImage($image),
-                                            'data-image-filename' => (string)$image->filename,
-                                            'data-photo-credit' => (string)($image->photo_credit ?? ''),
                                             'class' => 'game-photo-thumb-img',
-                                            'style' => 'width: 240px; height: 180px; object-fit: cover;',
                                         ],
                                     );
-
-                                    echo $this->element('image_with_credit', [
-                                        'image' => $image,
-                                        'imgContent' => $imgContent,
-                                    ]);
                                     ?>
+                                    <a
+                                        class="game-photo-thumb-link d-block w-100 h-100"
+                                        href="<?= h($photoUrl) ?>"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#gameImageModal"
+                                        data-image-url="<?= h($photoUrl) ?>"
+                                        data-image-filename="<?= h((string)$image->filename) ?>"
+                                        data-photo-credit="<?= h((string)($image->photo_credit ?? '')) ?>"
+                                        aria-label="<?= h('View photo: ' . (string)$image->filename) ?>"
+                                    >
+                                        <?= $this->element('image_with_credit', [
+                                            'image' => $image,
+                                            'imgContent' => $imgContent,
+                                            'wrapperClass' => 'position-relative w-100 h-100',
+                                        ]) ?>
+                                    </a>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
                 </section>
 
-                <div class="game-image-modal" data-game-image-modal style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1050; align-items: center; justify-content: center;">
-                    <button type="button" class="game-image-modal-close" aria-label="Close" data-modal-close style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; z-index: 1051;">x</button>
-                    <div class="game-image-modal-inner" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center; position: relative;">
-                        <picture class="game-image-modal-container" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center;">
-                            <source type="image/webp" data-modal-image-webp>
-                            <img src="" alt="" data-modal-image data-modal-image-fallback style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
-                        </picture>
-                        <div data-modal-photo-credit class="position-absolute bottom-0 end-0 p-2 m-3 rounded text-white" style="background-color: rgba(0,0,0,0.6); font-size: 0.9rem; z-index: 1052; display: none;"></div>
+                <div class="modal fade image-gallery-modal game-image-modal" id="gameImageModal" tabindex="-1" aria-labelledby="gameImageModalLabel" aria-hidden="true" data-game-image-modal data-game-view-target="imageModal">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0">
+                                <h2 class="visually-hidden" id="gameImageModalLabel">Game photo</h2>
+                                <button type="button" class="btn-close btn-close-white" aria-label="Close" data-bs-dismiss="modal" data-game-view-target="imageModalDismiss"></button>
+                            </div>
+                            <div class="modal-body">
+                                <picture class="image-gallery-modal-picture">
+                                    <source type="image/webp" data-modal-image-webp>
+                                    <img alt="" data-modal-image data-modal-image-fallback class="image-gallery-modal-image">
+                                </picture>
+                                <div data-modal-photo-credit class="image-gallery-modal-credit position-absolute bottom-0 end-0 p-2 m-3 rounded text-white d-none"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>

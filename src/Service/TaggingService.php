@@ -5,11 +5,12 @@ namespace App\Service;
 
 use App\Model\Entity\Opponent;
 use App\Model\Entity\Team;
+use App\Model\Table\BlogPostsTable;
 use Cake\Http\ServerRequest;
 use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Table;
-use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
+use LogicException;
 
 /**
  * TaggingService centralizes the common tagging workflow for different entities.
@@ -26,100 +27,66 @@ class TaggingService
     ];
 
     private string $subjectTableName;
-    private string $tagsTableName;
     private string $associationName;
     private bool $pruneOrphans;
     private bool $allowContextTags;
 
+    private Table $subjectTable;
+    private Table $tagsTable;
+
+    /**
+     * @var array<string,\Cake\ORM\Table>
+     */
+    private array $labelTables;
+
+    private BlogPostsTable $blogPostsTable;
     private PersonService $personService;
     private TeamSeasonService $teamSeasonService;
     private TeamSeasonRosterService $rosterService;
-
-    private ?Table $subjectTable = null;
-    private ?Table $tagsTable = null;
+    private TeamSportContextService $teamSportContextService;
+    private GameService $gameService;
 
     /**
      * Initialize a tagging service for the given tables and association.
      *
-     * @param string $subjectTableName Table alias backing the taggable subject.
-     * @param string $tagsTableName Table alias backing the tag storage.
+     * @param \Cake\ORM\Table $subjectTable Table backing the taggable subject.
+     * @param \Cake\ORM\Table $tagsTable Table backing the tag storage.
      * @param string $associationName The association name that links the two tables.
-     * @param array $options Behavior toggles for pruning and context tags.
-     * @param \App\Service\PersonService|null $personService Optional person display service.
-     * @param \App\Service\TeamSeasonService|null $teamSeasonService Optional team season service.
-     * @param \App\Service\TeamSeasonRosterService|null $rosterService Optional roster service.
+     * @param array{pruneOrphans?:bool,allowContextTags?:bool} $options Behavior toggles.
+     * @param array<string,\Cake\ORM\Table> $labelTables Tables used to resolve entity labels.
+     * @param \App\Model\Table\BlogPostsTable $blogPostsTable The blog posts table.
+     * @param \App\Service\PersonService $personService The person service.
+     * @param \App\Service\TeamSeasonService $teamSeasonService The team season service.
+     * @param \App\Service\TeamSeasonRosterService $rosterService The roster service.
+     * @param \App\Service\TeamSportContextService $teamSportContextService The team sport context service.
+     * @param \App\Service\GameService $gameService The game service.
      */
     public function __construct(
-        string $subjectTableName,
-        string $tagsTableName,
+        Table $subjectTable,
+        Table $tagsTable,
         string $associationName,
-        array $options = [],
-        ?PersonService $personService = null,
-        ?TeamSeasonService $teamSeasonService = null,
-        ?TeamSeasonRosterService $rosterService = null,
+        array $options,
+        array $labelTables,
+        BlogPostsTable $blogPostsTable,
+        PersonService $personService,
+        TeamSeasonService $teamSeasonService,
+        TeamSeasonRosterService $rosterService,
+        TeamSportContextService $teamSportContextService,
+        GameService $gameService,
     ) {
-        $this->subjectTableName = $subjectTableName;
-        $this->tagsTableName = $tagsTableName;
+        $this->subjectTable = $subjectTable;
+        $this->tagsTable = $tagsTable;
+        $this->subjectTableName = $subjectTable->getAlias();
         $this->associationName = $associationName;
         $this->pruneOrphans = (bool)($options['pruneOrphans'] ?? false);
         $this->allowContextTags = (bool)($options['allowContextTags'] ?? false);
-        $this->personService = $personService ?? new PersonService();
-        $this->teamSeasonService = $teamSeasonService ?? new TeamSeasonService();
-        $this->rosterService = $rosterService ?? new TeamSeasonRosterService();
-    }
-
-    /**
-     * Create a tagging service configured for the Images table.
-     *
-     * @param \App\Service\PersonService|null $personService Optional person service for dependency
-     *     injection.
-     * @param \App\Service\TeamSeasonService|null $teamSeasonService Optional team season service for
-     *     dependency injection.
-     * @param \App\Service\TeamSeasonRosterService|null $rosterService Optional roster service for
-     *     dependency injection.
-     * @return self
-     */
-    public static function forImages(
-        ?PersonService $personService = null,
-        ?TeamSeasonService $teamSeasonService = null,
-        ?TeamSeasonRosterService $rosterService = null,
-    ): self {
-        return new self(
-            'Images',
-            'ImageTags',
-            'ImageTags',
-            ['pruneOrphans' => true, 'allowContextTags' => true],
-            $personService,
-            $teamSeasonService,
-            $rosterService,
-        );
-    }
-
-    /**
-     * Create a tagging service configured for the BlogPosts table.
-     *
-     * @param \App\Service\PersonService|null $personService Optional person service for dependency
-     *     injection.
-     * @param \App\Service\TeamSeasonService|null $teamSeasonService Optional team season service for
-     *     dependency injection.
-     * @param \App\Service\TeamSeasonRosterService|null $rosterService Optional roster service for
-     *     dependency injection.
-     * @return self
-     */
-    public static function forBlogPosts(
-        ?PersonService $personService = null,
-        ?TeamSeasonService $teamSeasonService = null,
-        ?TeamSeasonRosterService $rosterService = null,
-    ): self {
-        return new self(
-            'BlogPosts',
-            'BlogTags',
-            'BlogTags',
-            [],
-            $personService,
-            $teamSeasonService,
-            $rosterService,
-        );
+        $this->labelTables = $labelTables;
+        $this->blogPostsTable = $blogPostsTable;
+        $this->personService = $personService;
+        $this->teamSeasonService = $teamSeasonService;
+        $this->rosterService = $rosterService;
+        $this->teamSportContextService = $teamSportContextService;
+        $this->gameService = $gameService;
     }
 
     /**
@@ -132,7 +99,7 @@ class TaggingService
      */
     public function attachTags(int $subjectId, array $tags, array $options = []): array
     {
-        $table = $this->subjectTable();
+        $table = $this->subjectTable;
         $association = $this->associationName;
         $entity = $table->get($subjectId, contain: [$association]);
         $existingTagIds = [];
@@ -143,7 +110,7 @@ class TaggingService
             }
         }
 
-        $tagsTable = $this->tagsTable();
+        $tagsTable = $this->tagsTable;
         $applied = [];
         $link = [];
         $skipExistingCheck = (bool)($options['skipExistingCheck'] ?? false);
@@ -265,7 +232,7 @@ class TaggingService
                         'name' => $this->teamSeasonService->getDisplayLabel($id),
                     ];
                 } elseif (in_array($type, ['blog', 'blogpost', 'post'], true) && $id > 0) {
-                    $label = (new BlogPostService())->getDisplayLabel($id);
+                    $label = $this->blogPostsTable->getDisplayLabel($id);
                     $tags[] = [
                         'slug' => "blogpost-{$id}",
                         'name' => $label,
@@ -303,7 +270,7 @@ class TaggingService
             return;
         }
 
-        $tagsTable = $this->tagsTable();
+        $tagsTable = $this->tagsTable;
         if (!$tagsTable->associations()->has($this->subjectTableName)) {
             return;
         }
@@ -370,14 +337,15 @@ class TaggingService
                         if ($meta['service'] === 'person') {
                             $display = $this->personService->getDisplayLabel($id);
                         } elseif ($meta['service'] === 'sport') {
-                            $display = (new TeamSportContextService())->resolveSportNameFromTeam(
+                            $display = $this->teamSportContextService->resolveSportNameFromTeam(
                                 (object)['sport_id' => $id],
                             ) ?? 'sport';
                         } else {
                             $display = $this->teamSeasonService->getDisplayLabel($id);
                         }
                     } else {
-                        $table = TableRegistry::getTableLocator()->get($meta['table']);
+                        $table = $this->labelTables[$meta['table']]
+                            ?? throw new LogicException('Tag label table dependency is missing.');
                         $alias = $table->getAlias();
                         $query = $table->find()->select()->where([$alias . '.id' => $id]);
                         if (!empty($meta['contain']) && is_array($meta['contain'])) {
@@ -516,7 +484,7 @@ class TaggingService
      */
     private function deleteExistingAttachments(int $subjectId): void
     {
-        $table = $this->subjectTable();
+        $table = $this->subjectTable;
         if (!$table->associations()->has($this->associationName)) {
             return;
         }
@@ -569,7 +537,7 @@ class TaggingService
                         $opponentName = $row->opponent->getDisplayName();
                     }
 
-                    return (new GameService())->formatGameTagLabelFromRow(
+                    return $this->gameService->formatGameTagLabelFromRow(
                         $row->game_date ?? null,
                         $opponentName,
                         (int)($row->hrn ?? 0),
@@ -654,30 +622,6 @@ class TaggingService
      */
     private function getGameTagDisplayLabel(int $gameId): string
     {
-        return (new GameService())->getGameTagDisplayLabel($gameId);
-    }
-
-    /**
-     * Lazily resolve the subject table for the current tagging context.
-     */
-    private function subjectTable(): Table
-    {
-        if ($this->subjectTable === null) {
-            $this->subjectTable = TableRegistry::getTableLocator()->get($this->subjectTableName);
-        }
-
-        return $this->subjectTable;
-    }
-
-    /**
-     * Lazily resolve the tag table for the current tagging context.
-     */
-    private function tagsTable(): Table
-    {
-        if ($this->tagsTable === null) {
-            $this->tagsTable = TableRegistry::getTableLocator()->get($this->tagsTableName);
-        }
-
-        return $this->tagsTable;
+        return $this->gameService->getGameTagDisplayLabel($gameId);
     }
 }

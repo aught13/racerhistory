@@ -4,15 +4,16 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\GameEavMetaService;
-use App\Service\GameEavUiService;
 use App\Service\GamesAdminService;
 use App\Service\GameService;
 use App\Service\GameUpsertService;
 use App\Service\GameViewService;
 use App\Service\SportConfigService;
 use App\Service\StatsService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Routing\Router;
 
 /**
@@ -25,7 +26,7 @@ use Cake\Routing\Router;
  *   sites-by-place lookup, delete and bulk-delete orchestration.
  * - GameUpsertService: add/edit/add-results workflows.
  * - GameViewService: full view-page data assembly.
- * - GameEavMetaService/GameEavUiService: sport-aware EAV metadata and UI vars.
+ * - GameEavMetaService: sport-aware EAV metadata.
  *
  * The controller keeps HTTP-only concerns: request method checks, flashes,
  * redirects, and response serialization.
@@ -35,7 +36,6 @@ use Cake\Routing\Router;
  * @property \App\Service\SportConfigService $SportConfig
  * @property \App\Service\StatsService $Stats
  * @property \App\Service\GameEavMetaService $gameEavMeta
- * @property \App\Service\GameEavUiService $gameEavUi
  * @property \App\Service\GameViewService $gameView
  * @property \App\Service\GameUpsertService $gameUpsert
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
@@ -49,7 +49,6 @@ class GamesController extends AppController
      */
     private GamesAdminService $gamesAdminService;
 
-    private GameEavUiService $gameEavUi;
     private GameEavMetaService $gameEavMeta;
     private GameViewService $gameView;
     private GameUpsertService $gameUpsert;
@@ -70,6 +69,40 @@ class GamesController extends AppController
     protected StatsService $Stats;
 
     /**
+     * Create the controller with its game administration services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\GamesAdminService $gamesAdminService The game administration service.
+     * @param \App\Service\GameService $gameService The game service.
+     * @param \App\Service\SportConfigService $sportConfigService The sport configuration service.
+     * @param \App\Service\StatsService $statsService The statistics service.
+     * @param \App\Service\GameEavMetaService $gameEavMeta The game EAV metadata service.
+     * @param \App\Service\GameViewService $gameView The game view service.
+     * @param \App\Service\GameUpsertService $gameUpsert The game upsert service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        GamesAdminService $gamesAdminService,
+        GameService $gameService,
+        SportConfigService $sportConfigService,
+        StatsService $statsService,
+        GameEavMetaService $gameEavMeta,
+        GameViewService $gameView,
+        GameUpsertService $gameUpsert,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->gamesAdminService = $gamesAdminService;
+        $this->Game = $gameService;
+        $this->SportConfig = $sportConfigService;
+        $this->Stats = $statsService;
+        $this->gameEavMeta = $gameEavMeta;
+        $this->gameView = $gameView;
+        $this->gameUpsert = $gameUpsert;
+    }
+
+    /**
      * Initialize controller
      *
      * @return void
@@ -77,16 +110,6 @@ class GamesController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->loadService('Game');
-        $this->loadService('SportConfig');
-        $this->loadService('Stats');
-
-        $this->gamesAdminService = new GamesAdminService($this->Game, $this->SportConfig);
-
-        $this->gameEavUi = new GameEavUiService();
-        $this->gameEavMeta = new GameEavMetaService($this->Game, $this->gameEavUi);
-        $this->gameView = new GameViewService($this->Game, $this->SportConfig, $this->Stats, $this->gameEavUi);
-        $this->gameUpsert = new GameUpsertService(null, $this->Game, $this->SportConfig, $this->gameEavUi);
     }
 
     /**
@@ -454,5 +477,5 @@ class GamesController extends AppController
         $this->set($this->gamesAdminService->getFormLists($placeId, $identity));
     }
 
-    // Sport-aware UI vars and legacy EAV mapping are handled via GameService + GameEavUiService.
+    // Sport-aware EAV metadata and view data are handled by the game services.
 }

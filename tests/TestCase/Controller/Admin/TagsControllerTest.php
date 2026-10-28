@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller\Admin;
 
-use App\Service\TaggingService;
 use App\Test\TestCase\Support\AuthTestTrait;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -13,6 +13,7 @@ class TagsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
     use AuthTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Users',
@@ -109,7 +110,7 @@ class TagsControllerTest extends TestCase
     public function testModalChecksExistingPresetTags(): void
     {
         $this->mockIdentity();
-        TaggingService::forBlogPosts()->replaceTags(1, [
+        $this->blogPostTaggingService()->replaceTags(1, [
             ['slug' => 'Bio', 'name' => 'Bio'],
         ]);
 
@@ -212,6 +213,13 @@ class TagsControllerTest extends TestCase
         $payload = json_decode((string)$this->_response->getBody(), true);
         $this->assertTrue((bool)($payload['success'] ?? false));
         $this->assertEqualsCanonicalizing(['bio', 'recap'], $payload['applied'] ?? []);
+        $this->assertEqualsCanonicalizing(
+            [
+                ['slug' => 'bio', 'name' => 'Bio'],
+                ['slug' => 'recap', 'name' => 'Recap'],
+            ],
+            $payload['tags'] ?? [],
+        );
 
         $tagsTable = TableRegistry::getTableLocator()->get('BlogTags');
         $bio = $tagsTable->find()->where(['slug' => 'bio'])->first();
@@ -236,7 +244,7 @@ class TagsControllerTest extends TestCase
     public function testApplyRemovesUnselectedPresetTags(): void
     {
         $this->mockIdentity();
-        TaggingService::forBlogPosts()->applyFromData(1, [
+        $this->blogPostTaggingService()->applyFromData(1, [
             'preset_tags' => ['bio'],
         ]);
         $this->enableCsrfToken();

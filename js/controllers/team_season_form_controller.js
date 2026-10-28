@@ -11,48 +11,38 @@ export default class extends Controller {
         "imagePreview",
         "heroVariantButton",
         "uploadButton",
+        "teamSelect",
+        "seasonSelect",
     ];
 
     static values = {
         existingImageId: String,
         existingPreviewUrl: String,
+        csrfToken: String,
+        maxUploadBytes: {
+            type: Number,
+            default: 0,
+        },
         uploadUrl: {
             type: String,
             default: "/admin/images/upload",
         },
     };
 
+    initialize() {
+        this.uploadRequest = null;
+        this.isCaching = false;
+    }
+
     connect() {
         this.tinyMceRetryCount = 0;
         this.tinyMceRetryTimer = null;
-        this.boundBeforeCache = () => this.destroyTinyMCE();
-        this.boundBeforeRender = () => this.destroyTinyMCE();
-        this.boundTurboLoad = () => this.onTurboLoad();
-        this.boundImageChange = () => this.updateImagePreview();
-        this.boundUploadClick = (event) => this.handleUploadClick(event);
-
-        document.addEventListener("turbo:before-cache", this.boundBeforeCache);
-        document.addEventListener(
-            "turbo:before-render",
-            this.boundBeforeRender,
-        );
-        document.addEventListener("turbo:load", this.boundTurboLoad);
+        this.isCaching = false;
 
         if (this.hasImageFieldTarget) {
-            this.imageFieldTarget.addEventListener(
-                "change",
-                this.boundImageChange,
-            );
             if (this.existingImageIdValue && !this.imageFieldTarget.value) {
                 this.imageFieldTarget.value = this.existingImageIdValue;
             }
-        }
-
-        if (this.hasUploadButtonTarget) {
-            this.uploadButtonTarget.addEventListener(
-                "click",
-                this.boundUploadClick,
-            );
         }
 
         this.updateImagePreview();
@@ -61,45 +51,84 @@ export default class extends Controller {
     }
 
     disconnect() {
-        document.removeEventListener(
-            "turbo:before-cache",
-            this.boundBeforeCache,
-        );
-        document.removeEventListener(
-            "turbo:before-render",
-            this.boundBeforeRender,
-        );
-        document.removeEventListener("turbo:load", this.boundTurboLoad);
-
-        if (this.hasImageFieldTarget) {
-            this.imageFieldTarget.removeEventListener(
-                "change",
-                this.boundImageChange,
-            );
-        }
-
-        if (this.hasUploadButtonTarget) {
-            this.uploadButtonTarget.removeEventListener(
-                "click",
-                this.boundUploadClick,
-            );
-        }
-
-        if (this.tinyMceRetryTimer) {
-            window.clearTimeout(this.tinyMceRetryTimer);
-            this.tinyMceRetryTimer = null;
-        }
-
-        this.destroyTinyMCE();
+        this.prepareForNavigation();
     }
 
     onTurboLoad() {
-        // Re-initialize TinyMCE after successful Turbo navigation
+        this.isCaching = false;
         this.tinyMceRetryCount = 0;
         this.initTinyMceWhenReady();
     }
 
+    beforeCache() {
+        this.prepareForNavigation();
+    }
+
+    beforeRender() {
+        this.prepareForNavigation();
+    }
+
+    prepareForNavigation() {
+        this.isCaching = true;
+        if (this.tinyMceRetryTimer !== null) {
+            window.clearTimeout(this.tinyMceRetryTimer);
+            this.tinyMceRetryTimer = null;
+        }
+        if (this.uploadRequest) {
+            this.uploadRequest.abort();
+            this.uploadRequest = null;
+        }
+        this.restoreUploadButton();
+        this.destroyTinyMCE();
+    }
+
+    restoreUploadButton() {
+        if (!this.hasUploadButtonTarget) {
+            return;
+        }
+
+        this.uploadButtonTarget.disabled = false;
+        this.uploadButtonTarget.textContent = "Select / Upload";
+    }
+
+    handleImageFieldChange() {
+        this.updateImagePreview();
+        this.updateHeroVariantButton();
+    }
+
+    popupOptionAdded(event) {
+        const detail = event.detail;
+        if (!detail?.targetSelectId || detail.newOption?.value == null) {
+            return;
+        }
+
+        const select = [
+            this.hasTeamSelectTarget ? this.teamSelectTarget : null,
+            this.hasSeasonSelectTarget ? this.seasonSelectTarget : null,
+        ].find((target) => target?.id === detail.targetSelectId);
+        if (!select) {
+            return;
+        }
+
+        const value = String(detail.newOption.value);
+        let option = Array.from(select.options).find(
+            (candidate) => candidate.value === value,
+        );
+        if (!option) {
+            option = select.ownerDocument.createElement("option");
+            option.value = value;
+            select.add(option);
+        }
+        option.textContent = String(detail.newOption.text ?? value);
+        select.value = value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
     initTinyMceWhenReady() {
+        if (this.isCaching) {
+            return;
+        }
+
         const editorIds = [];
         if (this.hasPreviewEditorTarget) {
             editorIds.push(this.previewEditorTarget.id);
@@ -113,12 +142,16 @@ export default class extends Controller {
         }
 
         if (typeof window.tinymce === "undefined") {
+            if (this.tinyMceRetryTimer !== null) {
+                return;
+            }
             if (this.tinyMceRetryCount >= TINYMCE_MAX_RETRIES) {
                 return;
             }
 
             this.tinyMceRetryCount += 1;
             this.tinyMceRetryTimer = window.setTimeout(() => {
+                this.tinyMceRetryTimer = null;
                 this.initTinyMceWhenReady();
             }, TINYMCE_RETRY_DELAY_MS);
             return;
@@ -146,28 +179,21 @@ export default class extends Controller {
                 convert_urls: false,
                 images_upload_handler: (blobInfo, progress) => {
                     return new Promise((resolve, reject) => {
-                        // Client-side preflight: reject files larger than configured max
-                        try {
-                            const maxMeta = document.querySelector(
-                                'meta[name="maxUploadBytes"]',
+                        const blob = blobInfo.blob();
+                        if (
+                            this.maxUploadBytesValue > 0 &&
+                            blob.size > this.maxUploadBytesValue
+                        ) {
+                            reject(
+                                "File too large. Maximum allowed: " +
+                                    (
+                                        this.maxUploadBytesValue /
+                                        1024 /
+                                        1024
+                                    ).toFixed(1) +
+                                    "MB",
                             );
-                            const maxBytes = maxMeta
-                                ? parseInt(
-                                      maxMeta.getAttribute("content") || "0",
-                                      10,
-                                  )
-                                : 0;
-                            const blob = blobInfo.blob();
-                            if (maxBytes > 0 && blob.size > maxBytes) {
-                                reject(
-                                    "File too large. Maximum allowed: " +
-                                        (maxBytes / 1024 / 1024).toFixed(1) +
-                                        "MB",
-                                );
-                                return;
-                            }
-                        } catch {
-                            // ignore and proceed
+                            return;
                         }
 
                         const xhr = new window.XMLHttpRequest();
@@ -232,37 +258,28 @@ export default class extends Controller {
 
         try {
             [
-                this.hasPreviewEditorTarget
-                    ? this.previewEditorTarget.id
-                    : null,
-                this.hasRecapEditorTarget ? this.recapEditorTarget.id : null,
+                this.hasPreviewEditorTarget ? this.previewEditorTarget : null,
+                this.hasRecapEditorTarget ? this.recapEditorTarget : null,
             ]
                 .filter(Boolean)
-                .forEach((editorId) => {
-                    const editor = window.tinymce.get(editorId);
-                    // Save content before removing to prevent data loss
-                    const target = document.getElementById(editorId);
+                .forEach((target) => {
+                    const editor = window.tinymce.get(target.id);
                     if (
-                        target &&
                         editor &&
                         typeof editor === "object" &&
                         typeof editor.getContent === "function"
                     ) {
                         target.value = editor.getContent();
                     }
-                    // Remove the editor instance (call remove() on the editor if it exists)
+
                     if (
                         editor &&
                         typeof editor === "object" &&
                         typeof editor.remove === "function"
                     ) {
                         editor.remove();
-                    } else if (editor) {
-                        // Fallback to global remove if editor doesn't have remove method
-                        window.tinymce.remove(editor || `#${editorId}`);
                     } else {
-                        // If no editor instance, try with selector
-                        window.tinymce.remove(`#${editorId}`);
+                        window.tinymce.remove(`#${target.id}`);
                     }
                 });
         } catch (e) {
@@ -276,7 +293,9 @@ export default class extends Controller {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
-        input.addEventListener("change", () => this.uploadSelectedFile(input));
+        input.addEventListener("change", () => this.uploadSelectedFile(input), {
+            once: true,
+        });
         input.click();
     }
 
@@ -284,30 +303,23 @@ export default class extends Controller {
         if (
             !fileInput.files ||
             !fileInput.files[0] ||
-            !this.hasImageFieldTarget
+            !this.hasImageFieldTarget ||
+            this.isCaching
         ) {
             return;
         }
 
         const file = fileInput.files[0];
-        // Client-side preflight: check configured max upload bytes
-        try {
-            const maxMeta = document.querySelector(
-                'meta[name="maxUploadBytes"]',
+        if (
+            this.maxUploadBytesValue > 0 &&
+            file.size > this.maxUploadBytesValue
+        ) {
+            alert(
+                "File too large. Maximum allowed: " +
+                    (this.maxUploadBytesValue / 1024 / 1024).toFixed(1) +
+                    "MB",
             );
-            const maxBytes = maxMeta
-                ? parseInt(maxMeta.getAttribute("content") || "0", 10)
-                : 0;
-            if (maxBytes > 0 && file.size > maxBytes) {
-                alert(
-                    "File too large. Maximum allowed: " +
-                        (maxBytes / 1024 / 1024).toFixed(1) +
-                        "MB",
-                );
-                return;
-            }
-        } catch {
-            // ignore and continue
+            return;
         }
         const formData = new FormData();
         formData.append("upload", file);
@@ -321,6 +333,10 @@ export default class extends Controller {
             this.uploadButtonTarget.textContent = "Uploading...";
         }
 
+        this.uploadRequest?.abort();
+        const request = new AbortController();
+        this.uploadRequest = request;
+
         try {
             const headers = {};
             if (csrfToken) {
@@ -332,7 +348,16 @@ export default class extends Controller {
                 body: formData,
                 credentials: "same-origin",
                 headers,
+                signal: request.signal,
             });
+
+            if (
+                this.uploadRequest !== request ||
+                this.isCaching ||
+                !this.element.isConnected
+            ) {
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error("Upload failed");
@@ -356,12 +381,19 @@ export default class extends Controller {
                 new Event("change", { bubbles: true }),
             );
         } catch (error) {
-            console.error("Team season image upload failed:", error);
-            alert(`Upload failed: ${error.message}`);
+            if (
+                error?.name !== "AbortError" &&
+                this.uploadRequest === request &&
+                !this.isCaching &&
+                this.element.isConnected
+            ) {
+                console.error("Team season image upload failed:", error);
+                alert(`Upload failed: ${error.message}`);
+            }
         } finally {
-            if (this.hasUploadButtonTarget) {
-                this.uploadButtonTarget.disabled = false;
-                this.uploadButtonTarget.textContent = "Select / Upload";
+            if (this.uploadRequest === request) {
+                this.uploadRequest = null;
+                this.restoreUploadButton();
             }
         }
     }
@@ -428,12 +460,9 @@ export default class extends Controller {
             return scopedFormToken;
         }
 
-        const metaToken = document
-            .querySelector('meta[name="csrfToken"]')
-            ?.getAttribute("content")
-            ?.trim();
-        if (metaToken) {
-            return metaToken;
+        const configuredToken = this.csrfTokenValue?.trim();
+        if (configuredToken) {
+            return configuredToken;
         }
 
         return this.readCookie("csrfToken") || this.readCookie("_csrfToken");

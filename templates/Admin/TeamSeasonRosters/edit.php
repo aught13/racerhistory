@@ -9,7 +9,7 @@ $this->assign('title', 'Edit Team Season Roster');
 $currentPersonId = isset($teamSeasonRoster->person_id) ? (int)$teamSeasonRoster->person_id : 0;
 $currentPersonLabel = isset($teamSeasonRoster->person) ? (string)$teamSeasonRoster->person->display : '';
 ?>
-<div class="container py-4" data-controller="roster-edit-person" data-roster-edit-person-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxSearch'])) ?>" data-roster-edit-person-current-id-value="<?= $currentPersonId ?>" data-roster-edit-person-current-label-value="<?= h($currentPersonLabel) ?>">
+<div class="container py-4" data-controller="roster-edit-person" data-action="turbo:before-cache@document->roster-edit-person#beforeCache turbo:load@document->roster-edit-person#afterCache admin:popup-option-added@document->roster-edit-person#popupOptionAdded" data-roster-edit-person-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Persons', 'action' => 'ajaxSearch'])) ?>" data-roster-edit-person-current-id-value="<?= $currentPersonId ?>" data-roster-edit-person-current-label-value="<?= h($currentPersonLabel) ?>">
     <div class="row mb-3">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -117,7 +117,7 @@ echo $this->element('Admin/popup_form', [
     'targetSelectId' => 'person-id-select',
     'fields' => $personFields,
     'hiddenFormId' => 'hidden-person-form',
-    'extraHtml' => '<div class="mb-3" data-controller="place-search" data-place-search-search-url-value="' . h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) . '"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-edit-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><input type="hidden" id="add-person-modal-birth-place-id" name="birth_place_id" data-place-search-target="hidden"><div id="add-person-modal-birth-place-results" class="mt-1" data-place-search-target="results"></div><div id="add-person-modal-birth-place-selected" class="small mt-1" data-place-search-target="selected"><span class="text-muted fst-italic">None selected</span></div></div>',
+    'extraHtml' => '<div class="mb-3" data-controller="place-search" data-place-search-search-url-value="' . h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) . '" data-action="click->place-search#handleClick click@document->place-search#handleDocumentClick admin:roster-birth-place-added@document->place-search#handleBirthPlaceAdded turbo:before-cache@document->place-search#beforeCache"><label class="form-label">Birth Place</label><div class="input-group"><input type="text" id="add-person-modal-birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search"><button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-roster-edit-birth-place-modal" title="Add New Place"><i class="bi bi-plus-circle"></i> New</button></div><input type="hidden" id="add-person-modal-birth-place-id" name="birth_place_id" data-place-search-target="hidden"><div id="add-person-modal-birth-place-results" class="mt-1" data-place-search-target="results"></div><div id="add-person-modal-birth-place-selected" class="small mt-1" data-place-search-target="selected"><span class="text-muted fst-italic">None selected</span></div></div>',
 ]);
 ?>
 
@@ -138,7 +138,7 @@ echo $this->element('Admin/popup_form', [
     'title' => 'Add New Place',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
     'hiddenFormId' => 'hidden-roster-edit-place-form',
-    'successCallback' => 'handleBirthPlaceAdded',
+    'successEvent' => 'admin:roster-birth-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],

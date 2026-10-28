@@ -3,27 +3,44 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Table\ImagesImageTagsTable;
+use App\Model\Table\ImagesTable;
+use App\Model\Table\UsersTable;
 use App\Service\GameService;
 use App\Service\ImageDeleteService;
 use App\Service\ImageEditService;
+use App\Service\ImageProcessor;
 use App\Service\ImagesAdminService;
+use App\Service\ImageStorageService;
+use App\Service\ImageTagUiService;
+use App\Service\OpponentService;
+use App\Service\PersonService;
 use App\Service\RbacPermissionService;
+use App\Service\SiteService;
+use App\Service\TeamSeasonRosterService;
 use App\Service\TeamSeasonService;
+use App\Service\TeamService;
+use App\Service\TeamSportContextService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 class ImagesAdminServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     protected array $fixtures = [
         'app.Images',
         'app.ImageTags',
         'app.ImagesImageTags',
+        'app.Persons',
         'app.Opponents',
         'app.Places',
         'app.Teams',
         'app.Sports',
         'app.TeamSeasons',
+        'app.TeamSeasonRosters',
         'app.Seasons',
         'app.Games',
         'app.GameTypes',
@@ -42,11 +59,31 @@ class ImagesAdminServiceTest extends TestCase
     {
         parent::setUp();
 
+        $taggingServiceFactory = $this->taggingServiceFactory();
+        $imagesTable = TableRegistry::getTableLocator()->get('Images');
+        assert($imagesTable instanceof ImagesTable);
+        $imagesImageTagsTable = TableRegistry::getTableLocator()->get('ImagesImageTags');
+        assert($imagesImageTagsTable instanceof ImagesImageTagsTable);
+        $storage = new ImageStorageService(new ImageProcessor(), $taggingServiceFactory, $imagesTable);
+        $teamSeasonService = new TeamSeasonService();
+        $rosterService = new TeamSeasonRosterService(new PersonService(), $teamSeasonService);
+        $usersTable = $this->getTableLocator()->get('Users');
+        assert($usersTable instanceof UsersTable);
+
         $this->service = new ImagesAdminService(
-            TableRegistry::getTableLocator()->get('Images'),
-            new ImageDeleteService(),
-            new ImageEditService(),
+            $imagesTable,
+            new ImageDeleteService($storage, $taggingServiceFactory, $imagesTable, $imagesImageTagsTable),
+            new ImageEditService(new ImageProcessor(), $storage),
             new RbacPermissionService(),
+            $taggingServiceFactory,
+            $usersTable,
+            new TeamService(),
+            $teamSeasonService,
+            new GameService(),
+            new SiteService(),
+            new OpponentService(),
+            new TeamSportContextService(),
+            new ImageTagUiService($rosterService),
         );
     }
 
@@ -140,6 +177,70 @@ class ImagesAdminServiceTest extends TestCase
         $this->assertSame([
             ['slug' => 'teamseason-1', 'name' => $label],
         ], $this->service->buildCommonEntityTags(['teamseason_select' => 1]));
+    }
+
+    /**
+     * A selected roster replaces redundant common entity tags but preserves freeform tags.
+     */
+    public function testBuildCommonEntityTagsSkipsOtherEntitiesWhenRosterSelected(): void
+    {
+        $data = [
+            'person_select' => 1,
+            'roster_select' => 1,
+            'teamseason_select' => 1,
+            'game_select' => 1,
+            'site_select' => 1,
+            'opponent_select' => 1,
+            'team_select' => 1,
+            'sport_select' => 1,
+            'common_tags' => 'sunset, team photo',
+        ];
+
+        $result = $this->service->buildCommonEntityTags($data);
+        $slugs = array_column(
+            array_values(array_filter($result, static fn($tag): bool => is_array($tag))),
+            'slug',
+        );
+
+        $this->assertContains('team_season_roster-1', $slugs);
+        $this->assertContains('person-1', $slugs);
+        $this->assertNotContains('teamseason-1', $slugs);
+        $this->assertNotContains('team-1', $slugs);
+        $this->assertContains('sunset', $result);
+        $this->assertContains('team photo', $result);
+    }
+
+    /**
+     * Bulk-upload tag arrays are normalized and receive an indexed context tag.
+     */
+    public function testBuildBulkUploadTagsParsesIndexedArraysAndContext(): void
+    {
+        $result = $this->service->buildBulkUploadTags(
+            ['0' => ['person-1', ' teamseason-1 ']],
+            ['0' => 'Media Day'],
+            '0',
+        );
+
+        $this->assertSame([
+            'person-1',
+            'teamseason-1',
+            ['slug' => 'context-media-day', 'name' => 'Media Day'],
+        ], $result);
+    }
+
+    /**
+     * Bulk-upload tag strings work without indexed form input and blank values are ignored.
+     */
+    public function testBuildBulkUploadTagsParsesStringsAndIgnoresBlankValues(): void
+    {
+        $result = $this->service->buildBulkUploadTags('alpha, beta, ', '  ', '0');
+
+        $this->assertSame(['alpha', 'beta'], $result);
+        $this->assertSame([], $this->service->buildBulkUploadTags(
+            [1 => ['alpha']],
+            [1 => 'Media Day'],
+            '2',
+        ));
     }
 
     /**

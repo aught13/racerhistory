@@ -4,11 +4,10 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\BasketballOpponentNameNormalizationService;
-use App\Service\DeployAuditService;
-use App\Service\SportConfigService;
-use Cake\Cache\Cache;
+use App\Service\DashboardAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
-use Cake\ORM\TableRegistry;
+use Cake\Http\ServerRequest;
 
 /**
  * Admin Dashboard Controller
@@ -49,6 +48,23 @@ use Cake\ORM\TableRegistry;
 class DashboardController extends AppController
 {
     /**
+     * Create the dashboard controller with its administration services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\DashboardAdminService $dashboardAdminService The dashboard administration service.
+     * @param \App\Service\BasketballOpponentNameNormalizationService $opponentNameNormalizationService The opponent name normalization service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        private DashboardAdminService $dashboardAdminService,
+        private BasketballOpponentNameNormalizationService $opponentNameNormalizationService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+    }
+
+    /**
      * Admin dashboard index action.
      *
      * Displays the admin dashboard with deployment audit health checks
@@ -58,21 +74,11 @@ class DashboardController extends AppController
      */
     public function index(): void
     {
-        $service = new DeployAuditService();
-        $audit = $service->run();
-
-        $locator = TableRegistry::getTableLocator();
-        $sportCount = count((new SportConfigService())->getAvailableSports());
-        $counts = [
-            'sports' => $sportCount,
-            'teams' => $locator->get('Teams')->find()->count(),
-            'games' => $locator->get('Games')->find()->count(),
-            'images' => $locator->get('Images')->find()->count(),
-        ];
+        $dashboardData = $this->dashboardAdminService->dashboardData();
 
         $this->set('title', 'Admin Dashboard');
-        $this->set('audit', $audit);
-        $this->set('counts', $counts);
+        $this->set('audit', $dashboardData['audit']);
+        $this->set('counts', $dashboardData['counts']);
     }
 
     /**
@@ -87,15 +93,9 @@ class DashboardController extends AppController
     {
         $this->request->allowMethod(['post']);
 
-        $cleared = [];
-        $failed = [];
-        foreach (Cache::configured() as $name) {
-            if (Cache::clear($name)) {
-                $cleared[] = $name;
-            } else {
-                $failed[] = $name;
-            }
-        }
+        $result = $this->dashboardAdminService->clearConfiguredCaches();
+        $cleared = $result['cleared'];
+        $failed = $result['failed'];
 
         if (empty($failed)) {
             $this->Flash->success(
@@ -117,8 +117,6 @@ class DashboardController extends AppController
      */
     public function normalizeOpponentNames(): ?Response
     {
-        $service = new BasketballOpponentNameNormalizationService();
-
         if ($this->request->is('post')) {
             $this->request->allowMethod(['post']);
             if ($this->request->getData('confirmation') !== 'NORMALIZE') {
@@ -127,13 +125,13 @@ class DashboardController extends AppController
                 return $this->redirect(['action' => 'normalizeOpponentNames']);
             }
 
-            $updated = $service->normalize();
+            $updated = $this->opponentNameNormalizationService->normalize();
             $this->Flash->success('Normalized ' . $updated . ' basketball opponent player name(s).');
 
             return $this->redirect(['action' => 'normalizeOpponentNames']);
         }
 
-        $preview = $service->preview();
+        $preview = $this->opponentNameNormalizationService->preview();
         $this->set(compact('preview'));
 
         return null;

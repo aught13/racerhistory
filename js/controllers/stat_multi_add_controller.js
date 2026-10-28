@@ -2,35 +2,10 @@ import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
     static targets = ["rows", "addButton"];
+
     connect() {
-        // Debug instrumentation to help E2E tracing when Stimulus attaches.
-        try {
-            console.debug("stat-multi-add: connect", {
-                hasRowsTarget: this.hasRowsTarget,
-                hasAddButtonTarget: this.hasAddButtonTarget,
-                rowsCount: this.hasRowsTarget
-                    ? this.rowsTarget.querySelectorAll(".stat-row").length
-                    : null,
-            });
-        } catch {
-            void 0;
-        }
-
         this.boundRowsClick = (event) => this.handleRowsClick(event);
-        this.boundAddClick = (event) => {
-            try {
-                if (event && event.__rh_add_handled) {
-                    return;
-                }
-                if (event) {
-                    event.__rh_add_handled = true;
-                }
-            } catch {
-                void 0;
-            }
-
-            this.addRow();
-        };
+        this.boundAddClick = () => this.addRow();
 
         if (this.hasRowsTarget) {
             this.rowsTarget.addEventListener("click", this.boundRowsClick);
@@ -41,15 +16,8 @@ export default class extends Controller {
 
         this.updateRemoveButtons();
 
-        // Signal readiness for E2E tests and other runtime consumers.
-        try {
-            if (this.hasAddButtonTarget && this.addButtonTarget.dataset) {
-                this.addButtonTarget.dataset.rhReady = "1";
-            }
-            // global flag used by Playwright tests to wait for handlers to be attached
-            window.__RH_STAT_MULTI_ADD_READY = true;
-        } catch {
-            void 0;
+        if (this.hasAddButtonTarget) {
+            this.addButtonTarget.dataset.rhReady = "1";
         }
     }
 
@@ -65,14 +33,8 @@ export default class extends Controller {
             );
         }
 
-        // Clear readiness signal when controller disconnects (Turbo navigation)
-        try {
-            if (this.hasAddButtonTarget && this.addButtonTarget.dataset) {
-                delete this.addButtonTarget.dataset.rhReady;
-            }
-            window.__RH_STAT_MULTI_ADD_READY = false;
-        } catch {
-            void 0;
+        if (this.hasAddButtonTarget) {
+            delete this.addButtonTarget.dataset.rhReady;
         }
     }
 
@@ -100,14 +62,6 @@ export default class extends Controller {
         // sequential programmatic clicks.
         const rows = this.rowsTarget.querySelectorAll(".stat-row");
         const template = rows[0];
-        try {
-            console.debug("stat-multi-add: addRow called", {
-                currentRows: rows.length,
-                templateExists: !!template,
-            });
-        } catch {
-            void 0;
-        }
         if (!template) {
             return;
         }

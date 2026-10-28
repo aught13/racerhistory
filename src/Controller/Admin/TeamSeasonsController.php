@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\TeamSeasonAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * TeamSeasons Admin Controller
@@ -33,6 +35,22 @@ class TeamSeasonsController extends AppController
     protected TeamSeasonAdminService $teamSeasonAdminService;
 
     /**
+     * Create the controller with its team season administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\TeamSeasonAdminService $teamSeasonAdminService The team season administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        TeamSeasonAdminService $teamSeasonAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->teamSeasonAdminService = $teamSeasonAdminService;
+    }
+
+    /**
      * Initialize controller
      *
      * @return void
@@ -48,8 +66,6 @@ class TeamSeasonsController extends AppController
                 $this->FormProtection->setConfig('unlockedActions', $current);
             }
         }
-
-        $this->teamSeasonAdminService = new TeamSeasonAdminService();
     }
 
     /**

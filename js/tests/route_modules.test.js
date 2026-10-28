@@ -119,7 +119,7 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("roster-multi-add")).toBe(true);
         });
 
-        test("registerAdminStatsEntryControllers registers stats entry controller and runs legacy init", () => {
+        test("registerAdminStatsEntryControllers registers the stats entry controller", () => {
             registerAdminStatsEntryControllers(application);
             expect(registeredControllers.has("stat-multi-add")).toBe(true);
         });

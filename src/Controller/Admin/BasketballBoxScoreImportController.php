@@ -6,7 +6,9 @@ namespace App\Controller\Admin;
 use App\Model\Entity\Opponent;
 use App\Model\Entity\Team;
 use App\Service\BasketballBoxScoreImportService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Log\Log;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
@@ -23,6 +25,22 @@ class BasketballBoxScoreImportController extends AppController
     private BasketballBoxScoreImportService $importService;
 
     /**
+     * Create the controller with its basketball box score import service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\BasketballBoxScoreImportService $importService The box score import service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        BasketballBoxScoreImportService $importService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->importService = $importService;
+    }
+
+    /**
      * Initialization hook method.
      *
      * @return void
@@ -30,7 +48,6 @@ class BasketballBoxScoreImportController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->importService = new BasketballBoxScoreImportService();
         $this->FormProtection->setConfig('unlockedFields', [
             'intent',
             'pdf_file',

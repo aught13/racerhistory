@@ -42,10 +42,10 @@ class PersonService
     /**
      * Restrict a People directory query to people with a roster in the selected scope.
      *
-     * @param \Cake\ORM\Query\SelectQuery $query Persons query.
+     * @param \Cake\ORM\Query\SelectQuery<\App\Model\Entity\Person> $query Persons query.
      * @param string|null $sportKey Canonical sport key.
      * @param int|null $teamId Team identifier.
-     * @return \Cake\ORM\Query\SelectQuery
+     * @return \Cake\ORM\Query\SelectQuery<\App\Model\Entity\Person>
      */
     public function applyPublicRosterScope(
         SelectQuery $query,

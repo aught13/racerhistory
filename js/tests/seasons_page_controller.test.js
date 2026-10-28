@@ -2,12 +2,22 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../lib/seasons_page_runtime.js", () => ({
+    cleanupSeasonsPage: jest.fn(),
+    enhancedBoot: jest.fn(),
+}));
+
+import {
+    cleanupSeasonsPage,
+    enhancedBoot,
+} from "../lib/seasons_page_runtime.js";
 import SeasonsPageController from "../controllers/seasons_page_controller.js";
 
 describe("seasons-page controller", () => {
     let application;
 
     beforeEach(() => {
+        jest.clearAllMocks();
         document.body.innerHTML =
             '<div id="seasons-root" data-controller="seasons-page"></div>';
 
@@ -21,81 +31,34 @@ describe("seasons-page controller", () => {
             application = null;
         }
 
-        delete window.__SEASONS_PAGE_INIT__;
-        delete window.__SEASONS_PAGE_CLEANUP__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
 
-    test("calls init override on connect", async () => {
-        const initMock = jest.fn();
-        window.__SEASONS_PAGE_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("seasons-page", SeasonsPageController);
-
+    test("initializes the seasons runtime on connect", async () => {
         await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledTimes(1);
+        expect(enhancedBoot).toHaveBeenCalledWith(
+            undefined,
+            document.getElementById("seasons-root"),
+        );
     });
 
-    test("calls cleanup override on disconnect", async () => {
-        const cleanupMock = jest.fn();
-        window.__SEASONS_PAGE_CLEANUP__ = cleanupMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("seasons-page", SeasonsPageController);
+    test("cleans up the seasons runtime on disconnect", async () => {
         await Promise.resolve();
 
         document.getElementById("seasons-root").remove();
         await Promise.resolve();
 
-        expect(cleanupMock).toHaveBeenCalledTimes(1);
+        expect(cleanupSeasonsPage).toHaveBeenCalledTimes(1);
     });
 
-    test("calls default init when no override", async () => {
-        delete window.__SEASONS_PAGE_INIT__;
-        delete window.__SEASONS_PAGE_CLEANUP__;
-
-        application.stop();
-        application = Application.start();
-        application.register("seasons-page", SeasonsPageController);
-
+    test("cleans up the seasons runtime before Turbo caches the page", async () => {
+        document.dispatchEvent(new Event("turbo:before-cache"));
         await Promise.resolve();
 
-        expect(true).toBe(true);
-    });
-
-    test("calls default cleanup when no override", async () => {
-        delete window.__SEASONS_PAGE_INIT__;
-        delete window.__SEASONS_PAGE_CLEANUP__;
-
-        application.stop();
-        application = Application.start();
-        application.register("seasons-page", SeasonsPageController);
-        await Promise.resolve();
-
-        document.getElementById("seasons-root").remove();
-        await Promise.resolve();
-
-        expect(true).toBe(true);
-    });
-
-    test("handles override being non-function value", async () => {
-        window.__SEASONS_PAGE_INIT__ = "not a function";
-        window.__SEASONS_PAGE_CLEANUP__ = { obj: true };
-
-        application.stop();
-        application = Application.start();
-        application.register("seasons-page", SeasonsPageController);
-
-        await Promise.resolve();
-
-        document.getElementById("seasons-root").remove();
-        await Promise.resolve();
-
-        expect(true).toBe(true);
+        expect(cleanupSeasonsPage).toHaveBeenCalledWith(
+            document.getElementById("seasons-root"),
+        );
     });
 });

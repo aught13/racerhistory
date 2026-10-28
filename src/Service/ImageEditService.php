@@ -16,13 +16,13 @@ class ImageEditService
     private ImageStorageService $storage;
 
     /**
-     * @param \App\Service\ImageProcessor|null      $processor Optional processor override (useful for testing).
-     * @param \App\Service\ImageStorageService|null $storage   Optional storage override (useful for testing).
+     * @param \App\Service\ImageProcessor $processor Image processing dependency.
+     * @param \App\Service\ImageStorageService $storage Image storage dependency.
      */
-    public function __construct(?ImageProcessor $processor = null, ?ImageStorageService $storage = null)
+    public function __construct(ImageProcessor $processor, ImageStorageService $storage)
     {
-        $this->processor = $processor ?? new ImageProcessor();
-        $this->storage = $storage ?? new ImageStorageService();
+        $this->processor = $processor;
+        $this->storage = $storage;
     }
 
     /**

@@ -31,7 +31,6 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
     data-controller="admin-games-index"
     data-admin-games-index-ajax-url-value="<?= h($ajaxUrl) ?>"
     data-admin-games-index-bulk-delete-url-value="<?= h($bulkDeleteUrl) ?>"
-    data-admin-games-index-delete-form-id-value="delete-form-games-bulk"
 >
     <?php if (isset($teamSeason)) : ?>
         <nav aria-label="breadcrumb">
@@ -138,7 +137,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
                 </table>
             </form>
 
-            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk'], 'id' => 'delete-form-games-bulk', 'style' => 'display:none']) ?>
+            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk'], 'id' => 'delete-form-games-bulk', 'style' => 'display:none', 'data-admin-games-index-target' => 'deleteForm']) ?>
             <?php $this->Form->unlockField('game_ids');
             $this->Form->unlockField('bulk_action'); ?>
             <?= $this->Form->hidden('game_ids[]', ['value' => '']) ?>

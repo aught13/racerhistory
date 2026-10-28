@@ -148,9 +148,9 @@ describe("person-form controller", () => {
         application.register("person-form", PersonFormController);
         await flush();
 
-        expect(document.getElementById("person-image-preview").style.display).toBe(
-            "block",
-        );
+        expect(
+            document.getElementById("person-image-preview").style.display,
+        ).toBe("block");
     });
 
     test("previewUrlForField prefers selected thumbnail url", async () => {

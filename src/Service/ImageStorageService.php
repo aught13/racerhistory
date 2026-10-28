@@ -6,7 +6,6 @@ namespace App\Service;
 use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
 use Cake\Core\Configure;
-use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -20,16 +19,22 @@ class ImageStorageService
 {
     private ImageProcessor $processor;
     private TaggingService $tagging;
+    private ImagesTable $imagesTable;
     private ?string $lastError = null;
 
     /**
-     * @param \App\Service\ImageProcessor|null $processor Optional processor override
-     * @param \App\Service\TaggingService|null $tagging   Optional tagging override
+     * @param \App\Service\ImageProcessor $processor Image processing dependency.
+     * @param \App\Service\TaggingServiceFactory $taggingServiceFactory Tagging context factory.
+     * @param \App\Model\Table\ImagesTable $imagesTable Image persistence dependency.
      */
-    public function __construct(?ImageProcessor $processor = null, ?TaggingService $tagging = null)
-    {
-        $this->processor = $processor ?? new ImageProcessor();
-        $this->tagging = $tagging ?? TaggingService::forImages();
+    public function __construct(
+        ImageProcessor $processor,
+        TaggingServiceFactory $taggingServiceFactory,
+        ImagesTable $imagesTable,
+    ) {
+        $this->processor = $processor;
+        $this->tagging = $taggingServiceFactory->forImages();
+        $this->imagesTable = $imagesTable;
     }
 
     /**
@@ -66,7 +71,7 @@ class ImageStorageService
         }
 
         [$processed, $hash, $mime, $ext] = $this->processFile($file, $manipulations);
-        $images = $this->imagesTable();
+        $images = $this->imagesTable;
         /** @var \App\Model\Entity\Image|null $existing */
         $existing = $images->find()->where(['hash' => $hash])->first();
         if ($existing) {
@@ -74,14 +79,18 @@ class ImageStorageService
             if ($restoreError !== null) {
                 return ['success' => false, 'error' => $restoreError];
             }
-            $this->tagging->attachTags((int)$existing->id, $tags);
+            if ($tags !== []) {
+                $this->tagging->attachTags((int)$existing->id, $tags);
+            }
 
             return ['success' => true, 'image' => $existing, 'existing' => true];
         }
 
         $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename(), $ownerId);
         if ($image) {
-            $this->tagging->attachTags((int)$image->id, $tags);
+            if ($tags !== []) {
+                $this->tagging->attachTags((int)$image->id, $tags);
+            }
 
             return ['success' => true, 'image' => $image, 'existing' => false];
         }
@@ -312,7 +321,7 @@ class ImageStorageService
      */
     public function loadImageOrFail(int $id): Image
     {
-        return $this->imagesTable()->get($id);
+        return $this->imagesTable->get($id);
     }
 
     /**
@@ -452,17 +461,6 @@ class ImageStorageService
         }
 
         return null;
-    }
-
-    /**
-     * Lookup a table instance.
-     */
-    private function imagesTable(): ImagesTable
-    {
-        /** @var \App\Model\Table\ImagesTable $table */
-        $table = TableRegistry::getTableLocator()->get('Images');
-
-        return $table;
     }
 
     /**

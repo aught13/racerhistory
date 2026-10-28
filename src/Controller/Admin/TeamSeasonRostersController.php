@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\TeamSeasonRosterAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * TeamSeasonRosters Admin Controller
@@ -32,12 +34,27 @@ class TeamSeasonRostersController extends AppController
     protected TeamSeasonRosterAdminService $teamSeasonRosterAdminService;
 
     /**
+     * Create the controller with its team season roster administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\TeamSeasonRosterAdminService $teamSeasonRosterAdminService The roster administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        TeamSeasonRosterAdminService $teamSeasonRosterAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->teamSeasonRosterAdminService = $teamSeasonRosterAdminService;
+    }
+
+    /**
      * @inheritDoc
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->teamSeasonRosterAdminService = new TeamSeasonRosterAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');

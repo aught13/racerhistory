@@ -39,7 +39,7 @@
                         <div class="col-md-6">
                             <?= $this->Form->control('death', ['type' => 'date', 'class' => 'form-control', 'label' => ['text' => 'Death Date', 'class' => 'form-label']]); ?>
                         </div>
-                        <div class="col-md-6" data-controller="place-search" data-place-search-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) ?>">
+                        <div class="col-md-6" data-controller="place-search" data-place-search-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) ?>" data-action="click->place-search#handleClick click@document->place-search#handleDocumentClick admin:person-birth-place-added@document->place-search#handleBirthPlaceAdded turbo:before-cache@document->place-search#beforeCache">
                             <label class="form-label">Birth Place</label>
                             <div class="input-group">
                                 <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search">
@@ -110,7 +110,7 @@
     'title' => 'Add New Place',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
     'hiddenFormId' => 'hidden-birth-place-form',
-    'successCallback' => 'handleBirthPlaceAdded',
+    'successEvent' => 'admin:person-birth-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],

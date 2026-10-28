@@ -9,58 +9,67 @@ const flush = async () => {
     await Promise.resolve();
 };
 
-const getController = (application) =>
-    application.controllers.find(
+const getController = (application) => {
+    const controller = application.controllers.find(
         (controller) => controller.identifier === "image-selector",
     );
+    if (controller && !controller.targetForm) {
+        controller.targetForm = document.getElementById("image-owner-form");
+        controller.refreshConfigAndTargetField();
+    }
+
+    return controller;
+};
 
 describe("image-selector controller", () => {
     let application;
-    let hideMock;
 
     beforeEach(() => {
-        hideMock = jest.fn();
-
         document.body.innerHTML = `
-            <meta name="csrfToken" content="csrf-token" />
-            <div id="image-modal" data-controller="image-selector" class="modal fade">
-                <button id="image-modal-select-tab" type="button">Select</button>
-                <button id="image-modal-upload-tab" type="button">Upload</button>
-                <input id="image-modal-search" type="text" />
-                <div id="image-modal-gallery" class="row"></div>
-                <input id="image-modal-file-input" type="file" />
-                <div id="image-modal-crop-container" style="display:none;">
-                    <img id="image-modal-crop-image" alt="crop" />
-                    <div id="image-modal-crop-preview" style="display:none;"></div>
+            <form id="image-owner-form">
+                <input id="image-target" value="2" />
+                <button id="image-modal-trigger" type="button" data-bs-toggle="modal" data-bs-target="#image-modal">
+                    Open selector
+                </button>
+            </form>
+            <div
+                id="image-modal"
+                data-controller="image-selector"
+                data-image-selector-target-field-id-value="image-target"
+                data-image-selector-tag-filter-value="featured"
+                data-image-selector-upload-context-value='{"entity":"person"}'
+                data-image-selector-aspect-ratio-value="1.5"
+                data-image-selector-csrf-token-value="csrf-token"
+                class="modal fade"
+            >
+                <button id="image-modal-select-tab" data-image-selector-target="selectTab" type="button">Select</button>
+                <button id="image-modal-upload-tab" data-image-selector-target="uploadTab" type="button">Upload</button>
+                <input id="image-modal-search" data-image-selector-target="searchInput" type="text" />
+                <div id="image-modal-gallery" data-image-selector-target="gallery" class="row"></div>
+                <input id="image-modal-file-input" data-image-selector-target="fileInput" type="file" />
+                <div id="image-modal-crop-container" data-image-selector-target="cropContainer" class="d-none">
+                    <img id="image-modal-crop-image" data-image-selector-target="cropImage" alt="crop" />
+                    <div id="image-modal-crop-preview" data-image-selector-target="cropPreview" class="d-none"></div>
                 </div>
-                <div id="image-modal-no-preview" style="display:block;">No preview</div>
-                <div id="image-modal-crop-controls" style="display:none;"></div>
-                <form id="image-modal-tag-form">
+                <div id="image-modal-no-preview" data-image-selector-target="noPreview">No preview</div>
+                <div id="image-modal-crop-controls" data-image-selector-target="cropControls" class="d-none"></div>
+                <form id="image-modal-tag-form" data-image-selector-target="tagForm">
                     <input name="tags" value="featured" />
                 </form>
-                <input id="image-modal-skip-crop" type="checkbox" />
-                <button id="image-modal-select-btn" type="button">Select image</button>
-                <button id="image-modal-upload-btn" type="button">Upload &amp; Crop</button>
-                <button id="image-modal-rotate-left" type="button">Rotate left</button>
-                <button id="image-modal-rotate-right" type="button">Rotate right</button>
-                <button id="image-modal-reset-crop" type="button">Reset crop</button>
+                <input id="image-modal-skip-crop" data-image-selector-target="skipCropToggle" type="checkbox" />
+                <button id="image-modal-select-btn" data-image-selector-target="selectButton" class="d-none" type="button">Select image</button>
+                <button id="image-modal-upload-btn" data-image-selector-target="uploadButton" class="d-none" type="button">Upload &amp; Crop</button>
+                <button id="image-modal-rotate-left" data-image-selector-target="rotateLeftButton" type="button">Rotate left</button>
+                <button id="image-modal-rotate-right" data-image-selector-target="rotateRightButton" type="button">Rotate right</button>
+                <button id="image-modal-reset-crop" data-image-selector-target="resetCropButton" type="button">Reset crop</button>
+                <button id="image-modal-dismiss" data-image-selector-target="dismissButton" data-bs-dismiss="modal" type="button">Close</button>
             </div>
-            <input id="image-target" value="2" />
         `;
-
-        window.imageSelectorConfig = {
-            "image-modal": {
-                targetFieldId: "image-target",
-                aspectRatio: 1.5,
-                tagFilter: "featured",
-                uploadContext: { entity: "person" },
-            },
-        };
 
         window.bootstrap = {
             Modal: {
-                getInstance: jest.fn(() => ({ hide: hideMock })),
-                getOrCreateInstance: jest.fn(() => ({ hide: hideMock })),
+                getInstance: jest.fn(),
+                getOrCreateInstance: jest.fn(),
             },
         };
 
@@ -97,7 +106,6 @@ describe("image-selector controller", () => {
             application = null;
         }
 
-        delete window.imageSelectorConfig;
         delete window.bootstrap;
         delete window.Cropper;
         delete window.FileReader;
@@ -133,14 +141,17 @@ describe("image-selector controller", () => {
         const modal = document.getElementById("image-modal");
         const target = document.getElementById("image-target");
 
+        const showEvent = new Event("show.bs.modal");
+        showEvent.relatedTarget = document.getElementById(
+            "image-modal-trigger",
+        );
+        modal.dispatchEvent(showEvent);
         modal.dispatchEvent(new Event("shown.bs.modal"));
         await flush();
 
         expect(fetch).toHaveBeenCalledWith(
             "/admin/images/browse?tag=featured",
-            {
-                credentials: "same-origin",
-            },
+            expect.objectContaining({ credentials: "same-origin" }),
         );
         expect(target.dataset.selectedImageUrl).toBe("/img/2.jpg");
 
@@ -158,24 +169,32 @@ describe("image-selector controller", () => {
         document
             .querySelector('[data-image-id="1"]')
             .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        const dismissClick = jest.spyOn(
+            document.getElementById("image-modal-dismiss"),
+            "click",
+        );
         document.getElementById("image-modal-select-btn").click();
 
         expect(target.value).toBe("1");
         expect(target.dataset.selectedImageThumbnailUrl).toBe(
             "/img/1-thumb.jpg",
         );
-        expect(hideMock).toHaveBeenCalledTimes(1);
+        expect(dismissClick).toHaveBeenCalledTimes(1);
 
         document.querySelector('[data-image-id="1"]').classList.add("border");
         document.getElementById("image-modal-skip-crop").checked = true;
         modal.dispatchEvent(new Event("hidden.bs.modal"));
 
         expect(
-            document.getElementById("image-modal-crop-container").style.display,
-        ).toBe("none");
+            document
+                .getElementById("image-modal-crop-container")
+                .classList.contains("d-none"),
+        ).toBe(true);
         expect(
-            document.getElementById("image-modal-no-preview").style.display,
-        ).toBe("block");
+            document
+                .getElementById("image-modal-no-preview")
+                .classList.contains("d-none"),
+        ).toBe(false);
         expect(
             document
                 .querySelector('[data-image-id="1"]')
@@ -197,6 +216,12 @@ describe("image-selector controller", () => {
             }),
         });
 
+        const showEvent = new Event("show.bs.modal");
+        showEvent.relatedTarget = document.getElementById(
+            "image-modal-trigger",
+        );
+        document.getElementById("image-modal").dispatchEvent(showEvent);
+
         const fileInput = document.getElementById("image-modal-file-input");
         const file = new File(["abc"], "photo.jpg", { type: "image/jpeg" });
 
@@ -210,11 +235,15 @@ describe("image-selector controller", () => {
 
         expect(window.Cropper).toHaveBeenCalledTimes(1);
         expect(
-            document.getElementById("image-modal-crop-container").style.display,
-        ).toBe("block");
+            document
+                .getElementById("image-modal-crop-container")
+                .classList.contains("d-none"),
+        ).toBe(false);
         expect(
-            document.getElementById("image-modal-crop-preview").style.display,
-        ).toBe("block");
+            document
+                .getElementById("image-modal-crop-preview")
+                .classList.contains("d-none"),
+        ).toBe(false);
 
         const cropperInstance = window.Cropper.mock.results[0].value;
         document.getElementById("image-modal-rotate-left").click();
@@ -245,42 +274,31 @@ describe("image-selector controller", () => {
             JSON.stringify({ entity: "person" }),
         );
         expect(document.getElementById("image-target").value).toBe("77");
-        expect(hideMock).toHaveBeenCalledTimes(1);
+        expect(
+            document.getElementById("image-modal").classList.contains("show"),
+        ).toBe(false);
     });
 
     test("cleans up lingering modal backdrop after programmatic hide", () => {
-        jest.useFakeTimers();
+        const controller = getController(application);
+        const modal = document.getElementById("image-modal");
 
-        try {
-            const controller = getController(application);
-            const modal = document.getElementById("image-modal");
+        delete window.bootstrap;
+        modal.classList.add("show");
+        document.body.classList.add("modal-open");
+        document.body.style.overflow = "hidden";
+        document.body.style.paddingRight = "17px";
+        const backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop fade show";
+        document.body.appendChild(backdrop);
 
-            document.body.classList.add("modal-open");
-            document.body.style.overflow = "hidden";
-            document.body.style.paddingRight = "17px";
+        controller.hideModalWithCleanup();
 
-            const backdrop = document.createElement("div");
-            backdrop.className = "modal-backdrop fade show";
-            document.body.appendChild(backdrop);
-
-            window.bootstrap.Modal.getInstance.mockReturnValueOnce({
-                hide: hideMock,
-            });
-
-            controller.modal = modal;
-            controller.hideModalWithCleanup();
-
-            expect(hideMock).toHaveBeenCalledTimes(1);
-
-            jest.runOnlyPendingTimers();
-
-            expect(document.body.classList.contains("modal-open")).toBe(false);
-            expect(document.querySelector(".modal-backdrop")).toBeNull();
-            expect(document.body.style.overflow).toBe("");
-            expect(document.body.style.paddingRight).toBe("");
-        } finally {
-            jest.useRealTimers();
-        }
+        expect(modal.classList.contains("show")).toBe(false);
+        expect(document.body.classList.contains("modal-open")).toBe(false);
+        expect(document.querySelector(".modal-backdrop")).toBeNull();
+        expect(document.body.style.overflow).toBe("");
+        expect(document.body.style.paddingRight).toBe("");
     });
 
     test("skips modal artifact cleanup while another modal is visible", () => {
@@ -305,6 +323,38 @@ describe("image-selector controller", () => {
 
         expect(document.body.classList.contains("modal-open")).toBe(false);
         expect(document.querySelector(".modal-backdrop")).toBeNull();
+    });
+
+    test("turbo before-cache aborts requests and clears only transient modal state", async () => {
+        const controller = getController(application);
+        controller.searchInput.value = "new query";
+        controller.loadedImages = [{ id: 1, url: "/img/1.jpg" }];
+        controller.renderGallery(controller.loadedImages);
+
+        fetch.mockImplementation(
+            (_url, { signal }) =>
+                new Promise((_resolve, reject) => {
+                    signal.addEventListener("abort", () =>
+                        reject(new DOMException("Aborted", "AbortError")),
+                    );
+                }),
+        );
+
+        const pending = controller.loadImages();
+        const signal = fetch.mock.calls[0][1].signal;
+        const target = document.getElementById("image-target");
+        target.value = "2";
+        document.body.classList.add("modal-open");
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+        await pending;
+
+        expect(signal.aborted).toBe(true);
+        expect(controller.searchInput.value).toBe("");
+        expect(controller.loadedImages).toEqual([]);
+        expect(controller.gallery.childElementCount).toBe(0);
+        expect(target.value).toBe("2");
+        expect(document.body.classList.contains("modal-open")).toBe(false);
     });
 
     test("handles guard and failure paths for loading, selecting, and uploading", async () => {
@@ -462,9 +512,6 @@ describe("image-selector controller", () => {
         controller.config.uploadContext = null;
         controller.skipCropToggle.checked = false;
 
-        const csrfMeta = document.querySelector('meta[name="csrfToken"]');
-        csrfMeta.remove();
-
         controller.cropper = {
             getCroppedCanvas: () => ({
                 toBlob: (callback) => callback(null),
@@ -484,8 +531,17 @@ describe("image-selector controller", () => {
     });
 
     test("covers connect defaults, gallery click miss, and unbind/destroy guards", async () => {
+        const modalElement = document.getElementById("image-modal");
+        [
+            "target-field-id",
+            "tag-filter",
+            "upload-context",
+            "aspect-ratio",
+            "csrf-token",
+        ].forEach((value) =>
+            modalElement.removeAttribute(`data-image-selector-${value}-value`),
+        );
         application.stop();
-        delete window.imageSelectorConfig["image-modal"];
 
         application = Application.start();
         application.register("image-selector", ImageSelectorController);
@@ -512,8 +568,17 @@ describe("image-selector controller", () => {
     });
 
     test("refreshes config and target field when config appears after connect", async () => {
+        const modalElement = document.getElementById("image-modal");
+        [
+            "target-field-id",
+            "tag-filter",
+            "upload-context",
+            "aspect-ratio",
+            "csrf-token",
+        ].forEach((value) =>
+            modalElement.removeAttribute(`data-image-selector-${value}-value`),
+        );
         application.stop();
-        delete window.imageSelectorConfig["image-modal"];
 
         application = Application.start();
         application.register("image-selector", ImageSelectorController);
@@ -523,10 +588,14 @@ describe("image-selector controller", () => {
         expect(controller.targetField).toBeNull();
         expect(controller.aspectRatio).toBeNull();
 
-        window.imageSelectorConfig["image-modal"] = {
-            targetFieldId: "image-target",
-            aspectRatio: 1,
-        };
+        modalElement.setAttribute(
+            "data-image-selector-target-field-id-value",
+            "image-target",
+        );
+        modalElement.setAttribute(
+            "data-image-selector-aspect-ratio-value",
+            "1",
+        );
 
         fetch.mockResolvedValueOnce({
             ok: true,
@@ -535,9 +604,12 @@ describe("image-selector controller", () => {
             }),
         });
 
-        document
-            .getElementById("image-modal")
-            .dispatchEvent(new Event("shown.bs.modal"));
+        const showEvent = new Event("show.bs.modal");
+        showEvent.relatedTarget = document.getElementById(
+            "image-modal-trigger",
+        );
+        modalElement.dispatchEvent(showEvent);
+        modalElement.dispatchEvent(new Event("shown.bs.modal"));
         await flush();
 
         expect(controller.targetField).toBe(
@@ -566,16 +638,16 @@ describe("image-selector controller", () => {
         loadSpy.mockRestore();
 
         controller.toggleActionButtons(false);
-        expect(controller.selectBtn.style.display).toBe("none");
-        expect(controller.uploadBtn.style.display).toBe("inline-block");
+        expect(controller.selectBtn.classList.contains("d-none")).toBe(true);
+        expect(controller.uploadBtn.classList.contains("d-none")).toBe(false);
 
-        const hideSpy = jest.spyOn(window.bootstrap.Modal, "getInstance");
+        const dismissClick = jest.spyOn(controller.dismissBtn, "click");
         controller.targetField = null;
         controller.selectedImageId = 11;
         controller.selectedImage = { id: 11, url: "/img/11.jpg" };
         controller.onSelectImage();
-        expect(hideSpy).toHaveBeenCalled();
-        hideSpy.mockRestore();
+        expect(dismissClick).toHaveBeenCalled();
+        dismissClick.mockRestore();
     });
 
     test("covers loadImages tag-filter query and sync fallback to null selection", async () => {

@@ -298,7 +298,7 @@ $canReadSiteOptions = $this->Rbac->can('SiteOptions', 'read');
                                 data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id]) ?>"
                                 data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'edit', $teamSeason->id]) ?>"
                                 data-item-type="team season" data-associated='[]'
-                                data-form-id="delete-form-team-season-<?= $teamSeason->id ?>">
+                                form="delete-form-team-season-<?= $teamSeason->id ?>">
                                 <i class="bi bi-trash"></i> Delete Team Season
                             </button>
                             <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'delete', $teamSeason->id], 'id' => 'delete-form-team-season-' . $teamSeason->id, 'style' => 'display:none']) ?>

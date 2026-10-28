@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
-use App\Service\TaggingService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -18,6 +18,7 @@ use DOMXPath;
 class SeasonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Sports',
@@ -201,7 +202,7 @@ class SeasonsControllerTest extends TestCase
             $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
             $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
 
-            TaggingService::forBlogPosts()->attachTags(1, [
+            $this->blogPostTaggingService()->attachTags(1, [
                 ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
                 'preview',
             ]);
@@ -224,7 +225,7 @@ class SeasonsControllerTest extends TestCase
      */
     public function testRecapPresetAppearsInSeasonRecapSection(): void
     {
-        TaggingService::forBlogPosts()->replaceTags(1, [
+        $this->blogPostTaggingService()->replaceTags(1, [
             ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
             ['slug' => 'Recap', 'name' => 'Recap'],
         ]);

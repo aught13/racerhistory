@@ -4,77 +4,58 @@
 
 import { describe, test, expect, beforeEach, jest } from "@jest/globals";
 
+jest.mock("../../legacy/modules/season-view-init.mjs", () => ({
+    __esModule: true,
+    default: jest.fn(),
+}));
+
+import initSeasonView from "../../legacy/modules/season-view-init.mjs";
+import {
+    bootSeasonView,
+    initSeasonViewRoot,
+} from "../../lib/season_view_runtime.js";
+
 describe("season_view_runtime", () => {
     beforeEach(() => {
-        jest.resetModules();
-        delete window.__SEASON_VIEW_INIT__;
+        jest.clearAllMocks();
     });
 
-    test("uses window override when available", async () => {
-        const mockInit = jest.fn();
-        window.__SEASON_VIEW_INIT__ = mockInit;
+    test("initializes the supplied root and defaults to the document", () => {
+        const root = document.createElement("div");
 
-        const mod = await import("../../lib/season_view_runtime.js");
-        mod.initSeasonViewRoot();
+        initSeasonViewRoot(root);
+        initSeasonViewRoot();
 
-        expect(mockInit).toHaveBeenCalled();
+        expect(initSeasonView).toHaveBeenNthCalledWith(1, { root });
+        expect(initSeasonView).toHaveBeenNthCalledWith(2, { root: document });
     });
 
-    test("uses default when no override", async () => {
-        delete window.__SEASON_VIEW_INIT__;
-
-        const mod = await import("../../lib/season_view_runtime.js");
-        mod.initSeasonViewRoot();
-
-        expect(true).toBe(true); // Just verify it ran without error
-    });
-
-    test("bootSeasonView handles turbo:frame-load events", async () => {
-        const mockInit = jest.fn();
-        window.__SEASON_VIEW_INIT__ = mockInit;
-
-        const frame = document.createElement("div");
+    test("boots a frame root for turbo frame loads", () => {
+        const frame = document.createElement("turbo-frame");
         const event = new Event("turbo:frame-load");
         Object.defineProperty(event, "target", { value: frame });
 
-        const mod = await import("../../lib/season_view_runtime.js");
-        mod.bootSeasonView(event);
+        bootSeasonView(event);
 
-        expect(mockInit).toHaveBeenCalled();
+        expect(initSeasonView).toHaveBeenCalledWith({ root: frame });
     });
 
-    test("bootSeasonView handles non-turbo events", async () => {
-        const mockInit = jest.fn();
-        window.__SEASON_VIEW_INIT__ = mockInit;
+    test.each([
+        ["custom event", new Event("custom-event")],
+        [
+            "invalid frame target",
+            (() => {
+                const event = new Event("turbo:frame-load");
+                Object.defineProperty(event, "target", {
+                    value: "not an element",
+                });
+                return event;
+            })(),
+        ],
+        ["missing event", undefined],
+    ])("uses the document for a %s", (_label, event) => {
+        bootSeasonView(event);
 
-        const event = new Event("custom-event");
-        const mod = await import("../../lib/season_view_runtime.js");
-        mod.bootSeasonView(event);
-
-        expect(mockInit).toHaveBeenCalled();
-    });
-
-    test("bootSeasonView handles invalid frame targets", async () => {
-        const mockInit = jest.fn();
-        window.__SEASON_VIEW_INIT__ = mockInit;
-
-        const event = new Event("turbo:frame-load");
-        Object.defineProperty(event, "target", { value: "not an element" });
-
-        const mod = await import("../../lib/season_view_runtime.js");
-        mod.bootSeasonView(event);
-
-        // Should fall back to using document
-        expect(mockInit).toHaveBeenCalled();
-    });
-
-    test("bootSeasonView handles undefined event", async () => {
-        const mockInit = jest.fn();
-        window.__SEASON_VIEW_INIT__ = mockInit;
-
-        const mod = await import("../../lib/season_view_runtime.js");
-        mod.bootSeasonView();
-
-        expect(mockInit).toHaveBeenCalled();
+        expect(initSeasonView).toHaveBeenCalledWith({ root: document });
     });
 });

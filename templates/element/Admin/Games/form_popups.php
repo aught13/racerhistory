@@ -67,7 +67,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Game Type',
     'formUrl' => $gameTypeAjaxAddUrl,
     'hiddenFormId' => 'hidden-game-type-form',
-    'successCallback' => 'handleGameTypeAdded',
+    'successEvent' => 'admin:game-type-added',
     'fields' => [
         ['name' => 'game_type_name', 'type' => 'text', 'label' => 'Name', 'required' => true],
         ['name' => 'abr', 'type' => 'text', 'label' => 'Abbreviation (e.g., NCAA)'],
@@ -81,7 +81,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Opponent',
     'formUrl' => $opponentAjaxAddUrl,
     'hiddenFormId' => 'hidden-opponent-form',
-    'successCallback' => 'handleOpponentAdded',
+    'successEvent' => 'admin:game-opponent-added',
     'opponentNamePreview' => true,
     'fields' => [
         [
@@ -138,7 +138,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Place (for Opponent)',
     'formUrl' => $placeAjaxAddUrl,
     'hiddenFormId' => 'hidden-place-form',
-    'successCallback' => 'handleOpponentPlaceAdded',
+    'successEvent' => 'admin:game-opponent-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
@@ -151,7 +151,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Place',
     'formUrl' => $placeAjaxAddUrl,
     'hiddenFormId' => 'hidden-place-form',
-    'successCallback' => 'handlePlaceAdded',
+    'successEvent' => 'admin:game-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
@@ -164,7 +164,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Site',
     'formUrl' => $siteAjaxAddUrl,
     'hiddenFormId' => 'hidden-site-form',
-    'successCallback' => 'handleSiteAdded',
+    'successEvent' => 'admin:game-site-added',
     'fields' => [
         ['name' => 'site_name', 'type' => 'text', 'label' => 'Site Name', 'required' => true],
         ['name' => 'place_id', 'type' => 'hidden', 'label' => 'Place'],

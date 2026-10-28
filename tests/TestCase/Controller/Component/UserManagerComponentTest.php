@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Component;
 
 use App\Controller\Component\UserManagerComponent;
+use App\Service\PasswordResetService;
+use App\Service\UserAccountService;
 use Authentication\Authenticator\ResultInterface;
 use Authentication\IdentityInterface;
 use Cake\Controller\Component\FlashComponent;
@@ -103,7 +105,11 @@ class UserManagerComponentTest extends TestCase
         );
         $this->controller->Authentication->method('logout')->willReturn(null);
 
-        $this->component = new UserManagerComponent($componentRegistry);
+        $this->component = new UserManagerComponent(
+            $componentRegistry,
+            new UserAccountService($this->Users),
+            new PasswordResetService($this->Users),
+        );
     }
 
     // Isolated unit tests

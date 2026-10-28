@@ -1,10 +1,8 @@
 /**
- * Extended tests for route_modules to improve coverage of prefetch logic
- * and fallback handlers.
+ * Extended tests for route_modules to improve coverage of prefetch logic.
  */
 
 import { registerPublicCoreControllers } from "../route_modules/public_core.js";
-import { registerAdminStatsEntryControllers } from "../route_modules/admin_stats_entry.js";
 
 describe("Route modules extended coverage", () => {
     describe("public_core prefetch logic", () => {
@@ -131,85 +129,6 @@ describe("Route modules extended coverage", () => {
             document.dispatchEvent(event);
             // Prefetch should be triggered
             expect(true).toBe(true);
-        });
-    });
-
-    describe("admin_stats_entry fallback logic", () => {
-        let mockStimulus;
-        let mockDocElement;
-
-        beforeEach(() => {
-            mockDocElement = document.createElement("div");
-            mockDocElement.id = "stat-rows";
-            document.body.appendChild(mockDocElement);
-
-            // Mock console methods
-            jest.spyOn(console, "debug").mockImplementation(() => {});
-
-            mockStimulus = {
-                register: jest.fn(),
-                getControllerForElementAndIdentifier: jest.fn(),
-            };
-        });
-
-        afterEach(() => {
-            if (mockDocElement && mockDocElement.parentNode) {
-                mockDocElement.parentNode.removeChild(mockDocElement);
-            }
-            console.debug.mockRestore();
-        });
-
-        test("admin_stats_entry registers stat-multi-add controller", () => {
-            registerAdminStatsEntryControllers(mockStimulus);
-            expect(mockStimulus.register).toHaveBeenCalledWith(
-                "stat-multi-add",
-                expect.any(Function),
-            );
-        });
-
-        test("admin_stats_entry skips legacy when controller exists", () => {
-            mockStimulus.getControllerForElementAndIdentifier.mockReturnValue({
-                id: "stat-multi-add",
-            });
-
-            registerAdminStatsEntryControllers(mockStimulus);
-
-            expect(
-                mockStimulus.getControllerForElementAndIdentifier,
-            ).toHaveBeenCalled();
-        });
-
-        test("admin_stats_entry handles missing container gracefully", () => {
-            // Remove the container
-            mockDocElement.remove();
-
-            mockStimulus.getControllerForElementAndIdentifier.mockReturnValue(
-                null,
-            );
-
-            // Should not throw
-            registerAdminStatsEntryControllers(mockStimulus);
-            expect(true).toBe(true);
-        });
-
-        test("admin_stats_entry handles missing getControllerForElementAndIdentifier", () => {
-            delete mockStimulus.getControllerForElementAndIdentifier;
-
-            // Should not throw - should fall back to running legacy
-            registerAdminStatsEntryControllers(mockStimulus);
-            expect(true).toBe(true);
-        });
-
-        test("admin_stats_entry handles getControllerForElementAndIdentifier exception", () => {
-            mockStimulus.getControllerForElementAndIdentifier.mockImplementation(
-                () => {
-                    throw new Error("Controller lookup failed");
-                },
-            );
-
-            // Should handle error gracefully
-            registerAdminStatsEntryControllers(mockStimulus);
-            expect(console.debug).toHaveBeenCalled();
         });
     });
 });

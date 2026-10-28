@@ -9,11 +9,12 @@ use App\Service\ImagesAdminService;
 use App\Service\ImageStorageService;
 use App\Service\ImageUrlService;
 use App\Service\PersonService;
-use App\Service\TaggingService;
+use App\Service\TaggingServiceFactory;
 use App\Service\TeamSeasonRosterService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Log\Log;
-use Cake\Utility\Text;
 use Laminas\Diactoros\UploadedFile;
 use Psr\Http\Message\UploadedFileInterface;
 use Throwable;
@@ -43,6 +44,52 @@ class ImagesController extends AppController
      */
     private ImagesAdminService $imagesAdminService;
 
+    private ImageBrowseService $imageBrowseService;
+
+    private ImageStorageService $imageStorageService;
+
+    private ImageUrlService $imageUrlService;
+
+    private PersonService $personService;
+
+    private TeamSeasonRosterService $teamSeasonRosterService;
+
+    private TaggingServiceFactory $taggingServiceFactory;
+
+    /**
+     * Create the controller with its image administration services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\ImagesAdminService $imagesAdminService The image administration service.
+     * @param \App\Service\ImageBrowseService $imageBrowseService The image browsing service.
+     * @param \App\Service\ImageStorageService $imageStorageService The image storage service.
+     * @param \App\Service\ImageUrlService $imageUrlService The image URL service.
+     * @param \App\Service\PersonService $personService The person service.
+     * @param \App\Service\TeamSeasonRosterService $teamSeasonRosterService The roster service.
+     * @param \App\Service\TaggingServiceFactory $taggingServiceFactory The tagging service factory.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        ImagesAdminService $imagesAdminService,
+        ImageBrowseService $imageBrowseService,
+        ImageStorageService $imageStorageService,
+        ImageUrlService $imageUrlService,
+        PersonService $personService,
+        TeamSeasonRosterService $teamSeasonRosterService,
+        TaggingServiceFactory $taggingServiceFactory,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->imagesAdminService = $imagesAdminService;
+        $this->imageBrowseService = $imageBrowseService;
+        $this->imageStorageService = $imageStorageService;
+        $this->imageUrlService = $imageUrlService;
+        $this->personService = $personService;
+        $this->teamSeasonRosterService = $teamSeasonRosterService;
+        $this->taggingServiceFactory = $taggingServiceFactory;
+    }
+
     /**
      * Controller initialization: unlock actions from FormProtection when the UI
      * uses custom (non-FormHelper) fields.
@@ -50,7 +97,6 @@ class ImagesController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->imagesAdminService = new ImagesAdminService();
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');
             $unlockedActions = [
@@ -92,11 +138,10 @@ class ImagesController extends AppController
                 return $this->json(['success' => false, 'error' => 'No file uploaded']);
             }
 
-            $tagging = TaggingService::forImages();
+            $tagging = $this->taggingServiceFactory->forImages();
             $tags = $tagging->parseTagsFromRequest($this->getRequest());
             $manipulations = $this->collectManipulations();
 
-            $storage = new ImageStorageService(null, $tagging);
             $ownerId = null;
             if ($this->components()->has('Authentication')) {
                 try {
@@ -124,7 +169,7 @@ class ImagesController extends AppController
                 }
             }
 
-            $result = $storage->upload($file, $tags, $manipulations, $ownerId);
+            $result = $this->imageStorageService->upload($file, $tags, $manipulations, $ownerId);
 
             if (!empty($result['success'])) {
                 /** @var \App\Model\Entity\Image $image */
@@ -149,7 +194,9 @@ class ImagesController extends AppController
                 ]);
             }
 
-            $detail = $result['error'] ?? $storage->getLastError() ?? 'Unable to save image';
+            $detail = $result['error']
+                ?? $this->imageStorageService->getLastError()
+                ?? 'Unable to save image';
 
             return $this->json(['success' => false, 'error' => $detail]);
         } catch (Throwable $e) {
@@ -254,7 +301,7 @@ class ImagesController extends AppController
         $limit = $request->getQuery('limit');
         $search = $request->getQuery('q') ?? $request->getQuery('search');
 
-        $payload = (new ImageBrowseService())->browse(
+        $payload = $this->imageBrowseService->browse(
             is_string($tag) ? $tag : null,
             is_string($search) ? $search : null,
             $limit !== null ? (int)$limit : null,
@@ -312,9 +359,7 @@ class ImagesController extends AppController
             $contextInput = $request->getData('context') ?? [];
 
             // Collect common entity tags that will apply to all files
-            $commonEntityTags = $this->buildCommonEntityTags((array)$request->getData());
-
-            $storage = new ImageStorageService();
+            $commonEntityTags = $this->imagesAdminService->buildCommonEntityTags((array)$request->getData());
 
             $results = [];
             foreach ($files as $index => $file) {
@@ -340,7 +385,11 @@ class ImagesController extends AppController
                 }
 
                 // Merge per-file tags with common entity tags
-                $fileTags = $this->collectBulkTags($tagsInput, $contextInput, (string)$index);
+                $fileTags = $this->imagesAdminService->buildBulkUploadTags(
+                    $tagsInput,
+                    $contextInput,
+                    (string)$index,
+                );
                 $allTags = array_merge($commonEntityTags, $fileTags);
 
                 // Determine uploader id (owner) similarly to single upload
@@ -371,7 +420,7 @@ class ImagesController extends AppController
                     }
                 }
 
-                $result = $storage->upload($file, $allTags, [], $ownerId);
+                $result = $this->imageStorageService->upload($file, $allTags, [], $ownerId);
 
                 $results[] = [
                     'index' => $index,
@@ -726,8 +775,7 @@ class ImagesController extends AppController
             return $this->json(['success' => true, 'rosters' => []]);
         }
 
-        $service = new TeamSeasonRosterService();
-        $out = $service->getRostersForPersonLookup($personId, 200);
+        $out = $this->teamSeasonRosterService->getRostersForPersonLookup($personId, 200);
 
         return $this->json(['success' => true, 'rosters' => $out]);
     }
@@ -745,8 +793,7 @@ class ImagesController extends AppController
             return $this->json(['success' => true, 'persons' => []]);
         }
 
-        $service = new PersonService();
-        $out = $service->searchPersonsForImageTagging($q, 25);
+        $out = $this->personService->searchPersonsForImageTagging($q, 25);
 
         return $this->json(['success' => true, 'persons' => $out]);
     }
@@ -801,81 +848,6 @@ class ImagesController extends AppController
         $legacy = $this->getRequest()->getSession()->read('Auth');
 
         return is_array($legacy) && !empty($legacy['id']);
-    }
-
-    /**
-     * Backward-compatible helper used by legacy private-method tests.
-     *
-     * @param array $data
-     * @return array<int,array<string,string>|string>
-     */
-    public function buildCommonEntityTags(array $data): array
-    {
-        $service = $this->imagesAdminService ?? new ImagesAdminService();
-
-        return $service->buildCommonEntityTags($data);
-    }
-
-    /**
-     * Build tags for a bulk-uploaded file by index.
-     *
-     * @param array|string|null $tagsInput
-     * @param array|string|null $contextInput
-     * @param string $index
-     * @return array<int,string|array>
-     */
-    private function collectBulkTags(
-        array|string|null $tagsInput,
-        array|string|null $contextInput,
-        string $index,
-    ): array {
-        $tags = [];
-
-        $rawTags = null;
-        if (is_array($tagsInput)) {
-            if (array_key_exists($index, $tagsInput)) {
-                $rawTags = $tagsInput[$index];
-            } elseif (array_key_exists((int)$index, $tagsInput)) {
-                $rawTags = $tagsInput[(int)$index];
-            }
-        } elseif (is_string($tagsInput)) {
-            $rawTags = $tagsInput;
-        }
-
-        if (is_string($rawTags)) {
-            $tags = array_values(array_filter(array_map('trim', explode(',', $rawTags)), fn($t) => $t !== ''));
-        } elseif (is_array($rawTags)) {
-            $tags = array_values(array_filter(array_map(fn($t) => trim((string)$t), $rawTags), fn($t) => $t !== ''));
-        }
-
-        $contextValue = null;
-        if (is_array($contextInput)) {
-            if (array_key_exists($index, $contextInput)) {
-                $contextValue = $contextInput[$index];
-            } elseif (array_key_exists((int)$index, $contextInput)) {
-                $contextValue = $contextInput[(int)$index];
-            }
-        } elseif (is_string($contextInput)) {
-            $contextValue = $contextInput;
-        }
-
-        if (is_string($contextValue)) {
-            $contextValue = trim($contextValue);
-            if ($contextValue !== '') {
-                $slug = Text::slug($contextValue, '-');
-                $slug = strtolower($slug);
-                if ($slug === '') {
-                    $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $contextValue), '-'));
-                }
-
-                $tags[] = [
-                    'slug' => 'context-' . ($slug ?: 'context'),
-                    'name' => $contextValue,
-                ];
-            }
-        }
-
-        return $tags;
     }
 
     /**
@@ -968,7 +940,6 @@ class ImagesController extends AppController
      */
     private function serializeImage(Image $image): array
     {
-        $imageUrlService = new ImageUrlService($this->Images);
         $variants = [];
         $raw = $image->variants;
         if (is_string($raw)) {
@@ -977,9 +948,9 @@ class ImagesController extends AppController
         if (is_array($raw)) {
             $variants = $raw;
         }
-        $baseUrl = $imageUrlService->urlForImage($image);
-        $thumbnailUrl = $imageUrlService->urlForImage($image, ['variant' => 'thumb']);
-        $heroUrl = $imageUrlService->urlForImage($image, ['variant' => 'hero']);
+        $baseUrl = $this->imageUrlService->urlForImage($image);
+        $thumbnailUrl = $this->imageUrlService->urlForImage($image, ['variant' => 'thumb']);
+        $heroUrl = $this->imageUrlService->urlForImage($image, ['variant' => 'hero']);
         $directUrl = $baseUrl;
 
         return [

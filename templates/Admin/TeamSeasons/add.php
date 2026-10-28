@@ -1,4 +1,6 @@
 <?php
+use Cake\Core\Configure;
+
 /**
  * @var \App\View\AppView $this
  * @var mixed $seasonsList
@@ -8,7 +10,7 @@
  */
 
 $this->assign('title', 'Add Team Season'); ?>
-<div class="container py-4" data-controller="team-season-form" data-team-season-form-existing-image-id-value="" data-team-season-form-existing-preview-url-value="" data-team-season-form-upload-url-value="/admin/images/upload">
+<div class="container py-4" data-controller="team-season-form" data-action="turbo:before-cache@document->team-season-form#beforeCache turbo:before-render@document->team-season-form#beforeRender turbo:load@document->team-season-form#onTurboLoad admin:popup-option-added@document->team-season-form#popupOptionAdded" data-team-season-form-existing-image-id-value="" data-team-season-form-existing-preview-url-value="" data-team-season-form-csrf-token-value="<?= h((string)$this->request->getAttribute('csrfToken')) ?>" data-team-season-form-max-upload-bytes-value="<?= (int)Configure::read('Images.maxUploadBytes', 5242880) ?>" data-team-season-form-upload-url-value="/admin/images/upload">
     <div class="row mb-3">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -49,6 +51,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'required' => true,
                                     'id' => 'team-id',
+                                    'data-team-season-form-target' => 'teamSelect',
                                 ]) ?>
                             </div>
                             <button
@@ -76,6 +79,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'required' => true,
                                     'id' => 'season-id',
+                                    'data-team-season-form-target' => 'seasonSelect',
                                 ]) ?>
                             </div>
                             <button
@@ -207,11 +211,12 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'maxlength' => 162,
                                     'placeholder' => 'Numeric image id after upload',
                                     'data-team-season-form-target' => 'imageField',
+                                    'data-action' => 'change->team-season-form#handleImageFieldChange',
                                 ]) ?>
                             </div>
                             <div class="col-md-4">
                                 <button type="button" class="btn btn-secondary w-100"
-                                id="select-team-season-image" data-team-season-form-target="uploadButton">Select / Upload</button>
+                                id="select-team-season-image" data-team-season-form-target="uploadButton" data-action="click->team-season-form#handleUploadClick">Select / Upload</button>
                             </div>
                         </div>
                         <div id="team-season-image-preview" class="mt-2" style="display:none;" data-team-season-form-target="imagePreview">

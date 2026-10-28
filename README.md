@@ -79,6 +79,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Smart Game Forms** - Sport-aware dynamic forms with AJAX loading of period/official fields
 - **Business Rule Validation** - Games enforce season date ranges and future games can't have scores
 - **Multi-Sport Support** - Basketball (halves/quarters), Football, Baseball with configurable periods/officials
+- **Consistent Team and Opponent Names** - Shared display formatting across game, season, roster, statistics, and admin views; opponent abbreviations support up to 30 characters
 - **EAV Attribute System** - Flexible storage for sport-specific game data (period scores, officials, attendance)
 - **Cumulative Scoring** - Validates period totals match game totals for supported sports
 - **Basketball Statistics** - Comprehensive player, opponent, and team statistics tracking; game and season minutes are stored to two decimal places.
@@ -96,6 +97,7 @@ Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web
 - **Admin editor**: `/admin/blog-posts` with draft/publish workflow
 - **Rich editing**: TinyMCE integration with inline image uploads
 - **Tagging**: reuse the same tag infrastructure as images, with freeform tags and structured tags (team/team-season/game/site/opponent/sport/person/roster)
+- **Person biographies and stories**: Person pages separate published biography-tagged posts from other person-tagged stories; admins manage both through blog posts rather than a standalone biography field.
 
 ### Images
 
@@ -187,7 +189,7 @@ racerhistory/
 │   │   ├── Entity/         # Data entities
 │   │   └── Table/          # Database tables
 │   ├── Policy/             # Authorization policies
-│   ├── Service/            # Business logic layer (31 services)
+│   ├── Service/            # Business logic layer
 │   └── View/               # View layer components
 ├── templates/              # View templates
 │   ├── layout/             # Layout templates (default + admin)
@@ -195,7 +197,7 @@ racerhistory/
 │   ├── Admin/              # Admin interface views
 │   ├── Blog/               # Public blog views
 │   └── Games/, People/...  # Public domain views
-├── tests/                  # PHPUnit tests (1235 tests)
+├── tests/                  # PHPUnit test suite
 └── webroot/                # Public web assets
     ├── js/                 # JavaScript (ES modules + tests)
     └── css/                # Stylesheets
@@ -208,12 +210,13 @@ racerhistory/
 - **[Application Summary](APPLICATION_SUMMARY.md)** - What the app does and how modules fit together
 - **[Authorization Setup Guide](AUTHORIZATION_SETUP.md)** - Authentication/authorization design and policy patterns
 - **[Image Storage Guide](README_IMAGE_STORAGE.md)** - Image upload, variants, storage layout, tagging
+- **[Popup Form Component Guide](templates/POPUP_FORM_COMPONENT.md)** - Reusable popup form events and integration behavior
 - **[Templates Documentation](templates/README.md)** - Template structure and UI element conventions
 
 ### Testing & Quality
 
-- **PHP**: PHPUnit (1235 tests / 4056 assertions), PHPStan (0 errors), PHPCS (clean)
-- **JavaScript**: Jest (1578 tests across 159 suites; 88.37% statements, 80% branches, 87.37% functions), ESLint, Prettier
+- **PHP**: PHPUnit, PHPStan, PHPCS
+- **JavaScript**: Jest with coverage, ESLint, Prettier
 - **E2E**: Playwright coverage for Turbo/admin flows including sidebar group expansion behavior; resilient service worker tests with CI graceful handling
 - **Coverage Targets**: PHP 98%, JS 88% statements / 80% branches (enforced via Codecov)
 - VS Code tasks exist for common workflows (PHPUnit/PHPCS/PHPStan/Jest)
@@ -230,11 +233,14 @@ racerhistory/
 ### Run Test Suites
 
 ```bash
-# PHP tests (1235 tests, 4056 assertions)
+# PHP tests
 vendor/bin/phpunit
 
-# JavaScript tests with coverage (1578 tests, 159 suites)
+# JavaScript tests with coverage
 npm run test:js
+
+# JavaScript lint
+npm run lint:js
 
 # PHP coverage report (CI-style)
 vendor/bin/phpunit --configuration phpunit.ci.xml
@@ -298,7 +304,7 @@ vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 - **DataTables + extensions** - npm-managed public bundles for SearchBuilder, Scroller, Responsive, Buttons, and DateTime/Luxon integration
 - **Sport-Aware Forms**: `games_sport_dynamic.js`, `sport-aware-game-form.js` - Dynamic form fields based on sport configuration
 - **TinyMCE** - Rich text editor for blog posts and team season content
-- **Tests**: Jest + jsdom with 90%+ statement coverage
+- **Tests**: Jest + jsdom with coverage reporting
 
 ### Design Principles
 

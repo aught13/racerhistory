@@ -4,9 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Controller\AppController as BaseController;
-use App\Service\AdminDataScopeService;
 use Authorization\Exception\ForbiddenException;
-use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
 
@@ -20,11 +18,10 @@ use Cake\Http\Exception\NotFoundException;
  * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
+ * @property \App\Controller\Component\AdminDataScopeComponent $AdminDataScope
  */
 class AppController extends BaseController
 {
-    use ServiceAwareTrait;
-
     /**
      * Initialization hook method.
      */
@@ -35,6 +32,7 @@ class AppController extends BaseController
 
         // Load Authorization component
         $this->loadComponent('Authorization.Authorization');
+        $this->loadComponent('AdminDataScope');
     }
 
     /**
@@ -87,7 +85,7 @@ class AppController extends BaseController
         $controller = (string)$this->request->getParam('controller');
         if (
             str_starts_with($controller, 'StatBasket')
-            && !(new AdminDataScopeService())->canAccessStatAdminRequest(
+            && !$this->AdminDataScope->canAccessStatAdminRequest(
                 $identity,
                 $controller,
                 (string)$action,

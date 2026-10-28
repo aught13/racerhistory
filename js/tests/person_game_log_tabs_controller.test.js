@@ -2,6 +2,15 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../lib/person_game_log_tabs_runtime.js", () => ({
+    initPersonGameLogTablesRoot: jest.fn(),
+    initPersonGameLogTabsRoot: jest.fn(),
+}));
+
+import {
+    initPersonGameLogTablesRoot,
+    initPersonGameLogTabsRoot,
+} from "../lib/person_game_log_tabs_runtime.js";
 import PersonGameLogTabsController from "../controllers/person_game_log_tabs_controller.js";
 import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
 
@@ -9,6 +18,7 @@ describe("person-game-log-tabs controller", () => {
     let application;
 
     beforeEach(() => {
+        jest.clearAllMocks();
         document.body.innerHTML =
             '<div id="person-log-root" data-controller="person-game-log-tabs"></div>';
 
@@ -25,42 +35,22 @@ describe("person-game-log-tabs controller", () => {
             application = null;
         }
 
-        delete window.__PERSON_GAME_LOG_TABS_INIT__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
 
-    test("calls init override on connect", async () => {
-        const initMock = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register(
-            "person-game-log-tabs",
-            PersonGameLogTabsController,
-        );
-        await Promise.resolve();
+    test("initializes tabs and tables on connect", async () => {
         await publicDataTablesReady;
+        await Promise.resolve();
+        const root = document.getElementById("person-log-root");
 
-        expect(initMock).toHaveBeenCalledWith({
-            root: document.getElementById("person-log-root"),
-        });
+        expect(initPersonGameLogTabsRoot).toHaveBeenCalledWith(root);
+        expect(initPersonGameLogTablesRoot).toHaveBeenCalledWith(root);
     });
 
-    test("calls init override for turbo frame loads", async () => {
-        const initMock = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register(
-            "person-game-log-tabs",
-            PersonGameLogTabsController,
-        );
-        await Promise.resolve();
+    test("initializes tabs and tables for Turbo frame loads", async () => {
         await publicDataTablesReady;
-
+        await Promise.resolve();
         const frame = document.createElement("turbo-frame");
         document.body.appendChild(frame);
 
@@ -72,35 +62,23 @@ describe("person-game-log-tabs controller", () => {
         );
         await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledWith({ root: frame });
+        expect(initPersonGameLogTabsRoot).toHaveBeenLastCalledWith(frame);
+        expect(initPersonGameLogTablesRoot).toHaveBeenLastCalledWith(frame);
     });
 
-    test("ignores turbo:frame-load events with non-Element targets", async () => {
-        const initMock = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register(
-            "person-game-log-tabs",
-            PersonGameLogTabsController,
-        );
-        await Promise.resolve();
+    test("ignores Turbo frame loads with non-Element targets", async () => {
         await publicDataTablesReady;
-
-        const callsBefore = initMock.mock.calls.length;
-
-        // Dispatch event with a non-Element target
+        await Promise.resolve();
+        const callsBefore = initPersonGameLogTabsRoot.mock.calls.length;
         const event = new CustomEvent("turbo:frame-load", {
             bubbles: true,
             detail: {},
         });
         Object.defineProperty(event, "target", { value: "not-an-element" });
-        document.dispatchEvent(event);
 
+        document.dispatchEvent(event);
         await Promise.resolve();
 
-        // Init should not have been called for non-Element target
-        expect(initMock.mock.calls.length).toBe(callsBefore);
+        expect(initPersonGameLogTabsRoot).toHaveBeenCalledTimes(callsBefore);
     });
 });
