@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-4.1.1_3c9bb1f3e2038783b91e642cbd2d4eb789e4d8af-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.1.1_509fb7e231b538e465aec73ba84073ed63f953b3-blue.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
