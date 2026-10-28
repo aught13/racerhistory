@@ -1,25 +1,53 @@
 /* eslint-disable security/detect-object-injection */
 import { Controller } from "@hotwired/stimulus";
 
+import TagModalAdapter from "../lib/tag_modal_adapter.js";
+
 export default class extends Controller {
+    static targets = ["host", "badges", "hiddenInputs"];
+
     static values = {
         subject: String,
         subjectId: Number,
+        csrfToken: String,
     };
 
     connect() {
-        this.host = this.element.querySelector(".tag-modal-host");
+        this.isActive = true;
+        this.isCaching = false;
         this.modalEl = null;
         this.saveButton = null;
         this.handleSaveClick = (event) => this.save(event);
+        this.modalAdapter = new TagModalAdapter();
+        this.modalRequest = null;
+        this.saveRequest = null;
+        this.boundBeforeCache = () => this.beforeCache();
+        this.element.ownerDocument.addEventListener(
+            "turbo:before-cache",
+            this.boundBeforeCache,
+        );
     }
 
     disconnect() {
-        if (this.saveButton) {
-            this.saveButton.removeEventListener("click", this.handleSaveClick);
-            this.saveButton = null;
-        }
-        this.modalEl = null;
+        this.isActive = false;
+        this.element.ownerDocument.removeEventListener(
+            "turbo:before-cache",
+            this.boundBeforeCache,
+        );
+        this.prepareForNavigation();
+    }
+
+    beforeCache() {
+        this.prepareForNavigation();
+    }
+
+    prepareForNavigation() {
+        this.isCaching = true;
+        this.modalRequest?.abort();
+        this.modalRequest = null;
+        this.saveRequest?.abort();
+        this.saveRequest = null;
+        this.disposeDynamicModal();
     }
 
     get subject() {
@@ -55,28 +83,67 @@ export default class extends Controller {
     }
 
     async ensureModal() {
-        let modalEl = document.getElementById(this.modalId);
+        if (!this.isActive || this.isCaching) {
+            return null;
+        }
+
+        let modalEl =
+            this.modalEl ||
+            (this.hasHostTarget
+                ? this.hostTarget.querySelector(".modal")
+                : null);
 
         if (!modalEl) {
-            if (!this.host) {
+            if (!this.hasHostTarget) {
                 console.warn("No host element for tag modal");
 
                 return null;
             }
 
             const url = `/admin/tags/modal/${encodeURIComponent(this.subject)}/${encodeURIComponent(this.subjectId)}`;
-            const resp = await fetch(url, {
-                credentials: "same-origin",
-                headers: { "X-Requested-With": "XMLHttpRequest" },
-            });
-            if (!resp.ok) {
-                console.error("Failed to load tag modal", resp.status);
+            this.modalRequest?.abort();
+            const request = new AbortController();
+            this.modalRequest = request;
+            let html;
+            try {
+                const resp = await fetch(url, {
+                    credentials: "same-origin",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    signal: request.signal,
+                });
+                if (
+                    !this.isActive ||
+                    this.isCaching ||
+                    this.modalRequest !== request
+                ) {
+                    return null;
+                }
+                if (!resp.ok) {
+                    console.error("Failed to load tag modal", resp.status);
 
-                return null;
+                    return null;
+                }
+                html = await resp.text();
+                if (
+                    !this.isActive ||
+                    this.isCaching ||
+                    this.modalRequest !== request
+                ) {
+                    return null;
+                }
+            } catch (error) {
+                if (error?.name === "AbortError") {
+                    return null;
+                }
+                throw error;
+            } finally {
+                if (this.modalRequest === request) {
+                    this.modalRequest = null;
+                }
             }
 
-            this.host.innerHTML = await resp.text();
-            modalEl = this.host.querySelector(".modal");
+            this.hostTarget.innerHTML = html;
+            modalEl = this.hostTarget.querySelector(".modal");
             if (!modalEl) {
                 console.error("Tag modal markup missing .modal root");
 
@@ -84,8 +151,8 @@ export default class extends Controller {
             }
         }
 
-        if (modalEl.parentElement !== document.body) {
-            document.body.appendChild(modalEl);
+        if (modalEl.parentElement !== this.element.ownerDocument.body) {
+            this.element.ownerDocument.body.appendChild(modalEl);
         }
 
         this.modalEl = modalEl;
@@ -118,10 +185,11 @@ export default class extends Controller {
     async save(event) {
         event?.preventDefault();
 
-        const modalEl =
-            this.modalEl ||
-            event?.target?.closest?.(".modal") ||
-            document.getElementById(this.modalId);
+        if (!this.isActive || this.isCaching || this.saveRequest) {
+            return;
+        }
+
+        const modalEl = this.modalEl || event?.target?.closest?.(".modal");
         if (!modalEl) {
             return;
         }
@@ -146,12 +214,13 @@ export default class extends Controller {
             return;
         }
 
+        const request = new AbortController();
+        this.saveRequest = request;
+
         try {
-            const csrfMeta = document.querySelector('meta[name="csrfToken"]');
             const headers = {};
-            if (csrfMeta) {
-                headers["X-CSRF-Token"] =
-                    csrfMeta.getAttribute("content") || "";
+            if (this.hasCsrfTokenValue) {
+                headers["X-CSRF-Token"] = this.csrfTokenValue;
             }
 
             const resp = await fetch(action, {
@@ -159,14 +228,57 @@ export default class extends Controller {
                 body: formData,
                 credentials: "same-origin",
                 headers,
+                signal: request.signal,
             });
+            if (
+                !this.isActive ||
+                this.isCaching ||
+                this.saveRequest !== request
+            ) {
+                return;
+            }
             if (!resp.ok) {
-                console.error("Failed to apply tags", resp.status);
+                const responseBody = await resp.text();
+                if (
+                    !this.isActive ||
+                    this.isCaching ||
+                    this.saveRequest !== request
+                ) {
+                    return;
+                }
+                console.error(
+                    "Failed to apply tags",
+                    resp.status,
+                    responseBody,
+                );
+
+                const previousError = modalEl.querySelector(
+                    "[data-tag-modal-error]",
+                );
+                previousError?.remove();
+
+                const errorNotice =
+                    this.element.ownerDocument.createElement("div");
+                errorNotice.className = "alert alert-danger";
+                errorNotice.setAttribute("role", "alert");
+                errorNotice.dataset.tagModalError = "";
+                errorNotice.textContent = `Unable to save tags (HTTP ${resp.status}). Your changes are still in the form. Check the browser console for server details.`;
+                const errorContainer =
+                    modalEl.querySelector(".modal-body") ||
+                    modalEl.querySelector(".modal-content");
+                errorContainer?.prepend(errorNotice);
 
                 return;
             }
 
             const payload = await resp.json();
+            if (
+                !this.isActive ||
+                this.isCaching ||
+                this.saveRequest !== request
+            ) {
+                return;
+            }
             this.updateBadges(payload);
             this.updateHiddenInputs(payload);
 
@@ -175,89 +287,53 @@ export default class extends Controller {
             const evt = new window.CustomEvent("tags:updated", {
                 detail: payload,
             });
-            document.dispatchEvent(evt);
+            this.element.ownerDocument.dispatchEvent(evt);
         } catch (e) {
-            console.error("Error applying tags", e);
+            if (
+                e?.name !== "AbortError" &&
+                this.isActive &&
+                !this.isCaching &&
+                this.saveRequest === request
+            ) {
+                console.error("Error applying tags", e);
+            }
+        } finally {
+            if (this.saveRequest === request) {
+                this.saveRequest = null;
+            }
         }
     }
 
     showModal(modalEl) {
-        const bootstrapModal = window.bootstrap?.Modal;
-        if (bootstrapModal) {
-            bootstrapModal.getOrCreateInstance(modalEl).show();
-
-            return;
-        }
-
-        modalEl.classList.add("show");
-        modalEl.style.display = "block";
-        modalEl.removeAttribute("aria-hidden");
-        modalEl.setAttribute("aria-modal", "true");
-        document.body.classList.add("modal-open");
+        this.modalAdapter.show(modalEl);
     }
 
     hideModal(modalEl) {
-        const bootstrapModal = window.bootstrap?.Modal;
-        if (bootstrapModal) {
-            const instance = bootstrapModal.getInstance(modalEl);
-            if (instance) {
-                // Wait for Bootstrap's hidden event, then remove the modal
-                // from the DOM so it will be re-fetched and re-initialized
-                // the next time it is opened.
-                const onHidden = () => {
-                    modalEl.removeEventListener("hidden.bs.modal", onHidden);
-                    try {
-                        if (this.saveButton) {
-                            this.saveButton.removeEventListener(
-                                "click",
-                                this.handleSaveClick,
-                            );
-                        }
-                    } catch {
-                        // ignore
-                    }
-                    if (modalEl.parentElement) {
-                        modalEl.parentElement.removeChild(modalEl);
-                    }
-                    if (this.modalEl === modalEl) {
-                        this.modalEl = null;
-                    }
-                    this.saveButton = null;
-                };
+        this.modalAdapter.hide(modalEl, () =>
+            this.clearModalReference(modalEl),
+        );
+    }
 
-                modalEl.addEventListener("hidden.bs.modal", onHidden);
-                instance.hide();
-
-                return;
-            }
+    disposeDynamicModal() {
+        if (this.saveButton) {
+            this.saveButton.removeEventListener("click", this.handleSaveClick);
+            this.saveButton = null;
         }
-
-        // Non-Bootstrap fallback: hide and remove immediately so next open
-        // will fetch a fresh modal markup and re-run Stimulus connect.
-        modalEl.classList.remove("show");
-        modalEl.style.display = "none";
-        modalEl.setAttribute("aria-hidden", "true");
-        modalEl.removeAttribute("aria-modal");
-        document.body.classList.remove("modal-open");
-
-        try {
-            if (this.saveButton) {
-                this.saveButton.removeEventListener(
-                    "click",
-                    this.handleSaveClick,
-                );
-            }
-        } catch {
-            // ignore
+        if (this.modalEl) {
+            this.modalAdapter.dispose(this.modalEl);
+            this.modalEl = null;
         }
+        this.hasHostTarget && this.hostTarget.replaceChildren();
+    }
 
-        if (modalEl.parentElement) {
-            modalEl.parentElement.removeChild(modalEl);
+    clearModalReference(modalEl) {
+        if (this.saveButton) {
+            this.saveButton.removeEventListener("click", this.handleSaveClick);
+            this.saveButton = null;
         }
         if (this.modalEl === modalEl) {
             this.modalEl = null;
         }
-        this.saveButton = null;
     }
 
     buildFormDataFromFields(root) {
@@ -302,21 +378,23 @@ export default class extends Controller {
     }
 
     updateBadges(payload) {
-        const badgesEl = this.element.querySelector(".tag-badges");
-        if (!badgesEl || !payload || !Array.isArray(payload.tags)) {
+        if (!this.hasBadgesTarget || !payload || !Array.isArray(payload.tags)) {
             return;
         }
 
-        badgesEl.innerHTML = "";
+        const badgesEl = this.badgesTarget;
+        badgesEl.replaceChildren();
         if (payload.tags.length === 0) {
-            badgesEl.innerHTML =
-                '<span class="text-muted small">No tags</span>';
+            const empty = badgesEl.ownerDocument.createElement("span");
+            empty.className = "text-muted small";
+            empty.textContent = "No tags";
+            badgesEl.appendChild(empty);
 
             return;
         }
 
         payload.tags.forEach((tag) => {
-            const span = document.createElement("span");
+            const span = badgesEl.ownerDocument.createElement("span");
             span.className = "badge bg-secondary me-1 mb-1";
             span.textContent = tag.name || tag.slug || "";
             badgesEl.appendChild(span);
@@ -324,14 +402,12 @@ export default class extends Controller {
     }
 
     updateHiddenInputs(payload) {
-        const hiddenContainer = this.element.querySelector(
-            ".tag-modal-hidden-inputs",
-        );
-        if (!hiddenContainer) {
+        if (!this.hasHiddenInputsTarget) {
             return;
         }
 
-        hiddenContainer.innerHTML = "";
+        const hiddenContainer = this.hiddenInputsTarget;
+        hiddenContainer.replaceChildren();
         const formFields = (payload && payload.formFields) || {};
         const pushHidden = (name, value) => {
             if (value === null || value === undefined || value === "") {
@@ -340,7 +416,8 @@ export default class extends Controller {
 
             if (Array.isArray(value)) {
                 value.forEach((item) => {
-                    const input = document.createElement("input");
+                    const input =
+                        hiddenContainer.ownerDocument.createElement("input");
                     input.type = "hidden";
                     input.name = name.endsWith("[]") ? name : `${name}[]`;
                     input.value = String(item);
@@ -351,13 +428,15 @@ export default class extends Controller {
             }
 
             if (name === "tags") {
-                const tagInput = document.createElement("input");
+                const tagInput =
+                    hiddenContainer.ownerDocument.createElement("input");
                 tagInput.type = "hidden";
                 tagInput.name = "tags";
                 tagInput.value = String(value);
                 hiddenContainer.appendChild(tagInput);
 
-                const commonTagInput = document.createElement("input");
+                const commonTagInput =
+                    hiddenContainer.ownerDocument.createElement("input");
                 commonTagInput.type = "hidden";
                 commonTagInput.name = "common_tags";
                 commonTagInput.value = String(value);
@@ -366,7 +445,7 @@ export default class extends Controller {
                 return;
             }
 
-            const input = document.createElement("input");
+            const input = hiddenContainer.ownerDocument.createElement("input");
             input.type = "hidden";
             input.name = name;
             input.value = String(value);

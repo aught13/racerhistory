@@ -36,6 +36,9 @@ class GamesControllerTest extends TestCase
         'app.StatBasketGameTeam',
         'app.StatBasketGameOpponent',
         'app.StatBasketGameBox',
+        'app.Roles',
+        'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     /**
@@ -50,6 +53,101 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('data-controller="admin-games-index"');
         // DataTables replaces pagination
         $this->assertResponseContains('DataTables');
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $this->assertSame($team->getDisplayName(), $this->viewVariable('teamOptions')[1]);
+    }
+
+    /**
+     * Ensure the Games DataTables endpoint counts only games under the role grant.
+     */
+    public function testAjaxListFiltersGamesToRoleGrant(): void
+    {
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+
+        $game = $this->getTableLocator()->get('Games')->newEntity([
+            'team_season_id' => (int)$teamSeason->id,
+            'game_date' => '2024-01-15',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+        ]);
+        $this->getTableLocator()->get('Games')->saveOrFail($game);
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/games/ajax-list?draw=1&start=0&length=25');
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(1, $payload['recordsTotal']);
+        $this->assertSame(1, $payload['recordsFiltered']);
+        $this->assertCount(1, $payload['data']);
+    }
+
+    /**
+     * Ensure sport/team filters narrow both the Games page context and AJAX rows.
+     */
+    public function testGamesListFiltersBySportAndTeam(): void
+    {
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 1,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+        $this->getTableLocator()->get('Games')->saveOrFail(
+            $this->getTableLocator()->get('Games')->newEntity([
+                'team_season_id' => (int)$teamSeason->id,
+                'game_date' => '2024-01-15',
+                'game_type_id' => 1,
+                'opponent_id' => 1,
+                'place_id' => 1,
+                'site_id' => 1,
+                'hrn' => 1,
+            ]),
+        );
+        $this->mockIdentity();
+
+        $this->get('/admin/games?sport_key=football&team_id=3');
+
+        $this->assertResponseOk();
+        $this->assertSame('football', $this->viewVariable('currentSportKey'));
+        $this->assertSame(3, $this->viewVariable('currentTeamId'));
+        $this->assertResponseContains('games-filter-team');
+
+        $this->get('/admin/games/ajax-list?sport_key=football&team_id=3&draw=1&start=0&length=25');
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(1, $payload['recordsTotal']);
+        $this->assertSame(1, $payload['recordsFiltered']);
+    }
+
+    /**
+     * Ensure a guessed game ID outside the role grant is not exposed.
+     */
+    public function testViewRejectsGameOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/games/view/1');
+
+        $this->assertResponseCode(404);
     }
 
     /**
@@ -62,6 +160,27 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('Add Game');
         $this->assertResponseContains('data-controller="admin-game-form"');
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bname="opponent_abbr")(?=[^>]*\bmaxlength="30")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
+    }
+
+    /**
+     * Ensure the add form rejects an out-of-scope TeamSeason ID.
+     */
+    public function testAddGetRejectsTeamSeasonOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/games/add?team_season_id=1');
+
+        $this->assertResponseCode(404);
     }
 
     /**
@@ -172,6 +291,82 @@ class GamesControllerTest extends TestCase
             'action' => 'gameBox',
             '1',
         ]);
+    }
+
+    /**
+     * Period score validation failures return a Turbo-compatible response and retain entered totals.
+     */
+    public function testEditWithMismatchedPeriodTotalsReturnsValidationResponse(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/games/edit/1', [
+            'team_season_id' => 1,
+            'game_date' => '2024-01-15',
+            'hrn' => 1,
+            'periods' => 2,
+            'ot' => 0,
+            'pts_mur' => '80',
+            'pts_opp' => '68',
+            'period_1_team' => '35',
+            'period_1_opponent' => '30',
+            'period_2_team' => '40',
+            'period_2_opponent' => '38',
+        ]);
+
+        $this->assertResponseCode(422);
+        $this->assertResponseContains('Team period scores (75) must equal final team score (80)');
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bid="pts-mur")(?=[^>]*\bvalue="80")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
+        $this->assertMatchesRegularExpression(
+            '/<input\b(?=[^>]*\bid="pts-opp")(?=[^>]*\bvalue="68")[^>]*>/',
+            (string)$this->_response->getBody(),
+        );
+
+        $game = $this->getTableLocator()->get('Games')->get(1);
+        $this->assertSame('75', $game->pts_mur);
+        $this->assertSame('68', $game->pts_opp);
+    }
+
+    /**
+     * Uses the saved period count when editing results without a periods form field.
+     */
+    public function testEditWithFourPeriodsSavesAllPeriodScores(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $games = $this->getTableLocator()->get('Games');
+        $game = $games->get(1);
+        $game->periods = '4';
+        $games->saveOrFail($game);
+
+        $this->post('/admin/games/edit/1', [
+            'team_season_id' => 1,
+            'game_date' => '2024-01-15',
+            'hrn' => 1,
+            'pts_mur' => '96',
+            'pts_opp' => '88',
+            'period_1_team' => '22',
+            'period_1_opponent' => '18',
+            'period_2_team' => '19',
+            'period_2_opponent' => '17',
+            'period_3_team' => '17',
+            'period_3_opponent' => '23',
+            'period_4_team' => '38',
+            'period_4_opponent' => '30',
+        ]);
+
+        $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
+        $savedGame = $games->get(1);
+        $this->assertSame('96', $savedGame->pts_mur);
+        $this->assertSame('88', $savedGame->pts_opp);
+        $this->assertSame('4', $savedGame->periods);
     }
 
     /**
@@ -369,8 +564,7 @@ class GamesControllerTest extends TestCase
             'game_date' => '2024-01-15', // Valid date
             'hrn' => 999, // Invalid hrn value
         ]);
-        // Controller may re-render with errors or redirect
-        $this->assertTrue($this->_response->getStatusCode() >= 200);
+        $this->assertResponseCode(422);
     }
 
     /**
@@ -385,7 +579,7 @@ class GamesControllerTest extends TestCase
         $this->post('/admin/games/add?team_season_id=1', [
             // Missing required fields
         ]);
-        $this->assertResponseSuccess(); // Re-renders form with errors
+        $this->assertResponseCode(422);
     }
 
     /**
@@ -437,6 +631,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('id="add-game-type-modal"');
         $this->assertResponseContains('id="add-opponent-modal"');
+        $this->assertResponseContains('data-controller="opponent-name-preview"');
+        $this->assertResponseContains('data-opponent-name-preview-target="fullOpponentName"');
         $this->assertResponseContains('id="add-place-modal"');
         $this->assertResponseContains('id="add-site-modal"');
     }
@@ -478,6 +674,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('id="add-game-type-modal"');
         $this->assertResponseContains('id="add-opponent-modal"');
+        $this->assertResponseContains('data-controller="opponent-name-preview"');
+        $this->assertResponseContains('data-opponent-name-preview-target="fullOpponentName"');
         $this->assertResponseContains('id="add-place-modal"');
         $this->assertResponseContains('id="add-site-modal"');
         $this->assertResponseContains('id="add-opponent-place-modal"');
@@ -543,6 +741,23 @@ class GamesControllerTest extends TestCase
             'period_2_opponent' => '35',
         ]);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', 1]);
+    }
+
+    /**
+     * Replace contributor's unrestricted role scope with one team grant.
+     *
+     * @param int $teamId Team identifier.
+     * @return void
+     */
+    private function setContributorTeamGrant(int $teamId): void
+    {
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => $teamId,
+        ]));
     }
 
     /**

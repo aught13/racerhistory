@@ -14,7 +14,6 @@ use Cake\ORM\Entity;
  * @property string|null $full
  * @property string|null $display
  * @property string|null $person_image
- * @property string|null $bio
  * @property \Cake\I18n\Date|null $birth
  * @property \Cake\I18n\Date|null $death
  * @property int|null $birth_place_id

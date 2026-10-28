@@ -7,6 +7,12 @@ declare(strict_types=1);
  * @var array<string,array{can_create:bool,can_read:string,can_update:string,can_delete:string,custom_rules:array<string,mixed>}> $matrix
  * @var array<string,array<string,string>> $levelOptionsByModel
  * @var array<string,array{label:string,custom_rules:array<string,string>}> $modelDefinitions
+ * @var string $roleScopeMode
+ * @var array<int,string> $selectedSportKeys
+ * @var array<int,int> $selectedTeamIds
+ * @var array<string,string> $scopeSportOptions
+ * @var array<int,array{label:string,sportKey:string}> $scopeTeamOptions
+ * @var bool $roleIsGlobalAdmin
  */
 
 $this->assign('title', 'Edit Role Matrix');
@@ -26,7 +32,49 @@ $this->assign('title', 'Edit Role Matrix');
                     'url' => ['prefix' => 'Admin', 'controller' => 'Roles', 'action' => 'edit', $role->id],
                 ]);
                 $this->Form->unlockField('permissions');
+                $this->Form->unlockField('data_scope');
                 ?>
+
+            <section class="mb-4" aria-labelledby="role-data-scope-heading">
+                <h2 id="role-data-scope-heading" class="h5">Team-Owned Data Scope</h2>
+                <?php if ($roleIsGlobalAdmin) : ?>
+                    <div class="alert alert-info mb-0">The Admin role is globally unrestricted and cannot be limited by sport or team.</div>
+                <?php else : ?>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">Access scope</legend>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="data_scope[mode]" id="data-scope-all" value="all"<?= $roleScopeMode === 'all' ? ' checked' : '' ?>>
+                            <label class="form-check-label" for="data-scope-all">All sports and teams</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="data_scope[mode]" id="data-scope-selected" value="selected"<?= $roleScopeMode === 'selected' ? ' checked' : '' ?>>
+                            <label class="form-check-label" for="data-scope-selected">Selected sports and teams</label>
+                        </div>
+                        <div class="form-text">Choose all access or limit this role to the grants below. A selected scope with no grants denies team-owned records.</div>
+                    </fieldset>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="data-scope-sports">Allowed sports</label>
+                            <select class="form-select" id="data-scope-sports" name="data_scope[sport_keys][]" multiple size="5">
+                                <?php foreach ($scopeSportOptions as $sportKey => $sportName) : ?>
+                                    <option value="<?= h($sportKey) ?>"<?= in_array($sportKey, $selectedSportKeys, true) ? ' selected' : '' ?>><?= h($sportName) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Select a sport to grant access to every team and team season in that sport.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="data-scope-teams">Allowed teams</label>
+                            <select class="form-select" id="data-scope-teams" name="data_scope[team_ids][]" multiple size="5">
+                                <?php foreach ($scopeTeamOptions as $teamId => $teamOption) : ?>
+                                    <option value="<?= (int)$teamId ?>"<?= in_array((int)$teamId, $selectedTeamIds, true) ? ' selected' : '' ?>><?= h($teamOption['label']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Select individual teams for narrower access. Team-only grants do not allow creating additional teams.</div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </section>
 
             <div class="table-responsive">
                 <table class="table table-bordered align-middle">

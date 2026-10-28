@@ -78,6 +78,28 @@ class TagLookupsControllerTest extends TestCase
     }
 
     /**
+     * Opponent lookup labels use the default short-name and mascot display.
+     */
+    public function testOpponentLookupUsesDefaultDisplayName(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $this->mockIdentity();
+        $this->get('/admin/tag-lookups/opponents?q=Bruins');
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame('Belmont Bruins', $payload['opponents'][0]['label']);
+    }
+
+    /**
      * Tests games label uses hrn punctuation.
      */
     public function testGamesLabelUsesHrnPunctuation(): void
@@ -94,9 +116,11 @@ class TagLookupsControllerTest extends TestCase
         $this->assertIsArray($payload['games'] ?? null);
 
         $labels = array_map(fn($g) => (string)($g['label'] ?? ''), $payload['games']);
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $teamName = $team->getDisplayName();
 
-        $this->assertContains('Los Angeles Lakers Vs Belmont (2025-01-15) 75-68', $labels);
-        $this->assertContains('Los Angeles Lakers @ Belmont (2025-01-16) 60-61', $labels);
-        $this->assertContains('Los Angeles Lakers vs Belmont (2025-01-17) 80-70', $labels);
+        $this->assertContains($teamName . ' Vs Belmont (2025-01-15) 75-68', $labels);
+        $this->assertContains($teamName . ' @ Belmont (2025-01-16) 60-61', $labels);
+        $this->assertContains($teamName . ' vs Belmont (2025-01-17) 80-70', $labels);
     }
 }

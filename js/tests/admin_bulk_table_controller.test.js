@@ -9,6 +9,7 @@ describe("admin-bulk-table controller", () => {
     let dataTableApi;
     let dataTableFactory;
     let jQueryMock;
+    let confirmDeleteEvent;
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -19,7 +20,6 @@ describe("admin-bulk-table controller", () => {
                 data-admin-bulk-table-bulk-delete-url-value="/admin/seasons/bulk"
                 data-admin-bulk-table-item-type-value="seasons (bulk)"
                 data-admin-bulk-table-ids-name-value="season_ids[]"
-                data-admin-bulk-table-form-id-value="delete-form-seasons-bulk"
                 data-admin-bulk-table-name-column-value="4"
                 data-admin-bulk-table-order-column-value="1"
                 data-admin-bulk-table-order-direction-value="desc"
@@ -62,11 +62,12 @@ describe("admin-bulk-table controller", () => {
                     </tbody>
                 </table>
 
-                <form id="delete-form-seasons-bulk"></form>
+                <form id="delete-form-seasons-bulk" data-admin-bulk-table-target="deleteForm"></form>
             </div>
         `;
 
-        window.__rhStimulusShowConfirmDelete = jest.fn();
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
 
         dataTableApi = {
             destroy: jest.fn(),
@@ -99,7 +100,10 @@ describe("admin-bulk-table controller", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -138,13 +142,13 @@ describe("admin-bulk-table controller", () => {
                 new Event("submit", { bubbles: true, cancelable: true }),
             );
 
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledTimes(1);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
                 deleteUrl: "/admin/seasons/bulk",
                 itemType: "seasons (bulk)",
                 idsName: "season_ids[]",
-                formId: "delete-form-seasons-bulk",
+                sourceForm: document.getElementById("delete-form-seasons-bulk"),
                 bulkAction: "delete",
                 ids: ["10"],
                 associated: ["2023-2024"],
@@ -167,6 +171,7 @@ describe("admin-bulk-table controller branch coverage", () => {
     let jQueryMock;
     let pagination;
     let capturedOptions;
+    let confirmDeleteEvent;
 
     const startController = ({
         includeTable = true,
@@ -202,7 +207,6 @@ describe("admin-bulk-table controller branch coverage", () => {
                 data-admin-bulk-table-bulk-delete-url-value="/admin/seasons/bulk"
                 data-admin-bulk-table-item-type-value="seasons (bulk)"
                 data-admin-bulk-table-ids-name-value="season_ids[]"
-                data-admin-bulk-table-form-id-value="delete-form-seasons-bulk"
                 ${includeNameColumnValue ? 'data-admin-bulk-table-name-column-value="4"' : ""}
                 ${includeOrderColumnValue ? 'data-admin-bulk-table-order-column-value="1"' : ""}
                 ${includeOrderDirectionValue ? 'data-admin-bulk-table-order-direction-value="desc"' : ""}
@@ -243,9 +247,8 @@ describe("admin-bulk-table controller branch coverage", () => {
                         : ""
                 }
             </div>
+            </div>
         `;
-
-        window.__rhStimulusShowConfirmDelete = jest.fn();
 
         dataTableApi = {
             destroy: jest.fn(),
@@ -317,6 +320,8 @@ describe("admin-bulk-table controller branch coverage", () => {
     beforeEach(() => {
         jest.useFakeTimers();
         capturedOptions = null;
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
     });
 
     afterEach(() => {
@@ -328,7 +333,10 @@ describe("admin-bulk-table controller branch coverage", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -508,7 +516,7 @@ describe("admin-bulk-table controller branch coverage", () => {
         expect(() => noButtonController.updateBulkButtonState()).not.toThrow();
     });
 
-    test("onSubmit guards and extractRowName branches include helper availability and missing row/cell", async () => {
+    test("onSubmit guards and extractRowName branches include missing row/cell", async () => {
         const mounted = startController();
         jest.advanceTimersByTime(0);
         const controller = await mounted.getController();
@@ -516,25 +524,20 @@ describe("admin-bulk-table controller branch coverage", () => {
         const event = { preventDefault: jest.fn() };
         controller.actionSelectTarget.value = "";
         controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.actionSelectTarget.value = "archive";
         controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.actionSelectTarget.value = "delete";
         controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.rowCheckboxes()[0].checked = true;
-        const originalBridge = window.__rhStimulusShowConfirmDelete;
-        window.__rhStimulusShowConfirmDelete = undefined;
         controller.onSubmit(event);
-        expect(originalBridge).not.toHaveBeenCalled();
-
-        window.__rhStimulusShowConfirmDelete = jest.fn();
-        controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
                 ids: ["10"],
                 associated: ["2023-2024"],

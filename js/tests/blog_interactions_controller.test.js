@@ -2,6 +2,12 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../legacy/modules/blog-interactions.mjs", () => ({
+    __esModule: true,
+    default: jest.fn(),
+}));
+
+import initBlogInteractions from "../legacy/modules/blog-interactions.mjs";
 import BlogInteractionsController from "../controllers/blog_interactions_controller.js";
 
 describe("blog-interactions controller", () => {
@@ -12,7 +18,7 @@ describe("blog-interactions controller", () => {
             <turbo-frame id="blog" data-controller="blog-interactions"></turbo-frame>
         `;
 
-        window.__BLOG_INTERACTIONS_INIT__ = jest.fn();
+        jest.clearAllMocks();
 
         application = Application.start();
         application.register("blog-interactions", BlogInteractionsController);
@@ -24,7 +30,6 @@ describe("blog-interactions controller", () => {
             application = null;
         }
 
-        delete window.__BLOG_INTERACTIONS_INIT__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
@@ -33,7 +38,7 @@ describe("blog-interactions controller", () => {
         await Promise.resolve();
 
         const root = document.getElementById("blog");
-        expect(window.__BLOG_INTERACTIONS_INIT__).toHaveBeenCalledWith({
+        expect(initBlogInteractions).toHaveBeenCalledWith({
             root,
         });
     });

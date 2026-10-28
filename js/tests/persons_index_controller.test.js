@@ -10,6 +10,7 @@ describe("persons-index controller", () => {
     let dataTableApi;
     let dataTableFactory;
     let jQueryMock;
+    let confirmDeleteEvent;
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -42,7 +43,8 @@ describe("persons-index controller", () => {
             </div>
         `;
 
-        window.__rhStimulusShowConfirmDelete = jest.fn();
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
 
         drawMock = jest.fn();
         dataTableApi = {
@@ -78,7 +80,10 @@ describe("persons-index controller", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -131,14 +136,14 @@ describe("persons-index controller", () => {
 
         bulkButton.click();
 
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledTimes(1);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
                 deleteUrl: "/admin/persons/bulk-delete",
                 itemType: "persons (bulk)",
                 ids: JSON.stringify(["101"]),
                 idsName: "person_ids[]",
-                formId: "delete-form-persons-bulk",
+                sourceForm: document.getElementById("delete-form-persons-bulk"),
                 bulkAction: "delete",
             }),
         );
@@ -181,7 +186,7 @@ describe("persons-index controller", () => {
         expect(selectAll.checked).toBe(true);
     });
 
-    test("guards bulk delete when action, selection, or confirm helper are unavailable", () => {
+    test("guards bulk delete when action or selection is unavailable", () => {
         jest.advanceTimersByTime(0);
 
         const tableBody = document.querySelector("#persons-table tbody");
@@ -194,23 +199,21 @@ describe("persons-index controller", () => {
             '<tr><td><input type="checkbox" class="person-checkbox" value="101"></td></tr>';
 
         bulkButton.click();
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         tableBody.querySelector(".person-checkbox").checked = true;
         bulkButton.click();
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         actionSelect.value = "archive";
         actionSelect.dispatchEvent(new Event("change", { bubbles: true }));
         bulkButton.click();
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         actionSelect.value = "delete";
         actionSelect.dispatchEvent(new Event("change", { bubbles: true }));
-        delete window.__rhStimulusShowConfirmDelete;
-
         bulkButton.click();
-        expect(window.__rhStimulusShowConfirmDelete).toBeUndefined();
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
     });
 
     test("retries DataTables initialization and skips when table URL is missing", () => {
@@ -261,6 +264,7 @@ describe("persons-index controller branch coverage", () => {
     let dataTableApi;
     let dataTableFactory;
     let jQueryMock;
+    let confirmDeleteEvent;
 
     const startController = ({
         includeTable = true,
@@ -333,8 +337,6 @@ describe("persons-index controller branch coverage", () => {
             </div>
         `;
 
-        window.__rhStimulusShowConfirmDelete = jest.fn();
-
         drawMock = jest.fn();
         dataTableApi = {
             destroy: jest.fn(),
@@ -389,6 +391,8 @@ describe("persons-index controller branch coverage", () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
     });
 
     afterEach(() => {
@@ -400,7 +404,10 @@ describe("persons-index controller branch coverage", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -600,13 +607,13 @@ describe("persons-index controller branch coverage", () => {
         ).not.toThrow();
     });
 
-    test("bulk button guard paths and fallback formId branch", async () => {
+    test("bulk button guard paths and optional source-form handling", async () => {
         const mounted = startController({ includeBulkForm: false });
         jest.advanceTimersByTime(0);
         const controller = await mounted.getController();
 
         controller.onBulkButtonClick();
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         const checkboxes =
             controller.tableTarget.querySelectorAll(".person-checkbox");
@@ -614,19 +621,14 @@ describe("persons-index controller branch coverage", () => {
 
         controller.actionSelectTarget.value = "archive";
         controller.onBulkButtonClick();
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.actionSelectTarget.value = "delete";
-        const originalBridge = window.__rhStimulusShowConfirmDelete;
-        window.__rhStimulusShowConfirmDelete = undefined;
         controller.onBulkButtonClick();
-        expect(originalBridge).not.toHaveBeenCalled();
-
-        window.__rhStimulusShowConfirmDelete = jest.fn();
-        controller.onBulkButtonClick();
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
-                formId: "delete-form-persons-bulk",
+                sourceForm: null,
                 idsName: "person_ids[]",
                 bulkAction: "delete",
             }),

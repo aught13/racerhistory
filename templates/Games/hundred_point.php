@@ -13,7 +13,7 @@ $filterLabels = [
     'team' => 'Team 100+ (Pts For)',
     'opponent' => 'Opponent 100+ (Pts Against)',
 ];
-$ajaxUrl = $this->Url->build([
+$ajaxUrl = $this->PublicScope->url([
     'controller' => 'Games',
     'action' => 'hundredPoint',
     '?' => ['format' => 'json', 'filter' => $hundredPointFilter],
@@ -27,7 +27,7 @@ $ajaxUrl = $this->Url->build([
 
     <div class="btn-group mb-4" role="group" aria-label="100 point filter">
         <?php foreach ($filterLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build([
+            <a href="<?= $this->PublicScope->url([
                 'controller' => 'Games',
                 'action' => 'hundredPoint',
                 '?' => ['filter' => $key],

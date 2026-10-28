@@ -253,6 +253,9 @@ describe("admin-image-bulk-upload controller", () => {
         expect(modalFetchCount).toBe(1);
 
         const triggerRoot = document.querySelector(".tag-modal-trigger");
+        expect(
+            triggerRoot.querySelector('[data-tag-modal-target="host"]'),
+        ).not.toBeNull();
         const tagCtrl =
             (application.getControllerForElementAndIdentifier &&
                 application.getControllerForElementAndIdentifier(

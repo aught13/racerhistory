@@ -28,6 +28,10 @@ class RolesTable extends Table
             'foreignKey' => 'role_id',
             'dependent' => true,
         ]);
+        $this->hasMany('RoleDataScopes', [
+            'foreignKey' => 'role_id',
+            'dependent' => true,
+        ]);
         $this->hasMany('Users', [
             'foreignKey' => 'role_id',
         ]);

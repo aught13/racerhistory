@@ -34,7 +34,7 @@ describe("back-navigation controller", () => {
             </div>
         `;
 
-        delete window.__RH_NAVIGATE__;
+        delete window.Turbo;
         setReferrer("");
 
         application = Application.start();
@@ -47,7 +47,7 @@ describe("back-navigation controller", () => {
             application = null;
         }
 
-        delete window.__RH_NAVIGATE__;
+        delete window.Turbo;
         setReferrer("");
         document.body.innerHTML = "";
     });
@@ -86,7 +86,7 @@ describe("back-navigation controller", () => {
         const navigateSpy = jest.fn();
 
         setReferrer("http://localhost/admin/persons");
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         backButton.click();
 
@@ -98,7 +98,7 @@ describe("back-navigation controller", () => {
         const navigateSpy = jest.fn();
 
         setReferrer("");
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         backButton.click();
 
@@ -128,7 +128,7 @@ describe("back-navigation controller", () => {
         const navigateSpy = jest.fn();
 
         setReferrer("http://localhost/admin/persons");
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         backButton.click();
 

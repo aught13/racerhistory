@@ -48,7 +48,7 @@ describe("image-upload controller", () => {
         includeRotationAction = true,
     } = {}) {
         document.body.innerHTML = `
-            <div data-controller="image-upload">
+            <div data-controller="image-upload" data-action="turbo:before-cache@document->image-upload#beforeCache">
                 ${includeForm ? '<form id="uploadForm" action="/admin/images/upload" data-image-upload-target="form">' : '<div id="uploadForm">'}
                     ${includeFileInput ? `<input id="imageFile" type="file" data-image-upload-target="fileInput" ${includeFileInputChangeAction ? 'data-action="change->image-upload#handleFileChange"' : ""} />` : ""}
                     ${includeTags ? '<input id="tags" data-image-upload-target="tags" />' : ""}
@@ -310,6 +310,92 @@ describe("image-upload controller", () => {
         expect(document.getElementById("uploadStatus").textContent).toContain(
             "Image uploaded successfully",
         );
+    });
+
+    test("clears the redirect timer and resets the upload state before Turbo caches", async () => {
+        jest.useFakeTimers();
+
+        const fileInput = document.getElementById("imageFile");
+        const file = new window.File(["abc"], "photo.png", {
+            type: "image/png",
+        });
+        Object.defineProperty(fileInput, "files", {
+            value: [file],
+            configurable: true,
+        });
+
+        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        document
+            .getElementById("uploadForm")
+            .dispatchEvent(
+                new Event("submit", { bubbles: true, cancelable: true }),
+            );
+
+        await flushPromises();
+
+        expect(jest.getTimerCount()).toBe(1);
+        expect(
+            document
+                .getElementById("uploadStatus")
+                .classList.contains("d-none"),
+        ).toBe(false);
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(jest.getTimerCount()).toBe(0);
+        expect(fileInput.value).toBe("");
+        expect(
+            document
+                .getElementById("uploadStatus")
+                .classList.contains("d-none"),
+        ).toBe(true);
+        expect(
+            document
+                .getElementById("previewContainer")
+                .classList.contains("d-none"),
+        ).toBe(true);
+    });
+
+    test("aborts an in-flight upload when the controller disconnects", async () => {
+        let requestSignal;
+        globalThis.fetch.mockImplementation(
+            (_url, { signal }) =>
+                new Promise((_resolve, reject) => {
+                    requestSignal = signal;
+                    signal.addEventListener("abort", () => {
+                        reject(new DOMException("Aborted", "AbortError"));
+                    });
+                }),
+        );
+
+        const fileInput = document.getElementById("imageFile");
+        const file = new window.File(["abc"], "photo.png", {
+            type: "image/png",
+        });
+        Object.defineProperty(fileInput, "files", {
+            value: [file],
+            configurable: true,
+        });
+
+        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        document
+            .getElementById("uploadForm")
+            .dispatchEvent(
+                new Event("submit", { bubbles: true, cancelable: true }),
+            );
+        await Promise.resolve();
+
+        expect(requestSignal).toBeDefined();
+        expect(requestSignal.aborted).toBe(false);
+
+        const controller = await getController();
+        controller.disconnect();
+        await flushPromises();
+
+        expect(requestSignal.aborted).toBe(true);
+        expect(
+            document.getElementById("uploadStatus").textContent,
+        ).not.toContain("Upload error");
     });
 
     test("disconnect and no-target guards are safe", async () => {

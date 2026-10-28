@@ -3,13 +3,17 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
-use App\Service\TaggingService;
+use App\Service\TeamSeasonService;
+use App\Service\TeamSportContextService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 class TaggingServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     protected array $fixtures = [
         'app.Teams',
         'app.Sports',
@@ -35,7 +39,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataGeneratesFriendlyLabelsForImage(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -113,7 +117,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testParseTagsFromRequestAddsFriendlyTeamSeasonLabel(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -146,7 +150,151 @@ class TaggingServiceTest extends TestCase
         $tsTag = $tagsTable->find()->where(['slug' => 'teamseason-1'])->first();
 
         $this->assertNotNull($tsTag);
-        $this->assertStringContainsString("Men's Basketball", (string)$tsTag->name);
+        $this->assertSame((new TeamSeasonService())->getDisplayLabel(1), (string)$tsTag->name);
+    }
+
+    /**
+     * Team tags use the canonical default display name.
+     */
+    public function testBuildTagsFromDataUsesTeamDisplayName(): void
+    {
+        $team = TableRegistry::getTableLocator()->get('Teams')->get(1);
+        $tags = $this->imageTaggingService()->buildTagsFromData(['team_select' => 1]);
+
+        $this->assertSame([
+            ['slug' => 'team-1', 'name' => $team->getDisplayName()],
+        ], $tags);
+    }
+
+    /**
+     * Sport tag names resolve from configuration instead of the legacy Sports table.
+     */
+    public function testBuildTagsFromDataUsesConfiguredSportName(): void
+    {
+        $sportOptions = (new TeamSportContextService())->getLegacySportOptions();
+        $sportId = (int)array_search('Basketball', $sportOptions, true);
+        $this->assertGreaterThan(0, $sportId);
+
+        $tags = $this->blogPostTaggingService()->buildTagsFromData(['sport_select' => $sportId]);
+
+        $this->assertSame([
+            ['slug' => 'sport-' . $sportId, 'name' => 'Basketball'],
+        ], $tags);
+    }
+
+    /**
+     * Blog-post preset tags use their canonical slugs and display names.
+     */
+    public function testBuildTagsFromDataAddsCanonicalBlogPostPresetTags(): void
+    {
+        $tags = $this->blogPostTaggingService()->buildTagsFromData([
+            'preset_tags' => ['bio', 'preview', 'recap', 'unknown'],
+        ]);
+
+        $this->assertSame([
+            ['slug' => 'bio', 'name' => 'Bio'],
+            ['slug' => 'preview', 'name' => 'Preview'],
+            ['slug' => 'recap', 'name' => 'Recap'],
+        ], $tags);
+    }
+
+    /**
+     * Preset tags are only accepted in the blog-post tagging context.
+     */
+    public function testBuildTagsFromDataIgnoresBlogPostPresetsForImages(): void
+    {
+        $tags = $this->imageTaggingService()->buildTagsFromData([
+            'preset_tags' => ['bio'],
+        ]);
+
+        $this->assertSame([], $tags);
+    }
+
+    /**
+     * A preset selected with a matching freeform tag is applied only once.
+     */
+    public function testBuildTagsFromDataDeduplicatesPresetFromFreeformTags(): void
+    {
+        $tags = $this->blogPostTaggingService()->buildTagsFromData([
+            'tags' => 'bio',
+            'preset_tags' => ['bio'],
+        ]);
+
+        $this->assertSame([
+            ['slug' => 'bio', 'name' => 'Bio'],
+        ], $tags);
+    }
+
+    /**
+     * Saving a preset canonicalizes a legacy case-variant tag slug.
+     */
+    public function testApplyFromDataCanonicalizesLegacyPresetTagSlug(): void
+    {
+        $service = $this->blogPostTaggingService();
+        $service->replaceTags(1, [
+            ['slug' => 'Bio', 'name' => 'Bio'],
+        ]);
+
+        $service->applyFromData(1, ['preset_tags' => ['bio']]);
+        $post = TableRegistry::getTableLocator()->get('BlogPosts')->get(
+            1,
+            contain: ['BlogTags'],
+        );
+        $slugs = array_map(
+            static fn($tag): string => (string)$tag->slug,
+            $post->blog_tags,
+        );
+
+        $this->assertSame(['bio'], $slugs);
+    }
+
+    /**
+     * Applying an empty tag selection clears existing tags on an existing subject.
+     */
+    public function testApplyFromDataClearsExistingTagsWhenSelectionIsEmpty(): void
+    {
+        $service = $this->blogPostTaggingService();
+        $service->replaceTags(1, ['bio']);
+
+        $this->assertSame([], $service->applyFromData(1, [
+            'tags' => '',
+            'preset_tags' => [],
+        ]));
+        $this->assertSame(
+            0,
+            TableRegistry::getTableLocator()->get('BlogPostsBlogTags')
+                ->find()
+                ->where(['blog_post_id' => 1])
+                ->count(),
+        );
+    }
+
+    /**
+     * Empty tag data remains a no-op when no subject has been created yet.
+     */
+    public function testApplyFromDataWithNoSubjectAndNoTagsIsNoop(): void
+    {
+        $this->assertSame([], $this->blogPostTaggingService()->applyFromData(0, []));
+    }
+
+    /**
+     * Opponent tags use the canonical default display name.
+     */
+    public function testBuildTagsFromDataUsesOpponentDisplayName(): void
+    {
+        $opponents = TableRegistry::getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $tags = $this->imageTaggingService()->buildTagsFromData(['opponent_select' => 1]);
+
+        $this->assertSame([
+            ['slug' => 'opponent-1', 'name' => 'BEL Bruins'],
+        ], $tags);
     }
 
     /**
@@ -154,7 +302,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testReplaceTagsForBlogPostCreatesLinkage(): void
     {
-        $service = TaggingService::forBlogPosts();
+        $service = $this->blogPostTaggingService();
         $service->replaceTags(1, ['team-1']);
 
         $tagsTable = TableRegistry::getTableLocator()->get('BlogTags');
@@ -171,7 +319,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataAllowsMultiplePersonsWhenNoRosterSelected(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -207,7 +355,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataIgnoresMultiplePersonsWhenRosterSelected(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -243,7 +391,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testApplyFromDataGeneratesFriendlyGameLabel(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
         $images = TableRegistry::getTableLocator()->get('Images');
 
         $image = $images->newEntity([
@@ -281,7 +429,7 @@ class TaggingServiceTest extends TestCase
      */
     public function testParseTagsFromRequestAddsFriendlyGameLabel(): void
     {
-        $service = TaggingService::forImages();
+        $service = $this->imageTaggingService();
 
         $request = new ServerRequest([
             'post' => [

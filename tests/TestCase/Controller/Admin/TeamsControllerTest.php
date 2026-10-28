@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller\Admin;
 
+use App\Service\RbacPermissionService;
 use App\Test\TestCase\Support\AuthTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -31,6 +32,9 @@ class TeamsControllerTest extends TestCase
         'app.Teams',
         'app.Sports',
         'app.Users',
+        'app.Roles',
+        'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     /**
@@ -43,6 +47,8 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams');
         $this->assertResponseOk();
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $this->assertResponseContains(h($team->getDisplayName()));
         $this->assertResponseContains('data-controller="admin-bulk-table"');
         $this->assertResponseContains('data-admin-bulk-table-target="bulkForm"');
         $this->assertResponseContains('data-admin-bulk-table-target="table"');
@@ -70,6 +76,14 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams/view/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('Display Previews');
+        $this->assertResponseContains('Full Team Name');
+        $this->assertResponseContains('Team Name (default)');
+        $this->assertResponseContains('Team:');
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+        $this->assertResponseContains(h($team->getFullTeamDisplayName()));
+        $this->assertResponseContains(h($team->getDisplayName()));
+        $this->assertResponseContains(h($team->getTeamDisplayName()));
     }
 
     /**
@@ -85,6 +99,58 @@ class TeamsControllerTest extends TestCase
     }
 
     /**
+     * Ensure scoped team lists contain only teams granted to the role.
+     */
+    public function testIndexFiltersTeamsToRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(1);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/teams');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Los Angeles Lakers');
+        $this->assertResponseNotContains('Boston Celtics');
+        $this->assertResponseNotContains('New York Giants');
+    }
+
+    /**
+     * Ensure the admin Teams list filters by sport while retaining the standard page shell.
+     */
+    public function testIndexFiltersBySport(): void
+    {
+        $this->mockIdentity();
+        $this->get('/admin/teams?sport_key=football');
+
+        $this->assertResponseOk();
+        $teams = $this->viewVariable('teams')->toArray();
+        $this->assertCount(1, $teams);
+        $this->assertSame('football', $teams[0]->sport_key);
+        $this->assertResponseContains('teams-filter-sport');
+    }
+
+    /**
+     * Ensure a guessed team id outside the role grant returns not found.
+     */
+    public function testViewRejectsTeamOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(1);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/teams/view/3');
+
+        $this->assertResponseCode(404);
+    }
+
+    /**
      * Test add method GET
      *
      * @return void
@@ -95,6 +161,10 @@ class TeamsControllerTest extends TestCase
         $this->get('/admin/teams/add');
         $this->assertResponseOk();
         $this->assertResponseContains('Select the sport for this team.');
+        $this->assertResponseContains('data-controller="team-name-preview"');
+        $this->assertResponseContains('data-team-name-preview-target="fullTeamName"');
+        $this->assertResponseContains('data-team-name-preview-target="defaultTeamName"');
+        $this->assertResponseContains('data-team-name-preview-target="team"');
         $this->assertResponseNotContains('add-sport-modal');
         $this->assertResponseContains('_Token');
     }
@@ -123,6 +193,68 @@ class TeamsControllerTest extends TestCase
         $this->post('/admin/teams/add', $data);
         $this->assertRedirect(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']);
         $this->assertFlashMessage('The team has been saved.');
+    }
+
+    /**
+     * Popup team creation returns the default composed label for its new option.
+     */
+    public function testAjaxAddReturnsDefaultTeamDisplay(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/teams/ajax-add', [
+            'sport_key' => 'basketball',
+            'team_description' => 'Murray State',
+            'team_name' => 'Basketball',
+            'abbr' => 'WBB',
+            'team_nickname' => 'Racers',
+            'team_scorebug' => 'MUR',
+            'gender' => 'F',
+        ]);
+
+        $this->assertResponseOk();
+        $response = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($response);
+        $this->assertTrue($response['success']);
+        $this->assertSame("Racers Women's Basketball", $response['newOption']['text']);
+    }
+
+    /**
+     * Ensure a team-only grant cannot create another team in that sport.
+     */
+    public function testAddPostRejectsSportOutsideCreationGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $permissions = $this->getTableLocator()->get('Permissions');
+        $teamPermission = $permissions->find()
+            ->where(['role_id' => 4, 'model_name' => 'Teams'])
+            ->firstOrFail();
+        $teamPermission->can_create = true;
+        $permissions->saveOrFail($teamPermission);
+        (new RbacPermissionService())->clearRoleCache(4);
+
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/teams/add', [
+            'sport_key' => 'basketball',
+            'team_name' => 'New Basketball Team',
+            'abbr' => 'NBT',
+            'team_nickname' => 'Test',
+            'team_scorebug' => 'NBT',
+            'gender' => 'M',
+        ]);
+
+        $this->assertResponseOk();
+        $this->assertSame(3, $this->getTableLocator()->get('Teams')->find()->count());
+        $this->assertResponseContains('The team could not be saved.');
     }
 
     /**
@@ -174,6 +306,8 @@ class TeamsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/teams/edit/1');
         $this->assertResponseOk();
+        $this->assertResponseContains('data-controller="team-name-preview"');
+        $this->assertResponseContains('Display Previews');
     }
 
     /**
@@ -400,5 +534,22 @@ class TeamsControllerTest extends TestCase
         $this->get('/admin/teams/edit/1');
         $this->assertResponseOk();
         $this->assertResponseContains('<turbo-frame id="admin-content"');
+    }
+
+    /**
+     * Replace the contributor role's default all-access row with one team grant.
+     *
+     * @param int $teamId Team identifier.
+     * @return void
+     */
+    private function setContributorTeamGrant(int $teamId): void
+    {
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => $teamId,
+        ]));
     }
 }

@@ -64,7 +64,7 @@ class PagesControllerTest extends TestCase
         $this->assertResponseContains('ad technology partners');
         $this->assertResponseContains('cc_cookie');
         $this->assertResponseContains('Manage privacy choices');
-        $this->assertResponseContains('href="/privacy"');
+        $this->assertResponseContains('href="/privacy?sport=all&amp;team=all"');
     }
 
     /**

@@ -33,11 +33,11 @@ $this->assign('title', 'Game Box Scores');
         <i class="bi bi-info-circle"></i>
         <strong>Game:</strong>
         <?php if ($game->team_season && $game->team_season->team) : ?>
-            <?= h($game->team_season->team->team_name) ?>
+            <?= h($game->team_season->team->team_nickname ?? $game->team_season->team->getDisplayName()) ?>
         <?php endif; ?>
         vs
         <?php if ($game->opponent) : ?>
-            <?= h($game->opponent->opponent_name) ?>
+            <?= h($game->opponent->getMascotDisplayName()) ?>
         <?php endif; ?>
         on <?= h($game->game_date ? $game->game_date->format('M j, Y') : 'N/A') ?>
     </div>

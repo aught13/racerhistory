@@ -40,11 +40,11 @@ class OpponentService
             return 'Opponent #' . $opponentId;
         }
 
-        return $opponent->opponent_name ?? 'Opponent #' . $opponentId;
+        return $opponent->getDisplayName();
     }
 
     /**
-     * Search opponents by name or short name.
+     * Search opponents by name, short name, or mascot.
      *
      * @param string $query Search query
      * @param int $limit Result limit
@@ -58,13 +58,16 @@ class OpponentService
             return [];
         }
 
+        $searchFields = [
+            'Opponents.opponent_name LIKE' => "%{$query}%",
+            'Opponents.opponent_short LIKE' => "%{$query}%",
+        ];
+        if ($opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $searchFields['Opponents.opponent_mascot LIKE'] = "%{$query}%";
+        }
+
         return $opponents->find()
-            ->where([
-                'OR' => [
-                    'Opponents.opponent_name LIKE' => "%{$query}%",
-                    'Opponents.opponent_short LIKE' => "%{$query}%",
-                ],
-            ])
+            ->where(['OR' => $searchFields])
             ->orderBy(['Opponents.opponent_name' => 'ASC'])
             ->limit($limit)
             ->all()
@@ -148,7 +151,7 @@ class OpponentService
             }
             $results[] = [
                 'id' => $opponent->id,
-                'label' => $opponent->opponent_name,
+                'label' => $opponent->getDisplayName(),
             ];
         }
 
@@ -175,7 +178,7 @@ class OpponentService
             if (!($opponent instanceof Opponent)) {
                 continue;
             }
-            $list[(int)$opponent->id] = (string)($opponent->opponent_name ?? '');
+            $list[(int)$opponent->id] = $opponent->getDisplayName();
         }
 
         return $list;

@@ -3,14 +3,18 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Table\ImagesTable;
 use App\Service\ImageProcessor;
 use App\Service\ImageStorageService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use Laminas\Diactoros\UploadedFile;
 
 class ImageStorageServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     /**
      * @var array<int,string>
      */
@@ -30,7 +34,7 @@ class ImageStorageServiceTest extends TestCase
         $this->legacyRoot = rtrim((string)Configure::read('Images.legacyStorageRoot'), DS) . DS;
         $this->clearDir($this->storageRoot);
         $this->clearDir($this->legacyRoot);
-        $this->service = new ImageStorageService();
+        $this->service = $this->createStorageService(new ImageProcessor());
     }
 
     /**
@@ -42,6 +46,20 @@ class ImageStorageServiceTest extends TestCase
         $this->clearDir($this->legacyRoot);
 
         parent::tearDown();
+    }
+
+    /**
+     * Create the storage service with a test-backed images table.
+     *
+     * @param \App\Service\ImageProcessor $processor The image processor.
+     * @return \App\Service\ImageStorageService
+     */
+    private function createStorageService(ImageProcessor $processor): ImageStorageService
+    {
+        $imagesTable = $this->getTableLocator()->get('Images');
+        assert($imagesTable instanceof ImagesTable);
+
+        return new ImageStorageService($processor, $this->taggingServiceFactory(), $imagesTable);
     }
 
     /**
@@ -184,7 +202,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),
@@ -294,7 +312,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),
@@ -392,7 +410,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),
@@ -494,7 +512,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),

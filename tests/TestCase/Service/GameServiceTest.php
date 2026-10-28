@@ -61,6 +61,16 @@ class GameServiceTest extends TestCase
         $this->assertArrayHasKey('game_date', $first);
         $this->assertArrayHasKey('hrn', $first);
         $this->assertArrayHasKey('score', $first);
+        $game = $this->fetchTable('Games')->find()
+            ->contain(['TeamSeason' => ['Teams', 'Seasons'], 'Opponents'])
+            ->orderByDesc('Games.game_date')
+            ->first();
+        $this->assertNotNull($game);
+        $this->assertStringStartsWith(
+            $game->team_season->team->getDisplayName(),
+            (string)$first['team_season'],
+        );
+        $this->assertSame($game->opponent->getDisplayName(), $first['opponent']);
     }
 
     /**
@@ -79,6 +89,29 @@ class GameServiceTest extends TestCase
         $this->assertSame(1, $result['recordsFiltered']);
         $this->assertCount(1, $result['data']);
         $this->assertSame('2025-01-16', $result['data'][0]['game_date']);
+    }
+
+    /**
+     * Global game search matches opponent mascots used in default labels.
+     */
+    public function testBuildGamesDataTableSearchesOpponentMascot(): void
+    {
+        $opponents = $this->fetchTable('Opponents');
+        $opponent = $opponents->get(1);
+        $opponent->opponent_mascot = 'Bruins';
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponents->saveOrFail($opponent);
+
+        $result = $this->service->buildGamesDataTable([
+            'start' => 0,
+            'length' => 25,
+            'searchValue' => 'Bruins',
+        ]);
+
+        $this->assertSame(3, $result['recordsFiltered']);
+        $this->assertStringContainsString('Bruins', $result['data'][0]['opponent']);
     }
 
     /**
@@ -209,14 +242,32 @@ class GameServiceTest extends TestCase
      */
     public function testSearchGamesForSelectUsesHrnPunctuation(): void
     {
+        $opponents = $this->fetchTable('Opponents');
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        $hasMascotColumn = $opponents->getSchema()->hasColumn('opponent_mascot');
+        if ($hasMascotColumn) {
+            $opponent->opponent_mascot = 'Bruins';
+        }
+        $opponents->saveOrFail($opponent);
+        $expectedOpponentName = $opponents->get(1)->getDisplayName();
+
         $results = $this->service->searchGamesForSelect('Belmont', 1, 25);
         $this->assertIsArray($results);
         $this->assertNotEmpty($results);
 
         $labels = array_map(fn($g) => (string)($g['label'] ?? ''), $results);
+        $team = $this->fetchTable('Teams')->get(1);
+        $this->assertNotNull($results[0]['id']);
 
-        $this->assertContains('Los Angeles Lakers Vs Belmont (2025-01-15) 80-70', $labels);
-        $this->assertContains('Los Angeles Lakers vs Belmont (2025-01-16) 65-72', $labels);
+        $this->assertContains($team->getDisplayName() . ' Vs ' . $expectedOpponentName . ' (2025-01-15) 80-70', $labels);
+        $this->assertContains($team->getDisplayName() . ' vs ' . $expectedOpponentName . ' (2025-01-16) 65-72', $labels);
+
+        if ($hasMascotColumn) {
+            $mascotResults = $this->service->searchGamesForSelect('Bruins', 1, 25);
+            $this->assertNotEmpty($mascotResults);
+            $this->assertStringContainsString('Belmont Bruins', $mascotResults[0]['label']);
+        }
     }
 
     /**
@@ -336,6 +387,15 @@ class GameServiceTest extends TestCase
         $results = $this->service->getRecentGamesForSelect(2);
 
         $this->assertCount(2, $results);
+        $game = $this->service->getGameWithAssociations((int)$results[0]['id']);
+        $this->assertStringContainsString(
+            $game->team_season->team->getDisplayName(),
+            $results[0]['label'],
+        );
+        $this->assertStringContainsString(
+            $game->opponent->getDisplayName(),
+            $results[0]['label'],
+        );
     }
 
     /**

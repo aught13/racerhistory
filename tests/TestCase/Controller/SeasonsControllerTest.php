@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
-use App\Service\TaggingService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -18,6 +18,7 @@ use DOMXPath;
 class SeasonsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Sports',
@@ -54,6 +55,40 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="searchbuilder-panel"');
         $this->assertResponseContains('id="seasons-table-frame"');
         $this->assertResponseContains('data-controller="seasons-page"');
+        $this->assertResponseContains('id="public-scope-sport"');
+        $this->assertResponseContains('id="public-scope-team"');
+    }
+
+    /**
+     * Tests shared public navigation preserves the scope on shared page links.
+     */
+    public function testSharedNavigationPreservesScope(): void
+    {
+        $this->get('/blog?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('href="/seasons?sport=football&amp;team=3"');
+        $this->assertResponseContains('href="/?sport=football&amp;team=3"');
+        $this->assertResponseContains('href="/privacy?sport=football&amp;team=3"');
+    }
+
+    /**
+     * A one-team sport omits a redundant all-teams selector until a team is selected.
+     *
+     * @return void
+     */
+    public function testTeamSelectorIsHiddenForSingleTeamSportUntilSelection(): void
+    {
+        $this->get('/seasons?sport=football&team=all');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('id="public-scope-team"');
+
+        $this->get('/seasons?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('New York Giants');
     }
 
     /**
@@ -69,6 +104,46 @@ class SeasonsControllerTest extends TestCase
         $this->assertIsArray($teamSeasons);
         $recordSummaries = $this->viewVariable('recordSummaries');
         $this->assertIsArray($recordSummaries);
+    }
+
+    /**
+     * Tests the seasons index applies a validated sport and team scope.
+     */
+    public function testIndexFiltersBySportAndTeam(): void
+    {
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $teamSeasons->saveOrFail($teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]));
+
+        $this->get('/seasons?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $rows = $this->viewVariable('teamSeasons');
+        $this->assertCount(1, $rows);
+        $this->assertSame(3, (int)$rows[0]->team_id);
+    }
+
+    /**
+     * Tests a team outside the selected sport is rejected.
+     */
+    public function testIndexRejectsMismatchedSportAndTeam(): void
+    {
+        $this->get('/seasons?sport=basketball&team=3');
+
+        $this->assertResponseCode(400);
+    }
+
+    /**
+     * Tests a season outside the selected sport is not exposed by its detail URL.
+     */
+    public function testViewRejectsSeasonOutsideSelectedSport(): void
+    {
+        $this->get('/seasons/1?sport=football');
+
+        $this->assertResponseCode(404);
     }
 
     /**
@@ -127,7 +202,7 @@ class SeasonsControllerTest extends TestCase
             $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
             $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
 
-            TaggingService::forBlogPosts()->attachTags(1, [
+            $this->blogPostTaggingService()->attachTags(1, [
                 ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
                 'preview',
             ]);
@@ -143,6 +218,36 @@ class SeasonsControllerTest extends TestCase
                 Configure::write('SiteOptions', $originalSiteOptions);
             }
         }
+    }
+
+    /**
+     * Recap preset posts appear in the season recap section, not season stories.
+     */
+    public function testRecapPresetAppearsInSeasonRecapSection(): void
+    {
+        $this->blogPostTaggingService()->replaceTags(1, [
+            ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
+            ['slug' => 'Recap', 'name' => 'Recap'],
+        ]);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $reviewPosts = $this->viewVariable('reviewPosts');
+        $otherPosts = $this->viewVariable('otherPosts');
+        $this->assertCount(1, $reviewPosts);
+        $this->assertSame('first-post', (string)$reviewPosts[0]->slug);
+        $this->assertSame([], $otherPosts);
+
+        $html = (string)$this->_response->getBody();
+        $recapPosition = strpos($html, '>Season Recap</h2>');
+        $postPosition = strpos($html, 'href="/blog/first-post');
+        $gamesPosition = strpos($html, 'id="season-games"');
+        $this->assertNotFalse($recapPosition);
+        $this->assertNotFalse($postPosition);
+        $this->assertNotFalse($gamesPosition);
+        $this->assertLessThan($postPosition, $recapPosition);
+        $this->assertLessThan($gamesPosition, $postPosition);
     }
 
     /**

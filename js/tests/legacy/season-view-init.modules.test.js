@@ -255,7 +255,7 @@ describe("season view init module", () => {
         run({ root: document });
 
         const navigateSpy = jest.fn();
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         handler({ target: {} });
         const externalItem = document.createElement("div");
@@ -268,7 +268,7 @@ describe("season view init module", () => {
         handler({ target: insideItem });
 
         expect(navigateSpy).not.toHaveBeenCalled();
-        delete window.__RH_NAVIGATE__;
+        delete window.Turbo;
     });
 
     test("blog click handler falls back to location when view frame missing", async () => {
@@ -289,7 +289,7 @@ describe("season view init module", () => {
         section.appendChild(frame);
 
         const navigateSpy = jest.fn();
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         const mod = await loadModule();
         const run = mod.default?.default || mod.default || mod;
@@ -297,7 +297,7 @@ describe("season view init module", () => {
 
         handler({ target: item });
         expect(navigateSpy).toHaveBeenCalledWith("/blog/missing");
-        delete window.__RH_NAVIGATE__;
+        delete window.Turbo;
     });
 
     test("blog click handler falls back when Turbo missing", async () => {
@@ -322,16 +322,17 @@ describe("season view init module", () => {
         section.appendChild(frame);
 
         delete window.Turbo;
-
-        const navigateSpy = jest.fn();
-        window.__RH_NAVIGATE__ = navigateSpy;
+        const originalLocation = window.location;
+        const assignSpy = jest.fn();
+        delete window.location;
+        window.location = { assign: assignSpy };
 
         const mod = await loadModule();
         const run = mod.default?.default || mod.default || mod;
         run({ root: document });
 
         handler({ target: item });
-        expect(navigateSpy).toHaveBeenCalledWith("/blog/alpha");
-        delete window.__RH_NAVIGATE__;
+        expect(assignSpy).toHaveBeenCalledWith("/blog/alpha");
+        window.location = originalLocation;
     });
 });

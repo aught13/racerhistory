@@ -15,7 +15,7 @@
             </li>
             <li class="breadcrumb-item">
                 <a href="<?= $this->Url->build(['controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>">
-                    <?= h($teamSeason->team->team_name ?? 'Team') ?> - <?= h($teamSeason->season->name ?? 'Season') ?>
+                    <?= h($teamSeason->team?->getDisplayName() ?? 'Team') ?> - <?= h($teamSeason->season->name ?? 'Season') ?>
                 </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">Edit Player Stats</li>

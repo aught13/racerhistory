@@ -1,32 +1,19 @@
-/* global bootstrap */
-
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-    static targets = ["associated", "hiddenForm"];
+    static targets = ["associated", "hiddenForm", "openTrigger"];
 
     connect() {
         this.modalContext = {};
-        this.globalShowHandler = (opts) => this.open(opts);
-
-        if (typeof window !== "undefined") {
-            window.__rhStimulusShowConfirmDelete = this.globalShowHandler;
-        }
-    }
-
-    disconnect() {
-        if (typeof window !== "undefined") {
-            if (
-                window.__rhStimulusShowConfirmDelete === this.globalShowHandler
-            ) {
-                delete window.__rhStimulusShowConfirmDelete;
-            }
-        }
     }
 
     onShow(event) {
         const trigger = event?.relatedTarget;
-        if (!trigger || !trigger.dataset) {
+        if (
+            !trigger ||
+            trigger === this.openTriggerTarget ||
+            !trigger.dataset
+        ) {
             return;
         }
 
@@ -37,7 +24,7 @@ export default class extends Controller {
                 trigger.dataset.deleteAssociated || trigger.dataset.associated,
             ids: trigger.dataset.ids,
             idsName: trigger.dataset.idsName,
-            formId: trigger.dataset.formId,
+            sourceForm: trigger.form || null,
             bulkAction: trigger.dataset.bulkAction,
         });
     }
@@ -56,19 +43,11 @@ export default class extends Controller {
         }
     }
 
-    open(opts) {
-        this.setContext(opts || {});
-
-        if (
-            typeof bootstrap !== "undefined" &&
-            bootstrap.Modal &&
-            typeof bootstrap.Modal.getOrCreateInstance === "function"
-        ) {
-            bootstrap.Modal.getOrCreateInstance(this.element).show();
-            return;
+    open(event) {
+        this.setContext(event?.detail || {});
+        if (this.hasOpenTriggerTarget) {
+            this.openTriggerTarget.click();
         }
-
-        this.element.style.display = "block";
     }
 
     setContext(opts) {
@@ -81,10 +60,10 @@ export default class extends Controller {
             return;
         }
 
-        this.associatedTarget.innerHTML = "";
+        this.associatedTarget.replaceChildren();
         const list = this.parseAssociated(associated);
         list.forEach((row) => {
-            const li = document.createElement("li");
+            const li = this.associatedTarget.ownerDocument.createElement("li");
             li.textContent =
                 typeof row === "string"
                     ? row
@@ -115,18 +94,12 @@ export default class extends Controller {
     }
 
     resolveSourceForm() {
-        if (this.modalContext?.formId) {
-            return document.getElementById(this.modalContext.formId);
-        }
-        // For single-item deletes, submit through a temporary form so the
-        // action can change to data-delete-url without inheriting URL-bound
-        // form-protection metadata from a pre-rendered page form.
-        return null;
+        return this.modalContext?.sourceForm || null;
     }
 
     resolvePostAction(source) {
         const deleteUrl = this.modalContext?.deleteUrl || "";
-        const usesExplicitSourceForm = Boolean(this.modalContext?.formId);
+        const usesExplicitSourceForm = Boolean(source);
 
         if (!usesExplicitSourceForm && deleteUrl) {
             return deleteUrl;
@@ -150,6 +123,7 @@ export default class extends Controller {
     }
 
     submitSourceForm(source, postAction, extraFields) {
+        const document = source.ownerDocument;
         source
             .querySelectorAll(".injected-delete")
             .forEach((node) => node.remove());
@@ -173,6 +147,7 @@ export default class extends Controller {
     }
 
     submitTempForm(postAction, extraFields) {
+        const document = this.element.ownerDocument;
         const temp = document.createElement("form");
         temp.style.display = "none";
         temp.method = "post";

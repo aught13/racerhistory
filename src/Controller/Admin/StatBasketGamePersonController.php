@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\BasketballStatsAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Admin controller for basketball player game stat workflows.
@@ -23,6 +25,22 @@ class StatBasketGamePersonController extends AppController
     private BasketballStatsAdminService $basketballStatsAdminService;
 
     /**
+     * Create the controller with its basketball stats administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\BasketballStatsAdminService $basketballStatsAdminService The basketball stats administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        BasketballStatsAdminService $basketballStatsAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->basketballStatsAdminService = $basketballStatsAdminService;
+    }
+
+    /**
      * Initialization hook method.
      *
      * @return void
@@ -30,8 +48,6 @@ class StatBasketGamePersonController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-
-        $this->basketballStatsAdminService = new BasketballStatsAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');

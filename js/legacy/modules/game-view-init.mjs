@@ -60,9 +60,8 @@ function navigateTo(url) {
         return;
     }
 
-    const testNavigate = window.__RH_NAVIGATE__;
-    if (typeof testNavigate === "function") {
-        testNavigate(url);
+    if (window.Turbo && typeof window.Turbo.visit === "function") {
+        window.Turbo.visit(url);
         return;
     }
 
@@ -122,12 +121,10 @@ function setupImageGallery(root) {
     if (!gallery || !modal) {
         return;
     }
-    if (modal.dataset.gameImageBound === "true") {
+    if (gallery.dataset.gameImageBound === "true") {
         return;
     }
-    modal.dataset.gameImageBound = "true";
 
-    const closeBtn = modal.querySelector("[data-modal-close]");
     const modalImg = modal.querySelector("[data-modal-image-fallback]");
     const modalWebp = modal.querySelector("[data-modal-image-webp]");
     const modalCredit = modal.querySelector("[data-modal-photo-credit]");
@@ -135,23 +132,7 @@ function setupImageGallery(root) {
         return;
     }
 
-    function closeModal() {
-        modal.removeAttribute("data-modal-open");
-    }
-
-    closeBtn?.addEventListener("click", closeModal);
-
-    modal.addEventListener("click", (event) => {
-        if (event.target === modal) {
-            closeModal();
-        }
-    });
-
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && modal.hasAttribute("data-modal-open")) {
-            closeModal();
-        }
-    });
+    gallery.dataset.gameImageBound = "true";
 
     gallery.addEventListener("click", (event) => {
         const img = event.target.closest(".game-photo-thumb-img");
@@ -159,8 +140,11 @@ function setupImageGallery(root) {
             return;
         }
 
-        const imageUrl = img.dataset.imageUrl || img.currentSrc || img.src;
-        const filename = img.dataset.imageFilename;
+        const imageTrigger = img.closest("[data-image-url]") || img;
+        const imageUrl =
+            imageTrigger.dataset.imageUrl || img.currentSrc || img.src;
+        const filename =
+            imageTrigger.dataset.imageFilename || img.dataset.imageFilename;
         if (!imageUrl) {
             return;
         }
@@ -174,16 +158,10 @@ function setupImageGallery(root) {
 
         const photoCredit = img.dataset.photoCredit || "";
         if (modalCredit) {
-            if (photoCredit) {
-                modalCredit.textContent = photoCredit;
-                modalCredit.style.display = "";
-            } else {
-                modalCredit.textContent = "";
-                modalCredit.style.display = "none";
-            }
+            modalCredit.textContent =
+                imageTrigger.dataset.photoCredit || photoCredit;
+            modalCredit.classList.toggle("d-none", !modalCredit.textContent);
         }
-
-        modal.setAttribute("data-modal-open", "true");
     });
 }
 

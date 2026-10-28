@@ -88,6 +88,15 @@ CREATE TABLE IF NOT EXISTS teams (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Per-role scope grants for team-owned data
+CREATE TABLE IF NOT EXISTS role_data_scopes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  role_id INTEGER NOT NULL,
+  scope_type VARCHAR(16) NOT NULL,
+  sport_key VARCHAR(64) NULL,
+  team_id INTEGER NULL
+);
+
 -- Game EAV table
 CREATE TABLE IF NOT EXISTS game_eav (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -191,7 +200,6 @@ CREATE TABLE IF NOT EXISTS persons (
   birth_place_id INTEGER NULL,
   person_previous VARCHAR(162) NULL,
   person_image INTEGER NULL,
-  bio TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -263,6 +271,7 @@ CREATE TABLE IF NOT EXISTS opponents (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   opponent_name VARCHAR(255) NOT NULL,
   opponent_short VARCHAR(50) NULL,
+  opponent_abbr VARCHAR(30) NULL,
   place_id INTEGER NOT NULL,
   opponent_current VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

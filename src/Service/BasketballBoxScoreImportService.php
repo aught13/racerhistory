@@ -24,6 +24,8 @@ class BasketballBoxScoreImportService
 
     private const MAX_PDF_BYTES = 20971520;
 
+    private const HTML_FINAL_TOTAL_MARKER = 'FINAL_TOTAL:';
+
     private OfficialBasketballBoxScoreParser $parser;
 
     private BasketballBoxScoreCsvParser $csvParser;
@@ -300,7 +302,7 @@ class BasketballBoxScoreImportService
         $bodyText = trim($crawler->filterXPath('//body')->text(null, true));
         if ($bodyText !== '') {
             if ($tables->count() > 5) {
-                $detailRows = $this->extractHtmlTableRows($tables->eq(5));
+                $detailRows = $this->extractHtmlTableRows($tables->eq(5), true);
                 $periodHeaders = array_slice($detailRows[0] ?? [], 1);
                 $fieldLabels = [
                     'points off turnovers' => 'OTO',
@@ -347,6 +349,10 @@ class BasketballBoxScoreImportService
                         if ($value === '') {
                             continue;
                         }
+                        if (str_starts_with($value, self::HTML_FINAL_TOTAL_MARKER)) {
+                            $finalValue = substr($value, strlen(self::HTML_FINAL_TOTAL_MARKER));
+                            continue;
+                        }
                         if (in_array(strtolower(trim($header)), ['t', 'total', 'final'], true)) {
                             $finalValue = $value;
                             continue;
@@ -386,17 +392,22 @@ class BasketballBoxScoreImportService
      * Extract table cells as row-oriented strings.
      *
      * @param \Symfony\Component\DomCrawler\Crawler $table Table node
+     * @param bool $markStyledFinalTotals Whether to mark Sidearm bold-total cells
      * @return list<list<string>> Table rows and cells
      */
-    private function extractHtmlTableRows(Crawler $table): array
+    private function extractHtmlTableRows(Crawler $table, bool $markStyledFinalTotals = false): array
     {
         return $table->filterXPath('.//tr')->each(
             static fn(Crawler $row): array => $row->filterXPath('.//th|.//td')->each(
-                static fn(Crawler $cell): string => trim(str_replace(
-                    "\xC2\xA0",
-                    ' ',
-                    $cell->text(null, true),
-                )),
+                static function (Crawler $cell) use ($markStyledFinalTotals): string {
+                    $value = trim(str_replace("\xC2\xA0", ' ', $cell->text(null, true)));
+                    $classes = preg_split('/\s+/', trim((string)$cell->attr('class'))) ?: [];
+                    if ($markStyledFinalTotals && in_array('s-text-paragraph-small-bold', $classes, true)) {
+                        return self::HTML_FINAL_TOTAL_MARKER . $value;
+                    }
+
+                    return $value;
+                },
             ),
         );
     }

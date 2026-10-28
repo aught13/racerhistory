@@ -362,3 +362,20 @@ input[type='color'] {
         content: " \2190";
     }
 }
+
+.image-selector-gallery {
+    max-height: 31.25rem;
+}
+
+.image-selector-gallery-card {
+    cursor: pointer;
+}
+
+.image-selector-gallery-preview {
+    height: 9.375rem;
+}
+
+.image-selector-crop-preview {
+    height: 12.5rem;
+    width: 12.5rem;
+}

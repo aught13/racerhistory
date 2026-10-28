@@ -491,4 +491,26 @@ class UsersControllerTest extends TestCase
         $this->assertSame('Empty Social User', (string)$updated->display_name);
         $this->assertNull($updated->social_links);
     }
+
+    /**
+     * Admins can enter social links as one URL per line.
+     */
+    public function testEditPostNormalizesNewlineSocialLinks(): void
+    {
+        $this->loginAsAdmin();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/users/edit/3', [
+            'display_name' => 'Newline Social User',
+            'social_links' => "https://example.com/one\nhttps://example.com/two",
+        ]);
+
+        $this->assertRedirect('/admin/users');
+        $updated = $this->getTableLocator()->get('Users')->get(3);
+        $this->assertSame(
+            '["https://example.com/one","https://example.com/two"]',
+            $updated->social_links,
+        );
+    }
 }

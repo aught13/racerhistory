@@ -36,13 +36,12 @@ $descriptions = [
 
     <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4">
         <h1 class="h3 mb-2 mb-md-0">Games</h1>
-        <p class="text-muted mb-0">Explore Men's Basketball game history</p>
     </div>
 
     <div class="row g-3" id="games-type-cards">
         <?php foreach ($searchTypes as $slug => $label) : ?>
             <div class="col-md-4 col-lg-3">
-                <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => Inflector::variable(str_replace('-', '_', $slug))]) ?>"
+                <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => Inflector::variable(str_replace('-', '_', $slug))]) ?>"
                    class="card h-100 text-decoration-none game-type-card">
                     <div class="card-body text-center">
                         <i class="bi <?= $icons[$slug] ?? 'bi-list' ?> fs-2 mb-2 d-block text-primary"></i>

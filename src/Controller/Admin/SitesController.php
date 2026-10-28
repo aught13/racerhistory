@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\SiteAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Sites Admin Controller
@@ -33,12 +35,27 @@ class SitesController extends AppController
     protected SiteAdminService $siteAdminService;
 
     /**
+     * Create the controller with its site administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\SiteAdminService $siteAdminService The site administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        SiteAdminService $siteAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->siteAdminService = $siteAdminService;
+    }
+
+    /**
      * Initialize controller.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->siteAdminService = new SiteAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');

@@ -346,7 +346,7 @@ class DeployAuditService
             'js/main.js',
             'js/legacy/admin-dashboard.js',
             'js/legacy/blog-view-init-loader.js',
-            'js/legacy/game-form-lookups.js',
+            'js/lib/game_form_lookups.js',
             'js/legacy/game-view-init-loader.mjs',
             'js/legacy/games-search-init.mjs',
             'js/legacy/games-series-opponents-init.mjs',

@@ -7,7 +7,7 @@ declare(strict_types=1);
  * @var \App\View\AppView $this
  */
 
-$teamName = $teamSeason?->team?->team_name ?? 'Team';
+$teamName = $teamSeason?->team?->getTeamDisplayName() ?? 'Team';
 $seasonStart = (string)($teamSeason?->season?->start ?? '');
 $seasonEnd = (string)($teamSeason?->season?->end ?? '');
 $seasonLabel = '';
@@ -65,7 +65,7 @@ $formatValue = static function ($value): string {
                     }
 
                     $gameDate = $game?->game_date?->format('m-d-Y') ?? '';
-                    $opponentName = $game?->opponent?->opponent_name ?? 'Unknown';
+                    $opponentName = $game?->opponent?->getDisplayName() ?? 'Unknown';
                     $locationPrefix = '@';
                     if (!empty($game?->hrn) && (int)$game->hrn === 1) {
                         $locationPrefix = 'Vs';

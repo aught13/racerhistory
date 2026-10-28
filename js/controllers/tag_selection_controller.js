@@ -2,6 +2,27 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
+    static targets = [
+        "selectedPersons",
+        "personSearch",
+        "personsList",
+        "addPersonButton",
+        "clearPersonsButton",
+        "personHiddenInputs",
+        "teamSeasonSelect",
+        "gameSearch",
+        "gamesList",
+        "gameSelect",
+        "selectedGame",
+        "siteSearch",
+        "sitesList",
+        "siteSelect",
+        "opponentSearch",
+        "opponentsList",
+        "opponentSelect",
+        "rosterSelect",
+    ];
+
     static values = {
         initialPersonsJson: String,
         initialRosterId: Number,
@@ -9,12 +30,16 @@ export default class extends Controller {
 
     connect() {
         this.cleanupCallbacks = [];
+        this.timers = new Set();
+        this.activeRequests = new Map();
         this._maps = {
             persons: new Map(),
             opponents: new Map(),
             sites: new Map(),
             games: new Map(),
         };
+        this.boundBeforeCache = () => this.resetEphemeralLookups();
+        document.addEventListener("turbo:before-cache", this.boundBeforeCache);
 
         this.setupSelectionUi();
     }
@@ -23,24 +48,31 @@ export default class extends Controller {
         this.cleanupCallbacks.forEach((cleanup) => cleanup());
         this.cleanupCallbacks = [];
 
-        if (this.personDebounce) {
-            clearTimeout(this.personDebounce);
-            this.personDebounce = null;
-        }
-        if (this.gameDebounce) {
-            clearTimeout(this.gameDebounce);
-            this.gameDebounce = null;
-        }
+        document.removeEventListener(
+            "turbo:before-cache",
+            this.boundBeforeCache,
+        );
+        this.timers.forEach((timer) => window.clearTimeout(timer));
+        this.timers.clear();
+        this.personDebounce = null;
+        this.gameDebounce = null;
+        this.activeRequests.forEach((request) => request.abort());
+        this.activeRequests.clear();
+        Object.values(this._maps).forEach((map) => map.clear());
     }
 
     setupSelectionUi() {
         const initialPersons = this.parseInitialPersons();
 
-        this.selectedPersonsEl = this.findByIdSuffix("selectedPersons");
-        this.hiddenInputsContainer = this.findByIdSuffix(
-            "person_hidden_inputs",
-        );
-        this.rosterSelect = this.findByName("roster_select");
+        this.selectedPersonsEl = this.hasSelectedPersonsTarget
+            ? this.selectedPersonsTarget
+            : null;
+        this.hiddenInputsContainer = this.hasPersonHiddenInputsTarget
+            ? this.personHiddenInputsTarget
+            : null;
+        this.rosterSelect = this.hasRosterSelectTarget
+            ? this.rosterSelectTarget
+            : null;
 
         if (
             !this.selectedPersonsEl ||
@@ -72,25 +104,21 @@ export default class extends Controller {
     }
 
     connectLookups() {
-        this.personSearch = this.findByName("person_search");
-        this.personsList = this.findByIdSuffix("personsList");
-        this.addPersonBtn = this.findByIdSuffix("add_person_btn");
-        this.clearPersonsBtn = this.findByIdSuffix("clear_persons_btn");
-
-        this.opponentSearch = this.findByName("opponent_search");
-        this.opponentsList = this.findByIdSuffix("opponentsList");
-        this.opponentHidden = this.findByName("opponent_select");
-
-        this.siteSearch = this.findByName("site_search");
-        this.sitesList = this.findByIdSuffix("sitesList");
-        this.siteHidden = this.findByName("site_select");
-
-        this.gameSearch = this.findByName("game_search");
-        this.gamesList = this.findByIdSuffix("gamesList");
-        this.gameHidden = this.findByName("game_select");
-        this.selectedGameEl = this.findByIdSuffix("selectedGame");
-
-        this.teamSeasonSelect = this.findByName("teamseason_select");
+        this.personSearch = this.targetOrNull("personSearch");
+        this.personsList = this.targetOrNull("personsList");
+        this.addPersonBtn = this.targetOrNull("addPersonButton");
+        this.clearPersonsBtn = this.targetOrNull("clearPersonsButton");
+        this.opponentSearch = this.targetOrNull("opponentSearch");
+        this.opponentsList = this.targetOrNull("opponentsList");
+        this.opponentHidden = this.targetOrNull("opponentSelect");
+        this.siteSearch = this.targetOrNull("siteSearch");
+        this.sitesList = this.targetOrNull("sitesList");
+        this.siteHidden = this.targetOrNull("siteSelect");
+        this.gameSearch = this.targetOrNull("gameSearch");
+        this.gamesList = this.targetOrNull("gamesList");
+        this.gameHidden = this.targetOrNull("gameSelect");
+        this.selectedGameEl = this.targetOrNull("selectedGame");
+        this.teamSeasonSelect = this.targetOrNull("teamSeasonSelect");
 
         if (
             this.personSearch &&
@@ -103,9 +131,9 @@ export default class extends Controller {
 
         if (this.opponentSearch && this.opponentsList && this.opponentHidden) {
             this.bindSimpleLookup(
+                "opponents",
                 this.opponentSearch,
                 this.opponentsList,
-                "/admin/tag-lookups/opponents",
                 this._maps.opponents,
                 (id) => {
                     this.opponentHidden.value = id ? String(id) : "";
@@ -115,9 +143,9 @@ export default class extends Controller {
 
         if (this.siteSearch && this.sitesList && this.siteHidden) {
             this.bindSimpleLookup(
+                "sites",
                 this.siteSearch,
                 this.sitesList,
-                "/admin/tag-lookups/sites",
                 this._maps.sites,
                 (id) => {
                     this.siteHidden.value = id ? String(id) : "";
@@ -139,18 +167,18 @@ export default class extends Controller {
             const q = String(this.personSearch.value || "").trim();
 
             if (this.personDebounce) {
-                clearTimeout(this.personDebounce);
+                this.clearTimer(this.personDebounce);
             }
 
             if (q.length < 2) {
-                this.personsList.innerHTML = "";
+                this.personsList.replaceChildren();
 
                 return;
             }
 
-            this.personDebounce = setTimeout(() => {
+            this.personDebounce = this.setTimer(() => {
                 this.fetchLookup("persons", q).catch(() => {
-                    this.personsList.innerHTML = "";
+                    this.personsList.replaceChildren();
                 });
             }, 250);
         });
@@ -187,52 +215,33 @@ export default class extends Controller {
         this.bindEvent(this.clearPersonsBtn, "click", (event) => {
             event.preventDefault();
 
-            this.selectedPersonsEl.innerHTML = "";
-            this.hiddenInputsContainer.innerHTML = "";
+            this.selectedPersonsEl.replaceChildren();
+            this.hiddenInputsContainer.replaceChildren();
             this.updateRosterSelectionState();
         });
     }
 
-    bindSimpleLookup(inputEl, datalistEl, urlBase, map, onSelectId) {
+    bindSimpleLookup(kind, inputEl, datalistEl, map, onSelectId) {
         let debounce = null;
 
         this.bindEvent(inputEl, "input", () => {
             const q = String(inputEl.value || "").trim();
 
             if (debounce) {
-                clearTimeout(debounce);
+                this.clearTimer(debounce);
             }
 
             if (q.length < 2) {
-                datalistEl.innerHTML = "";
+                datalistEl.replaceChildren();
                 map.clear();
                 onSelectId("");
 
                 return;
             }
 
-            debounce = setTimeout(() => {
-                fetch(`${urlBase}?q=${encodeURIComponent(q)}`, {
-                    credentials: "same-origin",
-                })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        const key = Object.keys(data).find((k) =>
-                            Array.isArray(data[k]),
-                        );
-                        const items = key ? data[key] : [];
-
-                        datalistEl.innerHTML = "";
-                        map.clear();
-
-                        items.forEach((item) => {
-                            const label = item.label || "";
-                            const option = document.createElement("option");
-                            option.value = label;
-                            datalistEl.appendChild(option);
-                            map.set(label, item.id);
-                        });
-
+            debounce = this.setTimer(() => {
+                this.fetchLookup(kind, q)
+                    .then(() => {
                         const selectedId = this.findIdForLabel(
                             map,
                             inputEl.value.trim(),
@@ -240,7 +249,7 @@ export default class extends Controller {
                         onSelectId(selectedId || "");
                     })
                     .catch(() => {
-                        datalistEl.innerHTML = "";
+                        datalistEl.replaceChildren();
                         map.clear();
                     });
             }, 220);
@@ -252,7 +261,7 @@ export default class extends Controller {
             const q = String(this.gameSearch.value || "").trim();
 
             if (this.gameDebounce) {
-                clearTimeout(this.gameDebounce);
+                this.clearTimer(this.gameDebounce);
             }
 
             if (q.length < 2) {
@@ -262,7 +271,7 @@ export default class extends Controller {
                 return;
             }
 
-            this.gameDebounce = setTimeout(() => {
+            this.gameDebounce = this.setTimer(() => {
                 this.searchGames(q).catch(() => {
                     this.clearGameResults();
                 });
@@ -310,12 +319,7 @@ export default class extends Controller {
 
     async fetchLookup(kind, q) {
         const url = `/admin/tag-lookups/${encodeURIComponent(kind)}?q=${encodeURIComponent(q)}`;
-        const response = await fetch(url, { credentials: "same-origin" });
-        if (!response.ok) {
-            throw new Error(`Lookup ${kind} failed status ${response.status}`);
-        }
-
-        const payload = await response.json();
+        const payload = await this.requestJson(url, kind);
         const items = payload[kind] || [];
         const datalist =
             kind === "persons"
@@ -329,7 +333,7 @@ export default class extends Controller {
                       : null;
 
         if (datalist) {
-            datalist.innerHTML = "";
+            datalist.replaceChildren();
         }
 
         const map = this._maps[kind];
@@ -357,12 +361,7 @@ export default class extends Controller {
             url += `&teamseason_id=${encodeURIComponent(teamSeasonId)}`;
         }
 
-        const response = await fetch(url, { credentials: "same-origin" });
-        if (!response.ok) {
-            throw new Error(`Game lookup failed status ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await this.requestJson(url, "games");
         const items = Array.isArray(data.games) ? data.games : [];
 
         this.clearGameResults();
@@ -400,7 +399,7 @@ export default class extends Controller {
 
     clearGameResults() {
         if (this.gamesList) {
-            this.gamesList.innerHTML = "";
+            this.gamesList.replaceChildren();
         }
         this._maps.games.clear();
     }
@@ -408,7 +407,7 @@ export default class extends Controller {
     clearGameSelection({ clearInput }) {
         this.gameHidden.value = "";
         if (this.selectedGameEl) {
-            this.selectedGameEl.innerHTML = "";
+            this.selectedGameEl.replaceChildren();
         }
         if (clearInput) {
             this.gameSearch.value = "";
@@ -420,7 +419,7 @@ export default class extends Controller {
             return;
         }
 
-        this.selectedGameEl.innerHTML = "";
+        this.selectedGameEl.replaceChildren();
 
         const badge = document.createElement("span");
         badge.className = "badge bg-primary me-1";
@@ -440,7 +439,7 @@ export default class extends Controller {
     }
 
     renderSelectedPersons(selectedPersons) {
-        this.selectedPersonsEl.innerHTML = "";
+        this.selectedPersonsEl.replaceChildren();
 
         selectedPersons.forEach((person) => {
             const personId = Number(person.id);
@@ -521,8 +520,7 @@ export default class extends Controller {
     populateRostersForPerson(personId, preselectId = null) {
         const url = `/admin/tag-lookups/rosters?person_id=${encodeURIComponent(personId)}`;
 
-        fetch(url, { credentials: "same-origin" })
-            .then((response) => response.json())
+        this.requestJson(url, "rosters")
             .then((data) => {
                 this.clearRosterOptions();
 
@@ -545,18 +543,74 @@ export default class extends Controller {
             });
     }
 
-    findByName(name) {
-        return (
-            this.element.querySelector(`[name="${name}"]`) ||
-            this.findByIdSuffix(name)
-        );
+    targetOrNull(name) {
+        const hasTarget = `has${name[0].toUpperCase()}${name.slice(1)}Target`;
+        const target = `${name}Target`;
+
+        return this[hasTarget] ? this[target] : null;
     }
 
-    findByIdSuffix(suffix) {
-        return (
-            this.element.querySelector(`#${suffix}`) ||
-            this.element.querySelector(`[id$="_${suffix}"]`) ||
-            this.element.querySelector(`[id$="${suffix}"]`)
+    async requestJson(url, key) {
+        this.activeRequests.get(key)?.abort();
+        const request = new AbortController();
+        this.activeRequests.set(key, request);
+
+        try {
+            const response = await fetch(url, {
+                credentials: "same-origin",
+                signal: request.signal,
+            });
+            if (!response.ok) {
+                const message =
+                    key === "games"
+                        ? "Game lookup"
+                        : key === "rosters"
+                          ? "Roster lookup"
+                          : `Lookup ${key}`;
+                throw new Error(`${message} failed status ${response.status}`);
+            }
+
+            return await response.json();
+        } finally {
+            if (this.activeRequests.get(key) === request) {
+                this.activeRequests.delete(key);
+            }
+        }
+    }
+
+    setTimer(callback, delay) {
+        const timer = window.setTimeout(() => {
+            this.timers.delete(timer);
+            callback();
+        }, delay);
+        this.timers.add(timer);
+
+        return timer;
+    }
+
+    clearTimer(timer) {
+        window.clearTimeout(timer);
+        this.timers.delete(timer);
+    }
+
+    resetEphemeralLookups() {
+        [
+            ["personsList", "persons"],
+            ["opponentsList", "opponents"],
+            ["sitesList", "sites"],
+            ["gamesList", "games"],
+        ].forEach(([target, mapName]) => {
+            const element = this.targetOrNull(target);
+            element?.replaceChildren();
+            this._maps[mapName].clear();
+        });
+
+        [this.personSearch, this.opponentSearch, this.siteSearch].forEach(
+            (input) => {
+                if (input) {
+                    input.value = "";
+                }
+            },
         );
     }
 

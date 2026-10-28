@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -14,6 +16,7 @@ use Cake\TestSuite\TestCase;
 class PeopleControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Persons',
@@ -103,6 +106,46 @@ class PeopleControllerTest extends TestCase
     }
 
     /**
+     * Ensure the directory shows each multi-sport team and scopes membership by roster.
+     */
+    public function testIndexJsonScopesMultiSportTeamMembership(): void
+    {
+        $teams = $this->getTableLocator()->get('Teams');
+        $footballTeam = $teams->get(3);
+        $footballTeam->abbr = 'LAL';
+        $teams->saveOrFail($footballTeam);
+
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+        $this->getTableLocator()->get('TeamSeasonRosters')->saveOrFail(
+            $this->getTableLocator()->get('TeamSeasonRosters')->newEntity([
+                'team_season_id' => $teamSeason->id,
+                'person_id' => 1,
+                'roster_year' => '2025',
+            ]),
+        );
+
+        $this->get('/people?format=json&sport=all&team=all&draw=1&start=0&length=50');
+        $this->assertResponseOk();
+        $allPayload = json_decode((string)$this->_response->getBody(), true);
+        $allTeamLabels = implode(', ', array_column($allPayload['data'], 1));
+        $this->assertStringContainsString('LAL (Basketball)', $allTeamLabels);
+        $this->assertStringContainsString('LAL (Football)', $allTeamLabels);
+
+        $this->get('/people?format=json&sport=football&team=3&draw=2&start=0&length=50');
+        $this->assertResponseOk();
+        $footballPayload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(1, $footballPayload['recordsTotal']);
+        $this->assertCount(1, $footballPayload['data']);
+        $this->assertSame('LAL', (string)$footballPayload['data'][0][1]);
+        $this->assertStringNotContainsString('LAL (Basketball)', (string)$footballPayload['data'][0][1]);
+    }
+
+    /**
      * Tests index json honors descending name order.
      */
     public function testIndexJsonHonorsDescendingNameOrder(): void
@@ -124,6 +167,21 @@ class PeopleControllerTest extends TestCase
     }
 
     /**
+     * Verify malformed DataTables filters are ignored safely.
+     *
+     * @return void
+     */
+    public function testIndexJsonIgnoresMalformedSearchAndOrderParameters(): void
+    {
+        $this->get('/people?format=json&draw=5&search=invalid&order=invalid');
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertSame(5, $payload['draw']);
+        $this->assertSame($payload['recordsTotal'], $payload['recordsFiltered']);
+    }
+
+    /**
      * Tests view.
      */
     public function testView(): void
@@ -136,6 +194,51 @@ class PeopleControllerTest extends TestCase
         $this->assertResponseContains('data-controller="person-game-log-tabs"');
         $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
         $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
+    }
+
+    /**
+     * Biography posts appear between the profile and seasons, and person links go to blog pages.
+     */
+    public function testViewSeparatesBiographyAndStoryLinks(): void
+    {
+        $this->blogPostTaggingService()->replaceTags(1, ['person-1', 'bio']);
+
+        $postsTable = TableRegistry::getTableLocator()->get('BlogPosts');
+        $story = $postsTable->newEntity([
+            'title' => 'Person Story',
+            'slug' => 'person-story',
+            'excerpt' => 'A story about this person.',
+            'body' => 'Story body',
+            'status' => 'published',
+            'is_published' => true,
+            'published_at' => '2025-01-02 12:00:00',
+        ]);
+        $postsTable->saveOrFail($story);
+        $this->blogPostTaggingService()->replaceTags((int)$story->id, ['person-1']);
+
+        $this->get('/people/1');
+
+        $this->assertResponseOk();
+        $bioPosts = $this->viewVariable('bioPosts');
+        $stories = $this->viewVariable('stories');
+        $this->assertCount(1, $bioPosts);
+        $this->assertSame('first-post', (string)$bioPosts[0]->slug);
+        $this->assertCount(1, $stories);
+        $this->assertSame('person-story', (string)$stories[0]->slug);
+
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('href="/blog/first-post"', $body);
+        $this->assertStringContainsString('href="/blog/person-story"', $body);
+        $this->assertStringNotContainsString('data-person-blog-popover', $body);
+
+        $bioPosition = strpos($body, '>Biography</h2>');
+        $seasonsPosition = strpos($body, '>Seasons ·');
+        $careerPosition = strpos($body, '>Career Statistics</h2>');
+        $this->assertNotFalse($seasonsPosition);
+        $this->assertNotFalse($bioPosition);
+        $this->assertNotFalse($careerPosition);
+        $this->assertLessThan($seasonsPosition, $bioPosition);
+        $this->assertLessThan($careerPosition, $seasonsPosition);
     }
 
     /**
@@ -162,8 +265,11 @@ class PeopleControllerTest extends TestCase
         $images = $this->viewVariable('images');
         $this->assertIsArray($images);
 
-        $blogPosts = $this->viewVariable('blogPosts');
-        $this->assertIsArray($blogPosts);
+        $bioPosts = $this->viewVariable('bioPosts');
+        $this->assertIsArray($bioPosts);
+
+        $stories = $this->viewVariable('stories');
+        $this->assertIsArray($stories);
 
         $rosterEntries = $this->viewVariable('rosterEntries');
         $this->assertIsArray($rosterEntries);
@@ -179,6 +285,40 @@ class PeopleControllerTest extends TestCase
 
         $gameLogGroups = $this->viewVariable('gameLogGroups');
         $this->assertIsArray($gameLogGroups);
+    }
+
+    /**
+     * Scope a multi-sport profile by default and allow full history locally.
+     */
+    public function testProfileScopeAndFullHistoryOverride(): void
+    {
+        $teamSeason = $this->getTableLocator()->get('TeamSeasons')->newEntity([
+            'team_id' => 3,
+            'season_id' => 2,
+            'semester' => 1,
+        ]);
+        $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
+        $this->getTableLocator()->get('TeamSeasonRosters')->saveOrFail(
+            $this->getTableLocator()->get('TeamSeasonRosters')->newEntity([
+                'team_season_id' => $teamSeason->id,
+                'person_id' => 1,
+                'roster_year' => '2025',
+            ]),
+        );
+
+        $this->get('/people/1?sport=football&team=3');
+        $this->assertResponseOk();
+        $rosterEntries = $this->viewVariable('rosterEntries');
+        $this->assertCount(1, $rosterEntries);
+        $this->assertSame(3, (int)$rosterEntries[0]->team_season->team_id);
+        $this->assertFalse($this->viewVariable('showAllHistory'));
+
+        $this->get('/people/1?sport=basketball&team=1&show_all_history=1');
+        $this->assertResponseOk();
+        $allRosterEntries = $this->viewVariable('rosterEntries');
+        $this->assertCount(2, $allRosterEntries);
+        $this->assertTrue($this->viewVariable('showAllHistory'));
+        $this->assertResponseContains('show_all_history=1');
     }
 
     /**

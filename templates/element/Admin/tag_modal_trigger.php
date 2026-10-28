@@ -15,9 +15,9 @@ $containerId = 'tag-modal-host-' . $subject . '-' . ($subjectId ?? 'new');
 $triggerId = 'tag-modal-trigger-' . $subject . '-' . ($subjectId ?? 'new');
 ?>
 
-<div class="tag-modal-trigger" data-controller="tag-modal" data-tag-modal-subject-value="<?= h($subject) ?>" data-tag-modal-subject-id-value="<?= h((string)($subjectId ?? '0')) ?>">
+<div class="tag-modal-trigger" data-controller="tag-modal" data-tag-modal-subject-value="<?= h($subject) ?>" data-tag-modal-subject-id-value="<?= h((string)($subjectId ?? '0')) ?>" data-tag-modal-csrf-token-value="<?= h((string)$this->request->getAttribute('csrfToken')) ?>">
     <div class="d-flex align-items-center gap-2">
-        <div class="tag-badges">
+        <div class="tag-badges" data-tag-modal-target="badges">
             <?php if (!empty($currentTags)) : ?>
                 <?php foreach ($currentTags as $tag) : ?>
                     <span class="badge bg-secondary me-1 mb-1"><?= h($tag->name ?? $tag['name'] ?? '') ?></span>
@@ -28,9 +28,9 @@ $triggerId = 'tag-modal-trigger-' . $subject . '-' . ($subjectId ?? 'new');
         </div>
         <button type="button" id="<?= h($triggerId) ?>" class="btn btn-sm btn-outline-primary" data-action="click->tag-modal#open">Edit Tags</button>
     </div>
-    <div id="<?= h($containerId) ?>" class="tag-modal-host"></div>
+    <div id="<?= h($containerId) ?>" class="tag-modal-host" data-tag-modal-target="host"></div>
     <?php if ($syncHiddenInputs) : ?>
         <!-- Hidden inputs container used for pages that need modal values in parent form submit (bulk upload). -->
-        <div class="tag-modal-hidden-inputs visually-hidden" aria-hidden="true"></div>
+        <div class="tag-modal-hidden-inputs visually-hidden" aria-hidden="true" data-tag-modal-target="hiddenInputs"></div>
     <?php endif; ?>
 </div>

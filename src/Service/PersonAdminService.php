@@ -311,6 +311,16 @@ class PersonAdminService
     }
 
     /**
+     * Create an empty person entity for the add form.
+     *
+     * @return \App\Model\Entity\Person
+     */
+    public function newEntity(): Person
+    {
+        return $this->personsTable->newEmptyEntity();
+    }
+
+    /**
      * Process an add form submission.
      *
      * Normalises person_image to int when a numeric value is provided.

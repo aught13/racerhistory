@@ -187,11 +187,12 @@ const root = document.querySelector('[data-controller="controller-name"]');
 const controller = application.getControllerForElementAndIdentifier(root, "controller-name");
 ```
 
-**Window Override Pattern** (for module initialization):
+**Turbo Navigation Mock**:
 ```javascript
-const mockInit = jest.fn();
-window.__MODULE_INIT__ = mockInit;
-const mod = await import("../../lib/module.js");
+const originalTurbo = window.Turbo;
+const visit = jest.fn();
+window.Turbo = { visit };
+// Restore the prior Turbo object in afterEach.
 ```
 
 **Event Target Testing** (handling missing/non-Element targets):
@@ -200,6 +201,27 @@ const event = new Event("turbo:frame-load");
 Object.defineProperty(event, "target", { value: frame });
 document.dispatchEvent(event);
 ```
+
+## Architecture and Lifecycle Conventions
+
+### PHP ownership and dependency injection
+
+- Controllers adapt HTTP requests: validate request shape, authorize, call a service, and render, redirect, or serialize its result.
+- Services own cross-table workflows and view-model/data transformations; reusable ORM queries belong in typed Table finders.
+- Register service dependencies and typed tables in `Application::services()` and inject them through constructors. Avoid constructing services or resolving tables with `TableRegistry` inside request workflows.
+- Tests should inject collaborators directly. Use a test factory helper when a workflow requires a configured context such as image or blog-post tagging.
+
+### Stimulus and Turbo lifecycle
+
+- Use Stimulus Targets and Values for controller-owned DOM and configuration; avoid global selectors for elements inside the controller root.
+- Pair manually registered listeners, timers, observers, and requests with cleanup in `disconnect()`. Abort in-flight work and clear ephemeral UI state before Turbo caches a page, while preserving submitted values and server-rendered selections.
+- Prefer Bootstrap `data-bs-*` attributes for static components. Keep imperative Bootstrap calls isolated to asynchronous flows or dynamically fetched modal fragments that cannot use static markup.
+
+### Vite assets and forms
+
+- Reference stylesheets through CakePHP's asset helpers or import them through Vite; import referenced images/fonts through Vite when they need manifest-backed URLs.
+- Prefer selective package imports and the existing route modules to avoid loading duplicate or monolithic bundles.
+- Social-link fields are newline-delimited URLs with user-facing help text and an example; never ask administrators to enter JSON.
 
 ## Test Coverage Goals
 

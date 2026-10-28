@@ -10,6 +10,7 @@ describe("admin-users-index controller", () => {
     let dataTableFactory;
     let jQueryMock;
     let bulkForm;
+    let confirmDeleteEvent;
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -19,7 +20,6 @@ describe("admin-users-index controller", () => {
                 data-controller="admin-users-index"
                 data-admin-users-index-bulk-activate-url-value="/admin/users/bulkActivate"
                 data-admin-users-index-bulk-delete-url-value="/admin/users/bulkDelete"
-                data-admin-users-index-delete-form-id-value="delete-form-users-bulk"
             >
                 <form id="bulk-action-form" data-admin-users-index-target="bulkForm">
                     <select id="bulk-action-select" data-admin-users-index-target="actionSelect">
@@ -60,7 +60,7 @@ describe("admin-users-index controller", () => {
                     </tbody>
                 </table>
 
-                <form id="delete-form-users-bulk"></form>
+                <form id="delete-form-users-bulk" data-admin-users-index-target="deleteForm"></form>
             </div>
         `;
 
@@ -68,7 +68,8 @@ describe("admin-users-index controller", () => {
         bulkForm.submit = jest.fn();
         bulkForm.requestSubmit = undefined;
 
-        window.__rhStimulusShowConfirmDelete = jest.fn();
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
 
         dataTableApi = {
             destroy: jest.fn(),
@@ -101,7 +102,10 @@ describe("admin-users-index controller", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -158,15 +162,15 @@ describe("admin-users-index controller", () => {
             new Event("submit", { bubbles: true, cancelable: true }),
         );
 
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledTimes(1);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
                 deleteUrl: "/admin/users/bulkDelete",
                 itemType: "users (bulk)",
                 ids: ["2"],
                 associated: ["new_user"],
                 idsName: "user_ids[]",
-                formId: "delete-form-users-bulk",
+                sourceForm: document.getElementById("delete-form-users-bulk"),
                 bulkAction: "delete",
             }),
         );
@@ -187,6 +191,7 @@ describe("admin-users-index controller branch coverage", () => {
     let jQueryMock;
     let pagination;
     let capturedOptions;
+    let confirmDeleteEvent;
 
     const startController = ({
         includeBulkForm = true,
@@ -217,7 +222,6 @@ describe("admin-users-index controller branch coverage", () => {
                 data-controller="admin-users-index"
                 data-admin-users-index-bulk-activate-url-value="/admin/users/bulkActivate"
                 data-admin-users-index-bulk-delete-url-value="/admin/users/bulkDelete"
-                data-admin-users-index-delete-form-id-value="delete-form-users-bulk"
             >
                 ${
                     includeBulkForm
@@ -260,6 +264,7 @@ describe("admin-users-index controller branch coverage", () => {
                         ? `<table id="search-users-table" data-admin-users-index-target="searchTable"><tbody><tr><td>admin</td></tr></tbody></table>`
                         : ""
                 }
+                <form id="delete-form-users-bulk" data-admin-users-index-target="deleteForm"></form>
             </div>
         `;
 
@@ -298,7 +303,6 @@ describe("admin-users-index controller branch coverage", () => {
         };
         jQueryMock.fn.DataTable.isDataTable = jest.fn(() => false);
 
-        window.__rhStimulusShowConfirmDelete = jest.fn();
         window.jQuery = jQueryMock;
         window.$ = jQueryMock;
 
@@ -336,6 +340,8 @@ describe("admin-users-index controller branch coverage", () => {
     beforeEach(() => {
         jest.useFakeTimers();
         capturedOptions = null;
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
     });
 
     afterEach(() => {
@@ -347,7 +353,10 @@ describe("admin-users-index controller branch coverage", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -529,7 +538,7 @@ describe("admin-users-index controller branch coverage", () => {
 
         controller.actionSelectTarget.value = "";
         controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.actionSelectTarget.value = "approve";
         controller.bulkFormTarget.requestSubmit = jest.fn();
@@ -545,30 +554,26 @@ describe("admin-users-index controller branch coverage", () => {
 
         controller.actionSelectTarget.value = "noop";
         controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.actionSelectTarget.value = "delete";
         controller.rowCheckboxes().forEach((checkbox) => {
             checkbox.checked = false;
         });
         controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         controller.rowCheckboxes().forEach((checkbox) => {
             checkbox.checked = true;
         });
-        const originalDeleteBridge = window.__rhStimulusShowConfirmDelete;
-        window.__rhStimulusShowConfirmDelete = undefined;
         controller.onSubmit(event);
-        expect(originalDeleteBridge).not.toHaveBeenCalled();
-
-        window.__rhStimulusShowConfirmDelete = jest.fn();
-        controller.onSubmit(event);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
                 ids: ["2", "9"],
                 associated: ["new_user", ""],
                 idsName: "user_ids[]",
+                sourceForm: document.getElementById("delete-form-users-bulk"),
                 bulkAction: "delete",
             }),
         );
@@ -633,8 +638,8 @@ describe("admin-users-index controller branch coverage", () => {
             new Event("submit", { bubbles: true, cancelable: true }),
         );
 
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalled();
-        const call = window.__rhStimulusShowConfirmDelete.mock.calls[0][0];
+        expect(confirmDeleteEvent).toHaveBeenCalled();
+        const call = confirmDeleteEvent.mock.calls[0][0].detail;
         // Should include empty string for row without second column cell
         expect(call.associated).toContain("");
     });

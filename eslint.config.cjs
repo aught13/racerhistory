@@ -39,6 +39,7 @@ module.exports = [
                 URL: "readonly",
                 URLSearchParams: "readonly",
                 Event: "readonly",
+                AbortController: "readonly",
                 HTMLImageElement: "readonly",
                 FileReader: "readonly",
                 FormData: "readonly",
@@ -88,7 +89,7 @@ module.exports = [
             "js/legacy/*-loader.js",
             "js/legacy/*-loader.mjs",
             "js/legacy/*-init.mjs",
-            "js/legacy/game-form-lookups.js",
+            "js/legacy/games_sport_dynamic.js",
         ],
         languageOptions: {
             ecmaVersion: 2022,
@@ -126,11 +127,10 @@ module.exports = [
         },
     },
     {
-        // Jest mock files (CommonJS)
+        // Jest mock files
         files: ["js/__mocks__/**/*.js", "js/__mocks__/**/*.cjs"],
         languageOptions: {
             ecmaVersion: 2022,
-            sourceType: "script",
             globals: {
                 window: "readonly",
                 document: "readonly",

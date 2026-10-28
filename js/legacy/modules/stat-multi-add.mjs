@@ -67,7 +67,6 @@ export function initStatMultiAdd() {
         if (addBtn && addBtn.dataset) {
             addBtn.dataset.rhReady = "1";
         }
-        window.__RH_STAT_MULTI_ADD_READY = true;
     } catch {
         void 0;
     }
@@ -182,13 +181,8 @@ function updateRemoveButtons(container) {
 // Reset flag on turbo:before-cache so re-init works after Turbo navigation
 document.addEventListener("turbo:before-cache", () => {
     _initialised = false;
-    try {
-        window.__RH_STAT_MULTI_ADD_READY = false;
-        const addBtn = document.getElementById("add-row-btn");
-        if (addBtn && addBtn.dataset) {
-            delete addBtn.dataset.rhReady;
-        }
-    } catch {
-        void 0;
+    const addBtn = document.getElementById("add-row-btn");
+    if (addBtn?.dataset) {
+        delete addBtn.dataset.rhReady;
     }
 });

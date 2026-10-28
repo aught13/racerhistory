@@ -11,9 +11,8 @@ function navigateTo(url) {
         return;
     }
 
-    const testNavigate = window.__RH_NAVIGATE__;
-    if (typeof testNavigate === "function") {
-        testNavigate(url);
+    if (window.Turbo && typeof window.Turbo.visit === "function") {
+        window.Turbo.visit(url);
         return;
     }
 

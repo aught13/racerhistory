@@ -20,7 +20,7 @@
                     ]) ?>
                     <?php $this->Form->unlockField('birth_place_id'); ?>
 
-                    <div class="row g-3" data-controller="person-form" data-person-form-initial-image-id-value="" data-person-form-initial-preview-url-value="" data-person-form-images-upload-url-value="/admin/images/upload">
+                    <div class="row g-3" data-controller="person-form" data-person-form-initial-image-id-value="" data-person-form-initial-preview-url-value="">
                         <div class="col-md-6">
                             <?= $this->Form->control('first', ['class' => 'form-control', 'label' => ['text' => 'First Name', 'class' => 'form-label'], 'maxlength' => 30]); ?>
                         </div>
@@ -39,7 +39,7 @@
                         <div class="col-md-6">
                             <?= $this->Form->control('death', ['type' => 'date', 'class' => 'form-control', 'label' => ['text' => 'Death Date', 'class' => 'form-label']]); ?>
                         </div>
-                        <div class="col-md-6" data-controller="place-search" data-place-search-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) ?>">
+                        <div class="col-md-6" data-controller="place-search" data-place-search-search-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxSearch'])) ?>" data-action="click->place-search#handleClick click@document->place-search#handleDocumentClick admin:person-birth-place-added@document->place-search#handleBirthPlaceAdded turbo:before-cache@document->place-search#beforeCache">
                             <label class="form-label">Birth Place</label>
                             <div class="input-group">
                                 <input type="text" id="birth-place-search" class="form-control" placeholder="Search places..." autocomplete="off" data-place-search-target="input" data-action="input->place-search#search">
@@ -78,19 +78,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12"> <?= $this->Form->control('bio', [
-                                'type' => 'textarea',
-                                'rows' => 8,
-                                'class' => 'form-control',
-                                'id' => 'bio-editor',
-                                'data-person-form-target' => 'bioEditor',
-                                'label' => ['text' => 'Biography', 'class' => 'form-label'],
-                                'templates' => [
-                                    // Ensure we keep the textarea markup simple for JS replacement
-                                    'textarea' => '<textarea name="{{name}}"{{attrs}}>{{value}}</textarea>',
-                                ],
-                            ]); ?>
-                        </div>
                     </div>
 
                     <div class="mt-4 d-flex gap-2">
@@ -123,7 +110,7 @@
     'title' => 'Add New Place',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Places', 'action' => 'ajaxAdd']),
     'hiddenFormId' => 'hidden-birth-place-form',
-    'successCallback' => 'handleBirthPlaceAdded',
+    'successEvent' => 'admin:person-birth-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
@@ -144,4 +131,3 @@ $uploadContext = null; // No auto-tagging on add
 $aspectRatio = 1; // Square aspect ratio for profile images
 echo $this->element('Admin/image_selector_modal', compact('modalId', 'targetFieldId', 'tagFilter', 'uploadContext', 'aspectRatio'));
 ?>
-

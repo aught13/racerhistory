@@ -9,6 +9,7 @@ describe("admin-games-index controller", () => {
     let dataTableApi;
     let dataTableFactory;
     let jQueryMock;
+    let confirmDeleteEvent;
 
     beforeEach(() => {
         jest.useFakeTimers();
@@ -18,7 +19,6 @@ describe("admin-games-index controller", () => {
                 data-controller="admin-games-index"
                 data-admin-games-index-ajax-url-value="/admin/games/ajaxList"
                 data-admin-games-index-bulk-delete-url-value="/admin/games/bulk"
-                data-admin-games-index-delete-form-id-value="delete-form-games-bulk"
             >
                 <form id="bulk-action-form-games" data-admin-games-index-target="bulkForm">
                     <select id="bulk-action-select" data-admin-games-index-target="actionSelect">
@@ -57,11 +57,12 @@ describe("admin-games-index controller", () => {
                     </tbody>
                 </table>
 
-                <form id="delete-form-games-bulk"></form>
+                <form id="delete-form-games-bulk" data-admin-games-index-target="deleteForm"></form>
             </div>
         `;
 
-        window.__rhStimulusShowConfirmDelete = jest.fn();
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
 
         dataTableApi = {
             destroy: jest.fn(),
@@ -99,7 +100,10 @@ describe("admin-games-index controller", () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -149,15 +153,15 @@ describe("admin-games-index controller", () => {
             new Event("submit", { bubbles: true, cancelable: true }),
         );
 
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledTimes(1);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail).toEqual(
             expect.objectContaining({
                 deleteUrl: "/admin/games/bulk",
                 itemType: "games (bulk)",
                 ids: ["1"],
                 associated: ["2024-01-10 vs Belmont"],
                 idsName: "game_ids[]",
-                formId: "delete-form-games-bulk",
+                sourceForm: document.getElementById("delete-form-games-bulk"),
                 bulkAction: "delete",
             }),
         );
@@ -176,6 +180,7 @@ describe("admin-games-index controller branch coverage", () => {
     let jQueryMock;
     let dataTableFactory;
     let dataTableApi;
+    let confirmDeleteEvent;
 
     const renderFixture = ({
         includeTableTarget = true,
@@ -188,7 +193,6 @@ describe("admin-games-index controller branch coverage", () => {
                 data-controller="admin-games-index"
                 data-admin-games-index-ajax-url-value="/admin/games/ajaxList"
                 data-admin-games-index-bulk-delete-url-value="/admin/games/bulk"
-                data-admin-games-index-delete-form-id-value="delete-form-games-bulk"
             >
                 <form id="bulk-action-form-games" ${includeBulkFormTarget ? 'data-admin-games-index-target="bulkForm"' : ""}>
                     <select id="bulk-action-select" ${includeActionTargets ? 'data-admin-games-index-target="actionSelect"' : ""}>
@@ -227,7 +231,7 @@ describe("admin-games-index controller branch coverage", () => {
                     </tbody>
                 </table>
 
-                <form id="delete-form-games-bulk"></form>
+                <form id="delete-form-games-bulk" data-admin-games-index-target="deleteForm"></form>
             </div>
         `;
     };
@@ -293,7 +297,8 @@ describe("admin-games-index controller branch coverage", () => {
 
         window.jQuery = jQueryMock;
         window.$ = jQueryMock;
-        window.__rhStimulusShowConfirmDelete = jest.fn();
+        confirmDeleteEvent = jest.fn();
+        document.addEventListener("admin:confirm-delete", confirmDeleteEvent);
     });
 
     afterEach(() => {
@@ -302,7 +307,10 @@ describe("admin-games-index controller branch coverage", () => {
             application = null;
         }
 
-        delete window.__rhStimulusShowConfirmDelete;
+        document.removeEventListener(
+            "admin:confirm-delete",
+            confirmDeleteEvent,
+        );
         delete window.jQuery;
         delete window.$;
         document.body.innerHTML = "";
@@ -414,20 +422,20 @@ describe("admin-games-index controller branch coverage", () => {
         actionSelect.value = "";
         controller.onSubmit(submitEvent);
         expect(submitEvent.preventDefault).toHaveBeenCalled();
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         actionSelect.value = "delete";
         controller.onSubmit(submitEvent);
-        expect(window.__rhStimulusShowConfirmDelete).not.toHaveBeenCalled();
+        expect(confirmDeleteEvent).not.toHaveBeenCalled();
 
         const rowCheckbox = document.querySelector(".game-checkbox");
         rowCheckbox.checked = true;
 
-        const savedConfirm = window.__rhStimulusShowConfirmDelete;
-        delete window.__rhStimulusShowConfirmDelete;
         controller.onSubmit(submitEvent);
-        expect(savedConfirm).not.toHaveBeenCalled();
-        window.__rhStimulusShowConfirmDelete = savedConfirm;
+        expect(confirmDeleteEvent).toHaveBeenCalledTimes(1);
+        expect(confirmDeleteEvent.mock.calls[0][0].detail.sourceForm).toBe(
+            document.getElementById("delete-form-games-bulk"),
+        );
 
         const detached = document.createElement("input");
         detached.className = "game-checkbox";
@@ -436,7 +444,7 @@ describe("admin-games-index controller branch coverage", () => {
         detached.checked = true;
         controller.element.appendChild(detached);
         controller.onSubmit(submitEvent);
-        expect(window.__rhStimulusShowConfirmDelete).toHaveBeenCalledWith(
+        expect(confirmDeleteEvent.mock.calls[1][0].detail).toEqual(
             expect.objectContaining({
                 ids: expect.arrayContaining(["44"]),
                 associated: expect.arrayContaining([""]),

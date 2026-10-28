@@ -6,6 +6,7 @@ namespace App\Service;
 use App\Model\Entity\Game;
 use App\Model\Table\GamesTable;
 use Cake\Datasource\EntityInterface;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -21,6 +22,7 @@ class GameUpsertService
     private SportConfigService $sportConfigService;
     private GameEavUiService $gameEavUi;
     private TeamSportContextService $teamSportContextService;
+    private AdminDataScopeService $adminDataScopeService;
 
     /**
      * Constructor.
@@ -29,12 +31,14 @@ class GameUpsertService
      * @param \App\Service\GameService|null $gameService Game service
      * @param \App\Service\SportConfigService|null $sportConfigService Sport config service
      * @param \App\Service\GameEavUiService|null $gameEavUi EAV UI helper
+     * @param \App\Service\AdminDataScopeService|null $adminDataScopeService Role data scope resolver
      */
     public function __construct(
         ?GamesTable $gamesTable = null,
         ?GameService $gameService = null,
         ?SportConfigService $sportConfigService = null,
         ?GameEavUiService $gameEavUi = null,
+        ?AdminDataScopeService $adminDataScopeService = null,
     ) {
         /** @var \App\Model\Table\GamesTable $table */
         $table = $gamesTable ?? TableRegistry::getTableLocator()->get('Games');
@@ -44,16 +48,19 @@ class GameUpsertService
         $this->sportConfigService = $sportConfigService ?? new SportConfigService();
         $this->gameEavUi = $gameEavUi ?? new GameEavUiService();
         $this->teamSportContextService = new TeamSportContextService($this->sportConfigService);
+        $this->adminDataScopeService = $adminDataScopeService ?? new AdminDataScopeService();
     }
 
     /**
      * Build view variables for the add form.
      *
      * @param int $teamSeasonId Team season id
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function getAddViewData(int $teamSeasonId): array
+    public function getAddViewData(int $teamSeasonId, mixed $identity = null): array
     {
+        $this->assertCanAccessTeamSeason($identity, $teamSeasonId);
         /** @var \App\Model\Entity\Game $game */
         $game = $this->gamesTable->newEmptyEntity();
         $game->set('team_season_id', $teamSeasonId);
@@ -68,10 +75,12 @@ class GameUpsertService
      *
      * @param int $teamSeasonId Team season id
      * @param array $data Request data
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function processAdd(int $teamSeasonId, array $data): array
+    public function processAdd(int $teamSeasonId, array $data, mixed $identity = null): array
     {
+        $this->assertCanAccessTeamSeason($identity, $teamSeasonId);
         /** @var \App\Model\Entity\Game $game */
         $game = $this->gamesTable->newEmptyEntity();
         $game->set('team_season_id', $teamSeasonId);
@@ -166,11 +175,12 @@ class GameUpsertService
      * Build view variables for the edit form.
      *
      * @param int $gameId Game id
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function getEditViewData(int $gameId): array
+    public function getEditViewData(int $gameId, mixed $identity = null): array
     {
-        $game = $this->getGameForEdit($gameId);
+        $game = $this->getGameForEdit($gameId, $identity);
         $metadata = $this->gameService->getGameEavMetadata($gameId, null);
 
         return $this->buildUpsertViewData($game, $metadata, $metadata['values'] ?? []);
@@ -181,11 +191,19 @@ class GameUpsertService
      *
      * @param int $gameId Game id
      * @param array $data Request data
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function processEdit(int $gameId, array $data): array
+    public function processEdit(int $gameId, array $data, mixed $identity = null): array
     {
-        $game = $this->getGameForEdit($gameId);
+        $game = $this->getGameForEdit($gameId, $identity);
+        if (
+            array_key_exists('team_season_id', $data)
+            && (int)$data['team_season_id'] !== (int)$game->team_season_id
+            && !$this->adminDataScopeService->canAccessTeamSeason($identity, (int)$data['team_season_id'])
+        ) {
+            throw new RecordNotFoundException('Team season not found.');
+        }
         $metadata = $this->gameService->getGameEavMetadata($gameId, null);
 
         $this->gameService->normalizeAssociatedInlineCreate($data);
@@ -194,8 +212,13 @@ class GameUpsertService
         $team = $game->team_season->team;
         $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
 
+        if ((!isset($data['periods']) || $data['periods'] === '') && $game->get('periods') !== null) {
+            $data['periods'] = (int)$game->get('periods');
+        }
+
         $eavErrors = $sportId ? $this->sportConfigService->validatePeriodScores((int)$sportId, $data) : [];
         if (!empty($eavErrors)) {
+            $game = $this->gamesTable->patchEntity($game, $data);
             $eav = $this->gameEavUi->mergePostedPeriodAndOvertimeFields($metadata['values'] ?? [], $data);
             $viewData = $this->buildUpsertViewData($game, $metadata, $eav);
 
@@ -234,7 +257,8 @@ class GameUpsertService
             ];
         }
 
-        $viewData = $this->buildUpsertViewData($game, $metadata, $metadata['values'] ?? []);
+        $eav = $this->gameEavUi->mergePostedPeriodAndOvertimeFields($metadata['values'] ?? [], $data);
+        $viewData = $this->buildUpsertViewData($game, $metadata, $eav);
 
         return [
             'success' => false,
@@ -251,10 +275,15 @@ class GameUpsertService
      * Load the game record used for edit.
      *
      * @param int $gameId Game id
+     * @param mixed $identity Current authenticated identity.
      * @return \App\Model\Entity\Game
      */
-    private function getGameForEdit(int $gameId): Game
+    private function getGameForEdit(int $gameId, mixed $identity): Game
     {
+        if (!$this->adminDataScopeService->canAccessGame($identity, $gameId)) {
+            throw new RecordNotFoundException('Game not found.');
+        }
+
         /** @var \App\Model\Entity\Game $game */
         $game = $this->gamesTable->find()
             ->contain(['TeamSeason' => ['Teams']])
@@ -264,6 +293,19 @@ class GameUpsertService
         $this->teamSportContextService->attachSportContextToTeam($game->team_season->team);
 
         return $game;
+    }
+
+    /**
+     * @param mixed $identity Current authenticated identity.
+     * @param int $teamSeasonId TeamSeason identifier.
+     * @return void
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException If outside the role scope.
+     */
+    private function assertCanAccessTeamSeason(mixed $identity, int $teamSeasonId): void
+    {
+        if (!$this->adminDataScopeService->canAccessTeamSeason($identity, $teamSeasonId)) {
+            throw new RecordNotFoundException('Team season not found.');
+        }
     }
 
     /**

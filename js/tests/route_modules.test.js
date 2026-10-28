@@ -63,6 +63,9 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("admin-layout")).toBe(true);
             expect(registeredControllers.has("admin-dashboard")).toBe(true);
             expect(registeredControllers.has("nav-accordion")).toBe(true);
+            expect(registeredControllers.has("opponent-name-preview")).toBe(
+                true,
+            );
             expect(registeredControllers.has("period-import-toggle")).toBe(
                 true,
             );
@@ -116,7 +119,7 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("roster-multi-add")).toBe(true);
         });
 
-        test("registerAdminStatsEntryControllers registers stats entry controller and runs legacy init", () => {
+        test("registerAdminStatsEntryControllers registers the stats entry controller", () => {
             registerAdminStatsEntryControllers(application);
             expect(registeredControllers.has("stat-multi-add")).toBe(true);
         });
@@ -126,6 +129,7 @@ describe("Route Module Controller Registration", () => {
             expect(registeredControllers.has("sports-form")).toBe(true);
             expect(registeredControllers.has("sports-configs-form")).toBe(true);
             expect(registeredControllers.has("season-form")).toBe(true);
+            expect(registeredControllers.has("team-name-preview")).toBe(true);
             expect(registeredControllers.has("team-season-form")).toBe(true);
         });
 

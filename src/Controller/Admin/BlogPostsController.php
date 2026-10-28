@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\BlogPostsAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Admin Blog Posts Controller
@@ -28,6 +30,22 @@ class BlogPostsController extends AppController
     private BlogPostsAdminService $blogPostsAdminService;
 
     /**
+     * Create the controller with its blog post administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\BlogPostsAdminService $blogPostsAdminService The blog post administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        BlogPostsAdminService $blogPostsAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->blogPostsAdminService = $blogPostsAdminService;
+    }
+
+    /**
      * Controller initialize: setup BlogPostService.
      *
      * @return void
@@ -35,7 +53,6 @@ class BlogPostsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->blogPostsAdminService = new BlogPostsAdminService();
     }
 
     /**

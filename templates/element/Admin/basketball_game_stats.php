@@ -416,7 +416,7 @@ $canUpdateGames = $this->Rbac->can('Games', 'update');
     <?php if (!empty($opponentBoxStats) || $hasOpponentStats) : ?>
         <div class="row mt-4">
             <div class="col-12">
-                <h3><?= h($game->opponent->opponent_name ?? 'Opponent') ?> - <?= h($game->pts_opp ?? '') ?></h3>
+                <h3><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?> - <?= h($game->pts_opp ?? '') ?></h3>
             </div>
         </div>
         <div class="row mb-3">
@@ -625,7 +625,7 @@ $canUpdateGames = $this->Rbac->can('Games', 'update');
                         <tr>
                             <th><?= h($game->team_season->team->team_nickname ?? 'Murray State') ?></th>
                             <th>Category</th>
-                            <th><?= h($game->opponent->opponent_name ?? 'Opponent') ?></th>
+                            <th><?= h($game->opponent?->getMascotDisplayName() ?? 'Opponent') ?></th>
                         </tr>
                     </thead>
                     <tbody>

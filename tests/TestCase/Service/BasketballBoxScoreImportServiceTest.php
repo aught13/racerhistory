@@ -172,6 +172,12 @@ class BasketballBoxScoreImportServiceTest extends TestCase
 <tr><th>Assists</th></tr>
 <tr><td>Team A</td><td></td><td>5</td><td>0</td><td>5</td></tr>
 <tr><td>Team B</td><td>4</td><td>3</td><td>1</td><td>8</td></tr>
+<tr><th>Offensive rebounds</th></tr>
+<tr><td>Team A</td><td>3</td><td>4</td><td class="s-text-paragraph-small-bold">15</td></tr>
+<tr><td>Team B</td><td>2</td><td>4</td><td class="s-text-paragraph-small-bold">7</td></tr>
+<tr><th>Total rebounds</th></tr>
+<tr><td>Team A</td><td>13</td><td>8</td><td class="s-text-paragraph-small-bold">39</td></tr>
+<tr><td>Team B</td><td>12</td><td>16</td><td class="s-text-paragraph-small-bold">44</td></tr>
 </table>
 Attendance: 1234
 </body></html>
@@ -185,6 +191,11 @@ HTML;
         self::assertStringContainsString('PERIOD_DETAIL|0|PNT|1=10|2=12|OT=4', $text);
         self::assertStringContainsString('FINAL_DETAIL|0|PNT|26', $text);
         self::assertStringContainsString('PERIOD_DETAIL|0|FG|1=15 - 30|2=15 - 30|OT=5 - 8', $text);
+        self::assertStringContainsString('PERIOD_DETAIL|0|ORB|1=3|2=4', $text);
+        self::assertStringNotContainsString('PERIOD_DETAIL|0|ORB|1=3|2=4|OT=15', $text);
+        self::assertStringContainsString('FINAL_DETAIL|0|ORB|15', $text);
+        self::assertStringContainsString('PERIOD_DETAIL|1|RB|1=12|2=16', $text);
+        self::assertStringContainsString('FINAL_DETAIL|1|RB|44', $text);
         self::assertStringContainsString('Attendance: 1234', $text);
     }
 

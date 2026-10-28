@@ -5,15 +5,17 @@ namespace App\Controller\Admin;
 
 use App\Model\Entity\User;
 use App\Service\ImageBrowseService;
-use App\Service\ImageStorageService;
 use App\Service\RbacPermissionService;
 use App\Service\RolesAdminService;
 use App\Service\SiteOptionsService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Log\Log;
 use Cake\ORM\Query\SelectQuery;
+use Psr\Http\Message\UploadedFileInterface;
 use Throwable;
 
 /**
@@ -25,6 +27,7 @@ use Throwable;
  * @property \App\Controller\Component\UserManagerComponent $UserManager
  * @property \App\Model\Table\UsersTable $Users
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \App\Controller\Component\UserProfileComponent $UserProfile
  */
 class UsersController extends AppController
 {
@@ -33,6 +36,33 @@ class UsersController extends AppController
     private RolesAdminService $rolesAdminService;
 
     private RbacPermissionService $rbacPermissionService;
+
+    private ImageBrowseService $imageBrowseService;
+
+    /**
+     * Create the controller with its user administration services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\SiteOptionsService $siteOptionsService The site options service.
+     * @param \App\Service\RolesAdminService $rolesAdminService The roles administration service.
+     * @param \App\Service\RbacPermissionService $rbacPermissionService The RBAC permission service.
+     * @param \App\Service\ImageBrowseService $imageBrowseService The image browsing service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        SiteOptionsService $siteOptionsService,
+        RolesAdminService $rolesAdminService,
+        RbacPermissionService $rbacPermissionService,
+        ImageBrowseService $imageBrowseService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->siteOptionsService = $siteOptionsService;
+        $this->rolesAdminService = $rolesAdminService;
+        $this->rbacPermissionService = $rbacPermissionService;
+        $this->imageBrowseService = $imageBrowseService;
+    }
 
     /**
      * Initialization hook method.
@@ -43,12 +73,9 @@ class UsersController extends AppController
     {
         parent::initialize();
 
-        $this->siteOptionsService = new SiteOptionsService();
-        $this->rolesAdminService = new RolesAdminService();
-        $this->rbacPermissionService = new RbacPermissionService();
-
         // Load UserManager component for admin-specific logic
         $this->loadComponent('UserManager');
+        $this->loadComponent('UserProfile');
 
         // Load Authorization component
         $this->loadComponent('Authorization.Authorization');
@@ -145,81 +172,17 @@ class UsersController extends AppController
             Log::debug('Admin Users::edit incoming data keys', ['keys' => array_keys((array)$data)]);
             Log::debug('Admin Users::edit social_links raw', ['social_links' => $data['social_links'] ?? null]);
 
-            // Normalize `social_links` to a valid JSON array string before
-            // patching. The live schema is JSON-backed (with a JSON validity check),
-            // so plain newline strings are not valid persisted values.
-            if (array_key_exists('social_links', $data)) {
-                $sl = $data['social_links'];
-                if ($sl === '' || $sl === null) {
-                    $data['social_links'] = null;
-                } elseif (is_string($sl)) {
-                    $decoded = json_decode((string)$sl, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $arr = array_values(array_filter(
-                            array_map('trim', $decoded),
-                            static fn($v) => trim((string)$v) !== '',
-                        ));
-                        $data['social_links'] = $arr === [] ? null :
-                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                    } else {
-                        $parts = preg_split("/\r\n|\n|\r/", (string)$sl);
-                        $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
-                        $data['social_links'] = $arr === [] ? null :
-                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                    }
-                } elseif (is_array($sl)) {
-                    $arr = array_values(array_filter(array_map('trim', $sl), static fn($v) => trim((string)$v) !== ''));
-                    $data['social_links'] = $arr === [] ? null :
-                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                } else {
-                    $data['social_links'] = null;
-                }
-            }
             // Administrators can manage roles, update display attributes, etc.
             $accessibleFields = [
                 'username', 'email', 'first_name', 'last_name', 'role', 'role_id', 'status', 'active',
                 'display_name', 'bio', 'website_url', 'social_links', 'profile_image_id',
             ];
 
-            $user = $this->Users->patchEntity($user, $data, [
-                'fields' => $accessibleFields,
-            ]);
-
-            // Ensure we persist only valid JSON-array data for this field.
-            if ($user->isDirty('social_links')) {
-                /** @var mixed $slVal */
-                $slVal = $user->social_links;
-                if ($slVal === '' || $slVal === null) {
-                    $user->social_links = null;
-                } elseif (is_array($slVal)) {
-                    $arr = array_values(array_filter(
-                        array_map('trim', $slVal),
-                        static fn($v) => trim((string)$v) !== '',
-                    ));
-                    $user->social_links = $arr === [] ? null :
-                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                } elseif (is_string($slVal)) {
-                    $decoded = json_decode($slVal, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $arr = array_values(array_filter(
-                            array_map('trim', $decoded),
-                            static fn($v) => trim((string)$v) !== '',
-                        ));
-                        $user->social_links = $arr === [] ? null :
-                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                    } else {
-                        $parts = preg_split("/\r\n|\n|\r/", $slVal);
-                        $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
-                        $user->social_links = $arr === [] ? null :
-                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                    }
-                }
-            }
+            $user = $this->UserProfile->patchProfile($user, $data, $accessibleFields);
 
             // Handle Avatar / profile image upload
             $file = $this->request->getData('avatar');
-            if ($file && is_object($file) && method_exists($file, 'getError') && $file->getError() === UPLOAD_ERR_OK) {
-                $imageStorage = new ImageStorageService();
+            if ($file instanceof UploadedFileInterface && $file->getError() === UPLOAD_ERR_OK) {
                 $ownerId = null;
                 if ($this->components()->has('Authentication')) {
                     try {
@@ -238,16 +201,13 @@ class UsersController extends AppController
                     }
                 }
 
-                $uploadResult = $imageStorage->upload($file, [], [], $ownerId);
-
-                if (!empty($uploadResult['image']['id'])) {
-                    $user->profile_image_id = $uploadResult['image']['id'];
-                } else {
-                    $this->Flash->error($imageStorage->getLastError() ?: 'Failed to process avatar image.');
+                $uploadError = $this->UserProfile->uploadProfileImage($user, $file, $ownerId);
+                if ($uploadError !== null) {
+                    $this->Flash->error($uploadError);
                 }
             }
 
-            if ($this->Users->save($user)) {
+            if ($this->UserProfile->saveProfile($user) !== false) {
                 $this->Flash->success('User has been updated successfully.');
 
                 return $this->redirect(['action' => 'index']);
@@ -281,7 +241,7 @@ class UsersController extends AppController
     {
         $imagesList = [];
         try {
-            $browse = (new ImageBrowseService())->browse(null, 50);
+            $browse = $this->imageBrowseService->browse(null, 50);
             foreach (($browse['images'] ?? []) as $img) {
                 $imagesList[(int)$img['id']] = sprintf('#%d - %s', $img['id'], $img['original_name']);
             }

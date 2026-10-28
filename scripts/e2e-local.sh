@@ -92,6 +92,14 @@ log() { echo "[e2e-local] $*"; }
 cleanup() {
     if [[ -n "${SERVER_PID:-}" ]]; then
         if kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+            while IFS= read -r child_pid; do
+                [[ -n "$child_pid" ]] || continue
+                if kill -0 "$child_pid" >/dev/null 2>&1; then
+                    log "Stopping CakePHP server child (PID $child_pid)";
+                    kill "$child_pid" || true;
+                fi
+            done < <(ps -o pid= --ppid "$SERVER_PID" 2>/dev/null || true)
+
             log "Stopping CakePHP dev server (PID $SERVER_PID)";
             kill "$SERVER_PID" || true;
             wait "$SERVER_PID" 2>/dev/null || true;

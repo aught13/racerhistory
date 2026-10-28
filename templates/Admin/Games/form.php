@@ -63,7 +63,11 @@
             <div class="col-md-6">
                 <fieldset class="border rounded p-2">
                     <legend class="float-none w-auto fs-6">New Opponent</legend>
-                    <?= $this->Form->control('new_opponent.opponent_name', ['label' => 'Name', 'class' => 'form-control']) ?>
+                    <?= $this->Form->control('new_opponent.opponent_name', [
+                        'label' => 'Official Opponent Name',
+                        'class' => 'form-control',
+                    ]) ?>
+                    <small class="text-muted">Enter the official name used in Full Opponent Name; add the mascot and short name on the Opponents page.</small>
                 </fieldset>
             </div>
         </div>

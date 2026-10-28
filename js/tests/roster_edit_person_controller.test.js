@@ -19,12 +19,13 @@ describe("roster-edit-person controller", () => {
         document.body.innerHTML = `
             <div
                 data-controller="roster-edit-person"
+                data-action="turbo:before-cache@document->roster-edit-person#beforeCache turbo:load@document->roster-edit-person#afterCache admin:popup-option-added@document->roster-edit-person#popupOptionAdded"
                 data-roster-edit-person-search-url-value="/admin/people/search"
                 data-roster-edit-person-current-id-value="5"
                 data-roster-edit-person-current-label-value="Current Person"
             >
                 <div id="select-wrapper">
-                    <select data-roster-edit-person-target="select" class="form-select">
+                    <select id="person-id-select" data-roster-edit-person-target="select" class="form-select">
                         <option value="">(Select a person)</option>
                     </select>
                 </div>
@@ -58,6 +59,57 @@ describe("roster-edit-person controller", () => {
         expect(select.querySelector('option[value="5"]').textContent).toBe(
             "Current Person",
         );
+    });
+
+    test("selects a person created by the popup", () => {
+        const select = document.querySelector("select");
+        document.dispatchEvent(
+            new CustomEvent("admin:popup-option-added", {
+                detail: {
+                    targetSelectId: select.id,
+                    newOption: { value: 8, text: "New Person" },
+                },
+            }),
+        );
+
+        expect(select.value).toBe("8");
+        expect(select.querySelector('option[value="8"]').textContent).toBe(
+            "New Person",
+        );
+    });
+
+    test("ignores popup options addressed to another select", () => {
+        const select = document.querySelector("select");
+        document.dispatchEvent(
+            new CustomEvent("admin:popup-option-added", {
+                detail: {
+                    targetSelectId: "another-select",
+                    newOption: { value: 8, text: "New Person" },
+                },
+            }),
+        );
+
+        expect(select.value).toBe("5");
+        expect(select.querySelector('option[value="8"]')).toBeNull();
+    });
+
+    test("cleans transient search markup before cache and restores it on load", async () => {
+        await flushPromises();
+
+        const root = document.querySelector(
+            '[data-controller="roster-edit-person"]',
+        );
+        const select = document.querySelector("select");
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(root.querySelector(".dynamic-person-wrapper")).toBeNull();
+        expect(select.value).toBe("5");
+
+        document.dispatchEvent(new Event("turbo:load"));
+        await flushPromises();
+
+        expect(root.querySelector(".dynamic-person-wrapper")).not.toBeNull();
+        expect(select.value).toBe("5");
     });
 
     test("uses an existing wrapper when present and does not duplicate controls", () => {
@@ -111,10 +163,14 @@ describe("roster-edit-person controller", () => {
         await flushPromises();
         await flushPromises();
 
-        expect(fetch).toHaveBeenCalledWith("/admin/people/search?q=Al", {
-            credentials: "same-origin",
-            headers: { "X-Requested-With": "XMLHttpRequest" },
-        });
+        expect(fetch).toHaveBeenCalledWith(
+            "/admin/people/search?q=Al",
+            expect.objectContaining({
+                credentials: "same-origin",
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                signal: expect.any(Object),
+            }),
+        );
         expect(select.querySelector('option[value=""]').textContent).toBe(
             "(Select a person)",
         );

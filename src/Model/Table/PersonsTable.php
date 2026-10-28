@@ -24,7 +24,7 @@ use Cake\Validation\Validator;
  * @method \App\Model\Entity\Person[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Person>|false deleteMany(iterable $entities, array $options = [])
  * @method \App\Model\Entity\Person[]|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\Person> deleteManyOrFail(iterable $entities, array $options = [])
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
- * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior}>
+ * @extends \Cake\ORM\Table<array{Timestamp: \Cake\ORM\Behavior\TimestampBehavior},\App\Model\Entity\Person>
  */
 class PersonsTable extends Table
 {
@@ -86,7 +86,6 @@ class PersonsTable extends Table
             ->maxLength('full', 162)
             ->maxLength('display', 162)
             ->maxLength('person_image', 162)
-            ->allowEmptyString('bio')
             ->integer('birth_place_id')
             ->allowEmptyString('birth_place_id')
             ->scalar('person_previous')

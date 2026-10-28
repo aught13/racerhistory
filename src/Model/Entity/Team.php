@@ -15,8 +15,8 @@ use Cake\ORM\Entity;
  * @property int $id Unique identifier
  * @property int $sport_id Foreign key to sports table
  * @property string|null $sport_key Canonical sport key (basketball, football, etc.)
- * @property string $team_name Short display name (max 162 chars)
- * @property string|null $team_description Full official name including institution and sport (max 240 chars)
+ * @property string $team_name Base team name or category (max 162 chars)
+ * @property string|null $team_description Organization or name prefix for the full team name (max 240 chars)
  * @property string $abbr Team abbreviation for compact display (max 5 chars)
  * @property string $team_nickname Team mascot or nickname (max 30 chars)
  * @property string $team_scorebug Shortened name for score display (max 6 chars)
@@ -59,13 +59,55 @@ class Team extends Entity
     public const GENDER_COED = 'C';
 
     /**
-     * Get display name for this team
+     * Get the default team name for display.
      *
      * @return string
      */
     public function getDisplayName(): string
     {
-        return $this->team_name ?? 'Unknown Team';
+        $nameParts = [$this->team_nickname ?? null, $this->team_name ?? null];
+
+        return $this->composeDisplayName([
+            $nameParts[0],
+            $this->getDisplayGenderPrefix($nameParts),
+            $nameParts[1],
+        ]);
+    }
+
+    /**
+     * Get the full team name for display.
+     *
+     * @return string
+     */
+    public function getFullTeamDisplayName(): string
+    {
+        $nameParts = [
+            $this->team_description ?? null,
+            $this->team_nickname ?? null,
+            $this->team_name ?? null,
+        ];
+
+        return $this->composeDisplayName([
+            $nameParts[0],
+            $nameParts[1],
+            $this->getDisplayGenderPrefix($nameParts),
+            $nameParts[2],
+        ]);
+    }
+
+    /**
+     * Get the short team label for display.
+     *
+     * @return string
+     */
+    public function getTeamDisplayName(): string
+    {
+        $nameParts = [$this->team_name ?? null];
+
+        return $this->composeDisplayName([
+            $this->getDisplayGenderPrefix($nameParts),
+            $nameParts[0],
+        ]);
     }
 
     /**
@@ -107,6 +149,73 @@ class Team extends Entity
     }
 
     /**
+     * Join populated display components and avoid repeating exact components.
+     *
+     * @param array<int,mixed> $parts Display components
+     * @return string
+     */
+    private function composeDisplayName(array $parts): string
+    {
+        $components = $this->normalizeDisplayComponents($parts);
+
+        return $components === [] ? 'Unknown Team' : implode(' ', $components);
+    }
+
+    /**
+     * Add a gender prefix unless the base team name is missing or already gendered.
+     *
+     * @param array<int,mixed> $nameParts Name components included in this display
+     * @return string
+     */
+    private function getDisplayGenderPrefix(array $nameParts): string
+    {
+        if ($this->normalizeDisplayComponents([$this->team_name ?? null]) === []) {
+            return '';
+        }
+
+        $prefix = match ($this->gender ?? null) {
+            self::GENDER_MALE => "Men's",
+            self::GENDER_FEMALE => "Women's",
+            default => '',
+        };
+        if ($prefix === '') {
+            return '';
+        }
+
+        $includedName = implode(' ', $this->normalizeDisplayComponents($nameParts));
+        $pattern = "/\\b(?:men(?:['’]s)?|male|boys?|women(?:['’]s)?|female|girls?)\\b/ui";
+
+        return preg_match($pattern, $includedName) === 1 ? '' : $prefix;
+    }
+
+    /**
+     * Trim empty display components and remove exact duplicates.
+     *
+     * @param array<int,mixed> $parts Display components
+     * @return list<string>
+     */
+    private function normalizeDisplayComponents(array $parts): array
+    {
+        $components = [];
+        foreach ($parts as $part) {
+            if (!is_string($part) && !is_numeric($part)) {
+                continue;
+            }
+
+            $component = trim((string)$part);
+            if ($component !== '') {
+                $existingIndex = array_search($component, $components, true);
+                if ($existingIndex !== false) {
+                    array_splice($components, $existingIndex, 1);
+                }
+                $components[] = $component;
+            }
+        }
+
+        return $components;
+    }
+
+    /**
      * Get compact display format using abbreviation
      *
      * @return string
@@ -117,7 +226,7 @@ class Team extends Entity
     }
 
     /**
-     * Check if team has a description
+     * Check if the team has an organization or name prefix.
      *
      * @return bool
      */

@@ -13,11 +13,11 @@ class ImageTagUiService
     private TeamSeasonRosterService $rosterService;
 
     /**
-     * @param \App\Service\TeamSeasonRosterService|null $rosterService Optional roster service override (useful for testing).
+     * @param \App\Service\TeamSeasonRosterService $rosterService Roster label dependency.
      */
-    public function __construct(?TeamSeasonRosterService $rosterService = null)
+    public function __construct(TeamSeasonRosterService $rosterService)
     {
-        $this->rosterService = $rosterService ?? new TeamSeasonRosterService();
+        $this->rosterService = $rosterService;
     }
 
     /**

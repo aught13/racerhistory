@@ -1,4 +1,6 @@
 <?php
+use App\Service\TaggingService;
+
 /**
  * Tag modal partial
  * Expects view variables: teams, teamSeasons, games, sites, opponents, sports,
@@ -31,6 +33,9 @@ $applyUrl = $this->Url->build($formUrl);
                         'sports' => $sports ?? [],
                         'currentTags' => $currentTags ?? [],
                         'tagString' => $tagString ?? '',
+                        'presetTags' => ($subject ?? '') === 'blogposts'
+                            ? TaggingService::BLOG_POST_PRESET_TAGS
+                            : [],
                     ]) ?>
                 </div>
             </div>

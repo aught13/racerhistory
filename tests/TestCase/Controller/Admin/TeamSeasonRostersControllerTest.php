@@ -24,6 +24,9 @@ class TeamSeasonRostersControllerTest extends TestCase
         'app.Sports',
         'app.Users',
         'app.Places',
+        'app.Roles',
+        'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     /**
@@ -57,7 +60,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseContains('id="roster-rows"');
         $this->assertResponseContains('data-roster-multi-add-target="rows"');
         $this->assertResponseContains('id="add-row-btn"');
-        $this->assertResponseContains('data-roster-multi-add-target="addButton"');
+        $this->assertResponseContains('roster-multi-add#addRow');
         $this->assertResponseContains('Add Another');
         $this->assertResponseContains('Save All');
         $this->assertResponseContains('roster-row');
@@ -147,6 +150,31 @@ class TeamSeasonRostersControllerTest extends TestCase
     }
 
     /**
+     * Ensure bulk-add cannot attach rows to an out-of-scope TeamSeason.
+     */
+    public function testBulkAddRejectsOutOfScopeTeamSeason(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+        $this->enableRetainFlashMessages();
+
+        $this->post('/admin/team-season-rosters/bulk-add', [
+            'team_season_id' => 1,
+            'rows' => [
+                ['person_id' => 2, 'roster_number' => '22'],
+            ],
+        ]);
+
+        $this->assertRedirectContains('/admin/team-season-rosters/add');
+        $this->assertSame(1, $this->getTableLocator()->get('TeamSeasonRosters')->find()->count());
+        $this->assertFlashMessage('The selected team season is outside your role scope.');
+    }
+
+    /**
      * Tests bulk add requires post.
      */
     public function testBulkAddRequiresPost(): void
@@ -178,7 +206,7 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->assertResponseOk();
         $this->assertResponseContains('data-controller="roster-multi-add"');
         $this->assertResponseContains('data-roster-multi-add-target="rows"');
-        $this->assertResponseContains('data-roster-multi-add-target="addButton"');
+        $this->assertResponseContains('roster-multi-add#addRow');
     }
 
     /**
@@ -593,5 +621,39 @@ class TeamSeasonRostersControllerTest extends TestCase
         $this->get('/admin/team-season-rosters/bulk-edit?team_season_id=1');
         $this->assertResponseOk();
         $this->assertResponseContains('turbo-frame id="roster-edit-frame" target="_top"');
+    }
+
+    /**
+     * Ensure a guessed roster ID under an ungranted TeamSeason is not exposed.
+     */
+    public function testViewRejectsRosterOutsideRoleGrant(): void
+    {
+        $this->setContributorTeamGrant(3);
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/team-season-rosters/view/1');
+
+        $this->assertResponseCode(404);
+    }
+
+    /**
+     * Replace contributor's unrestricted role scope with one team grant.
+     *
+     * @param int $teamId Team identifier.
+     * @return void
+     */
+    private function setContributorTeamGrant(int $teamId): void
+    {
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => $teamId,
+        ]));
     }
 }

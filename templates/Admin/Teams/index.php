@@ -2,6 +2,10 @@
 /**
  * @var \App\View\AppView $this
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Team> $teams
+ * @var array<string,string> $sportOptions
+ * @var array<string,string> $genderOptions
+ * @var string $currentSportKey
+ * @var string $currentGender
  */
 
 $canCreateTeams = $this->Rbac->can('Teams', 'create');
@@ -16,7 +20,6 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
     data-admin-bulk-table-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'])) ?>"
     data-admin-bulk-table-item-type-value="teams (bulk)"
     data-admin-bulk-table-ids-name-value="team_ids[]"
-    data-admin-bulk-table-form-id-value="delete-form-teams-bulk"
     data-admin-bulk-table-name-column-value="2"
     data-admin-bulk-table-order-column-value="1"
 >
@@ -35,6 +38,30 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
             <?php endif; ?>
         </div>
     </div>
+
+    <form method="get" action="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-3">
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="teams-filter-sport">Sport</label>
+            <select class="form-select form-select-sm" id="teams-filter-sport" name="sport_key">
+                <option value="">All sports</option>
+                <?php foreach ($sportOptions as $sportKey => $sportName) : ?>
+                    <option value="<?= h($sportKey) ?>"<?= $currentSportKey === $sportKey ? ' selected' : '' ?>><?= h($sportName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="teams-filter-gender">Gender</label>
+            <select class="form-select form-select-sm" id="teams-filter-gender" name="gender">
+                <option value="">All genders</option>
+                <?php foreach ($genderOptions as $genderKey => $genderLabel) : ?>
+                    <option value="<?= h($genderKey) ?>"<?= $currentGender === $genderKey ? ' selected' : '' ?>><?= h($genderLabel) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </div>
+    </form>
 
     <div class="row">
         <div class="col">
@@ -56,7 +83,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                     <thead class="table-dark">
                         <tr>
                             <th><input type="checkbox" id="select-all-teams" data-admin-bulk-table-target="selectAll"<?= $canDeleteTeams ? '' : ' disabled' ?>></th>
-                            <th>Team Name <small class="text-light">(Short Name)</small></th>
+                            <th>Team Name <small class="text-light">(Default Display)</small></th>
                             <th>Sport <small class="text-light">(Category)</small></th>
                             <th>Abbreviation <small class="text-light">(5 chars max)</small></th>
                             <th>Gender <small class="text-light">(M/F/Co-ed)</small></th>
@@ -68,7 +95,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                         <tr>
                             <td><input type="checkbox" name="team_ids[]" value="<?= $team->id ?>" class="team-checkbox" data-admin-bulk-table-role="row-checkbox"<?= $canDeleteTeams ? '' : ' disabled' ?>>
                             </td>
-                            <td><?= h($team->team_name) ?></td>
+                            <td><?= h($team->getDisplayName()) ?></td>
                             <td><?= h($team->sport ? $team->sport->sport_name : 'N/A') ?></td>
                             <td><?= h($team->abbr) ?></td>
                             <td>
@@ -91,8 +118,8 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                                         data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
                                         data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                         data-item-type="team"
-                                        data-associated='<?= json_encode([$team->team_name, $team->abbr]) ?>'
-                                        data-form-id="delete-form-team-<?= $team->id ?>">
+                                        data-associated='<?= json_encode([$team->getDisplayName(), $team->abbr]) ?>'
+                                        form="delete-form-team-<?= $team->id ?>">
                                         Delete
                                     </button>
                                     <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id], 'id' => 'delete-form-team-' . $team->id, 'style' => 'display:none']) ?>
@@ -107,7 +134,7 @@ $canDeleteTeams = $this->Rbac->can('Teams', 'delete');
                     </tbody>
                 </table>
             </form>
-                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none']) ?>
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'bulkDelete'], 'id' => 'delete-form-teams-bulk', 'style' => 'display:none', 'data-admin-bulk-table-target' => 'deleteForm']) ?>
                 <?php
                 // These fields will be injected client-side; unlock them so FormProtection allows their values to change.
                 $this->Form->unlockField('team_ids');

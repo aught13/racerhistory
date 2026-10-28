@@ -206,15 +206,17 @@ $canDeleteRosters = $this->Rbac->can('TeamSeasonRosters', 'delete');
                 bulkForm.querySelectorAll('.roster-checkbox:checked'),
             ).map((checkbox) => checkbox.value);
 
-            if (window.__rhStimulusShowConfirmDelete) {
-                window.__rhStimulusShowConfirmDelete({
+            bulkForm.dispatchEvent(new CustomEvent('admin:confirm-delete', {
+                bubbles: true,
+                detail: {
                     deleteUrl: bulkForm.action,
                     itemType: 'roster entries (bulk)',
                     ids: JSON.stringify(ids),
                     idsName: 'team_season_roster_ids[]',
+                    sourceForm: bulkForm,
                     bulkAction: 'delete'
-                });
-            }
+                }
+            }));
         });
     }
 

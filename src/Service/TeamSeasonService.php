@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\Season;
+use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 use Cake\ORM\TableRegistry;
 
@@ -60,7 +61,7 @@ class TeamSeasonService
             return 'Team Season #' . $teamSeasonId;
         }
 
-        $teamName = $ts->team->team_name ?? 'Team';
+        $teamName = $ts->team instanceof Team ? $ts->team->getDisplayName() : 'Team';
         $season = $ts->season ?? null;
         $seasonLabel = '';
 
@@ -120,7 +121,7 @@ class TeamSeasonService
         }
 
         // Fallback to team name if sport not available
-        $teamName = $team->team_name ?? 'Team Season';
+        $teamName = $team instanceof Team ? $team->getDisplayName() : 'Team Season';
 
         return trim($teamName . $seasonLabel);
     }
@@ -210,7 +211,7 @@ class TeamSeasonService
             }
             $results[] = [
                 'id' => $ts->id,
-                'label' => $this->getSportDisplayLabel($ts->id),
+                'label' => $ts->getDisplayName(),
             ];
         }
 
@@ -239,7 +240,7 @@ class TeamSeasonService
                 continue;
             }
             $this->teamSportContextService->attachSportContextToTeam($ts->team ?? null);
-            $list[(int)$ts->id] = $this->getSportDisplayLabel((int)$ts->id);
+            $list[(int)$ts->id] = $ts->getDisplayName();
         }
 
         return $list;
@@ -259,7 +260,14 @@ class TeamSeasonService
 
         $rows = $teamSeasons->find()
             ->contain(['Teams', 'Seasons'])
-            ->select(['id', 'Teams.team_name', 'Seasons.start', 'Seasons.end'])
+            ->select([
+                'id',
+                'Teams.team_name',
+                'Teams.team_nickname',
+                'Teams.gender',
+                'Seasons.start',
+                'Seasons.end',
+            ])
             ->orderByDesc('Seasons.start')
             ->limit($limit)
             ->all();
@@ -267,7 +275,7 @@ class TeamSeasonService
         $list = [];
         foreach ($rows as $ts) {
             /** @var \App\Model\Entity\TeamSeason $ts */
-            $teamName = (string)($ts->team->team_name ?? 'Team');
+            $teamName = $ts->team instanceof Team ? $ts->team->getDisplayName() : 'Team';
             $start = $ts->season->start ?? null;
             $end = $ts->season->end ?? null;
             $seasonRange = trim((string)$start . '-' . (string)$end, '-');
@@ -304,7 +312,7 @@ class TeamSeasonService
             $sportName = $this->teamSportContextService->resolveSportNameFromTeam($ts->team ?? null) ?? 'Unknown';
             $list[(int)$ts->id] = sprintf(
                 '%s (%s) — %s-%s',
-                ($ts->team->team_name ?? 'Team'),
+                ($ts->team instanceof Team ? $ts->team->getDisplayName() : 'Team'),
                 $sportName,
                 ($ts->season->start ?? ''),
                 ($ts->season->end ?? ''),
@@ -608,31 +616,45 @@ class TeamSeasonService
     }
 
     /**
-     * Get team seasons for the public seasons index, filtered by sport name and gender.
+     * Get team seasons for the public seasons index with optional team filters.
      *
-     * @param string $sport Sport name to filter by (e.g. 'Basketball'). Empty string skips filter.
-     * @param string $gender Gender to filter by ('M', 'F', etc.). Empty string skips filter.
+     * @param string $sport Sport key or display name. Empty string skips the sport filter.
+     * @param string $gender Gender filter. Empty string includes every gender.
+     * @param int|null $teamId Team identifier. Null includes every team.
      * @return array<int,\App\Model\Entity\TeamSeason>
      */
-    public function getPublicSeasonsList(string $sport = 'Basketball', string $gender = 'M'): array
+    public function getPublicSeasonsList(string $sport = '', string $gender = '', ?int $teamId = null): array
     {
         $teamSeasons = TableRegistry::getTableLocator()->get('TeamSeasons');
         $query = $teamSeasons->find()
             ->contain(['Teams', 'Seasons']);
 
-        if ($sport !== '') {
-            $sportKey = $this->teamSportContextService->resolveSportKey($sport);
-            if ($sportKey !== null) {
-                $sportFilter = $this->teamSportContextService->buildSportFilterConditions($sportKey);
-                $query->matching('Teams', function ($q) use ($sportFilter) {
-                    return $q->where($sportFilter);
-                });
-            }
+        if ($sport !== '' && $this->teamSportContextService->resolveSportKey($sport) === null) {
+            return [];
         }
 
-        if ($gender !== '') {
-            $query->matching('Teams', function ($q) use ($gender) {
-                return $q->where(['Teams.gender' => $gender]);
+        if ($teamId !== null && $teamId <= 0) {
+            return [];
+        }
+
+        if ($sport !== '' || $gender !== '' || $teamId !== null) {
+            $sportKey = $sport !== '' ? $this->teamSportContextService->resolveSportKey($sport) : null;
+            $sportFilter = $sportKey !== null
+                ? $this->teamSportContextService->buildSportFilterConditions($sportKey)
+                : [];
+
+            $query->matching('Teams', function ($q) use ($sportFilter, $gender, $teamId) {
+                if ($sportFilter !== []) {
+                    $q->where($sportFilter);
+                }
+                if ($gender !== '') {
+                    $q->where(['Teams.gender' => $gender]);
+                }
+                if ($teamId !== null) {
+                    $q->where(['Teams.id' => $teamId]);
+                }
+
+                return $q;
             });
         }
 
