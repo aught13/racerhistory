@@ -188,6 +188,10 @@ class TaggingService
      */
     public function applyFromData(int $subjectId, array $data): array
     {
+        if (!$this->hasTagInput($data)) {
+            return [];
+        }
+
         $tags = $this->buildTagsFromData($data);
         if ($tags === [] && $subjectId <= 0) {
             return [];
@@ -567,6 +571,27 @@ class TaggingService
                 'service' => 'sport',
             ],
         ];
+    }
+
+    /**
+     * Determine whether a submitted payload contains tag fields.
+     *
+     * @param array $data Incoming request data.
+     * @return bool
+     */
+    private function hasTagInput(array $data): bool
+    {
+        foreach (array_keys($this->entityTagMap()) as $field) {
+            if (array_key_exists($field, $data)) {
+                return true;
+            }
+        }
+
+        if (array_key_exists('roster_select', $data) || array_key_exists('tags', $data)) {
+            return true;
+        }
+
+        return $this->subjectTableName === 'BlogPosts' && array_key_exists('preset_tags', $data);
     }
 
     /**

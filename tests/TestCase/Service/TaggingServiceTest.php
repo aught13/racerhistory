@@ -270,6 +270,26 @@ class TaggingServiceTest extends TestCase
     }
 
     /**
+     * Omitting tag fields while saving a subject preserves its existing tags.
+     */
+    public function testApplyFromDataWithoutTagFieldsPreservesExistingTags(): void
+    {
+        $service = $this->blogPostTaggingService();
+        $service->replaceTags(1, ['bio']);
+
+        $this->assertSame([], $service->applyFromData(1, ['title' => 'Updated post']));
+
+        $post = TableRegistry::getTableLocator()->get('BlogPosts')->get(
+            1,
+            contain: ['BlogTags'],
+        );
+        $this->assertSame(
+            ['bio'],
+            array_map(static fn($tag): string => (string)$tag->slug, $post->blog_tags),
+        );
+    }
+
+    /**
      * Empty tag data remains a no-op when no subject has been created yet.
      */
     public function testApplyFromDataWithNoSubjectAndNoTagsIsNoop(): void

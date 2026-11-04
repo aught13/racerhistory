@@ -178,6 +178,13 @@ Flash message templates for different message types:
 - **Features**: Optional hero image, tag badges, body rendered as paragraphs
 - **Variables**: `$post` (BlogPost entity)
 
+## Game Templates
+
+### Games/view.php
+- **Purpose**: Public game detail page
+- **Features**: Recap-tagged posts render separately from other game stories
+- **Variables**: `$gameRecapPosts` and `$blogPosts` (arrays of BlogPost entities)
+
 ## Admin Blog Templates
 
 ### Admin/BlogPosts/index.php

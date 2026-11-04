@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -14,6 +15,7 @@ use Cake\TestSuite\TestCase;
 class GamesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Sports',
@@ -174,6 +176,29 @@ class GamesControllerTest extends TestCase
 
         $blogPosts = $this->viewVariable('blogPosts');
         $this->assertIsArray($blogPosts);
+
+        $gameRecapPosts = $this->viewVariable('gameRecapPosts');
+        $this->assertIsArray($gameRecapPosts);
+    }
+
+    /**
+     * Recap-tagged posts render in the game recap section, not game stories.
+     */
+    public function testViewRendersRecapPostsInGameRecapSection(): void
+    {
+        $this->blogPostTaggingService()->replaceTags(1, ['game-1', 'recap']);
+
+        $this->get('/games/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="game-recap"');
+        $this->assertResponseContains('>Game Recap</h2>');
+        $this->assertResponseContains('First Post');
+        $this->assertResponseNotContains('id="game-stories"');
+
+        $gameRecapPosts = $this->viewVariable('gameRecapPosts');
+        $this->assertCount(1, $gameRecapPosts);
+        $this->assertSame('first-post', (string)$gameRecapPosts[0]->slug);
     }
 
     /**

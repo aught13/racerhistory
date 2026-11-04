@@ -164,8 +164,8 @@ class SeasonViewService
         $other = [];
 
         foreach ($posts as $post) {
-            $hasPreview = $this->postHasTag($post, 'preview');
-            $hasReview = $this->postHasTag($post, 'recap');
+            $hasPreview = $this->blogPostService->hasTag($post, 'preview');
+            $hasReview = $this->blogPostService->hasTag($post, 'recap');
 
             if ($hasPreview) {
                 $preview[] = $post;
@@ -183,24 +183,5 @@ class SeasonViewService
             'review' => $review,
             'other' => $other,
         ];
-    }
-
-    /**
-     * @param \App\Model\Entity\BlogPost $post
-     * @param string $slug
-     * @return bool
-     */
-    private function postHasTag(object $post, string $slug): bool
-    {
-        $slug = mb_strtolower($slug);
-        $tags = $post->blog_tags ?? [];
-        foreach ($tags as $tag) {
-            $tagSlug = (string)($tag->slug ?? '');
-            if ($tagSlug !== '' && mb_strtolower($tagSlug) === $slug) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

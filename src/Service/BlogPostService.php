@@ -109,6 +109,53 @@ class BlogPostService
     }
 
     /**
+     * Get published game posts separated into recaps and stories.
+     *
+     * @param int $gameId
+     * @param int|null $limit
+     * @return array{recaps:array<int,\App\Model\Entity\BlogPost>,stories:array<int,\App\Model\Entity\BlogPost>}
+     */
+    public function getPublishedForGame(int $gameId, ?int $limit = 12): array
+    {
+        $posts = $this->getPublishedByTag('game-' . $gameId, $limit);
+        $recaps = [];
+        $stories = [];
+
+        foreach ($posts as $post) {
+            if ($this->hasTag($post, 'recap')) {
+                $recaps[] = $post;
+            } else {
+                $stories[] = $post;
+            }
+        }
+
+        return [
+            'recaps' => $recaps,
+            'stories' => $stories,
+        ];
+    }
+
+    /**
+     * Determine whether a post has a tag with the supplied slug.
+     *
+     * @param \App\Model\Entity\BlogPost $post
+     * @param string $slug
+     * @return bool
+     */
+    public function hasTag(BlogPost $post, string $slug): bool
+    {
+        $slug = mb_strtolower($slug);
+        foreach ($post->blog_tags ?? [] as $tag) {
+            $tagSlug = (string)($tag->slug ?? '');
+            if ($tagSlug !== '' && mb_strtolower($tagSlug) === $slug) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Get all published posts tagged for a person, separated into biography and stories.
      *
      * @param int $personId
@@ -121,15 +168,7 @@ class BlogPostService
         $stories = [];
 
         foreach ($posts as $post) {
-            $hasBioTag = false;
-            foreach ($post->blog_tags ?? [] as $tag) {
-                if (strcasecmp((string)($tag->slug ?? ''), 'bio') === 0) {
-                    $hasBioTag = true;
-                    break;
-                }
-            }
-
-            if ($hasBioTag) {
+            if ($this->hasTag($post, 'bio')) {
                 $bioPosts[] = $post;
             } else {
                 $stories[] = $post;
@@ -268,7 +307,7 @@ class BlogPostService
     }
 
     /**
-     * Update an existing blog post and reapply tags.
+     * Update an existing blog post and apply any submitted tag fields.
      *
      * @param int $id
      * @param array $data

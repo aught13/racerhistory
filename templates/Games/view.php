@@ -19,6 +19,7 @@ use App\Service\SocialImageService;
  * @var string|null $statsElement
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
  * @var array<int,\App\Model\Entity\BlogPost> $blogPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $gameRecapPosts
  * @var \App\View\AppView $this
  * @var array $match
  */
@@ -335,6 +336,17 @@ $this->start('css'); ?>
                         </div>
                     </div>
                 </div>
+            <?php endif; ?>
+
+            <?php if (!empty($gameRecapPosts)) : ?>
+                <section class="card shadow-sm game-section" id="game-recap">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Game Recap</h2>
+                    </div>
+                    <div class="card-body" data-game-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $gameRecapPosts]) ?>
+                    </div>
+                </section>
             <?php endif; ?>
 
             <?php if (!empty($blogPosts)) : ?>

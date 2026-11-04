@@ -1,4 +1,8 @@
 export default class TagModalAdapter {
+    constructor() {
+        this.pendingHides = new WeakMap();
+    }
+
     show(modal) {
         const Modal = window.bootstrap?.Modal;
         if (Modal) {
@@ -18,6 +22,10 @@ export default class TagModalAdapter {
         const Modal = window.bootstrap?.Modal;
         const instance = Modal?.getInstance(modal);
         if (instance) {
+            if (this.pendingHides.has(modal)) {
+                return;
+            }
+
             let cleanedUp = false;
             const cleanup = () => {
                 if (cleanedUp) {
@@ -25,15 +33,21 @@ export default class TagModalAdapter {
                 }
                 cleanedUp = true;
                 modal.removeEventListener("hidden.bs.modal", cleanup);
+                this.pendingHides.delete(modal);
                 instance.dispose?.();
                 modal.remove();
                 onHidden?.();
             };
 
+            const wasShown = modal.classList.contains("show");
             modal.addEventListener("hidden.bs.modal", cleanup);
+            this.pendingHides.set(modal, cleanup);
             instance.hide();
-            if (!modal.classList.contains("show")) {
+            if (!wasShown) {
                 cleanup();
+            } else if (modal.classList.contains("show")) {
+                modal.removeEventListener("hidden.bs.modal", cleanup);
+                this.pendingHides.delete(modal);
             }
 
             return;
@@ -46,8 +60,20 @@ export default class TagModalAdapter {
     dispose(modal) {
         const Modal = window.bootstrap?.Modal;
         const instance = Modal?.getInstance(modal);
+        if (this.pendingHides.has(modal)) {
+            this.remove(modal);
+
+            return;
+        }
+
         if (instance) {
-            instance.hide();
+            if (modal.classList.contains("show")) {
+                this.hide(modal);
+                this.remove(modal);
+
+                return;
+            }
+
             instance.dispose?.();
         }
 

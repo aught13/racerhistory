@@ -671,8 +671,10 @@ class GamesController extends AppController
 
         $statsElement = $this->statsService->getGameStatsElement($id);
         $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 12);
-        $blogPosts = $this->blogPostService->getPublishedByTag("game-{$id}", 12);
+        $gamePosts = $this->blogPostService->getPublishedForGame($id);
+        $blogPosts = $gamePosts['stories'];
+        $gameRecapPosts = $gamePosts['recaps'];
 
-        return $viewData + compact('game', 'statsElement', 'images', 'blogPosts');
+        return $viewData + compact('game', 'statsElement', 'images', 'blogPosts', 'gameRecapPosts');
     }
 }

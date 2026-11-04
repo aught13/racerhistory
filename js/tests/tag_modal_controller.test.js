@@ -126,15 +126,16 @@ describe("tag-modal controller", () => {
             };
         });
 
-        // Create a bootstrap Modal instance stub that triggers hidden event when hide() is called
+        let modalEl;
         const instance = {
-            show: jest.fn(),
-            hide: jest.fn(() => {
-                const modalEl = document.getElementById("tag-modal-images-123");
-                if (modalEl) {
-                    modalEl.dispatchEvent(new Event("hidden.bs.modal"));
-                }
+            show: jest.fn(() => {
+                modalEl = document.getElementById("tag-modal-images-123");
+                modalEl?.classList.add("show");
             }),
+            hide: jest.fn(() => {
+                modalEl?.classList.remove("show");
+            }),
+            dispose: jest.fn(),
         };
 
         window.bootstrap = {
@@ -155,8 +156,50 @@ describe("tag-modal controller", () => {
         await controller.save();
         await flush();
 
-        // Instance.hide dispatches hidden.bs.modal, handler should remove modal
+        expect(document.getElementById("tag-modal-images-123")).not.toBeNull();
+        expect(instance.dispose).not.toHaveBeenCalled();
+
+        modalEl.dispatchEvent(new Event("hidden.bs.modal"));
+
         expect(document.getElementById("tag-modal-images-123")).toBeNull();
+        expect(instance.dispose).toHaveBeenCalledTimes(1);
+    });
+
+    test("turbo before-cache waits for an in-progress bootstrap hide before disposing", async () => {
+        window.fetch = jest.fn(async () => ({
+            ok: true,
+            text: async () => modalHtml(),
+        }));
+
+        let modalEl;
+        const instance = {
+            show: jest.fn(() => {
+                modalEl = document.getElementById("tag-modal-images-123");
+                modalEl?.classList.add("show");
+            }),
+            hide: jest.fn(() => modalEl?.classList.remove("show")),
+            dispose: jest.fn(),
+        };
+        window.bootstrap = {
+            Modal: {
+                getOrCreateInstance: jest.fn(() => instance),
+                getInstance: jest.fn(() => instance),
+            },
+        };
+
+        const controller = getController();
+        await controller.open();
+        await flush();
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(document.getElementById("tag-modal-images-123")).toBeNull();
+        expect(instance.hide).toHaveBeenCalledTimes(1);
+        expect(instance.dispose).not.toHaveBeenCalled();
+
+        modalEl.dispatchEvent(new Event("hidden.bs.modal"));
+
+        expect(instance.dispose).toHaveBeenCalledTimes(1);
     });
 
     test("turbo before-cache removes the dynamic modal and clears its host", async () => {
@@ -467,9 +510,13 @@ describe("tag-modal controller", () => {
             ok: true,
             text: async () => modalHtml(),
         }));
+        let modalEl;
         const instance = {
-            show: jest.fn(),
-            hide: jest.fn(),
+            show: jest.fn(() => {
+                modalEl = document.getElementById("tag-modal-images-123");
+                modalEl?.classList.add("show");
+            }),
+            hide: jest.fn(() => modalEl?.classList.remove("show")),
             dispose: jest.fn(),
         };
         window.bootstrap = {
@@ -486,7 +533,11 @@ describe("tag-modal controller", () => {
         controller.disconnect();
 
         expect(instance.hide).toHaveBeenCalled();
-        expect(instance.dispose).toHaveBeenCalled();
+        expect(instance.dispose).not.toHaveBeenCalled();
         expect(controller.modalEl).toBeNull();
+
+        modalEl.dispatchEvent(new Event("hidden.bs.modal"));
+
+        expect(instance.dispose).toHaveBeenCalledTimes(1);
     });
 });

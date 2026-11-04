@@ -68,6 +68,56 @@ class BlogPostServiceTest extends TestCase
         ]);
         $this->assertNotFalse($updated);
         $this->assertSame('Updated Title', $updated->title);
+        $this->assertSame(
+            ['news'],
+            array_map(static fn($tag): string => (string)$tag->slug, $updated->blog_tags),
+        );
+    }
+
+    /**
+     * Explicitly submitting an empty tag selection clears existing tags.
+     */
+    public function testUpdatePostWithEmptyTagSelectionClearsTags(): void
+    {
+        $this->blogPostTaggingService()->replaceTags(1, ['news']);
+
+        $updated = $this->service->updatePost(1, [
+            'title' => 'Updated without tags',
+            'body' => 'Updated body',
+            'tags' => '',
+        ]);
+
+        $this->assertNotFalse($updated);
+        $this->assertSame([], $updated->blog_tags);
+    }
+
+    /**
+     * Published game posts are separated into recaps and other stories.
+     */
+    public function testGetPublishedForGameSeparatesRecapsAndStories(): void
+    {
+        $tagging = $this->blogPostTaggingService();
+        $tagging->replaceTags(1, ['game-1', 'recap']);
+
+        $story = $this->service->createPost([
+            'title' => 'Game Story',
+            'slug' => 'game-story',
+            'body' => 'Story body',
+            'is_published' => true,
+        ]);
+        $this->assertNotFalse($story);
+        $tagging->replaceTags((int)$story->id, ['game-1']);
+
+        $posts = $this->service->getPublishedForGame(1);
+
+        $this->assertSame(
+            ['first-post'],
+            array_map(static fn($post): string => (string)$post->slug, $posts['recaps']),
+        );
+        $this->assertSame(
+            ['game-story'],
+            array_map(static fn($post): string => (string)$post->slug, $posts['stories']),
+        );
     }
 
     /**
