@@ -50,7 +50,22 @@ declare(strict_types=1);
                 <?php if (!empty($post->blog_tags)) : ?>
                 <footer class="blog-tags mb-4">
                     <?php foreach ((array)$post->blog_tags as $tag) : ?>
-                        <span class="blog-tag badge bg-secondary"><?= h($tag->name) ?></span>
+                        <?php
+                        $tagUrl = null;
+                        if (preg_match('/^(person|teamseason|game)-([1-9][0-9]*)$/', (string)$tag->slug, $tagMatch) === 1) {
+                            $tagId = $tagMatch[2];
+                            $tagUrl = match ($tagMatch[1]) {
+                                'person' => $this->Url->build(['controller' => 'People', 'action' => 'view', $tagId]),
+                                'teamseason' => $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $tagId]),
+                                'game' => $this->Url->build(['controller' => 'Games', 'action' => 'view', $tagId]),
+                            };
+                        }
+                        ?>
+                        <?php if ($tagUrl !== null) : ?>
+                            <?= $this->Html->link($tag->name, $tagUrl, ['class' => 'blog-tag badge bg-secondary text-decoration-none']) ?>
+                        <?php else : ?>
+                            <span class="blog-tag badge bg-secondary"><?= h($tag->name) ?></span>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </footer>
                 <?php endif; ?>
@@ -74,7 +89,7 @@ declare(strict_types=1);
                             <i class="bi bi-person-fill fs-3"></i>
                         <?php endif; ?>
                     </div>
-                    <div>
+                    <div class="author-bio-content">
                         <h5 class="h6 mb-1 fw-bold"><?= h($post->user->display_name ?: $post->user->username) ?></h5>
                         <?php if ($post->user->bio) : ?>
                             <p class="small text-muted mb-1"><?= h($post->user->bio) ?></p>

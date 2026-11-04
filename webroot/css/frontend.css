@@ -2137,6 +2137,15 @@ body {
   text-transform: none;
 }
 
+.author-bio-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.author-bio-content .social-links {
+  flex-wrap: wrap;
+}
+
 .blog-expanded-frame {
   max-height: none;
 }
