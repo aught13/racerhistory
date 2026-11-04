@@ -92,7 +92,7 @@ class BlogPostServiceTest extends TestCase
     }
 
     /**
-     * Published game posts are separated into recaps and other stories.
+     * Published game posts are separated into previews, recaps, and stories.
      */
     public function testGetPublishedForGameSeparatesRecapsAndStories(): void
     {
@@ -108,11 +108,24 @@ class BlogPostServiceTest extends TestCase
         $this->assertNotFalse($story);
         $tagging->replaceTags((int)$story->id, ['game-1']);
 
+        $preview = $this->service->createPost([
+            'title' => 'Game Preview',
+            'slug' => 'game-preview',
+            'body' => 'Preview body',
+            'is_published' => true,
+        ]);
+        $this->assertNotFalse($preview);
+        $tagging->replaceTags((int)$preview->id, ['game-1', 'preview']);
+
         $posts = $this->service->getPublishedForGame(1);
 
         $this->assertSame(
             ['first-post'],
             array_map(static fn($post): string => (string)$post->slug, $posts['recaps']),
+        );
+        $this->assertSame(
+            ['game-preview'],
+            array_map(static fn($post): string => (string)$post->slug, $posts['previews']),
         );
         $this->assertSame(
             ['game-story'],

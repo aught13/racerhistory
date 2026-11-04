@@ -672,9 +672,22 @@ class GamesController extends AppController
         $statsElement = $this->statsService->getGameStatsElement($id);
         $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 12);
         $gamePosts = $this->blogPostService->getPublishedForGame($id);
+        $gamePreviewPosts = $gamePosts['previews'];
         $blogPosts = $gamePosts['stories'];
         $gameRecapPosts = $gamePosts['recaps'];
+        $opponentId = (int)($game->opponent_id ?? 0);
+        $seriesRecord = $opponentId > 0
+            ? $this->gameSearchService->seriesHistory($opponentId)['record']
+            : null;
 
-        return $viewData + compact('game', 'statsElement', 'images', 'blogPosts', 'gameRecapPosts');
+        return $viewData + compact(
+            'game',
+            'statsElement',
+            'images',
+            'blogPosts',
+            'gamePreviewPosts',
+            'gameRecapPosts',
+            'seriesRecord',
+        );
     }
 }

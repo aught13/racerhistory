@@ -19,7 +19,9 @@ use App\Service\SocialImageService;
  * @var string|null $statsElement
  * @var \Cake\Collection\CollectionInterface|array<\App\Model\Entity\Image> $images
  * @var array<int,\App\Model\Entity\BlogPost> $blogPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $gamePreviewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $gameRecapPosts
+ * @var array<string,mixed>|null $seriesRecord
  * @var \App\View\AppView $this
  * @var array $match
  */
@@ -36,6 +38,7 @@ $seasonLabel = $seasonStart && $seasonEnd
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
 $resultFlag = $game->result_flag ?? null;
+$hasFinalScore = $game->pts_mur !== null && $game->pts_opp !== null;
 $sportName = $game->team_season->team->sport_name ?? $game->team_season->team->sport->sport_name ?? 'Sport';
 
 $periods = 2;
@@ -266,6 +269,56 @@ $this->start('css'); ?>
 
     <div class="row g-4">
         <div class="col-12">
+            <?php if ($seriesRecord !== null) : ?>
+                <div class="accordion game-section mb-4" id="game-series-history">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="game-series-history-heading">
+                            <button
+                                class="accordion-button<?= $hasFinalScore ? ' collapsed' : '' ?>"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#game-series-history-collapse"
+                                aria-expanded="<?= $hasFinalScore ? 'false' : 'true' ?>"
+                                aria-controls="game-series-history-collapse"
+                            >
+                                Series History vs <?= h($opponentName) ?>
+                            </button>
+                        </h2>
+                        <div
+                            id="game-series-history-collapse"
+                            class="accordion-collapse collapse<?= $hasFinalScore ? '' : ' show' ?>"
+                            aria-labelledby="game-series-history-heading"
+                        >
+                            <div class="accordion-body">
+                                <?= $this->element('Games/series_summary', ['record' => $seriesRecord]) ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($gamePreviewPosts)) : ?>
+                <section class="card shadow-sm game-section" id="game-preview">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Game Preview</h2>
+                    </div>
+                    <div class="card-body" data-game-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $gamePreviewPosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <?php if (!empty($gameRecapPosts)) : ?>
+                <section class="card shadow-sm game-section" id="game-recap">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Game Recap</h2>
+                    </div>
+                    <div class="card-body" data-game-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $gameRecapPosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <section class="card shadow-sm game-section">
                 <div class="card-header">
                     <h2 class="h5 mb-0">Box Score</h2>
@@ -336,17 +389,6 @@ $this->start('css'); ?>
                         </div>
                     </div>
                 </div>
-            <?php endif; ?>
-
-            <?php if (!empty($gameRecapPosts)) : ?>
-                <section class="card shadow-sm game-section" id="game-recap">
-                    <div class="card-header">
-                        <h2 class="h5 mb-0">Game Recap</h2>
-                    </div>
-                    <div class="card-body" data-game-blog>
-                        <?= $this->element('blog/list_items', ['paginatedPosts' => $gameRecapPosts]) ?>
-                    </div>
-                </section>
             <?php endif; ?>
 
             <?php if (!empty($blogPosts)) : ?>

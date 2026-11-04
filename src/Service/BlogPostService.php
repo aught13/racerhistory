@@ -109,27 +109,36 @@ class BlogPostService
     }
 
     /**
-     * Get published game posts separated into recaps and stories.
+     * Get published game posts separated into previews, recaps, and stories.
      *
      * @param int $gameId
      * @param int|null $limit
-     * @return array{recaps:array<int,\App\Model\Entity\BlogPost>,stories:array<int,\App\Model\Entity\BlogPost>}
+     * @return array{previews:array<int,\App\Model\Entity\BlogPost>,recaps:array<int,\App\Model\Entity\BlogPost>,stories:array<int,\App\Model\Entity\BlogPost>}
      */
     public function getPublishedForGame(int $gameId, ?int $limit = 12): array
     {
         $posts = $this->getPublishedByTag('game-' . $gameId, $limit);
+        $previews = [];
         $recaps = [];
         $stories = [];
 
         foreach ($posts as $post) {
-            if ($this->hasTag($post, 'recap')) {
+            $hasPreview = $this->hasTag($post, 'preview');
+            $hasRecap = $this->hasTag($post, 'recap');
+
+            if ($hasPreview) {
+                $previews[] = $post;
+            }
+            if ($hasRecap) {
                 $recaps[] = $post;
-            } else {
+            }
+            if (!$hasPreview && !$hasRecap) {
                 $stories[] = $post;
             }
         }
 
         return [
+            'previews' => $previews,
             'recaps' => $recaps,
             'stories' => $stories,
         ];

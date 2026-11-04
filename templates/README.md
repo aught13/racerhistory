@@ -182,8 +182,13 @@ Flash message templates for different message types:
 
 ### Games/view.php
 - **Purpose**: Public game detail page
-- **Features**: Recap-tagged posts render separately from other game stories
-- **Variables**: `$gameRecapPosts` and `$blogPosts` (arrays of BlogPost entities)
+- **Features**: Opponent series summary collapses based on game result; available previews and recaps appear above the box score
+- **Variables**: `$gamePreviewPosts`, `$gameRecapPosts`, and `$blogPosts` (arrays of BlogPost entities); `$seriesRecord` (opponent series summary)
+
+### element/Games/series_summary.php
+- **Purpose**: Shared summary cards for an opponent series
+- **Features**: Overall, home/road/neutral, recent-form, streak, and first/last meeting summaries
+- **Variables**: `$record` (series summary array)
 
 ## Admin Blog Templates
 

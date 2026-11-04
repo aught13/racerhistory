@@ -179,6 +179,12 @@ class GamesControllerTest extends TestCase
 
         $gameRecapPosts = $this->viewVariable('gameRecapPosts');
         $this->assertIsArray($gameRecapPosts);
+
+        $gamePreviewPosts = $this->viewVariable('gamePreviewPosts');
+        $this->assertIsArray($gamePreviewPosts);
+
+        $seriesRecord = $this->viewVariable('seriesRecord');
+        $this->assertTrue(is_array($seriesRecord) || $seriesRecord === null);
     }
 
     /**
@@ -196,9 +202,81 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('First Post');
         $this->assertResponseNotContains('id="game-stories"');
 
+        $html = (string)$this->_response->getBody();
+        $gameInfoPosition = strpos($html, 'class="game-hero');
+        $seriesPosition = strpos($html, 'id="game-series-history"');
+        $recapPosition = strpos($html, 'id="game-recap"');
+        $boxScorePosition = strpos($html, '>Box Score</h2>');
+        $this->assertNotFalse($gameInfoPosition);
+        $this->assertNotFalse($seriesPosition);
+        $this->assertNotFalse($recapPosition);
+        $this->assertNotFalse($boxScorePosition);
+        $this->assertLessThan($seriesPosition, $gameInfoPosition);
+        $this->assertLessThan($recapPosition, $seriesPosition);
+        $this->assertLessThan($boxScorePosition, $recapPosition);
+        $this->assertStringNotContainsString('All Games vs', $html);
+
         $gameRecapPosts = $this->viewVariable('gameRecapPosts');
         $this->assertCount(1, $gameRecapPosts);
         $this->assertSame('first-post', (string)$gameRecapPosts[0]->slug);
+    }
+
+    /**
+     * Preview-tagged posts render above the game box score.
+     */
+    public function testViewRendersPreviewPostsAboveBoxScore(): void
+    {
+        $this->blogPostTaggingService()->replaceTags(1, ['game-1', 'preview']);
+
+        $this->get('/games/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('id="game-preview"');
+        $this->assertResponseContains('>Game Preview</h2>');
+
+        $html = (string)$this->_response->getBody();
+        $previewPosition = strpos($html, 'id="game-preview"');
+        $boxScorePosition = strpos($html, '>Box Score</h2>');
+        $this->assertNotFalse($previewPosition);
+        $this->assertNotFalse($boxScorePosition);
+        $this->assertLessThan($boxScorePosition, $previewPosition);
+    }
+
+    /**
+     * The opponent summary is collapsed after a final score is available.
+     */
+    public function testViewCollapsesSeriesSummaryForFinalGame(): void
+    {
+        $this->get('/games/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('class="accordion-button collapsed"');
+        $this->assertResponseContains('aria-expanded="false"');
+        $this->assertResponseContains('id="game-series-history-collapse"');
+        $this->assertResponseContains('class="accordion-collapse collapse"');
+        $this->assertResponseNotContains('class="accordion-collapse collapse show"');
+    }
+
+    /**
+     * The opponent summary is expanded when the game has no final score.
+     */
+    public function testViewExpandsSeriesSummaryForUnplayedGame(): void
+    {
+        $this->fetchTable('Games')->updateAll([
+            'pts_mur' => null,
+            'pts_opp' => null,
+            'w' => null,
+            'l' => null,
+        ], ['id' => 1]);
+
+        $this->get('/games/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Series History vs');
+        $this->assertResponseContains('aria-expanded="true"');
+        $this->assertResponseContains('id="game-series-history-collapse"');
+        $this->assertResponseContains('class="accordion-collapse collapse show"');
+        $this->assertResponseNotContains('All Games vs');
     }
 
     /**
