@@ -35,6 +35,16 @@
                 <div id="uploadsHelp" class="form-text">You can pick multiple files; supported types: JPG, PNG, GIF, WebP.</div>
             </div>
 
+            <div class="mb-3">
+                <label for="photoCredit" class="form-label">Photo Credit (applies to all images)</label>
+                <input type="text" class="form-control" id="photoCredit" name="photo_credit" maxlength="255"
+                    aria-describedby="photoCreditHelp">
+                <div id="photoCreditHelp" class="form-text">
+                    Enter the photographer or rights holder to credit on every image in this upload.
+                    Leave blank to leave credits unchanged or unset.
+                </div>
+            </div>
+
             <div id="fileList" class="row g-3" data-admin-image-bulk-upload-target="fileList"></div>
 
             <?= $this->element('Admin/tag_modal_trigger', [
@@ -62,4 +72,3 @@
     <!-- Per-file tagging: removed global entity-tags card. Use per-file "Apply Tags" links shown after upload. -->
     <?= $this->Form->end() ?>
 </div>
-

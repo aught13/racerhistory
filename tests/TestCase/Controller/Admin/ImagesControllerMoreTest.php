@@ -150,6 +150,8 @@ class ImagesControllerMoreTest extends TestCase
         $this->assertResponseContains('data-controller="admin-image-bulk-upload"');
         $this->assertResponseContains('data-admin-image-bulk-upload-target="uploadsInput"');
         $this->assertResponseContains('data-action="click->admin-image-bulk-upload#uploadAll"');
+        $this->assertResponseContains('name="photo_credit"');
+        $this->assertResponseContains('maxlength="255"');
         $this->assertResponseContains('tag-modal-hidden-inputs');
     }
 
@@ -187,9 +189,27 @@ class ImagesControllerMoreTest extends TestCase
     }
 
     /**
-     * Tests bulk upload with string tags and context succeeds.
+     * Tests bulk upload rejects a non-string photo credit.
      */
-    public function testBulkUploadWithStringTagsAndContextSucceeds(): void
+    public function testBulkUploadRejectsNonStringPhotoCredit(): void
+    {
+        $this->mockIdentity();
+
+        $this->post('/admin/images/bulk-upload', [
+            'uploads' => ['invalid-upload'],
+            'photo_credit' => ['invalid'],
+        ]);
+
+        $this->assertResponseOk();
+        $json = json_decode((string)$this->_response->getBody(), true);
+        $this->assertFalse($json['success'] ?? true);
+        $this->assertSame('Invalid photo credit', $json['error'] ?? null);
+    }
+
+    /**
+     * Tests bulk upload with tags, context, and photo credit succeeds.
+     */
+    public function testBulkUploadWithStringTagsContextAndPhotoCreditSucceeds(): void
     {
         $this->mockIdentity();
 
@@ -207,6 +227,7 @@ class ImagesControllerMoreTest extends TestCase
             ]],
             'tags' => 'tag-one, tag-two',
             'context' => 'My Context',
+            'photo_credit' => 'Photographer Name',
         ]);
 
         $this->assertResponseOk();
@@ -216,6 +237,8 @@ class ImagesControllerMoreTest extends TestCase
 
         $imageId = (int)($json['results'][0]['image']['id'] ?? 0);
         $this->assertGreaterThan(0, $imageId);
+        $image = $this->getTableLocator()->get('Images')->get($imageId);
+        $this->assertSame('Photographer Name', $image->photo_credit);
         $this->createdImageIds[] = $imageId;
     }
 

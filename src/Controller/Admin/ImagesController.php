@@ -355,6 +355,11 @@ class ImagesController extends AppController
                 return $this->json(['success' => false, 'error' => 'No files uploaded']);
             }
 
+            $photoCredit = $request->getData('photo_credit');
+            if ($photoCredit !== null && !is_string($photoCredit)) {
+                return $this->json(['success' => false, 'error' => 'Invalid photo credit']);
+            }
+
             $tagsInput = $request->getData('tags') ?? [];
             $contextInput = $request->getData('context') ?? [];
 
@@ -420,7 +425,7 @@ class ImagesController extends AppController
                     }
                 }
 
-                $result = $this->imageStorageService->upload($file, $allTags, [], $ownerId);
+                $result = $this->imageStorageService->upload($file, $allTags, [], $ownerId, $photoCredit);
 
                 $results[] = [
                     'index' => $index,

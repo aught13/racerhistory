@@ -53,6 +53,7 @@ class ImageStorageService
      * @param array<int|string,string|array>          $tags
      * @param array<string,mixed>                     $manipulations
      * @param int|null                                $ownerId    Optional user id to set as image owner
+     * @param string|null                              $photoCredit Optional credit to apply to the image
      * @return array<string,mixed>
      */
     public function upload(
@@ -60,8 +61,13 @@ class ImageStorageService
         array $tags = [],
         array $manipulations = [],
         ?int $ownerId = null,
+        ?string $photoCredit = null,
     ): array {
         $this->lastError = null;
+        $photoCredit = $photoCredit !== null ? trim($photoCredit) : null;
+        if ($photoCredit === '') {
+            $photoCredit = null;
+        }
 
         $validation = $this->validateUpload($file);
         if ($validation !== true) {
@@ -79,6 +85,14 @@ class ImageStorageService
             if ($restoreError !== null) {
                 return ['success' => false, 'error' => $restoreError];
             }
+            if ($photoCredit !== null) {
+                $existing->photo_credit = $photoCredit;
+                if (!$images->save($existing)) {
+                    $this->lastError = 'Failed to save photo credit';
+
+                    return ['success' => false, 'error' => $this->lastError];
+                }
+            }
             if ($tags !== []) {
                 $this->tagging->attachTags((int)$existing->id, $tags);
             }
@@ -86,7 +100,16 @@ class ImageStorageService
             return ['success' => true, 'image' => $existing, 'existing' => true];
         }
 
-        $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename(), $ownerId);
+        $image = $this->persistNewImage(
+            $images,
+            $processed,
+            $hash,
+            $mime,
+            $ext,
+            $file->getClientFilename(),
+            $ownerId,
+            $photoCredit,
+        );
         if ($image) {
             if ($tags !== []) {
                 $this->tagging->attachTags((int)$image->id, $tags);
@@ -191,6 +214,7 @@ class ImageStorageService
      * @param string $ext
      * @param string|null $originalName
      * @param int|null $ownerId
+     * @param string|null $photoCredit
      */
     public function persistNewImage(
         ImagesTable $images,
@@ -200,6 +224,7 @@ class ImageStorageService
         string $ext,
         ?string $originalName,
         ?int $ownerId = null,
+        ?string $photoCredit = null,
     ): ?Image {
         $uuid = Text::uuid();
         $subdir = date('Y') . '/' . date('m');
@@ -235,6 +260,7 @@ class ImageStorageService
             'hash' => $hash,
             'status' => 'active',
             'user_id' => $ownerId !== null && $ownerId > 0 ? $ownerId : null,
+            'photo_credit' => $photoCredit,
         ];
         $image = $images->newEntity($data);
         if ($images->save($image)) {

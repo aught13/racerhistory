@@ -160,6 +160,7 @@ class ImageStorageServiceTest extends TestCase
                 'width' => 100,
                 'height' => 50,
                 'hash' => hash('sha256', $originalData),
+                'photo_credit' => 'Original Photographer',
                 'variants' => json_encode([
                     'thumb' => [
                         'file' => 'seed-thumb.webp',
@@ -176,7 +177,7 @@ class ImageStorageServiceTest extends TestCase
                 ->onlyMethods(['process'])
                 ->getMock();
 
-            $processor->expects($this->once())->method('process')->willReturn([
+            $processor->expects($this->exactly(2))->method('process')->willReturn([
                 'original' => [
                     'data' => $originalData,
                     'width' => 100,
@@ -211,7 +212,7 @@ class ImageStorageServiceTest extends TestCase
                 'image/png',
             );
 
-            $result = $service->upload($uploadedFile);
+            $result = $service->upload($uploadedFile, [], [], null, 'Updated Photographer');
 
             $this->assertTrue($result['success'] ?? false, 'Duplicate upload should succeed');
             $this->assertTrue($result['existing'] ?? false, 'Duplicate upload should return existing image');
@@ -220,6 +221,7 @@ class ImageStorageServiceTest extends TestCase
             $this->assertSame('MEDIUM-BYTES', (string)file_get_contents($baseDir . 'seed-medium.webp'));
 
             $reloaded = $images->get(1);
+            $this->assertSame('Updated Photographer', $reloaded->photo_credit);
             $variants = $reloaded->variants;
             if (is_string($variants)) {
                 $variants = json_decode($variants, true);
@@ -236,6 +238,10 @@ class ImageStorageServiceTest extends TestCase
             $this->assertSame(100, $variants['medium']['width']);
             $this->assertSame(50, $variants['medium']['height']);
             $this->assertSame('image/webp', $variants['medium']['mime']);
+
+            $resultWithoutCredit = $service->upload($uploadedFile, [], [], null, '  ');
+            $this->assertTrue($resultWithoutCredit['success'] ?? false);
+            $this->assertSame('Updated Photographer', $images->get(1)->photo_credit);
         } finally {
             if (is_file($uploadPath)) {
                 unlink($uploadPath);
