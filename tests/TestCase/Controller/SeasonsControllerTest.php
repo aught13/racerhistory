@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use App\Service\BlogPostService;
 use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\IntegrationTestTrait;
@@ -210,7 +211,7 @@ class SeasonsControllerTest extends TestCase
             $this->get('/seasons/1');
             $this->assertResponseOk();
             $html = (string)$this->_response->getBody();
-            $this->assertSame(1, preg_match('/Season Preview.*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
+            $this->assertSame(1, preg_match('/id="season-preview".*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
             $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
         } finally {
             Configure::delete('SiteOptions');
@@ -229,7 +230,6 @@ class SeasonsControllerTest extends TestCase
             ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
             ['slug' => 'Recap', 'name' => 'Recap'],
         ]);
-
         $this->get('/seasons/1');
 
         $this->assertResponseOk();
@@ -240,14 +240,79 @@ class SeasonsControllerTest extends TestCase
         $this->assertSame([], $otherPosts);
 
         $html = (string)$this->_response->getBody();
-        $recapPosition = strpos($html, '>Season Recap</h2>');
+        $recapPosition = strpos($html, 'id="season-recap"');
         $postPosition = strpos($html, 'href="/blog/first-post');
         $gamesPosition = strpos($html, 'id="season-games"');
         $this->assertNotFalse($recapPosition);
         $this->assertNotFalse($postPosition);
-        $this->assertNotFalse($gamesPosition);
         $this->assertLessThan($postPosition, $recapPosition);
-        $this->assertLessThan($gamesPosition, $postPosition);
+        $this->assertNotFalse($gamesPosition);
+        $this->assertLessThan($gamesPosition, $recapPosition);
+    }
+
+    /**
+     * Game-tagged recaps stay out of season recaps and all season articles appear below the roster.
+     */
+    public function testGameTaggedRecapIsListedSeparatelyFromSeasonRecap(): void
+    {
+        $tagging = $this->blogPostTaggingService();
+        $tagging->replaceTags(1, [
+            ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
+            ['slug' => 'game-1', 'name' => 'Game 1'],
+            ['slug' => 'recap', 'name' => 'Recap'],
+            ['slug' => 'preview', 'name' => 'Preview'],
+        ]);
+
+        $postsTable = $this->fetchTable('BlogPosts');
+        $gameRecap = $postsTable->get(1);
+        $gameRecap->excerpt = 'Game recap &mdash; &lt;script&gt;';
+        $postsTable->saveOrFail($gameRecap);
+
+        $seasonStory = (new BlogPostService($this->taggingServiceFactory()))->createPost([
+            'title' => 'Season Story',
+            'slug' => 'season-story',
+            'body' => 'Season story body',
+            'is_published' => true,
+        ]);
+        $this->assertNotFalse($seasonStory);
+        $tagging->replaceTags((int)$seasonStory->id, ['teamseason-1']);
+        $this->imageTaggingService()->replaceTags(1, ['teamseason-1']);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $this->assertSame([], $this->viewVariable('previewPosts'));
+        $this->assertSame([], $this->viewVariable('reviewPosts'));
+        $this->assertSame(
+            ['first-post'],
+            array_map(
+                static fn($post): string => (string)$post->slug,
+                $this->viewVariable('gamePosts'),
+            ),
+        );
+        $this->assertSame(
+            ['season-story'],
+            array_map(
+                static fn($post): string => (string)$post->slug,
+                $this->viewVariable('otherPosts'),
+            ),
+        );
+
+        $html = (string)$this->_response->getBody();
+        $rosterPosition = strpos($html, 'id="season-roster"');
+        $gameArticlesPosition = strpos($html, 'id="season-game-posts"');
+        $otherStoriesPosition = strpos($html, 'id="season-other-posts"');
+        $photosPosition = strpos($html, 'id="season-images"');
+        $this->assertNotFalse($rosterPosition);
+        $this->assertNotFalse($gameArticlesPosition);
+        $this->assertNotFalse($otherStoriesPosition);
+        $this->assertNotFalse($photosPosition);
+        $this->assertLessThan($gameArticlesPosition, $rosterPosition);
+        $this->assertLessThan($otherStoriesPosition, $gameArticlesPosition);
+        $this->assertLessThan($photosPosition, $otherStoriesPosition);
+        $this->assertStringContainsString('Game recap — &lt;script&gt;', $html);
+        $this->assertStringNotContainsString('Game recap &amp;mdash;', $html);
+        $this->assertStringNotContainsString('Game recap — <script>', $html);
     }
 
     /**
@@ -282,6 +347,9 @@ class SeasonsControllerTest extends TestCase
 
         $otherPosts = $this->viewVariable('otherPosts');
         $this->assertIsArray($otherPosts);
+
+        $gamePosts = $this->viewVariable('gamePosts');
+        $this->assertIsArray($gamePosts);
 
         $games = $this->viewVariable('games');
         $this->assertIsArray($games);

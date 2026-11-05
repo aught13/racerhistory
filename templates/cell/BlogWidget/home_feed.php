@@ -14,7 +14,7 @@
                 <div class="card-img-overlay d-flex flex-column justify-content-end p-4 p-md-5 bg-gradient-dark">
                     <h1 class="card-title display-4 fw-bold"><?= h($hero->title) ?></h1>
                     <p class="card-text lead d-none d-md-block">
-                        <?= h($hero->excerpt ?: mb_substr(strip_tags((string)$hero->body), 0, 200) . '...') ?>
+                        <?= h($this->BlogContent->decodeHtmlEntities((string)($hero->excerpt ?: mb_substr(strip_tags((string)$hero->body), 0, 200) . '...'))) ?>
                     </p>
                     <p class="card-text small">
                         <time><?= h($hero->published_at?->format('F j, Y')) ?></time>
@@ -44,7 +44,7 @@
                     <time><?= h($post->published_at?->format('M j, Y')) ?></time>
                 </p>
                 <p class="card-text small mb-0 mt-auto">
-                    <?= h($post->excerpt ?: mb_substr(strip_tags((string)$post->body), 0, 100) . '...') ?>
+                    <?= h($this->BlogContent->decodeHtmlEntities((string)($post->excerpt ?: mb_substr(strip_tags((string)$post->body), 0, 100) . '...'))) ?>
                 </p>
             </div>
         </div>

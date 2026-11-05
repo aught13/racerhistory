@@ -37,7 +37,7 @@ $viewUrl = $this->Url->build([
                 <?php endif; ?>
             </p>
             <?php if (!empty($post->excerpt)) : ?>
-                <p class="small mb-0"><?= h($post->excerpt) ?></p>
+                <p class="small mb-0"><?= h($this->BlogContent->decodeHtmlEntities((string)$post->excerpt)) ?></p>
             <?php endif; ?>
         </div>
     </div>

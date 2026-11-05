@@ -190,6 +190,13 @@ Flash message templates for different message types:
 - **Features**: Overall, home/road/neutral, recent-form, streak, and first/last meeting summaries
 - **Variables**: `$record` (series summary array)
 
+## Season Templates
+
+### Seasons/view.php
+- **Purpose**: Public team-season detail page
+- **Features**: Season previews/recaps appear above the Game Log; game-tagged articles and other season stories appear below the roster, above photos
+- **Variables**: `$previewPosts`, `$reviewPosts`, `$gamePosts`, and `$otherPosts` (arrays of BlogPost entities)
+
 ## Admin Blog Templates
 
 ### Admin/BlogPosts/index.php

@@ -52,7 +52,7 @@ if ($page === 1) {
                         <?= h($post->published_at ?? '') ?>
                     <?php endif; ?>
                 </p>
-                <p class="small mb-0 blog-list-excerpt"><?= h($post->excerpt ?: mb_substr(strip_tags((string)$post->body), 0, 120) . '...') ?></p>
+                <p class="small mb-0 blog-list-excerpt"><?= h($this->BlogContent->decodeHtmlEntities((string)($post->excerpt ?: mb_substr(strip_tags((string)$post->body), 0, 120) . '...'))) ?></p>
             </div>
         </article>
     </a>
@@ -62,4 +62,3 @@ if ($page === 1) {
         <?= $this->element('Ads/block', ['slot' => 'news_every_fifth']) ?>
     <?php endif; ?>
 <?php endforeach; ?>
-

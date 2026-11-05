@@ -11,6 +11,7 @@
  * @var array<int,\App\Model\Entity\BlogPost> $previewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $reviewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $otherPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $gamePosts
  * @var \App\View\AppView $this
  */
 use App\Service\SocialImageService;
@@ -310,7 +311,7 @@ $this->start('css'); ?>
     <div class="row g-4">
         <div class="col-12">
             <?php if (!empty($previewPosts)) : ?>
-                <section class="card shadow-sm season-section">
+                <section class="card shadow-sm season-section" id="season-preview">
                     <div class="card-header">
                         <h2 class="h5 mb-0">Season Preview</h2>
                     </div>
@@ -321,7 +322,7 @@ $this->start('css'); ?>
             <?php endif; ?>
 
             <?php if (!empty($reviewPosts)) : ?>
-                <section class="card shadow-sm season-section">
+                <section class="card shadow-sm season-section" id="season-recap">
                     <div class="card-header">
                         <h2 class="h5 mb-0">Season Recap</h2>
                     </div>
@@ -559,6 +560,28 @@ $this->start('css'); ?>
                 </div>
             </section>
 
+            <?php if (!empty($gamePosts)) : ?>
+                <section class="card shadow-sm season-section" id="season-game-posts">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Game Articles</h2>
+                    </div>
+                    <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $gamePosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <?php if (!empty($otherPosts)) : ?>
+                <section class="card shadow-sm season-section" id="season-other-posts">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">More Season Stories</h2>
+                    </div>
+                    <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $otherPosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <?php if (!empty($images)) : ?>
             <section class="card shadow-sm season-section" id="season-images">
                 <div class="card-header">
@@ -606,17 +629,6 @@ $this->start('css'); ?>
                     </div>
                 </div>
             </div>
-            <?php endif; ?>
-
-            <?php if (!empty($otherPosts)) : ?>
-            <section class="card shadow-sm season-section" id="season-other-posts">
-                <div class="card-header">
-                    <h2 class="h5 mb-0">More Season Stories</h2>
-                </div>
-                <div class="card-body" data-season-blog>
-                        <?= $this->element('blog/list_items', ['paginatedPosts' => $otherPosts]) ?>
-                    </div>
-            </section>
             <?php endif; ?>
         </div>
     </div>
