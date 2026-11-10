@@ -3,14 +3,19 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Table\ImagesTable;
 use App\Service\ImageEditService;
 use App\Service\ImageProcessor;
+use App\Service\ImageStorageService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
 class ImageEditServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     protected array $fixtures = [
         'app.Images',
     ];
@@ -18,6 +23,8 @@ class ImageEditServiceTest extends TestCase
     private ?string $storageRoot = null;
 
     private array $previousConfig = [];
+
+    private ImageStorageService $storage;
 
     /**
      * Sets up the test case.
@@ -45,6 +52,7 @@ class ImageEditServiceTest extends TestCase
         ]);
 
         $images = TableRegistry::getTableLocator()->get('Images');
+        assert($images instanceof ImagesTable);
         $image = $images->get(1);
 
         $subdirPath = $this->storageRoot
@@ -75,6 +83,11 @@ class ImageEditServiceTest extends TestCase
 
         file_put_contents($subdirPath . 'seed-thumb.webp', 'OLDTHUMB');
         file_put_contents($subdirPath . 'seed-hero.webp', 'OLDHERO');
+        $this->storage = new ImageStorageService(
+            new ImageProcessor(),
+            $this->taggingServiceFactory(),
+            $images,
+        );
     }
 
     /**
@@ -103,7 +116,7 @@ class ImageEditServiceTest extends TestCase
         $image = $images->get(1);
 
         $processor = $this->createFakeProcessor();
-        $service = new ImageEditService($processor, null);
+        $service = new ImageEditService($processor, $this->storage);
         $result = $service->manipulateImage($images, $image, ['rotate' => 90], 'apply', null);
 
         $this->assertTrue((bool)($result['success'] ?? false));
@@ -142,7 +155,7 @@ class ImageEditServiceTest extends TestCase
         $image = $images->get(1);
 
         $processor = $this->createFakeProcessor();
-        $service = new ImageEditService($processor, null);
+        $service = new ImageEditService($processor, $this->storage);
         $result = $service->cropThumbVariant($images, $image, [
             'x' => 1,
             'y' => 2,
@@ -171,7 +184,7 @@ class ImageEditServiceTest extends TestCase
         $image = $images->get(1);
 
         $processor = $this->createFakeProcessor();
-        $service = new ImageEditService($processor, null);
+        $service = new ImageEditService($processor, $this->storage);
         $result = $service->cropHeroVariant($images, $image, [
             'x' => 1,
             'y' => 2,

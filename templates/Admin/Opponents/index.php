@@ -36,7 +36,7 @@ $canCreateOpponents = $this->Rbac->can('Opponents', 'create');
             >
                 <thead class="table-dark">
                     <tr>
-                        <th>Name</th>
+                        <th>Opponent Name (Default Display)</th>
                         <th>Short</th>
                         <th>Abbr</th>
                         <th>Place</th>

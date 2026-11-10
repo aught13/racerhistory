@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\TeamSeasonRosters;
 use App\Model\Table\TeamSeasonRostersTable;
 use Cake\Datasource\EntityInterface;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
 
 /**
@@ -25,28 +27,31 @@ class TeamSeasonRosterAdminService
 
     private RbacPermissionService $rbacPermissionService;
 
+    private AdminDataScopeService $adminDataScopeService;
+
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     * @param \App\Service\AdminDataScopeService|null $adminDataScopeService Role data scope resolver
      */
-    public function __construct(?TeamSportContextService $teamSportContextService = null)
-    {
+    public function __construct(
+        ?TeamSportContextService $teamSportContextService = null,
+        ?AdminDataScopeService $adminDataScopeService = null,
+    ) {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
         $this->rbacPermissionService = new RbacPermissionService();
+        $this->adminDataScopeService = $adminDataScopeService ?? new AdminDataScopeService();
     }
 
     /**
      * Return detail page data.
      *
      * @param string|int $id Team season roster identifier
+     * @param mixed $identity Current authenticated identity.
      * @return array{teamSeasonRoster:\App\Model\Entity\TeamSeasonRosters}
      */
-    public function getViewData(int|string $id): array
+    public function getViewData(int|string $id, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
-        $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get(
-            $id,
-            ['contain' => ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons']],
-        );
+        $teamSeasonRoster = $this->findScopedRoster($id, $identity);
 
         return compact('teamSeasonRoster');
     }
@@ -55,11 +60,16 @@ class TeamSeasonRosterAdminService
      * Return add form data for multi-row creation.
      *
      * @param int|null $teamSeasonId Optional pre-selected team season id
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function getAddFormData(?int $teamSeasonId): array
+    public function getAddFormData(?int $teamSeasonId, mixed $identity = null): array
     {
-        $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
+        if ($teamSeasonId !== null && !$this->adminDataScopeService->canAccessTeamSeason($identity, $teamSeasonId)) {
+            $teamSeasonId = null;
+        }
+
+        $teamSeasonsList = $this->getScopedTeamSeasonOptions($identity);
         $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonId', 'teamSeasonsList', 'sports');
@@ -70,12 +80,16 @@ class TeamSeasonRosterAdminService
      *
      * @param int $teamSeasonId Team season id
      * @param array<mixed> $rows Submitted rows
+     * @param mixed $identity Current authenticated identity.
      * @return array{saved:int,errors:array<int,string>}
      */
-    public function saveBulkAddRows(int $teamSeasonId, array $rows): array
+    public function saveBulkAddRows(int $teamSeasonId, array $rows, mixed $identity = null): array
     {
         $saved = 0;
         $errors = [];
+        if (!$this->adminDataScopeService->canAccessTeamSeason($identity, $teamSeasonId)) {
+            return ['saved' => 0, 'errors' => ['The selected team season is outside your role scope.']];
+        }
 
         foreach ($rows as $index => $rowData) {
             if (!is_array($rowData)) {
@@ -111,10 +125,15 @@ class TeamSeasonRosterAdminService
      * Return bulk edit form data.
      *
      * @param int|null $teamSeasonId Selected team season id
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function getBulkEditFormData(?int $teamSeasonId): array
+    public function getBulkEditFormData(?int $teamSeasonId, mixed $identity = null): array
     {
+        if ($teamSeasonId !== null && !$this->adminDataScopeService->canAccessTeamSeason($identity, $teamSeasonId)) {
+            throw new RecordNotFoundException('Team season not found.');
+        }
+
         $existingRosters = [];
         if ($teamSeasonId) {
             $existingRosters = $this->getTeamSeasonRostersTable()->find()
@@ -125,7 +144,7 @@ class TeamSeasonRosterAdminService
                 ->toArray();
         }
 
-        $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
+        $teamSeasonsList = $this->getScopedTeamSeasonOptions($identity);
         $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonId', 'teamSeasonsList', 'sports', 'existingRosters');
@@ -136,10 +155,20 @@ class TeamSeasonRosterAdminService
      *
      * @param int $teamSeasonId Team season id
      * @param array<mixed> $rows Submitted rows
+     * @param mixed $identity Current authenticated identity.
      * @return array{saved:int,deletedCount:int,errors:array<int,string>,teamSeasonId:int}
      */
-    public function processBulkUpdate(int $teamSeasonId, array $rows): array
+    public function processBulkUpdate(int $teamSeasonId, array $rows, mixed $identity = null): array
     {
+        if (!$this->adminDataScopeService->canAccessTeamSeason($identity, $teamSeasonId)) {
+            return [
+                'saved' => 0,
+                'deletedCount' => 0,
+                'errors' => ['The selected team season is outside your role scope.'],
+                'teamSeasonId' => $teamSeasonId,
+            ];
+        }
+
         $submittedIds = [];
         foreach ($rows as $rowData) {
             if (!is_array($rowData)) {
@@ -215,17 +244,14 @@ class TeamSeasonRosterAdminService
      * Return edit form data.
      *
      * @param string|int $id Team season roster identifier
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function getEditFormData(int|string $id): array
+    public function getEditFormData(int|string $id, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
-        $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get(
-            $id,
-            contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons'],
-        );
+        $teamSeasonRoster = $this->findScopedRoster($id, $identity);
 
-        $teamSeasonsList = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
+        $teamSeasonsList = $this->getScopedTeamSeasonOptions($identity);
         $personIdExisting = (int)$teamSeasonRoster->get('person_id');
         $persons = (new PersonService())->getPersonsList(200, $personIdExisting ?: null);
         $sports = $this->teamSportContextService->getLegacySportOptions();
@@ -238,15 +264,18 @@ class TeamSeasonRosterAdminService
      *
      * @param string|int $id Team season roster identifier
      * @param array<string,mixed> $data Request payload
+     * @param mixed $identity Current authenticated identity.
      * @return array{success:bool,teamSeasonRoster:\App\Model\Entity\TeamSeasonRosters}
      */
-    public function saveExistingRoster(int|string $id, array $data): array
+    public function saveExistingRoster(int|string $id, array $data, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
-        $teamSeasonRoster = $this->getTeamSeasonRostersTable()->get(
-            $id,
-            contain: ['TeamSeasons' => ['Teams', 'Seasons'], 'Persons'],
-        );
+        $teamSeasonRoster = $this->findScopedRoster($id, $identity);
+        if (
+            array_key_exists('team_season_id', $data)
+            && !$this->adminDataScopeService->canAccessTeamSeason($identity, (int)$data['team_season_id'])
+        ) {
+            return ['success' => false, 'teamSeasonRoster' => $teamSeasonRoster];
+        }
 
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->patchEntity($teamSeasonRoster, $data);
         $success = (bool)$this->getTeamSeasonRostersTable()->save($teamSeasonRoster);
@@ -270,6 +299,7 @@ class TeamSeasonRosterAdminService
             'delete',
             'id',
         );
+        $scoped = $this->adminDataScopeService->scopeTeamOwnedQuery($identity, 'TeamSeasonRosters', $scoped);
         /** @var \App\Model\Entity\TeamSeasonRosters|null $teamSeasonRoster */
         $teamSeasonRoster = $scoped->where(['TeamSeasonRosters.id' => (int)$id])->first();
         if ($teamSeasonRoster === null) {
@@ -316,12 +346,17 @@ class TeamSeasonRosterAdminService
             ];
         }
 
-        $allowedIds = $this->rbacPermissionService->scopeQuery(
+        $allowedQuery = $this->rbacPermissionService->scopeQuery(
             $identity,
             'TeamSeasonRosters',
             $this->getTeamSeasonRostersTable()->find(),
             'delete',
             'id',
+        );
+        $allowedIds = $this->adminDataScopeService->scopeTeamOwnedQuery(
+            $identity,
+            'TeamSeasonRosters',
+            $allowedQuery,
         )
             ->select(['TeamSeasonRosters.id'])
             ->where(['TeamSeasonRosters.id IN' => $teamSeasonRosterIds])
@@ -369,12 +404,19 @@ class TeamSeasonRosterAdminService
      * Save a roster from popup add form and return JSON-ready payload.
      *
      * @param array<string,mixed> $data Request payload
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function createRosterFromPopup(array $data): array
+    public function createRosterFromPopup(array $data, mixed $identity = null): array
     {
         /** @var \App\Model\Entity\TeamSeasonRosters $teamSeasonRoster */
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->newEmptyEntity();
+        if (!$this->adminDataScopeService->canAccessTeamSeason($identity, (int)($data['team_season_id'] ?? 0))) {
+            return [
+                'success' => false,
+                'errors' => ['The selected team season is outside your role scope.'],
+            ];
+        }
         $teamSeasonRoster = $this->getTeamSeasonRostersTable()->patchEntity($teamSeasonRoster, $data);
 
         if ($this->getTeamSeasonRostersTable()->save($teamSeasonRoster)) {
@@ -414,6 +456,45 @@ class TeamSeasonRosterAdminService
         }
 
         return $errors;
+    }
+
+    /**
+     * @param string|int $id Roster identifier.
+     * @param mixed $identity Current authenticated identity.
+     * @return \App\Model\Entity\TeamSeasonRosters
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException If outside the role scope.
+     */
+    private function findScopedRoster(int|string $id, mixed $identity): TeamSeasonRosters
+    {
+        $scoped = $this->adminDataScopeService->scopeTeamOwnedQuery(
+            $identity,
+            'TeamSeasonRosters',
+            $this->getTeamSeasonRostersTable()->find(),
+        )
+            ->where(['TeamSeasonRosters.id' => (int)$id])
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons'], 'Persons'])
+            ->first();
+
+        if (!$scoped instanceof TeamSeasonRosters) {
+            throw new RecordNotFoundException('Roster entry not found.');
+        }
+
+        return $scoped;
+    }
+
+    /**
+     * @param mixed $identity Current authenticated identity.
+     * @return array<int,string>
+     */
+    private function getScopedTeamSeasonOptions(mixed $identity): array
+    {
+        $options = (new TeamSeasonService())->getTeamSeasonsListForRosterSelect(200);
+        $allowedIds = $this->adminDataScopeService->getAllowedTeamSeasonIds($identity);
+        if ($allowedIds === null) {
+            return $options;
+        }
+
+        return array_intersect_key($options, array_fill_keys($allowedIds, true));
     }
 
     /**

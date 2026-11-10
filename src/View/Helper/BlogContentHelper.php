@@ -28,6 +28,17 @@ class BlogContentHelper extends Helper
     }
 
     /**
+     * Decode entities in plain-text excerpts before they are HTML-escaped for output.
+     *
+     * @param string $text Excerpt text.
+     * @return string
+     */
+    public function decodeHtmlEntities(string $text): string
+    {
+        return html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    /**
      * Render blog HTML with photo credits for stored images.
      *
      * @param string $html Blog body HTML.

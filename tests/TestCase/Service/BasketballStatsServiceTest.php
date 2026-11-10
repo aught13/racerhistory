@@ -54,6 +54,17 @@ class BasketballStatsServiceTest extends TestCase
     }
 
     /**
+     * Basketball team filters use the team display variant.
+     */
+    public function testGetFilterOptionsUsesTeamDisplayName(): void
+    {
+        $options = $this->service->getFilterOptions();
+        $team = $this->fetchTable('Teams')->get(1);
+
+        $this->assertSame($team->getTeamDisplayName(), $options['teams'][1]);
+    }
+
+    /**
      * Replace an existing final game row without changing period rows or double-counting totals.
      *
      * @return void

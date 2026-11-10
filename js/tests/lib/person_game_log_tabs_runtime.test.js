@@ -2,100 +2,111 @@
  * @jest-environment jsdom
  */
 
-import { describe, test, expect, beforeEach, jest } from "@jest/globals";
+import {
+    describe,
+    test,
+    expect,
+    beforeEach,
+    afterEach,
+    jest,
+} from "@jest/globals";
+
+jest.mock("../../legacy/modules/person-game-log-tabs.mjs", () => ({
+    __esModule: true,
+    default: jest.fn(),
+}));
+
+import initPersonGameLogTabs from "../../legacy/modules/person-game-log-tabs.mjs";
+import {
+    bootPersonGameLogTabs,
+    initPersonGameLogTablesRoot,
+    initPersonGameLogTabsRoot,
+} from "../../lib/person_game_log_tabs_runtime.js";
 
 describe("person_game_log_tabs_runtime", () => {
     beforeEach(() => {
-        jest.resetModules();
-        delete window.__PERSON_GAME_LOG_TABS_INIT__;
+        jest.clearAllMocks();
+        delete window.$;
     });
 
-    test("uses window override when available", async () => {
-        const mockInit = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = mockInit;
-
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.initPersonGameLogTabsRoot();
-
-        expect(mockInit).toHaveBeenCalled();
+    afterEach(() => {
+        delete window.$;
     });
 
-    test("uses default when no override", async () => {
-        delete window.__PERSON_GAME_LOG_TABS_INIT__;
+    test("initializes the supplied root and defaults to the document", () => {
+        const root = document.createElement("div");
 
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.initPersonGameLogTabsRoot();
+        initPersonGameLogTabsRoot(root);
+        initPersonGameLogTabsRoot();
 
-        expect(true).toBe(true);
+        expect(initPersonGameLogTabs).toHaveBeenNthCalledWith(1, { root });
+        expect(initPersonGameLogTabs).toHaveBeenNthCalledWith(2, {
+            root: document,
+        });
     });
 
-    test("initializes game log tables with sorting and search enabled", async () => {
+    test("initializes game log tables with searching and paging options", () => {
         const dataTable = jest.fn();
         const jquery = jest.fn(() => ({ DataTable: dataTable }));
         jquery.fn = { dataTable: { isDataTable: jest.fn(() => false) } };
-        window.$ = jquery;
 
         const root = document.createElement("div");
         root.innerHTML = "<table data-person-game-log-table></table>";
+        window.$ = jquery;
 
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.initPersonGameLogTablesRoot(root);
+        initPersonGameLogTablesRoot(root);
 
         expect(dataTable).toHaveBeenCalledWith(
             expect.objectContaining({ searching: true, paging: false }),
         );
     });
 
-    test("does not reinitialize an existing game log table", async () => {
+    test("does not reinitialize an existing game log table", () => {
         const dataTable = jest.fn();
         const jquery = jest.fn(() => ({ DataTable: dataTable }));
         jquery.fn = { dataTable: { isDataTable: jest.fn(() => true) } };
-        window.$ = jquery;
 
         const root = document.createElement("div");
         root.innerHTML = "<table data-person-game-log-table></table>";
+        window.$ = jquery;
 
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.initPersonGameLogTablesRoot(root);
+        initPersonGameLogTablesRoot(root);
 
         expect(dataTable).not.toHaveBeenCalled();
     });
 
-    test("bootPersonGameLogTabs handles turbo:frame-load events", async () => {
-        const mockInit = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = mockInit;
+    test("skips table setup when DataTables is unavailable", () => {
+        const root = document.createElement("div");
+        root.innerHTML = "<table data-person-game-log-table></table>";
 
-        const frame = document.createElement("div");
+        expect(() => initPersonGameLogTablesRoot(root)).not.toThrow();
+    });
+
+    test("boots a frame root for turbo frame loads", () => {
+        const frame = document.createElement("turbo-frame");
         const event = new Event("turbo:frame-load");
         Object.defineProperty(event, "target", { value: frame });
 
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.bootPersonGameLogTabs(event);
+        bootPersonGameLogTabs(event);
 
-        expect(mockInit).toHaveBeenCalled();
+        expect(initPersonGameLogTabs).toHaveBeenCalledWith({ root: frame });
     });
 
-    test("bootPersonGameLogTabs handles non-turbo events", async () => {
-        const mockInit = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = mockInit;
+    test.each([
+        ["custom event", new Event("custom-event")],
+        [
+            "invalid frame target",
+            (() => {
+                const event = new Event("turbo:frame-load");
+                Object.defineProperty(event, "target", {
+                    value: "not an element",
+                });
+                return event;
+            })(),
+        ],
+    ])("uses the document for a %s", (_label, event) => {
+        bootPersonGameLogTabs(event);
 
-        const event = new Event("custom-event");
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.bootPersonGameLogTabs(event);
-
-        expect(mockInit).toHaveBeenCalled();
-    });
-
-    test("bootPersonGameLogTabs handles invalid frame targets", async () => {
-        const mockInit = jest.fn();
-        window.__PERSON_GAME_LOG_TABS_INIT__ = mockInit;
-
-        const event = new Event("turbo:frame-load");
-        Object.defineProperty(event, "target", { value: "not an element" });
-
-        const mod = await import("../../lib/person_game_log_tabs_runtime.js");
-        mod.bootPersonGameLogTabs(event);
-
-        expect(mockInit).toHaveBeenCalled();
+        expect(initPersonGameLogTabs).toHaveBeenCalledWith({ root: document });
     });
 });

@@ -27,11 +27,11 @@ $filterLabels = [
 
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="btn-group" role="group" aria-label="Result type">
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'streaks', '?' => ['result' => 'W', 'filter' => $filter]]) ?>"
+            <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'streaks', '?' => ['result' => 'W', 'filter' => $filter]]) ?>"
                class="btn btn-sm <?= $resultType === 'W' ? 'btn-success' : 'btn-outline-success' ?>">
                 Winning
             </a>
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'streaks', '?' => ['result' => 'L', 'filter' => $filter]]) ?>"
+            <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'streaks', '?' => ['result' => 'L', 'filter' => $filter]]) ?>"
                class="btn btn-sm <?= $resultType === 'L' ? 'btn-danger' : 'btn-outline-danger' ?>">
                 Losing
             </a>
@@ -40,7 +40,7 @@ $filterLabels = [
 
     <div class="btn-group mb-4" role="group" aria-label="Filter">
         <?php foreach ($filterLabels as $key => $label) : ?>
-            <a href="<?= $this->Url->build(['controller' => 'Games', 'action' => 'streaks', '?' => ['result' => $resultType, 'filter' => $key]]) ?>"
+            <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'streaks', '?' => ['result' => $resultType, 'filter' => $key]]) ?>"
                class="btn btn-sm <?= $filter === $key ? 'btn-primary' : 'btn-outline-primary' ?>">
                 <?= h($label) ?>
             </a>

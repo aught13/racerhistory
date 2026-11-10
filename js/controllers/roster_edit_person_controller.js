@@ -13,10 +13,14 @@ export default class extends Controller {
     };
 
     connect() {
-        if (!this.hasSelectTarget) {
+        this.isConnected = true;
+        this.initialize();
+    }
+
+    initialize() {
+        if (!this.hasSelectTarget || this.boundInput) {
             return;
         }
-
         this.debounceTimer = null;
         this.lastQuery = "";
         this.boundInput = (event) => this.handleSearchInput(event);
@@ -30,14 +34,42 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.isConnected = false;
+        this.cleanup(true);
+    }
+
+    beforeCache() {
+        this.cleanup(true);
+    }
+
+    afterCache() {
+        if (this.isConnected) {
+            this.initialize();
+        }
+    }
+
+    cleanup(removeSearchWrapper) {
         if (this.searchInput && this.boundInput) {
             this.searchInput.removeEventListener("input", this.boundInput);
         }
+        this.boundInput = null;
 
-        if (this.debounceTimer) {
+        if (this.debounceTimer !== null) {
             window.clearTimeout(this.debounceTimer);
             this.debounceTimer = null;
         }
+        this.activeRequest?.abort();
+        this.activeRequest = null;
+
+        if (removeSearchWrapper && this.searchInput) {
+            const wrapper = this.searchInput.closest(".dynamic-person-wrapper");
+            if (wrapper?.contains(this.selectTarget)) {
+                wrapper.parentNode.insertBefore(this.selectTarget, wrapper);
+                wrapper.remove();
+            }
+            this.searchInput = null;
+        }
+        this.lastQuery = "";
     }
 
     injectSearchInput() {
@@ -98,6 +130,29 @@ export default class extends Controller {
         this.selectTarget.value = currentId;
     }
 
+    popupOptionAdded(event) {
+        const detail = event.detail;
+        if (
+            detail?.targetSelectId !== this.selectTarget.id ||
+            detail.newOption?.value == null
+        ) {
+            return;
+        }
+
+        const value = String(detail.newOption.value);
+        let option = Array.from(this.selectTarget.options).find(
+            (candidate) => candidate.value === value,
+        );
+        if (!option) {
+            option = this.selectTarget.ownerDocument.createElement("option");
+            option.value = value;
+            this.selectTarget.add(option);
+        }
+        option.textContent = String(detail.newOption.text ?? value);
+        this.selectTarget.value = value;
+        this.selectTarget.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
     handleSearchInput(event) {
         const query = event.target.value.trim();
         if (query === this.lastQuery) {
@@ -108,6 +163,8 @@ export default class extends Controller {
         if (this.debounceTimer) {
             window.clearTimeout(this.debounceTimer);
         }
+        this.activeRequest?.abort();
+        this.activeRequest = null;
 
         this.debounceTimer = window.setTimeout(() => {
             this.search(query);
@@ -115,24 +172,46 @@ export default class extends Controller {
     }
 
     search(query) {
-        if (!this.hasSearchUrlValue || query.length < MIN_QUERY_LENGTH) {
+        if (!this.hasSearchUrlValue) {
             return;
         }
+        if (query.length < MIN_QUERY_LENGTH) {
+            this.activeRequest?.abort();
+            this.activeRequest = null;
+            return;
+        }
+
+        const request = new AbortController();
+        this.activeRequest = request;
 
         fetch(`${this.searchUrlValue}?q=${encodeURIComponent(query)}`, {
             credentials: "same-origin",
             headers: { "X-Requested-With": "XMLHttpRequest" },
+            signal: request.signal,
         })
             .then((response) => response.json())
             .then((data) => {
+                if (this.activeRequest !== request) {
+                    return;
+                }
                 if (!data.success || !Array.isArray(data.results)) {
                     return;
                 }
 
                 this.replaceOptions(data.results);
             })
-            .catch(() => {
-                // Keep existing options on transient network errors.
+            .catch((error) => {
+                if (
+                    error?.name !== "AbortError" &&
+                    this.activeRequest === request
+                ) {
+                    console.warn("Roster person search failed", error);
+                }
+            })
+            .finally(() => {
+                if (this.activeRequest === request) {
+                    this.activeRequest = null;
+                }
             });
     }
 
@@ -144,7 +223,7 @@ export default class extends Controller {
               )
             : null;
 
-        this.selectTarget.innerHTML = "";
+        this.selectTarget.replaceChildren();
 
         const emptyOption = new window.Option("(Select a person)", "");
         this.selectTarget.add(emptyOption);

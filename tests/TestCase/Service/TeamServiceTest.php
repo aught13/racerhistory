@@ -49,19 +49,11 @@ class TeamServiceTest extends TestCase
      */
     public function testGetDisplayLabel(): void
     {
+        $team = $this->service->getTeamById(1);
         $label = $this->service->getDisplayLabel(1);
-        $this->assertIsString($label);
-        $this->assertNotEmpty($label);
-    }
 
-    /**
-     * Tests get display label with gender.
-     */
-    public function testGetDisplayLabelWithGender(): void
-    {
-        $label = $this->service->getDisplayLabel(1, true);
-        $this->assertIsString($label);
-        $this->assertNotEmpty($label);
+        $this->assertNotNull($team);
+        $this->assertSame($team->getDisplayName(), $label);
     }
 
     /**
@@ -148,6 +140,9 @@ class TeamServiceTest extends TestCase
             $this->assertArrayHasKey('id', $first);
             $this->assertArrayHasKey('label', $first);
             $this->assertArrayHasKey('sport', $first);
+            $team = $this->service->getTeamById((int)$first['id']);
+            $this->assertNotNull($team);
+            $this->assertSame($team->getDisplayName(), $first['label']);
         }
     }
 

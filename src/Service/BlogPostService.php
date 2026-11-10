@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Model\Entity\BlogPost;
+use App\Model\Table\BlogPostsTable;
 use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
@@ -11,6 +12,7 @@ use Cake\Utility\Text;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
+use LogicException;
 
 /**
  * BlogPostService
@@ -19,16 +21,16 @@ use Exception;
  */
 class BlogPostService
 {
-    private TaggingService $tagging;
+    private ?TaggingService $tagging;
 
     /**
      * Create the service with an optional tagging dependency.
      *
-     * @param \App\Service\TaggingService|null $tagging Tagging helper, defaults to BlogPosts context.
+     * @param \App\Service\TaggingServiceFactory|null $taggingServiceFactory Tagging context factory.
      */
-    public function __construct(?TaggingService $tagging = null)
+    public function __construct(?TaggingServiceFactory $taggingServiceFactory = null)
     {
-        $this->tagging = $tagging ?? TaggingService::forBlogPosts();
+        $this->tagging = $taggingServiceFactory?->forBlogPosts();
     }
 
     /**
@@ -83,25 +85,109 @@ class BlogPostService
      * Get published posts by a tag slug.
      *
      * @param string $tagSlug
-     * @param int $limit
+     * @param int|null $limit
      * @return array<int,\App\Model\Entity\BlogPost>
      */
-    public function getPublishedByTag(string $tagSlug, int $limit = 20): array
+    public function getPublishedByTag(string $tagSlug, ?int $limit = 20): array
     {
         $table = $this->posts();
 
-        $rows = $table->find()
+        $query = $table->find()
             ->contain(['BlogTags'])
             ->matching('BlogTags', function ($q) use ($tagSlug) {
                 return $q->where(['BlogTags.slug' => $tagSlug]);
             })
             ->where(['BlogPosts.is_published' => true])
-            ->orderByDesc('BlogPosts.published_at')
-            ->limit($limit)
-            ->all()
-            ->toArray();
+            ->orderByDesc('BlogPosts.published_at');
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        $rows = $query->all()->toArray();
 
         return $this->normalizePosts($rows);
+    }
+
+    /**
+     * Get published game posts separated into previews, recaps, and stories.
+     *
+     * @param int $gameId
+     * @param int|null $limit
+     * @return array{previews:array<int,\App\Model\Entity\BlogPost>,recaps:array<int,\App\Model\Entity\BlogPost>,stories:array<int,\App\Model\Entity\BlogPost>}
+     */
+    public function getPublishedForGame(int $gameId, ?int $limit = 12): array
+    {
+        $posts = $this->getPublishedByTag('game-' . $gameId, $limit);
+        $previews = [];
+        $recaps = [];
+        $stories = [];
+
+        foreach ($posts as $post) {
+            $hasPreview = $this->hasTag($post, 'preview');
+            $hasRecap = $this->hasTag($post, 'recap');
+
+            if ($hasPreview) {
+                $previews[] = $post;
+            }
+            if ($hasRecap) {
+                $recaps[] = $post;
+            }
+            if (!$hasPreview && !$hasRecap) {
+                $stories[] = $post;
+            }
+        }
+
+        return [
+            'previews' => $previews,
+            'recaps' => $recaps,
+            'stories' => $stories,
+        ];
+    }
+
+    /**
+     * Determine whether a post has a tag with the supplied slug.
+     *
+     * @param \App\Model\Entity\BlogPost $post
+     * @param string $slug
+     * @return bool
+     */
+    public function hasTag(BlogPost $post, string $slug): bool
+    {
+        $slug = mb_strtolower($slug);
+        foreach ($post->blog_tags ?? [] as $tag) {
+            $tagSlug = (string)($tag->slug ?? '');
+            if ($tagSlug !== '' && mb_strtolower($tagSlug) === $slug) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all published posts tagged for a person, separated into biography and stories.
+     *
+     * @param int $personId
+     * @return array{bioPosts:array<int,\App\Model\Entity\BlogPost>,stories:array<int,\App\Model\Entity\BlogPost>}
+     */
+    public function getPublishedForPerson(int $personId): array
+    {
+        $posts = $this->getPublishedByTag('person-' . $personId, null);
+        $bioPosts = [];
+        $stories = [];
+
+        foreach ($posts as $post) {
+            if ($this->hasTag($post, 'bio')) {
+                $bioPosts[] = $post;
+            } else {
+                $stories[] = $post;
+            }
+        }
+
+        return [
+            'bioPosts' => $bioPosts,
+            'stories' => $stories,
+        ];
     }
 
     /**
@@ -224,13 +310,13 @@ class BlogPostService
 
         assert($saved instanceof BlogPost);
 
-        $this->tagging->applyFromData((int)$saved->id, $data);
+        $this->taggingService()->applyFromData((int)$saved->id, $data);
 
         return $this->getPostById((int)$saved->id) ?: $saved;
     }
 
     /**
-     * Update an existing blog post and reapply tags.
+     * Update an existing blog post and apply any submitted tag fields.
      *
      * @param int $id
      * @param array $data
@@ -250,7 +336,7 @@ class BlogPostService
 
         assert($saved instanceof BlogPost);
 
-        $this->tagging->applyFromData((int)$id, $data);
+        $this->taggingService()->applyFromData((int)$id, $data);
 
         return $this->getPostById($id) ?: $saved;
     }
@@ -275,15 +361,7 @@ class BlogPostService
      */
     public function getDisplayLabel(int $id): string
     {
-        $post = $this->posts()->find()->select(['id', 'title'])->where(['id' => $id])->first();
-
-        if (!$post) {
-            return 'Post #' . $id;
-        }
-
-        $title = $post->get('title');
-
-        return is_scalar($title) ? (string)$title : 'Post #' . $id;
+        return $this->posts()->getDisplayLabel($id);
     }
 
     /**
@@ -389,10 +467,27 @@ class BlogPostService
     /**
      * Resolve the BlogPosts table locator.
      *
-     * @return \Cake\ORM\Table
+     * @return \App\Model\Table\BlogPostsTable
      */
-    private function posts(): Table
+    private function posts(): BlogPostsTable
     {
-        return TableRegistry::getTableLocator()->get('BlogPosts');
+        $table = TableRegistry::getTableLocator()->get('BlogPosts');
+        assert($table instanceof BlogPostsTable);
+
+        return $table;
+    }
+
+    /**
+     * Resolve the configured tagging service for blog post mutations.
+     *
+     * @return \App\Service\TaggingService
+     */
+    private function taggingService(): TaggingService
+    {
+        if ($this->tagging === null) {
+            throw new LogicException('TaggingServiceFactory is required for blog post tag mutations.');
+        }
+
+        return $this->tagging;
     }
 }

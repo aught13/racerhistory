@@ -7,6 +7,7 @@ export default class extends Controller {
     static targets = [
         "table",
         "bulkForm",
+        "deleteForm",
         "selectAll",
         "actionSelect",
         "actionButton",
@@ -15,7 +16,6 @@ export default class extends Controller {
     static values = {
         ajaxUrl: String,
         bulkDeleteUrl: String,
-        deleteFormId: String,
     };
 
     connect() {
@@ -288,10 +288,7 @@ export default class extends Controller {
         const checkedRows = this.rowCheckboxes().filter(
             (checkbox) => checkbox.checked,
         );
-        if (
-            checkedRows.length === 0 ||
-            typeof window.__rhStimulusShowConfirmDelete !== "function"
-        ) {
+        if (checkedRows.length === 0) {
             return;
         }
 
@@ -308,14 +305,19 @@ export default class extends Controller {
             return `${date} vs ${opponent}`;
         });
 
-        window.__rhStimulusShowConfirmDelete({
-            deleteUrl: this.bulkDeleteUrlValue,
-            itemType: "games (bulk)",
-            associated,
-            ids,
-            idsName: "game_ids[]",
-            formId: this.deleteFormIdValue,
-            bulkAction: "delete",
+        this.dispatch("confirm-delete", {
+            prefix: "admin",
+            detail: {
+                deleteUrl: this.bulkDeleteUrlValue,
+                itemType: "games (bulk)",
+                associated,
+                ids,
+                idsName: "game_ids[]",
+                sourceForm: this.hasDeleteFormTarget
+                    ? this.deleteFormTarget
+                    : null,
+                bulkAction: "delete",
+            },
         });
     }
 

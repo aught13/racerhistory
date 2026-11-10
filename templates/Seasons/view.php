@@ -11,6 +11,7 @@
  * @var array<int,\App\Model\Entity\BlogPost> $previewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $reviewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $otherPosts
+ * @var array<int,\App\Model\Entity\BlogPost> $gamePosts
  * @var \App\View\AppView $this
  */
 use App\Service\SocialImageService;
@@ -20,7 +21,7 @@ $seasonEnd = $teamSeason->season->end ?? '';
 $seasonLabel = $seasonStart !== '' && $seasonEnd !== ''
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
-$teamName = $teamSeason->team->team_name ?? 'Team';
+$teamName = $teamSeason->team?->getDisplayName() ?? 'Team';
 $hasRecord = static function (array $record): bool {
     $wins = (int)($record['W'] ?? 0);
     $losses = (int)($record['L'] ?? 0);
@@ -152,7 +153,7 @@ if (!empty($seasonSocialImageCandidates)) {
 $this->start('css'); ?>
 <?php $this->end(); ?>
 
-<div class="container py-4 season-view" data-season-view data-controller="season-view">
+<div class="container py-4 season-view" data-season-view data-controller="season-view" data-action="turbo:before-cache@document->season-view#beforeCache">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
@@ -310,7 +311,7 @@ $this->start('css'); ?>
     <div class="row g-4">
         <div class="col-12">
             <?php if (!empty($previewPosts)) : ?>
-                <section class="card shadow-sm season-section">
+                <section class="card shadow-sm season-section" id="season-preview">
                     <div class="card-header">
                         <h2 class="h5 mb-0">Season Preview</h2>
                     </div>
@@ -321,7 +322,7 @@ $this->start('css'); ?>
             <?php endif; ?>
 
             <?php if (!empty($reviewPosts)) : ?>
-                <section class="card shadow-sm season-section">
+                <section class="card shadow-sm season-section" id="season-recap">
                     <div class="card-header">
                         <h2 class="h5 mb-0">Season Recap</h2>
                     </div>
@@ -366,7 +367,7 @@ $this->start('css'); ?>
                                                     $locationPrefix = 'vs';
                                                 }
                                                 ?>
-                                                <?= h($locationPrefix) ?> <?= h($game->opponent->opponent_name ?? 'Unknown') ?>
+                                                <?= h($locationPrefix) ?> <?= h($game->opponent?->getDisplayName() ?? 'Unknown') ?>
                                             </td>
                                             <td>
                                                 <?php $type = $game->game_type ?? null; ?>
@@ -559,6 +560,28 @@ $this->start('css'); ?>
                 </div>
             </section>
 
+            <?php if (!empty($gamePosts)) : ?>
+                <section class="card shadow-sm season-section" id="season-game-posts">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">Game Articles</h2>
+                    </div>
+                    <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $gamePosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <?php if (!empty($otherPosts)) : ?>
+                <section class="card shadow-sm season-section" id="season-other-posts">
+                    <div class="card-header">
+                        <h2 class="h5 mb-0">More Season Stories</h2>
+                    </div>
+                    <div class="card-body" data-season-blog>
+                        <?= $this->element('blog/list_items', ['paginatedPosts' => $otherPosts]) ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <?php if (!empty($images)) : ?>
             <section class="card shadow-sm season-section" id="season-images">
                 <div class="card-header">
@@ -568,7 +591,7 @@ $this->start('css'); ?>
                     <?php if (!empty($images)) : ?>
                         <div class="season-photos-grid" data-season-image-gallery>
                             <?php foreach ($images as $image) : ?>
-                                <div class="season-photo-thumb">
+                                <button type="button" class="season-photo-thumb btn p-0 border-0" data-bs-toggle="modal" data-bs-target="#seasonImageModal" aria-label="<?= h('View photo: ' . (string)$image->filename) ?>">
                                     <?php $photoThumbUrl = $this->ImageServe->urlForImage($image, ['variant' => 'thumb']); ?>
                                     <?php $photoUrl = $this->ImageServe->urlForImage($image); ?>
                                     <?= $this->Html->image('data:image/gif;base64,R0lGODlhAQABAAAAACw=', [
@@ -576,7 +599,6 @@ $this->start('css'); ?>
                                         'class' => 'season-photo-thumb-img js-season-photo',
                                         'width' => 240,
                                         'height' => 180,
-                                        'style' => 'object-fit: cover;',
                                         'loading' => 'lazy',
                                         'decoding' => 'async',
                                         'data-image-url' => $photoUrl,
@@ -584,32 +606,29 @@ $this->start('css'); ?>
                                         'data-thumb-src' => $photoThumbUrl,
                                         'data-rh-no-retry' => '1',
                                     ]) ?>
-                                </div>
+                                </button>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>
             </section>
 
-            <!-- Image Popover Modal -->
-            <div class="season-image-modal" id="seasonImageModal" data-season-image-modal style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1050; align-items: center; justify-content: center;">
-                <button type="button" class="season-image-modal-close" aria-label="Close" data-modal-close style="position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; z-index: 1051;">×</button>
-                <picture class="season-image-modal-container" style="max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center;">
-                    <source type="image/webp" data-modal-image-webp>
-                    <img src="" alt="" data-modal-image data-modal-image-fallback style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
-                </picture>
-            </div>
-            <?php endif; ?>
-
-            <?php if (!empty($otherPosts)) : ?>
-            <section class="card shadow-sm season-section" id="season-other-posts">
-                <div class="card-header">
-                    <h2 class="h5 mb-0">More Season Stories</h2>
-                </div>
-                <div class="card-body" data-season-blog>
-                        <?= $this->element('blog/list_items', ['paginatedPosts' => $otherPosts]) ?>
+            <div class="modal fade image-gallery-modal season-image-modal" id="seasonImageModal" tabindex="-1" aria-labelledby="seasonImageModalLabel" aria-hidden="true" data-season-image-modal data-season-view-target="imageModal">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header border-0">
+                            <h2 class="visually-hidden" id="seasonImageModalLabel">Season photo</h2>
+                            <button type="button" class="btn-close btn-close-white" aria-label="Close" data-bs-dismiss="modal" data-season-view-target="imageModalDismiss"></button>
+                        </div>
+                        <div class="modal-body">
+                            <picture class="image-gallery-modal-picture">
+                                <source type="image/webp" data-modal-image-webp>
+                                <img alt="" data-modal-image data-modal-image-fallback class="image-gallery-modal-image">
+                            </picture>
+                        </div>
                     </div>
-            </section>
+                </div>
+            </div>
             <?php endif; ?>
         </div>
     </div>

@@ -7,12 +7,14 @@ import PlaceSearchController from "../controllers/place_search_controller.js";
 const flushPromises = async () => {
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 };
 
 describe("place-search controller", () => {
     let application;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.useFakeTimers();
         globalThis.fetch = jest.fn();
 
@@ -20,6 +22,12 @@ describe("place-search controller", () => {
             <div
                 data-controller="place-search"
                 data-place-search-search-url-value="/places/search"
+                data-action="
+                    click->place-search#handleClick
+                    click@document->place-search#handleDocumentClick
+                    admin:person-birth-place-added@document->place-search#handleBirthPlaceAdded
+                    turbo:before-cache@document->place-search#beforeCache
+                "
             >
                 <input
                     id="place-search-input"
@@ -36,6 +44,7 @@ describe("place-search controller", () => {
 
         application = Application.start();
         application.register("place-search", PlaceSearchController);
+        await flushPromises();
     });
 
     afterEach(() => {
@@ -84,6 +93,7 @@ describe("place-search controller", () => {
         await flushPromises();
 
         expect(fetch).toHaveBeenCalledWith("/places/search?q=Na", {
+            signal: expect.anything(),
             headers: {
                 "X-Requested-With": "XMLHttpRequest",
             },
@@ -103,7 +113,7 @@ describe("place-search controller", () => {
         expect(selected.textContent).toContain("None selected");
     });
 
-    test("shows empty and error states, handles global selection, and cleans up on disconnect", async () => {
+    test("shows empty and error states, handles scoped selection, and cleans up on disconnect", async () => {
         const input = document.getElementById("place-search-input");
         const results = document.getElementById("place-search-results");
         const hidden = document.getElementById("place-search-hidden");
@@ -127,9 +137,13 @@ describe("place-search controller", () => {
 
         expect(results.innerHTML).toContain("Error");
 
-        window.handleBirthPlaceAdded({
-            place: { id: 13, place_city: "Paris", place_state: "KY" },
-        });
+        document.dispatchEvent(
+            new CustomEvent("admin:person-birth-place-added", {
+                detail: {
+                    place: { id: 13, place_city: "Paris", place_state: "KY" },
+                },
+            }),
+        );
 
         expect(hidden.value).toBe("13");
         expect(
@@ -140,9 +154,92 @@ describe("place-search controller", () => {
         document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(results.innerHTML).toBe("");
 
-        document.querySelector('[data-controller="place-search"]').remove();
+        const root = document.querySelector('[data-controller="place-search"]');
+        root.remove();
         await flushPromises();
 
-        expect(window.handleBirthPlaceAdded).toBeUndefined();
+        hidden.value = "";
+        document.dispatchEvent(
+            new CustomEvent("admin:person-birth-place-added", {
+                detail: {
+                    place: { id: 14, place_city: "Not selected" },
+                },
+            }),
+        );
+        expect(hidden.value).toBe("");
+    });
+
+    test("aborts stale requests and clears only ephemeral state before Turbo caching", async () => {
+        const input = document.getElementById("place-search-input");
+        const results = document.getElementById("place-search-results");
+        const hidden = document.getElementById("place-search-hidden");
+        const selected = document.getElementById("place-search-selected");
+
+        fetch.mockImplementationOnce(
+            (_url, { signal }) =>
+                new Promise((_resolve, reject) => {
+                    signal.addEventListener(
+                        "abort",
+                        () =>
+                            reject(
+                                Object.assign(new Error("aborted"), {
+                                    name: "AbortError",
+                                }),
+                            ),
+                        { once: true },
+                    );
+                }),
+        );
+
+        input.value = "Ab";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        jest.advanceTimersByTime(300);
+        const signal = fetch.mock.calls[0][1].signal;
+        results.textContent = "Old results";
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+        await flushPromises();
+
+        expect(signal.aborted).toBe(true);
+        expect(input.value).toBe("");
+        expect(results.textContent).toBe("");
+        expect(hidden.value).toBe("");
+        expect(selected.textContent).toContain("None selected");
+
+        input.value = "No";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        jest.advanceTimersByTime(300);
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test("routes place-added events only to matching controller actions", async () => {
+        const firstHidden = document.getElementById("place-search-hidden");
+        const secondRoot = document.createElement("div");
+        secondRoot.dataset.controller = "place-search";
+        secondRoot.dataset.placeSearchSearchUrlValue = "/places/other-search";
+        secondRoot.dataset.action =
+            "admin:other-birth-place-added@document->place-search#handleBirthPlaceAdded";
+        secondRoot.innerHTML = `
+            <input data-place-search-target="input">
+            <div data-place-search-target="results"></div>
+            <div data-place-search-target="selected"></div>
+            <input data-place-search-target="hidden">
+        `;
+        document.body.append(secondRoot);
+        await flushPromises();
+
+        document.dispatchEvent(
+            new CustomEvent("admin:person-birth-place-added", {
+                detail: {
+                    place: { id: 25, place_city: "Scoped Place" },
+                },
+            }),
+        );
+
+        expect(firstHidden.value).toBe("25");
+        expect(
+            secondRoot.querySelector('[data-place-search-target="hidden"]')
+                .value,
+        ).toBe("");
     });
 });

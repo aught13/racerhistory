@@ -26,7 +26,7 @@ echo $this->element('People/table_assets');
         <div class="people-table-card shadow-sm">
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle" id="people-table"
-                       data-people-data-url="<?= h($this->Url->build(['controller' => 'People', 'action' => 'index', '?' => ['format' => 'json']])) ?>">
+                       data-people-data-url="<?= h($this->PublicScope->url(['controller' => 'People', 'action' => 'index', '?' => ['format' => 'json']])) ?>">
                     <thead class="table-dark">
                         <tr>
                             <th>Name</th>

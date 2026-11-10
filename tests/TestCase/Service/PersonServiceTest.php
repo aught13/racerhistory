@@ -10,6 +10,11 @@ class PersonServiceTest extends TestCase
 {
     protected array $fixtures = [
         'app.Persons',
+        'app.TeamSeasonRosters',
+        'app.TeamSeasons',
+        'app.Teams',
+        'app.Sports',
+        'app.Seasons',
     ];
 
     private PersonService $service;
@@ -92,6 +97,27 @@ class PersonServiceTest extends TestCase
     {
         $results = $this->service->searchPersons('a', 5);
         $this->assertLessThanOrEqual(5, count($results));
+    }
+
+    /**
+     * Image-tagging search uses the canonical team display for roster context.
+     */
+    public function testSearchPersonsForImageTaggingUsesTeamDisplayName(): void
+    {
+        $results = $this->service->searchPersonsForImageTagging('John');
+        $this->assertNotEmpty($results);
+
+        $roster = $this->getTableLocator()->get('TeamSeasonRosters')->find()
+            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
+            ->where(['TeamSeasonRosters.person_id' => $results[0]['id']])
+            ->orderBy(['Seasons.start' => 'DESC', 'TeamSeasonRosters.id' => 'DESC'])
+            ->first();
+
+        $this->assertNotNull($roster);
+        $this->assertStringContainsString(
+            $roster->team_season->team->getDisplayName(),
+            $results[0]['label'],
+        );
     }
 
     /**

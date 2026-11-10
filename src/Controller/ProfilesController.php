@@ -3,14 +3,26 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\ImageStorageService;
 use Cake\Event\EventInterface;
+use Psr\Http\Message\UploadedFileInterface;
 
 /**
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ * @property \App\Controller\Component\UserProfileComponent $UserProfile
  */
 class ProfilesController extends AppController
 {
+    /**
+     * Initialize the profile controller and its component.
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->loadComponent('UserProfile');
+    }
+
     /**
      * @param \Cake\Event\EventInterface $event
      * @return void
@@ -29,9 +41,7 @@ class ProfilesController extends AppController
      */
     public function view(string $username)
     {
-        $user = $this->fetchTable('Users')->find()
-            ->where(['username' => $username, 'active' => true])
-            ->firstOrFail();
+        $user = $this->UserProfile->findActiveByUsername($username);
 
         $this->set(compact('user'));
     }
@@ -42,69 +52,31 @@ class ProfilesController extends AppController
     public function edit()
     {
         $identity = $this->Authentication->getIdentity();
-        $user = $this->fetchTable('Users')->get($identity->getIdentifier());
+        $user = $this->UserProfile->getById((int)$identity->getIdentifier());
         $this->Authorization->skipAuthorization(); // Users can edit their own profile by definition
 
         if ($this->request->is(['post', 'put', 'patch'])) {
             $data = $this->request->getData();
 
-            // Normalize `social_links` to a valid JSON array string before save.
-            if (array_key_exists('social_links', $data)) {
-                $sl = $data['social_links'];
-                if ($sl === '' || $sl === null) {
-                    $data['social_links'] = null;
-                } elseif (is_string($sl)) {
-                    $decoded = json_decode((string)$sl, true);
-                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        $arr = array_values(array_filter(
-                            array_map('trim', $decoded),
-                            static fn($v) => trim((string)$v) !== '',
-                        ));
-                        $data['social_links'] = $arr === [] ? null :
-                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                    } else {
-                        $parts = preg_split("/\r\n|\n|\r/", (string)$sl);
-                        $arr = array_values(array_filter(array_map('trim', $parts), static fn($v) => $v !== ''));
-                        $data['social_links'] = $arr === [] ? null :
-                        json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                    }
-                } elseif (is_array($sl)) {
-                    $arr = array_values(array_filter(array_map('trim', $sl), static fn($v) => trim((string)$v) !== ''));
-                    $data['social_links'] = $arr === [] ? null :
-                    json_encode($arr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-                } else {
-                    $data['social_links'] = null;
-                }
-            }
-
-            // Validate and sanitize specific fields
             $allowedFields = ['display_name', 'bio', 'website_url', 'social_links'];
+            $user = $this->UserProfile->patchProfile($user, $data, $allowedFields);
 
-            $user = $this->fetchTable('Users')->patchEntity($user, $data, [
-                'fields' => $allowedFields,
-            ]);
-
-            // Handle Avatar Upload
             $file = $this->request->getData('avatar');
-            if ($file && $file->getError() === UPLOAD_ERR_OK) {
-                $imageStorage = new ImageStorageService();
-                $ownerId = null;
-                if ($identity !== null && method_exists($identity, 'getIdentifier')) {
-                    $ownerId = (int)$identity->getIdentifier();
-                }
-                $uploadResult = $imageStorage->upload($file, [], [], $ownerId);
-
-                if (isset($uploadResult['image']['id'])) {
-                    $user->profile_image_id = $uploadResult['image']['id'];
-                } else {
-                    $this->Flash->error($imageStorage->getLastError() ?: 'Failed to process avatar image.');
+            if ($file instanceof UploadedFileInterface && $file->getError() === UPLOAD_ERR_OK) {
+                $ownerId = $identity !== null && method_exists($identity, 'getIdentifier')
+                    ? (int)$identity->getIdentifier()
+                    : null;
+                $uploadError = $this->UserProfile->uploadProfileImage($user, $file, $ownerId);
+                if ($uploadError !== null) {
+                    $this->Flash->error($uploadError);
                 }
             }
 
-            if ($this->fetchTable('Users')->save($user)) {
+            $savedUser = $this->UserProfile->saveProfile($user);
+            if ($savedUser !== false) {
                 $this->Flash->success('Profile updated successfully.');
 
-                return $this->redirect(['action' => 'view', $user->username]);
+                return $this->redirect(['action' => 'view', $savedUser->username]);
             }
             $this->Flash->error('Could not update profile.');
         }

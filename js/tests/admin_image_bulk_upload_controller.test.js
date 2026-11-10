@@ -30,6 +30,7 @@ describe("admin-image-bulk-upload controller", () => {
                     data-admin-image-bulk-upload-target="uploadsInput"
                     data-action="change->admin-image-bulk-upload#fileSelectionChanged"
                 />
+                <input type="text" id="photoCredit" name="photo_credit" />
                 <div id="fileList" data-admin-image-bulk-upload-target="fileList"></div>
                 <button
                     id="uploadAll"
@@ -93,6 +94,7 @@ describe("admin-image-bulk-upload controller", () => {
         });
 
         const input = document.getElementById("uploads");
+        document.getElementById("photoCredit").value = "Team Photographer";
         const files = [
             new File(["a"], "first.png", { type: "image/png" }),
             new File(["b"], "second.png", { type: "image/png" }),
@@ -106,9 +108,15 @@ describe("admin-image-bulk-upload controller", () => {
 
         document.getElementById("uploadAll").click();
         await flushPromises();
+        await flushPromises();
 
-        expect(fetch.mock.calls.length).toBeGreaterThanOrEqual(1);
+        expect(fetch.mock.calls).toHaveLength(2);
         expect(fetch.mock.calls[0][0]).toContain("/admin/images/bulk-upload");
+        expect(
+            fetch.mock.calls.map(([, options]) =>
+                options.body.get("photo_credit"),
+            ),
+        ).toEqual(["Team Photographer", "Team Photographer"]);
     });
 
     test("shows an error when no files are selected", async () => {
@@ -253,6 +261,9 @@ describe("admin-image-bulk-upload controller", () => {
         expect(modalFetchCount).toBe(1);
 
         const triggerRoot = document.querySelector(".tag-modal-trigger");
+        expect(
+            triggerRoot.querySelector('[data-tag-modal-target="host"]'),
+        ).not.toBeNull();
         const tagCtrl =
             (application.getControllerForElementAndIdentifier &&
                 application.getControllerForElementAndIdentifier(

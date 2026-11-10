@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\GameTypeAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * GameTypes Admin Controller
@@ -32,12 +34,27 @@ class GameTypesController extends AppController
     protected GameTypeAdminService $gameTypeAdminService;
 
     /**
+     * Create the controller with its game type administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\GameTypeAdminService $gameTypeAdminService The game type administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        GameTypeAdminService $gameTypeAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->gameTypeAdminService = $gameTypeAdminService;
+    }
+
+    /**
      * Initialize controller and adjust FormProtection unlocked actions.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->gameTypeAdminService = new GameTypeAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');

@@ -6,7 +6,6 @@ namespace App\Service;
 use App\Model\Entity\Image;
 use App\Model\Table\ImagesTable;
 use Cake\Core\Configure;
-use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -20,16 +19,22 @@ class ImageStorageService
 {
     private ImageProcessor $processor;
     private TaggingService $tagging;
+    private ImagesTable $imagesTable;
     private ?string $lastError = null;
 
     /**
-     * @param \App\Service\ImageProcessor|null $processor Optional processor override
-     * @param \App\Service\TaggingService|null $tagging   Optional tagging override
+     * @param \App\Service\ImageProcessor $processor Image processing dependency.
+     * @param \App\Service\TaggingServiceFactory $taggingServiceFactory Tagging context factory.
+     * @param \App\Model\Table\ImagesTable $imagesTable Image persistence dependency.
      */
-    public function __construct(?ImageProcessor $processor = null, ?TaggingService $tagging = null)
-    {
-        $this->processor = $processor ?? new ImageProcessor();
-        $this->tagging = $tagging ?? TaggingService::forImages();
+    public function __construct(
+        ImageProcessor $processor,
+        TaggingServiceFactory $taggingServiceFactory,
+        ImagesTable $imagesTable,
+    ) {
+        $this->processor = $processor;
+        $this->tagging = $taggingServiceFactory->forImages();
+        $this->imagesTable = $imagesTable;
     }
 
     /**
@@ -48,6 +53,7 @@ class ImageStorageService
      * @param array<int|string,string|array>          $tags
      * @param array<string,mixed>                     $manipulations
      * @param int|null                                $ownerId    Optional user id to set as image owner
+     * @param string|null                              $photoCredit Optional credit to apply to the image
      * @return array<string,mixed>
      */
     public function upload(
@@ -55,8 +61,13 @@ class ImageStorageService
         array $tags = [],
         array $manipulations = [],
         ?int $ownerId = null,
+        ?string $photoCredit = null,
     ): array {
         $this->lastError = null;
+        $photoCredit = $photoCredit !== null ? trim($photoCredit) : null;
+        if ($photoCredit === '') {
+            $photoCredit = null;
+        }
 
         $validation = $this->validateUpload($file);
         if ($validation !== true) {
@@ -66,7 +77,7 @@ class ImageStorageService
         }
 
         [$processed, $hash, $mime, $ext] = $this->processFile($file, $manipulations);
-        $images = $this->imagesTable();
+        $images = $this->imagesTable;
         /** @var \App\Model\Entity\Image|null $existing */
         $existing = $images->find()->where(['hash' => $hash])->first();
         if ($existing) {
@@ -74,14 +85,35 @@ class ImageStorageService
             if ($restoreError !== null) {
                 return ['success' => false, 'error' => $restoreError];
             }
-            $this->tagging->attachTags((int)$existing->id, $tags);
+            if ($photoCredit !== null) {
+                $existing->photo_credit = $photoCredit;
+                if (!$images->save($existing)) {
+                    $this->lastError = 'Failed to save photo credit';
+
+                    return ['success' => false, 'error' => $this->lastError];
+                }
+            }
+            if ($tags !== []) {
+                $this->tagging->attachTags((int)$existing->id, $tags);
+            }
 
             return ['success' => true, 'image' => $existing, 'existing' => true];
         }
 
-        $image = $this->persistNewImage($images, $processed, $hash, $mime, $ext, $file->getClientFilename(), $ownerId);
+        $image = $this->persistNewImage(
+            $images,
+            $processed,
+            $hash,
+            $mime,
+            $ext,
+            $file->getClientFilename(),
+            $ownerId,
+            $photoCredit,
+        );
         if ($image) {
-            $this->tagging->attachTags((int)$image->id, $tags);
+            if ($tags !== []) {
+                $this->tagging->attachTags((int)$image->id, $tags);
+            }
 
             return ['success' => true, 'image' => $image, 'existing' => false];
         }
@@ -182,6 +214,7 @@ class ImageStorageService
      * @param string $ext
      * @param string|null $originalName
      * @param int|null $ownerId
+     * @param string|null $photoCredit
      */
     public function persistNewImage(
         ImagesTable $images,
@@ -191,6 +224,7 @@ class ImageStorageService
         string $ext,
         ?string $originalName,
         ?int $ownerId = null,
+        ?string $photoCredit = null,
     ): ?Image {
         $uuid = Text::uuid();
         $subdir = date('Y') . '/' . date('m');
@@ -226,6 +260,7 @@ class ImageStorageService
             'hash' => $hash,
             'status' => 'active',
             'user_id' => $ownerId !== null && $ownerId > 0 ? $ownerId : null,
+            'photo_credit' => $photoCredit,
         ];
         $image = $images->newEntity($data);
         if ($images->save($image)) {
@@ -312,7 +347,7 @@ class ImageStorageService
      */
     public function loadImageOrFail(int $id): Image
     {
-        return $this->imagesTable()->get($id);
+        return $this->imagesTable->get($id);
     }
 
     /**
@@ -452,17 +487,6 @@ class ImageStorageService
         }
 
         return null;
-    }
-
-    /**
-     * Lookup a table instance.
-     */
-    private function imagesTable(): ImagesTable
-    {
-        /** @var \App\Model\Table\ImagesTable $table */
-        $table = TableRegistry::getTableLocator()->get('Images');
-
-        return $table;
     }
 
     /**

@@ -9,7 +9,13 @@
  * @var string $bodyClass
  * @var string $content
  * @var string $flash
+ * @var array{sportKey:string|null,teamId:int|null} $publicScope
  */
+$publicScope = $publicScope ?? ['sportKey' => null, 'teamId' => null];
+$scopeQueryString = http_build_query([
+    'sport' => $publicScope['sportKey'] ?? 'all',
+    'team' => $publicScope['teamId'] ?? 'all',
+]);
 ?>
 <a class="rh-skip-link" href="#main-content">Skip to main content</a>
 <div class="rh-page" data-controller="public-shell">
@@ -79,7 +85,7 @@
                 </button>
             </div>
             <div class="rh-footer-links">
-                <a href="<?= $this->Url->build('/privacy') ?>">Privacy</a>
+                <a href="<?= $this->Url->build('/privacy?' . $scopeQueryString) ?>">Privacy</a>
                 <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'login']) ?>"><i class="fa-solid fa-arrow-right-to-bracket"></i> Login</a>
             </div>
         </div>

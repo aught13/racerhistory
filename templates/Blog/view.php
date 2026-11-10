@@ -19,7 +19,7 @@ if ($excerpt === '') {
     $excerpt = trim((string)preg_replace('/\s+/', ' ', strip_tags((string)($post->body ?? ''))));
 }
 if ($excerpt !== '') {
-    $this->assign('socialDescription', $excerpt);
+    $this->assign('socialDescription', $this->BlogContent->decodeHtmlEntities($excerpt));
 }
 
 if (!empty($post->hero_image_id)) {

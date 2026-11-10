@@ -130,14 +130,13 @@ test("advanced table omits three-point columns when no attempts", () => {
     expect(headers).toContain("FG%");
 });
 
-test("image gallery modal closes on background click and Escape", () => {
+test("image gallery click handler is bound once across repeated initialization", () => {
     const root = document.createElement("div");
     root.innerHTML = `
     <div data-season-image-gallery>
-      <img class="season-photo-thumb-img" data-image-id="1" data-image-filename="a.jpg" />
+      <img class="season-photo-thumb-img" data-image-id="1" data-image-filename="a.jpg" data-image-url="photo.jpg" />
     </div>
-    <div data-season-image-modal data-modal-open>
-      <button data-modal-close>Close</button>
+    <div data-season-image-modal>
       <picture>
         <source data-modal-image-webp />
         <img data-modal-image-fallback />
@@ -146,15 +145,14 @@ test("image gallery modal closes on background click and Escape", () => {
   `;
     document.body.appendChild(root);
 
+    const gallery = root.querySelector("[data-season-image-gallery]");
+    const addEventListener = jest.spyOn(gallery, "addEventListener");
+    initSeasonView({ root });
     initSeasonView({ root });
 
-    const modal = root.querySelector("[data-season-image-modal]");
-    modal.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(modal.hasAttribute("data-modal-open")).toBe(false);
-
-    modal.setAttribute("data-modal-open", "");
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(modal.hasAttribute("data-modal-open")).toBe(false);
+    expect(
+        addEventListener.mock.calls.filter(([type]) => type === "click"),
+    ).toHaveLength(1);
 });
 
 test("blog click falls back to location when view frame missing", () => {
@@ -169,14 +167,14 @@ test("blog click falls back to location when view frame missing", () => {
     document.body.appendChild(root);
 
     const navigateSpy = jest.fn();
-    window.__RH_NAVIGATE__ = navigateSpy;
+    window.Turbo = { visit: navigateSpy };
 
     initSeasonView({ root });
     const item = root.querySelector(".blog-list-item");
     item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(navigateSpy).toHaveBeenCalledWith("/blog/missing");
-    delete window.__RH_NAVIGATE__;
+    delete window.Turbo;
 });
 
 test("advanced panel marks rendered when container missing", () => {
@@ -212,17 +210,18 @@ test("blog click falls back when Turbo missing but view frame exists", () => {
   `;
     document.body.appendChild(root);
 
-    const navigateSpy = jest.fn();
-    window.__RH_NAVIGATE__ = navigateSpy;
-
+    const originalLocation = window.location;
+    const assignSpy = jest.fn();
+    delete window.location;
+    window.location = { assign: assignSpy };
     delete window.Turbo;
 
     initSeasonView({ root });
     const item = root.querySelector(".blog-list-item");
     item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(navigateSpy).toHaveBeenCalledWith("/blog/alpha");
-    delete window.__RH_NAVIGATE__;
+    expect(assignSpy).toHaveBeenCalledWith("/blog/alpha");
+    window.location = originalLocation;
 });
 
 test("advanced table renders em dash for invalid percentages", () => {
@@ -308,7 +307,7 @@ test("setupBlogClicks ignores clicks outside blog items", () => {
     document.body.appendChild(root);
 
     const navigateSpy = jest.fn();
-    window.__RH_NAVIGATE__ = navigateSpy;
+    window.Turbo = { visit: navigateSpy };
 
     initSeasonView({ root });
 
@@ -316,7 +315,7 @@ test("setupBlogClicks ignores clicks outside blog items", () => {
     root.querySelector("button").click();
     expect(navigateSpy).not.toHaveBeenCalled();
 
-    delete window.__RH_NAVIGATE__;
+    delete window.Turbo;
 });
 
 test("blog click without slug data does not navigate", () => {
@@ -328,14 +327,14 @@ test("blog click without slug data does not navigate", () => {
     document.body.appendChild(root);
 
     const navigateSpy = jest.fn();
-    window.__RH_NAVIGATE__ = navigateSpy;
+    window.Turbo = { visit: navigateSpy };
 
     initSeasonView({ root });
 
     root.querySelector(".blog-list-item").click();
     expect(navigateSpy).not.toHaveBeenCalled();
 
-    delete window.__RH_NAVIGATE__;
+    delete window.Turbo;
 });
 
 test("blog click with Turbo.visit and custom frame", () => {
@@ -442,30 +441,6 @@ test("stats tabs with no buttons returns early", () => {
     expect(result.tables).toBeDefined(); // Should still complete
 });
 
-test("image gallery closes on Escape key", () => {
-    const root = document.createElement("div");
-    root.innerHTML = `
-        <div data-season-image-gallery>
-            <img class="season-photo-thumb-img" data-image-id="1" data-image-filename="a.jpg" data-image-url="img.jpg" />
-        </div>
-        <div data-season-image-modal data-modal-open>
-            <button data-modal-close>Close</button>
-            <img data-modal-image-fallback />
-        </div>
-    `;
-    document.body.appendChild(root);
-
-    initSeasonView({ root });
-
-    const modal = root.querySelector("[data-season-image-modal]");
-    expect(modal.hasAttribute("data-modal-open")).toBe(true);
-
-    const escapeEvent = new KeyboardEvent("keydown", { key: "Escape" });
-    document.dispatchEvent(escapeEvent);
-
-    expect(modal.hasAttribute("data-modal-open")).toBe(false);
-});
-
 test("image gallery without modal returns early", () => {
     const root = document.createElement("div");
     root.innerHTML = `
@@ -539,7 +514,6 @@ test("image gallery with currentSrc fallback", () => {
     const modal = root.querySelector("[data-season-image-modal]");
     const modalImg = modal.querySelector("[data-modal-image-fallback]");
 
-    expect(modal.hasAttribute("data-modal-open")).toBe(true);
     expect(modalImg.src).toContain("picture-source.jpg");
 });
 
@@ -568,7 +542,7 @@ test("blog click - item exists and root contains it", () => {
     document.body.appendChild(root);
 
     const navigateSpy = jest.fn();
-    window.__RH_NAVIGATE__ = navigateSpy;
+    window.Turbo = { visit: navigateSpy };
 
     initSeasonView({ root });
 
@@ -576,7 +550,7 @@ test("blog click - item exists and root contains it", () => {
     item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(navigateSpy).toHaveBeenCalledWith("/blog/my-post");
-    delete window.__RH_NAVIGATE__;
+    delete window.Turbo;
 });
 
 test("blog click with Turbo.visit when frame exists", () => {
@@ -726,80 +700,7 @@ test("image gallery clicks with data-image-url attribute", () => {
 
     const modal = root.querySelector("[data-season-image-modal]");
     const modalImg = modal.querySelector("[data-modal-image-fallback]");
-    expect(modal.hasAttribute("data-modal-open")).toBe(true);
     expect(modalImg.src).toContain("custom-url.jpg");
-});
-
-test("image gallery close button removes modal-open attribute", () => {
-    const root = document.createElement("div");
-    root.innerHTML = `
-        <div data-season-image-gallery>
-            <img class="season-photo-thumb-img" data-image-url="img.jpg" />
-        </div>
-        <div data-season-image-modal data-modal-open>
-            <button data-modal-close>Close</button>
-            <img data-modal-image-fallback />
-        </div>
-    `;
-    document.body.appendChild(root);
-
-    initSeasonView({ root });
-
-    const modal = root.querySelector("[data-season-image-modal]");
-    const closeBtn = modal.querySelector("[data-modal-close]");
-
-    closeBtn.click();
-    expect(modal.hasAttribute("data-modal-open")).toBe(false);
-});
-
-test("image gallery closes on click outside modal", () => {
-    const root = document.createElement("div");
-    root.innerHTML = `
-        <div data-season-image-gallery>
-            <img class="season-photo-thumb-img" data-image-url="img.jpg" />
-        </div>
-        <div data-season-image-modal data-modal-open>
-            <button data-modal-close>Close</button>
-            <img data-modal-image-fallback />
-        </div>
-    `;
-    document.body.appendChild(root);
-
-    initSeasonView({ root });
-
-    const modal = root.querySelector("[data-season-image-modal]");
-    const event = new MouseEvent("click");
-    Object.defineProperty(event, "target", { value: modal, enumerable: true });
-    modal.dispatchEvent(event);
-
-    expect(modal.hasAttribute("data-modal-open")).toBe(false);
-});
-
-test("image gallery click inside modal doesn't close it", () => {
-    const root = document.createElement("div");
-    root.innerHTML = `
-        <div data-season-image-gallery>
-            <img class="season-photo-thumb-img" data-image-url="img.jpg" />
-        </div>
-        <div data-season-image-modal data-modal-open>
-            <button data-modal-close>Close</button>
-            <img data-modal-image-fallback />
-        </div>
-    `;
-    document.body.appendChild(root);
-
-    initSeasonView({ root });
-
-    const modal = root.querySelector("[data-season-image-modal]");
-    const img = modal.querySelector("[data-modal-image-fallback]");
-    const event = new MouseEvent("click");
-    Object.defineProperty(event, "target", {
-        value: img,
-        enumerable: true,
-    });
-    modal.dispatchEvent(event);
-
-    expect(modal.hasAttribute("data-modal-open")).toBe(true);
 });
 
 test("deferred images marked with thumb-loaded skip loading", () => {

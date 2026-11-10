@@ -85,6 +85,25 @@ class BasketballStatsServiceSearchTest extends TestCase
     }
 
     /**
+     * The global team scope filters each Stats report to the selected team.
+     *
+     * @return void
+     */
+    public function testPublicTeamScopeFiltersEveryStatsReport(): void
+    {
+        $filters = ['public_team_id' => 2];
+
+        $this->assertSame([], $this->service->searchPlayerSeasonStats($filters));
+        $this->assertSame([], $this->service->searchTeamSeasonStats($filters));
+        $this->assertSame([], $this->service->searchTeamSeasonOpponentStats($filters));
+        $this->assertSame([], $this->service->searchPlayerGameStats($filters));
+        $this->assertSame([], $this->service->searchOpponentPlayerGameStats($filters));
+        $this->assertSame([], $this->service->searchTeamGameStats($filters));
+        $this->assertSame([], $this->service->searchOpponentTeamGameStats($filters));
+        $this->assertSame([], $this->service->searchPlayerCareerStats($filters));
+    }
+
+    /**
      * Tests search player season stats no results.
      */
     public function testSearchPlayerSeasonStatsNoResults(): void

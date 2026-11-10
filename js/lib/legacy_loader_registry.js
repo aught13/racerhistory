@@ -163,7 +163,7 @@ const LEGACY_MODULES = [
             ]),
         mobileStrategy: "visible",
         visibilityTarget:
-            "[data-controller~='admin-index-table'], [data-controller~='admin-bulk-table'], [data-controller~='sports-form'], [data-controller~='sports-configs-form'], [data-controller~='season-form'], [data-controller~='team-season-form'], [data-controller~='team-season-image'], [data-controller~='field-mapping']",
+            "[data-controller~='admin-index-table'], [data-controller~='admin-bulk-table'], [data-controller~='sports-form'], [data-controller~='sports-configs-form'], [data-controller~='season-form'], [data-controller~='team-name-preview'], [data-controller~='team-season-form'], [data-controller~='team-season-image'], [data-controller~='field-mapping']",
         load: async (stimulus) => {
             const module = await import("../route_modules/admin_taxonomy.js");
             module.registerAdminTaxonomyControllers(stimulus);

@@ -1,7 +1,8 @@
 <?php
 
 /** Lightweight popup form element.
- * Variables: $popupId, $title, $formUrl, $fields (see previous doc), $successCallback, $targetSelectId.
+ * Variables: $popupId, $title, $formUrl, $fields, $successEvent, $targetSelectId.
+ * Field configs may provide help text and a display-name preview target.
  *
  * @var \App\View\AppView $this
  */
@@ -10,10 +11,12 @@ $popupId = $popupId ?? 'popup-form-modal';
 $title = $title ?? 'Add Item';
 $formUrl = $formUrl ?? '';
 $fields = $fields ?? [];
-$successCallback = $successCallback ?? 'handlePopupSuccess';
+$successEvent = $successEvent ?? '';
 $targetSelectId = $targetSelectId ?? '';
 $hiddenFormId = $hiddenFormId ?? '';
 $extraHtml = $extraHtml ?? '';
+$teamNamePreview = !empty($teamNamePreview);
+$opponentNamePreview = !empty($opponentNamePreview);
 
 $hasPlaceCountryField = false;
 $hasPlaceCityField = false;
@@ -40,6 +43,16 @@ $hasPlaceLocationBehavior =
     $hasPlaceCountryField &&
     $hasPlaceCityField &&
     $hasPlaceStateField;
+$formControllers = [];
+if ($hasPlaceLocationBehavior) {
+    $formControllers[] = 'place-location';
+}
+if ($teamNamePreview) {
+    $formControllers[] = 'team-name-preview';
+}
+if ($opponentNamePreview) {
+    $formControllers[] = 'opponent-name-preview';
+}
 ?>
 <div class="modal fade"
      id="<?= h($popupId) ?>"
@@ -59,8 +72,8 @@ $hasPlaceLocationBehavior =
                     id="<?= h($popupId) ?>-form"
                     data-url="<?= h($formUrl) ?>"
                     data-target-select="<?= h($targetSelectId) ?>"
-                    data-success-callback="<?= h($successCallback) ?>"
-                    <?= $hasPlaceLocationBehavior ? 'data-controller="place-location"' : '' ?>>
+                    data-success-event="<?= h($successEvent) ?>"
+                    <?= $formControllers !== [] ? 'data-controller="' . h(implode(' ', $formControllers)) . '"' : '' ?>>
 
                     <?php if ($hasPlaceLocationBehavior) : ?>
                     <div class="mb-3">
@@ -95,6 +108,23 @@ $hasPlaceLocationBehavior =
                         $type = $f['type'] ?? 'text';
                         $label = $f['label'] ?? ucfirst($name);
                         $req = !empty($f['required']);
+                        $help = $f['help'] ?? '';
+                        $fieldAttributes = [];
+                        foreach (($f['attributes'] ?? []) as $attribute => $value) {
+                            $fieldAttributes[] = h((string)$attribute) . '="' . h((string)$value) . '"';
+                        }
+                        $fieldAttributes = implode(' ', $fieldAttributes);
+                        $previewTarget = $f['previewTarget'] ?? null;
+                        $previewIdentifier = $teamNamePreview
+                            ? 'team-name-preview'
+                            : ($opponentNamePreview ? 'opponent-name-preview' : '');
+                        $previewAttrs = is_string($previewTarget)
+                            && $previewTarget !== ''
+                            && $previewIdentifier !== ''
+                            ? 'data-' . $previewIdentifier . '-target="' . h($previewTarget) .
+                                '" data-action="input->' . $previewIdentifier .
+                                '#update change->' . $previewIdentifier . '#update"'
+                            : '';
                         ?>
 
                         <?php if ($type === 'hidden') : ?>
@@ -116,14 +146,18 @@ $hasPlaceLocationBehavior =
                                 class="form-control"
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
-                                <?= $req ? 'required' : '' ?>></textarea>
+                                <?= $req ? 'required' : '' ?>
+                                <?= $fieldAttributes ?>
+                                <?= $previewAttrs ?>></textarea>
 
                             <?php elseif ($type === 'select') : ?>
                             <select
                                 class="form-select"
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
-                                <?= $req ? 'required' : '' ?>>
+                                <?= $req ? 'required' : '' ?>
+                                <?= $fieldAttributes ?>
+                                <?= $previewAttrs ?>>
                                 <option value="">Select...</option>
                                 <?php foreach (($f['options'] ?? []) as $val => $text) : ?>
                                     <option value="<?= h($val) ?>"><?= h($text) ?></option>
@@ -159,7 +193,9 @@ $hasPlaceLocationBehavior =
                                 id="<?= h($popupId . '-' . $name) ?>"
                                 name="<?= h($name) ?>"
                                 <?= $req ? 'required' : '' ?>
-                                <?= implode(' ', $inputAttrs) ?> />
+                                <?= implode(' ', $inputAttrs) ?>
+                                <?= $fieldAttributes ?>
+                                <?= $previewAttrs ?> />
 
                                 <?php if ($hasPlaceLocationBehavior && $name === 'place_city') : ?>
                             <datalist id="<?= h($popupId) ?>-place-city-options" data-place-location-target="cityList"></datalist>
@@ -170,10 +206,54 @@ $hasPlaceLocationBehavior =
                                 <?php endif; ?>
 
                             <?php endif; ?>
+                            <?php if (is_string($help) && $help !== '') : ?>
+                                <div class="form-text"><?= h($help) ?></div>
+                            <?php endif; ?>
                     </div>
                         <?php endif; ?>
 
                     <?php endforeach; ?>
+
+                    <?php if ($teamNamePreview) : ?>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Display Previews</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Full Team Name:</strong><br>
+                                <span data-team-name-preview-target="fullTeamName">Unknown Team</span>
+                            </p>
+                            <p><strong>Team Name (default):</strong><br>
+                                <span data-team-name-preview-target="defaultTeamName">Unknown Team</span>
+                            </p>
+                            <p class="mb-0"><strong>Team:</strong><br>
+                                <span data-team-name-preview-target="team">Unknown Team</span>
+                            </p>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if ($opponentNamePreview) : ?>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Display Previews</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Full Opponent Name:</strong><br>
+                                <span data-opponent-name-preview-target="fullOpponentName">Unknown Opponent</span>
+                            </p>
+                            <p><strong>Opponent Name (default):</strong><br>
+                                <span data-opponent-name-preview-target="defaultOpponentName">Unknown Opponent</span>
+                            </p>
+                            <p class="mb-0"><strong>Opponent:</strong><br>
+                                <span data-opponent-name-preview-target="opponent">Unknown Opponent</span>
+                            </p>
+                            <small class="text-muted">
+                                Existing records are not rewritten automatically. Update the short name and mascot as needed.
+                            </small>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($hasPlaceLocationBehavior) : ?>
                         <small class="text-muted d-block mt-1" data-place-location-target="locationMeta">Select a country to load subdivisions and localities.</small>
@@ -312,15 +392,20 @@ $hasPlaceLocationBehavior =
 
                 if (data.success) {
                     if (form.dataset.targetSelect && data.newOption) {
-                        var sel = document.getElementById(form.dataset.targetSelect);
-                        if (sel) {
-                            var o = new Option(data.newOption.text, data.newOption.value, true, true);
-                            sel.add(o);
-                        }
+                        form.dispatchEvent(new CustomEvent('admin:popup-option-added', {
+                            bubbles: true,
+                            detail: {
+                                targetSelectId: form.dataset.targetSelect,
+                                newOption: data.newOption
+                            }
+                        }));
                     }
 
-                    if (form.dataset.successCallback && typeof window[form.dataset.successCallback] === 'function') {
-                        window[form.dataset.successCallback](data);
+                    if (form.dataset.successEvent) {
+                        form.dispatchEvent(new CustomEvent(form.dataset.successEvent, {
+                            bubbles: true,
+                            detail: data
+                        }));
                     }
 
                     bootstrap.Modal.getOrCreateInstance(modal).hide();

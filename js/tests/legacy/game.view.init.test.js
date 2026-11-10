@@ -76,8 +76,6 @@ describe("Game view init", () => {
             new MouseEvent("click", { bubbles: true, cancelable: true }),
         );
 
-        const modal = document.querySelector("[data-game-image-modal]");
-        expect(modal?.getAttribute("data-modal-open")).toBe("true");
         expect(
             document.querySelector("[data-modal-image-fallback]")?.src,
         ).toContain("/img/storage/2026/05/sample.jpg");

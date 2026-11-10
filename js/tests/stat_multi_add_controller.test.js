@@ -47,6 +47,16 @@ describe("stat-multi-add controller", () => {
         expect(document.querySelector(".remove-row-btn").disabled).toBe(true);
     });
 
+    test("clears the readiness marker when the controller disconnects", async () => {
+        const addButton = document.getElementById("add-stat-row");
+        expect(addButton.dataset.rhReady).toBe("1");
+
+        document.querySelector('[data-controller="stat-multi-add"]').remove();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(addButton.hasAttribute("data-rh-ready")).toBe(false);
+    });
+
     test("adds a row and resets cloned fields for the new index", () => {
         document.getElementById("add-stat-row").click();
 

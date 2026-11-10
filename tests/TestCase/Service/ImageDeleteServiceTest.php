@@ -3,7 +3,12 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Table\ImagesImageTagsTable;
+use App\Model\Table\ImagesTable;
 use App\Service\ImageDeleteService;
+use App\Service\ImageProcessor;
+use App\Service\ImageStorageService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
@@ -11,6 +16,8 @@ use Cake\TestSuite\TestCase;
 
 class ImageDeleteServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     protected array $fixtures = [
         'app.Images',
         'app.ImageTags',
@@ -20,6 +27,8 @@ class ImageDeleteServiceTest extends TestCase
     private ?string $storageRoot = null;
 
     private array $previousConfig = [];
+
+    private ImageDeleteService $service;
 
     /**
      * Sets up the test case.
@@ -41,6 +50,7 @@ class ImageDeleteServiceTest extends TestCase
         Configure::write('Images.storageRoot', $this->storageRoot);
 
         $images = TableRegistry::getTableLocator()->get('Images');
+        assert($images instanceof ImagesTable);
         $image = $images->get(1);
 
         $subdir = str_replace('/', DIRECTORY_SEPARATOR, (string)$image->storage_subdir);
@@ -62,6 +72,17 @@ class ImageDeleteServiceTest extends TestCase
         $images->saveOrFail($image);
 
         file_put_contents($subdirPath . 'seed-thumb.webp', 'THUMB');
+
+        $imagesImageTags = TableRegistry::getTableLocator()->get('ImagesImageTags');
+        assert($imagesImageTags instanceof ImagesImageTagsTable);
+        $taggingServiceFactory = $this->taggingServiceFactory();
+        $storage = new ImageStorageService(new ImageProcessor(), $taggingServiceFactory, $images);
+        $this->service = new ImageDeleteService(
+            $storage,
+            $taggingServiceFactory,
+            $images,
+            $imagesImageTags,
+        );
     }
 
     /**
@@ -95,8 +116,7 @@ class ImageDeleteServiceTest extends TestCase
         $this->assertFileExists($subdirPath . (string)$image->filename);
         $this->assertFileExists($subdirPath . 'seed-thumb.webp');
 
-        $service = new ImageDeleteService();
-        $result = $service->deleteImageById(1);
+        $result = $this->service->deleteImageById(1);
 
         $this->assertTrue((bool)($result['deleted'] ?? false));
 
@@ -112,8 +132,7 @@ class ImageDeleteServiceTest extends TestCase
      */
     public function testBulkDeleteImagesDeletesJoinRowsAndPrunesAllOrphanTags(): void
     {
-        $service = new ImageDeleteService();
-        $service->bulkDeleteImages([1]);
+        $this->service->bulkDeleteImages([1]);
 
         $imagesImageTags = TableRegistry::getTableLocator()->get('ImagesImageTags');
         $this->assertSame(0, $imagesImageTags->find()->where(['image_id' => 1])->count());

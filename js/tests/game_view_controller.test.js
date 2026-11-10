@@ -2,14 +2,25 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../lib/game_view_runtime.js", () => ({
+    initGameViewRoot: jest.fn(),
+}));
+
+import { initGameViewRoot } from "../lib/game_view_runtime.js";
 import GameViewController from "../controllers/game_view_controller.js";
 
 describe("game-view controller", () => {
     let application;
 
     beforeEach(() => {
-        document.body.innerHTML =
-            '<div id="game-view-root" data-controller="game-view"></div>';
+        jest.clearAllMocks();
+        document.body.innerHTML = `
+            <div id="game-view-root" data-controller="game-view" data-action="turbo:before-cache@document->game-view#beforeCache">
+                <div class="modal show" data-game-view-target="imageModal">
+                    <button data-game-view-target="imageModalDismiss"></button>
+                </div>
+            </div>
+        `;
 
         application = Application.start();
         application.register("game-view", GameViewController);
@@ -21,38 +32,22 @@ describe("game-view controller", () => {
             application = null;
         }
 
-        delete window.__GAME_VIEW_INIT__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
 
-    test("calls init override on connect", async () => {
-        const initMock = jest.fn();
-        window.__GAME_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("game-view", GameViewController);
-
+    test("initializes the controller root on connect", async () => {
         await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledTimes(1);
+        expect(initGameViewRoot).toHaveBeenCalledWith(
+            document.getElementById("game-view-root"),
+        );
     });
 
-    test("calls init override for turbo frame load", async () => {
-        const initMock = jest.fn();
-        window.__GAME_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("game-view", GameViewController);
+    test("initializes the root for turbo frame loads", async () => {
         await Promise.resolve();
-
         const frame = document.createElement("turbo-frame");
-        frame.id = "test-frame";
         document.body.appendChild(frame);
-
-        const callsBefore = initMock.mock.calls.length;
 
         frame.dispatchEvent(
             new CustomEvent("turbo:frame-load", {
@@ -61,34 +56,48 @@ describe("game-view controller", () => {
             }),
         );
 
-        await Promise.resolve();
-
-        expect(initMock.mock.calls.length).toBeGreaterThan(callsBefore);
-        expect(initMock).toHaveBeenCalledWith({ root: frame });
+        expect(initGameViewRoot).toHaveBeenLastCalledWith(frame);
     });
 
-    test("ignores turbo:frame-load events with non-Element targets", async () => {
-        const initMock = jest.fn();
-        window.__GAME_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("game-view", GameViewController);
+    test("ignores turbo frame loads with non-Element targets", async () => {
         await Promise.resolve();
-
-        const callsBefore = initMock.mock.calls.length;
-
-        // Dispatch event with a non-Element target
+        const callsBefore = initGameViewRoot.mock.calls.length;
         const event = new CustomEvent("turbo:frame-load", {
             bubbles: true,
             detail: {},
         });
         Object.defineProperty(event, "target", { value: "not-an-element" });
+
         document.dispatchEvent(event);
 
-        await Promise.resolve();
+        expect(initGameViewRoot).toHaveBeenCalledTimes(callsBefore);
+    });
 
-        // Init should not have been called for non-Element target
-        expect(initMock.mock.calls.length).toBe(callsBefore);
+    test("dismisses the open image modal before Turbo caches the page", async () => {
+        await Promise.resolve();
+        const dismiss = document.querySelector(
+            '[data-game-view-target="imageModalDismiss"]',
+        );
+        const click = jest.spyOn(dismiss, "click");
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(click).toHaveBeenCalledTimes(1);
+    });
+
+    test("does not dismiss an image modal that is already closed", async () => {
+        await Promise.resolve();
+        const modal = document.querySelector(
+            '[data-game-view-target="imageModal"]',
+        );
+        modal.classList.remove("show");
+        const dismiss = document.querySelector(
+            '[data-game-view-target="imageModalDismiss"]',
+        );
+        const click = jest.spyOn(dismiss, "click");
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(click).not.toHaveBeenCalled();
     });
 });

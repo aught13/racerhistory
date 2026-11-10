@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Cake\Core\Configure;
+
 /**
  * Admin Blog Post Edit/Add Template
  *
@@ -35,7 +37,7 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
 <?= $this->Html->css('blog-content') ?>
 <?php $this->end(); ?>
 
-<div class="container py-4" data-controller="blog-post-form" data-blog-post-form-existing-hero-id-value="<?= $existingHeroId ?>" data-blog-post-form-existing-hero-url-value="<?= h($existingHeroUrl) ?>" data-blog-post-form-images-upload-url-value="/admin/images/upload">
+<div class="container py-4" data-controller="blog-post-form" data-action="turbo:before-render@document->blog-post-form#beforeRender turbo:before-cache@document->blog-post-form#beforeCache turbo:load@document->blog-post-form#onTurboLoad" data-blog-post-form-existing-hero-id-value="<?= $existingHeroId ?>" data-blog-post-form-existing-hero-url-value="<?= h($existingHeroUrl) ?>" data-blog-post-form-csrf-token-value="<?= h((string)$this->request->getAttribute('csrfToken')) ?>" data-blog-post-form-max-upload-bytes-value="<?= (int)Configure::read('Images.maxUploadBytes', 5242880) ?>" data-blog-post-form-images-upload-url-value="/admin/images/upload">
     <?= $this->Form->create($post, [
         'url' => isset($post->id) ? ['action' => 'edit', $post->id] : ['action' => 'add'],
         'class' => 'needs-validation',
@@ -185,12 +187,13 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
                         'label' => ['text' => 'Image ID', 'class' => 'form-label'],
                         'id' => $heroFieldId,
                         'data-blog-post-form-target' => 'heroField',
+                        'data-action' => 'change->blog-post-form#onHeroFieldChange',
                         'class' => 'form-control',
                         'placeholder' => 'Select image',
                     ]) ?>
                     <div class="d-flex gap-2 mt-2">
                         <button type="button" class="btn btn-secondary flex-grow-1" data-bs-toggle="modal" data-bs-target="#<?= h($heroModalId) ?>">Select/Upload Image</button>
-                        <button type="button" id="unset-hero-btn" class="btn btn-outline-danger" title="Remove hero image" style="display: none;" data-blog-post-form-target="unsetHeroButton">&times; Remove</button>
+                        <button type="button" id="unset-hero-btn" class="btn btn-outline-danger" title="Remove hero image" style="display: none;" data-blog-post-form-target="unsetHeroButton" data-action="click->blog-post-form#clearHeroImage">&times; Remove</button>
                     </div>
                     <a
                         id="hero-variant-btn"
@@ -210,7 +213,7 @@ $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId,
             <div class="card mb-3">
                 <div class="card-header"><h3 class="h6 mb-0">Insert Inline Image</h3></div>
                 <div class="card-body">
-                    <input type="text" id="<?= h($inlineFieldId) ?>" class="form-control mb-2" placeholder="Image ID to insert" data-blog-post-form-target="inlineField">
+                    <input type="text" id="<?= h($inlineFieldId) ?>" class="form-control mb-2" placeholder="Image ID to insert" data-blog-post-form-target="inlineField" data-action="change->blog-post-form#onInlineFieldChange">
                     <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#<?= h($inlineModalId) ?>">Choose Image</button>
                     <div class="form-text">On selection, the image will be inserted at the cursor in the editor.</div>
                 </div>

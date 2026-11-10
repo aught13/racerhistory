@@ -5,6 +5,7 @@ namespace App\Service;
 
 use App\Model\Entity\Game;
 use App\Model\Entity\GameEav;
+use App\Model\Entity\Opponent;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Date;
@@ -568,7 +569,7 @@ class GameService
     /**
      * Build DataTables result set for Games listing (server-side processing)
      *
-     * @param array $params Parameters: start, length, searchValue, teamSeasonId, searchBuilder
+     * @param array $params Parameters: start, length, searchValue, teamSeasonId, searchBuilder, allowedTeamSeasonIds
      * @return array{recordsTotal:int,recordsFiltered:int,data:array<int,array<string,mixed>>}
      */
     public function buildGamesDataTable(array $params): array
@@ -578,14 +579,50 @@ class GameService
         $searchValue = (string)($params['searchValue'] ?? '');
         $teamSeasonId = $params['teamSeasonId'] ?? null;
         $searchBuilder = $params['searchBuilder'] ?? null;
+        $allowedTeamSeasonIds = $params['allowedTeamSeasonIds'] ?? null;
+        $allowedTeamIds = $params['allowedTeamIds'] ?? null;
+        $sportKey = $params['sportKey'] ?? null;
+        $teamId = isset($params['teamId']) && ctype_digit((string)$params['teamId'])
+            ? (int)$params['teamId']
+            : null;
 
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
+        $opponentsSchema = $this->fetchTable('Opponents')->getSchema();
+        $hasOpponentShortColumn = $opponentsSchema->hasColumn('opponent_short');
+        $hasOpponentMascotColumn = $opponentsSchema->hasColumn('opponent_mascot');
         $query = $gamesTable->find()
             ->contain([
                 'TeamSeason' => ['Teams', 'Seasons'],
                 'GameTypes', 'Opponents', 'Places',
             ]);
+
+        if (is_array($allowedTeamSeasonIds)) {
+            $query->where(['Games.team_season_id IN' => $allowedTeamSeasonIds]);
+        }
+        if (is_array($allowedTeamIds) && $allowedTeamIds === []) {
+            $query->where(['Games.id' => -1]);
+        }
+        if (is_string($sportKey) && trim($sportKey) !== '') {
+            $normalizedSportKey = $this->teamSportContextService->resolveSportKey($sportKey);
+            if ($normalizedSportKey === null) {
+                $query->where(['Games.id' => -1]);
+            } else {
+                $sportConditions = $this->teamSportContextService->buildSportFilterConditions($normalizedSportKey);
+                $query->matching('TeamSeason.Teams', static function ($teamsQuery) use ($sportConditions) {
+                    return $teamsQuery->where($sportConditions);
+                });
+            }
+        }
+        if ($teamId !== null) {
+            if (is_array($allowedTeamIds) && !in_array($teamId, $allowedTeamIds, true)) {
+                $query->where(['Games.id' => -1]);
+            } else {
+                $query->matching('TeamSeason.Teams', static function ($teamsQuery) use ($teamId) {
+                    return $teamsQuery->where(['Teams.id' => $teamId]);
+                });
+            }
+        }
 
         if ($teamSeasonId) {
             $query->where(['Games.team_season_id' => $teamSeasonId]);
@@ -598,20 +635,58 @@ class GameService
 
         // Global search (only if no SearchBuilder criteria)
         if ($searchValue !== '' && empty($searchBuilder['criteria'])) {
-            $query->where([
-                'OR' => [
-                    'Games.game_date LIKE' => '%' . $searchValue . '%',
-                    'Teams.team_name LIKE' => '%' . $searchValue . '%',
-                    'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
-                    'GameTypes.game_type_name LIKE' => '%' . $searchValue . '%',
-                    'Places.place_country LIKE' => '%' . $searchValue . '%',
-                    'Places.place_city LIKE' => '%' . $searchValue . '%',
-                    'Places.place_state LIKE' => '%' . $searchValue . '%',
-                ],
-            ]);
+            $searchConditions = [
+                'Games.game_date LIKE' => '%' . $searchValue . '%',
+                'Teams.team_name LIKE' => '%' . $searchValue . '%',
+                'Opponents.opponent_name LIKE' => '%' . $searchValue . '%',
+                'GameTypes.game_type_name LIKE' => '%' . $searchValue . '%',
+                'Places.place_country LIKE' => '%' . $searchValue . '%',
+                'Places.place_city LIKE' => '%' . $searchValue . '%',
+                'Places.place_state LIKE' => '%' . $searchValue . '%',
+            ];
+            if ($hasOpponentShortColumn) {
+                $searchConditions['Opponents.opponent_short LIKE'] = '%' . $searchValue . '%';
+            }
+            if ($hasOpponentMascotColumn) {
+                $searchConditions['Opponents.opponent_mascot LIKE'] = '%' . $searchValue . '%';
+            }
+            $query->where(['OR' => $searchConditions]);
         }
 
-        $recordsTotal = $gamesTable->find()->count();
+        $totalQuery = $gamesTable->find();
+        if (is_array($allowedTeamSeasonIds)) {
+            $totalQuery->where(['Games.team_season_id IN' => $allowedTeamSeasonIds]);
+        }
+        if ($teamSeasonId) {
+            $totalQuery->where(['Games.team_season_id' => $teamSeasonId]);
+        }
+        if (is_array($allowedTeamSeasonIds)) {
+            $totalQuery->where(['Games.team_season_id IN' => $allowedTeamSeasonIds]);
+        }
+        if (is_array($allowedTeamIds) && $allowedTeamIds === []) {
+            $totalQuery->where(['Games.id' => -1]);
+        }
+        if ($teamId !== null) {
+            if (is_array($allowedTeamIds) && !in_array($teamId, $allowedTeamIds, true)) {
+                $totalQuery->where(['Games.id' => -1]);
+            } else {
+                $totalQuery->where(['Games.team_season_id IN' => $this->fetchTable('TeamSeasons')->find()
+                    ->select(['TeamSeasons.id'])
+                    ->where(['TeamSeasons.team_id' => $teamId])]);
+            }
+        }
+        if (is_string($sportKey) && trim($sportKey) !== '') {
+            $normalizedSportKey = $this->teamSportContextService->resolveSportKey($sportKey);
+            if ($normalizedSportKey === null) {
+                $totalQuery->where(['Games.id' => -1]);
+            } else {
+                $sportConditions = $this->teamSportContextService->buildSportFilterConditions($normalizedSportKey);
+                $totalQuery->matching('TeamSeason.Teams', static function ($teamsQuery) use ($sportConditions) {
+                    return $teamsQuery->where($sportConditions);
+                });
+            }
+        }
+        $recordsTotal = $totalQuery->count();
         $recordsFiltered = $query->count();
 
         $query->limit($length)->offset($start)->orderByDesc('Games.game_date');
@@ -624,7 +699,7 @@ class GameService
             $teamName = '';
             $seasonRange = '';
             if (!empty($game->team_season) && !empty($game->team_season->team)) {
-                $teamName = $game->team_season->team->team_name ?? '';
+                $teamName = $game->team_season->team->getDisplayName();
             }
             if (!empty($game->team_season) && !empty($game->team_season->season)) {
                 $seasonRange = $game->team_season->season->start . '-' . $game->team_season->season->end;
@@ -635,8 +710,8 @@ class GameService
             }
 
             $oppName = '-';
-            if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
-                $oppName = $game->opponent->opponent_name;
+            if ($game->opponent instanceof Opponent) {
+                $oppName = $game->opponent->getDisplayName();
             }
             if (!empty($game->opp_rk)) {
                 $oppName .= ' (#' . $game->opp_rk . ')';
@@ -840,11 +915,15 @@ class GameService
     /**
      * Get team season list (formatted) and sports list for form helpers.
      *
+     * @param array<int>|null $allowedTeamSeasonIds Permitted TeamSeason IDs, or null for unrestricted.
      * @return array{teamSeasonList:array<int,string>,sports:array<int,string>}
      */
-    public function getTeamSeasonAndSportsLists(): array
+    public function getTeamSeasonAndSportsLists(?array $allowedTeamSeasonIds = null): array
     {
         $teamSeasonList = (new TeamSeasonService())->getTeamSeasonsDetailedList();
+        if ($allowedTeamSeasonIds !== null) {
+            $teamSeasonList = array_intersect_key($teamSeasonList, array_fill_keys($allowedTeamSeasonIds, true));
+        }
         $sports = $this->teamSportContextService->getLegacySportOptions();
 
         return compact('teamSeasonList', 'sports');
@@ -898,6 +977,9 @@ class GameService
 
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
+        $opponentsSchema = $this->fetchTable('Opponents')->getSchema();
+        $hasOpponentShortColumn = $opponentsSchema->hasColumn('opponent_short');
+        $hasOpponentMascotColumn = $opponentsSchema->hasColumn('opponent_mascot');
 
         $q = $gamesTable->find()
             ->contain(['TeamSeason' => ['Teams'], 'Opponents'])
@@ -910,12 +992,17 @@ class GameService
 
         if ($query !== '') {
             $like = '%' . str_replace('%', '\\%', $query) . '%';
-            $q->where([
-                'OR' => [
-                    ['Opponents.opponent_name LIKE' => $like],
-                    ['Teams.team_name LIKE' => $like],
-                ],
-            ]);
+            $searchConditions = [
+                ['Opponents.opponent_name LIKE' => $like],
+                ['Teams.team_name LIKE' => $like],
+            ];
+            if ($hasOpponentShortColumn) {
+                $searchConditions[] = ['Opponents.opponent_short LIKE' => $like];
+            }
+            if ($hasOpponentMascotColumn) {
+                $searchConditions[] = ['Opponents.opponent_mascot LIKE' => $like];
+            }
+            $q->where(['OR' => $searchConditions]);
         }
 
         $results = [];
@@ -953,10 +1040,8 @@ class GameService
             return 'game-' . $gameId;
         }
 
-        $opponentName = '';
-        if (!empty($game->opponent) && !empty($game->opponent->opponent_name)) {
-            $opponentName = (string)$game->opponent->opponent_name;
-        }
+        $opponent = $game->get('opponent');
+        $opponentName = $opponent instanceof Opponent ? $opponent->getDisplayName() : '';
 
         return $this->formatGameTagLabel($game->game_date ?? null, $opponentName, (int)($game->hrn ?? 0), $gameId);
     }
@@ -985,8 +1070,8 @@ class GameService
      */
     private function formatGameSelectLabel(Game $game): string
     {
-        $teamName = $game->team_season->team->team_name ?? 'Team';
-        $oppName = $game->opponent->opponent_name ?? 'Opponent';
+        $teamName = $game->team_season->team?->getDisplayName() ?? 'Team';
+        $oppName = $game->opponent?->getDisplayName() ?? 'Opponent';
 
         $date = '';
         if (!empty($game->game_date)) {

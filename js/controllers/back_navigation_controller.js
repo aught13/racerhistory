@@ -57,8 +57,8 @@ export default class extends Controller {
             return;
         }
 
-        if (typeof window.__RH_NAVIGATE__ === "function") {
-            window.__RH_NAVIGATE__(this.indexUrlValue);
+        if (window.Turbo && typeof window.Turbo.visit === "function") {
+            window.Turbo.visit(this.indexUrlValue);
             return;
         }
 

@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\TagLookupsAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Admin Tag Lookups Controller
@@ -32,6 +34,22 @@ class TagLookupsController extends AppController
     private TagLookupsAdminService $tagLookupsAdminService;
 
     /**
+     * Create the controller with its tag lookup service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\TagLookupsAdminService $tagLookupsAdminService The tag lookup service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        TagLookupsAdminService $tagLookupsAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->tagLookupsAdminService = $tagLookupsAdminService;
+    }
+
+    /**
      * Initialize controller services.
      *
      * @return void
@@ -39,7 +57,6 @@ class TagLookupsController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->tagLookupsAdminService = new TagLookupsAdminService();
     }
 
     /**

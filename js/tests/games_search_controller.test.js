@@ -2,12 +2,24 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../lib/games_search_runtime.js", () => ({
+    cleanupGamesPage: jest.fn(),
+    initGamesPage: jest.fn(),
+    resetGamesSearchRuntimeState: jest.fn(),
+}));
+
+import {
+    cleanupGamesPage,
+    initGamesPage,
+    resetGamesSearchRuntimeState,
+} from "../lib/games_search_runtime.js";
 import GamesSearchController from "../controllers/games_search_controller.js";
 
 describe("games-search controller", () => {
     let application;
 
     beforeEach(() => {
+        jest.clearAllMocks();
         document.body.innerHTML =
             '<div id="games-root" data-controller="games-search"></div>';
 
@@ -21,41 +33,22 @@ describe("games-search controller", () => {
             application = null;
         }
 
-        delete window.__GAMES_SEARCH_INIT__;
-        delete window.__GAMES_SEARCH_CLEANUP__;
-        delete window.__GAMES_SEARCH_RESET__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
 
-    test("calls init override on connect", async () => {
-        const initMock = jest.fn();
-        window.__GAMES_SEARCH_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("games-search", GamesSearchController);
-
+    test("initializes the games runtime on connect", async () => {
         await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledTimes(1);
+        expect(initGamesPage).toHaveBeenCalledTimes(1);
     });
 
-    test("calls cleanup and reset overrides on disconnect", async () => {
-        const cleanupMock = jest.fn();
-        const resetMock = jest.fn();
-        window.__GAMES_SEARCH_CLEANUP__ = cleanupMock;
-        window.__GAMES_SEARCH_RESET__ = resetMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("games-search", GamesSearchController);
+    test("cleans up the games runtime on disconnect", async () => {
         await Promise.resolve();
-
         document.getElementById("games-root").remove();
         await Promise.resolve();
 
-        expect(cleanupMock).toHaveBeenCalledTimes(1);
-        expect(resetMock).toHaveBeenCalledTimes(1);
+        expect(cleanupGamesPage).toHaveBeenCalledTimes(1);
+        expect(resetGamesSearchRuntimeState).toHaveBeenCalledTimes(1);
     });
 });

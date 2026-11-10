@@ -4,9 +4,11 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\PlaceAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Core\Configure;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Exception;
 
 /**
@@ -36,12 +38,27 @@ class PlacesController extends AppController
     protected PlaceAdminService $placeAdminService;
 
     /**
+     * Create the controller with its place administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\PlaceAdminService $placeAdminService The place administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        PlaceAdminService $placeAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->placeAdminService = $placeAdminService;
+    }
+
+    /**
      * Initialize controller.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->placeAdminService = new PlaceAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');

@@ -46,14 +46,21 @@ describe("blog-post-form controller", () => {
                 data-controller="blog-post-form"
                 data-blog-post-form-existing-hero-id-value="12"
                 data-blog-post-form-existing-hero-url-value="/img/storage/12-hero.jpg"
+                data-blog-post-form-csrf-token-value=""
+                data-blog-post-form-max-upload-bytes-value="0"
                 data-blog-post-form-images-upload-url-value="/admin/images/upload"
+                data-action="
+                    turbo:before-render@document->blog-post-form#beforeRender
+                    turbo:before-cache@document->blog-post-form#beforeCache
+                    turbo:load@document->blog-post-form#onTurboLoad
+                "
             >
                 <textarea id="body-editor" data-blog-post-form-target="editor"></textarea>
-                <input id="hero-image-field" data-blog-post-form-target="heroField" />
-                <button id="unset-hero-btn" data-blog-post-form-target="unsetHeroButton"></button>
+                <input id="hero-image-field" data-blog-post-form-target="heroField" data-action="change->blog-post-form#onHeroFieldChange" />
+                <button id="unset-hero-btn" data-blog-post-form-target="unsetHeroButton" data-action="click->blog-post-form#clearHeroImage"></button>
                 <a id="hero-variant-btn" data-blog-post-form-target="heroVariantButton" style="display:none;"></a>
                 <div id="hero-image-preview" data-blog-post-form-target="heroPreview" style="display:none;"><img src="" alt="preview"></div>
-                <input id="inline-image-field" data-blog-post-form-target="inlineField" />
+                <input id="inline-image-field" data-blog-post-form-target="inlineField" data-action="change->blog-post-form#onInlineFieldChange" />
             </div>
         `;
 
@@ -94,6 +101,7 @@ describe("blog-post-form controller", () => {
         const initConfig = tinymceInitMock.mock.calls[0][0];
         expect(initConfig.selector).toBe("#body-editor");
         expect(initConfig.images_upload_url).toBe("/admin/images/upload");
+        expect(initConfig.content_css).toBe("/mock-asset");
 
         const heroField = document.getElementById("hero-image-field");
         const heroPreview = document.getElementById("hero-image-preview");
@@ -286,6 +294,22 @@ describe("blog-post-form controller", () => {
         ).rejects.toBe("Image upload failed");
     });
 
+    test("rejects TinyMCE uploads larger than the configured limit", async () => {
+        const controller = await getController();
+        controller.element.dataset.blogPostFormMaxUploadBytesValue = "3";
+        const initConfig = tinymceInitMock.mock.calls[0][0];
+
+        await expect(
+            initConfig.images_upload_handler(
+                {
+                    blob: () => new Blob(["large"], { type: "image/jpeg" }),
+                    filename: () => "hero.jpg",
+                },
+                jest.fn(),
+            ),
+        ).rejects.toBe("File too large. Maximum allowed: 0.0MB");
+    });
+
     test("connect and disconnect cover optional target guards and timer cleanup", () => {
         const clearTimeoutSpy = jest
             .spyOn(window, "clearTimeout")
@@ -298,6 +322,8 @@ describe("blog-post-form controller", () => {
             updateHeroImageState: jest.fn(),
             initTinyMceWhenReady: jest.fn(),
             destroyTinyMCE: jest.fn(),
+            prepareForNavigation:
+                BlogPostFormController.prototype.prepareForNavigation,
         };
 
         BlogPostFormController.prototype.connect.call(fake);
@@ -316,6 +342,8 @@ describe("blog-post-form controller", () => {
             updateHeroImageState: jest.fn(),
             initTinyMceWhenReady: jest.fn(),
             destroyTinyMCE: jest.fn(),
+            prepareForNavigation:
+                BlogPostFormController.prototype.prepareForNavigation,
         };
         BlogPostFormController.prototype.connect.call(fakeNoTimer);
         fakeNoTimer.tinyMceRetryTimer = null;
@@ -388,6 +416,7 @@ describe("blog-post-form controller", () => {
         expect(retryContext.tinyMceRetryCount).toBe(1);
         expect(setTimeoutSpy).toHaveBeenCalled();
 
+        retryContext.tinyMceRetryTimer = null;
         retryContext.tinyMceRetryCount = 20;
         setTimeoutSpy.mockClear();
         BlogPostFormController.prototype.initTinyMceWhenReady.call(
@@ -537,6 +566,35 @@ describe("blog-post-form controller", () => {
         expect(window.XMLHttpRequest).toHaveBeenCalledTimes(2);
     });
 
+    test("aborts active TinyMCE uploads before Turbo caching", async () => {
+        const controller = await getController();
+        const uploadHandler =
+            tinymceInitMock.mock.calls[0][0].images_upload_handler;
+        const blobInfo = {
+            blob: () => new Blob(["img"], { type: "image/jpeg" }),
+            filename: () => "hero.jpg",
+        };
+        const xhr = {
+            upload: {},
+            open: jest.fn(),
+            setRequestHeader: jest.fn(),
+            send: jest.fn(),
+        };
+        xhr.abort = jest.fn(() => xhr.onabort());
+        window.XMLHttpRequest = jest.fn(() => xhr);
+
+        const upload = uploadHandler(blobInfo, jest.fn());
+        expect(controller.activeUploadXhrs.has(xhr)).toBe(true);
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        await expect(upload).rejects.toBe("Upload cancelled");
+        expect(xhr.abort).toHaveBeenCalledTimes(1);
+        expect(controller.activeUploadXhrs.size).toBe(0);
+        expect(controller.isCaching).toBe(true);
+        expect(controller.lifecycleAbortController).toBeNull();
+    });
+
     test("destroy, clear hero, update hero, inline guard, and cache bust utility cover fallback branches", async () => {
         const controller = await getController();
 
@@ -546,6 +604,7 @@ describe("blog-post-form controller", () => {
 
         window.tinymce = {
             get: jest.fn(() => null),
+            remove: jest.fn(),
         };
         controller.destroyTinyMCE();
         expect(window.tinymce.get).toHaveBeenCalledWith("body-editor");
@@ -602,6 +661,8 @@ describe("blog-post-form controller", () => {
     });
 
     test("destroyTinyMCE covers editor without getContent and no hasEditorTarget branches", () => {
+        tinymceGetMock.mockClear();
+        tinymceRemoveMock.mockClear();
         tinymceGetMock.mockReturnValue({
             remove: tinymceRemoveMock,
         });
@@ -612,7 +673,8 @@ describe("blog-post-form controller", () => {
             destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
         };
         fakeNoTarget.destroyTinyMCE();
-        expect(tinymceRemoveMock).toHaveBeenCalled();
+        expect(tinymceGetMock).not.toHaveBeenCalled();
+        expect(tinymceRemoveMock).not.toHaveBeenCalled();
         tinymceRemoveMock.mockClear();
 
         // Branch: editor exists but doesn't have getContent method
@@ -622,6 +684,7 @@ describe("blog-post-form controller", () => {
         const fakeWithTarget = {
             hasEditorTarget: true,
             editorTarget: {
+                id: "body-editor",
                 value: "original",
             },
             destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
@@ -640,6 +703,7 @@ describe("blog-post-form controller", () => {
         const controller = {
             hasEditorTarget: true,
             editorTarget: {
+                id: "body-editor",
                 value: "test",
             },
             destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,
@@ -675,6 +739,7 @@ describe("blog-post-form controller", () => {
         const controller = {
             hasEditorTarget: true,
             editorTarget: {
+                id: "body-editor",
                 value: "",
             },
             destroyTinyMCE: BlogPostFormController.prototype.destroyTinyMCE,

@@ -24,6 +24,7 @@ class TeamSeasonAdminServiceTest extends TestCase
         'app.Users',
         'app.Roles',
         'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     private TeamSeasonAdminService $service;
@@ -35,6 +36,29 @@ class TeamSeasonAdminServiceTest extends TestCase
     {
         parent::setUp();
         $this->service = new TeamSeasonAdminService();
+    }
+
+    /**
+     * Team selectors on admin team-season pages use the default team display.
+     */
+    public function testTeamOptionsUseDefaultTeamDisplay(): void
+    {
+        $adminIdentity = [
+            'id' => 1,
+            'role' => 'admin',
+            'role_id' => 1,
+            'status' => 'active',
+            'active' => true,
+        ];
+        $team = $this->getTableLocator()->get('Teams')->get(1);
+
+        $indexData = $this->service->getIndexData($adminIdentity);
+        $addData = $this->service->getAddFormData(identity: $adminIdentity);
+        $editData = $this->service->getEditFormData(1, $adminIdentity);
+
+        $this->assertSame($team->getDisplayName(), $indexData['teams'][1]);
+        $this->assertSame($team->getDisplayName(), $addData['teams'][1]);
+        $this->assertSame($team->getDisplayName(), $editData['teams'][1]);
     }
 
     /**
@@ -136,9 +160,80 @@ class TeamSeasonAdminServiceTest extends TestCase
             'season_id' => 1,
             'semester' => 1,
             'team_season_image' => '1',
+        ], identity: [
+            'id' => 1,
+            'role_id' => 1,
+            'role' => 'admin',
+            'status' => 'active',
+            'active' => true,
         ]);
 
         $this->assertTrue($result['success']);
         $this->assertSame(1, (int)$result['teamSeason']->team_season_image);
+    }
+
+    /**
+     * Ensure adjacent TeamSeason navigation does not expose another team's season.
+     */
+    public function testPreviousNextNavigationRespectsTeamGrant(): void
+    {
+        $seasons = $this->getTableLocator()->get('Seasons');
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $nearerSeason = $seasons->newEntity(['start' => 2024, 'end' => 2025]);
+        $seasons->saveOrFail($nearerSeason);
+        $teamSeasons->saveOrFail($teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => $nearerSeason->id,
+            'semester' => 1,
+        ]));
+
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => 1,
+        ]));
+        $identity = [
+            'id' => 4,
+            'role_id' => 4,
+            'role' => 'contributor',
+            'status' => 'active',
+            'active' => true,
+        ];
+
+        $viewData = $this->service->getViewData(1, $identity);
+
+        $this->assertNotNull($viewData['nextTeamSeason']);
+        $this->assertSame(1, (int)$viewData['nextTeamSeason']->team_id);
+        $this->assertSame('Admin/basketball_season_stats', $viewData['adminSeasonStatsElement']);
+    }
+
+    /**
+     * Unsupported sports should not expose an admin season stats element.
+     *
+     * @return void
+     */
+    public function testViewDataOmitsStatsForUnsupportedSport(): void
+    {
+        $teamSeasons = $this->getTableLocator()->get('TeamSeasons');
+        $teamSeason = $teamSeasons->newEntity([
+            'team_id' => 3,
+            'season_id' => 3,
+            'semester' => 1,
+        ]);
+        $teamSeasons->saveOrFail($teamSeason);
+
+        $adminIdentity = [
+            'id' => 1,
+            'role_id' => 1,
+            'role' => 'admin',
+            'status' => 'active',
+            'active' => true,
+        ];
+        $viewData = $this->service->getViewData((int)$teamSeason->id, $adminIdentity);
+
+        $this->assertNull($viewData['adminSeasonStatsElement']);
+        $this->assertNull($viewData['playerStats']);
     }
 }

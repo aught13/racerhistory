@@ -230,7 +230,7 @@ describe("person-blog-popover.mjs", () => {
             </div>
         `;
         const navigateSpy = jest.fn();
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         const mod =
             await import("../../legacy/modules/person-blog-popover.mjs");
@@ -244,7 +244,7 @@ describe("person-blog-popover.mjs", () => {
         expect(navigateSpy).toHaveBeenCalledWith(
             "http://localhost/blog/direct",
         );
-        delete window.__RH_NAVIGATE__;
+        delete window.Turbo;
     });
 
     test("does not re-bind already bound links", async () => {

@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\OpponentAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Opponents Admin Controller
@@ -32,12 +34,27 @@ class OpponentsController extends AppController
     protected OpponentAdminService $opponentAdminService;
 
     /**
+     * Create the controller with its opponent administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\OpponentAdminService $opponentAdminService The opponent administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        OpponentAdminService $opponentAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->opponentAdminService = $opponentAdminService;
+    }
+
+    /**
      * Initialize controller.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->opponentAdminService = new OpponentAdminService();
 
         if ($this->components()->has('FormProtection')) {
             $current = (array)$this->FormProtection->getConfig('unlockedActions');

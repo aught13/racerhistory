@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\Team;
 use App\Model\Table\TeamsTable;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -27,42 +28,80 @@ class TeamAdminService
 
     private RbacPermissionService $rbacPermissionService;
 
+    private AdminDataScopeService $adminDataScopeService;
+
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     * @param \App\Service\AdminDataScopeService|null $adminDataScopeService Role data scope resolver
      */
-    public function __construct(?TeamSportContextService $teamSportContextService = null)
-    {
+    public function __construct(
+        ?TeamSportContextService $teamSportContextService = null,
+        ?AdminDataScopeService $adminDataScopeService = null,
+    ) {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
         $this->rbacPermissionService = new RbacPermissionService();
+        $this->adminDataScopeService = $adminDataScopeService ?? new AdminDataScopeService();
     }
 
     /**
      * Return index page data.
      *
+     * @param mixed $identity Current authenticated identity.
+     * @param string|null $sportKey Optional sport filter.
+     * @param string|null $gender Optional gender filter.
      * @return array{teams:\Cake\Datasource\ResultSetInterface}
      */
-    public function getIndexData(): array
-    {
-        $teams = $this->getTeamsTable()->find()
+    public function getIndexData(
+        mixed $identity = null,
+        ?string $sportKey = null,
+        ?string $gender = null,
+    ): array {
+        $query = $this->adminDataScopeService->scopeTeamOwnedQuery(
+            $identity,
+            'Teams',
+            $this->getTeamsTable()->find(),
+        );
+        $normalizedSportKey = null;
+        if ($sportKey !== null && trim($sportKey) !== '') {
+            $normalizedSportKey = $this->teamSportContextService->resolveSportKey($sportKey);
+            $query->where($normalizedSportKey !== null
+                ? $this->teamSportContextService->buildSportFilterConditions($normalizedSportKey)
+                : ['Teams.id' => -1]);
+        }
+
+        $normalizedGender = $gender !== null && in_array($gender, ['M', 'F', 'C'], true) ? $gender : null;
+        if ($gender !== null && $gender !== '' && $normalizedGender === null) {
+            $query->where(['Teams.id' => -1]);
+        } elseif ($normalizedGender !== null) {
+            $query->where(['Teams.gender' => $normalizedGender]);
+        }
+
+        $teams = $query
+            ->orderByAsc('Teams.team_name')
             ->all();
 
         foreach ($teams as $team) {
             $this->teamSportContextService->attachSportContextToTeam($team);
         }
 
-        return compact('teams');
+        $sportOptions = $this->teamSportContextService->getSportOptions();
+        $genderOptions = Team::getGenderOptions();
+        $currentSportKey = $normalizedSportKey ?? '';
+        $currentGender = $normalizedGender ?? '';
+
+        return compact('teams', 'sportOptions', 'genderOptions', 'currentSportKey', 'currentGender');
     }
 
     /**
      * Return view page data.
      *
      * @param string|int $id Team identifier
+     * @param mixed $identity Current authenticated identity.
      * @return array{team:\App\Model\Entity\Team}
      */
-    public function getViewData(int|string $id): array
+    public function getViewData(int|string $id, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\Team $team */
-        $team = $this->getTeamsTable()->get($id);
+        $team = $this->findScopedTeam($id, $identity);
         $this->teamSportContextService->attachSportContextToTeam($team);
 
         return compact('team');
@@ -72,9 +111,10 @@ class TeamAdminService
      * Return add form data including optional sport pre-selection.
      *
      * @param string|null $sportKey Sport key from query string
+     * @param mixed $identity Current authenticated identity.
      * @return array{team:\App\Model\Entity\Team,sports:array<string,string>}
      */
-    public function getAddFormData(?string $sportKey = null): array
+    public function getAddFormData(?string $sportKey = null, mixed $identity = null): array
     {
         /** @var \App\Model\Entity\Team $team */
         $team = $this->getTeamsTable()->newEmptyEntity();
@@ -96,7 +136,7 @@ class TeamAdminService
             }
         }
 
-        $sports = $this->teamSportContextService->getSportOptions();
+        $sports = $this->getRoleSportOptions($identity);
 
         return compact('team', 'sports');
     }
@@ -106,9 +146,10 @@ class TeamAdminService
      *
      * @param array<string,mixed> $data Request payload
      * @param string|null $sportKey Optional pre-selected sport key
+     * @param mixed $identity Current authenticated identity.
      * @return array{success:bool,team:\App\Model\Entity\Team}
      */
-    public function saveNewTeam(array $data, ?string $sportKey = null): array
+    public function saveNewTeam(array $data, ?string $sportKey = null, mixed $identity = null): array
     {
         /** @var \App\Model\Entity\Team $team */
         $team = $this->getTeamsTable()->newEmptyEntity();
@@ -117,6 +158,13 @@ class TeamAdminService
         }
 
         $data = $this->normalizeSportData($data);
+        $resolvedSportKey = $this->teamSportContextService->resolveSportKey((string)($data['sport_key'] ?? ''));
+        if (
+            $resolvedSportKey === null
+            || !$this->adminDataScopeService->canCreateTeamForSport($identity, $resolvedSportKey)
+        ) {
+            return ['success' => false, 'team' => $team];
+        }
 
         $team = $this->getTeamsTable()->patchEntity($team, $data);
         $success = (bool)$this->getTeamsTable()->save($team);
@@ -132,14 +180,21 @@ class TeamAdminService
      * Return edit form data.
      *
      * @param string|int $id Team identifier
+     * @param mixed $identity Current authenticated identity.
      * @return array{team:\App\Model\Entity\Team,sports:array<string,string>}
      */
-    public function getEditFormData(int|string $id): array
+    public function getEditFormData(int|string $id, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\Team $team */
-        $team = $this->getTeamsTable()->get($id);
+        $team = $this->findScopedTeam($id, $identity);
         $this->teamSportContextService->attachSportContextToTeam($team);
-        $sports = $this->teamSportContextService->getSportOptions();
+        $currentSportKey = $this->teamSportContextService->resolveSportKeyFromTeam($team);
+        $sports = $this->getRoleSportOptions($identity);
+        if ($currentSportKey !== null) {
+            $allSports = $this->teamSportContextService->getSportOptions();
+            if (isset($allSports[$currentSportKey])) {
+                $sports[$currentSportKey] = $allSports[$currentSportKey];
+            }
+        }
 
         return compact('team', 'sports');
     }
@@ -149,13 +204,25 @@ class TeamAdminService
      *
      * @param string|int $id Team identifier
      * @param array<string,mixed> $data Request payload
+     * @param mixed $identity Current authenticated identity.
      * @return array{success:bool,team:\App\Model\Entity\Team}
      */
-    public function saveExistingTeam(int|string $id, array $data): array
+    public function saveExistingTeam(int|string $id, array $data, mixed $identity = null): array
     {
-        /** @var \App\Model\Entity\Team $team */
-        $team = $this->getTeamsTable()->get($id);
+        $team = $this->findScopedTeam($id, $identity);
+        $currentSportKey = $this->teamSportContextService->resolveSportKeyFromTeam($team);
         $data = $this->normalizeSportData($data);
+        $requestedSportKey = $this->teamSportContextService->resolveSportKey(
+            (string)($data['sport_key'] ?? $currentSportKey ?? ''),
+        );
+        if (
+            $requestedSportKey === null
+            || ($requestedSportKey !== $currentSportKey
+                && !$this->adminDataScopeService->canCreateTeamForSport($identity, $requestedSportKey))
+        ) {
+            return ['success' => false, 'team' => $team];
+        }
+
         $team = $this->getTeamsTable()->patchEntity($team, $data);
         $success = (bool)$this->getTeamsTable()->save($team);
 
@@ -182,6 +249,7 @@ class TeamAdminService
             'delete',
             'id',
         );
+        $scoped = $this->adminDataScopeService->scopeTeamOwnedQuery($identity, 'Teams', $scoped);
         $team = $scoped->where(['Teams.id' => (int)$id])->first();
         if ($team === null) {
             return false;
@@ -204,13 +272,14 @@ class TeamAdminService
             return 0;
         }
 
-        $allowed = $this->rbacPermissionService->scopeQuery(
+        $allowedQuery = $this->rbacPermissionService->scopeQuery(
             $identity,
             'Teams',
             $this->getTeamsTable()->find(),
             'delete',
             'id',
-        )
+        );
+        $allowed = $this->adminDataScopeService->scopeTeamOwnedQuery($identity, 'Teams', $allowedQuery)
             ->select(['Teams.id'])
             ->where(['Teams.id IN' => $teamIds])
             ->enableHydration(false)
@@ -257,13 +326,22 @@ class TeamAdminService
      * Save a team from popup add form and return JSON-ready payload.
      *
      * @param array<string,mixed> $data Request payload
+     * @param mixed $identity Current authenticated identity.
      * @return array<string,mixed>
      */
-    public function createTeamFromPopup(array $data): array
+    public function createTeamFromPopup(array $data, mixed $identity = null): array
     {
         /** @var \App\Model\Entity\Team $team */
         $team = $this->getTeamsTable()->newEmptyEntity();
         $data = $this->normalizeSportData($data);
+        $sportKey = $this->teamSportContextService->resolveSportKey((string)($data['sport_key'] ?? ''));
+        if ($sportKey === null || !$this->adminDataScopeService->canCreateTeamForSport($identity, $sportKey)) {
+            return [
+                'success' => false,
+                'errors' => ['Your role is not allowed to create a team for this sport.'],
+            ];
+        }
+
         $team = $this->getTeamsTable()->patchEntity($team, $data);
 
         if ($this->getTeamsTable()->save($team)) {
@@ -272,7 +350,7 @@ class TeamAdminService
                 'message' => 'Team has been added successfully.',
                 'newOption' => [
                     'value' => $team->id,
-                    'text' => $team->team_name,
+                    'text' => $team->getDisplayName(),
                 ],
             ];
         }
@@ -299,6 +377,45 @@ class TeamAdminService
         }
 
         return $errors;
+    }
+
+    /**
+     * @param string|int $id Team identifier.
+     * @param mixed $identity Current authenticated identity.
+     * @return \App\Model\Entity\Team
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException If the team is outside the role scope.
+     */
+    private function findScopedTeam(int|string $id, mixed $identity): Team
+    {
+        $team = $this->adminDataScopeService->scopeTeamOwnedQuery(
+            $identity,
+            'Teams',
+            $this->getTeamsTable()->find(),
+        )
+            ->where(['Teams.id' => (int)$id])
+            ->first();
+
+        if (!$team instanceof Team) {
+            throw new RecordNotFoundException('Team not found.');
+        }
+
+        return $team;
+    }
+
+    /**
+     * @param mixed $identity Current authenticated identity.
+     * @return array<string,string>
+     */
+    private function getRoleSportOptions(mixed $identity): array
+    {
+        $options = $this->teamSportContextService->getSportOptions();
+        foreach (array_keys($options) as $sportKey) {
+            if (!$this->adminDataScopeService->canCreateTeamForSport($identity, $sportKey)) {
+                unset($options[$sportKey]);
+            }
+        }
+
+        return $options;
     }
 
     /**

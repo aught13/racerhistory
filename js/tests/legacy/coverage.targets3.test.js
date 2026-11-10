@@ -6,6 +6,15 @@ import AdminConfirmDeleteController from "../../controllers/admin_confirm_delete
 describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () => {
     let application;
 
+    const dispatchConfirmDelete = (detail) => {
+        document.body.dispatchEvent(
+            new CustomEvent("admin:confirm-delete", {
+                bubbles: true,
+                detail,
+            }),
+        );
+    };
+
     beforeEach(() => {
         document.body.innerHTML = "";
         jest.resetModules();
@@ -21,12 +30,11 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
             application.stop();
             application = null;
         }
-        delete window.__rhStimulusShowConfirmDelete;
     });
 
     test("admin uses source.requestSubmit when available", async () => {
         document.body.innerHTML = `
-      <div id="confirm-delete-modal" data-controller="admin-confirm-delete">
+      <div id="confirm-delete-modal" data-controller="admin-confirm-delete" data-action="admin:confirm-delete@document->admin-confirm-delete#open">
         <ul id="confirm-delete-modal-assoc"></ul>
         <button id="confirm-delete-modal-delete-btn" data-action="admin-confirm-delete#confirmDelete">Delete</button>
         <form id="confirm-delete-modal-hidden-form"></form>
@@ -42,8 +50,8 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
         src.requestSubmit = jest.fn();
         document.body.appendChild(src);
 
-        window.__rhStimulusShowConfirmDelete({
-            formId: "srcRS",
+        dispatchConfirmDelete({
+            sourceForm: src,
             deleteUrl: "/rs",
             ids: "[5]",
             idsName: "ids[]",
@@ -56,7 +64,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
 
     test("admin falls back to temp.requestSubmit when source missing but temp supports requestSubmit", async () => {
         document.body.innerHTML = `
-            <div id="confirm-delete-modal" data-controller="admin-confirm-delete">
+            <div id="confirm-delete-modal" data-controller="admin-confirm-delete" data-action="admin:confirm-delete@document->admin-confirm-delete#open">
         <ul id="confirm-delete-modal-assoc"></ul>
                 <button id="confirm-delete-modal-delete-btn" data-action="admin-confirm-delete#confirmDelete">Delete</button>
       </div>
@@ -70,7 +78,7 @@ describe("Coverage targets 3 - requestSubmit and mapping/min-max branches", () =
             /* noop */
         };
 
-        window.__rhStimulusShowConfirmDelete({
+        dispatchConfirmDelete({
             deleteUrl: "/tmpRS",
             ids: "[9]",
             idsName: "ids[]",

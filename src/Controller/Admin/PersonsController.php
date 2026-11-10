@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\PersonAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Admin Persons Controller
@@ -47,6 +49,22 @@ class PersonsController extends AppController
     protected PersonAdminService $personAdminService;
 
     /**
+     * Create the controller with its person administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\PersonAdminService $personAdminService The person administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        PersonAdminService $personAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->personAdminService = $personAdminService;
+    }
+
+    /**
      * Initialize controller.
      *
      * @return void
@@ -62,8 +80,6 @@ class PersonsController extends AppController
                 $this->FormProtection->setConfig('unlockedActions', $current);
             }
         }
-
-        $this->personAdminService = new PersonAdminService();
     }
 
     /**
@@ -147,8 +163,7 @@ class PersonsController extends AppController
             return null;
         }
 
-        /** @var \App\Model\Entity\Person $person */
-        $person = $this->fetchTable('Persons')->newEmptyEntity();
+        $person = $this->personAdminService->newEntity();
         $this->set(compact('person'));
 
         return null;

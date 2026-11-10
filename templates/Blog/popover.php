@@ -17,7 +17,7 @@ declare(strict_types=1);
         <?php endif; ?>
     </p>
     <p class="small mb-3">
-        <?= h($post->excerpt ?: mb_substr((string)$post->body, 0, 180) . '...') ?>
+        <?= h($this->BlogContent->decodeHtmlEntities((string)($post->excerpt ?: mb_substr((string)$post->body, 0, 180) . '...'))) ?>
     </p>
     <a
         href="<?= $this->Url->build(['controller' => 'Blog', 'action' => 'view', $post->slug]) ?>"

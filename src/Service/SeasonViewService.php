@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Model\Entity\BlogPost;
 use App\Model\Entity\TeamSeason;
 use Cake\ORM\TableRegistry;
 use Throwable;
@@ -108,6 +109,7 @@ class SeasonViewService
             'previewPosts' => $categorized['preview'],
             'reviewPosts' => $categorized['review'],
             'otherPosts' => $categorized['other'],
+            'gamePosts' => $categorized['game'],
         ];
     }
 
@@ -155,17 +157,24 @@ class SeasonViewService
 
     /**
      * @param array<int,\App\Model\Entity\BlogPost> $posts
-     * @return array{preview:array<int,\App\Model\Entity\BlogPost>,review:array<int,\App\Model\Entity\BlogPost>,other:array<int,\App\Model\Entity\BlogPost>}
+     * @return array{preview:array<int,\App\Model\Entity\BlogPost>,review:array<int,\App\Model\Entity\BlogPost>,other:array<int,\App\Model\Entity\BlogPost>,game:array<int,\App\Model\Entity\BlogPost>}
      */
     private function categorizeSeasonPosts(array $posts): array
     {
         $preview = [];
         $review = [];
         $other = [];
+        $game = [];
 
         foreach ($posts as $post) {
-            $hasPreview = $this->postHasTag($post, 'preview');
-            $hasReview = $this->postHasTag($post, 'review');
+            if ($this->postHasSpecificGameTag($post)) {
+                $game[] = $post;
+
+                continue;
+            }
+
+            $hasPreview = $this->blogPostService->hasTag($post, 'preview');
+            $hasReview = $this->blogPostService->hasTag($post, 'recap');
 
             if ($hasPreview) {
                 $preview[] = $post;
@@ -182,21 +191,18 @@ class SeasonViewService
             'preview' => $preview,
             'review' => $review,
             'other' => $other,
+            'game' => $game,
         ];
     }
 
     /**
      * @param \App\Model\Entity\BlogPost $post
-     * @param string $slug
      * @return bool
      */
-    private function postHasTag(object $post, string $slug): bool
+    private function postHasSpecificGameTag(BlogPost $post): bool
     {
-        $slug = mb_strtolower($slug);
-        $tags = $post->blog_tags ?? [];
-        foreach ($tags as $tag) {
-            $tagSlug = (string)($tag->slug ?? '');
-            if ($tagSlug !== '' && mb_strtolower($tagSlug) === $slug) {
+        foreach ($post->blog_tags ?? [] as $tag) {
+            if (preg_match('/^game-[1-9][0-9]*$/i', (string)($tag->slug ?? '')) === 1) {
                 return true;
             }
         }

@@ -12,19 +12,8 @@ const GAME_LOG_TABLE_OPTIONS = {
     dom: "ftip",
 };
 
-function getInitializer() {
-    if (typeof window !== "undefined") {
-        const override = window.__PERSON_GAME_LOG_TABS_INIT__;
-        if (typeof override === "function") {
-            return override;
-        }
-    }
-
-    return initPersonGameLogTabs;
-}
-
 export function initPersonGameLogTabsRoot(root = document) {
-    getInitializer()({ root });
+    initPersonGameLogTabs({ root });
 }
 
 export function initPersonGameLogTablesRoot(root = document) {

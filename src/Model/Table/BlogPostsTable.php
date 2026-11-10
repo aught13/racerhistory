@@ -104,4 +104,26 @@ class BlogPostsTable extends Table
             $entity->set('slug', mb_strtolower($base));
         }
     }
+
+    /**
+     * Get a post label for tag and selection interfaces.
+     *
+     * @param int $id Blog post ID.
+     * @return string
+     */
+    public function getDisplayLabel(int $id): string
+    {
+        $post = $this->find()
+            ->select(['id', 'title'])
+            ->where(['id' => $id])
+            ->first();
+
+        if ($post === null) {
+            return 'Post #' . $id;
+        }
+
+        $title = $post->get('title');
+
+        return is_scalar($title) ? (string)$title : 'Post #' . $id;
+    }
 }

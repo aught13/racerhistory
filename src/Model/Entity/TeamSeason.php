@@ -65,7 +65,7 @@ class TeamSeason extends Entity
      */
     public function getDisplayName(): string
     {
-        $teamName = $this->team->team_name ?? 'Unknown Team';
+        $teamName = $this->team?->getDisplayName() ?? 'Unknown Team';
         $seasonName = isset($this->season) ? $this->season->getDisplayName() : 'Unknown Season';
 
         return $teamName . ' (' . $seasonName . ')';

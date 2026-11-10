@@ -21,8 +21,15 @@ export default class extends Controller {
         "tags",
     ];
 
+    initialize() {
+        this.redirectTimer = null;
+        this.uploadRequest = null;
+        this.isCaching = false;
+    }
+
     connect() {
         this.currentImageFile = null;
+        this.isCaching = false;
         this.boundHandleFileChange = (event) => this.handleFileChange(event);
         this.boundHandleBrightnessInput = (event) =>
             this.handleBrightnessInput(event);
@@ -58,6 +65,9 @@ export default class extends Controller {
     }
 
     disconnect() {
+        this.isCaching = true;
+        this.cancelPendingWork();
+
         if (this.hasFileInputTarget) {
             this.fileInputTarget.removeEventListener(
                 "change",
@@ -78,6 +88,33 @@ export default class extends Controller {
         }
         if (this.hasFormTarget) {
             this.formTarget.removeEventListener("submit", this.boundSubmit);
+        }
+    }
+
+    beforeCache() {
+        this.isCaching = true;
+        this.cancelPendingWork();
+        this.currentImageFile = null;
+        this.setSubmitting(false);
+        this.showEmptyPreviewState();
+
+        if (this.hasFileInputTarget) {
+            this.fileInputTarget.value = "";
+        }
+        if (this.hasStatusTarget) {
+            this.statusTarget.replaceChildren();
+            this.statusTarget.classList.add("d-none");
+        }
+    }
+
+    cancelPendingWork() {
+        if (this.redirectTimer !== null) {
+            window.clearTimeout(this.redirectTimer);
+            this.redirectTimer = null;
+        }
+        if (this.uploadRequest) {
+            this.uploadRequest.abort();
+            this.uploadRequest = null;
         }
     }
 
@@ -124,6 +161,10 @@ export default class extends Controller {
     async submit(event) {
         event.preventDefault();
 
+        if (this.isCaching || this.uploadRequest) {
+            return;
+        }
+
         if (!this.currentImageFile) {
             this.showStatus("error", "Please select an image file");
             return;
@@ -164,6 +205,8 @@ export default class extends Controller {
         }
 
         this.setSubmitting(true);
+        const request = new AbortController();
+        this.uploadRequest = request;
 
         try {
             const response = await fetch(
@@ -176,20 +219,27 @@ export default class extends Controller {
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
                     },
+                    signal: request.signal,
                 },
             );
 
             const data = await response.json();
+            if (this.isCaching || this.uploadRequest !== request) {
+                return;
+            }
 
             if (data.success) {
                 this.showStatus(
                     "success",
                     "Image uploaded successfully! Redirecting...",
                 );
-                window.setTimeout(() => {
-                    window.location.assign(
-                        `/admin/images/edit/${data.image.id}`,
-                    );
+                this.redirectTimer = window.setTimeout(() => {
+                    this.redirectTimer = null;
+                    if (!this.isCaching) {
+                        window.location.assign(
+                            `/admin/images/edit/${data.image.id}`,
+                        );
+                    }
                 }, REDIRECT_DELAY_MS);
                 return;
             }
@@ -197,8 +247,20 @@ export default class extends Controller {
             this.showStatus("error", data.error || "Upload failed");
             this.setSubmitting(false);
         } catch (error) {
+            if (
+                this.isCaching ||
+                this.uploadRequest !== request ||
+                error?.name === "AbortError"
+            ) {
+                return;
+            }
+
             this.showStatus("error", `Upload error: ${error.message}`);
             this.setSubmitting(false);
+        } finally {
+            if (this.uploadRequest === request) {
+                this.uploadRequest = null;
+            }
         }
     }
 

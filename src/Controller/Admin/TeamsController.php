@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\TeamAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Teams Admin Controller
@@ -34,12 +36,27 @@ class TeamsController extends AppController
     protected TeamAdminService $teamAdminService;
 
     /**
+     * Create the controller with its team administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\TeamAdminService $teamAdminService The team administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        TeamAdminService $teamAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->teamAdminService = $teamAdminService;
+    }
+
+    /**
      * Initialize controller dependencies.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->teamAdminService = new TeamAdminService();
     }
 
     /**
@@ -49,7 +66,13 @@ class TeamsController extends AppController
      */
     public function index(): void
     {
-        $this->set($this->teamAdminService->getIndexData());
+        $sportKey = $this->request->getQuery('sport_key');
+        $gender = $this->request->getQuery('gender');
+        $this->set($this->teamAdminService->getIndexData(
+            $this->request->getAttribute('identity'),
+            is_string($sportKey) ? $sportKey : null,
+            is_string($gender) ? $gender : null,
+        ));
     }
 
     /**
@@ -60,7 +83,7 @@ class TeamsController extends AppController
      */
     public function view(string $id): void
     {
-        $this->set($this->teamAdminService->getViewData($id));
+        $this->set($this->teamAdminService->getViewData($id, $this->request->getAttribute('identity')));
     }
 
     /**
@@ -80,10 +103,11 @@ class TeamsController extends AppController
             }
         }
 
-        $viewData = $this->teamAdminService->getAddFormData($sportRef);
+        $identity = $this->request->getAttribute('identity');
+        $viewData = $this->teamAdminService->getAddFormData($sportRef, $identity);
 
         if ($this->request->is('post')) {
-            $result = $this->teamAdminService->saveNewTeam((array)$this->request->getData(), $sportRef);
+            $result = $this->teamAdminService->saveNewTeam((array)$this->request->getData(), $sportRef, $identity);
             $viewData['team'] = $result['team'];
 
             if ($result['success']) {
@@ -107,10 +131,11 @@ class TeamsController extends AppController
      */
     public function edit(string $id): ?Response
     {
-        $viewData = $this->teamAdminService->getEditFormData($id);
+        $identity = $this->request->getAttribute('identity');
+        $viewData = $this->teamAdminService->getEditFormData($id, $identity);
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->teamAdminService->saveExistingTeam($id, (array)$this->request->getData());
+            $result = $this->teamAdminService->saveExistingTeam($id, (array)$this->request->getData(), $identity);
             $viewData['team'] = $result['team'];
 
             if ($result['success']) {
@@ -199,7 +224,10 @@ class TeamsController extends AppController
     public function ajaxAdd(): Response
     {
         if ($this->request->is('post')) {
-            $response = $this->teamAdminService->createTeamFromPopup((array)$this->request->getData());
+            $response = $this->teamAdminService->createTeamFromPopup(
+                (array)$this->request->getData(),
+                $this->request->getAttribute('identity'),
+            );
         } else {
             $response = [
                 'success' => false,

@@ -23,29 +23,32 @@ function setupFullFormDom() {
          data-place-display=""
          data-site-display=""
          data-game-type-display="">
+      <input type="text" id="game-type-search" />
+      <input type="hidden" id="game-type-id" />
+      <div id="game-type-results"></div>
+      <div id="game-type-selected"></div>
+
+      <input type="text" id="opponent-search" />
+      <input type="hidden" id="opponent-id" />
+      <div id="opponent-results"></div>
+      <div id="opponent-selected"></div>
+
+      <input type="text" id="place-search" />
+      <input type="hidden" id="place-id" />
+      <div id="place-results"></div>
+      <div id="place-selected"></div>
+
+      <input type="text" id="site-search" />
+      <input type="hidden" id="site-id" />
+      <div id="site-results"></div>
+      <div id="site-selected"></div>
+
+      <button id="add-site-btn">Add New Site</button>
     </div>
-    <input type="text" id="game-type-search" />
-    <input type="hidden" id="game-type-id" />
-    <div id="game-type-results"></div>
-    <div id="game-type-selected"></div>
 
-    <input type="text" id="opponent-search" />
-    <input type="hidden" id="opponent-id" />
-    <div id="opponent-results"></div>
-    <div id="opponent-selected"></div>
-
-    <input type="text" id="place-search" />
-    <input type="hidden" id="place-id" />
-    <div id="place-results"></div>
-    <div id="place-selected"></div>
-
-    <input type="text" id="site-search" />
-    <input type="hidden" id="site-id" />
-    <div id="site-results"></div>
-    <div id="site-selected"></div>
-
-    <button id="add-site-btn">Add New Site</button>
-    <input type="hidden" id="add-site-modal-place_id" />
+    <div id="add-site-modal" class="modal">
+      <input type="hidden" id="add-site-modal-place_id" />
+    </div>
 
     <!-- Opponent popup place lookup elements -->
     <div id="add-opponent-modal" class="modal">
@@ -59,9 +62,20 @@ function setupFullFormDom() {
   `;
 }
 
+function dispatchPopupSuccess(eventName, data) {
+    const form = document.createElement("form");
+    document.body.appendChild(form);
+    form.dispatchEvent(
+        new CustomEvent(eventName, { bubbles: true, detail: data }),
+    );
+    form.remove();
+}
+
 describe("game-form-lookups", () => {
     let initLookup;
     let initGameFormLookups;
+    let gameFormCleanup;
+    let lookupCleanups;
 
     beforeEach(async () => {
         jest.restoreAllMocks();
@@ -82,20 +96,26 @@ describe("game-form-lookups", () => {
             },
         };
 
-        const mod = await import("../../legacy/game-form-lookups.js");
-        initLookup = mod.initLookup;
-        initGameFormLookups = mod.initGameFormLookups;
+        const mod = await import("../../lib/game_form_lookups.js");
+        lookupCleanups = [];
+        gameFormCleanup = null;
+        initLookup = (...args) => {
+            const lookup = mod.initLookup(...args);
+            lookupCleanups.push(lookup);
+            return lookup;
+        };
+        initGameFormLookups = (...args) => {
+            gameFormCleanup = mod.initGameFormLookups(...args);
+            return gameFormCleanup;
+        };
     });
 
     afterEach(() => {
+        gameFormCleanup?.();
+        lookupCleanups.forEach((lookup) => lookup.destroy());
         document.body.innerHTML = "";
         delete global.fetch;
         delete global.bootstrap;
-        delete window.handleOpponentAdded;
-        delete window.handlePlaceAdded;
-        delete window.handleSiteAdded;
-        delete window.handleGameTypeAdded;
-        delete window.handleOpponentPlaceAdded;
     });
 
     describe("initLookup", () => {
@@ -307,6 +327,41 @@ describe("game-form-lookups", () => {
 
             jest.advanceTimersByTime(500);
             expect(global.fetch).not.toHaveBeenCalled();
+
+            jest.useRealTimers();
+        });
+
+        test("destroy aborts the active request and removes search state", () => {
+            jest.useFakeTimers();
+            setupLookupDom("test");
+            global.fetch.mockReturnValue(new Promise(() => {}));
+
+            const lookup = initLookup({
+                searchInputId: "test-search",
+                hiddenInputId: "test-id",
+                resultsTableId: "test-results",
+                selectedDisplayId: "test-selected",
+                searchUrl: "/admin/test/ajax-search",
+                columns: ["name"],
+                columnLabels: ["Name"],
+                displayField: "name",
+            });
+            const input = document.getElementById("test-search");
+            input.value = "hello";
+            input.dispatchEvent(new Event("input"));
+            jest.advanceTimersByTime(300);
+
+            const signal = global.fetch.mock.calls[0][1].signal;
+            expect(signal.aborted).toBe(false);
+
+            lookup.destroy();
+            expect(signal.aborted).toBe(true);
+            expect(input.value).toBe("");
+
+            input.value = "again";
+            input.dispatchEvent(new Event("input"));
+            jest.advanceTimersByTime(300);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
 
             jest.useRealTimers();
         });
@@ -642,6 +697,43 @@ describe("game-form-lookups", () => {
             ).toContain("None selected");
         });
 
+        test("opponent lookup selects the default display label", async () => {
+            jest.useFakeTimers();
+            setupFullFormDom();
+            initGameFormLookups();
+            global.fetch.mockResolvedValue({
+                json: () =>
+                    Promise.resolve({
+                        success: true,
+                        results: [
+                            {
+                                id: 8,
+                                opponent_name: "Belmont University",
+                                opponent_short: "Belmont",
+                                opponent_mascot: "Bruins",
+                                label: "Belmont Bruins",
+                            },
+                        ],
+                    }),
+            });
+
+            const input = document.getElementById("opponent-search");
+            input.value = "Belmont";
+            input.dispatchEvent(new Event("input"));
+            await jest.advanceTimersByTimeAsync(300);
+
+            const result = document.querySelector(
+                "#opponent-results .lookup-result-row",
+            );
+            expect(result.dataset.display).toBe("Belmont Bruins");
+            result.click();
+            expect(
+                document.getElementById("opponent-selected").textContent,
+            ).toContain("Belmont Bruins");
+
+            jest.useRealTimers();
+        });
+
         test("disables add-site button when no place is selected", () => {
             setupFullFormDom();
             initGameFormLookups();
@@ -651,21 +743,49 @@ describe("game-form-lookups", () => {
             expect(btn.title).toBe("Select a place first");
         });
 
-        test("registers window callback handlers", () => {
+        test("does not register global success callbacks", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            expect(typeof window.handleOpponentAdded).toBe("function");
-            expect(typeof window.handlePlaceAdded).toBe("function");
-            expect(typeof window.handleSiteAdded).toBe("function");
-            expect(typeof window.handleGameTypeAdded).toBe("function");
+            expect(window.handleOpponentAdded).toBeUndefined();
+            expect(window.handlePlaceAdded).toBeUndefined();
+            expect(window.handleSiteAdded).toBeUndefined();
+            expect(window.handleGameTypeAdded).toBeUndefined();
+        });
+
+        test("removes popup handlers on cleanup and supports reinitialization", () => {
+            setupFullFormDom();
+            const cleanup = initGameFormLookups();
+
+            dispatchPopupSuccess("admin:game-opponent-added", {
+                newOption: { value: 10, text: "First Opponent" },
+            });
+            cleanup();
+            dispatchPopupSuccess("admin:game-opponent-added", {
+                newOption: { value: 11, text: "Ignored Opponent" },
+            });
+
+            expect(document.getElementById("opponent-id").value).toBe("10");
+            expect(
+                document.getElementById("opponent-selected").textContent,
+            ).toContain("First Opponent");
+
+            initGameFormLookups();
+            dispatchPopupSuccess("admin:game-opponent-added", {
+                newOption: { value: 12, text: "Second Opponent" },
+            });
+
+            expect(document.getElementById("opponent-id").value).toBe("12");
+            expect(
+                document.getElementById("opponent-selected").textContent,
+            ).toContain("Second Opponent");
         });
 
         test("handleOpponentAdded sets opponent selection", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            window.handleOpponentAdded({
+            dispatchPopupSuccess("admin:game-opponent-added", {
                 newOption: { value: 10, text: "New Opponent" },
             });
 
@@ -679,7 +799,7 @@ describe("game-form-lookups", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            window.handlePlaceAdded({
+            dispatchPopupSuccess("admin:game-place-added", {
                 newOption: { value: 3, text: "Nashville, TN" },
             });
 
@@ -693,7 +813,7 @@ describe("game-form-lookups", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            window.handleSiteAdded({
+            dispatchPopupSuccess("admin:game-site-added", {
                 newOption: { value: 5, text: "New Arena" },
             });
 
@@ -707,7 +827,7 @@ describe("game-form-lookups", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            window.handleGameTypeAdded({
+            dispatchPopupSuccess("admin:game-type-added", {
                 newOption: { value: 8, text: "Exhibition" },
             });
 
@@ -722,7 +842,7 @@ describe("game-form-lookups", () => {
             initGameFormLookups();
 
             // Simulate place being added via popup
-            window.handlePlaceAdded({
+            dispatchPopupSuccess("admin:game-place-added", {
                 newOption: { value: 7, text: "Clarksville, TN" },
             });
 
@@ -741,11 +861,11 @@ describe("game-form-lookups", () => {
             initGameFormLookups();
 
             // First select a place
-            window.handlePlaceAdded({
+            dispatchPopupSuccess("admin:game-place-added", {
                 newOption: { value: 7, text: "Clarksville, TN" },
             });
             // Then select a site
-            window.handleSiteAdded({
+            dispatchPopupSuccess("admin:game-site-added", {
                 newOption: { value: 2, text: "Arena" },
             });
 
@@ -763,15 +883,15 @@ describe("game-form-lookups", () => {
             expect(document.getElementById("add-site-btn").disabled).toBe(true);
         });
 
-        test("handles popup callbacks with missing newOption gracefully", () => {
+        test("handles popup events with missing newOption gracefully", () => {
             setupFullFormDom();
             initGameFormLookups();
 
             // Should not throw
-            window.handleOpponentAdded({});
-            window.handlePlaceAdded({});
-            window.handleSiteAdded({});
-            window.handleGameTypeAdded({});
+            dispatchPopupSuccess("admin:game-opponent-added", {});
+            dispatchPopupSuccess("admin:game-place-added", {});
+            dispatchPopupSuccess("admin:game-site-added", {});
+            dispatchPopupSuccess("admin:game-type-added", {});
         });
 
         test("initializes opponent place lookup inside opponent popup", () => {
@@ -790,18 +910,18 @@ describe("game-form-lookups", () => {
             ).toContain("None selected");
         });
 
-        test("registers handleOpponentPlaceAdded callback", () => {
+        test("does not register a global opponent-place callback", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            expect(typeof window.handleOpponentPlaceAdded).toBe("function");
+            expect(window.handleOpponentPlaceAdded).toBeUndefined();
         });
 
         test("handleOpponentPlaceAdded sets place in opponent popup", () => {
             setupFullFormDom();
             initGameFormLookups();
 
-            window.handleOpponentPlaceAdded({
+            dispatchPopupSuccess("admin:game-opponent-place-added", {
                 newOption: { value: 42, text: "Lexington, KY" },
             });
 
@@ -818,7 +938,7 @@ describe("game-form-lookups", () => {
             initGameFormLookups();
 
             // Should not throw
-            window.handleOpponentPlaceAdded({});
+            dispatchPopupSuccess("admin:game-opponent-place-added", {});
         });
 
         test("opponent place search triggers fetch to place search URL", () => {
@@ -933,7 +1053,7 @@ describe("game-form-lookups", () => {
             initGameFormLookups();
 
             // First set a place in the opponent popup
-            window.handleOpponentPlaceAdded({
+            dispatchPopupSuccess("admin:game-opponent-place-added", {
                 newOption: { value: 42, text: "Lexington, KY" },
             });
             expect(
@@ -959,7 +1079,7 @@ describe("game-form-lookups", () => {
             initGameFormLookups();
 
             // Set a place in the opponent popup
-            window.handleOpponentPlaceAdded({
+            dispatchPopupSuccess("admin:game-opponent-place-added", {
                 newOption: { value: 42, text: "Lexington, KY" },
             });
             expect(
@@ -987,29 +1107,39 @@ describe("game-form-lookups", () => {
              data-place-display="Murray, KY"
              data-site-display="CFSB Center"
              data-game-type-display="Conference">
+          <input type="text" id="game-type-search" />
+          <input type="hidden" id="game-type-id" value="1" />
+          <div id="game-type-results"></div>
+          <div id="game-type-selected"></div>
+
+          <input type="text" id="opponent-search" />
+          <input type="hidden" id="opponent-id" value="1" />
+          <div id="opponent-results"></div>
+          <div id="opponent-selected"></div>
+
+          <input type="text" id="place-search" />
+          <input type="hidden" id="place-id" value="1" />
+          <div id="place-results"></div>
+          <div id="place-selected"></div>
+
+          <input type="text" id="site-search" />
+          <input type="hidden" id="site-id" value="1" />
+          <div id="site-results"></div>
+          <div id="site-selected"></div>
+
+          <button id="add-site-btn">Add New Site</button>
         </div>
-        <input type="text" id="game-type-search" />
-        <input type="hidden" id="game-type-id" value="1" />
-        <div id="game-type-results"></div>
-        <div id="game-type-selected"></div>
-
-        <input type="text" id="opponent-search" />
-        <input type="hidden" id="opponent-id" value="1" />
-        <div id="opponent-results"></div>
-        <div id="opponent-selected"></div>
-
-        <input type="text" id="place-search" />
-        <input type="hidden" id="place-id" value="1" />
-        <div id="place-results"></div>
-        <div id="place-selected"></div>
-
-        <input type="text" id="site-search" />
-        <input type="hidden" id="site-id" value="1" />
-        <div id="site-results"></div>
-        <div id="site-selected"></div>
-
-        <button id="add-site-btn">Add New Site</button>
-        <input type="hidden" id="add-site-modal-place_id" />
+        <div id="add-site-modal">
+          <input type="hidden" id="add-site-modal-place_id" />
+        </div>
+        <div id="add-opponent-modal" class="modal">
+          <input type="text" id="opponent-place-search" />
+          <input type="hidden" id="add-opponent-modal-place_id" />
+          <div id="opponent-place-results"></div>
+          <div id="opponent-place-selected"></div>
+          <button id="opponent-add-place-btn">New Place</button>
+        </div>
+        <div id="add-opponent-place-modal" class="modal"></div>
       `;
 
             initGameFormLookups();

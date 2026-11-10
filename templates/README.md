@@ -178,6 +178,25 @@ Flash message templates for different message types:
 - **Features**: Optional hero image, tag badges, body rendered as paragraphs
 - **Variables**: `$post` (BlogPost entity)
 
+## Game Templates
+
+### Games/view.php
+- **Purpose**: Public game detail page
+- **Features**: Opponent series summary collapses based on game result; available previews and recaps appear above the box score
+- **Variables**: `$gamePreviewPosts`, `$gameRecapPosts`, and `$blogPosts` (arrays of BlogPost entities); `$seriesRecord` (opponent series summary)
+
+### element/Games/series_summary.php
+- **Purpose**: Shared summary cards for an opponent series
+- **Features**: Overall, home/road/neutral, recent-form, streak, and first/last meeting summaries
+- **Variables**: `$record` (series summary array)
+
+## Season Templates
+
+### Seasons/view.php
+- **Purpose**: Public team-season detail page
+- **Features**: Season previews/recaps appear above the Game Log; game-tagged articles and other season stories appear below the roster, above photos
+- **Variables**: `$previewPosts`, `$reviewPosts`, `$gamePosts`, and `$otherPosts` (arrays of BlogPost entities)
+
 ## Admin Blog Templates
 
 ### Admin/BlogPosts/index.php

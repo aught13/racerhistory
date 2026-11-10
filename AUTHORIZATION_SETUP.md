@@ -15,6 +15,14 @@ Authentication UI is provided by **CakeDC/Users** (login/logout/password reset).
 3. **Controller checks permissions** → Uses policies to authorize actions
 4. **Policy resolves** → Determines if user can perform action
 
+### Team-Owned Data Scopes
+
+Model-level CRUD permissions remain the first authorization layer. A role's normalized data-scope grants then restrict team-owned data to all sports, selected sports, or selected teams. Sport grants include every team in that sport; team grants include its team seasons, games, rosters, and parent-linked Basketball stat records.
+
+The scope is enforced in service queries, form choices, direct-ID reads, writes, and bulk actions. Admin list query parameters are filters only and never grant access. Existing roles are backfilled as unrestricted to preserve access; Admin and superuser identities remain unrestricted. Shared catalogs continue to use their existing model-level permissions.
+
+See [RBAC_HARDENING.md](docs/RBAC_HARDENING.md) for the service and migration details.
+
 ### Components
 
 #### 1. Application.php - Authorization Service Configuration

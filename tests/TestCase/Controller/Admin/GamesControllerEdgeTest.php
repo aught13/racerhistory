@@ -37,7 +37,7 @@ class GamesControllerEdgeTest extends TestCase
         $this->enableCsrfToken();
         $this->enableSecurityToken();
         $this->post('/admin/games/add?team_season_id=1', [ 'team_season_id' => null ]);
-        $this->assertResponseOk();
+        $this->assertResponseCode(422);
         $this->assertResponseContains('error');
     }
 

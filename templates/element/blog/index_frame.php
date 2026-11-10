@@ -60,7 +60,7 @@ if ($page === 1 && !empty($paginatedPosts)) {
                                 ) ?>
                             </div>
                             <?php endif; ?>
-                            <p class="lead mb-0 blog-hero-excerpt"><?= h($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 220) . '...') ?></p>
+                            <p class="lead mb-0 blog-hero-excerpt"><?= h($this->BlogContent->decodeHtmlEntities((string)($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 220) . '...'))) ?></p>
                         </div>
                     </a>
                 </div>

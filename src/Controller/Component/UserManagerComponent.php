@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Component;
 
 use App\Service\PasswordResetService;
+use App\Service\UserAccountService;
 use Cake\Controller\Component;
+use Cake\Controller\ComponentRegistry;
 use Cake\Controller\Controller;
 use Cake\Core\Configure;
 use Cake\Http\Response;
@@ -19,6 +21,23 @@ use Cake\Log\Log;
  */
 class UserManagerComponent extends Component
 {
+    /**
+     * Create the component with its account and password services.
+     *
+     * @param \Cake\Controller\ComponentRegistry $registry The component registry.
+     * @param \App\Service\UserAccountService $userAccountService The user account service.
+     * @param \App\Service\PasswordResetService $passwordResetService The password reset service.
+     * @param array<string,mixed> $config The component configuration.
+     */
+    public function __construct(
+        ComponentRegistry $registry,
+        private UserAccountService $userAccountService,
+        private PasswordResetService $passwordResetService,
+        array $config = [],
+    ) {
+        parent::__construct($registry, $config);
+    }
+
     /**
      * Handle user login - main entry point for controllers.
      *
@@ -214,11 +233,10 @@ class UserManagerComponent extends Component
      */
     public function createUser(Controller $controller, array $data)
     {
-        $usersTable = $controller->fetchTable('Users');
-        $user = $usersTable->newEmptyEntity();
-        $user = $usersTable->patchEntity($user, $data);
+        $result = $this->userAccountService->create($data);
+        $user = $result['user'];
 
-        if ($usersTable->save($user)) {
+        if ($result['saved']) {
             $controller->Flash->success('User has been created successfully.');
 
             return $controller->redirect(['action' => 'index']);
@@ -240,11 +258,10 @@ class UserManagerComponent extends Component
      */
     public function updateUser(Controller $controller, string|int $id, array $data): ?Response
     {
-        $usersTable = $controller->fetchTable('Users');
-        $user = $usersTable->get($id);
-        $user = $usersTable->patchEntity($user, $data);
+        $result = $this->userAccountService->update($id, $data);
+        $user = $result['user'];
 
-        if ($usersTable->save($user)) {
+        if ($result['saved']) {
             $controller->Flash->success('User has been updated successfully.');
 
             return $controller->redirect(['action' => 'index']);
@@ -265,12 +282,7 @@ class UserManagerComponent extends Component
      */
     public function approveUser(Controller $controller, string|int $id): Response
     {
-        $usersTable = $controller->fetchTable('Users');
-        /** @var \App\Model\Entity\User $user */
-        $user = $usersTable->get($id);
-        $user->status = 'active';
-
-        if ($usersTable->save($user)) {
+        if ($this->userAccountService->approve($id)) {
             $controller->Flash->success('User has been approved successfully.');
         } else {
             $controller->Flash->error('Unable to approve user.');
@@ -288,10 +300,7 @@ class UserManagerComponent extends Component
      */
     public function deleteUser(Controller $controller, string|int $id): Response
     {
-        $usersTable = $controller->fetchTable('Users');
-        $user = $usersTable->get($id);
-
-        if ($usersTable->delete($user)) {
+        if ($this->userAccountService->delete($id)) {
             $controller->Flash->success('User has been deleted successfully.');
         } else {
             $controller->Flash->error('Unable to delete user.');
@@ -316,11 +325,7 @@ class UserManagerComponent extends Component
             return $controller->redirect(['action' => 'index']);
         }
 
-        $usersTable = $controller->fetchTable('Users');
-        $count = $usersTable->updateAll(
-            ['status' => 'active'],
-            ['id IN' => $userIds],
-        );
+        $count = $this->userAccountService->bulkActivate((array)$userIds);
 
         $controller->Flash->success("{$count} user(s) have been activated.");
 
@@ -343,8 +348,7 @@ class UserManagerComponent extends Component
             return $controller->redirect(['action' => 'index']);
         }
 
-        $usersTable = $controller->fetchTable('Users');
-        $count = $usersTable->deleteAll(['id IN' => $userIds]);
+        $count = $this->userAccountService->bulkDelete((array)$userIds);
 
         $controller->Flash->success("{$count} user(s) have been deleted.");
 
@@ -364,8 +368,7 @@ class UserManagerComponent extends Component
     {
         if ($controller->getRequest()->is('post')) {
             $email = (string)($controller->getRequest()->getData('email') ?? '');
-            $service = new PasswordResetService();
-            $service->generateAndSendToken($email);
+            $this->passwordResetService->generateAndSendToken($email);
             // Always respond with the same message to avoid account enumeration
             $controller->Flash->success('If your email exists, a reset link will be sent.');
         }
