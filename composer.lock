@@ -346,21 +346,21 @@
         },
         {
             "name": "cakephp/cakephp",
-            "version": "5.4.3",
+            "version": "5.4.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cakephp/cakephp.git",
-                "reference": "6f3dd91371ac0698b64024ddb21d57def9fbba91"
+                "reference": "47f15a350fff9ac374172a5c675bca6b4146716f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cakephp/cakephp/zipball/6f3dd91371ac0698b64024ddb21d57def9fbba91",
-                "reference": "6f3dd91371ac0698b64024ddb21d57def9fbba91",
+                "url": "https://api.github.com/repos/cakephp/cakephp/zipball/47f15a350fff9ac374172a5c675bca6b4146716f",
+                "reference": "47f15a350fff9ac374172a5c675bca6b4146716f",
                 "shasum": ""
             },
             "require": {
                 "cakephp/chronos": "^3.3",
-                "composer/ca-bundle": "^1.5",
+                "composer/ca-bundle": "^1.6",
                 "ext-intl": "*",
                 "ext-json": "*",
                 "ext-mbstring": "*",
@@ -406,10 +406,9 @@
                 "cakephp/validation": "self.version"
             },
             "require-dev": {
-                "boundwize/structarmed": "^0.14",
+                "boundwize/structarmed": "^0.19",
                 "cakephp/cakephp-codesniffer": "^5.3",
                 "http-interop/http-factory-tests": "^2.0",
-                "mikey179/vfsstream": "^1.6.12",
                 "mockery/mockery": "^1.6",
                 "paragonie/csp-builder": "^2.3 || ^3.0",
                 "phpunit/phpunit": "^11.5.3 || ^12.1.3 || ^13.0"
@@ -467,7 +466,7 @@
                 "issues": "https://github.com/cakephp/cakephp/issues",
                 "source": "https://github.com/cakephp/cakephp"
             },
-            "time": "2026-10-03T03:40:34+00:00"
+            "time": "2026-11-01T00:47:56+00:00"
         },
         {
             "name": "cakephp/chronos",
@@ -646,16 +645,16 @@
         },
         {
             "name": "composer/ca-bundle",
-            "version": "1.5.14",
+            "version": "1.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/ca-bundle.git",
-                "reference": "0c8abba0634f637bd78c4e451981da368d403463"
+                "reference": "0c64479fae6952ba4cf021a72c0ac530394c91d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/ca-bundle/zipball/0c8abba0634f637bd78c4e451981da368d403463",
-                "reference": "0c8abba0634f637bd78c4e451981da368d403463",
+                "url": "https://api.github.com/repos/composer/ca-bundle/zipball/0c64479fae6952ba4cf021a72c0ac530394c91d4",
+                "reference": "0c64479fae6952ba4cf021a72c0ac530394c91d4",
                 "shasum": ""
             },
             "require": {
@@ -702,7 +701,7 @@
             "support": {
                 "irc": "irc://irc.freenode.org/composer",
                 "issues": "https://github.com/composer/ca-bundle/issues",
-                "source": "https://github.com/composer/ca-bundle/tree/1.5.14"
+                "source": "https://github.com/composer/ca-bundle/tree/1.6.1"
             },
             "funding": [
                 {
@@ -714,7 +713,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-21T14:57:29+00:00"
+            "time": "2026-10-29T14:10:42+00:00"
         },
         {
             "name": "intervention/gif",
