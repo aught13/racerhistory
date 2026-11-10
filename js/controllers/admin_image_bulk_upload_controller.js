@@ -219,7 +219,7 @@ export default class extends Controller {
                         : null;
                 if (ok && imageId) {
                     const hostId = `tag-modal-host-images-${imageId}`;
-                    applyHtml = ` <span class="ms-2 d-inline-block"><div class="tag-modal-trigger d-inline-block" data-controller="tag-modal" data-tag-modal-subject-value="images" data-tag-modal-subject-id-value="${imageId}"><button type="button" class="btn btn-link btn-sm p-0" data-action="click->tag-modal#open">Edit Tags</button><div id="${hostId}" class="tag-modal-host" aria-hidden="true"></div></div></span>`;
+                    applyHtml = ` <span class="ms-2 d-inline-block"><div class="tag-modal-trigger d-inline-block" data-controller="tag-modal" data-tag-modal-subject-value="images" data-tag-modal-subject-id-value="${imageId}"><button type="button" class="btn btn-link btn-sm p-0" data-action="click->tag-modal#open">Edit Tags</button><div id="${hostId}" class="tag-modal-host" data-tag-modal-target="host" aria-hidden="true"></div></div></span>`;
                 }
 
                 return `<li class="${statusClass}"><i class="bi ${icon}"></i> ${fileName}${duplicate}${error}${applyHtml}</li>`;

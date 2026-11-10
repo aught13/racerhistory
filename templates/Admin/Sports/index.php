@@ -11,7 +11,6 @@
     data-admin-bulk-table-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete'])) ?>"
     data-admin-bulk-table-item-type-value="sports (bulk)"
     data-admin-bulk-table-ids-name-value="sport_ids[]"
-    data-admin-bulk-table-form-id-value="delete-form-sports-bulk"
     data-admin-bulk-table-name-column-value="2"
 >
     <div class="row mb-3">
@@ -77,7 +76,7 @@
                                     data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'delete', $sport->id]) ?>"
                                     data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'edit', $sport->id]) ?>"
                                     data-item-type="sport" data-associated='<?= $associated ?>'
-                                    data-form-id="<?= 'delete-form-sport-' . $sport->id ?>" aria-label="Delete sport <?= h($sport->sport_name) ?>">Delete</button>
+                                    form="<?= 'delete-form-sport-' . $sport->id ?>" aria-label="Delete sport <?= h($sport->sport_name) ?>">Delete</button>
                                 <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'delete', $sport->id], 'id' => 'delete-form-sport-' . $sport->id, 'style' => 'display:none']) ?>
                                 <?= $this->Form->end() ?>
                             </td>
@@ -86,7 +85,7 @@
                     </tbody>
                 </table>
             </form>
-                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete'], 'id' => 'delete-form-sports-bulk', 'style' => 'display:none']) ?>
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Sports', 'action' => 'bulkDelete'], 'id' => 'delete-form-sports-bulk', 'style' => 'display:none', 'data-admin-bulk-table-target' => 'deleteForm']) ?>
                 <?php
                 // Unlock dynamic fields for FormProtection
                 $this->Form->unlockField('sport_ids');

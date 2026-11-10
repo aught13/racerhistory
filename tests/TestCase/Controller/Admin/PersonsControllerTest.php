@@ -150,7 +150,8 @@ class PersonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/persons/view/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('Sample biography for John Doe.');
+        $this->assertResponseNotContains('Biography');
+        $this->assertResponseNotContains('Sample biography for John Doe.');
         $this->assertResponseContains('data-controller="back-navigation"');
         $this->assertResponseContains('data-action="click->back-navigation#goBack"');
     }
@@ -187,6 +188,7 @@ class PersonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/persons/add');
         $this->assertResponseOk();
+        $this->assertResponseNotContains('name="bio"');
     }
 
     /**
@@ -226,6 +228,7 @@ class PersonsControllerTest extends TestCase
         $this->mockIdentity();
         $this->get('/admin/persons/edit/1');
         $this->assertResponseOk();
+        $this->assertResponseNotContains('name="bio"');
     }
 
     /**

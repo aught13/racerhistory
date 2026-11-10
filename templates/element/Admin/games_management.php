@@ -81,7 +81,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?= h($game->opponent->opponent_name ?? 'TBD') ?>
+                                    <?= h($game->opponent?->getDisplayName() ?? 'TBD') ?>
                                     <?php if (isset($game->opponent->place->place_city)) : ?>
                                         <br><small class="text-muted"><?= h($game->opponent->place->place_city) ?></small>
                                     <?php endif; ?>
@@ -203,17 +203,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 return date + ' vs ' + opp;
             });
 
-            if (window.__rhStimulusShowConfirmDelete) {
-                window.__rhStimulusShowConfirmDelete({
+            bulkFormGames.dispatchEvent(new CustomEvent('admin:confirm-delete', {
+                bubbles: true,
+                detail: {
                     deleteUrl: '<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk']) ?>',
                     itemType: 'games (bulk)',
                     associated: assoc,
                     ids: ids,
                     idsName: 'game_ids[]',
-                    formId: 'delete-form-games-bulk',
+                    sourceForm: document.getElementById('delete-form-games-bulk'),
                     bulkAction: 'delete'
-                });
-            }
+                }
+            }));
         });
     }
 });

@@ -278,7 +278,7 @@ test.describe("DataTables with Turbo Drive navigation", () => {
 
     test.describe("Stats pages – DataTables with AJAX", () => {
         test("Stats player-season page loads DataTable", async ({ page }) => {
-            await page.goto("/stats/player-season");
+            await page.goto("/stats/player-season?sport=basketball");
             await page.waitForLoadState("domcontentloaded");
 
             const table = page.locator("#stats-results-table");

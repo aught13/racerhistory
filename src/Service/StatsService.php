@@ -58,6 +58,15 @@ class StatsService
     ];
 
     /**
+     * Map of sport names to the season stats element used in the admin site.
+     *
+     * @var array<string, string>
+     */
+    protected array $adminSeasonStatsElements = [
+        'basketball' => 'Admin/basketball_season_stats',
+    ];
+
+    /**
      * Map of sport names to the game stats element used in the public site
      *
      * @var array<string, string>
@@ -156,6 +165,23 @@ class StatsService
         $sportName = $this->sportConfig->getSportName($sportId);
 
         return $this->seasonStatsElements[$sportName] ?? null;
+    }
+
+    /**
+     * Get the admin season stats element for a supported sport.
+     *
+     * @param int $sportId Sport ID
+     * @return string|null Element path or null when the sport has no admin stats view
+     */
+    public function getAdminSeasonStatsElement(int $sportId): ?string
+    {
+        if (!$this->hasSportSupport($sportId)) {
+            return null;
+        }
+
+        $sportName = $this->sportConfig->getSportName($sportId);
+
+        return $this->adminSeasonStatsElements[$sportName] ?? null;
     }
 
     /**

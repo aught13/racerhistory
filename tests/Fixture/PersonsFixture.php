@@ -29,7 +29,6 @@ class PersonsFixture extends TestFixture
                 'person_image' => null,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
-                'bio' => 'Sample biography for John Doe.',
             ],
             [
                 'id' => 2,
@@ -44,7 +43,6 @@ class PersonsFixture extends TestFixture
                 'person_image' => null,
                 'created_at' => '2025-01-01 00:00:00',
                 'updated_at' => '2025-01-01 00:00:00',
-                'bio' => 'Sample biography for Jane Smith.',
             ],
         ];
         parent::init();

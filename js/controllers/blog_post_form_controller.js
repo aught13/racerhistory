@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
+import blogContentCssUrl from "../../webroot/css/blog-content.css?url";
 
 const TINYMCE_RETRY_DELAY_MS = 200;
 const TINYMCE_MAX_RETRIES = 20;
@@ -16,49 +17,33 @@ export default class extends Controller {
     static values = {
         existingHeroId: Number,
         existingHeroUrl: String,
+        csrfToken: String,
+        maxUploadBytes: {
+            type: Number,
+            default: 0,
+        },
         imagesUploadUrl: {
             type: String,
             default: "/admin/images/upload",
         },
     };
 
+    initialize() {
+        this.activeUploadXhrs = new Set();
+        this.lifecycleAbortController = null;
+        this.isCaching = false;
+    }
+
     connect() {
         this.tinyMceRetryCount = 0;
         this.tinyMceRetryTimer = null;
-        this.boundBeforeRender = () => this.destroyTinyMCE();
-        this.boundBeforeCache = () => this.destroyTinyMCE();
-        this.boundTurboLoad = () => this.onTurboLoad();
-        this.boundHeroChange = () => this.onHeroFieldChange();
-        this.boundUnsetHero = () => this.clearHeroImage();
-        this.boundInlineChange = () => this.onInlineFieldChange();
-
-        document.addEventListener(
-            "turbo:before-render",
-            this.boundBeforeRender,
-        );
-        document.addEventListener("turbo:before-cache", this.boundBeforeCache);
-        document.addEventListener("turbo:load", this.boundTurboLoad);
+        this.isCaching = false;
+        this.lifecycleAbortController = new AbortController();
 
         if (this.hasHeroFieldTarget) {
-            this.heroFieldTarget.addEventListener(
-                "change",
-                this.boundHeroChange,
-            );
             if (this.existingHeroIdValue > 0 && !this.heroFieldTarget.value) {
                 this.heroFieldTarget.value = String(this.existingHeroIdValue);
             }
-        }
-        if (this.hasUnsetHeroButtonTarget) {
-            this.unsetHeroButtonTarget.addEventListener(
-                "click",
-                this.boundUnsetHero,
-            );
-        }
-        if (this.hasInlineFieldTarget) {
-            this.inlineFieldTarget.addEventListener(
-                "change",
-                this.boundInlineChange,
-            );
         }
 
         this.updateHeroImageState();
@@ -66,51 +51,47 @@ export default class extends Controller {
     }
 
     disconnect() {
-        document.removeEventListener(
-            "turbo:before-render",
-            this.boundBeforeRender,
-        );
-        document.removeEventListener(
-            "turbo:before-cache",
-            this.boundBeforeCache,
-        );
-        document.removeEventListener("turbo:load", this.boundTurboLoad);
+        this.prepareForNavigation();
+    }
 
-        if (this.hasHeroFieldTarget) {
-            this.heroFieldTarget.removeEventListener(
-                "change",
-                this.boundHeroChange,
-            );
-        }
-        if (this.hasUnsetHeroButtonTarget) {
-            this.unsetHeroButtonTarget.removeEventListener(
-                "click",
-                this.boundUnsetHero,
-            );
-        }
-        if (this.hasInlineFieldTarget) {
-            this.inlineFieldTarget.removeEventListener(
-                "change",
-                this.boundInlineChange,
-            );
-        }
+    beforeCache() {
+        this.prepareForNavigation();
+    }
 
-        if (this.tinyMceRetryTimer) {
+    beforeRender() {
+        this.prepareForNavigation();
+    }
+
+    prepareForNavigation() {
+        this.isCaching = true;
+        if (this.tinyMceRetryTimer !== null) {
             window.clearTimeout(this.tinyMceRetryTimer);
             this.tinyMceRetryTimer = null;
         }
 
+        this.lifecycleAbortController?.abort();
+        this.lifecycleAbortController = null;
+        this.activeUploadXhrs?.forEach((xhr) => {
+            if (typeof xhr.abort === "function") {
+                xhr.abort();
+            }
+        });
+        this.activeUploadXhrs?.clear();
         this.destroyTinyMCE();
     }
 
     onTurboLoad() {
-        // Re-initialize TinyMCE after successful Turbo navigation
-        // This ensures the editor is properly set up even if destroyed during navigation
+        this.isCaching = false;
+        this.lifecycleAbortController = new AbortController();
         this.tinyMceRetryCount = 0;
         this.initTinyMceWhenReady();
     }
 
     initTinyMceWhenReady() {
+        if (this.isCaching) {
+            return;
+        }
+
         if (!this.hasEditorTarget) {
             return;
         }
@@ -121,12 +102,16 @@ export default class extends Controller {
         }
 
         if (typeof window.tinymce === "undefined") {
+            if (this.tinyMceRetryTimer !== null) {
+                return;
+            }
             if (this.tinyMceRetryCount >= TINYMCE_MAX_RETRIES) {
                 return;
             }
 
             this.tinyMceRetryCount += 1;
             this.tinyMceRetryTimer = window.setTimeout(() => {
+                this.tinyMceRetryTimer = null;
                 this.initTinyMceWhenReady();
             }, TINYMCE_RETRY_DELAY_MS);
             return;
@@ -228,7 +213,7 @@ export default class extends Controller {
                     ],
                 },
             ],
-            content_css: "/css/blog-content.css",
+            content_css: blogContentCssUrl,
             content_style:
                 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 1.125rem; line-height: 1.8; padding: 1rem; max-width: 100%; } img { max-width: 100%; height: auto; border-radius: 6px; }',
             image_title: true,
@@ -240,32 +225,31 @@ export default class extends Controller {
             relative_urls: false,
             images_upload_handler: (blobInfo, progress) => {
                 return new Promise((resolve, reject) => {
-                    // Client-side preflight: reject files larger than configured max
-                    try {
-                        const maxMeta = document.querySelector(
-                            'meta[name="maxUploadBytes"]',
+                    const blob = blobInfo.blob();
+                    if (
+                        this.maxUploadBytesValue > 0 &&
+                        blob.size > this.maxUploadBytesValue
+                    ) {
+                        reject(
+                            "File too large. Maximum allowed: " +
+                                (
+                                    this.maxUploadBytesValue /
+                                    1024 /
+                                    1024
+                                ).toFixed(1) +
+                                "MB",
                         );
-                        const maxBytes = maxMeta
-                            ? parseInt(
-                                  maxMeta.getAttribute("content") || "0",
-                                  10,
-                              )
-                            : 0;
-                        const blob = blobInfo.blob();
-                        if (maxBytes > 0 && blob.size > maxBytes) {
-                            reject(
-                                "File too large. Maximum allowed: " +
-                                    (maxBytes / 1024 / 1024).toFixed(1) +
-                                    "MB",
-                            );
-                            return;
-                        }
-                    } catch {
-                        // ignore and continue to attempt upload
+                        return;
                     }
 
                     const sendUpload = (attempt = 0) => {
+                        if (this.isCaching || !this.element.isConnected) {
+                            reject("Upload cancelled");
+                            return;
+                        }
+
                         const xhr = new window.XMLHttpRequest();
+                        this.activeUploadXhrs.add(xhr);
                         xhr.open("POST", uploadUrl);
                         xhr.withCredentials = true;
                         xhr.upload.onprogress = (event) => {
@@ -274,6 +258,12 @@ export default class extends Controller {
                             }
                         };
                         xhr.onload = async () => {
+                            this.activeUploadXhrs.delete(xhr);
+                            if (this.isCaching || !this.element.isConnected) {
+                                reject("Upload cancelled");
+                                return;
+                            }
+
                             const responseText = String(xhr.responseText || "");
 
                             if (xhr.status < 200 || xhr.status >= 300) {
@@ -283,6 +273,13 @@ export default class extends Controller {
                                     this.looksLikeCsrfFailure(responseText)
                                 ) {
                                     await this.refreshCsrfContext();
+                                    if (
+                                        this.isCaching ||
+                                        !this.element.isConnected
+                                    ) {
+                                        reject("Upload cancelled");
+                                        return;
+                                    }
                                     sendUpload(1);
                                     return;
                                 }
@@ -327,7 +324,14 @@ export default class extends Controller {
 
                             resolve(json.image.url);
                         };
-                        xhr.onerror = () => reject("Image upload failed");
+                        xhr.onerror = () => {
+                            this.activeUploadXhrs.delete(xhr);
+                            reject("Image upload failed");
+                        };
+                        xhr.onabort = () => {
+                            this.activeUploadXhrs.delete(xhr);
+                            reject("Upload cancelled");
+                        };
 
                         const formData = new FormData();
                         formData.append(
@@ -364,23 +368,26 @@ export default class extends Controller {
     }
 
     destroyTinyMCE() {
-        if (typeof window.tinymce === "undefined") {
+        if (
+            typeof window.tinymce === "undefined" ||
+            !this.hasEditorTarget ||
+            !this.editorTarget.id
+        ) {
             return;
         }
 
         try {
-            const editor = window.tinymce.get("body-editor");
+            const editor = window.tinymce.get(this.editorTarget.id);
             // Save content before removing to prevent data loss
             if (
                 editor &&
                 typeof editor === "object" &&
-                typeof editor.getContent === "function" &&
-                this.hasEditorTarget
+                typeof editor.getContent === "function"
             ) {
                 this.editorTarget.value = editor.getContent();
             }
             // Remove the editor instance (use editor object or selector string)
-            window.tinymce.remove(editor || "#body-editor");
+            window.tinymce.remove(editor || `#${this.editorTarget.id}`);
         } catch (e) {
             console.warn("Error destroying TinyMCE editor:", e);
         }
@@ -490,12 +497,9 @@ export default class extends Controller {
             return scopedFormToken;
         }
 
-        const metaToken = document
-            .querySelector('meta[name="csrfToken"]')
-            ?.getAttribute("content")
-            ?.trim();
-        if (metaToken) {
-            return metaToken;
+        const configuredToken = this.csrfTokenValue?.trim();
+        if (configuredToken) {
+            return configuredToken;
         }
 
         return this.readCookie("csrfToken") || this.readCookie("_csrfToken");
@@ -531,6 +535,7 @@ export default class extends Controller {
                 method: "GET",
                 credentials: "same-origin",
                 cache: "no-store",
+                signal: this.lifecycleAbortController?.signal,
                 headers: {
                     Accept: "text/html",
                     "X-Requested-With": "XMLHttpRequest",

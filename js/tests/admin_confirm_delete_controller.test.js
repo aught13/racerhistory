@@ -6,7 +6,6 @@ import AdminConfirmDeleteController from "../controllers/admin_confirm_delete_co
 
 describe("admin-confirm-delete controller", () => {
     let application;
-    let showSpy;
     let requestSubmitMock;
 
     const getController = async () => {
@@ -37,8 +36,14 @@ describe("admin-confirm-delete controller", () => {
             <div
                 id="confirm-delete-modal"
                 data-controller="admin-confirm-delete"
-                data-action="show.bs.modal->admin-confirm-delete#onShow"
+                data-action="admin:confirm-delete@document->admin-confirm-delete#open show.bs.modal->admin-confirm-delete#onShow"
             >
+                <button
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirm-delete-modal"
+                    data-admin-confirm-delete-target="openTrigger"
+                ></button>
                 <ul id="confirm-delete-modal-assoc" data-admin-confirm-delete-target="associated"></ul>
                 <form id="confirm-delete-modal-hidden-form" data-admin-confirm-delete-target="hiddenForm">
                     <input type="hidden" name="_csrfToken" value="test-token" />
@@ -48,10 +53,9 @@ describe("admin-confirm-delete controller", () => {
             <form id="delete-form-seasons-bulk" action="/admin/seasons/source-action"></form>
         `;
 
-        showSpy = jest.fn();
         global.bootstrap = {
             Modal: {
-                getOrCreateInstance: jest.fn(() => ({ show: showSpy })),
+                getOrCreateInstance: jest.fn(),
             },
         };
 
@@ -76,16 +80,26 @@ describe("admin-confirm-delete controller", () => {
         }
 
         delete global.bootstrap;
-        delete window.__rhStimulusShowConfirmDelete;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
+
+    const dispatchConfirmDelete = (detail) => {
+        document.body.dispatchEvent(
+            new CustomEvent("admin:confirm-delete", {
+                bubbles: true,
+                detail,
+            }),
+        );
+    };
 
     test("populates associated list from bootstrap trigger dataset", async () => {
         const modal = document.getElementById("confirm-delete-modal");
         const trigger = document.createElement("button");
         trigger.dataset.deleteUrl = "/admin/seasons/delete/10";
         trigger.dataset.associated = '["Season 2023-2024"]';
+        trigger.setAttribute("form", "delete-form-seasons-bulk");
+        document.body.appendChild(trigger);
 
         await Promise.resolve();
         const event = new Event("show.bs.modal");
@@ -95,31 +109,46 @@ describe("admin-confirm-delete controller", () => {
         const list = document.getElementById("confirm-delete-modal-assoc");
         expect(list.children).toHaveLength(1);
         expect(list.children[0].textContent).toBe("Season 2023-2024");
+        expect(
+            application.controllers.find(
+                (controller) =>
+                    controller.identifier === "admin-confirm-delete",
+            ).modalContext.sourceForm,
+        ).toBe(document.getElementById("delete-form-seasons-bulk"));
+        trigger.remove();
     });
 
-    test("exposes the Stimulus confirm-delete bridge", async () => {
-        await Promise.resolve();
+    test("opens through a document event and declarative Bootstrap trigger", async () => {
+        const controller = await getController();
+        const click = jest.spyOn(controller.openTriggerTarget, "click");
 
-        expect(typeof window.__rhStimulusShowConfirmDelete).toBe("function");
-        window.__rhStimulusShowConfirmDelete({
+        dispatchConfirmDelete({
             deleteUrl: "/admin/teams/delete/1",
             associated: ["Team A"],
+            sourceForm: document.getElementById("delete-form-seasons-bulk"),
         });
 
-        expect(showSpy).toHaveBeenCalledTimes(1);
+        expect(click).toHaveBeenCalledTimes(1);
+        expect(controller.openTriggerTarget.dataset.bsToggle).toBe("modal");
+        expect(controller.openTriggerTarget.dataset.bsTarget).toBe(
+            "#confirm-delete-modal",
+        );
+        expect(controller.modalContext.sourceForm).toBe(
+            document.getElementById("delete-form-seasons-bulk"),
+        );
         const list = document.getElementById("confirm-delete-modal-assoc");
         expect(list.children).toHaveLength(1);
         expect(list.children[0].textContent).toBe("Team A");
     });
 
-    test("submits source form when formId is provided", async () => {
+    test("submits an explicitly provided source form", async () => {
         await Promise.resolve();
 
-        window.__rhStimulusShowConfirmDelete({
+        dispatchConfirmDelete({
             deleteUrl: "/admin/seasons/delete/bulk",
             ids: [10, 11],
             idsName: "season_ids[]",
-            formId: "delete-form-seasons-bulk",
+            sourceForm: document.getElementById("delete-form-seasons-bulk"),
             bulkAction: "delete",
         });
 
@@ -139,12 +168,11 @@ describe("admin-confirm-delete controller", () => {
     test("falls back to temporary form with tokens when source form is missing", async () => {
         await Promise.resolve();
 
-        window.__rhStimulusShowConfirmDelete({
+        dispatchConfirmDelete({
             deleteUrl: "/admin/users/bulk",
             ids: "[7,8]",
             idsName: "user_ids[]",
             bulkAction: "delete",
-            formId: "missing-form",
         });
 
         document.getElementById("confirm-delete-modal-delete-btn").click();
@@ -184,27 +212,23 @@ describe("admin-confirm-delete controller", () => {
         setContextSpy.mockRestore();
     });
 
-    test("open falls back to display block without bootstrap and defaults empty context", async () => {
+    test("open relies on its declarative Bootstrap trigger and defaults empty context", async () => {
         const controller = await getController();
         delete global.bootstrap;
+        delete window.bootstrap;
 
+        const click = jest.spyOn(controller.openTriggerTarget, "click");
         controller.element.style.display = "";
         controller.open();
 
         expect(controller.modalContext).toEqual({});
-        expect(controller.element.style.display).toBe("block");
+        expect(click).toHaveBeenCalledTimes(1);
+        expect(controller.element.style.display).toBe("");
     });
 
-    test("disconnect only removes bridge when handler matches", async () => {
-        const controller = await getController();
-        const otherHandler = () => {};
+    test("does not publish a window callback", async () => {
+        await getController();
 
-        window.__rhStimulusShowConfirmDelete = otherHandler;
-        controller.disconnect();
-        expect(window.__rhStimulusShowConfirmDelete).toBe(otherHandler);
-
-        window.__rhStimulusShowConfirmDelete = controller.globalShowHandler;
-        controller.disconnect();
         expect(window.__rhStimulusShowConfirmDelete).toBeUndefined();
     });
 
@@ -258,7 +282,7 @@ describe("admin-confirm-delete controller", () => {
         const controller = await getController();
         const source = document.getElementById("delete-form-seasons-bulk");
 
-        controller.modalContext = { formId: "delete-form-seasons-bulk" };
+        controller.modalContext = { sourceForm: source };
         expect(controller.resolveSourceForm()).toBe(source);
 
         controller.modalContext = {};
@@ -268,7 +292,7 @@ describe("admin-confirm-delete controller", () => {
         source.setAttribute("action", "/admin/seasons/custom-action");
         controller.modalContext = {
             deleteUrl: "/admin/fallback-action",
-            formId: "delete-form-seasons-bulk",
+            sourceForm: source,
         };
         expect(controller.resolvePostAction(source)).toContain(
             "/admin/seasons/custom-action",
@@ -410,7 +434,7 @@ describe("admin-confirm-delete controller", () => {
         tokenField.value = "some-hash";
         hiddenForm.appendChild(tokenField);
 
-        window.__rhStimulusShowConfirmDelete({
+        dispatchConfirmDelete({
             deleteUrl: "/admin/persons/delete/1",
         });
 
@@ -438,7 +462,7 @@ describe("admin-confirm-delete controller", () => {
         );
         hiddenForm.setAttribute("action", "/admin/team-seasons");
 
-        window.__rhStimulusShowConfirmDelete({
+        dispatchConfirmDelete({
             deleteUrl: "/admin/team-seasons/delete/1",
         });
 

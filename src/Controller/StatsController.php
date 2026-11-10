@@ -3,10 +3,18 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\PublicSportScopeService;
 use App\Service\SportConfigService;
 use App\Service\StatsService;
+use App\Service\StatsViewService;
+use App\Service\TeamSeasonService;
+use App\Service\TeamSportContextService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
+use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Routing\Router;
 
 /**
@@ -47,14 +55,58 @@ use Cake\Routing\Router;
 class StatsController extends AppController
 {
     /**
+     * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}|null
+     */
+    private ?array $resolvedPublicScope = null;
+
+    private PublicSportScopeService $publicSportScopeService;
+
+    private TeamSportContextService $teamSportContextService;
+
+    private TeamSeasonService $teamSeasonService;
+
+    /**
      * @var \App\Service\StatsService
      */
     protected StatsService $statsService;
+
+    private StatsViewService $statsViewService;
 
     /**
      * @var \App\Service\SportConfigService
      */
     protected SportConfigService $sportConfigService;
+
+    /**
+     * Create the controller with the services used to render statistics.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\StatsService $statsService The statistics service.
+     * @param \App\Service\StatsViewService $statsViewService The statistics view service.
+     * @param \App\Service\SportConfigService $sportConfigService The sport configuration service.
+     * @param \App\Service\PublicSportScopeService $publicSportScopeService The public sport scope service.
+     * @param \App\Service\TeamSportContextService $teamSportContextService The team sport context service.
+     * @param \App\Service\TeamSeasonService $teamSeasonService The team season service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        StatsService $statsService,
+        StatsViewService $statsViewService,
+        SportConfigService $sportConfigService,
+        PublicSportScopeService $publicSportScopeService,
+        TeamSportContextService $teamSportContextService,
+        TeamSeasonService $teamSeasonService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->statsService = $statsService;
+        $this->statsViewService = $statsViewService;
+        $this->sportConfigService = $sportConfigService;
+        $this->publicSportScopeService = $publicSportScopeService;
+        $this->teamSportContextService = $teamSportContextService;
+        $this->teamSeasonService = $teamSeasonService;
+    }
 
     /**
      * Allowed stat types and their labels.
@@ -79,8 +131,6 @@ class StatsController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
-        $this->statsService = new StatsService();
-        $this->sportConfigService = new SportConfigService();
     }
 
     /**
@@ -126,10 +176,17 @@ class StatsController extends AppController
             $filters['team_id'] = (int)$teamId;
         }
 
+        $publicTeamId = $this->getResolvedPublicScope()['teamId'];
+        if ($publicTeamId !== null) {
+            $filters['public_team_id'] = $publicTeamId;
+        }
+
         $gameId = $request->getQuery('game_id');
         if ($gameId !== null && $gameId !== '') {
             $filters['game_id'] = (int)$gameId;
         }
+
+        $filters['limit'] = 0;
 
         return $filters;
     }
@@ -159,18 +216,6 @@ class StatsController extends AppController
     }
 
     /**
-     * Build a safe HTML anchor tag.
-     *
-     * @param string $text
-     * @param array $url
-     * @return string
-     */
-    protected function link(string $text, array $url): string
-    {
-        return '<a href="' . h(Router::url($url)) . '">' . h($text) . '</a>';
-    }
-
-    /**
      * Resolve sport ID from query param, defaulting to basketball.
      *
      * @return int
@@ -178,37 +223,55 @@ class StatsController extends AppController
     protected function resolveSportId(): int
     {
         $sport = $this->resolveCurrentSport();
-        $sportId = $this->statsService->getSportIdByName((string)$sport);
-
-        if ($sportId !== null) {
-            return $sportId;
+        if ($sport === null) {
+            throw new BadRequestException('Choose a sport before viewing statistics.');
         }
 
-        $defaultSportName = $this->sportConfigService->getSportDisplayName(
-            $this->sportConfigService->getDefaultSportKey(),
-        );
-        $fallbackSportId = $this->statsService->getSportIdByName($defaultSportName);
-
-        if ($fallbackSportId !== null) {
-            return $fallbackSportId;
+        $sportId = $this->statsService->getSportIdByName($sport);
+        if ($sportId === null || !$this->statsService->hasSportSupport($sportId)) {
+            throw new BadRequestException('Statistics are not available for the selected sport.');
         }
 
-        $defaultSportId = $this->sportConfigService->getIdByKey($this->sportConfigService->getDefaultSportKey());
-
-        return $defaultSportId ?? 0;
+        return $sportId;
     }
 
     /**
-     * Resolve current sport query param with configured default fallback.
+     * Resolve the selected supported sport, or null when no sport is selected.
      */
-    protected function resolveCurrentSport(): string
+    protected function resolveCurrentSport(): ?string
     {
-        $sport = $this->getRequest()->getQuery('sport');
-        if (is_string($sport) && trim($sport) !== '') {
-            return trim($sport);
+        $sport = $this->getResolvedPublicScope()['sportKey'];
+        if ($sport === null) {
+            return null;
         }
 
-        return $this->sportConfigService->getDefaultSportKey();
+        $sportId = $this->statsService->getSportIdByName($sport);
+        if ($sportId === null || !$this->statsService->hasSportSupport($sportId)) {
+            throw new BadRequestException('Statistics are not available for the selected sport.');
+        }
+
+        return $this->sportConfigService->getKeyById($sportId);
+    }
+
+    /**
+     * Resolve the validated public sport/team scope once per request.
+     *
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    private function getResolvedPublicScope(): array
+    {
+        if ($this->resolvedPublicScope !== null) {
+            return $this->resolvedPublicScope;
+        }
+
+        $scope = $this->publicSportScopeService->resolve($this->getRequest()->getQueryParams());
+        if (!$scope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        $this->resolvedPublicScope = $scope;
+
+        return $this->resolvedPublicScope;
     }
 
     /**
@@ -216,7 +279,26 @@ class StatsController extends AppController
      */
     public function index(): void
     {
-        $this->set('currentSport', $this->resolveCurrentSport());
+        $this->set([
+            'currentSport' => $this->resolveCurrentSport(),
+            'supportedSports' => $this->getSupportedSportOptions(),
+        ]);
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    private function getSupportedSportOptions(): array
+    {
+        $options = [];
+        foreach ($this->statsService->getSupportedSports() as $sportKey) {
+            $sportId = $this->sportConfigService->getIdByKey((string)$sportKey);
+            if ($sportId !== null && $this->statsService->hasSportSupport($sportId)) {
+                $options[(string)$sportKey] = $this->sportConfigService->getSportDisplayName((string)$sportKey);
+            }
+        }
+
+        return $options;
     }
 
     /**
@@ -230,9 +312,9 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchPlayerSeasonStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchPlayerSeasonStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatPlayerSeasonRows($results, $sportId));
+            return $this->jsonResponse($this->statsViewService->playerSeasonRows($results, $sportId));
         }
 
         $this->set('statType', 'player-season');
@@ -253,9 +335,9 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchTeamSeasonStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchTeamSeasonStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatTeamSeasonRows($results, $sportId));
+            return $this->jsonResponse($this->statsViewService->teamSeasonRows($results, $sportId));
         }
 
         $this->set('statType', 'team-season');
@@ -276,9 +358,9 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchTeamSeasonOpponentStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchTeamSeasonOpponentStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatTeamSeasonRows($results, $sportId));
+            return $this->jsonResponse($this->statsViewService->teamSeasonRows($results, $sportId));
         }
 
         $this->set('statType', 'team-season-opponent');
@@ -299,9 +381,9 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchPlayerCareerStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchPlayerCareerStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatPlayerCareerRows($results, $sportId));
+            return $this->jsonResponse($this->statsViewService->playerCareerRows($results, $sportId));
         }
 
         $this->set('statType', 'player-career');
@@ -322,9 +404,9 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchPlayerGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchPlayerGameStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatPlayerGameRows($results, $sportId));
+            return $this->jsonResponse($this->statsViewService->playerGameRows($results, $sportId));
         }
 
         $this->set('statType', 'player-game');
@@ -345,9 +427,11 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchTeamGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchTeamGameStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatTeamGameRows($results, $sportId, 'team-game'));
+            return $this->jsonResponse(
+                $this->statsViewService->teamGameRows($results, $sportId, 'team-game'),
+            );
         }
 
         $this->set('statType', 'team-game');
@@ -368,9 +452,11 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchOpponentTeamGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchOpponentTeamGameStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatTeamGameRows($results, $sportId, 'opponent-team-game'));
+            return $this->jsonResponse(
+                $this->statsViewService->teamGameRows($results, $sportId, 'opponent-team-game'),
+            );
         }
 
         $this->set('statType', 'opponent-team-game');
@@ -391,9 +477,11 @@ class StatsController extends AppController
         $currentSport = $this->resolveCurrentSport();
 
         if ($this->isJsonRequest()) {
-            $results = $this->statsService->searchOpponentPlayerGameStats($sportId, ['limit' => 0]);
+            $results = $this->statsService->searchOpponentPlayerGameStats($sportId, $this->getFilters());
 
-            return $this->jsonResponse($this->formatOpponentPlayerGameRows($results, $sportId));
+            return $this->jsonResponse(
+                $this->statsViewService->opponentPlayerGameRows($results, $sportId),
+            );
         }
 
         $this->set('statType', 'opponent-player-game');
@@ -411,11 +499,8 @@ class StatsController extends AppController
      */
     public function season(int $teamSeasonId)
     {
-        $teamSeasonsTable = $this->fetchTable('TeamSeasons');
-        $teamSeason = $teamSeasonsTable->find()
-            ->contain(['Teams', 'Seasons'])
-            ->where(['TeamSeasons.id' => $teamSeasonId])
-            ->first();
+        $selectedSportId = $this->resolveSportId();
+        $teamSeason = $this->teamSeasonService->getTeamSeasonById($teamSeasonId);
 
         if (!$teamSeason) {
             $this->Flash->error('Season not found');
@@ -423,227 +508,20 @@ class StatsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
+        $teamSportId = $this->teamSportContextService
+            ->resolveSportIdFromTeam($teamSeason->team ?? null);
+        if ($teamSportId !== $selectedSportId) {
+            throw new NotFoundException('Statistics not found for the selected sport.');
+        }
+        $selectedTeamId = $this->getResolvedPublicScope()['teamId'];
+        if ($selectedTeamId !== null && $selectedTeamId !== (int)$teamSeason->get('team_id')) {
+            throw new NotFoundException('Statistics not found for the selected team.');
+        }
+
         $playerStats = $this->statsService->getSeasonPlayerStatsList($teamSeasonId);
 
-        $this->set(compact('teamSeason', 'playerStats'));
+        $this->set(compact('teamSeason', 'playerStats') + ['currentSport' => $this->resolveCurrentSport()]);
 
         return null;
-    }
-
-    /**
-     * Format player season results for DataTables JSON.
-     *
-     * @param array $results
-     * @param int $sportId
-     * @return array<int, array>
-     */
-    protected function formatPlayerSeasonRows(array $results, int $sportId): array
-    {
-        $rows = [];
-        foreach ($results as $row) {
-            $stat = $row['stat'];
-            $person = $row['person'] ?? null;
-            $ts = $row['teamSeason'] ?? null;
-
-            $playerCell = $person
-                ? $this->link(
-                    $person->display ?? $person->label,
-                    ['controller' => 'People', 'action' => 'view', $person->id],
-                )
-                : '-';
-
-            $rows[] = array_merge(
-                [
-                    $playerCell,
-                    h($ts->team->team_name ?? '-'),
-                    h(($ts->season->start ?? '') . '-' . ($ts->season->end ?? '')),
-                ],
-                $this->statsService->getPlayerSeasonStatCells($sportId, $stat),
-            );
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format team season (and opponent) results for DataTables JSON.
-     *
-     * @param array $results
-     * @param int $sportId
-     * @return array<int, array>
-     */
-    protected function formatTeamSeasonRows(array $results, int $sportId): array
-    {
-        $rows = [];
-        foreach ($results as $row) {
-            $stat = $row['stat'];
-            $ts = $row['teamSeason'] ?? null;
-
-            $seasonCell = $ts
-                ? $this->link(
-                    ($ts->season->start ?? '') . '-' . ($ts->season->end ?? ''),
-                    ['controller' => 'Seasons', 'action' => 'view', $ts->id],
-                )
-                : '-';
-
-            $rows[] = array_merge(
-                [
-                    h($ts->team->team_name ?? '-'),
-                    $seasonCell,
-                ],
-                $this->statsService->getTeamSeasonStatCells($sportId, $stat),
-            );
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format player career results for DataTables JSON.
-     *
-     * @param array $results
-     * @param int $sportId
-     * @return array<int, array>
-     */
-    protected function formatPlayerCareerRows(array $results, int $sportId): array
-    {
-        $rows = [];
-        foreach ($results as $row) {
-            $person = $row['person'] ?? null;
-            $totals = $row['totals'];
-            $seasons = $row['seasons'];
-
-            $playerCell = $person
-                ? $this->link(
-                    $person->display ?? $person->label,
-                    ['controller' => 'People', 'action' => 'view', $person->id],
-                )
-                : '-';
-
-            $rows[] = array_merge(
-                [$playerCell, (int)$seasons],
-                $this->statsService->getPlayerCareerStatCells($sportId, $totals),
-            );
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format player game results for DataTables JSON.
-     *
-     * @param array $results
-     * @param int $sportId
-     * @return array<int, array>
-     */
-    protected function formatPlayerGameRows(array $results, int $sportId): array
-    {
-        $rows = [];
-        foreach ($results as $row) {
-            $stat = $row['stat'];
-            $person = $row['person'] ?? null;
-            $game = $row['game'] ?? null;
-
-            $playerCell = $person
-                ? $this->link(
-                    $person->display ?? $person->label,
-                    ['controller' => 'People', 'action' => 'view', $person->id],
-                )
-                : '-';
-
-            $opponentCell = $game
-                ? $this->link(
-                    $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
-                    ['controller' => 'Games', 'action' => 'view', $game->id],
-                )
-                : '-';
-
-            $rows[] = array_merge(
-                [
-                    $playerCell,
-                    $opponentCell,
-                    h((string)($game->game_date ?? '-')),
-                ],
-                $this->statsService->getPlayerGameStatCells($sportId, $stat),
-            );
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format team game box score results for DataTables JSON.
-     *
-     * @param array $results
-     * @param int $sportId
-     * @param string $statType
-     * @return array<int, array>
-     */
-    protected function formatTeamGameRows(array $results, int $sportId, string $statType): array
-    {
-        $rows = [];
-        foreach ($results as $row) {
-            $stat = $row['stat'];
-            $game = $row['game'] ?? null;
-
-            if ($statType === 'team-game') {
-                $opponentText = ($game->team_season->team->abbr ?? '???') . ' Vs ' .
-                    ($game->opponent->opponent_short ?? $game->opponent->opponent_name ?? '???');
-            } else {
-                $opponentText = ($game->opponent->opponent_short ?? $game->opponent->opponent_name ?? '???') . ' Vs ' .
-                    ($game->team_season->team->abbr ?? '???');
-            }
-
-            $opponentCell = $game ? $this->link(
-                $opponentText,
-                ['controller' => 'Games', 'action' => 'view', $game->id],
-            ) : '-';
-
-            $rows[] = array_merge(
-                [
-                    $opponentCell,
-                    h((string)($game->game_date ?? '-')),
-                ],
-                $this->statsService->getTeamGameStatCells($sportId, $stat),
-            );
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Format opponent player game results for DataTables JSON.
-     *
-     * @param array $results
-     * @param int $sportId
-     * @return array<int, array>
-     */
-    protected function formatOpponentPlayerGameRows(array $results, int $sportId): array
-    {
-        $rows = [];
-        foreach ($results as $row) {
-            $stat = $row['stat'];
-            $game = $row['game'] ?? null;
-
-            $nameCell = h($this->statsService->getOpponentPlayerName($sportId, $stat)) ?: '-';
-
-            $opponentCell = $game
-                ? $this->link(
-                    $game->opponent->opponent_short ?? $game->opponent->opponent_name ?? 'vs ???',
-                    ['controller' => 'Games', 'action' => 'view', $game->id],
-                )
-                : '-';
-
-            $rows[] = array_merge(
-                [
-                    $nameCell,
-                    $opponentCell,
-                    h((string)($game->game_date ?? '-')),
-                ],
-                $this->statsService->getOpponentPlayerGameStatCells($sportId, $stat),
-            );
-        }
-
-        return $rows;
     }
 }

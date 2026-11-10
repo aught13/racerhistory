@@ -47,9 +47,11 @@ class OpponentServiceTest extends TestCase
      */
     public function testGetDisplayLabel(): void
     {
+        $opponent = $this->service->getOpponentById(1);
         $label = $this->service->getDisplayLabel(1);
-        $this->assertIsString($label);
-        $this->assertNotEmpty($label);
+
+        $this->assertNotNull($opponent);
+        $this->assertSame($opponent->getDisplayName(), $label);
     }
 
     /**
@@ -68,6 +70,26 @@ class OpponentServiceTest extends TestCase
     {
         $results = $this->service->searchOpponents('Test', 10);
         $this->assertIsArray($results);
+    }
+
+    /**
+     * Mascot names are included in opponent search.
+     */
+    public function testSearchOpponentsMatchesMascot(): void
+    {
+        $opponents = $this->getTableLocator()->get('Opponents');
+        if (!$opponents->getSchema()->hasColumn('opponent_mascot')) {
+            $this->markTestSkipped('Test schema does not include opponent_mascot.');
+        }
+        $opponent = $opponents->get(1);
+        $opponent->opponent_short = 'Belmont';
+        $opponent->opponent_mascot = 'Bruins';
+        $opponents->saveOrFail($opponent);
+
+        $results = $this->service->searchOpponents('Bruins');
+
+        $this->assertCount(1, $results);
+        $this->assertSame('Bruins', $results[0]->opponent_mascot);
     }
 
     /**
@@ -159,6 +181,21 @@ class OpponentServiceTest extends TestCase
             $first = $results[0];
             $this->assertArrayHasKey('id', $first);
             $this->assertArrayHasKey('label', $first);
+            $opponent = $this->service->getOpponentById((int)$first['id']);
+            $this->assertNotNull($opponent);
+            $this->assertSame($opponent->getDisplayName(), $first['label']);
         }
+    }
+
+    /**
+     * FormHelper opponent lists use the canonical default display name.
+     */
+    public function testGetOpponentsListUsesDisplayName(): void
+    {
+        $opponent = $this->service->getOpponentById(1);
+        $list = $this->service->getOpponentsList();
+
+        $this->assertNotNull($opponent);
+        $this->assertSame($opponent->getDisplayName(), $list[1]);
     }
 }

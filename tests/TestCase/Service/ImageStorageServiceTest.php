@@ -3,14 +3,18 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Table\ImagesTable;
 use App\Service\ImageProcessor;
 use App\Service\ImageStorageService;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use Laminas\Diactoros\UploadedFile;
 
 class ImageStorageServiceTest extends TestCase
 {
+    use TaggingServiceFactoryTestTrait;
+
     /**
      * @var array<int,string>
      */
@@ -30,7 +34,7 @@ class ImageStorageServiceTest extends TestCase
         $this->legacyRoot = rtrim((string)Configure::read('Images.legacyStorageRoot'), DS) . DS;
         $this->clearDir($this->storageRoot);
         $this->clearDir($this->legacyRoot);
-        $this->service = new ImageStorageService();
+        $this->service = $this->createStorageService(new ImageProcessor());
     }
 
     /**
@@ -42,6 +46,20 @@ class ImageStorageServiceTest extends TestCase
         $this->clearDir($this->legacyRoot);
 
         parent::tearDown();
+    }
+
+    /**
+     * Create the storage service with a test-backed images table.
+     *
+     * @param \App\Service\ImageProcessor $processor The image processor.
+     * @return \App\Service\ImageStorageService
+     */
+    private function createStorageService(ImageProcessor $processor): ImageStorageService
+    {
+        $imagesTable = $this->getTableLocator()->get('Images');
+        assert($imagesTable instanceof ImagesTable);
+
+        return new ImageStorageService($processor, $this->taggingServiceFactory(), $imagesTable);
     }
 
     /**
@@ -142,6 +160,7 @@ class ImageStorageServiceTest extends TestCase
                 'width' => 100,
                 'height' => 50,
                 'hash' => hash('sha256', $originalData),
+                'photo_credit' => 'Original Photographer',
                 'variants' => json_encode([
                     'thumb' => [
                         'file' => 'seed-thumb.webp',
@@ -158,7 +177,7 @@ class ImageStorageServiceTest extends TestCase
                 ->onlyMethods(['process'])
                 ->getMock();
 
-            $processor->expects($this->once())->method('process')->willReturn([
+            $processor->expects($this->exactly(2))->method('process')->willReturn([
                 'original' => [
                     'data' => $originalData,
                     'width' => 100,
@@ -184,7 +203,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),
@@ -193,7 +212,7 @@ class ImageStorageServiceTest extends TestCase
                 'image/png',
             );
 
-            $result = $service->upload($uploadedFile);
+            $result = $service->upload($uploadedFile, [], [], null, 'Updated Photographer');
 
             $this->assertTrue($result['success'] ?? false, 'Duplicate upload should succeed');
             $this->assertTrue($result['existing'] ?? false, 'Duplicate upload should return existing image');
@@ -202,6 +221,7 @@ class ImageStorageServiceTest extends TestCase
             $this->assertSame('MEDIUM-BYTES', (string)file_get_contents($baseDir . 'seed-medium.webp'));
 
             $reloaded = $images->get(1);
+            $this->assertSame('Updated Photographer', $reloaded->photo_credit);
             $variants = $reloaded->variants;
             if (is_string($variants)) {
                 $variants = json_decode($variants, true);
@@ -218,6 +238,10 @@ class ImageStorageServiceTest extends TestCase
             $this->assertSame(100, $variants['medium']['width']);
             $this->assertSame(50, $variants['medium']['height']);
             $this->assertSame('image/webp', $variants['medium']['mime']);
+
+            $resultWithoutCredit = $service->upload($uploadedFile, [], [], null, '  ');
+            $this->assertTrue($resultWithoutCredit['success'] ?? false);
+            $this->assertSame('Updated Photographer', $images->get(1)->photo_credit);
         } finally {
             if (is_file($uploadPath)) {
                 unlink($uploadPath);
@@ -294,7 +318,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),
@@ -392,7 +416,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),
@@ -494,7 +518,7 @@ class ImageStorageServiceTest extends TestCase
                 ],
             ]);
 
-            $service = new ImageStorageService($processor, null);
+            $service = $this->createStorageService($processor);
             $uploadedFile = new UploadedFile(
                 $uploadPath,
                 filesize($uploadPath),

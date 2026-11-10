@@ -5,6 +5,7 @@ import ImageSelectorController from "../controllers/image_selector_controller.js
 import SeasonFormController from "../controllers/season_form_controller.js";
 import SportsConfigsFormController from "../controllers/sports_configs_form_controller.js";
 import SportsFormController from "../controllers/sports_form_controller.js";
+import TeamNamePreviewController from "../controllers/team_name_preview_controller.js";
 import TeamSeasonFormController from "../controllers/team_season_form_controller.js";
 import TeamSeasonImageController from "../controllers/team_season_image_controller.js";
 
@@ -16,6 +17,7 @@ export function registerAdminTaxonomyControllers(stimulus) {
     stimulus.register("season-form", SeasonFormController);
     stimulus.register("sports-configs-form", SportsConfigsFormController);
     stimulus.register("sports-form", SportsFormController);
+    stimulus.register("team-name-preview", TeamNamePreviewController);
     stimulus.register("team-season-form", TeamSeasonFormController);
     stimulus.register("team-season-image", TeamSeasonImageController);
 }

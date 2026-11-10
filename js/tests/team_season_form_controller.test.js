@@ -37,6 +37,12 @@ describe("team-season-form controller", () => {
         } = options;
 
         return `
+            <select id="team-id" data-team-season-form-target="teamSelect">
+                <option value="">Select a Team</option>
+            </select>
+            <select id="season-id" data-team-season-form-target="seasonSelect">
+                <option value="">Select a Season</option>
+            </select>
             ${
                 includePreviewEditor
                     ? '<textarea id="team-season-preview" data-team-season-form-target="previewEditor"></textarea>'
@@ -49,7 +55,7 @@ describe("team-season-form controller", () => {
             }
             ${
                 includeImageField
-                    ? `<input id="team-season-image-field" data-team-season-form-target="imageField" value="${imageFieldValue}" />`
+                    ? `<input id="team-season-image-field" data-team-season-form-target="imageField" data-action="change->team-season-form#handleImageFieldChange" value="${imageFieldValue}" />`
                     : ""
             }
             ${
@@ -68,7 +74,7 @@ describe("team-season-form controller", () => {
             }
             ${
                 includeUploadButton
-                    ? '<button id="select-team-season-image" data-team-season-form-target="uploadButton">Select / Upload</button>'
+                    ? '<button id="select-team-season-image" data-team-season-form-target="uploadButton" data-action="click->team-season-form#handleUploadClick">Select / Upload</button>'
                     : ""
             }
         `;
@@ -85,12 +91,24 @@ describe("team-season-form controller", () => {
         controllerElement = document.createElement("div");
         controllerElement.setAttribute("data-controller", "team-season-form");
         controllerElement.setAttribute(
+            "data-action",
+            "turbo:before-cache@document->team-season-form#beforeCache turbo:before-render@document->team-season-form#beforeRender turbo:load@document->team-season-form#onTurboLoad admin:popup-option-added@document->team-season-form#popupOptionAdded",
+        );
+        controllerElement.setAttribute(
             "data-team-season-form-existing-image-id-value",
             options.existingImageIdValue ?? "77",
         );
         controllerElement.setAttribute(
             "data-team-season-form-existing-preview-url-value",
             options.existingPreviewUrlValue ?? "/img/storage/77-hero.jpg",
+        );
+        controllerElement.setAttribute(
+            "data-team-season-form-csrf-token-value",
+            options.csrfTokenValue ?? "",
+        );
+        controllerElement.setAttribute(
+            "data-team-season-form-max-upload-bytes-value",
+            options.maxUploadBytesValue ?? 0,
         );
         controllerElement.setAttribute(
             "data-team-season-form-upload-url-value",
@@ -185,6 +203,36 @@ describe("team-season-form controller", () => {
         );
     });
 
+    test("adds popup-created options to the matching select only", async () => {
+        await mountController();
+
+        const teamSelect = controllerElement.querySelector("#team-id");
+        const seasonSelect = controllerElement.querySelector("#season-id");
+        document.dispatchEvent(
+            new CustomEvent("admin:popup-option-added", {
+                detail: {
+                    targetSelectId: "team-id",
+                    newOption: { value: 12, text: "New Team" },
+                },
+            }),
+        );
+        document.dispatchEvent(
+            new CustomEvent("admin:popup-option-added", {
+                detail: {
+                    targetSelectId: "unknown-select",
+                    newOption: { value: 13, text: "Ignored" },
+                },
+            }),
+        );
+
+        expect(teamSelect.value).toBe("12");
+        expect(teamSelect.querySelector('option[value="12"]').textContent).toBe(
+            "New Team",
+        );
+        expect(seasonSelect.value).toBe("");
+        expect(seasonSelect.querySelector('option[value="13"]')).toBeNull();
+    });
+
     test("uploads selected file from add-page button and updates preview", async () => {
         const controller = getController();
         const file = new window.File(["x"], "season.jpg", {
@@ -213,6 +261,37 @@ describe("team-season-form controller", () => {
         expect(uploadButton.textContent).toBe("Select / Upload");
     });
 
+    test("rejects oversized uploads before sending either upload request", async () => {
+        const alertSpy = jest
+            .spyOn(window, "alert")
+            .mockImplementation(() => {});
+        const controller = await mountController({ maxUploadBytesValue: 3 });
+        const file = new window.File(["large"], "season.jpg", {
+            type: "image/jpeg",
+        });
+
+        await controller.uploadSelectedFile({ files: [file] });
+
+        expect(window.fetch).not.toHaveBeenCalled();
+        expect(alertSpy).toHaveBeenCalledWith(
+            "File too large. Maximum allowed: 0.0MB",
+        );
+
+        const uploadHandler =
+            tinymceInitMock.mock.calls.at(-1)[0].images_upload_handler;
+        await expect(
+            uploadHandler(
+                {
+                    blob: () => new window.Blob(["large"]),
+                    filename: () => "season.jpg",
+                },
+                jest.fn(),
+            ),
+        ).rejects.toBe("File too large. Maximum allowed: 0.0MB");
+
+        alertSpy.mockRestore();
+    });
+
     test("removes TinyMCE before turbo cache", () => {
         const removeMock = jest.fn();
         tinymceGetMock.mockImplementation(() => ({ remove: removeMock }));
@@ -220,6 +299,44 @@ describe("team-season-form controller", () => {
         document.dispatchEvent(new Event("turbo:before-cache"));
 
         expect(removeMock).toHaveBeenCalled();
+    });
+
+    test("aborts active image uploads and restores controls before Turbo caching", async () => {
+        const controller = getController();
+        window.fetch = jest.fn(
+            (_url, { signal }) =>
+                new Promise((_resolve, reject) => {
+                    signal.addEventListener(
+                        "abort",
+                        () =>
+                            reject(
+                                Object.assign(new Error("aborted"), {
+                                    name: "AbortError",
+                                }),
+                            ),
+                        { once: true },
+                    );
+                }),
+        );
+
+        const upload = controller.uploadSelectedFile({
+            files: [
+                new window.File(["x"], "season.jpg", { type: "image/jpeg" }),
+            ],
+        });
+        const signal = window.fetch.mock.calls[0][1].signal;
+        const uploadButton = document.getElementById(
+            "select-team-season-image",
+        );
+        expect(uploadButton.disabled).toBe(true);
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+        await upload;
+
+        expect(signal.aborted).toBe(true);
+        expect(controller.uploadRequest).toBeNull();
+        expect(uploadButton.disabled).toBe(false);
+        expect(uploadButton.textContent).toBe("Select / Upload");
     });
 
     test("retries TinyMCE init when unavailable and stops at retry cap", () => {
@@ -233,6 +350,7 @@ describe("team-season-form controller", () => {
         expect(controller.tinyMceRetryCount).toBe(1);
         expect(setTimeoutSpy).toHaveBeenCalled();
 
+        controller.tinyMceRetryTimer = null;
         controller.tinyMceRetryCount = 20;
         controller.initTinyMceWhenReady();
         expect(controller.tinyMceRetryCount).toBe(20);
@@ -266,6 +384,7 @@ describe("team-season-form controller", () => {
     });
 
     test("covers TinyMCE upload handler success, progress, and CSRF header", async () => {
+        controllerElement.dataset.teamSeasonFormCsrfTokenValue = "csrf-123";
         const uploadHandler =
             tinymceInitMock.mock.calls[0][0].images_upload_handler;
         const progress = jest.fn();
@@ -273,11 +392,6 @@ describe("team-season-form controller", () => {
             blob: () => new window.Blob(["x"], { type: "image/jpeg" }),
             filename: () => "upload.jpg",
         };
-        const csrf = document.createElement("meta");
-        csrf.name = "csrfToken";
-        csrf.content = "csrf-123";
-        document.head.appendChild(csrf);
-
         let xhrInstance;
         class MockXHR {
             constructor() {
@@ -313,8 +427,6 @@ describe("team-season-form controller", () => {
             "X-CSRF-Token",
             "csrf-123",
         );
-
-        csrf.remove();
     });
 
     test("covers TinyMCE upload handler rejection branches", async () => {

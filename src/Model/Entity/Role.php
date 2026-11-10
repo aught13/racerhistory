@@ -11,6 +11,7 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime $modified
  * @property array<\App\Model\Entity\Permission> $permissions
+ * @property array<\App\Model\Entity\RoleDataScope> $role_data_scopes
  * @property array<\App\Model\Entity\User> $users
  */
 class Role extends Entity

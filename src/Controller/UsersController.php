@@ -4,9 +4,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\PasswordResetService;
+use App\Service\UserAccountService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Core\Configure;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Users Controller
@@ -42,6 +45,23 @@ use Cake\Http\Response;
  */
 class UsersController extends AppController
 {
+    /**
+     * Create the controller with its account and password services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\UserAccountService $userAccountService The user account service.
+     * @param \App\Service\PasswordResetService $passwordResetService The password reset service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        private UserAccountService $userAccountService,
+        private PasswordResetService $passwordResetService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+    }
+
     /**
      * Initialization hook method.
      *
@@ -139,10 +159,9 @@ class UsersController extends AppController
         if ($this->request->is('post') && $registrationEnabled) {
             $data['role'] = 'user';
             $data['status'] = 'active';
-            $usersTable = $this->fetchTable('Users');
-            $user = $usersTable->newEmptyEntity();
-            $user = $usersTable->patchEntity($user, $data);
-            if ($usersTable->save($user)) {
+            $result = $this->userAccountService->create($data);
+            $user = $result['user'];
+            if ($result['saved']) {
                 $this->request->getSession()->write('Auth.username', $user->get('username'));
                 $this->Flash->success('Registration successful.');
 
@@ -165,8 +184,7 @@ class UsersController extends AppController
     {
         if ($this->request->is('post')) {
             $email = (string)($this->request->getData('email') ?? '');
-            $service = new PasswordResetService();
-            $service->generateAndSendToken($email);
+            $this->passwordResetService->generateAndSendToken($email);
             // Unified message prevents account enumeration
             $this->Flash->success('If your email exists, a reset link will be sent.');
         }
@@ -182,8 +200,7 @@ class UsersController extends AppController
      */
     public function resetPasswordForm(string $token): ?Response
     {
-        $service = new PasswordResetService();
-        $user = $service->validateToken($token);
+        $user = $this->passwordResetService->validateToken($token);
 
         if ($user === null) {
             $this->Flash->error('This password reset link is invalid or has expired. Please request a new one.');
@@ -199,7 +216,7 @@ class UsersController extends AppController
                 $this->Flash->error('Password must be at least 8 characters.');
             } elseif ($newPassword !== $confirmPassword) {
                 $this->Flash->error('Passwords do not match.');
-            } elseif ($service->consumeToken($token, $newPassword)) {
+            } elseif ($this->passwordResetService->consumeToken($token, $newPassword)) {
                 $this->Flash->success('Your password has been reset. You can now log in.');
 
                 return $this->redirect(['action' => 'login']);
@@ -239,9 +256,8 @@ class UsersController extends AppController
             } elseif ($newPassword !== $confirmPassword) {
                 $this->Flash->error('New passwords do not match.');
             } else {
-                $service = new PasswordResetService();
                 $userId = (int)$identity->getIdentifier();
-                if ($service->changePassword($userId, $currentPassword, $newPassword)) {
+                if ($this->passwordResetService->changePassword($userId, $currentPassword, $newPassword)) {
                     $this->Flash->success('Your password has been updated.');
 
                     return $this->redirect('/');

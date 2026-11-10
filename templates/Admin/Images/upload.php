@@ -4,7 +4,7 @@
  */
 ?>
 
-<div class="container py-4" data-controller="image-upload">
+<div class="container py-4" data-controller="image-upload" data-action="turbo:before-cache@document->image-upload#beforeCache">
     <h1 class="mb-4">Upload Image</h1>
 
     <div class="row g-4">

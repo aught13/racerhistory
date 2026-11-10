@@ -10,12 +10,12 @@ The popup form component (`templates/element/Admin/popup_form.php`) provides a m
 
 - **Modal popup interface** using Bootstrap 5.3.2 modals
 - **AJAX form submission** with JSON responses
-- **Automatic select option updates** when new entities are created
+- **Bubbling select-option events** when new entities are created
 - **Error handling and validation display**
 - **Toast notifications** for success/error feedback
 - **CSRF protection** with automatic token handling
 - **Customizable field configurations**
-- **Success callback hooks** for custom logic
+- **Bubbling success events** for custom logic
 
 ## Basic Usage
 
@@ -28,7 +28,7 @@ echo $this->element('Admin/popup_form', [
     'title' => 'Add New Entity',
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Entities', 'action' => 'ajaxAdd']),
     'targetSelectId' => 'entity-id-select',
-    'successCallback' => 'handleEntityAdded',
+    'successEvent' => 'admin:entity-added',
     'fields' => [
         [
             'name' => 'entity_name',
@@ -128,7 +128,11 @@ public function ajaxAdd(): Response
 ### Optional Parameters
 
 - **`targetSelectId`**: ID of select element to update on success (string)
-- **`successCallback`**: JavaScript function name to call on success (string)
+- **`successEvent`**: Custom event name dispatched from the popup form after a successful save; the JSON response is available as `event.detail`
+
+When `targetSelectId` is set, the popup dispatches `admin:popup-option-added` with `{ targetSelectId, newOption }` in its detail. A parent Stimulus controller should handle that event, for example with `admin:popup-option-added@document->entity-form#popupOptionAdded`.
+
+The optional `successEvent` also bubbles from the popup form to the document; its `event.detail` contains the JSON response. Handle it with an action such as `admin:entity-added@document->entity-form#entityAdded`.
 
 ### Field Configuration
 
@@ -272,7 +276,7 @@ This example demonstrates selecting a sport via `sport_key` (the canonical runti
 
 1. **Modal not opening**: Check Bootstrap JavaScript is loaded
 2. **AJAX request failing**: Verify CSRF token is properly set in layout
-3. **Select not updating**: Ensure `targetSelectId` matches the select element ID
+3. **Select not updating**: Ensure `targetSelectId` matches the select ID and a parent Stimulus controller handles `admin:popup-option-added`
 4. **Validation errors not showing**: Check controller returns proper error format
 
 ### Debug Tips

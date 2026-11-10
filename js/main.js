@@ -1,6 +1,7 @@
 import * as Turbo from "@hotwired/turbo";
 import { Application } from "@hotwired/stimulus";
 import ConsentController from "./controllers/consent_controller.js";
+import PublicSportScopeController from "./controllers/public_sport_scope_controller.js";
 
 import { initThemeFromCookie } from "./lib/theme.js";
 import {
@@ -92,6 +93,7 @@ if (!runtimeAlreadyBooted) {
     initTinyMceLoader();
     const stimulus = Application.start();
     stimulus.register("consent", ConsentController);
+    stimulus.register("public-sport-scope", PublicSportScopeController);
     // Expose Stimulus application globally so eager module imports can
     // register controllers directly instead of relying on fallbacks.
     if (hasWindow) {

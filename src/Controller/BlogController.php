@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\BlogPostService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
+use Cake\Http\ServerRequest;
 
 /**
  * Public Blog Controller
@@ -39,6 +41,22 @@ class BlogController extends AppController
     private BlogPostService $blogPostService;
 
     /**
+     * Create the controller with its blog service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\BlogPostService $blogPostService The blog post service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        BlogPostService $blogPostService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->blogPostService = $blogPostService;
+    }
+
+    /**
      * Detect whether this request originates from a Turbo Frame.
      */
     private function isTurboFrameRequest(): bool
@@ -68,7 +86,6 @@ class BlogController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
-        $this->blogPostService = new BlogPostService();
     }
 
     /**

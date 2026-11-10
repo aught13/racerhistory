@@ -77,7 +77,20 @@ class BasketballBoxScoreImportControllerTest extends TestCase
         $this->assertResponseContains('Choose the official PDF');
         $this->assertResponseContains('multipart/form-data');
         $this->assertResponseContains('data-turbo="false"');
+        $this->assertResponseContains('name="_Token[fields]"');
         $this->assertResponseContains('Preview Import');
+    }
+
+    /**
+     * Importer fallback uses a Team entity so the composed label can render.
+     */
+    public function testIndexFallbackRendersPlaceholderTeam(): void
+    {
+        $this->get('/admin/basketball-box-score-import/index/99999');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Import Basketball Box Score');
+        $this->assertResponseContains('Team');
     }
 
     /**

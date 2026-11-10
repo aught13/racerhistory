@@ -4,6 +4,11 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\AppController;
+use App\Controller\Component\PublicScopeComponent;
+use App\Service\PublicSportScopeService;
+use App\Service\StatsService;
+use Cake\Controller\ComponentRegistry;
+use Cake\Core\Container;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -16,6 +21,28 @@ use Cake\TestSuite\TestCase;
 class AppControllerTest extends TestCase
 {
     use IntegrationTestTrait;
+
+    /**
+     * Create a component registry with public scope dependencies.
+     *
+     * @return \Cake\Controller\ComponentRegistry
+     */
+    private function createComponentRegistry(): ComponentRegistry
+    {
+        $container = new Container();
+        $components = new ComponentRegistry(container: $container);
+        $container->addShared(ComponentRegistry::class, $components);
+        $container->addShared(
+            PublicScopeComponent::class,
+            new PublicScopeComponent(
+                $components,
+                $this->createMock(PublicSportScopeService::class),
+                $this->createMock(StatsService::class),
+            ),
+        );
+
+        return $components;
+    }
 
     /**
      * Fixtures
@@ -35,7 +62,10 @@ class AppControllerTest extends TestCase
     public function testInitializeComponents(): void
     {
         $request = $this->createMock(ServerRequest::class);
-        $controller = new AppController($request);
+        $controller = new AppController(
+            $request,
+            components: $this->createComponentRegistry(),
+        );
         $controller->initialize();
 
         $this->assertTrue($controller->components()->has('Flash'));
@@ -77,7 +107,10 @@ class AppControllerTest extends TestCase
     public function testFlashComponentLoaded(): void
     {
         $request = $this->createMock(ServerRequest::class);
-        $controller = new AppController($request);
+        $controller = new AppController(
+            $request,
+            components: $this->createComponentRegistry(),
+        );
         $controller->initialize();
 
         $this->assertTrue($controller->components()->has('Flash'));
@@ -104,7 +137,10 @@ class AppControllerTest extends TestCase
 
             return null;
         });
-        $controller = new AppController($request);
+        $controller = new AppController(
+            $request,
+            components: $this->createComponentRegistry(),
+        );
         $controller->initialize();
         $this->assertTrue($controller->components()->has('FormProtection'));
     }

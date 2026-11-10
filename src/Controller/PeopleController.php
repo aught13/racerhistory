@@ -3,16 +3,14 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Model\Entity\BlogPost;
-use App\Model\Entity\TeamSeasonRosters;
+use App\Service\BlogPostService;
 use App\Service\ImageProcessor;
-use App\Service\PersonService;
-use App\Service\StatsService;
-use App\Service\TeamSportContextService;
+use App\Service\PeopleDirectoryService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\NotFoundException;
-use Cake\ORM\Query\SelectQuery;
-use Cake\Routing\Router;
+use Cake\Http\ServerRequest;
 
 /**
  * Public People Controller
@@ -70,10 +68,36 @@ use Cake\Routing\Router;
  */
 class PeopleController extends AppController
 {
-    private PersonService $personService;
+    private BlogPostService $blogPostService;
     private ImageProcessor $imageProcessor;
-    protected StatsService $Stats;
-    private TeamSportContextService $teamSportContextService;
+    private PeopleDirectoryService $peopleDirectoryService;
+
+    /**
+     * @var array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    private array $publicScope = ['valid' => true, 'error' => null, 'sportKey' => null, 'teamId' => null];
+
+    /**
+     * Create the controller with its people and view services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\BlogPostService $blogPostService The blog post service.
+     * @param \App\Service\ImageProcessor $imageProcessor The image processor.
+     * @param \App\Service\PeopleDirectoryService $peopleDirectoryService The people directory service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        BlogPostService $blogPostService,
+        ImageProcessor $imageProcessor,
+        PeopleDirectoryService $peopleDirectoryService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->blogPostService = $blogPostService;
+        $this->imageProcessor = $imageProcessor;
+        $this->peopleDirectoryService = $peopleDirectoryService;
+    }
 
     /**
      * Initialize controller.
@@ -82,10 +106,6 @@ class PeopleController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authorization.Authorization');
-        $this->Stats = new StatsService();
-        $this->personService = new PersonService();
-        $this->imageProcessor = new ImageProcessor();
-        $this->teamSportContextService = new TeamSportContextService();
     }
 
     /**
@@ -97,6 +117,11 @@ class PeopleController extends AppController
     {
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
+
+        $this->publicScope = $this->PublicScope->resolve($this->request->getQueryParams());
+        if (!$this->publicScope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
     }
 
     /**
@@ -113,13 +138,16 @@ class PeopleController extends AppController
             return;
         }
 
-        $table = $this->fetchTable('Persons');
-        $peopleCount = $table->find()->count();
+        $peopleCount = $this->peopleDirectoryService->countPeople(
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        );
 
         $this->set([
             'people' => [],
             'peopleRows' => [],
             'peopleCount' => $peopleCount,
+            'publicScope' => $this->publicScope,
         ]);
     }
 
@@ -129,245 +157,15 @@ class PeopleController extends AppController
     private function renderPeopleIndexJson(): void
     {
         $this->autoRender = false;
-        $table = $this->fetchTable('Persons');
-        $draw = (int)$this->request->getQuery('draw');
-        $start = max(0, (int)$this->request->getQuery('start'));
-        $length = (int)$this->request->getQuery('length');
-        if ($length < 1) {
-            $length = 50;
-        }
-        $length = min($length, 200);
-
-        $search = (string)($this->request->getQuery('search')['value'] ?? '');
-        $search = trim($search);
-
-        $total = $table->find()->count();
-
-        $query = $table->find()
-            ->select(['id', 'first', 'last', 'full', 'display']);
-
-        $this->applyDataTablesOrderToPeopleQuery($query);
-
-        if ($search !== '') {
-            $query->where([
-                'OR' => [
-                    'Persons.first LIKE' => '%' . $search . '%',
-                    'Persons.last LIKE' => '%' . $search . '%',
-                    'Persons.full LIKE' => '%' . $search . '%',
-                    'Persons.display LIKE' => '%' . $search . '%',
-                ],
-            ]);
-        }
-
-        $filtered = $query->count();
-        $people = $query
-            ->limit($length)
-            ->offset($start)
-            ->all()
-            ->toArray();
-
-        $rowsByPerson = $this->buildPeopleRows($people);
-        $data = $this->formatPeopleRowsForDataTables($rowsByPerson);
-
-        $payload = [
-            'draw' => $draw,
-            'recordsTotal' => $total,
-            'recordsFiltered' => $filtered,
-            'data' => $data,
-        ];
+        $payload = $this->peopleDirectoryService->dataTablesPayload(
+            $this->request->getQueryParams(),
+            $this->publicScope['sportKey'],
+            $this->publicScope['teamId'],
+        );
 
         $this->response = $this->response
             ->withType('application/json')
-            ->withStringBody((string)json_encode($payload));
-    }
-
-    /**
-     * Apply DataTables order settings to the People index query.
-     * Currently we only support server-side ordering by the Name column.
-     *
-     * @param \Cake\ORM\Query\SelectQuery $query
-     */
-    private function applyDataTablesOrderToPeopleQuery(SelectQuery $query): void
-    {
-        $order = $this->request->getQuery('order');
-        $direction = 'asc';
-
-        if (is_array($order) && !empty($order)) {
-            $firstOrder = reset($order);
-            if (is_array($firstOrder)) {
-                $requestedDirection = strtolower((string)($firstOrder['dir'] ?? 'asc'));
-                if (in_array($requestedDirection, ['asc', 'desc'], true)) {
-                    $direction = $requestedDirection;
-                }
-            }
-        }
-
-        if ($direction === 'desc') {
-            $query
-                ->orderByDesc('Persons.last')
-                ->orderByDesc('Persons.first');
-
-            return;
-        }
-
-        $query
-            ->orderByAsc('Persons.last')
-            ->orderByAsc('Persons.first');
-    }
-
-    /**
-     * Runs the build people rows routine.
-     *
-     * @param array $people
-     * @return array<int,array{person:\App\Model\Entity\Person,teams:array<int,string>,years:array<int,array{id:int,label:string,start:int}>}>
-     */
-    private function buildPeopleRows(array $people): array
-    {
-        if (empty($people)) {
-            return [];
-        }
-
-        $personIds = [];
-        foreach ($people as $person) {
-            if (!empty($person->id)) {
-                $personIds[] = (int)$person->id;
-            }
-        }
-
-        $rosterMap = [];
-        if (!empty($personIds)) {
-            $rosterTable = $this->fetchTable('TeamSeasonRosters');
-            $rosters = $rosterTable->find()
-                ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-                ->where(['TeamSeasonRosters.person_id IN' => $personIds])
-                ->all();
-
-            foreach ($rosters as $roster) {
-                $pid = (int)($roster->person_id ?? 0);
-                if ($pid > 0) {
-                    $rosterMap[$pid][] = $roster;
-                }
-            }
-        }
-
-        $peopleRows = [];
-        foreach ($people as $person) {
-            $teams = [];
-            $years = [];
-            $rosters = $rosterMap[(int)$person->id] ?? [];
-
-            foreach ($rosters as $roster) {
-                $teamAbbr = $roster->team_season->team->abbr ?? null;
-                if ($teamAbbr) {
-                    $teams[$teamAbbr] = true;
-                }
-
-                $season = $roster->team_season->season ?? null;
-                if ($season && ($season->start !== null || $season->end !== null)) {
-                    $start = (string)($season->start ?? '');
-                    $end = (string)($season->end ?? '');
-                    $label = trim($start . '-' . ($end !== '' ? substr($end, -2) : ''), '-');
-                    $seasonId = (int)($season->id ?? 0);
-                    if ($label !== '' && $seasonId > 0) {
-                        $years[$seasonId] = [
-                            'id' => $seasonId,
-                            'label' => $label,
-                            'start' => (int)($season->start ?? 0),
-                        ];
-                    }
-                }
-            }
-
-            $teamList = array_keys($teams);
-            sort($teamList, SORT_NATURAL | SORT_FLAG_CASE);
-
-            $yearLabels = [];
-            if (!empty($years)) {
-                uasort(
-                    $years,
-                    static fn(array $left, array $right): int => $left['start'] <=> $right['start'],
-                );
-                $yearLabels = array_values($years);
-            }
-
-            $peopleRows[] = [
-                'person' => $person,
-                'teams' => $teamList,
-                'years' => $yearLabels,
-            ];
-        }
-
-        return $peopleRows;
-    }
-
-    /**
-     * Runs the format people rows for data tables routine.
-     *
-     * @param array $peopleRows
-     * @return array<int,array<int,string>>
-     */
-    private function formatPeopleRowsForDataTables(array $peopleRows): array
-    {
-        $data = [];
-        foreach ($peopleRows as $row) {
-            $person = $row['person'];
-            $teams = $row['teams'];
-            $years = $row['years'];
-
-            $first = (string)($person->first ?? '');
-            $last = (string)($person->last ?? '');
-            $full = (string)($person->full ?? '');
-            $display = (string)($person->display ?? '');
-
-            $name = $full !== '' ? $full : trim($first . ' ' . $last);
-            if ($name === '') {
-                $name = $display !== '' ? $display : 'Unknown';
-            }
-
-            $personUrl = Router::url([
-                'controller' => 'People',
-                'action' => 'view',
-                $person->id,
-            ]);
-            $nameHtml = '<a href="' . $this->escape($personUrl) . '" class="fw-semibold text-decoration-none">'
-                . $this->escape($name) . '</a>';
-            if ($display !== '' && $display !== $name) {
-                $nameHtml .= '<div class="people-display-name">' . $this->escape($display) . '</div>';
-            }
-
-            $teamsHtml = !empty($teams)
-                ? $this->escape(implode(', ', $teams))
-                : '<span class="text-muted">&mdash;</span>';
-            $yearsHtml = '<span class="text-muted">&mdash;</span>';
-            if (!empty($years)) {
-                $yearLinks = [];
-                foreach ($years as $year) {
-                    $seasonUrl = Router::url([
-                        'controller' => 'Seasons',
-                        'action' => 'view',
-                        $year['id'],
-                    ]);
-                    $yearLinks[] = '<a href="' . $this->escape($seasonUrl) . '">'
-                        . $this->escape($year['label']) . '</a>';
-                }
-                $yearsHtml = implode(', ', $yearLinks);
-            }
-
-            $data[] = [$nameHtml, $teamsHtml, $yearsHtml];
-        }
-
-        return $data;
-    }
-
-    /**
-     * Runs the escape routine.
-     *
-     * @param string $value
-     * @return string
-     */
-    private function escape(string $value): string
-    {
-        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            ->withStringBody(json_encode($payload, JSON_THROW_ON_ERROR));
     }
 
     /**
@@ -377,110 +175,25 @@ class PeopleController extends AppController
      */
     public function view(int $id): void
     {
-        $person = $this->personService->getPersonById($id);
-        if (!$person) {
+        $showAllHistory = $this->request->getQuery('show_all_history') === '1';
+        $viewData = $this->peopleDirectoryService->profileViewData(
+            $id,
+            $this->publicScope,
+            $showAllHistory,
+        );
+        if ($viewData === null) {
             throw new NotFoundException('Person not found');
         }
 
-        // Get related images via tagging
         $images = $this->imageProcessor->getImagesForPerson($id, 20);
-
-        // Get related blog posts via tagging
-        $blogPosts = $this->getBlogPostsByTag("person-{$id}");
-
-        // Get roster entries (team seasons this person was on)
-        $rosterEntries = $this->getRosterEntriesForPerson($id);
-
-        // Organize roster entries by sport and calculate career stats
-        $rostersBySport = [];
-        $careerStatsBySport = [];
-
-        foreach ($rosterEntries as $roster) {
-            $teamSeason = $roster->team_season ?? null;
-            if ($teamSeason === null) {
-                continue;
-            }
-
-            $team = $teamSeason->team ?? null;
-            $this->teamSportContextService->attachSportContextToTeam($team);
-            $sport = $team->sport ?? null;
-            $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
-            if (!$sport || !$sportId) {
-                continue;
-            }
-
-            if (!isset($rostersBySport[$sportId])) {
-                $rostersBySport[$sportId] = [
-                    'sport' => $sport,
-                    'rosters' => [],
-                ];
-            }
-
-            $rostersBySport[$sportId]['rosters'][] = [
-                'roster' => $roster,
-                'teamSeason' => $teamSeason,
-            ];
-
-            if ($this->Stats->hasSportSupport($sportId)) {
-                if (!isset($careerStatsBySport[$sportId])) {
-                    $careerStatsBySport[$sportId] = [
-                        'sport' => $sport,
-                        'totals' => $this->Stats->initializeStats($sportId, 'player'),
-                        'seasons' => [],
-                        'minYear' => null,
-                        'maxYear' => null,
-                    ];
-                }
-
-                $seasonStats = $this->Stats->getPersonSeasonStats(
-                    $sportId,
-                    (int)$roster->id,
-                );
-                if ($seasonStats) {
-                    $careerStatsBySport[$sportId]['seasons'][] = [
-                        'teamSeason' => $teamSeason,
-                        'stats' => $seasonStats,
-                    ];
-
-                    $startYear = $teamSeason?->season->start ?? null;
-                    $endYear = $teamSeason?->season->end ?? null;
-                    if ($startYear !== null) {
-                        $minYear = $careerStatsBySport[$sportId]['minYear'];
-                        if ($minYear === null || $startYear < $minYear) {
-                            $careerStatsBySport[$sportId]['minYear'] = $startYear;
-                        }
-                    }
-                    if ($endYear !== null) {
-                        $maxYear = $careerStatsBySport[$sportId]['maxYear'];
-                        if ($maxYear === null || $endYear > $maxYear) {
-                            $careerStatsBySport[$sportId]['maxYear'] = $endYear;
-                        }
-                    }
-
-                    $this->Stats->addSeasonStats(
-                        $sportId,
-                        $careerStatsBySport[$sportId]['totals'],
-                        $seasonStats,
-                    );
-                }
-            }
-        }
-
-        $gameLogGroups = $this->buildGameLogGroups($rosterEntries);
-        $gameStats = [];
-
-        $this->set(
-            compact(
-                'person',
-                'images',
-                'blogPosts',
-                'rosterEntries',
-                'rostersBySport',
-                'careerStatsBySport',
-                'gameLogGroups',
-                'gameStats',
-            ),
-        );
+        $personPosts = $this->blogPostService->getPublishedForPerson($id);
+        $this->set(array_merge($viewData, [
+            'images' => $images,
+            'bioPosts' => $personPosts['bioPosts'],
+            'stories' => $personPosts['stories'],
+            'showAllHistory' => $showAllHistory,
+            'publicScope' => $this->publicScope,
+        ]));
     }
 
     /**
@@ -491,193 +204,23 @@ class PeopleController extends AppController
      */
     public function gameLog(int $personId, int $teamSeasonId): void
     {
-        $person = $this->personService->getPersonById($personId);
-        if (!$person) {
+        $person = $this->peopleDirectoryService->getPersonById($personId);
+        if ($person === null) {
             throw new NotFoundException('Person not found');
         }
 
-        $rosterTable = $this->fetchTable('TeamSeasonRosters');
-        $roster = $rosterTable->find()
-            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-            ->where([
-                'TeamSeasonRosters.person_id' => $personId,
-                'TeamSeasonRosters.team_season_id' => $teamSeasonId,
-            ])
-            ->first();
-
-        if (!($roster instanceof TeamSeasonRosters)) {
+        $viewData = $this->peopleDirectoryService->gameLogViewData(
+            $person,
+            $teamSeasonId,
+            $this->publicScope,
+        );
+        if ($viewData === null) {
             throw new NotFoundException('Roster entry not found');
         }
 
-        $teamSeason = $roster->team_season ?? null;
-        $team = $teamSeason ? ($teamSeason->team ?? null) : null;
-        $this->teamSportContextService->attachSportContextToTeam($team);
-        $sport = $team ? ($team->sport ?? null) : null;
-        $sportId = $this->teamSportContextService->resolveSportIdFromTeam($team);
-        $gameLogRows = [];
-        $gameLogElement = null;
-        if ($sport && $sportId && $this->Stats->hasSportSupport((int)$sportId)) {
-            $gameLogElement = $this->Stats->getPersonGameLogElement((int)$sportId);
-            $gameLogRows = $this->Stats->getPersonGameStats(
-                (int)$sportId,
-                (int)$roster->id,
-            );
-        }
-
-        $frameId = 'person-game-log-frame-' . $personId . '-' . $teamSeasonId;
-
-        $this->set(
-            compact(
-                'person',
-                'teamSeason',
-                'sport',
-                'gameLogRows',
-                'gameLogElement',
-                'frameId',
-            ),
-        );
+        $this->set($viewData);
 
         $this->viewBuilder()->disableAutoLayout();
         $this->viewBuilder()->setTemplate('game_log');
-    }
-
-    /**
-     * Get blog posts by tag slug.
-     *
-     * @param string $tagSlug
-     * @return array<int,\App\Model\Entity\BlogPost>
-     */
-    private function getBlogPostsByTag(string $tagSlug): array
-    {
-        $table = $this->fetchTable('BlogPosts');
-        $rows = $table->find()
-            ->contain(['BlogTags'])
-            ->matching('BlogTags', function ($q) use ($tagSlug) {
-                return $q->where(['BlogTags.slug' => $tagSlug]);
-            })
-            ->where(['BlogPosts.is_published' => true])
-            ->orderByDesc('BlogPosts.published_at')
-            ->limit(10)
-            ->all()
-            ->toArray();
-
-        /** @var array<int,\App\Model\Entity\BlogPost> $posts */
-        $posts = array_values(array_filter($rows, static fn($post): bool => $post instanceof BlogPost));
-
-        return $posts;
-    }
-
-    /**
-     * Get roster entries for a person.
-     *
-     * @param int $personId
-     * @return array<int,\App\Model\Entity\TeamSeasonRosters>
-     */
-    private function getRosterEntriesForPerson(int $personId): array
-    {
-        $table = $this->fetchTable('TeamSeasonRosters');
-        $rows = $table->find()
-            ->contain(['TeamSeasons' => ['Teams', 'Seasons']])
-            ->where(['TeamSeasonRosters.person_id' => $personId])
-            ->orderByDesc('Seasons.start')
-            ->all()
-            ->toArray();
-
-        /** @var array<int,\App\Model\Entity\TeamSeasonRosters> $entries */
-        $entries = array_values(array_filter($rows, static fn($entry): bool => $entry instanceof TeamSeasonRosters));
-
-        return $entries;
-    }
-
-    /**
-     * Build game log groups for supported sports.
-     *
-     * @param array $rosterEntries
-     * @return array<int,array{sportId:int,sport:\App\Model\Entity\Sport,seasons:array<int,array{teamSeason:\App\Model\Entity\TeamSeason,rosterId:int,label:string,startYear:int}>,activeSeasonId:int|null}>
-     */
-    private function buildGameLogGroups(array $rosterEntries): array
-    {
-        $groups = [];
-
-        foreach ($rosterEntries as $roster) {
-            $teamSeason = $roster->team_season ?? null;
-            if ($teamSeason === null) {
-                continue;
-            }
-
-            $team = $teamSeason->team ?? null;
-            $this->teamSportContextService->attachSportContextToTeam($team);
-            $sport = $team->sport ?? null;
-            if (!$sport) {
-                continue;
-            }
-
-            $sportId = (int)($this->teamSportContextService->resolveSportIdFromTeam($team) ?? 0);
-            if ($sportId <= 0) {
-                continue;
-            }
-            if (!$this->Stats->hasSportSupport($sportId)) {
-                continue;
-            }
-
-            $teamSeasonId = (int)($teamSeason->id ?? 0);
-            if ($teamSeasonId <= 0) {
-                continue;
-            }
-
-            $season = $teamSeason->season ?? null;
-            $label = $this->formatSeasonLabel($season);
-            if ($label === '') {
-                $label = 'Season';
-            }
-
-            if (!isset($groups[$sportId])) {
-                $groups[$sportId] = [
-                    'sportId' => $sportId,
-                    'sport' => $sport,
-                    'seasons' => [],
-                    'activeSeasonId' => null,
-                ];
-            }
-
-            $groups[$sportId]['seasons'][$teamSeasonId] = [
-                'teamSeason' => $teamSeason,
-                'rosterId' => (int)$roster->id,
-                'label' => $label,
-                'startYear' => (int)($season->start ?? 0),
-            ];
-        }
-
-        foreach ($groups as $sportId => $group) {
-            $seasons = array_values($group['seasons']);
-            usort(
-                $seasons,
-                static function (array $left, array $right): int {
-                    return $right['startYear'] <=> $left['startYear'];
-                },
-            );
-            $groups[$sportId]['seasons'] = $seasons;
-            $groups[$sportId]['activeSeasonId'] = $seasons[0]['teamSeason']->id ?? null;
-        }
-
-        return array_values($groups);
-    }
-
-    /**
-     * Runs the format season label routine.
-     *
-     * @param object|null $season
-     */
-    private function formatSeasonLabel(?object $season): string
-    {
-        $seasonStart = (string)($season->start ?? '');
-        $seasonEnd = (string)($season->end ?? '');
-        if ($seasonStart === '' && $seasonEnd === '') {
-            return '';
-        }
-
-        $suffix = $seasonEnd !== '' ? substr($seasonEnd, -2) : '';
-
-        return trim($seasonStart . '-' . $suffix, '-');
     }
 }

@@ -34,6 +34,12 @@ const NUMERIC_COLUMNS = [
 
 /** Number of rows visible at a time (Scroller display buffer). */
 const SCROLLER_THRESHOLD = 75;
+const dragScrollListeners = new WeakMap();
+const cardHoverListeners = new WeakMap();
+
+function resolveRoot(root) {
+    return typeof root?.querySelector === "function" ? root : document;
+}
 
 /* ——— Helpers ————————————————————————————————————————— */
 
@@ -161,12 +167,13 @@ async function copySearchBuilderLinkToClipboardLocal(dt) {
 /**
  * Main entry point. Called on page load.
  */
-function initStatsPage() {
-    const table = document.getElementById("stats-results-table");
-    const cards = document.getElementById("stats-type-cards");
+function initStatsPage(root = document) {
+    root = resolveRoot(root);
+    const table = root.querySelector("#stats-results-table");
+    const cards = root.querySelector("#stats-type-cards");
 
     if (table) {
-        initStatsDataTable(table);
+        initStatsDataTable(table, root);
     }
 
     if (cards) {
@@ -185,7 +192,7 @@ function initStatsPage() {
  *
  * @param {HTMLTableElement} table
  */
-function initStatsDataTable(table) {
+function initStatsDataTable(table, root = table.ownerDocument) {
     const ajaxUrl = table.dataset.ajaxUrl;
     if (!ajaxUrl) {
         return;
@@ -244,7 +251,7 @@ function initStatsDataTable(table) {
                 return;
             }
             const dt = window.$(table).DataTable(dtOptions);
-            setupStatsSearchBuilderUi(dt, table);
+            setupStatsSearchBuilderUi(dt, table, root);
             /* Fix header/body alignment after each draw (scrollX + Bootstrap sort-icon padding mismatch) */
             dt.on("draw.dt", function () {
                 fixScrollXHeaderAlignment(dt);
@@ -256,13 +263,13 @@ function initStatsDataTable(table) {
         });
 }
 
-function setupStatsSearchBuilderUi(dt, table) {
+function setupStatsSearchBuilderUi(dt, table, root = table.ownerDocument) {
     const card = table.closest(".card");
     if (!card || !card.parentNode) {
         return;
     }
 
-    let controls = document.getElementById("stats-controls");
+    let controls = root.querySelector("#stats-controls");
     if (!controls) {
         controls = document.createElement("div");
         controls.id = "stats-controls";
@@ -271,7 +278,7 @@ function setupStatsSearchBuilderUi(dt, table) {
         card.parentNode.insertBefore(controls, card);
     }
 
-    let copyBtn = document.getElementById("stats-copy-link-btn");
+    let copyBtn = root.querySelector("#stats-copy-link-btn");
     if (!copyBtn) {
         copyBtn = document.createElement("button");
         copyBtn.type = "button";
@@ -286,7 +293,7 @@ function setupStatsSearchBuilderUi(dt, table) {
         controls.appendChild(copyBtn);
     }
 
-    let filterBtn = document.getElementById("stats-filter-btn");
+    let filterBtn = root.querySelector("#stats-filter-btn");
     if (!filterBtn) {
         filterBtn = document.createElement("button");
         filterBtn.type = "button";
@@ -298,7 +305,7 @@ function setupStatsSearchBuilderUi(dt, table) {
         controls.appendChild(filterBtn);
     }
 
-    let slot = document.getElementById("stats-searchbuilder-slot");
+    let slot = root.querySelector("#stats-searchbuilder-slot");
     if (!slot) {
         slot = document.createElement("div");
         slot.id = "stats-searchbuilder-slot";
@@ -393,41 +400,58 @@ function fixScrollXHeaderAlignment(dt) {
  * @param {HTMLElement|null} container
  */
 function initDragScroll(container) {
-    if (!container) {
+    if (!container || dragScrollListeners.has(container)) {
         return;
     }
     let isDown = false;
     let startX = 0;
     let scrollLeft = 0;
 
-    container.addEventListener("mousedown", (e) => {
-        if (e.target.closest("a, button, input, select, textarea")) {
-            return;
-        }
-        isDown = true;
-        container.classList.add("is-dragging");
-        startX = e.pageX - container.offsetLeft;
-        scrollLeft = container.scrollLeft;
-    });
+    const listeners = {
+        mousedown: (e) => {
+            if (e.target.closest("a, button, input, select, textarea")) {
+                return;
+            }
+            isDown = true;
+            container.classList.add("is-dragging");
+            startX = e.pageX - container.offsetLeft;
+            scrollLeft = container.scrollLeft;
+        },
+        mouseleave: () => {
+            isDown = false;
+            container.classList.remove("is-dragging");
+        },
+        mouseup: () => {
+            isDown = false;
+            container.classList.remove("is-dragging");
+        },
+        mousemove: (e) => {
+            if (!isDown) {
+                return;
+            }
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            container.scrollLeft = scrollLeft - (x - startX);
+        },
+    };
 
-    container.addEventListener("mouseleave", () => {
-        isDown = false;
-        container.classList.remove("is-dragging");
+    Object.entries(listeners).forEach(([eventName, handler]) => {
+        container.addEventListener(eventName, handler);
     });
+    dragScrollListeners.set(container, listeners);
+}
 
-    container.addEventListener("mouseup", () => {
-        isDown = false;
-        container.classList.remove("is-dragging");
-    });
+function cleanupDragScroll(container) {
+    const listeners = dragScrollListeners.get(container);
+    if (!listeners) {
+        return;
+    }
 
-    container.addEventListener("mousemove", (e) => {
-        if (!isDown) {
-            return;
-        }
-        e.preventDefault();
-        const x = e.pageX - container.offsetLeft;
-        container.scrollLeft = scrollLeft - (x - startX);
+    Object.entries(listeners).forEach(([eventName, handler]) => {
+        container.removeEventListener(eventName, handler);
     });
+    container.classList.remove("is-dragging");
+    dragScrollListeners.delete(container);
 }
 
 /**
@@ -438,12 +462,42 @@ function initDragScroll(container) {
 function initCardHover(container) {
     const cards = container.querySelectorAll(".stat-type-card");
     cards.forEach((card) => {
-        card.addEventListener("mouseenter", () => {
-            card.classList.add("shadow-sm");
+        if (cardHoverListeners.has(card)) {
+            return;
+        }
+
+        const listeners = {
+            mouseenter: () => {
+                card.classList.add("shadow-sm");
+            },
+            mouseleave: () => {
+                card.classList.remove("shadow-sm");
+            },
+        };
+
+        Object.entries(listeners).forEach(([eventName, handler]) => {
+            card.addEventListener(eventName, handler);
         });
-        card.addEventListener("mouseleave", () => {
-            card.classList.remove("shadow-sm");
+        cardHoverListeners.set(card, listeners);
+    });
+}
+
+function cleanupCardHover(container) {
+    if (!container) {
+        return;
+    }
+
+    container.querySelectorAll(".stat-type-card").forEach((card) => {
+        const listeners = cardHoverListeners.get(card);
+        if (!listeners) {
+            return;
+        }
+
+        Object.entries(listeners).forEach(([eventName, handler]) => {
+            card.removeEventListener(eventName, handler);
         });
+        card.classList.remove("shadow-sm");
+        cardHoverListeners.delete(card);
     });
 }
 
@@ -462,26 +516,30 @@ export {
     SCROLLER_THRESHOLD,
 };
 
-function cleanupStatsPage() {
-    const table = document.getElementById("stats-results-table");
-    if (!table || !hasJquery() || !window.$.fn?.dataTable) {
-        return;
-    }
-
-    try {
-        if (window.$.fn.dataTable.isDataTable(table)) {
-            window.$(table).DataTable().destroy(false);
+function cleanupStatsPage(root = document) {
+    root = resolveRoot(root);
+    const table = root.querySelector("#stats-results-table");
+    if (table) {
+        cleanupDragScroll(table.closest(".table-responsive"));
+        if (hasJquery() && window.$.fn?.dataTable) {
+            try {
+                if (window.$.fn.dataTable.isDataTable(table)) {
+                    window.$(table).DataTable().destroy(false);
+                }
+            } catch (err) {
+                console.warn("Failed to clean up stats DataTable", err);
+            }
         }
-    } catch (err) {
-        console.warn("Failed to clean up stats DataTable", err);
     }
 
-    const slot = document.getElementById("stats-searchbuilder-slot");
+    cleanupCardHover(root.querySelector("#stats-type-cards"));
+
+    const slot = root.querySelector("#stats-searchbuilder-slot");
     if (slot) {
         slot.remove();
     }
 
-    const controls = document.getElementById("stats-controls");
+    const controls = root.querySelector("#stats-controls");
     if (controls) {
         controls.remove();
     }

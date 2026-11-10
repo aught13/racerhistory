@@ -177,9 +177,10 @@ class UsersTableTest extends TestCase
     public function testFindActive(): void
     {
         $query = $this->Users->find('active');
-        $sql = $query->sql();
+        $usernames = $query->all()->extract('username')->toList();
 
-        $this->assertStringContainsString('active', $sql);
+        $this->assertContains('admin', $usernames);
+        $this->assertNotContains('user', $usernames);
     }
 
     /**

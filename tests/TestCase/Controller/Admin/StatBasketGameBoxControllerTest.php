@@ -38,6 +38,9 @@ class StatBasketGameBoxControllerTest extends TestCase
         'app.StatBasketGameOpponent',
         'app.StatBasketSeasonTeam',
         'app.StatBasketSeasonOpponent',
+        'app.Roles',
+        'app.Permissions',
+        'app.RoleDataScopes',
     ];
 
     /**
@@ -192,6 +195,29 @@ class StatBasketGameBoxControllerTest extends TestCase
         $this->get('/admin/stat-basket-game-box/game-box/1');
         // Should redirect or deny access
         $this->assertResponseCode(302);
+    }
+
+    /**
+     * Ensure a role with Games permission cannot access another team's box score.
+     */
+    public function testGameBoxRejectsGameOutsideRoleScope(): void
+    {
+        $scopes = $this->getTableLocator()->get('RoleDataScopes');
+        $scopes->deleteAll(['role_id' => 4]);
+        $scopes->saveOrFail($scopes->newEntity([
+            'role_id' => 4,
+            'scope_type' => 'team',
+            'team_id' => 3,
+        ]));
+        $this->mockIdentity([
+            'id' => 4,
+            'role' => 'contributor',
+            'role_id' => 4,
+        ]);
+
+        $this->get('/admin/stat-basket-game-box/game-box/1');
+
+        $this->assertResponseCode(404);
     }
 
     /**

@@ -7,6 +7,11 @@
 import { ensureSearchBuilderLoaded } from "../legacy/modules/searchbuilder-loader.mjs";
 
 let initSeasonsPromise;
+let bootGeneration = 0;
+
+function resolveRoot(root) {
+    return typeof root?.querySelector === "function" ? root : document;
+}
 
 function getInitSeasons() {
     const globalRef =
@@ -39,18 +44,29 @@ function getSearchBuilderLoader() {
     return ensureSearchBuilderLoaded;
 }
 
-function inferActiveTable() {
-    const splitsTable = document.querySelector("#season-splits-table");
+function getSeasonsFrame(root) {
+    if (typeof root.getElementById === "function") {
+        return root.getElementById("seasons-table-frame");
+    }
+
+    return (
+        root.closest?.("#seasons-table-frame") ||
+        root.querySelector("#seasons-table-frame")
+    );
+}
+
+function inferActiveTable(root = document) {
+    const splitsTable = root.querySelector("#season-splits-table");
     if (splitsTable) {
         return { view: "splits", table: splitsTable };
     }
 
-    const standardTable = document.querySelector("#seasons-table");
+    const standardTable = root.querySelector("#seasons-table");
     if (standardTable) {
         return { view: "standard", table: standardTable };
     }
 
-    const frame = document.getElementById("seasons-table-frame");
+    const frame = getSeasonsFrame(root);
     return {
         view: frame?.dataset?.seasonsView || "standard",
         table: null,
@@ -131,10 +147,10 @@ function getCellDataAttr(meta, name) {
     return value !== null ? value : null;
 }
 
-function buildOptions() {
-    const { view, table } = inferActiveTable();
+function buildOptions(root = document) {
+    const { view, table } = inferActiveTable(root);
     if (view === "splits") {
-        const frame = document.getElementById("seasons-table-frame");
+        const frame = getSeasonsFrame(root);
         const hasTies = frame?.dataset?.splitsHasTies === "true";
         const totalColumns = countTableColumns(table);
         const columns = totalColumns
@@ -234,7 +250,7 @@ async function ensureDataTablesLoaded() {
     }
 }
 
-function boot(event) {
+function boot(event, root = document, isCurrent = () => true) {
     if (event?.type === "turbo:frame-load") {
         const frame = event.target;
         if (!frame || frame.id !== "seasons-table-frame") {
@@ -250,12 +266,16 @@ function boot(event) {
             }
             const runInit = () => {
                 const attemptInit = (remaining) => {
-                    const opts = buildOptions();
-                    const tableEl = document.querySelector(opts.tableSelector);
-                    const controlsEl = document.querySelector(
+                    if (!isCurrent()) {
+                        return;
+                    }
+
+                    const opts = buildOptions(root);
+                    const tableEl = root.querySelector(opts.tableSelector);
+                    const controlsEl = root.querySelector(
                         opts.controlsSelector,
                     );
-                    const panelEl = document.querySelector(opts.panelSelector);
+                    const panelEl = root.querySelector(opts.panelSelector);
 
                     if (!tableEl) {
                         console.debug(
@@ -312,7 +332,8 @@ function boot(event) {
 }
 
 // Enhanced boot with dynamic DataTables loading
-async function enhancedBoot(event) {
+async function enhancedBoot(event, root = document) {
+    const generation = ++bootGeneration;
     if (event?.type === "turbo:frame-load") {
         const frame = event.target;
         if (!frame || frame.id !== "seasons-table-frame") {
@@ -324,7 +345,7 @@ async function enhancedBoot(event) {
     // Frame-load events may fire before content is settled, so we let
     // boot() handle the retry logic in that case.
     if (event?.type !== "turbo:frame-load") {
-        const { table } = inferActiveTable();
+        const { table } = inferActiveTable(root);
         if (!table) {
             return;
         }
@@ -337,20 +358,31 @@ async function enhancedBoot(event) {
     try {
         await ensureDataTablesLoaded();
     } catch (err) {
-        console.warn("Skipping seasons-init: DataTables failed to load", err);
+        if (generation === bootGeneration) {
+            console.warn(
+                "Skipping seasons-init: DataTables failed to load",
+                err,
+            );
+        }
+        return;
+    }
+
+    if (generation !== bootGeneration) {
         return;
     }
 
     console.debug(
         "[seasons-init-loader] DataTables available, initializing...",
     );
-    boot(event);
+    boot(event, root, () => generation === bootGeneration);
 }
 
-function cleanupSeasonsPage() {
+function cleanupSeasonsPage(root = document) {
+    root = resolveRoot(root);
+    bootGeneration += 1;
     const selectors = ["#seasons-table", "#season-splits-table"];
     for (const sel of selectors) {
-        const table = document.querySelector(sel);
+        const table = root.querySelector(sel);
         if (!table || !hasJquery() || !window.$.fn?.dataTable) {
             continue;
         }
@@ -362,7 +394,7 @@ function cleanupSeasonsPage() {
             console.warn("Failed to clean up seasons DataTable", err);
         }
     }
-    const panel = document.querySelector("#searchbuilder-panel");
+    const panel = root.querySelector("#searchbuilder-panel");
     if (panel) {
         panel.innerHTML = "";
     }

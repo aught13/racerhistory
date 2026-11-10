@@ -4,8 +4,9 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\ImagesController;
+use App\Model\Table\ImagesTable;
+use App\Service\ImageUrlService;
 use Cake\Core\Configure;
-use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
@@ -258,7 +259,7 @@ class ImagesControllerTest extends TestCase
         $request = new ServerRequest(['url' => '/images/serve/1']);
         $controller = $this->getMockBuilder(ImagesController::class)
             ->onlyMethods(['initialize'])
-            ->setConstructorArgs([$request])
+            ->setConstructorArgs([$request, $this->imageUrlService()])
             ->getMock();
 
         $ref = new ReflectionClass(ImagesController::class);
@@ -500,12 +501,24 @@ class ImagesControllerTest extends TestCase
             'url' => '/images/serve/1',
             'query' => $query,
         ]);
-        $response = new Response();
 
         return $this->getMockBuilder(ImagesController::class)
             ->onlyMethods(['initialize'])
-            ->setConstructorArgs([$request, $response])
+            ->setConstructorArgs([$request, $this->imageUrlService()])
             ->getMock();
+    }
+
+    /**
+     * Create the image URL service backed by the test table locator.
+     *
+     * @return \App\Service\ImageUrlService
+     */
+    private function imageUrlService(): ImageUrlService
+    {
+        $imagesTable = $this->getTableLocator()->get('Images');
+        $this->assertInstanceOf(ImagesTable::class, $imagesTable);
+
+        return new ImageUrlService($imagesTable);
     }
 
     /**

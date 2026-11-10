@@ -36,7 +36,14 @@
         <?= $this->Form->control('bio', ['type' => 'textarea', 'rows' => 4, 'class' => 'form-control']) ?>
     </div>
     <div class="mb-3">
-        <?= $this->Form->control('social_links', ['type' => 'textarea', 'rows' => 3, 'class' => 'form-control', 'label' => 'Social Links (one URL per line)', 'placeholder' => 'https://twitter.com/yourhandle']) ?>
+        <?= $this->Form->control('social_links', [
+            'type' => 'textarea',
+            'rows' => 3,
+            'class' => 'form-control',
+            'label' => 'Social Links (one URL per line)',
+            'placeholder' => 'https://twitter.com/yourhandle',
+            'help' => 'Enter one profile URL per line. For example: https://twitter.com/yourhandle',
+        ]) ?>
     </div>
 
     <div class="mb-3">

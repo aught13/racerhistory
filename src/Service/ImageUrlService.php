@@ -56,6 +56,17 @@ class ImageUrlService
     }
 
     /**
+     * Find an image for controller workflows.
+     *
+     * @param int $id Image ID.
+     * @return \App\Model\Entity\Image|null
+     */
+    public function findImageById(int $id): ?Image
+    {
+        return $this->loadImage($id);
+    }
+
+    /**
      * Build a direct URL from an image entity.
      *
      * @param \App\Model\Entity\Image $image

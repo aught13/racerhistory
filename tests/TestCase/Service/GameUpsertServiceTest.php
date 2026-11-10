@@ -75,7 +75,7 @@ class GameUpsertServiceTest extends TestCase
 
         $service = new GameUpsertService($gamesTable, $gameService, $sportConfig, $eavUi);
 
-        $result = $service->processAdd($teamSeasonId, ['period_1_mur' => '10', 'pts_mur' => '20']);
+        $result = $service->processAdd($teamSeasonId, ['period_1_mur' => '10', 'pts_mur' => '20'], $this->adminIdentity());
 
         $this->assertFalse($result['success']);
         $this->assertNotEmpty($result['flashErrors']);
@@ -164,7 +164,7 @@ class GameUpsertServiceTest extends TestCase
             'new_opponent' => ['opponent_name' => 'New Opponent'],
             'pts_mur' => 1,
             'pts_opp' => 0,
-        ]);
+        ], $this->adminIdentity());
 
         $this->assertTrue($result['success']);
         $this->assertSame(
@@ -188,7 +188,7 @@ class GameUpsertServiceTest extends TestCase
         $sport = new Sport(['id' => 1]);
         $team = new Team(['sport' => $sport]);
         $teamSeason = new TeamSeason(['team' => $team]);
-        $game = new Game(['id' => $gameId, 'place_id' => 9, 'team_season' => $teamSeason]);
+        $game = new Game(['id' => $gameId, 'place_id' => 9, 'periods' => '4', 'team_season' => $teamSeason]);
 
         $query = $this->getMockBuilder(SelectQuery::class)
             ->disableOriginalConstructor()
@@ -200,11 +200,19 @@ class GameUpsertServiceTest extends TestCase
 
         $gamesTable = $this->getMockBuilder(GamesTable::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['find'])
+            ->onlyMethods(['find', 'patchEntity'])
             ->getMock();
         $gamesTable->expects($this->once())
             ->method('find')
             ->willReturn($query);
+        $gamesTable->expects($this->once())
+            ->method('patchEntity')
+            ->with($game, $this->isType('array'))
+            ->willReturnCallback(static function (Game $entity, array $data): Game {
+                $entity->set($data);
+
+                return $entity;
+            });
 
         $metadata = [
             'sportId' => 1,
@@ -233,7 +241,7 @@ class GameUpsertServiceTest extends TestCase
             ->getMock();
         $sportConfig->expects($this->once())
             ->method('validatePeriodScores')
-            ->with(1, $this->isType('array'))
+            ->with(1, $this->callback(static fn(array $data): bool => $data['periods'] === 4))
             ->willReturn(['Opponent period scores (10) must equal final opponent score (20)']);
 
         $eavUi = $this->getMockBuilder(GameEavUiService::class)
@@ -250,13 +258,15 @@ class GameUpsertServiceTest extends TestCase
 
         $service = new GameUpsertService($gamesTable, $gameService, $sportConfig, $eavUi);
 
-        $result = $service->processEdit($gameId, ['period_2_team' => '10', 'pts_mur' => '35']);
+        $result = $service->processEdit($gameId, ['period_2_team' => '10', 'pts_mur' => '35'], $this->adminIdentity());
 
         $this->assertFalse($result['success']);
         $this->assertNotEmpty($result['flashErrors']);
         $this->assertNull($result['redirect']);
         $this->assertSame(9, $result['placeId']);
         $this->assertSame($game, $result['viewData']['game']);
+        $this->assertSame('35', $game->get('pts_mur'));
+        $this->assertSame(4, $game->get('periods'));
     }
 
     /**
@@ -302,7 +312,7 @@ class GameUpsertServiceTest extends TestCase
         $eavUi = $this->getMockBuilder(GameEavUiService::class)->getMock();
 
         $service = new GameUpsertService($gamesTable, $gameService, $sportConfig, $eavUi);
-        $result = $service->processAdd($teamSeasonId, ['pts_mur' => 1, 'pts_opp' => 0]);
+        $result = $service->processAdd($teamSeasonId, ['pts_mur' => 1, 'pts_opp' => 0], $this->adminIdentity());
 
         $this->assertTrue($result['success']);
         $this->assertSame('addResults', $result['redirect']['action']);
@@ -353,12 +363,26 @@ class GameUpsertServiceTest extends TestCase
         $eavUi = $this->getMockBuilder(GameEavUiService::class)->getMock();
 
         $service = new GameUpsertService($gamesTable, $gameService, $sportConfig, $eavUi);
-        $result = $service->processAdd($teamSeasonId, []);
+        $result = $service->processAdd($teamSeasonId, [], $this->adminIdentity());
 
         $this->assertTrue($result['success']);
         $this->assertSame('add', $result['redirect']['action']);
         $this->assertSame($teamSeasonId, $result['redirect']['?']['team_season_id']);
         $this->assertSame(43, $result['gameId']);
         $this->assertStringContainsString('Add another', $result['flashSuccess']);
+    }
+
+    /**
+     * @return array{id:int,role_id:int,role:string,status:string,active:bool}
+     */
+    private function adminIdentity(): array
+    {
+        return [
+            'id' => 1,
+            'role_id' => 1,
+            'role' => 'admin',
+            'status' => 'active',
+            'active' => true,
+        ];
     }
 }

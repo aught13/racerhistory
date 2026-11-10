@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Controller\Admin;
 
 use App\Test\TestCase\Support\AuthTestTrait;
+use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
@@ -12,6 +13,7 @@ class TagsControllerTest extends TestCase
 {
     use IntegrationTestTrait;
     use AuthTestTrait;
+    use TaggingServiceFactoryTestTrait;
 
     protected array $fixtures = [
         'app.Users',
@@ -55,6 +57,7 @@ class TagsControllerTest extends TestCase
         $body = (string)$this->_response->getBody();
         $this->assertStringContainsString('data-tag-modal-fields="1"', $body);
         $this->assertStringContainsString('data-apply-url="/admin/tags/apply/images/1"', $body);
+        $this->assertStringNotContainsString('name="preset_tags[]"', $body);
     }
 
     /**
@@ -95,6 +98,31 @@ class TagsControllerTest extends TestCase
         $body = (string)$this->_response->getBody();
         $this->assertStringContainsString('data-tag-modal-fields="1"', $body);
         $this->assertStringContainsString('data-apply-url="/admin/tags/apply/blogposts/1"', $body);
+        $this->assertStringContainsString('name="preset_tags[]"', $body);
+        $this->assertStringContainsString('>Bio</label>', $body);
+        $this->assertStringContainsString('>Preview</label>', $body);
+        $this->assertStringContainsString('>Recap</label>', $body);
+    }
+
+    /**
+     * Selected preset tags are checked and excluded from the freeform input.
+     */
+    public function testModalChecksExistingPresetTags(): void
+    {
+        $this->mockIdentity();
+        $this->blogPostTaggingService()->replaceTags(1, [
+            ['slug' => 'Bio', 'name' => 'Bio'],
+        ]);
+
+        $this->get('/admin/tags/modal/blogposts/1');
+
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertMatchesRegularExpression(
+            '/id="preset-tag-bio"[\s\S]*?value="bio"[\s\S]*?checked/',
+            $body,
+        );
+        $this->assertStringNotContainsString('>Bio</textarea>', $body);
     }
 
     /**
@@ -166,6 +194,78 @@ class TagsControllerTest extends TestCase
         $junction = TableRegistry::getTableLocator()->get('BlogPostsBlogTags');
         $count = $junction->find()->where(['blog_tag_id' => $tag->id, 'blog_post_id' => 1])->count();
         $this->assertSame(1, (int)$count);
+    }
+
+    /**
+     * Preset tags are attached with canonical names and slugs.
+     */
+    public function testApplyAttachesBlogPostPresetTags(): void
+    {
+        $this->mockIdentity();
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/tags/apply/blogposts/1', [
+            'preset_tags' => ['bio', 'recap'],
+        ]);
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue((bool)($payload['success'] ?? false));
+        $this->assertEqualsCanonicalizing(['bio', 'recap'], $payload['applied'] ?? []);
+        $this->assertEqualsCanonicalizing(
+            [
+                ['slug' => 'bio', 'name' => 'Bio'],
+                ['slug' => 'recap', 'name' => 'Recap'],
+            ],
+            $payload['tags'] ?? [],
+        );
+
+        $tagsTable = TableRegistry::getTableLocator()->get('BlogTags');
+        $bio = $tagsTable->find()->where(['slug' => 'bio'])->first();
+        $recap = $tagsTable->find()->where(['slug' => 'recap'])->first();
+        $this->assertNotNull($bio);
+        $this->assertNotNull($recap);
+        $this->assertSame('Bio', (string)$bio->name);
+        $this->assertSame('Recap', (string)$recap->name);
+
+        $junction = TableRegistry::getTableLocator()->get('BlogPostsBlogTags');
+        $this->assertSame(1, $junction->find()
+            ->where(['blog_tag_id' => $bio->id, 'blog_post_id' => 1])
+            ->count());
+        $this->assertSame(1, $junction->find()
+            ->where(['blog_tag_id' => $recap->id, 'blog_post_id' => 1])
+            ->count());
+    }
+
+    /**
+     * Unchecking the only preset tag removes it from an existing blog post.
+     */
+    public function testApplyRemovesUnselectedPresetTags(): void
+    {
+        $this->mockIdentity();
+        $this->blogPostTaggingService()->applyFromData(1, [
+            'preset_tags' => ['bio'],
+        ]);
+        $this->enableCsrfToken();
+        $this->enableSecurityToken();
+
+        $this->post('/admin/tags/apply/blogposts/1', [
+            'tags' => '',
+            'preset_tags' => [],
+        ]);
+
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertTrue((bool)($payload['success'] ?? false));
+        $this->assertSame([], $payload['applied'] ?? null);
+        $this->assertSame(
+            0,
+            TableRegistry::getTableLocator()->get('BlogPostsBlogTags')
+                ->find()
+                ->where(['blog_post_id' => 1])
+                ->count(),
+        );
     }
 
     /**

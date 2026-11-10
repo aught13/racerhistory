@@ -230,6 +230,11 @@ describe("games_sport_dynamic helpers", () => {
     });
 
     test("fetchMeta sets sport name and renders eavTemplate on success", async () => {
+        document.body.innerHTML = `
+            <select id="team-season-select" data-sport-url="/meta"></select>
+            <div id="sport-specific-section"></div>
+            <span id="current-sport"></span>
+        `;
         const modImport = await import("../../legacy/games_sport_dynamic.js");
         const mod = modImport.default || modImport;
         const { fetchMeta } = mod;

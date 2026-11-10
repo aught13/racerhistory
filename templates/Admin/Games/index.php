@@ -3,13 +3,22 @@
  * @var \App\View\AppView $this
  * @var mixed $teamSeasonId
  * @var \App\Model\Entity\TeamSeason $teamSeason
+ * @var array<string,string> $sportOptions
+ * @var array<int,string> $teamOptions
+ * @var string $currentSportKey
+ * @var int $currentTeamId
  */
 
+$gameFilters = array_filter([
+    'team_season_id' => $teamSeasonId ?: null,
+    'sport_key' => $currentSportKey ?: null,
+    'team_id' => $currentTeamId > 0 ? $currentTeamId : null,
+]);
 $ajaxUrl = $this->Url->build([
     'prefix' => 'Admin',
     'controller' => 'Games',
     'action' => 'ajaxList',
-    '?' => $teamSeasonId ? ['team_season_id' => $teamSeasonId] : [],
+    '?' => $gameFilters,
 ]);
 
 $bulkDeleteUrl = $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk']);
@@ -22,7 +31,6 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
     data-controller="admin-games-index"
     data-admin-games-index-ajax-url-value="<?= h($ajaxUrl) ?>"
     data-admin-games-index-bulk-delete-url-value="<?= h($bulkDeleteUrl) ?>"
-    data-admin-games-index-delete-form-id-value="delete-form-games-bulk"
 >
     <?php if (isset($teamSeason)) : ?>
         <nav aria-label="breadcrumb">
@@ -34,7 +42,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
                 </li>
                 <li class="breadcrumb-item">
                     <a href="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'TeamSeasons', 'action' => 'view', $teamSeason->id]) ?>">
-                        <?= h($teamSeason->team->team_name) ?> (<?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>)
+                        <?= h($teamSeason->team->getDisplayName()) ?> (<?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?>)
                     </a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">Games</li>
@@ -46,7 +54,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
         <div class="col">
             <?php if (isset($teamSeason)) : ?>
                 <h1 class="mb-3">
-                    Games for <?= h($teamSeason->team->team_name) ?>
+                    Games for <?= h($teamSeason->team->getDisplayName()) ?>
                     <small class="text-muted"><?= h($teamSeason->season->start . '-' . $teamSeason->season->end) ?></small>
                 </h1>
             <?php else : ?>
@@ -69,6 +77,33 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
             </div>
         </div>
     </div>
+
+    <form method="get" action="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-3">
+        <?php if ($teamSeasonId) : ?>
+            <input type="hidden" name="team_season_id" value="<?= (int)$teamSeasonId ?>">
+        <?php endif; ?>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="games-filter-sport">Sport</label>
+            <select class="form-select form-select-sm" id="games-filter-sport" name="sport_key">
+                <option value="">All sports</option>
+                <?php foreach ($sportOptions as $sportKey => $sportName) : ?>
+                    <option value="<?= h($sportKey) ?>"<?= $currentSportKey === $sportKey ? ' selected' : '' ?>><?= h($sportName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-5 col-md-3">
+            <label class="form-label" for="games-filter-team">Team</label>
+            <select class="form-select form-select-sm" id="games-filter-team" name="team_id">
+                <option value="">All teams</option>
+                <?php foreach ($teamOptions as $teamId => $teamName) : ?>
+                    <option value="<?= (int)$teamId ?>"<?= $currentTeamId === (int)$teamId ? ' selected' : '' ?>><?= h($teamName) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        </div>
+    </form>
 
     <div class="row">
         <div class="col">
@@ -102,7 +137,7 @@ $canDeleteGames = $this->Rbac->can('Games', 'delete');
                 </table>
             </form>
 
-            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk'], 'id' => 'delete-form-games-bulk', 'style' => 'display:none']) ?>
+            <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Games', 'action' => 'bulk'], 'id' => 'delete-form-games-bulk', 'style' => 'display:none', 'data-admin-games-index-target' => 'deleteForm']) ?>
             <?php $this->Form->unlockField('game_ids');
             $this->Form->unlockField('bulk_action'); ?>
             <?= $this->Form->hidden('game_ids[]', ['value' => '']) ?>

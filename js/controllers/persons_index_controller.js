@@ -332,21 +332,16 @@ export default class extends Controller {
             return;
         }
 
-        if (typeof window.__rhStimulusShowConfirmDelete !== "function") {
-            return;
-        }
-
-        const formId = this.hasBulkFormTarget
-            ? this.bulkFormTarget.id
-            : "delete-form-persons-bulk";
-
-        window.__rhStimulusShowConfirmDelete({
-            deleteUrl: this.bulkDeleteUrlValue,
-            itemType: "persons (bulk)",
-            ids: JSON.stringify(ids),
-            idsName: "person_ids[]",
-            formId,
-            bulkAction: "delete",
+        this.dispatch("confirm-delete", {
+            prefix: "admin",
+            detail: {
+                deleteUrl: this.bulkDeleteUrlValue,
+                itemType: "persons (bulk)",
+                ids: JSON.stringify(ids),
+                idsName: "person_ids[]",
+                sourceForm: this.hasBulkFormTarget ? this.bulkFormTarget : null,
+                bulkAction: "delete",
+            },
         });
     }
 }

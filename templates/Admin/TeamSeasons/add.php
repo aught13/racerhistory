@@ -1,4 +1,6 @@
 <?php
+use Cake\Core\Configure;
+
 /**
  * @var \App\View\AppView $this
  * @var mixed $seasonsList
@@ -8,7 +10,7 @@
  */
 
 $this->assign('title', 'Add Team Season'); ?>
-<div class="container py-4" data-controller="team-season-form" data-team-season-form-existing-image-id-value="" data-team-season-form-existing-preview-url-value="" data-team-season-form-upload-url-value="/admin/images/upload">
+<div class="container py-4" data-controller="team-season-form" data-action="turbo:before-cache@document->team-season-form#beforeCache turbo:before-render@document->team-season-form#beforeRender turbo:load@document->team-season-form#onTurboLoad admin:popup-option-added@document->team-season-form#popupOptionAdded" data-team-season-form-existing-image-id-value="" data-team-season-form-existing-preview-url-value="" data-team-season-form-csrf-token-value="<?= h((string)$this->request->getAttribute('csrfToken')) ?>" data-team-season-form-max-upload-bytes-value="<?= (int)Configure::read('Images.maxUploadBytes', 5242880) ?>" data-team-season-form-upload-url-value="/admin/images/upload">
     <div class="row mb-3">
         <div class="col">
             <nav aria-label="breadcrumb">
@@ -49,6 +51,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'required' => true,
                                     'id' => 'team-id',
+                                    'data-team-season-form-target' => 'teamSelect',
                                 ]) ?>
                             </div>
                             <button
@@ -76,6 +79,7 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'label' => false,
                                     'required' => true,
                                     'id' => 'season-id',
+                                    'data-team-season-form-target' => 'seasonSelect',
                                 ]) ?>
                             </div>
                             <button
@@ -207,11 +211,12 @@ $this->assign('title', 'Add Team Season'); ?>
                                     'maxlength' => 162,
                                     'placeholder' => 'Numeric image id after upload',
                                     'data-team-season-form-target' => 'imageField',
+                                    'data-action' => 'change->team-season-form#handleImageFieldChange',
                                 ]) ?>
                             </div>
                             <div class="col-md-4">
                                 <button type="button" class="btn btn-secondary w-100"
-                                id="select-team-season-image" data-team-season-form-target="uploadButton">Select / Upload</button>
+                                id="select-team-season-image" data-team-season-form-target="uploadButton" data-action="click->team-season-form#handleUploadClick">Select / Upload</button>
                             </div>
                         </div>
                         <div id="team-season-image-preview" class="mt-2" style="display:none;" data-team-season-form-target="imagePreview">
@@ -272,7 +277,10 @@ $this->assign('title', 'Add Team Season'); ?>
     ]) ?>
     <?= $this->Form->control('sport_key', ['type' => 'select']) ?>
     <?= $this->Form->control('team_name', ['type' => 'text']) ?>
+    <?= $this->Form->control('team_description', ['type' => 'textarea']) ?>
+    <?= $this->Form->control('team_nickname', ['type' => 'text']) ?>
     <?= $this->Form->control('abbr', ['type' => 'text']) ?>
+    <?= $this->Form->control('team_scorebug', ['type' => 'text']) ?>
     <?= $this->Form->control('gender', ['type' => 'text']) ?>
     <?= $this->Form->end() ?>
 </div>
@@ -293,6 +301,7 @@ $this->assign('title', 'Add Team Season'); ?>
     'formUrl' => $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'ajaxAdd']),
     'targetSelectId' => 'team-id',
     'hiddenFormId' => 'hidden-team-form',
+    'teamNamePreview' => true,
     'fields' => [
         [
             'name' => 'sport_key',
@@ -300,18 +309,44 @@ $this->assign('title', 'Add Team Season'); ?>
             'label' => 'Sport',
             'required' => true,
             'options' => $sports ?? [],
+            'help' => 'Choose the sport this team competes in.',
         ],
         [
             'name' => 'team_name',
             'type' => 'text',
-            'label' => 'Team Name',
+            'label' => 'Base Team Name',
             'required' => true,
+            'previewTarget' => 'teamName',
+            'help' => 'Enter the base team/category phrase used in every display value, such as Basketball.',
+        ],
+        [
+            'name' => 'team_description',
+            'type' => 'textarea',
+            'label' => 'Organization / Name Prefix',
+            'previewTarget' => 'teamDescription',
+            'help' => 'Optionally enter the organization or descriptor shown first in Full Team Name.',
+        ],
+        [
+            'name' => 'team_nickname',
+            'type' => 'text',
+            'label' => 'Team Nickname / Mascot',
+            'required' => true,
+            'previewTarget' => 'teamNickname',
+            'help' => 'Enter the team nickname included in Team Name and Full Team Name.',
         ],
         [
             'name' => 'abbr',
             'type' => 'text',
             'label' => 'Abbreviation',
             'required' => true,
+            'help' => 'Enter the short code used in compact contexts, up to 5 characters.',
+        ],
+        [
+            'name' => 'team_scorebug',
+            'type' => 'text',
+            'label' => 'Scorebug Name',
+            'required' => true,
+            'help' => 'Enter the short name used on score displays, up to 6 characters.',
         ],
         [
             'name' => 'gender',
@@ -319,6 +354,8 @@ $this->assign('title', 'Add Team Season'); ?>
             'label' => 'Gender',
             'required' => true,
             'options' => ['M' => 'Male', 'F' => 'Female', 'C' => 'Co-ed'],
+            'previewTarget' => 'gender',
+            'help' => 'Select the competition classification; Co-ed is omitted from display names.',
         ],
     ],
 ]) ?>

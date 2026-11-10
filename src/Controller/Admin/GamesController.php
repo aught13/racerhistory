@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\GameEavMetaService;
-use App\Service\GameEavUiService;
 use App\Service\GamesAdminService;
 use App\Service\GameService;
 use App\Service\GameUpsertService;
 use App\Service\GameViewService;
 use App\Service\SportConfigService;
 use App\Service\StatsService;
+use Cake\Controller\ComponentRegistry;
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Routing\Router;
 
 /**
@@ -24,7 +26,7 @@ use Cake\Routing\Router;
  *   sites-by-place lookup, delete and bulk-delete orchestration.
  * - GameUpsertService: add/edit/add-results workflows.
  * - GameViewService: full view-page data assembly.
- * - GameEavMetaService/GameEavUiService: sport-aware EAV metadata and UI vars.
+ * - GameEavMetaService: sport-aware EAV metadata.
  *
  * The controller keeps HTTP-only concerns: request method checks, flashes,
  * redirects, and response serialization.
@@ -34,7 +36,6 @@ use Cake\Routing\Router;
  * @property \App\Service\SportConfigService $SportConfig
  * @property \App\Service\StatsService $Stats
  * @property \App\Service\GameEavMetaService $gameEavMeta
- * @property \App\Service\GameEavUiService $gameEavUi
  * @property \App\Service\GameViewService $gameView
  * @property \App\Service\GameUpsertService $gameUpsert
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
@@ -48,7 +49,6 @@ class GamesController extends AppController
      */
     private GamesAdminService $gamesAdminService;
 
-    private GameEavUiService $gameEavUi;
     private GameEavMetaService $gameEavMeta;
     private GameViewService $gameView;
     private GameUpsertService $gameUpsert;
@@ -69,6 +69,40 @@ class GamesController extends AppController
     protected StatsService $Stats;
 
     /**
+     * Create the controller with its game administration services.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\GamesAdminService $gamesAdminService The game administration service.
+     * @param \App\Service\GameService $gameService The game service.
+     * @param \App\Service\SportConfigService $sportConfigService The sport configuration service.
+     * @param \App\Service\StatsService $statsService The statistics service.
+     * @param \App\Service\GameEavMetaService $gameEavMeta The game EAV metadata service.
+     * @param \App\Service\GameViewService $gameView The game view service.
+     * @param \App\Service\GameUpsertService $gameUpsert The game upsert service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        GamesAdminService $gamesAdminService,
+        GameService $gameService,
+        SportConfigService $sportConfigService,
+        StatsService $statsService,
+        GameEavMetaService $gameEavMeta,
+        GameViewService $gameView,
+        GameUpsertService $gameUpsert,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->gamesAdminService = $gamesAdminService;
+        $this->Game = $gameService;
+        $this->SportConfig = $sportConfigService;
+        $this->Stats = $statsService;
+        $this->gameEavMeta = $gameEavMeta;
+        $this->gameView = $gameView;
+        $this->gameUpsert = $gameUpsert;
+    }
+
+    /**
      * Initialize controller
      *
      * @return void
@@ -76,16 +110,6 @@ class GamesController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->loadService('Game');
-        $this->loadService('SportConfig');
-        $this->loadService('Stats');
-
-        $this->gamesAdminService = new GamesAdminService($this->Game, $this->SportConfig);
-
-        $this->gameEavUi = new GameEavUiService();
-        $this->gameEavMeta = new GameEavMetaService($this->Game, $this->gameEavUi);
-        $this->gameView = new GameViewService($this->Game, $this->SportConfig, $this->Stats, $this->gameEavUi);
-        $this->gameUpsert = new GameUpsertService(null, $this->Game, $this->SportConfig, $this->gameEavUi);
     }
 
     /**
@@ -102,6 +126,16 @@ class GamesController extends AppController
         $this->request->allowMethod(['get']);
         $gameId = (int)$this->request->getQuery('game_id');
         $teamSeasonId = (int)$this->request->getQuery('team_season_id');
+
+        $identity = $this->request->getAttribute('identity');
+        if (
+            ($gameId && !$this->gamesAdminService->canAccessGame($identity, $gameId))
+            || (!$gameId && $teamSeasonId && !$this->gamesAdminService->canAccessTeamSeason($identity, $teamSeasonId))
+        ) {
+            return $this->response
+                ->withType('application/json')
+                ->withStringBody(json_encode(['success' => false, 'error' => 'Game not found.']));
+        }
 
         $result = $this->gameEavMeta->getMetadataResult($gameId ?: null, $teamSeasonId ?: null);
         $payload = $result['payload'];
@@ -148,7 +182,17 @@ class GamesController extends AppController
     {
         $teamSeasonIdRaw = $this->request->getQuery('team_season_id');
         $teamSeasonId = $teamSeasonIdRaw !== null ? (int)$teamSeasonIdRaw : null;
-        $this->set($this->gamesAdminService->getIndexContext($teamSeasonId));
+        $sportKey = $this->request->getQuery('sport_key');
+        $teamIdRaw = $this->request->getQuery('team_id');
+        $teamId = is_scalar($teamIdRaw) && ctype_digit((string)$teamIdRaw) && (int)$teamIdRaw > 0
+            ? (int)$teamIdRaw
+            : null;
+        $this->set($this->gamesAdminService->getIndexContext(
+            $teamSeasonId,
+            $this->request->getAttribute('identity'),
+            is_string($sportKey) ? $sportKey : null,
+            $teamId,
+        ));
     }
 
     /**
@@ -171,8 +215,10 @@ class GamesController extends AppController
             'length' => $length,
             'searchValue' => $searchValue,
             'teamSeasonId' => $teamSeasonId,
+            'sportKey' => $this->request->getQuery('sport_key'),
+            'teamId' => $this->request->getQuery('team_id'),
             'searchBuilder' => $searchBuilder,
-        ]);
+        ], $this->request->getAttribute('identity'));
 
         $this->set([
             'draw' => $draw,
@@ -199,6 +245,9 @@ class GamesController extends AppController
      */
     public function view(string $id): void
     {
+        if (!$this->gamesAdminService->canAccessGame($this->request->getAttribute('identity'), (int)$id)) {
+            throw new RecordNotFoundException('Game not found.');
+        }
         $this->set($this->gameView->getViewData((int)$id));
     }
 
@@ -216,7 +265,11 @@ class GamesController extends AppController
         }
 
         if ($this->request->is('post')) {
-            $result = $this->gameUpsert->processAdd($teamSeasonId, $this->request->getData());
+            $result = $this->gameUpsert->processAdd(
+                $teamSeasonId,
+                $this->request->getData(),
+                $this->request->getAttribute('identity'),
+            );
 
             foreach (($result['flashErrors'] ?? []) as $error) {
                 $this->Flash->error(__((string)$error));
@@ -228,14 +281,15 @@ class GamesController extends AppController
                 return $this->redirect($result['redirect']);
             }
 
-            $this->setFormLists();
+            $this->setFormLists(null, $this->request->getAttribute('identity'));
             $this->set($result['viewData'] ?? []);
+            $this->response = $this->response->withStatus(422);
 
             return null;
         }
 
-        $this->setFormLists();
-        $this->set($this->gameUpsert->getAddViewData($teamSeasonId));
+        $this->setFormLists(null, $this->request->getAttribute('identity'));
+        $this->set($this->gameUpsert->getAddViewData($teamSeasonId, $this->request->getAttribute('identity')));
 
         return null;
     }
@@ -247,7 +301,7 @@ class GamesController extends AppController
      */
     public function addResults(string $id): ?Response
     {
-        $viewData = $this->gameUpsert->getEditViewData((int)$id);
+        $viewData = $this->gameUpsert->getEditViewData((int)$id, $this->request->getAttribute('identity'));
         $game = $viewData['game'];
 
         $sportId = (int)($viewData['sportId'] ?? 0);
@@ -255,7 +309,11 @@ class GamesController extends AppController
         $viewData['sportHasStats'] = $sportHasStats;
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->gameUpsert->processEdit((int)$id, $this->request->getData());
+            $result = $this->gameUpsert->processEdit(
+                (int)$id,
+                $this->request->getData(),
+                $this->request->getAttribute('identity'),
+            );
 
             foreach (($result['flashErrors'] ?? []) as $error) {
                 $this->Flash->error(__((string)$error));
@@ -282,6 +340,7 @@ class GamesController extends AppController
 
             $viewData = array_merge($viewData, $result['viewData'] ?? []);
             $viewData['sportHasStats'] = $sportHasStats;
+            $this->response = $this->response->withStatus(422);
         }
 
         $this->set($viewData);
@@ -297,7 +356,11 @@ class GamesController extends AppController
     public function edit(string $id): ?Response
     {
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $result = $this->gameUpsert->processEdit((int)$id, $this->request->getData());
+            $result = $this->gameUpsert->processEdit(
+                (int)$id,
+                $this->request->getData(),
+                $this->request->getAttribute('identity'),
+            );
 
             foreach (($result['flashErrors'] ?? []) as $error) {
                 $this->Flash->error(__((string)$error));
@@ -318,17 +381,18 @@ class GamesController extends AppController
                 return $this->redirect($result['redirect']);
             }
 
-            $this->setFormLists($result['placeId'] ?? null);
+            $this->setFormLists($result['placeId'] ?? null, $this->request->getAttribute('identity'));
             $viewData = $result['viewData'] ?? [];
             $viewData['sportHasStats'] = $this->determineSportHasStats($viewData['sportId'] ?? 0);
             $this->set($viewData);
+            $this->response = $this->response->withStatus(422);
 
             return null;
         }
 
-        $viewData = $this->gameUpsert->getEditViewData((int)$id);
+        $viewData = $this->gameUpsert->getEditViewData((int)$id, $this->request->getAttribute('identity'));
         $viewData['sportHasStats'] = $this->determineSportHasStats($viewData['sportId'] ?? 0);
-        $this->setFormLists($viewData['game']->place_id ?? null);
+        $this->setFormLists($viewData['game']->place_id ?? null, $this->request->getAttribute('identity'));
         $this->set($viewData);
 
         return null;
@@ -406,11 +470,12 @@ class GamesController extends AppController
      * Build lists for select inputs and provide inline create options.
      *
      * @param int|null $placeId Optional place ID to filter sites
+     * @param mixed $identity Current authenticated identity.
      */
-    private function setFormLists(?int $placeId = null): void
+    private function setFormLists(?int $placeId = null, mixed $identity = null): void
     {
-        $this->set($this->gamesAdminService->getFormLists($placeId));
+        $this->set($this->gamesAdminService->getFormLists($placeId, $identity));
     }
 
-    // Sport-aware UI vars and legacy EAV mapping are handled via GameService + GameEavUiService.
+    // Sport-aware EAV metadata and view data are handled by the game services.
 }

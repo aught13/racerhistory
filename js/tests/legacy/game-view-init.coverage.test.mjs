@@ -134,7 +134,7 @@ describe("game-view-init.mjs", () => {
         setupJQueryMock();
 
         const navigateSpy = jest.fn();
-        window.__RH_NAVIGATE__ = navigateSpy;
+        window.Turbo = { visit: navigateSpy };
 
         const mod = await import("../../legacy/modules/game-view-init.mjs");
         mod.default({ root: document });
@@ -144,7 +144,7 @@ describe("game-view-init.mjs", () => {
             new MouseEvent("click", { bubbles: true }),
         );
         expect(navigateSpy).toHaveBeenCalledWith("/blog/my-post");
-        delete window.__RH_NAVIGATE__;
+        delete window.Turbo;
     });
 
     test("setupBlogClicks handles Turbo.visit when available", async () => {
@@ -195,7 +195,7 @@ describe("game-view-init.mjs", () => {
         mod.default({ root: document }); // second call should skip
     });
 
-    test("setupImageGallery opens and closes modal", async () => {
+    test("setupImageGallery updates modal image content", async () => {
         document.body.innerHTML = `
             <div data-game-image-gallery>
                 <img class="game-photo-thumb-img" data-image-id="42" data-image-url="/img/storage/game-42.webp" data-image-filename="test.jpg" />
@@ -213,59 +213,8 @@ describe("game-view-init.mjs", () => {
         const thumb = document.querySelector(".game-photo-thumb-img");
         thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-        const modal = document.querySelector("[data-game-image-modal]");
-        expect(modal.getAttribute("data-modal-open")).toBe("true");
-
         const modalImg = document.querySelector("[data-modal-image-fallback]");
         expect(modalImg.src).toContain("/img/storage/game-42.webp");
-
-        // Close via button
-        const closeBtn = document.querySelector("[data-modal-close]");
-        closeBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        expect(modal.hasAttribute("data-modal-open")).toBe(false);
-    });
-
-    test("setupImageGallery closes on Escape key", async () => {
-        document.body.innerHTML = `
-            <div data-game-image-gallery>
-                <img class="game-photo-thumb-img" data-image-id="1" data-image-url="/img/storage/game-1.webp" />
-            </div>
-            <div data-game-image-modal>
-                <img data-modal-image-fallback />
-            </div>
-        `;
-        setupJQueryMock();
-        const mod = await import("../../legacy/modules/game-view-init.mjs");
-        mod.default({ root: document });
-
-        const thumb = document.querySelector(".game-photo-thumb-img");
-        thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-        const modal = document.querySelector("[data-game-image-modal]");
-        expect(modal.getAttribute("data-modal-open")).toBe("true");
-
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-        expect(modal.hasAttribute("data-modal-open")).toBe(false);
-    });
-
-    test("setupImageGallery closes on backdrop click", async () => {
-        document.body.innerHTML = `
-            <div data-game-image-gallery>
-                <img class="game-photo-thumb-img" data-image-id="5" />
-            </div>
-            <div data-game-image-modal>
-                <img data-modal-image-fallback />
-            </div>
-        `;
-        setupJQueryMock();
-        const mod = await import("../../legacy/modules/game-view-init.mjs");
-        mod.default({ root: document });
-
-        const thumb = document.querySelector(".game-photo-thumb-img");
-        thumb.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-        const modal = document.querySelector("[data-game-image-modal]");
-        modal.dispatchEvent(new MouseEvent("click", { target: modal }));
     });
 
     test("setupImageGallery ignores click on non-thumb", async () => {

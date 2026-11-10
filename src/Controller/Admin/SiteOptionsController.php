@@ -4,8 +4,10 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\SiteOptionsService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Throwable;
 
 /**
@@ -18,12 +20,27 @@ class SiteOptionsController extends AppController
     private SiteOptionsService $siteOptionsService;
 
     /**
+     * Create the controller with its site options service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\SiteOptionsService $siteOptionsService The site options service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        SiteOptionsService $siteOptionsService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->siteOptionsService = $siteOptionsService;
+    }
+
+    /**
      * Initialization hook method.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->siteOptionsService = new SiteOptionsService();
     }
 
     /**

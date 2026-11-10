@@ -255,7 +255,9 @@ class BlogPostsAdminService
                 $selectedRosterId = (int)substr($slug, strlen('team_season_roster-'));
             }
 
-            if (preg_match('/-[0-9]+$/', $slug)) {
+            if (isset(TaggingService::BLOG_POST_PRESET_TAGS[strtolower($slug)])) {
+                $formattedTags[] = $tag;
+            } elseif (preg_match('/-[0-9]+$/', $slug)) {
                 if (str_starts_with($slug, 'team_season_roster-')) {
                     $rid = (int)substr($slug, strlen('team_season_roster-'));
                     $display = (new TeamSeasonRosterService())->getRosterDisplayData($rid);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Test\TestCase\Service;
 
 use App\Service\TeamSeasonRosterService;
+use App\Service\TeamSeasonService;
 use Cake\TestSuite\TestCase;
 
 class TeamSeasonRosterServiceTest extends TestCase
@@ -52,9 +53,14 @@ class TeamSeasonRosterServiceTest extends TestCase
      */
     public function testGetDisplayLabel(): void
     {
+        $roster = $this->service->getRosterById(1);
         $label = $this->service->getDisplayLabel(1);
-        $this->assertIsString($label);
-        $this->assertNotEmpty($label);
+
+        $this->assertNotNull($roster);
+        $this->assertSame(
+            (new TeamSeasonService())->getDisplayLabel((int)$roster->team_season_id),
+            $label,
+        );
     }
 
     /**
@@ -93,7 +99,12 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertArrayHasKey('id', $first);
         $this->assertArrayHasKey('label', $first);
         $this->assertStringContainsString('John Doe', (string)$first['label']);
-        $this->assertStringContainsString('Los Angeles Lakers', (string)$first['label']);
+        $roster = $this->service->getRosterById((int)$first['id']);
+        $this->assertNotNull($roster);
+        $this->assertStringContainsString(
+            $roster->team_season->team->getDisplayName(),
+            (string)$first['label'],
+        );
     }
 
     /**
@@ -107,6 +118,12 @@ class TeamSeasonRosterServiceTest extends TestCase
         $this->assertArrayHasKey('person_label', $data);
         $this->assertArrayHasKey('team_season_id', $data);
         $this->assertArrayHasKey('team_season_label', $data);
+        $roster = $this->service->getRosterById(1);
+        $this->assertNotNull($roster);
+        $this->assertStringContainsString(
+            $roster->team_season->team->getDisplayName(),
+            (string)$data['team_season_label'],
+        );
     }
 
     /**

@@ -317,7 +317,7 @@ describe("season-view-init additional branches", () => {
         expect(tfoot.textContent).toContain("Team");
     });
 
-    test("image gallery click opens modal", async () => {
+    test("image gallery click updates modal image", async () => {
         document.body.innerHTML = `
             <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
             <div data-season-image-gallery>
@@ -334,58 +334,9 @@ describe("season-view-init additional branches", () => {
 
         // Click image
         document.querySelector(".season-photo-thumb-img").click();
-        const modal = document.querySelector("[data-season-image-modal]");
-        expect(modal.hasAttribute("data-modal-open")).toBe(true);
         expect(
             document.querySelector("[data-modal-image-fallback]")?.src,
         ).toContain("/img/storage/2026/05/test.jpg");
-
-        // Close via button
-        document.querySelector("[data-modal-close]").click();
-        expect(modal.hasAttribute("data-modal-open")).toBe(false);
-    });
-
-    test("image gallery click outside modal closes it", async () => {
-        document.body.innerHTML = `
-            <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
-            <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/f.jpg" data-image-filename="f.jpg" />
-            </div>
-            <div data-season-image-modal>
-                <img data-modal-image-fallback />
-            </div>`;
-        setupDT();
-        const mod = await import("../../legacy/modules/season-view-init.mjs");
-        mod.default({ tableSelectors: ["#t1"] });
-
-        document.querySelector(".season-photo-thumb-img").click();
-        const modal = document.querySelector("[data-season-image-modal]");
-        expect(modal.hasAttribute("data-modal-open")).toBe(true);
-
-        // Click on modal background (event.target === modal)
-        modal.click();
-        expect(modal.hasAttribute("data-modal-open")).toBe(false);
-    });
-
-    test("image gallery Escape key closes modal", async () => {
-        document.body.innerHTML = `
-            <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
-            <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/a.jpg" />
-            </div>
-            <div data-season-image-modal>
-                <img data-modal-image-fallback />
-            </div>`;
-        setupDT();
-        const mod = await import("../../legacy/modules/season-view-init.mjs");
-        mod.default({ tableSelectors: ["#t1"] });
-
-        document.querySelector(".season-photo-thumb-img").click();
-        const modal = document.querySelector("[data-season-image-modal]");
-        expect(modal.hasAttribute("data-modal-open")).toBe(true);
-
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-        expect(modal.hasAttribute("data-modal-open")).toBe(false);
     });
 
     test("image gallery click without image URL is ignored", async () => {
@@ -402,8 +353,11 @@ describe("season-view-init additional branches", () => {
         mod.default({ tableSelectors: ["#t1"] });
 
         document.querySelector(".season-photo-thumb-img").click();
-        const modal = document.querySelector("[data-season-image-modal]");
-        expect(modal.hasAttribute("data-modal-open")).toBe(false);
+        expect(
+            document
+                .querySelector("[data-modal-image-fallback]")
+                ?.hasAttribute("src"),
+        ).toBe(false);
     });
 
     test("image gallery without modal img is ignored", async () => {
@@ -416,23 +370,6 @@ describe("season-view-init additional branches", () => {
         setupDT();
         const mod = await import("../../legacy/modules/season-view-init.mjs");
         mod.default({ tableSelectors: ["#t1"] });
-    });
-
-    test("Escape key when modal not open does nothing", async () => {
-        document.body.innerHTML = `
-            <table id="t1"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>
-            <div data-season-image-gallery>
-                <img class="season-photo-thumb-img" data-image-url="/img/storage/2026/05/c.jpg" />
-            </div>
-            <div data-season-image-modal>
-                <img data-modal-image-fallback />
-            </div>`;
-        setupDT();
-        const mod = await import("../../legacy/modules/season-view-init.mjs");
-        mod.default({ tableSelectors: ["#t1"] });
-
-        // Escape without opening
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
 
     test("initTable with existing DataTable destroys first", async () => {

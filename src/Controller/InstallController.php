@@ -4,9 +4,11 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\DeployAuditService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Core\Configure;
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
+use Cake\Http\ServerRequest;
 
 /**
  * InstallController
@@ -23,6 +25,21 @@ use Cake\Http\Exception\NotFoundException;
  */
 class InstallController extends AppController
 {
+    /**
+     * Create the controller with its deployment audit service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\DeployAuditService $deployAuditService The deployment audit service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        private readonly DeployAuditService $deployAuditService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+    }
+
     /**
      * Load Authorization and skip it (public page, token-gated).
      */
@@ -52,8 +69,7 @@ class InstallController extends AppController
      */
     public function index(): void
     {
-        $service = new DeployAuditService();
-        $audit = $service->run();
+        $audit = $this->deployAuditService->run();
 
         $this->set('audit', $audit);
         $this->set('pageTitle', 'Deployment Audit');

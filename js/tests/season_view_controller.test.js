@@ -2,6 +2,11 @@
 
 import { Application } from "@hotwired/stimulus";
 
+jest.mock("../lib/season_view_runtime.js", () => ({
+    initSeasonViewRoot: jest.fn(),
+}));
+
+import { initSeasonViewRoot } from "../lib/season_view_runtime.js";
 import SeasonViewController from "../controllers/season_view_controller.js";
 import { publicDataTablesReady } from "../lib/public_vite_datatables.mjs";
 
@@ -9,8 +14,14 @@ describe("season-view controller", () => {
     let application;
 
     beforeEach(() => {
-        document.body.innerHTML =
-            '<div id="season-root" data-controller="season-view"></div>';
+        jest.clearAllMocks();
+        document.body.innerHTML = `
+            <div id="season-root" data-controller="season-view" data-action="turbo:before-cache@document->season-view#beforeCache">
+                <div class="modal show" data-season-view-target="imageModal">
+                    <button data-season-view-target="imageModalDismiss"></button>
+                </div>
+            </div>
+        `;
 
         application = Application.start();
         application.register("season-view", SeasonViewController);
@@ -22,36 +33,22 @@ describe("season-view controller", () => {
             application = null;
         }
 
-        delete window.__SEASON_VIEW_INIT__;
         document.body.innerHTML = "";
         jest.restoreAllMocks();
     });
 
-    test("calls init override on connect", async () => {
-        const initMock = jest.fn();
-        window.__SEASON_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("season-view", SeasonViewController);
-        await Promise.resolve();
+    test("initializes the controller root after DataTables is ready", async () => {
         await publicDataTablesReady;
+        await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledWith({
-            root: document.getElementById("season-root"),
-        });
+        expect(initSeasonViewRoot).toHaveBeenCalledWith(
+            document.getElementById("season-root"),
+        );
     });
 
-    test("calls init override for turbo frame loads", async () => {
-        const initMock = jest.fn();
-        window.__SEASON_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("season-view", SeasonViewController);
-        await Promise.resolve();
+    test("initializes a frame root after Turbo frame loads", async () => {
         await publicDataTablesReady;
-
+        await Promise.resolve();
         const frame = document.createElement("turbo-frame");
         document.body.appendChild(frame);
 
@@ -63,18 +60,13 @@ describe("season-view controller", () => {
         );
         await Promise.resolve();
 
-        expect(initMock).toHaveBeenCalledWith({ root: frame });
+        expect(initSeasonViewRoot).toHaveBeenLastCalledWith(frame);
     });
 
     test("does not initialize a frame removed before dependencies are ready", async () => {
-        const initMock = jest.fn();
-        window.__SEASON_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("season-view", SeasonViewController);
-        await Promise.resolve();
         await publicDataTablesReady;
+        await Promise.resolve();
+        initSeasonViewRoot.mockClear();
 
         const frame = document.createElement("turbo-frame");
         document.body.appendChild(frame);
@@ -87,32 +79,52 @@ describe("season-view controller", () => {
         frame.remove();
         await Promise.resolve();
 
-        expect(initMock).not.toHaveBeenCalledWith({ root: frame });
+        expect(initSeasonViewRoot).not.toHaveBeenCalledWith(frame);
     });
 
-    test("ignores turbo:frame-load events with non-Element targets", async () => {
-        const initMock = jest.fn();
-        window.__SEASON_VIEW_INIT__ = initMock;
-
-        application.stop();
-        application = Application.start();
-        application.register("season-view", SeasonViewController);
-        await Promise.resolve();
+    test("ignores Turbo frame loads with non-Element targets", async () => {
         await publicDataTablesReady;
-
-        const callsBefore = initMock.mock.calls.length;
-
-        // Dispatch event with a non-Element target
+        await Promise.resolve();
+        const callsBefore = initSeasonViewRoot.mock.calls.length;
         const event = new CustomEvent("turbo:frame-load", {
             bubbles: true,
             detail: {},
         });
         Object.defineProperty(event, "target", { value: "not-an-element" });
-        document.dispatchEvent(event);
 
+        document.dispatchEvent(event);
         await Promise.resolve();
 
-        // Init should not have been called for non-Element target
-        expect(initMock.mock.calls.length).toBe(callsBefore);
+        expect(initSeasonViewRoot).toHaveBeenCalledTimes(callsBefore);
+    });
+
+    test("dismisses the open image modal before Turbo caches the page", async () => {
+        await publicDataTablesReady;
+        await Promise.resolve();
+        const dismiss = document.querySelector(
+            '[data-season-view-target="imageModalDismiss"]',
+        );
+        const click = jest.spyOn(dismiss, "click");
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(click).toHaveBeenCalledTimes(1);
+    });
+
+    test("does not dismiss an image modal that is already closed", async () => {
+        await publicDataTablesReady;
+        await Promise.resolve();
+        const modal = document.querySelector(
+            '[data-season-view-target="imageModal"]',
+        );
+        modal.classList.remove("show");
+        const dismiss = document.querySelector(
+            '[data-season-view-target="imageModalDismiss"]',
+        );
+        const click = jest.spyOn(dismiss, "click");
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(click).not.toHaveBeenCalled();
     });
 });

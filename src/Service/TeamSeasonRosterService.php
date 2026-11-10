@@ -51,7 +51,7 @@ class TeamSeasonRosterService
 
     /**
      * Get a friendly display label for a roster entry.
-     * Delegates to TeamSeasonService to get sport+season label.
+     * Delegates to TeamSeasonService to get the team name and season.
      *
      * @param int $rosterId
      * @return string
@@ -63,8 +63,7 @@ class TeamSeasonRosterService
             return 'Roster #' . $rosterId;
         }
 
-        // Use team season service to get sport-prefixed label
-        return $this->teamSeasonService->getSportDisplayLabel($roster->team_season_id);
+        return $this->teamSeasonService->getDisplayLabel($roster->team_season_id);
     }
 
     /**
@@ -122,7 +121,7 @@ class TeamSeasonRosterService
 
             $teamName = 'Team';
             if ($teamSeason && $teamSeason->team) {
-                $teamName = $teamSeason->team->team_name ?? 'Team';
+                $teamName = $teamSeason->team->getDisplayName();
             }
             if ($teamSeason && !empty($teamSeason->season)) {
                 $start = $teamSeason->season->start ?? null;
@@ -166,7 +165,7 @@ class TeamSeasonRosterService
         $teamSeason = $roster->team_season ?? null;
         $rosterLabel = 'Unknown';
         if ($teamSeason) {
-            $teamName = $teamSeason->team->team_name ?? 'Team';
+            $teamName = $teamSeason->team->getDisplayName();
             $seasonLabel = '';
             if ($teamSeason->season) {
                 $start = $teamSeason->season->start ?? null;

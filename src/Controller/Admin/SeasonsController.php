@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Service\SeasonAdminService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 
 /**
  * Seasons Admin Controller
@@ -32,12 +34,27 @@ class SeasonsController extends AppController
     protected SeasonAdminService $seasonAdminService;
 
     /**
+     * Create the controller with its season administration service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\SeasonAdminService $seasonAdminService The season administration service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        SeasonAdminService $seasonAdminService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+        $this->seasonAdminService = $seasonAdminService;
+    }
+
+    /**
      * Initialize controller dependencies.
      */
     public function initialize(): void
     {
         parent::initialize();
-        $this->seasonAdminService = new SeasonAdminService();
     }
 
     /**

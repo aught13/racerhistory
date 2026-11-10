@@ -57,7 +57,7 @@
                             ? h($game->game_date->format('M j, Y'))
                             : 'N/A' ?>
                     </td>
-                    <td><?= h($game->opponent->opponent_name ?? 'Unknown') ?></td>
+                    <td><?= h($game->opponent?->getDisplayName() ?? 'Unknown') ?></td>
                     <td><?= h($totals['MIN']) ?></td>
                     <td><?= h($totals['FGM']) ?>-<?= h($totals['FGA']) ?></td>
                     <td><?= h($totals['TPM']) ?>-<?= h($totals['TPA']) ?></td>

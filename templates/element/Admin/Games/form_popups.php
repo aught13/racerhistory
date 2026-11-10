@@ -67,7 +67,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Game Type',
     'formUrl' => $gameTypeAjaxAddUrl,
     'hiddenFormId' => 'hidden-game-type-form',
-    'successCallback' => 'handleGameTypeAdded',
+    'successEvent' => 'admin:game-type-added',
     'fields' => [
         ['name' => 'game_type_name', 'type' => 'text', 'label' => 'Name', 'required' => true],
         ['name' => 'abr', 'type' => 'text', 'label' => 'Abbreviation (e.g., NCAA)'],
@@ -81,13 +81,44 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Opponent',
     'formUrl' => $opponentAjaxAddUrl,
     'hiddenFormId' => 'hidden-opponent-form',
-    'successCallback' => 'handleOpponentAdded',
+    'successEvent' => 'admin:game-opponent-added',
+    'opponentNamePreview' => true,
     'fields' => [
-        ['name' => 'opponent_name', 'type' => 'text', 'label' => 'Name', 'required' => true],
-        ['name' => 'opponent_mascot', 'type' => 'text', 'label' => 'Mascot'],
-        ['name' => 'opponent_short', 'type' => 'text', 'label' => 'Short Name (max 30)'],
-        ['name' => 'opponent_abbr', 'type' => 'text', 'label' => 'Abbreviation (max 6)'],
-        ['name' => 'opponent_current', 'type' => 'text', 'label' => 'Current Opponent ID (self-ref)'],
+        [
+            'name' => 'opponent_name',
+            'type' => 'text',
+            'label' => 'Official Opponent Name',
+            'required' => true,
+            'previewTarget' => 'opponentName',
+            'help' => 'Enter the official/full opponent name used in Full Opponent Name.',
+        ],
+        [
+            'name' => 'opponent_mascot',
+            'type' => 'text',
+            'label' => 'Mascot / Nickname',
+            'previewTarget' => 'opponentMascot',
+            'help' => 'Enter the mascot or nickname appended to the opponent name variants.',
+        ],
+        [
+            'name' => 'opponent_short',
+            'type' => 'text',
+            'label' => 'Short Opponent Name',
+            'previewTarget' => 'opponentShort',
+            'help' => 'Enter the short name used with the mascot in the default display (maximum 30 characters).',
+        ],
+        [
+            'name' => 'opponent_abbr',
+            'type' => 'text',
+            'label' => 'Scorebug Abbreviation',
+            'attributes' => ['maxlength' => 30],
+            'help' => 'Enter the abbreviation used on score displays (maximum 30 characters).',
+        ],
+        [
+            'name' => 'opponent_current',
+            'type' => 'text',
+            'label' => 'Current Opponent ID (self-reference)',
+            'help' => 'Leave blank unless this opponent was renamed; otherwise enter the current opponent record ID.',
+        ],
         ['name' => 'place_id', 'type' => 'hidden', 'label' => 'Place'],
     ],
     'extraHtml' => '<div class="mb-3">'
@@ -98,6 +129,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
         . '</div>'
         . '<div id="opponent-place-selected" class="mt-1"></div>'
         . '<div id="opponent-place-results" class="position-relative"></div>'
+        . '<small class="form-text">Select or add the opponent location to distinguish similarly named records.</small>'
         . '</div>',
 ]) ?>
 
@@ -106,7 +138,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Place (for Opponent)',
     'formUrl' => $placeAjaxAddUrl,
     'hiddenFormId' => 'hidden-place-form',
-    'successCallback' => 'handleOpponentPlaceAdded',
+    'successEvent' => 'admin:game-opponent-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
@@ -119,7 +151,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Place',
     'formUrl' => $placeAjaxAddUrl,
     'hiddenFormId' => 'hidden-place-form',
-    'successCallback' => 'handlePlaceAdded',
+    'successEvent' => 'admin:game-place-added',
     'fields' => [
         ['name' => 'place_country', 'type' => 'text', 'label' => 'Country (ISO 3166 alpha-3)', 'required' => true],
         ['name' => 'place_city', 'type' => 'text', 'label' => 'Locality (city, town, or village)', 'required' => true],
@@ -132,7 +164,7 @@ $gameTypeAjaxAddUrl = $gameTypeAjaxAddUrl ?? $this->Url->build(['prefix' => 'Adm
     'title' => 'Add New Site',
     'formUrl' => $siteAjaxAddUrl,
     'hiddenFormId' => 'hidden-site-form',
-    'successCallback' => 'handleSiteAdded',
+    'successEvent' => 'admin:game-site-added',
     'fields' => [
         ['name' => 'site_name', 'type' => 'text', 'label' => 'Site Name', 'required' => true],
         ['name' => 'place_id', 'type' => 'hidden', 'label' => 'Place'],

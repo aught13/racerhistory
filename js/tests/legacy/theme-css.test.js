@@ -40,6 +40,24 @@ describe("frontend.css variables", () => {
         );
     });
 
+    test("navigation panels and controls use theme-aware variables", () => {
+        expect(css).toMatch(/--rh-nav-panel-bg:\s*var\(--rh-surface\)/);
+        expect(css).toMatch(/:root\[data-theme="dark"\][\s\S]*?--rh-surface:/);
+        expect(css).toMatch(/:root\[data-theme="light"\][\s\S]*?--rh-surface:/);
+        expect(css).toMatch(
+            /\.rh-navbar \.rh-nav-item--menu > \.rh-nav-panel[\s\S]*?background:\s*var\(--rh-nav-panel-bg\)/,
+        );
+        expect(css).toMatch(
+            /\.rh-navbar \.rh-nav-panel \.nav-link[\s\S]*?color:\s*var\(--rh-nav-panel-text\)/,
+        );
+        expect(css).toMatch(
+            /\.rh-nav-scope \.form-select[\s\S]*?background-color:\s*transparent[\s\S]*?border-color:\s*transparent/,
+        );
+        expect(css).toMatch(
+            /\.rh-nav-scope \.form-select:focus-visible[\s\S]*?outline:\s*2px solid var\(--rh-navy\)/,
+        );
+    });
+
     test("footer uses CSS variable for background", () => {
         expect(css).toMatch(
             /\.rh-footer[\s\S]*?background:\s*var\(--rh-surface\)/,

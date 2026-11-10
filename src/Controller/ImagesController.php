@@ -4,9 +4,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Model\Entity\Image;
+use App\Service\ImageUrlService;
+use Cake\Controller\ComponentRegistry;
 use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\Log\Log;
 use Intervention\Image\ImageManager;
 use Throwable;
@@ -44,6 +47,21 @@ use Throwable;
 class ImagesController extends AppController
 {
     /**
+     * Create the controller with its image URL service.
+     *
+     * @param \Cake\Http\ServerRequest $request The current request.
+     * @param \App\Service\ImageUrlService $imageUrlService The image URL service.
+     * @param \Cake\Controller\ComponentRegistry|null $components The component registry.
+     */
+    public function __construct(
+        ServerRequest $request,
+        private ImageUrlService $imageUrlService,
+        ?ComponentRegistry $components = null,
+    ) {
+        parent::__construct($request, null, null, $components);
+    }
+
+    /**
      * Initialization hook method.
      */
     public function initialize(): void
@@ -68,7 +86,7 @@ class ImagesController extends AppController
         $request->allowMethod(['get', 'head']);
 
         try {
-            $imageRecord = $this->fetchTable('Images')->find()->where(['id' => $id])->first();
+            $imageRecord = $this->imageUrlService->findImageById($id);
             if (!($imageRecord instanceof Image)) {
                 return $this->placeholderTransparentWebp();
             }
@@ -450,9 +468,8 @@ class ImagesController extends AppController
      */
     private function resolvePath(mixed $image, string $variant): array
     {
-        // Handle case where $image is a numeric ID
         if (is_numeric($image)) {
-            $imageEntity = $this->fetchTable('Images')->find()->where(['id' => $image])->first();
+            $imageEntity = $this->imageUrlService->findImageById((int)$image);
             if (!$imageEntity) {
                 throw new RecordNotFoundException('Image not found');
             }

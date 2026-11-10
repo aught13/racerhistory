@@ -13,7 +13,6 @@ test('debug legacy loader for stat multi-add', async ({ page }) => {
         return {
             runtimeBooted: window.__RH_RUNTIME_BOOTED__,
             loaderDebug: window.__RH_LOADER_DEBUG__ || null,
-            statReady: window.__RH_STAT_MULTI_ADD_READY || null,
             addBtnAttr: (function () {
                 const b = document.getElementById('add-row-btn');
                 return b ? b.dataset.rhReady || null : null;
@@ -35,7 +34,6 @@ test('debug legacy loader for stat multi-add', async ({ page }) => {
         return window.__RH_LOADER_DEBUG__ || null;
     });
     const readyAfter = await page.evaluate(() => ({
-        statReady: window.__RH_STAT_MULTI_ADD_READY || null,
         addBtnAttr: (function () {
             const b = document.getElementById('add-row-btn');
             return b ? b.dataset.rhReady || null : null;

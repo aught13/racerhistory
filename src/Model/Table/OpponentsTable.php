@@ -5,6 +5,7 @@ namespace App\Model\Table;
 
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Table;
+use Cake\Validation\Validator;
 
 /**
  * @method \App\Model\Entity\Opponent newEntity(array $data, array $options = [])
@@ -53,6 +54,20 @@ class OpponentsTable extends Table
             'propertyName' => 'current_opponent',
             'joinType' => 'LEFT',
         ]);
+    }
+
+    /**
+     * Default validation rules.
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance.
+     * @return \Cake\Validation\Validator
+     */
+    public function validationDefault(Validator $validator): Validator
+    {
+        return $validator
+            ->scalar('opponent_abbr')
+            ->maxLength('opponent_abbr', 30)
+            ->allowEmptyString('opponent_abbr');
     }
 
     /**

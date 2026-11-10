@@ -34,4 +34,27 @@ describe("games_sport_dynamic", () => {
         const name = document.getElementById("current-sport");
         expect(name.textContent).toBe("Soccer");
     });
+
+    test("initializer cleanup removes the listener and aborts its request", async () => {
+        const { initGamesSportDynamic } =
+            await import("../../legacy/games_sport_dynamic.js");
+        const select = document.getElementById("team-season-select");
+        select.innerHTML =
+            '<option value="1">Season One</option><option value="2">Season Two</option>';
+        const cleanup = initGamesSportDynamic();
+
+        select.value = "1";
+        select.dispatchEvent(new Event("change"));
+        const signal = global.fetch.mock.calls[0][1].signal;
+        expect(signal.aborted).toBe(false);
+
+        cleanup();
+        expect(signal.aborted).toBe(true);
+        expect(select.dataset.gamesSportDynamicBound).toBeUndefined();
+
+        const callsAfterCleanup = global.fetch.mock.calls.length;
+        select.value = "2";
+        select.dispatchEvent(new Event("change"));
+        expect(global.fetch).toHaveBeenCalledTimes(callsAfterCleanup);
+    });
 });

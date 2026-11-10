@@ -60,9 +60,8 @@ function navigateTo(url) {
         return;
     }
 
-    const testNavigate = window.__RH_NAVIGATE__;
-    if (typeof testNavigate === "function") {
-        testNavigate(url);
+    if (window.Turbo && typeof window.Turbo.visit === "function") {
+        window.Turbo.visit(url);
         return;
     }
 
@@ -475,39 +474,18 @@ function setupImageGallery(root) {
     }
     const gallery = root.querySelector("[data-season-image-gallery]");
     const modal = root.querySelector("[data-season-image-modal]");
-    if (!gallery || !modal) {
+    if (!gallery || !modal || gallery.dataset.seasonImageBound === "true") {
         return;
     }
 
-    const closeBtn = modal.querySelector("[data-modal-close]");
     const modalImg = modal.querySelector("[data-modal-image-fallback]");
     const modalWebp = modal.querySelector("[data-modal-image-webp]");
     if (!modalImg) {
         return;
     }
 
-    // Close modal
-    function closeModal() {
-        modal.removeAttribute("data-modal-open");
-    }
+    gallery.dataset.seasonImageBound = "true";
 
-    closeBtn?.addEventListener("click", closeModal);
-
-    // Click outside to close
-    modal.addEventListener("click", (event) => {
-        if (event.target === modal) {
-            closeModal();
-        }
-    });
-
-    // Escape key to close
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && modal.hasAttribute("data-modal-open")) {
-            closeModal();
-        }
-    });
-
-    // Image click handler
     gallery.addEventListener("click", (event) => {
         const img = event.target.closest(".season-photo-thumb-img");
         if (!img) {
@@ -530,9 +508,6 @@ function setupImageGallery(root) {
 
         modalImg.src = imageUrl;
         modalImg.alt = filename || "";
-
-        // Show modal
-        modal.setAttribute("data-modal-open", "true");
     });
 }
 

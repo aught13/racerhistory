@@ -27,6 +27,7 @@ use Cake\View\View;
  * @property \App\View\Helper\AdHelper $Ad
  * @property \App\View\Helper\BlogContentHelper $BlogContent
  * @property \App\View\Helper\ImageServeHelper $ImageServe
+ * @property \App\View\Helper\PublicScopeHelper $PublicScope
  * @property \CakeVite\View\Helper\ViteHelper $Vite
  * @property \Cake\View\Helper\FormHelper $Form
  * @property \Cake\View\Helper\UrlHelper $Url
@@ -51,6 +52,7 @@ class AppView extends View
         $this->loadHelper('Ad');
         $this->loadHelper('BlogContent');
         $this->loadHelper('ImageServe');
+        $this->loadHelper('PublicScope');
         $this->loadHelper('SocialLinks');
         $this->loadHelper('Rbac');
 

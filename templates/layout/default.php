@@ -38,6 +38,7 @@ $htmlThemeAttribute = in_array($themeCookie, ['light', 'dark'], true)
     : '';
 $content = $this->fetch('content');
 $flash = $this->Flash->render();
+$publicScope = $this->get('publicScope') ?? ['sportKey' => null, 'teamId' => null];
 $socialTitle = trim((string)$this->fetch('socialTitle'));
 if ($socialTitle === '') {
     $socialTitle = trim((string)$this->fetch('title'));
@@ -171,6 +172,7 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         'bodyClass' => $bodyClass,
         'content' => $content,
         'flash' => $flash,
+        'publicScope' => $publicScope,
     ]) ?>
 
 </body>

@@ -41,6 +41,15 @@ This document summarizes the RBAC hardening work landed on `feat/rbac-hardening`
     - UI elements: `templates/element/Admin/roster_management.php`, `templates/element/Admin/games_management.php` and the admin nav element.
   - `templates/Admin/Users/manage.php` now surfaces a self-password-change CTA and avoids exposing administrative password-change flows when not permitted.
 
+Sport and Team Data Scope (4.1.1)
+---------------------------------
+- Per-role sport/team grants are stored in `role_data_scopes` and resolved by `AdminDataScopeService`.
+- A role's data scope intersects with its existing per-model CRUD permissions. All-sports, selected-sport, and selected-team grants are supported; a team grant includes its team seasons, games, and rosters.
+- The scope is applied to list queries, option lists, direct IDs, and create/update/delete/bulk operations for Teams, Team Seasons, Games, Team Season Rosters, and Basketball stat rows through their parent records.
+- Admin and superuser identities remain unrestricted. Existing roles are migrated with an all-sports grant so the migration preserves established access. Newly restricted roles with no grants are denied team-owned data.
+- Admin sport/team query filters are presentation state only; authorization is always resolved from the authenticated identity on the server.
+- Shared catalogs and full People histories remain governed by their existing model permissions. Public sport/team browsing is query-scoped separately and never grants Admin access.
+
 Tests & Verification
 - PHPCS: fixed docblock/style issues; `vendor/bin/phpcs` clean on patched files.
 - PHPStan: no errors after changes.

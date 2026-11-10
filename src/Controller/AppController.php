@@ -19,6 +19,7 @@ namespace App\Controller;
 
 use Cake\Controller\Controller;
 use Cake\Event\EventInterface;
+use Cake\Http\Exception\BadRequestException;
 
 /**
  * Application Controller
@@ -29,6 +30,7 @@ use Cake\Event\EventInterface;
  * @property \Cake\Controller\Component\FlashComponent $Flash
  * @property \Authentication\Controller\Component\AuthenticationComponent $Authentication
  * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
+ * @property \App\Controller\Component\PublicScopeComponent $PublicScope
  * @link https://book.cakephp.org/5/en/controllers.html#the-app-controller
  */
 class AppController extends Controller
@@ -47,6 +49,12 @@ class AppController extends Controller
         parent::initialize();
 
         $this->loadComponent('Flash');
+        if (
+            $this->getRequest()->getParam('prefix') !== 'Admin'
+            && !($this instanceof ErrorController)
+        ) {
+            $this->loadComponent('PublicScope');
+        }
 
         // Only load authentication for admin controllers and the app's own UsersController.
         // CakeDC/Users manages its own auth component wiring via its SetupComponent.
@@ -82,5 +90,50 @@ class AppController extends Controller
         ) {
             $this->Authentication->allowUnauthenticated(['login', 'register']);
         }
+    }
+
+    /**
+     * Add validated public scope and selector options to the shared layout.
+     *
+     * @param \Cake\Event\EventInterface $event The before-render event.
+     * @return void
+     */
+    public function beforeRender(EventInterface $event): void
+    {
+        parent::beforeRender($event);
+
+        if ($this->getRequest()->getParam('prefix') === 'Admin' || $this instanceof ErrorController) {
+            return;
+        }
+
+        $scope = $this->PublicScope->resolve($this->getRequest()->getQueryParams());
+        if (!$scope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        $sportOptions = $this->PublicScope->getAvailableSportOptions();
+        $teamOptions = $this->PublicScope->getTeamOptions($scope['sportKey']);
+        $isStatsController = $this->getRequest()->getParam('controller') === 'Stats';
+        if ($isStatsController) {
+            $supportedKeys = array_fill_keys($this->PublicScope->getSupportedStatSports(), true);
+            $sportOptions = array_intersect_key($sportOptions, $supportedKeys);
+            $teamOptions = array_filter(
+                $teamOptions,
+                static fn(array $teamOption): bool => isset($supportedKeys[$teamOption['sportKey']]),
+            );
+        }
+
+        $showPublicTeamSelector = $isStatsController
+            ? $scope['sportKey'] !== null && (count($teamOptions) > 1 || $scope['teamId'] !== null)
+            : count($teamOptions) > 1 || $scope['teamId'] !== null;
+
+        $this->set([
+            'publicScope' => $scope,
+            'publicSportOptions' => $sportOptions,
+            'publicTeamOptions' => $teamOptions,
+            'showPublicSportSelector' => count($sportOptions) > 1 || $isStatsController,
+            'showPublicTeamSelector' => $showPublicTeamSelector,
+            'isStatsController' => $isStatsController,
+        ]);
     }
 }

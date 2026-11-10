@@ -16,7 +16,6 @@ $canDeleteSeasons = $this->Rbac->can('Seasons', 'delete');
     data-admin-bulk-table-bulk-delete-url-value="<?= h($this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'bulkDelete'])) ?>"
     data-admin-bulk-table-item-type-value="seasons (bulk)"
     data-admin-bulk-table-ids-name-value="season_ids[]"
-    data-admin-bulk-table-form-id-value="delete-form-seasons-bulk"
     data-admin-bulk-table-name-column-value="4"
     data-admin-bulk-table-order-column-value="1"
     data-admin-bulk-table-order-direction-value="desc"
@@ -105,7 +104,7 @@ $canDeleteSeasons = $this->Rbac->can('Seasons', 'delete');
                                         data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id]) ?>"
                                         data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'edit', $season->id]) ?>"
                                         data-item-type="season" data-associated='<?= $associated ?>'
-                                        data-form-id="<?= 'delete-form-season-' . $season->id ?>" aria-label="Delete season <?= h($season->start . '-' . $season->end) ?>">Delete</button>
+                                        form="<?= 'delete-form-season-' . $season->id ?>" aria-label="Delete season <?= h($season->start . '-' . $season->end) ?>">Delete</button>
                                     <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'delete', $season->id], 'id' => 'delete-form-season-' . $season->id, 'style' => 'display:none']) ?>
                                     <?= $this->Form->end() ?>
                                 <?php endif; ?>
@@ -118,7 +117,7 @@ $canDeleteSeasons = $this->Rbac->can('Seasons', 'delete');
                     </tbody>
                 </table>
             </form>
-                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'bulkDelete'], 'id' => 'delete-form-seasons-bulk', 'style' => 'display:none']) ?>
+                <?= $this->Form->create(null, ['url' => ['prefix' => 'Admin', 'controller' => 'Seasons', 'action' => 'bulkDelete'], 'id' => 'delete-form-seasons-bulk', 'style' => 'display:none', 'data-admin-bulk-table-target' => 'deleteForm']) ?>
                 <?php
                 // Unlock dynamic fields for FormProtection
                 $this->Form->unlockField('season_ids');

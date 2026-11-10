@@ -5,34 +5,18 @@ import {
     initSeriesOpponentsTable,
 } from "../lib/series_opponents_runtime.js";
 
-function getInit() {
-    if (typeof window !== "undefined") {
-        const override = window.__SERIES_OPPONENTS_INIT__;
-        if (typeof override === "function") {
-            return override;
-        }
-    }
-
-    return initSeriesOpponentsTable;
-}
-
-function getCleanup() {
-    if (typeof window !== "undefined") {
-        const override = window.__SERIES_OPPONENTS_CLEANUP__;
-        if (typeof override === "function") {
-            return override;
-        }
-    }
-
-    return cleanupSeriesOpponentsTable;
-}
-
 export default class extends Controller {
     connect() {
-        getInit()();
+        this.boundBeforeCache = () => cleanupSeriesOpponentsTable(this.element);
+        document.addEventListener("turbo:before-cache", this.boundBeforeCache);
+        initSeriesOpponentsTable(this.element);
     }
 
     disconnect() {
-        getCleanup()();
+        document.removeEventListener(
+            "turbo:before-cache",
+            this.boundBeforeCache,
+        );
+        cleanupSeriesOpponentsTable(this.element);
     }
 }

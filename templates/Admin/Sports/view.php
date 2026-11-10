@@ -185,10 +185,10 @@
                                 <table class="table table-striped table-hover">
                                     <thead class="table-dark">
                                         <tr>
-                                            <th>Team Name</th>
+                                            <th>Team Name (Default Display)</th>
                                             <th>Abbreviation</th>
                                             <th>Gender</th>
-                                            <th>Description</th>
+                                            <th>Organization / Prefix</th>
                                             <th class="text-center">Actions</th>
                                         </tr>
                                     </thead>
@@ -196,7 +196,7 @@
                                         <?php foreach ($sport->teams as $team) : ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?= h($team->team_name) ?></strong>
+                                                    <strong><?= h($team->getDisplayName()) ?></strong>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-secondary"><?= h($team->abbr) ?></span>
@@ -213,7 +213,7 @@
                                                     <span class="badge bg-<?= $genderInfo[1] ?>"><?= $genderInfo[0] ?></span>
                                                 </td>
                                                 <td>
-                                                    <?= !empty($team->team_description) ? h($team->team_description) : '<em class="text-muted">No description</em>' ?>
+                                                    <?= !empty($team->team_description) ? h($team->team_description) : '<em class="text-muted">No prefix</em>' ?>
                                                 </td>
                                                 <td class="text-center">
                                                     <div class="btn-group btn-group-sm" role="group">
@@ -231,7 +231,7 @@
                                                             data-delete-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'delete', $team->id]) ?>"
                                                             data-edit-url="<?= $this->Url->build(['prefix' => 'Admin', 'controller' => 'Teams', 'action' => 'edit', $team->id]) ?>"
                                                             data-item-type="team"
-                                                            data-associated='<?= json_encode([['label' => $team->team_name, 'count' => 0, 'id' => $team->id]]) ?>'>
+                                                            data-associated='<?= json_encode([['label' => $team->getDisplayName(), 'count' => 0, 'id' => $team->id]]) ?>'>
                                                             <i class="bi bi-trash"></i>
                                                         </button>
                                                     </div>

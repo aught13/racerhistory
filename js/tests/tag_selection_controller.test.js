@@ -24,14 +24,14 @@ describe("tag-selection controller", () => {
         const id = (name) => `${prefix}_${name}`;
 
         return `
-            <div id="${id("selectedPersons")}" class="d-flex flex-wrap gap-2 mb-2"></div>
-            <input type="text" name="person_search" id="${id("person_search")}" />
-            <datalist id="${id("personsList")}"></datalist>
-            <button type="button" id="${id("add_person_btn")}">Add Person</button>
-            <button type="button" id="${id("clear_persons_btn")}">Clear</button>
-            <div id="${id("person_hidden_inputs")}"></div>
+            <div id="${id("selectedPersons")}" class="d-flex flex-wrap gap-2 mb-2" data-tag-selection-target="selectedPersons"></div>
+            <input type="text" name="person_search" id="${id("person_search")}" data-tag-selection-target="personSearch" />
+            <datalist id="${id("personsList")}" data-tag-selection-target="personsList"></datalist>
+            <button type="button" id="${id("add_person_btn")}" data-tag-selection-target="addPersonButton">Add Person</button>
+            <button type="button" id="${id("clear_persons_btn")}" data-tag-selection-target="clearPersonsButton">Clear</button>
+            <div id="${id("person_hidden_inputs")}" data-tag-selection-target="personHiddenInputs"></div>
 
-            <select name="teamseason_select" id="${id("teamseason_select")}">
+            <select name="teamseason_select" id="${id("teamseason_select")}" data-tag-selection-target="teamSeasonSelect">
                 <option value="">-- select team season --</option>
                 <option value="110">Men's Basketball 2025-2026</option>
             </select>
@@ -40,21 +40,22 @@ describe("tag-selection controller", () => {
                 type="text"
                 name="game_search"
                 id="${id("game_search")}"
+                data-tag-selection-target="gameSearch"
                 disabled
             />
-            <datalist id="${id("gamesList")}"></datalist>
-            <input type="hidden" name="game_select" id="${id("game_select")}" />
-            <div id="${id("selectedGame")}"></div>
+            <datalist id="${id("gamesList")}" data-tag-selection-target="gamesList"></datalist>
+            <input type="hidden" name="game_select" id="${id("game_select")}" data-tag-selection-target="gameSelect" />
+            <div id="${id("selectedGame")}" data-tag-selection-target="selectedGame"></div>
 
-            <input type="text" name="site_search" id="${id("site_search")}" />
-            <datalist id="${id("sitesList")}"></datalist>
-            <input type="hidden" name="site_select" id="${id("site_select")}" />
+            <input type="text" name="site_search" id="${id("site_search")}" data-tag-selection-target="siteSearch" />
+            <datalist id="${id("sitesList")}" data-tag-selection-target="sitesList"></datalist>
+            <input type="hidden" name="site_select" id="${id("site_select")}" data-tag-selection-target="siteSelect" />
 
-            <input type="text" name="opponent_search" id="${id("opponent_search")}" />
-            <datalist id="${id("opponentsList")}"></datalist>
-            <input type="hidden" name="opponent_select" id="${id("opponent_select")}" />
+            <input type="text" name="opponent_search" id="${id("opponent_search")}" data-tag-selection-target="opponentSearch" />
+            <datalist id="${id("opponentsList")}" data-tag-selection-target="opponentsList"></datalist>
+            <input type="hidden" name="opponent_select" id="${id("opponent_select")}" data-tag-selection-target="opponentSelect" />
 
-            <select name="roster_select" id="${id("roster_select")}" disabled>
+            <select name="roster_select" id="${id("roster_select")}" data-tag-selection-target="rosterSelect" disabled>
                 <option value="">-- select roster entry --</option>
             </select>
         `;
@@ -522,20 +523,46 @@ describe("tag-selection controller", () => {
         expect(rosterSelect.value).toBe("");
     });
 
-    test("disconnect clears debounce timers", async () => {
+    test("disconnect clears tracked debounce timers", async () => {
         await mount({ prefix: "uploadModalTag" });
         const controller = application.controllers.find(
             (c) => c.identifier === "tag-selection",
         );
 
-        const clearTimeoutSpy = jest.spyOn(global, "clearTimeout");
-        controller.personDebounce = setTimeout(() => {}, 1000);
-        controller.gameDebounce = setTimeout(() => {}, 1000);
+        const clearTimeoutSpy = jest.spyOn(window, "clearTimeout");
+        controller.personDebounce = controller.setTimer(() => {}, 1000);
+        controller.gameDebounce = controller.setTimer(() => {}, 1000);
 
         controller.disconnect();
 
         expect(clearTimeoutSpy).toHaveBeenCalledTimes(2);
         expect(controller.personDebounce).toBeNull();
         expect(controller.gameDebounce).toBeNull();
+    });
+
+    test("before-cache clears lookup state but preserves selected values", async () => {
+        await mount({
+            prefix: "uploadModalTag",
+            initialPersons: [{ id: 42, label: "Saved person" }],
+        });
+
+        const personSearch = controllerElement.querySelector(
+            "input[name='person_search']",
+        );
+        const personsList = controllerElement.querySelector(
+            "datalist[id$='personsList']",
+        );
+        const hiddenPerson = controllerElement.querySelector(
+            "input[name='person_select[]']",
+        );
+        personSearch.value = "unfinished search";
+        personsList.appendChild(document.createElement("option"));
+
+        document.dispatchEvent(new Event("turbo:before-cache"));
+
+        expect(personSearch.value).toBe("");
+        expect(personsList.querySelectorAll("option")).toHaveLength(0);
+        expect(hiddenPerson.value).toBe("42");
+        expect(controllerElement.textContent).toContain("Saved person");
     });
 });
