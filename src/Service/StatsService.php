@@ -459,7 +459,8 @@ class StatsService
     {
         $sportName = $this->sportConfig->getSportName($sportId);
 
-        return isset($this->sportServiceMap[$sportName]);
+        return isset($this->sportServiceMap[$sportName])
+            && $this->sportConfig->getConfig($sportId, 'has_stats', false) === true;
     }
 
     /**
@@ -469,7 +470,15 @@ class StatsService
      */
     public function getSupportedSports(): array
     {
-        return array_keys($this->sportServiceMap);
+        $supportedSports = [];
+        foreach (array_keys($this->sportServiceMap) as $sportKey) {
+            $sportId = $this->sportConfig->getIdByKey($sportKey);
+            if ($sportId !== null && $this->hasSportSupport($sportId)) {
+                $supportedSports[] = $sportKey;
+            }
+        }
+
+        return $supportedSports;
     }
 
     /**

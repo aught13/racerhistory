@@ -55,10 +55,10 @@ class StatsControllerTest extends TestCase
         $this->get('/stats');
         $this->assertResponseOk();
         $this->assertResponseContains('Statistics');
-        $this->assertResponseContains('id="stats-sport"');
+        $this->assertResponseContains('id="stats-type-cards"');
+        $this->assertResponseNotContains('id="stats-sport"');
         $this->assertResponseContains('property="og:image"');
         $this->assertResponseContains('/img/logo.png');
-        $this->assertResponseContains('id="stats-sport"');
     }
 
     /**
@@ -87,8 +87,9 @@ class StatsControllerTest extends TestCase
         $this->assertResponseOk();
 
         $currentSport = $this->viewVariable('currentSport');
-        $this->assertNull($currentSport);
-        $this->assertResponseContains('id="stats-sport"');
+        $this->assertSame('basketball', $currentSport);
+        $this->assertSame('basketball', $this->viewVariable('publicScope')['sportKey']);
+        $this->assertFalse($this->viewVariable('showPublicSportSelector'));
     }
 
     /**
@@ -99,8 +100,9 @@ class StatsControllerTest extends TestCase
         $this->get('/stats?sport=basketball');
 
         $this->assertResponseOk();
-        $this->assertResponseContains('option value="basketball"');
-        $this->assertResponseNotContains('option value="football"');
+        $options = $this->viewVariable('publicSportOptions');
+        $this->assertArrayHasKey('basketball', $options);
+        $this->assertArrayNotHasKey('football', $options);
     }
 
     /**
@@ -124,12 +126,14 @@ class StatsControllerTest extends TestCase
     /**
      * Reports require an explicit supported sport.
      */
-    public function testPlayerSeasonRequiresExplicitSport(): void
+    public function testPlayerSeasonDefaultsToTheOnlySupportedSport(): void
     {
         $this->replaceRequest([]);
         $this->get('/stats/player-season');
 
-        $this->assertResponseCode(400);
+        $this->assertResponseOk();
+        $this->assertSame('player-season', $this->viewVariable('statType'));
+        $this->assertSame('basketball', $this->viewVariable('currentSport'));
     }
 
     /**

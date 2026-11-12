@@ -106,14 +106,19 @@ class AppController extends Controller
             return;
         }
 
-        $scope = $this->PublicScope->resolve($this->getRequest()->getQueryParams());
+        $controller = $this->getRequest()->getParam('controller');
+        $isStatsController = $controller === 'Stats';
+        $scope = match ($controller) {
+            'Games' => $this->PublicScope->resolveGamesScope($this->getRequest()->getQueryParams()),
+            'Stats' => $this->PublicScope->resolveStatsScope($this->getRequest()->getQueryParams()),
+            default => $this->PublicScope->resolve($this->getRequest()->getQueryParams()),
+        };
         if (!$scope['valid']) {
             throw new BadRequestException('Invalid sport or team selection.');
         }
 
         $sportOptions = $this->PublicScope->getAvailableSportOptions();
         $teamOptions = $this->PublicScope->getTeamOptions($scope['sportKey']);
-        $isStatsController = $this->getRequest()->getParam('controller') === 'Stats';
         if ($isStatsController) {
             $supportedKeys = array_fill_keys($this->PublicScope->getSupportedStatSports(), true);
             $sportOptions = array_intersect_key($sportOptions, $supportedKeys);
@@ -131,7 +136,7 @@ class AppController extends Controller
             'publicScope' => $scope,
             'publicSportOptions' => $sportOptions,
             'publicTeamOptions' => $teamOptions,
-            'showPublicSportSelector' => count($sportOptions) > 1 || $isStatsController,
+            'showPublicSportSelector' => count($sportOptions) > 1,
             'showPublicTeamSelector' => $showPublicTeamSelector,
             'isStatsController' => $isStatsController,
         ]);

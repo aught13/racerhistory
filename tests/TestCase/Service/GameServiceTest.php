@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Entity\Game;
 use App\Service\GameService;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\TableRegistry;
@@ -40,6 +41,33 @@ class GameServiceTest extends TestCase
     {
         parent::setUp();
         $this->service = new GameService();
+    }
+
+    /**
+     * Result flags are derived from complete scores or explicit W/L markers.
+     *
+     * @return void
+     */
+    public function testGetResultFlagRequiresACompleteResult(): void
+    {
+        $this->assertSame('W', $this->service->getResultFlag(new Game([
+            'pts_mur' => '10',
+            'pts_opp' => '9',
+        ])));
+        $this->assertSame('L', $this->service->getResultFlag(new Game([
+            'pts_mur' => '9',
+            'pts_opp' => '10',
+        ])));
+        $this->assertSame('T', $this->service->getResultFlag(new Game([
+            'pts_mur' => '10',
+            'pts_opp' => '10',
+        ])));
+        $this->assertSame('W', $this->service->getResultFlag(new Game(['w' => 'W'])));
+        $this->assertSame('L', $this->service->getResultFlag(new Game(['l' => 'L'])));
+        $this->assertNull($this->service->getResultFlag(new Game()));
+        $this->assertNull($this->service->getResultFlag(new Game([
+            'pts_mur' => '10',
+        ])));
     }
 
     /**

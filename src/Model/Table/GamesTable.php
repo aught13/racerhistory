@@ -6,6 +6,7 @@ namespace App\Model\Table;
 use App\Service\SportConfigService;
 use App\Service\TeamSportContextService;
 use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\ORM\Query\SelectQuery;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -74,6 +75,33 @@ class GamesTable extends Table
             'foreignKey' => 'site_id',
             'joinType' => 'LEFT',
         ]);
+    }
+
+    /**
+     * Find games with a final score or an explicit win/loss result.
+     *
+     * @param \Cake\ORM\Query\SelectQuery $query
+     * @param array<string,mixed> $options
+     * @return \Cake\ORM\Query\SelectQuery
+     */
+    public function findWithResult(SelectQuery $query, array $options = []): SelectQuery
+    {
+        $alias = $this->getAlias();
+
+        return $query->where(function ($exp) use ($alias) {
+            return $exp->or([
+                function ($and) use ($alias) {
+                    return $and->and([
+                        $and->isNotNull($alias . '.pts_mur'),
+                        $and->notEq($alias . '.pts_mur', ''),
+                        $and->isNotNull($alias . '.pts_opp'),
+                        $and->notEq($alias . '.pts_opp', ''),
+                    ]);
+                },
+                $exp->in($alias . '.w', ['W', '1']),
+                $exp->in($alias . '.l', ['L', '1']),
+            ]);
+        });
     }
 
     /**

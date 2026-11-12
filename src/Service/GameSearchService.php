@@ -59,7 +59,7 @@ class GameSearchService
         /** @var \App\Model\Table\GamesTable $gamesTable */
         $gamesTable = $this->fetchTable('Games');
 
-        return $gamesTable->find()
+        return $gamesTable->find('withResult')
             ->contain([
                 'Opponents',
                 'Places',
@@ -70,13 +70,32 @@ class GameSearchService
                 $conditions = $this->publicTeamFilter();
 
                 return $conditions !== [] ? $q->where($conditions) : $q;
-            })
-            ->where([
-                'OR' => [
-                    'Games.pts_mur IS NOT' => null,
-                    'Games.w IS NOT' => null,
-                ],
-            ]);
+            });
+    }
+
+    /**
+     * Whether a game has a complete score or a stored win/loss marker.
+     *
+     * @param \App\Model\Entity\Game $game
+     * @return bool
+     */
+    public function hasResult(Game $game): bool
+    {
+        $pointsFor = trim((string)($game->pts_mur ?? ''));
+        $pointsAgainst = trim((string)($game->pts_opp ?? ''));
+        if (
+            $pointsFor !== ''
+            && $pointsAgainst !== ''
+            && is_numeric($pointsFor)
+            && is_numeric($pointsAgainst)
+        ) {
+            return true;
+        }
+
+        $win = strtoupper(trim((string)($game->w ?? '')));
+        $loss = strtoupper(trim((string)($game->l ?? '')));
+
+        return in_array($win, ['W', '1'], true) || in_array($loss, ['L', '1'], true);
     }
 
     /**
@@ -555,7 +574,9 @@ class GameSearchService
         $query = $this->baseQuery()
             ->where([
                 'Games.pts_mur IS NOT' => null,
+                'Games.pts_mur !=' => '',
                 'Games.pts_opp IS NOT' => null,
+                'Games.pts_opp !=' => '',
             ]);
 
         // Filter by location
@@ -845,7 +866,7 @@ class GameSearchService
         $opponentsTable = $this->fetchTable('Opponents');
 
         // Only return opponents that have games
-        $opponentIds = $gamesTable->find()
+        $opponentIds = $gamesTable->find('withResult')
             ->select(['Games.opponent_id'])
             ->distinct(['Games.opponent_id'])
             ->matching('TeamSeason.Teams', function ($q) {
@@ -897,7 +918,7 @@ class GameSearchService
         $hasShortColumn = $opponentsSchema->hasColumn('opponent_short');
         $hasMascotColumn = $opponentsSchema->hasColumn('opponent_mascot');
 
-        $baseQuery = $gamesTable->find();
+        $baseQuery = $gamesTable->find('withResult');
         $selectFields = [
             'opponent_id' => 'Opponents.id',
             'opponent_name' => 'Opponents.opponent_name',
@@ -941,7 +962,7 @@ class GameSearchService
         $countQuery = clone $baseQuery;
         $filtered = count($countQuery->all()->toList());
 
-        $totalQuery = $gamesTable->find()
+        $totalQuery = $gamesTable->find('withResult')
             ->select(['opponent_id' => 'Games.opponent_id'])
             ->distinct(['Games.opponent_id'])
             ->innerJoinWith('TeamSeason.Teams', function (SelectQuery $q) {
