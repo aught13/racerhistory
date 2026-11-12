@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Service\SportConfigService;
 use App\Service\StatsService;
 use Cake\TestSuite\TestCase;
 
@@ -84,6 +85,33 @@ class StatsServiceTest extends TestCase
 
         $this->assertIsArray($supported);
         $this->assertContains('basketball', $supported);
+    }
+
+    /**
+     * The configured has_stats option gates public stats support.
+     *
+     * @return void
+     */
+    public function testHasStatsConfigurationGatesSupportedSports(): void
+    {
+        $sportConfig = $this->getMockBuilder(SportConfigService::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSportName', 'getConfig', 'getIdByKey'])
+            ->getMock();
+        $sportConfig->method('getSportName')
+            ->with(1)
+            ->willReturn('basketball');
+        $sportConfig->method('getConfig')
+            ->with(1, 'has_stats', false)
+            ->willReturn(false);
+        $sportConfig->method('getIdByKey')
+            ->with('basketball')
+            ->willReturn(1);
+
+        $service = new StatsService($sportConfig);
+
+        $this->assertFalse($service->hasSportSupport(1));
+        $this->assertSame([], $service->getSupportedSports());
     }
 
     /**

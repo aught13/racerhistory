@@ -37,6 +37,27 @@ class PublicScopeComponent extends Component
     }
 
     /**
+     * @param array<string,mixed> $query
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    public function resolveGamesScope(array $query): array
+    {
+        return $this->publicSportScopeService->resolveGamesScope($query);
+    }
+
+    /**
+     * @param array<string,mixed> $query
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    public function resolveStatsScope(array $query): array
+    {
+        return $this->publicSportScopeService->resolveStatsScope(
+            $query,
+            $this->statsService->getSupportedSports(),
+        );
+    }
+
+    /**
      * @return array<string,string>
      */
     public function getAvailableSportOptions(): array

@@ -88,21 +88,20 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Unscoped Games shows only the All Games view in cards and the navigation menu.
+     * Unscoped Games automatically selects the only team with results.
      *
      * @return void
      */
-    public function testIndexWithoutSelectedTeamOnlyOffersAllGames(): void
+    public function testIndexWithoutSelectedTeamSelectsOnlyTeamWithGames(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => 'all']]);
         $this->get('/games?sport=basketball&team=all');
 
         $this->assertResponseOk();
-        $this->assertSame(['all' => 'All Games'], $this->viewVariable('searchTypes'));
-        $this->assertResponseContains('All Games');
-        $this->assertResponseNotContains('Games Home');
-        $this->assertResponseNotContains('Ranked Games');
-        $this->assertResponseNotContains('Overtime Games');
+        $this->assertSame(1, $this->viewVariable('publicScope')['teamId']);
+        $this->assertArrayHasKey('ranked', $this->viewVariable('searchTypes'));
+        $this->assertArrayHasKey('streaks', $this->viewVariable('searchTypes'));
+        $this->assertArrayHasKey('series', $this->viewVariable('searchTypes'));
     }
 
     /**
@@ -151,6 +150,34 @@ class GamesControllerTest extends TestCase
     {
         $this->get('/games/9999');
         $this->assertResponseError();
+        $this->assertResponseCode(404);
+    }
+
+    /**
+     * Games without a result are excluded from public lists and detail pages.
+     *
+     * @return void
+     */
+    public function testPublicGamesHideGamesWithoutResults(): void
+    {
+        $gamesTable = $this->fetchTable('Games');
+        $pendingGame = $gamesTable->saveOrFail($gamesTable->newEntity([
+            'team_season_id' => 1,
+            'game_date' => '2024-01-21',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+        ]));
+
+        $this->get('/games/all?format=json&sport=basketball&team=1');
+        $this->assertResponseOk();
+        $payload = json_decode((string)$this->_response->getBody(), true);
+        $this->assertIsArray($payload);
+        $this->assertCount(4, $payload['data']);
+
+        $this->get('/games/' . $pendingGame->id . '?sport=basketball&team=1');
         $this->assertResponseCode(404);
     }
 
@@ -258,9 +285,9 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * The opponent summary is expanded when the game has no final score.
+     * Games without a result are not publicly viewable.
      */
-    public function testViewExpandsSeriesSummaryForUnplayedGame(): void
+    public function testViewHidesUnplayedGame(): void
     {
         $this->fetchTable('Games')->updateAll([
             'pts_mur' => null,
@@ -271,12 +298,7 @@ class GamesControllerTest extends TestCase
 
         $this->get('/games/1');
 
-        $this->assertResponseOk();
-        $this->assertResponseContains('Series History vs');
-        $this->assertResponseContains('aria-expanded="true"');
-        $this->assertResponseContains('id="game-series-history-collapse"');
-        $this->assertResponseContains('class="accordion-collapse collapse show"');
-        $this->assertResponseNotContains('All Games vs');
+        $this->assertResponseCode(404);
     }
 
     /**
@@ -390,38 +412,41 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Specialty game views require an explicit team scope.
+     * Specialty game views use the only team with results as their scope.
      */
-    public function testRankedPageRequiresTeamScope(): void
+    public function testRankedPageUsesTheOnlyTeamWithGames(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
         $this->get('/games/ranked?sport=all&team=all');
 
-        $this->assertRedirectContains('/games?sport=all&team=all');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Ranked Games');
     }
 
     /**
-     * The 100-point view also requires a selected team.
+     * The 100-point view uses the only team with results as its scope.
      *
      * @return void
      */
-    public function testHundredPointRequiresTeamScope(): void
+    public function testHundredPointUsesTheOnlyTeamWithGames(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => 'all']]);
         $this->get('/games/hundred-point?sport=basketball&team=all');
 
-        $this->assertRedirectContains('/games?sport=basketball&team=all');
+        $this->assertResponseOk();
+        $this->assertResponseContains('100 Point Games');
     }
 
     /**
-     * The Series opponents endpoint also requires a selected team.
+     * The Series opponents endpoint uses the only team with results as its scope.
      */
-    public function testSeriesOpponentsRequiresTeamScope(): void
+    public function testSeriesOpponentsUsesTheOnlyTeamWithGames(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
         $this->get('/games/series-opponents?format=json&sport=all&team=all');
 
-        $this->assertRedirectContains('/games?sport=all&team=all');
+        $this->assertResponseOk();
+        $this->assertContentType('application/json');
     }
 
     /**

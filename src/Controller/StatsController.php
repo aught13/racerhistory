@@ -264,7 +264,10 @@ class StatsController extends AppController
             return $this->resolvedPublicScope;
         }
 
-        $scope = $this->publicSportScopeService->resolve($this->getRequest()->getQueryParams());
+        $scope = $this->publicSportScopeService->resolveStatsScope(
+            $this->getRequest()->getQueryParams(),
+            $this->statsService->getSupportedSports(),
+        );
         if (!$scope['valid']) {
             throw new BadRequestException('Invalid sport or team selection.');
         }
