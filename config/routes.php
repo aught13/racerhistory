@@ -53,6 +53,20 @@ return function (RouteBuilder $routes): void {
 
         // Global site options admin panel
         $routes->connect('/site-options/edit', ['controller' => 'SiteOptions', 'action' => 'edit']);
+        $routes->connect('/site-options/write-ads-txt', [
+            'controller' => 'Advertising',
+            'action' => 'writeAdsTxt',
+        ]);
+        $routes->connect('/advertising', ['controller' => 'Advertising', 'action' => 'index']);
+        $routes->connect('/advertising/add', ['controller' => 'Advertising', 'action' => 'add']);
+        $routes->connect('/advertising/edit/{id}', ['controller' => 'Advertising', 'action' => 'edit'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\d+']);
+        $routes->connect('/advertising/delete/{id}', ['controller' => 'Advertising', 'action' => 'delete'])
+            ->setPass(['id'])
+            ->setPatterns(['id' => '\d+']);
+        $routes->connect('/advertising/save-settings', ['controller' => 'Advertising', 'action' => 'saveSettings']);
+        $routes->connect('/advertising/write-ads-txt', ['controller' => 'Advertising', 'action' => 'writeAdsTxt']);
         $routes->connect('/site-options/sports-configs', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs']);
         $routes->connect('/site-options/sports-configs/{sportRef}', ['controller' => 'SiteOptions', 'action' => 'sportsConfigs'])
             ->setPass(['sportRef']);

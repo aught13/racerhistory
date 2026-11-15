@@ -46,7 +46,6 @@ use Cake\Mailer\TransportFactory;
 use Cake\ORM\TableRegistry;
 use Cake\Routing\Router;
 use Cake\Utility\Security;
-use App\Service\SiteOptionsService;
 use function Cake\Core\env;
 
 /*
@@ -202,8 +201,6 @@ $siteOptionDefinitions = Configure::read('SiteOptionsDefaults');
 if (!is_array($siteOptionDefinitions)) {
     $siteOptionDefinitions = [];
 }
-$siteOptionDefinitions = SiteOptionsService::withAdSlotDefinitions($siteOptionDefinitions);
-
 /**
  * @param mixed $value
  * @param string $type

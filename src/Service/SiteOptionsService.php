@@ -23,20 +23,6 @@ class SiteOptionsService
 {
     private const CACHE_KEY = 'global_site_options';
 
-    /**
-     * @var array<string>
-     */
-    private const AD_SLOT_NAMES = [
-        'below_nav',
-        'below_content',
-        'footer',
-        'homepage_mid',
-        'news_after_first',
-        'news_every_fifth',
-        'news_sidebar_1',
-        'news_sidebar_2',
-    ];
-
     private SiteOptionsTable $siteOptionsTable;
 
     private SportConfigAdminService $sportConfigAdminService;
@@ -395,41 +381,6 @@ class SiteOptionsService
                     ? ['options' => $definition['options']]
                     : []),
             ];
-        }
-
-        return self::withAdSlotDefinitions($definitions);
-    }
-
-    /**
-     * Add the registered ad-unit fields used by bootstrap, admin forms, and runtime reads.
-     *
-     * @param array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}> $definitions
-     * @return array<string,array{label:string,type:string,default:mixed,help?:string,options?:array<string,string>}>
-     */
-    public static function withAdSlotDefinitions(array $definitions): array
-    {
-        foreach (self::AD_SLOT_NAMES as $slotName) {
-            $labelName = ucwords(str_replace('_', ' ', $slotName));
-            $prefix = 'ad_' . $slotName;
-            $slotDefinitions = [
-                $prefix . '_mode' => 'Delivery Mode',
-                $prefix . '_sizes_desktop' => 'Desktop Size Presets',
-                $prefix . '_sizes_mobile' => 'Mobile Size Presets',
-                $prefix . '_gpt_unit_path' => 'GPT Unit Path',
-            ];
-
-            foreach ($slotDefinitions as $optionKey => $optionLabel) {
-                if (isset($definitions[$optionKey])) {
-                    continue;
-                }
-
-                $definitions[$optionKey] = [
-                    'label' => 'Ads - ' . $labelName . ': ' . $optionLabel,
-                    'type' => 'text',
-                    'default' => '',
-                    'help' => self::defaultHelpText($optionKey),
-                ];
-            }
         }
 
         return $definitions;

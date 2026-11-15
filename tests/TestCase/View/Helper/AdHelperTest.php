@@ -3,55 +3,20 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\View\Helper;
 
+use App\Service\AdConfigurationService;
 use App\View\Helper\AdHelper;
-use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use Cake\View\View;
 
 class AdHelperTest extends TestCase
 {
-    private AdHelper $helper;
-
-    /**
-     * @var mixed
-     */
-    private $originalSiteOptions;
-
-    /**
-     * Initialize helper and preserve prior runtime site options.
-     */
-    public function setUp(): void
-    {
-        parent::setUp();
-        $this->helper = new AdHelper(new View());
-        $this->originalSiteOptions = Configure::read('SiteOptions');
-        // Ensure tests start with a clean runtime SiteOptions map so local DB
-        // persisted values do not affect assertions.
-        Configure::write('SiteOptions', []);
-    }
-
-    /**
-     * Restore runtime options after each test.
-     */
-    public function tearDown(): void
-    {
-        Configure::delete('SiteOptions');
-        if ($this->originalSiteOptions !== null) {
-            Configure::write('SiteOptions', $this->originalSiteOptions);
-        }
-
-        unset($this->helper);
-        parent::tearDown();
-    }
-
     /**
      * Missing slots should return inactive payload defaults.
      */
     public function testSlotReturnsInactiveDefaultsWhenNotConfigured(): void
     {
-        Configure::write('SiteOptions', []);
-
-        $payload = $this->helper->slot('below_nav');
+        $helper = $this->createHelper([$this->configuration()]);
+        $payload = $helper->slot('below_nav', ['sportKey' => 'basketball']);
 
         $this->assertFalse($payload['active']);
         $this->assertSame('below-nav', $payload['slot_class']);
@@ -64,11 +29,13 @@ class AdHelperTest extends TestCase
      */
     public function testSlotReturnsCustomPayload(): void
     {
-        Configure::write('SiteOptions.ad_below_nav_active', true);
-        Configure::write('SiteOptions.ad_below_nav_google_mode', false);
-        Configure::write('SiteOptions.ad_below_nav_html', '<div class="banner">Banner</div>');
-
-        $payload = $this->helper->slot('below_nav');
+        $helper = $this->createHelper([
+            $this->configuration([
+                'active' => true,
+                'html' => '<div class="banner">Banner</div>',
+            ]),
+        ]);
+        $payload = $helper->slot('below_nav', ['sportKey' => 'basketball']);
 
         $this->assertTrue($payload['active']);
         $this->assertSame('below-nav', $payload['slot_class']);
@@ -82,14 +49,17 @@ class AdHelperTest extends TestCase
      */
     public function testSlotReturnsGooglePayload(): void
     {
-        Configure::write('SiteOptions.ad_below_nav_active', true);
-        Configure::write('SiteOptions.ad_below_nav_google_mode', true);
-        Configure::write(
-            'SiteOptions.ad_below_nav_html',
-            '<ins class="adsbygoogle" data-ad-client="ca-pub-321" data-ad-slot="1234567890" data-ad-format="auto"></ins>',
-        );
-
-        $payload = $this->helper->slot('below_nav');
+        $helper = $this->createHelper([
+            $this->configuration([
+                'active' => true,
+                'mode' => 'google',
+                'html' => '<ins class="adsbygoogle" data-ad-client="ca-pub-321" data-ad-slot="1234567890" data-ad-format="auto"></ins>',
+                'google_slot_id' => '1234567890',
+                'google_client' => 'ca-pub-321',
+                'google_format' => 'auto',
+            ]),
+        ]);
+        $payload = $helper->slot('below_nav', ['sportKey' => 'basketball']);
 
         $this->assertTrue($payload['active']);
         $this->assertSame('google', $payload['mode']);
@@ -97,5 +67,109 @@ class AdHelperTest extends TestCase
         $this->assertSame('1234567890', $payload['google_slot_id']);
         $this->assertSame('ca-pub-321', $payload['google_client']);
         $this->assertSame('auto', $payload['google_format']);
+    }
+
+    /**
+     * Every matching campaign should be represented as a separate slot payload.
+     */
+    public function testSlotsReturnsAllCampaignPayloads(): void
+    {
+        $helper = $this->createHelper([
+            $this->configuration(['active' => true, 'html' => '<div>Site sponsor</div>']),
+            $this->configuration(['active' => true, 'html' => '<div>Content sponsor</div>']),
+        ]);
+
+        $payloads = $helper->slots('below_nav', ['sportKey' => 'basketball']);
+
+        $this->assertCount(2, $payloads);
+        $this->assertSame('below-nav', $payloads[0]['slot_class']);
+        $this->assertStringContainsString('Site sponsor', $payloads[0]['html']);
+        $this->assertStringContainsString('Content sponsor', $payloads[1]['html']);
+    }
+
+    /**
+     * The view helper returns the separately configured global provider script.
+     */
+    public function testGlobalScriptReturnsProviderScript(): void
+    {
+        $helper = $this->createHelper([], '<script src="/provider.js"></script>');
+
+        $this->assertSame('<script src="/provider.js"></script>', $helper->globalScript());
+    }
+
+    /**
+     * Placements without an explicit context use sport/team view variables.
+     */
+    public function testSlotsResolvePageContextFromViewVariables(): void
+    {
+        $configuration = $this->configuration(['active' => true, 'html' => '<div>Scoped</div>']);
+        $service = $this->getMockBuilder(AdConfigurationService::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSlotConfigurations', 'resolvePageContext'])
+            ->getMock();
+        $service->expects($this->once())
+            ->method('resolvePageContext')
+            ->with($this->callback(
+                static fn(array $viewVars): bool => $viewVars['publicScope'] === [
+                    'sportKey' => 'basketball',
+                    'teamId' => 1,
+                ],
+            ))
+            ->willReturn(['sportKey' => 'basketball', 'teamId' => 1]);
+        $service->expects($this->once())
+            ->method('getSlotConfigurations')
+            ->with('below_nav', ['sportKey' => 'basketball', 'teamId' => 1])
+            ->willReturn([$configuration]);
+        $view = new View();
+        $view->set('publicScope', ['sportKey' => 'basketball', 'teamId' => 1]);
+        $helper = new AdHelper($view, ['adConfigurationService' => $service]);
+
+        $this->assertCount(1, $helper->slots('below_nav'));
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $configurations
+     * @param string $globalScript Provider loader script.
+     */
+    private function createHelper(array $configurations, string $globalScript = ''): AdHelper
+    {
+        $service = $this->getMockBuilder(AdConfigurationService::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSlotConfiguration', 'getSlotConfigurations', 'getGlobalScript', 'resolvePageContext'])
+            ->getMock();
+        $service->method('getSlotConfiguration')->willReturn(
+            $configurations[0] ?? $this->configuration(),
+        );
+        $service->method('getSlotConfigurations')->willReturn($configurations);
+        $service->method('resolvePageContext')->willReturn([
+            'sportKey' => null,
+            'teamId' => null,
+        ]);
+        $service->method('getGlobalScript')->willReturn($globalScript);
+
+        return new AdHelper(new View(), ['adConfigurationService' => $service]);
+    }
+
+    /**
+     * @param array<string,mixed> $overrides
+     * @return array<string,mixed>
+     */
+    private function configuration(array $overrides = []): array
+    {
+        return array_replace([
+            'slot' => 'below_nav',
+            'active' => false,
+            'mode' => 'custom',
+            'html' => '',
+            'sizes_desktop' => [],
+            'sizes_mobile' => [],
+            'gpt_unit_path' => '',
+            'google_slot_id' => '',
+            'google_client' => '',
+            'google_format' => '',
+            'google_layout' => '',
+            'google_layout_key' => '',
+            'google_full_width_responsive' => '',
+        ], $overrides);
     }
 }
