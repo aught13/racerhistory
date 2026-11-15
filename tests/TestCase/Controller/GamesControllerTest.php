@@ -7,6 +7,8 @@ use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 use DateTimeImmutable;
+use DOMDocument;
+use DOMXPath;
 
 /**
  * App\Controller\GamesController Test Case
@@ -404,6 +406,104 @@ class GamesControllerTest extends TestCase
             '/id="game-opponent-advanced-stats-table".*?<td>\s*John Doe\s*<\/td>\s*<td data-order="1">\s*\*\s*<\/td>/s',
             (string)$this->_response->getBody(),
         );
+    }
+
+    /**
+     * Game box-score tabs omit empty player rows, columns, and stat sets.
+     */
+    public function testStatsFrameFiltersUnavailablePlayerStatsAndTabs(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'BD', 'TRN', 'PF', 'TF', 'FD', 'PTS',
+        ];
+        $boxFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+            'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+        ];
+        $teamFields = ['ORB', 'DRB', 'RB', 'TRN', 'TF', 'PTS'];
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $emptyOpponentStats = array_fill_keys([
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'BD', 'TRN', 'PF', 'TF', 'FD', 'PTS',
+        ], null);
+        $emptyBoxStats = array_fill_keys($boxFields, null);
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+
+        $playerStats = $this->fetchTable('StatBasketGamePerson');
+        $partialPlayerStats = $emptyPlayerStats;
+        $partialPlayerStats['MIN'] = '30';
+        $partialPlayerStats['FGM'] = '8';
+        $partialPlayerStats['FGA'] = '20';
+        $partialPlayerStats['TPM'] = '2';
+        $partialPlayerStats['TPA'] = '6';
+        $partialPlayerStats['FTM'] = '4';
+        $partialPlayerStats['FTA'] = '5';
+        $partialPlayerStats['PTS'] = '22';
+        $playerStats->updateAll($partialPlayerStats, ['id' => 1]);
+        $opponentStats = $this->fetchTable('StatBasketGameOpponent');
+        $opponentStats->updateAll($emptyOpponentStats, ['id' => 1]);
+        $this->fetchTable('StatBasketGameBox')->updateAll($emptyBoxStats, ['game_id' => 1, 'period' => 'Z']);
+        $this->fetchTable('StatBasketGameTeam')->updateAll($emptyTeamStats, ['game_id' => 1]);
+
+        $this->get('/games/stats/1');
+
+        $this->assertResponseOk();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $basicHeaders = $xpath->query('//table[@id="game-team-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $basicHeaderNames = [];
+        foreach ($basicHeaders as $header) {
+            $basicHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame([
+            'Name', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%',
+            '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'PTS',
+        ], $basicHeaderNames);
+        $this->assertSame(1, $xpath->query('//table[@id="game-team-stats-table"]/tbody/tr')->length);
+        $this->assertSame(0, $xpath->query('//table[@id="game-opponent-stats-table"]')->length);
+
+        $advancedHeaders = $xpath->query('//table[@id="game-team-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $advancedHeaderNames = [];
+        foreach ($advancedHeaders as $header) {
+            $advancedHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame(['Name', 'MP', 'TS%', 'eFG%', '3PAr', 'FTr'], $advancedHeaderNames);
+        $this->assertSame(1, $xpath->query('//table[@id="game-team-advanced-stats-table"]/tbody/tr')->length);
+        $this->assertSame(0, $xpath->query('//table[@id="game-opponent-advanced-stats-table"]')->length);
+
+        $ptsOnlyStats = $emptyPlayerStats;
+        $ptsOnlyStats['PTS'] = '7';
+        $playerStats->updateAll($ptsOnlyStats, ['id' => 1]);
+        $this->get('/games/stats/1');
+
+        $this->assertResponseOk();
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+        $xpath = new DOMXPath($dom);
+        $basicHeaders = $xpath->query('//table[@id="game-team-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $this->assertSame(
+            ['Name', 'PTS'],
+            array_map(static fn($header): string => trim($header->textContent), iterator_to_array($basicHeaders)),
+        );
+        $this->assertSame(0, $xpath->query('//button[@data-game-stats-tab="advanced"]')->length);
+
+        $playerStats->updateAll($emptyPlayerStats, ['game_id' => 1]);
+        $opponentStats->updateAll($emptyOpponentStats, ['game_id' => 1]);
+        $this->get('/games/stats/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('data-game-stats-tab=');
+        $this->assertResponseNotContains('id="game-team-stats-table"');
+        $this->assertResponseNotContains('id="game-opponent-stats-table"');
     }
 
     /**

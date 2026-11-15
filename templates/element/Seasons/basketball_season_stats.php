@@ -12,7 +12,6 @@ declare(strict_types=1);
  */
 
 $playerRows = $playerStats ? $playerStats->toArray() : [];
-$hasStats = !empty($playerRows) || $teamStats !== null || $opponentStats !== null;
 
 $makeBoxScoreRow = static function (object $stats, string $name): array {
     $advancedStats = $stats->advanced_stats ?? [];
@@ -192,28 +191,114 @@ $resolveBoxValue = static function (array $row, array $column): mixed {
     return $row[$key] ?? null;
 };
 
-$statsTabs = [
-    [
+$resolveAdvancedValue = static function (array $row, array $column): mixed {
+    if (in_array($column['key'], ['GP', 'GS', 'MIN'], true)) {
+        return $row[$column['key']] ?? null;
+    }
+
+    return $row['advanced'][$column['key']] ?? null;
+};
+
+$filterRowsWithData = static function (array $rows, array $columns, callable $resolveValue): array {
+    $filteredRows = [];
+    foreach ($rows as $row) {
+        foreach ($columns as $column) {
+            if (is_numeric($resolveValue($row, $column))) {
+                $filteredRows[] = $row;
+                break;
+            }
+        }
+    }
+
+    return $filteredRows;
+};
+
+$filterColumnsWithData = static function (
+    array $columns,
+    array $rows,
+    array $totals,
+    callable $resolveValue,
+): array {
+    $resultRows = array_merge($rows, $totals);
+    $filteredColumns = [];
+    foreach ($columns as $column) {
+        foreach ($resultRows as $row) {
+            if (is_numeric($resolveValue($row, $column))) {
+                $filteredColumns[] = $column;
+                break;
+            }
+        }
+    }
+
+    return $filteredColumns;
+};
+
+$boxScoreTotals = [];
+foreach ([$teamTotals, $opponentTotals] as $totalRow) {
+    if ($totalRow !== null) {
+        $boxScoreTotals[] = $totalRow;
+    }
+}
+
+$basicRows = $filterRowsWithData($seasonPlayers, $basicColumns, $resolveBoxValue);
+$basicTotals = $filterRowsWithData($boxScoreTotals, $basicColumns, $resolveBoxValue);
+$basicColumns = $filterColumnsWithData($basicColumns, $basicRows, $basicTotals, $resolveBoxValue);
+
+$statsTabs = [];
+if ($basicRows !== [] || $basicTotals !== []) {
+    $statsTabs[] = [
         'id' => 'basic',
         'label' => 'Basic Box Score Stats',
         'tableId' => 'season-stats-table',
         'columns' => $basicColumns,
-        'rows' => $seasonPlayers,
-        'totals' => [$teamTotals, $opponentTotals],
+        'rows' => $basicRows,
+        'totals' => $basicTotals,
         'perGame' => false,
         'active' => true,
-    ],
-    [
+    ];
+}
+
+$hasGames = static function (array $row): bool {
+    return is_numeric($row['GP'] ?? null) && (float)$row['GP'] > 0;
+};
+$perGameCandidates = array_values(array_filter($seasonPlayers, $hasGames));
+$perGameTotalCandidates = array_values(array_filter($boxScoreTotals, $hasGames));
+$perGameRows = $filterRowsWithData($perGameCandidates, $basicColumns, $resolveBoxValue);
+$perGameTotals = $filterRowsWithData($perGameTotalCandidates, $basicColumns, $resolveBoxValue);
+$perGameColumns = $filterColumnsWithData($basicColumns, $perGameRows, $perGameTotals, $resolveBoxValue);
+if ($perGameRows !== [] || $perGameTotals !== []) {
+    $statsTabs[] = [
         'id' => 'per-game',
         'label' => 'Per Game',
         'tableId' => 'season-per-game-table',
-        'columns' => $basicColumns,
-        'rows' => $seasonPlayers,
-        'totals' => [$teamTotals, $opponentTotals],
+        'columns' => $perGameColumns,
+        'rows' => $perGameRows,
+        'totals' => $perGameTotals,
         'perGame' => true,
-        'active' => false,
-    ],
-];
+        'active' => $statsTabs === [],
+    ];
+}
+
+$advancedRows = $filterRowsWithData($seasonPlayers, $advancedColumns, $resolveAdvancedValue);
+$advancedTotals = $teamTotals !== null
+    ? $filterRowsWithData([$teamTotals], $advancedColumns, $resolveAdvancedValue)
+    : [];
+$advancedColumns = $filterColumnsWithData(
+    $advancedColumns,
+    $advancedRows,
+    $advancedTotals,
+    $resolveAdvancedValue,
+);
+$hasAdvancedMetrics = false;
+foreach ($advancedColumns as $column) {
+    if (!in_array($column['key'], ['GP', 'GS', 'MIN'], true)) {
+        $hasAdvancedMetrics = true;
+        break;
+    }
+}
+$showAdvancedStats = $hasAdvancedMetrics && ($advancedRows !== [] || $advancedTotals !== []);
+$hasStats = $statsTabs !== [] || $showAdvancedStats;
+$activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
 ?>
 
 <?php if (!$hasStats) : ?>
@@ -230,13 +315,15 @@ $statsTabs = [
                     aria-selected="<?= $tab['active'] ? 'true' : 'false' ?>"
                 ><?= h($tab['label']) ?></button>
             <?php endforeach; ?>
-            <button
-                class="nav-link"
-                type="button"
-                role="tab"
-                data-season-stats-tab="advanced"
-                aria-selected="false"
-            >Advanced Box Score Stats</button>
+            <?php if ($showAdvancedStats) : ?>
+                <button
+                    class="nav-link<?= $activeTabId === 'advanced' ? ' active' : '' ?>"
+                    type="button"
+                    role="tab"
+                    data-season-stats-tab="advanced"
+                    aria-selected="<?= $activeTabId === 'advanced' ? 'true' : 'false' ?>"
+                >Advanced Box Score Stats</button>
+            <?php endif; ?>
         </div>
 
         <div class="tab-content mt-3 season-stats-tabs__panels">
@@ -279,9 +366,9 @@ $statsTabs = [
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
-                            <tfoot>
-                                <?php foreach ($tab['totals'] as $totalRow) : ?>
-                                    <?php if ($totalRow) : ?>
+                            <?php if ($tab['totals'] !== []) : ?>
+                                <tfoot>
+                                    <?php foreach ($tab['totals'] as $totalRow) : ?>
                                         <tr class="table-secondary fw-bold">
                                             <td><?= h($totalRow['name']) ?></td>
                                             <?php foreach ($tab['columns'] as $column) : ?>
@@ -291,72 +378,75 @@ $statsTabs = [
                                                 <td><?= h($formatBoxValue($value, $column['format'], $tab['perGame'], $totalRow['GP'])) ?></td>
                                             <?php endforeach; ?>
                                         </tr>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </tfoot>
+                                    <?php endforeach; ?>
+                                </tfoot>
+                            <?php endif; ?>
                         </table>
                     </div>
-                    <p class="text-muted small mb-0">GS = games started.</p>
+                    <?php if (in_array('GS', array_column($tab['columns'], 'key'), true)) : ?>
+                        <p class="text-muted small mb-0">GS = games started.</p>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
 
-            <div class="tab-pane d-none" data-season-stats-panel="advanced">
-                <div class="table-responsive">
-                    <table
-                        id="season-advanced-stats-table"
-                        class="table table-striped table-bordered table-sm small js-datatable"
-                        data-season-advanced-table
-                    >
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <?php foreach ($advancedColumns as $column) : ?>
-                                    <th><?= h($column['label']) ?></th>
-                                <?php endforeach; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($seasonPlayers as $row) : ?>
+            <?php if ($showAdvancedStats) : ?>
+                <div
+                    class="tab-pane<?= $activeTabId === 'advanced' ? ' active' : ' d-none' ?>"
+                    data-season-stats-panel="advanced"
+                >
+                    <div class="table-responsive">
+                        <table
+                            id="season-advanced-stats-table"
+                            class="table table-striped table-bordered table-sm small js-datatable"
+                            data-season-advanced-table
+                        >
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <?php if ($row['personId'] > 0) : ?>
-                                            <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $row['personId']]) ?>" class="fw-bold text-body text-decoration-none">
-                                                <?= h($row['name']) ?>
-                                            </a>
-                                        <?php else : ?>
-                                            <span class="fw-bold"><?= h($row['name']) ?></span>
-                                        <?php endif; ?>
-                                    </td>
+                                    <th>Name</th>
                                     <?php foreach ($advancedColumns as $column) : ?>
-                                        <?php
-                                        $value = in_array($column['key'], ['GS', 'MIN'], true)
-                                            ? $row[$column['key']]
-                                            : ($row['advanced'][$column['key']] ?? null);
-                                        ?>
-                                        <td><?= h($formatBoxValue($value, $column['format'])) ?></td>
+                                        <th><?= h($column['label']) ?></th>
                                     <?php endforeach; ?>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <?php if ($teamTotals) : ?>
-                            <tfoot>
-                                <tr class="table-secondary fw-bold">
-                                    <td><?= h($teamTotals['name']) ?></td>
-                                    <?php foreach ($advancedColumns as $column) : ?>
-                                        <?php
-                                        $value = in_array($column['key'], ['GS', 'MIN'], true)
-                                            ? $teamTotals[$column['key']]
-                                            : ($teamTotals['advanced'][$column['key']] ?? null);
-                                        ?>
-                                        <td><?= h($formatBoxValue($value, $column['format'])) ?></td>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($advancedRows as $row) : ?>
+                                    <tr>
+                                        <td>
+                                            <?php if ($row['personId'] > 0) : ?>
+                                                <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $row['personId']]) ?>" class="fw-bold text-body text-decoration-none">
+                                                    <?= h($row['name']) ?>
+                                                </a>
+                                            <?php else : ?>
+                                                <span class="fw-bold"><?= h($row['name']) ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <?php foreach ($advancedColumns as $column) : ?>
+                                            <?php $value = $resolveAdvancedValue($row, $column); ?>
+                                            <td><?= h($formatBoxValue($value, $column['format'])) ?></td>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <?php if ($advancedTotals !== []) : ?>
+                                <tfoot>
+                                    <?php foreach ($advancedTotals as $totalRow) : ?>
+                                        <tr class="table-secondary fw-bold">
+                                            <td><?= h($totalRow['name']) ?></td>
+                                            <?php foreach ($advancedColumns as $column) : ?>
+                                                <?php $value = $resolveAdvancedValue($totalRow, $column); ?>
+                                                <td><?= h($formatBoxValue($value, $column['format'])) ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
                                     <?php endforeach; ?>
-                                </tr>
-                            </tfoot>
-                        <?php endif; ?>
-                    </table>
+                                </tfoot>
+                            <?php endif; ?>
+                        </table>
+                    </div>
+                    <?php if (in_array('GS', array_column($advancedColumns, 'key'), true)) : ?>
+                        <p class="text-muted small mb-0">GS = games started.</p>
+                    <?php endif; ?>
                 </div>
-                <p class="text-muted small mb-0">GS = games started.</p>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
 <?php endif; ?>

@@ -160,45 +160,150 @@ $groups = [
     ],
 ];
 
-$tabs = [
-    ['id' => 'basic', 'label' => 'Basic Box Score Stats', 'columns' => $basicColumns, 'advanced' => false],
-    ['id' => 'advanced', 'label' => 'Advanced Box Score Stats', 'columns' => $advancedColumns, 'advanced' => true],
-];
+$filterPlayerRows = static function (array $rows, array $columns, bool $advanced) use ($readPlayerValue): array {
+    $filteredRows = [];
+    foreach ($rows as $stat) {
+        foreach ($columns as $column) {
+            if (
+                ($advanced && in_array($column['key'], ['GS', 'MIN'], true))
+                || (!$advanced && $column['key'] === 'GS')
+            ) {
+                continue;
+            }
+
+            $hasAdvancedValue = $advanced || isset($column['made']) || isset($column['derive']);
+            if (is_numeric($readPlayerValue($stat, $column['key'], $hasAdvancedValue))) {
+                $filteredRows[] = $stat;
+                break;
+            }
+        }
+    }
+
+    return $filteredRows;
+};
+
+$filterGroupColumns = static function (
+    array $rows,
+    array $columns,
+    array $group,
+    bool $advanced,
+) use (
+    $readPlayerValue,
+    $formatTeamValue,
+    $formatTotalValue,
+): array {
+    $filteredColumns = [];
+    foreach ($columns as $column) {
+        $hasValue = false;
+        foreach ($rows as $stat) {
+            $hasAdvancedValue = $advanced || isset($column['made']) || isset($column['derive']);
+            if (is_numeric($readPlayerValue($stat, $column['key'], $hasAdvancedValue))) {
+                $hasValue = true;
+                break;
+            }
+        }
+
+        if (!$hasValue && !$advanced && $column['key'] !== 'GS' && !empty($group['teamStats'])) {
+            $hasValue = $formatTeamValue($group['teamStats'], $column) !== '-';
+        }
+        if (!$hasValue && !$advanced && $column['key'] !== 'GS' && !empty($group['boxStats'])) {
+            $hasValue = $formatTotalValue($group['boxStats'], $column) !== '-';
+        }
+        if ($hasValue) {
+            $filteredColumns[] = $column;
+        }
+    }
+
+    return $filteredColumns;
+};
+
+$tabs = [];
+foreach (
+    [
+        ['id' => 'basic', 'label' => 'Basic Box Score Stats', 'columns' => $basicColumns, 'advanced' => false],
+        ['id' => 'advanced', 'label' => 'Advanced Box Score Stats', 'columns' => $advancedColumns, 'advanced' => true],
+    ] as $tab
+) {
+    $visibleGroups = [];
+    foreach ($groups as $group) {
+        $visibleRows = $filterPlayerRows($group['rows'], $tab['columns'], $tab['advanced']);
+        if ($visibleRows === []) {
+            continue;
+        }
+
+        $visibleColumns = $filterGroupColumns($visibleRows, $tab['columns'], $group, $tab['advanced']);
+        if ($visibleColumns === []) {
+            continue;
+        }
+
+        $group['rows'] = $visibleRows;
+        $group['columns'] = $visibleColumns;
+        $group['showTeamStats'] = false;
+        $group['showBoxTotals'] = false;
+        if (!$tab['advanced']) {
+            foreach ($visibleColumns as $column) {
+                if ($column['key'] === 'GS') {
+                    continue;
+                }
+                if (!empty($group['teamStats']) && $formatTeamValue($group['teamStats'], $column) !== '-') {
+                    $group['showTeamStats'] = true;
+                }
+                if (!empty($group['boxStats']) && $formatTotalValue($group['boxStats'], $column) !== '-') {
+                    $group['showBoxTotals'] = true;
+                }
+            }
+        }
+        $visibleGroups[] = $group;
+    }
+
+    if ($visibleGroups !== []) {
+        $tab['groups'] = $visibleGroups;
+        $tab['showStarterNote'] = false;
+        foreach ($visibleGroups as $group) {
+            if (in_array('GS', array_column($group['columns'], 'key'), true)) {
+                $tab['showStarterNote'] = true;
+                break;
+            }
+        }
+        $tabs[] = $tab;
+    }
+}
+$activeTabId = $tabs[0]['id'] ?? null;
 ?>
 
+<?php if ($tabs !== []) : ?>
 <div class="game-box-score-tabs" data-game-box-score-tabs>
-    <ul class="nav nav-tabs mb-3" role="tablist">
-        <?php foreach ($tabs as $index => $tab) : ?>
+    <ul class="nav nav-tabs mb-3 game-box-score-tabs__nav" role="tablist">
+        <?php foreach ($tabs as $tab) : ?>
             <?php $tabId = 'game-box-score-' . $tab['id'] . '-tab'; ?>
             <?php $panelId = 'game-box-score-' . $tab['id'] . '-panel'; ?>
+            <?php $active = $tab['id'] === $activeTabId; ?>
             <li class="nav-item" role="presentation">
                 <button
-                    class="nav-link<?= $index === 0 ? ' active' : '' ?>"
+                    class="nav-link<?= $active ? ' active' : '' ?>"
                     id="<?= h($tabId) ?>"
                     type="button"
                     role="tab"
                     data-game-stats-tab="<?= h($tab['id']) ?>"
                     aria-controls="<?= h($panelId) ?>"
-                    aria-selected="<?= $index === 0 ? 'true' : 'false' ?>"
+                    aria-selected="<?= $active ? 'true' : 'false' ?>"
                 ><?= h($tab['label']) ?></button>
             </li>
         <?php endforeach; ?>
     </ul>
 
     <div class="tab-content">
-        <?php foreach ($tabs as $index => $tab) : ?>
+        <?php foreach ($tabs as $tab) : ?>
             <?php $panelId = 'game-box-score-' . $tab['id'] . '-panel'; ?>
+            <?php $active = $tab['id'] === $activeTabId; ?>
             <div
-                class="tab-pane fade<?= $index === 0 ? ' show active' : ' d-none' ?>"
+                class="tab-pane fade<?= $active ? ' show active' : ' d-none' ?>"
                 id="<?= h($panelId) ?>"
                 role="tabpanel"
                 aria-labelledby="game-box-score-<?= h($tab['id']) ?>-tab"
                 data-game-stats-panel="<?= h($tab['id']) ?>"
             >
-                <?php foreach ($groups as $group) : ?>
-                    <?php if (empty($group['rows'])) : ?>
-                        <?php continue; ?>
-                    <?php endif; ?>
+                <?php foreach ($tab['groups'] as $group) : ?>
                     <div class="game-stats-block mb-4">
                         <h3 class="h5 mb-3"><?= h($group['title']) ?> Player Stats</h3>
                         <div class="table-responsive">
@@ -209,7 +314,7 @@ $tabs = [
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <?php foreach ($tab['columns'] as $column) : ?>
+                                        <?php foreach ($group['columns'] as $column) : ?>
                                             <th><?= h($column['label']) ?></th>
                                         <?php endforeach; ?>
                                     </tr>
@@ -238,7 +343,7 @@ $tabs = [
                                                     <?= h($name) ?>
                                                 <?php endif; ?>
                                             </td>
-                                            <?php foreach ($tab['columns'] as $column) : ?>
+                                            <?php foreach ($group['columns'] as $column) : ?>
                                                 <?php
                                                 $value = $readPlayerValue(
                                                     $stat,
@@ -256,32 +361,35 @@ $tabs = [
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
-                                <?php if (!$tab['advanced'] && !empty($group['boxStats'])) : ?>
+                                <?php if (!$tab['advanced'] && ($group['showTeamStats'] || $group['showBoxTotals'])) : ?>
                                     <tfoot>
-                                        <?php if (!empty($group['teamStats'])) : ?>
+                                        <?php if ($group['showTeamStats']) : ?>
                                             <tr class="table-light">
                                                 <td>TEAM</td>
-                                                <?php foreach ($tab['columns'] as $column) : ?>
+                                                <?php foreach ($group['columns'] as $column) : ?>
                                                     <td><?= h($formatTeamValue($group['teamStats'], $column)) ?></td>
                                                 <?php endforeach; ?>
                                             </tr>
                                         <?php endif; ?>
-                                        <tr class="table-secondary fw-bold">
-                                            <td><?= h($group['totalsLabel']) ?></td>
-                                            <?php foreach ($tab['columns'] as $column) : ?>
-                                                <td><?= h($formatTotalValue($group['boxStats'], $column)) ?></td>
-                                            <?php endforeach; ?>
-                                        </tr>
+                                        <?php if ($group['showBoxTotals']) : ?>
+                                            <tr class="table-secondary fw-bold">
+                                                <td><?= h($group['totalsLabel']) ?></td>
+                                                <?php foreach ($group['columns'] as $column) : ?>
+                                                    <td><?= h($formatTotalValue($group['boxStats'], $column)) ?></td>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        <?php endif; ?>
                                     </tfoot>
                                 <?php endif; ?>
                             </table>
                         </div>
                     </div>
                 <?php endforeach; ?>
-                <?php if ($index === 0) : ?>
+                <?php if ($tab['showStarterNote']) : ?>
                     <p class="text-muted small mb-0">* = game starter.</p>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
 </div>
+<?php endif; ?>

@@ -33,4 +33,13 @@ describe("Game view CSS", () => {
             /\[data-theme="dark"\][\s\S]*--bs-table-color:\s*var\(--rh-text\)/i,
         );
     });
+
+    test("game box score tabs use readable theme-aware button styles", () => {
+        expect(css).toMatch(
+            /\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\s*\{[^}]*color:\s*var\(--rh-muted\)/i,
+        );
+        expect(css).toMatch(
+            /\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\.active\s*\{[^}]*color:\s*var\(--rh-text\)[^}]*background-color:\s*var\(--rh-surface\)/i,
+        );
+    });
 });
