@@ -6,25 +6,25 @@ namespace App\Service;
 /**
  * Service layer for ad slot configuration normalization.
  *
- * Reads ad slot configuration from runtime SiteOptions and exposes a typed
- * payload used by the view helper and frontend lifecycle controller.
+ * Resolves persisted advertising campaigns into typed view and frontend payloads.
  */
 class AdConfigurationService
 {
-    private SiteOptionsService $siteOptionsService;
+    private AdvertisingService $advertisingService;
 
     /**
-     * @param \App\Service\SiteOptionsService|null $siteOptionsService
+     * @param \App\Service\AdvertisingService|null $advertisingService
      */
-    public function __construct(?SiteOptionsService $siteOptionsService = null)
+    public function __construct(?AdvertisingService $advertisingService = null)
     {
-        $this->siteOptionsService = $siteOptionsService ?? new SiteOptionsService();
+        $this->advertisingService = $advertisingService ?? new AdvertisingService();
     }
 
     /**
-     * Build normalized slot configuration for a named ad placement.
+     * Build the first normalized campaign for a named placement.
      *
      * @param string $slot
+     * @param array<string,mixed> $context
      * @return array{
      *   slot:string,
      *   active:bool,
@@ -41,84 +41,99 @@ class AdConfigurationService
      *   google_full_width_responsive:string
      * }
      */
-    public function getSlotConfiguration(string $slot): array
+    public function getSlotConfiguration(string $slot, array $context = []): array
     {
         $normalizedSlot = trim($slot);
         if ($normalizedSlot === '') {
             return $this->emptySlotConfiguration('');
         }
 
-        $settings = $this->siteOptionsService->getRuntimeSettings();
-        $prefix = 'ad_' . $normalizedSlot;
-        $active = $this->toBool($settings[$prefix . '_active'] ?? false);
-        $html = trim((string)($settings[$prefix . '_html'] ?? ''));
-        $configuredMode = strtolower(trim((string)($settings[$prefix . '_mode'] ?? '')));
-        $legacyGoogleMode = $this->toBool($settings[$prefix . '_google_mode'] ?? false);
-        $sizesDesktop = $this->parseSizes($settings[$prefix . '_sizes_desktop'] ?? '');
-        $sizesMobile = $this->parseSizes($settings[$prefix . '_sizes_mobile'] ?? '');
-        $gptUnitPath = trim((string)($settings[$prefix . '_gpt_unit_path'] ?? ''));
+        return $this->getSlotConfigurations($normalizedSlot, $context)[0]
+            ?? $this->emptySlotConfiguration($normalizedSlot);
+    }
 
-        if (!$active) {
-            return $this->emptySlotConfiguration($normalizedSlot);
+    /**
+     * Build normalized frontend payloads for all matching campaigns in a placement.
+     *
+     * @param string $slot Placement key.
+     * @param array<string,mixed> $context Current page sport/team context.
+     * @return array<int,array{
+     *   slot:string,
+     *   active:bool,
+     *   mode:string,
+     *   html:string,
+     *   sizes_desktop:array<int,array{0:int,1:int}>,
+     *   sizes_mobile:array<int,array{0:int,1:int}>,
+     *   gpt_unit_path:string,
+     *   google_slot_id:string,
+     *   google_client:string,
+     *   google_format:string,
+     *   google_layout:string,
+     *   google_layout_key:string,
+     *   google_full_width_responsive:string
+     * }>
+     */
+    public function getSlotConfigurations(string $slot, array $context = []): array
+    {
+        $normalizedSlot = trim($slot);
+        if ($normalizedSlot === '') {
+            return [];
         }
 
-        $hasExplicitMode = in_array($configuredMode, ['custom', 'google', 'gpt'], true);
-        $mode = $hasExplicitMode
-            ? $configuredMode
-            : ($legacyGoogleMode ? 'google' : 'custom');
+        $settings = $this->advertisingService->getSettings();
+        $configurations = [];
+        $advertisements = $this->advertisingService->getAdvertisementsForPlacement($normalizedSlot, $context);
+        foreach ($advertisements as $advertisement) {
+            $html = trim((string)$advertisement->html);
+            $configuredMode = strtolower(trim((string)$advertisement->mode));
+            $hasExplicitMode = in_array($configuredMode, ['custom', 'google', 'gpt'], true);
+            $mode = $hasExplicitMode ? $configuredMode : 'custom';
+            $sizesDesktop = $this->parseSizes($advertisement->sizes_desktop ?? '');
+            $sizesMobile = $this->parseSizes($advertisement->sizes_mobile ?? '');
+            $gptUnitPath = trim((string)($advertisement->gpt_unit_path ?? ''));
 
-        if (in_array($mode, ['custom', 'google'], true) && $html === '') {
-            return $this->emptySlotConfiguration($normalizedSlot);
-        }
+            if (in_array($mode, ['custom', 'google'], true) && $html === '') {
+                continue;
+            }
 
-        if ($mode === 'gpt' && $gptUnitPath === '') {
-            return $html === ''
-                ? $this->emptySlotConfiguration($normalizedSlot)
-                : $this->buildConfiguration(
-                    $normalizedSlot,
-                    'custom',
-                    $html,
-                    $sizesDesktop,
-                    $sizesMobile,
-                    $gptUnitPath,
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                );
-        }
+            if ($mode === 'gpt' && $gptUnitPath === '') {
+                if ($html === '') {
+                    continue;
+                }
+                $mode = 'custom';
+            }
 
-        $publisherId = trim((string)($settings['ad_publisher_id'] ?? ''));
-        $googleClient = $this->extractAttribute($html, 'data-ad-client');
-        if ($googleClient === '') {
-            $googleClient = $this->normalizePublisherId($publisherId);
-        }
+            $googleClient = $this->extractAttribute($html, 'data-ad-client');
+            if ($googleClient === '') {
+                $googleClient = $this->advertisingService->normalizePublisherId($settings['publisher_id']);
+            }
 
-        $googleSlotId = $this->extractNumericAttribute($html, 'data-ad-slot');
-        $googleFormat = $this->extractAttribute($html, 'data-ad-format');
-        $googleLayout = $this->extractAttribute($html, 'data-ad-layout');
-        $googleLayoutKey = $this->extractAttribute($html, 'data-ad-layout-key');
-        $googleFullWidthResponsive = $this->extractAttribute($html, 'data-full-width-responsive');
+            $googleSlotId = $this->extractNumericAttribute($html, 'data-ad-slot');
+            $googleFormat = $this->extractAttribute($html, 'data-ad-format');
+            $googleLayout = $this->extractAttribute($html, 'data-ad-layout');
+            $googleLayoutKey = $this->extractAttribute($html, 'data-ad-layout-key');
+            $googleFullWidthResponsive = $this->extractAttribute($html, 'data-full-width-responsive');
 
-        $hasGoogleMarkup = preg_match(
-            '/<ins\b[^>]*\bclass\s*=\s*(["\'])[^"\']*\badsbygoogle\b[^"\']*\1/i',
-            $html,
-        ) === 1;
-        if (!$hasExplicitMode && $hasGoogleMarkup) {
-            $mode = 'google';
-        }
+            $hasGoogleMarkup = preg_match(
+                '/<ins\b[^>]*\bclass\s*=\s*(["\'])[^"\']*\badsbygoogle\b[^"\']*\1/i',
+                $html,
+            ) === 1;
+            if (!$hasExplicitMode && $hasGoogleMarkup) {
+                $mode = 'google';
+            }
 
-        if ($mode === 'google' && $googleSlotId === '') {
-            return $this->buildConfiguration(
+            if ($mode === 'google' && $googleSlotId === '') {
+                $mode = 'custom';
+            }
+
+            $configurations[] = $this->buildConfiguration(
                 $normalizedSlot,
-                'custom',
+                $mode,
                 $html,
                 $sizesDesktop,
                 $sizesMobile,
                 $gptUnitPath,
-                '',
+                $mode === 'google' ? $googleSlotId : '',
                 $googleClient,
                 $googleFormat,
                 $googleLayout,
@@ -127,20 +142,26 @@ class AdConfigurationService
             );
         }
 
-        return $this->buildConfiguration(
-            $normalizedSlot,
-            $mode,
-            $html,
-            $sizesDesktop,
-            $sizesMobile,
-            $gptUnitPath,
-            $googleSlotId,
-            $googleClient,
-            $googleFormat,
-            $googleLayout,
-            $googleLayoutKey,
-            $googleFullWidthResponsive,
-        );
+        return $configurations;
+    }
+
+    /**
+     * Return the site-wide provider script.
+     */
+    public function getGlobalScript(): string
+    {
+        return $this->advertisingService->getSettings()['global_script'];
+    }
+
+    /**
+     * Resolve sport/team context from the current view variables.
+     *
+     * @param array<string,mixed> $viewVars Template variables.
+     * @return array{sportKey:string|null,teamId:int|null}
+     */
+    public function resolvePageContext(array $viewVars): array
+    {
+        return $this->advertisingService->resolvePageContext($viewVars);
     }
 
     /**
@@ -281,28 +302,6 @@ class AdConfigurationService
     }
 
     /**
-     * @param mixed $value
-     */
-    private function toBool(mixed $value): bool
-    {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if (is_numeric($value)) {
-            return (int)$value === 1;
-        }
-
-        if (is_string($value)) {
-            $normalized = strtolower(trim($value));
-
-            return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
-        }
-
-        return false;
-    }
-
-    /**
      * @param string $html
      * @param string $attribute
      */
@@ -328,34 +327,5 @@ class AdConfigurationService
         }
 
         return '';
-    }
-
-    /**
-     * @param string $publisherId
-     */
-    private function normalizePublisherId(string $publisherId): string
-    {
-        $candidate = trim($publisherId);
-        if ($candidate === '') {
-            return '';
-        }
-
-        if (ctype_digit($candidate)) {
-            return 'ca-pub-' . $candidate;
-        }
-
-        if (preg_match('/^ca-pub-\d+$/i', $candidate) === 1) {
-            return strtolower($candidate);
-        }
-
-        if (preg_match('/^pub-\d+$/i', $candidate) === 1) {
-            return 'ca-' . strtolower($candidate);
-        }
-
-        if (preg_match('/ca-pub-\d+/i', $candidate, $matches) === 1) {
-            return strtolower((string)$matches[0]);
-        }
-
-        return $candidate;
     }
 }

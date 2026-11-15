@@ -5,7 +5,7 @@ namespace App\Test\TestCase\Controller;
 
 use App\Service\BlogPostService;
 use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
-use Cake\Core\Configure;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 use DOMDocument;
@@ -39,6 +39,8 @@ class SeasonsControllerTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.Advertisements',
+        'app.AdvertisingSettings',
     ];
 
     /**
@@ -187,38 +189,47 @@ class SeasonsControllerTest extends TestCase
      */
     public function testViewAdPlacements(): void
     {
-        $originalSiteOptions = Configure::read('SiteOptions');
-        Configure::write('SiteOptions.ad_below_content_active', true);
-        Configure::write('SiteOptions.ad_below_content_mode', 'custom');
-        Configure::write('SiteOptions.ad_below_content_html', '<div>Below content test ad</div>');
-        Configure::write('SiteOptions.ad_news_after_first_active', true);
-        Configure::write('SiteOptions.ad_news_after_first_mode', 'custom');
-        Configure::write('SiteOptions.ad_news_after_first_html', '<div>News test ad</div>');
-
-        try {
-            $this->get('/seasons/1');
-            $this->assertResponseOk();
-            $html = (string)$this->_response->getBody();
-            $this->assertSame(1, substr_count($html, 'data-ad-slot="below_content"'));
-            $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
-            $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
-
-            $this->blogPostTaggingService()->attachTags(1, [
-                ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
-                'preview',
-            ]);
-
-            $this->get('/seasons/1');
-            $this->assertResponseOk();
-            $html = (string)$this->_response->getBody();
-            $this->assertSame(1, preg_match('/id="season-preview".*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
-            $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
-        } finally {
-            Configure::delete('SiteOptions');
-            if (is_array($originalSiteOptions)) {
-                Configure::write('SiteOptions', $originalSiteOptions);
-            }
+        /** @var \App\Model\Table\AdvertisementsTable $advertisements */
+        $advertisements = TableRegistry::getTableLocator()->get('Advertisements');
+        $adDataEntries = [
+            [
+                'title' => 'Below content test ad',
+                'placement' => 'below_content',
+                'html' => '<div>Below content test ad</div>',
+            ],
+            [
+                'title' => 'News test ad',
+                'placement' => 'news_after_first',
+                'html' => '<div>News test ad</div>',
+            ],
+        ];
+        foreach ($adDataEntries as $adData) {
+            $entityData = $adData + [
+                'target_type' => 'site',
+                'is_active' => true,
+                'mode' => 'custom',
+                'display_order' => 0,
+            ];
+            $advertisements->saveOrFail($advertisements->newEntity($entityData));
         }
+
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+        $html = (string)$this->_response->getBody();
+        $this->assertSame(1, substr_count($html, 'data-ad-slot="below_content"'));
+        $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
+        $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
+
+        $this->blogPostTaggingService()->attachTags(1, [
+            ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
+            'preview',
+        ]);
+
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+        $html = (string)$this->_response->getBody();
+        $this->assertSame(1, preg_match('/id="season-preview".*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
+        $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
     }
 
     /**

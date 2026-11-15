@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Controller\Admin\AdvertisingController;
 use App\Controller\Admin\BasketballBoxScoreImportController;
 use App\Controller\Admin\BlogPostsController;
 use App\Controller\Admin\DashboardController;
@@ -67,6 +68,7 @@ use App\Model\Table\TeamsTable;
 use App\Model\Table\UsersTable;
 use App\Policy\RequestPolicy;
 use App\Service\AdminDataScopeService;
+use App\Service\AdvertisingService;
 use App\Service\BasketballBoxScoreImportService;
 use App\Service\BasketballOpponentNameNormalizationService;
 use App\Service\BasketballStatsAdminService;
@@ -418,6 +420,7 @@ class Application extends BaseApplication implements
             ->addArgument(BlogPostService::class);
         $container->add(RolesAdminService::class);
         $container->add(SiteOptionsService::class);
+        $container->add(AdvertisingService::class);
         $container->add(TagLookupsAdminService::class);
         $container->add(PeopleDirectoryService::class)
             ->addArgument(PersonsTable::class)
@@ -559,6 +562,10 @@ class Application extends BaseApplication implements
         $container->add(SiteOptionsController::class)
             ->addArgument(ServerRequest::class)
             ->addArgument(SiteOptionsService::class)
+            ->addArgument(ComponentRegistry::class);
+        $container->add(AdvertisingController::class)
+            ->addArgument(ServerRequest::class)
+            ->addArgument(AdvertisingService::class)
             ->addArgument(ComponentRegistry::class);
         $container->add(StatBasketGameBoxController::class)
             ->addArgument(ServerRequest::class)
