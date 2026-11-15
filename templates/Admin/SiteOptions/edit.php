@@ -15,6 +15,14 @@ $this->assign('title', 'Site Options');
         <div class="col">
             <h1 class="mb-2">Site Options</h1>
             <p class="text-muted mb-0">Manage global runtime configuration for registration, maintenance mode, and defaults.</p>
+            <p class="text-muted mt-2 mb-0">
+                Advertising campaigns and provider settings are managed in
+                <?= $this->Html->link(
+                    'Advertising',
+                    ['prefix' => 'Admin', 'controller' => 'Advertising', 'action' => 'index'],
+                    ['data-turbo-frame' => 'admin-content'],
+                ) ?>.
+            </p>
         </div>
     </div>
 

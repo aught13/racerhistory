@@ -14,6 +14,8 @@ class AdHelper extends Helper
 {
     private AdConfigurationService $adConfigurationService;
 
+    private View $view;
+
     /**
      * @param \Cake\View\View $View
      * @param array<string,mixed> $config
@@ -21,6 +23,7 @@ class AdHelper extends Helper
     public function __construct(View $View, array $config = [])
     {
         parent::__construct($View, $config);
+        $this->view = $View;
 
         $service = $config['adConfigurationService'] ?? null;
         if ($service instanceof AdConfigurationService) {
@@ -33,9 +36,10 @@ class AdHelper extends Helper
     }
 
     /**
-     * Resolve normalized payload for a slot name.
+     * Resolve the first normalized payload for a placement.
      *
      * @param string $slot
+     * @param array<string,mixed> $context
      * @return array{
      *   slot:string,
      *   slot_class:string,
@@ -54,9 +58,98 @@ class AdHelper extends Helper
      *   google_full_width_responsive:string
      * }
      */
-    public function slot(string $slot): array
+    public function slot(string $slot, array $context = []): array
     {
-        $configuration = $this->adConfigurationService->getSlotConfiguration($slot);
+        $resolvedContext = $context !== [] ? $context : $this->pageContext();
+        $configuration = $this->adConfigurationService->getSlotConfiguration($slot, $resolvedContext);
+
+        return $this->formatSlotPayload($configuration);
+    }
+
+    /**
+     * Resolve all normalized campaign payloads for a placement.
+     *
+     * @param string $slot Placement key.
+     * @param array<string,mixed> $context Optional sport/team context.
+     * @return array<int,array{
+     *   slot:string,
+     *   slot_class:string,
+     *   active:bool,
+     *   mode:string,
+     *   is_google:bool,
+     *   html:string,
+     *   sizes_desktop:array<int,array{0:int,1:int}>,
+     *   sizes_mobile:array<int,array{0:int,1:int}>,
+     *   gpt_unit_path:string,
+     *   google_slot_id:string,
+     *   google_client:string,
+     *   google_format:string,
+     *   google_layout:string,
+     *   google_layout_key:string,
+     *   google_full_width_responsive:string
+     * }>
+     */
+    public function slots(string $slot, array $context = []): array
+    {
+        $resolvedContext = $context !== [] ? $context : $this->pageContext();
+        $configurations = $this->adConfigurationService->getSlotConfigurations($slot, $resolvedContext);
+        $payloads = [];
+        foreach ($configurations as $configuration) {
+            $payloads[] = $this->formatSlotPayload($configuration);
+        }
+
+        return $payloads;
+    }
+
+    /**
+     * Return the global provider script.
+     */
+    public function globalScript(): string
+    {
+        return $this->adConfigurationService->getGlobalScript();
+    }
+
+    /**
+     * Resolve the current view's sport/team context for content campaigns.
+     *
+     * @return array{sportKey:string|null,teamId:int|null}
+     */
+    private function pageContext(): array
+    {
+        return $this->adConfigurationService->resolvePageContext([
+            'advertisingContext' => $this->view->get('advertisingContext'),
+            'publicScope' => $this->view->get('publicScope'),
+            'currentSport' => $this->view->get('currentSport'),
+            'game' => $this->view->get('game'),
+            'teamSeason' => $this->view->get('teamSeason'),
+            'post' => $this->view->get('post'),
+        ]);
+    }
+
+    /**
+     * Map a service payload to the stable view helper shape.
+     *
+     * @param array<string,mixed> $configuration Normalized campaign payload.
+     * @return array{
+     *   slot:string,
+     *   slot_class:string,
+     *   active:bool,
+     *   mode:string,
+     *   is_google:bool,
+     *   html:string,
+     *   sizes_desktop:array<int,array{0:int,1:int}>,
+     *   sizes_mobile:array<int,array{0:int,1:int}>,
+     *   gpt_unit_path:string,
+     *   google_slot_id:string,
+     *   google_client:string,
+     *   google_format:string,
+     *   google_layout:string,
+     *   google_layout_key:string,
+     *   google_full_width_responsive:string
+     * }
+     */
+    private function formatSlotPayload(array $configuration): array
+    {
         $slotName = (string)($configuration['slot'] ?? '');
         $mode = (string)($configuration['mode'] ?? 'custom');
 
