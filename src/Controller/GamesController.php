@@ -653,13 +653,17 @@ class GamesController extends AppController
         }
 
         $game = $viewData['game'] ?? null;
-        if (!$game instanceof Game || !$this->gameSearchService->hasResult($game)) {
+        if (!$game instanceof Game) {
             throw new NotFoundException('Game not found');
         }
 
+        $hasGameResult = $this->gameSearchService->hasResult($game);
         foreach (['previousGame', 'nextGame'] as $adjacentGameKey) {
             $adjacentGame = $viewData[$adjacentGameKey] ?? null;
-            if ($adjacentGame instanceof Game && !$this->gameSearchService->hasResult($adjacentGame)) {
+            if (
+                !$hasGameResult
+                || ($adjacentGame instanceof Game && !$this->gameSearchService->hasResult($adjacentGame))
+            ) {
                 $viewData[$adjacentGameKey] = null;
             }
         }
@@ -677,7 +681,7 @@ class GamesController extends AppController
 
         $this->gameListViewService->enrichGameDisplay($game);
 
-        $statsElement = $this->statsService->getGameStatsElement($id);
+        $statsElement = $hasGameResult ? $this->statsService->getGameStatsElement($id) : null;
         $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 12);
         $gamePosts = $this->blogPostService->getPublishedForGame($id);
         $gamePreviewPosts = $gamePosts['previews'];
@@ -690,6 +694,7 @@ class GamesController extends AppController
 
         return $viewData + compact(
             'game',
+            'hasGameResult',
             'statsElement',
             'images',
             'blogPosts',

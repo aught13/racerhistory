@@ -11,6 +11,7 @@ use App\Model\Entity\Team;
 use App\Model\Entity\TeamSeason;
 use Burzum\CakeServiceLayer\Service\ServiceAwareTrait;
 use Cake\Collection\CollectionInterface;
+use Cake\ORM\Entity;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Query\SelectQuery;
 
@@ -40,13 +41,18 @@ class BasketballStatsService
     use ServiceAwareTrait;
 
     protected TeamSportContextService $teamSportContextService;
+    private BasketballAdvancedStatsService $advancedStatsService;
 
     /**
      * @param \App\Service\TeamSportContextService|null $teamSportContextService Team sport context helper
+     * @param \App\Service\BasketballAdvancedStatsService|null $advancedStatsService Advanced basketball stats calculator.
      */
-    public function __construct(?TeamSportContextService $teamSportContextService = null)
-    {
+    public function __construct(
+        ?TeamSportContextService $teamSportContextService = null,
+        ?BasketballAdvancedStatsService $advancedStatsService = null,
+    ) {
         $this->teamSportContextService = $teamSportContextService ?? new TeamSportContextService();
+        $this->advancedStatsService = $advancedStatsService ?? new BasketballAdvancedStatsService();
     }
 
     /**
@@ -215,6 +221,21 @@ class BasketballStatsService
             ->where(['StatBasketGameTeam.game_id' => $gameId, 'StatBasketGameTeam.opp' => 1])
             ->first();
 
+        $this->advancedStatsService->enrichPlayers($playerStats, $teamBoxStats, $opponentBoxStats);
+        $this->advancedStatsService->enrichPlayers($opponentPlayerStats, $opponentBoxStats, $teamBoxStats);
+        if ($teamBoxStats !== []) {
+            $teamBoxStats['advanced_stats'] = $this->advancedStatsService->calculateTeamSummary(
+                $teamBoxStats,
+                $opponentBoxStats,
+            );
+        }
+        if ($opponentBoxStats !== []) {
+            $opponentBoxStats['advanced_stats'] = $this->advancedStatsService->calculateTeamSummary(
+                $opponentBoxStats,
+                $teamBoxStats,
+            );
+        }
+
         return compact(
             'teamBoxStats',
             'opponentBoxStats',
@@ -278,6 +299,18 @@ class BasketballStatsService
         $opponentStats = $opponentTable->find()
             ->where(['team_season_id' => $teamSeasonId])
             ->first();
+
+        $this->advancedStatsService->enrichPlayers(
+            $playerStats,
+            $teamStats ?? [],
+            $opponentStats ?? [],
+        );
+        if ($teamStats instanceof Entity) {
+            $teamStats->set(
+                'advanced_stats',
+                $this->advancedStatsService->calculateTeamSummary($teamStats, $opponentStats ?? []),
+            );
+        }
 
         return compact('playerStats', 'teamStats', 'opponentStats');
     }

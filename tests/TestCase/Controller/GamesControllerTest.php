@@ -6,6 +6,7 @@ namespace App\Test\TestCase\Controller;
 use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use DateTimeImmutable;
 
 /**
  * App\Controller\GamesController Test Case
@@ -154,16 +155,23 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Games without a result are excluded from public lists and detail pages.
+     * Games without a result stay out of public result lists but have a scheduled-game detail page.
      *
      * @return void
      */
     public function testPublicGamesHideGamesWithoutResults(): void
     {
+        $futureGameDate = new DateTimeImmutable('+1 year');
+        $seasonStart = (int)$futureGameDate->format('Y');
+        $this->fetchTable('Seasons')->updateAll([
+            'start' => $seasonStart,
+            'end' => $seasonStart + 1,
+        ], ['id' => 1]);
+
         $gamesTable = $this->fetchTable('Games');
         $pendingGame = $gamesTable->saveOrFail($gamesTable->newEntity([
             'team_season_id' => 1,
-            'game_date' => '2024-01-21',
+            'game_date' => $futureGameDate->format('Y-m-d'),
             'game_type_id' => 1,
             'opponent_id' => 1,
             'place_id' => 1,
@@ -178,7 +186,21 @@ class GamesControllerTest extends TestCase
         $this->assertCount(4, $payload['data']);
 
         $this->get('/games/' . $pendingGame->id . '?sport=basketball&team=1');
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $this->assertResponseContains(
+            'Back to ' . $seasonStart . '-' . substr((string)($seasonStart + 1), -2) . ' Season',
+        );
+        $this->assertResponseContains('href="/seasons/1');
+        $this->assertResponseNotContains('Previous Game:');
+        $this->assertResponseNotContains('Next Game:');
+        $this->assertResponseContains('aria-expanded="true"');
+        $this->assertResponseContains('class="accordion-collapse collapse show"');
+        $this->assertResponseContains('Box score will be available after the game.');
+        $this->assertResponseNotContains('id="game-stats-frame"');
+
+        $this->get('/games/stats/' . $pendingGame->id . '?sport=basketball&team=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Box score will be available after the game.');
     }
 
     /**
@@ -285,9 +307,9 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Games without a result are not publicly viewable.
+     * Games without a result show the season navigation and expanded series history.
      */
-    public function testViewHidesUnplayedGame(): void
+    public function testViewShowsUnplayedGameWithoutPreviousNextNavigation(): void
     {
         $this->fetchTable('Games')->updateAll([
             'pts_mur' => null,
@@ -298,7 +320,12 @@ class GamesControllerTest extends TestCase
 
         $this->get('/games/1');
 
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $this->assertResponseContains('Back to 2023-24 Season');
+        $this->assertResponseNotContains('Previous Game:');
+        $this->assertResponseNotContains('Next Game:');
+        $this->assertResponseContains('class="accordion-collapse collapse show"');
+        $this->assertResponseNotContains('id="game-stats-frame"');
     }
 
     /**
@@ -326,32 +353,57 @@ class GamesControllerTest extends TestCase
         $this->get('/games/stats/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Player Stats');
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseContains('id="game-team-advanced-stats-table"');
+        foreach (['Name', 'GS', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%', '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS'] as $label) {
+            $this->assertResponseContains('<th>' . $label . '</th>');
+        }
+        foreach (['TS%', '3PAr', 'FTr', 'ORB%', 'DRB%', 'TRB%', 'AST%', 'STL%', 'BLK%', 'TOV%', 'USG%', 'PProd'] as $label) {
+            $this->assertResponseContains($label);
+        }
+        foreach (['eFG%', 'TOV%', 'ORB%', 'FT/FGA'] as $label) {
+            $this->assertResponseContains('<th scope="row" class="text-muted">' . $label . '</th>');
+        }
+
+        $teamBoxStats = $this->viewVariable('teamBoxStats');
+        $this->assertEqualsWithDelta(
+            32 / 62,
+            $teamBoxStats['advanced_stats']['eFG%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            12 / (62 + (0.475 * 18) + 12),
+            $teamBoxStats['advanced_stats']['TOV%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            10 / (10 + 22),
+            $teamBoxStats['advanced_stats']['ORB%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            14 / 62,
+            $teamBoxStats['advanced_stats']['FT/FGA'],
+            0.0001,
+        );
     }
 
     /**
-     * Tests opponent GS displays the manual position or a star when unset.
+     * The opponent box score displays numeric games started separately from the name.
      */
-    public function testStatsFrameDefaultsOpponentGsToStarWithoutPosition(): void
+    public function testStatsFrameMarksOpponentStarters(): void
     {
         $this->get('/games/stats/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('>G</td>');
-
-        $opponentStats = $this->fetchTable('StatBasketGameOpponent');
-        $opponentStat = $opponentStats->get(1);
-        $opponentStat->position = null;
-        $opponentStats->saveOrFail($opponentStat);
-
-        $this->get('/games/stats/1');
-        $this->assertResponseOk();
-        $this->assertResponseContains('>*</td>');
-
-        $opponentStat->position = '';
-        $opponentStats->saveOrFail($opponentStat);
-
-        $this->get('/games/stats/1');
-        $this->assertResponseOk();
-        $this->assertResponseContains('>*</td>');
+        $this->assertMatchesRegularExpression(
+            '/<td>\s*John Doe\s*<\/td>\s*<td data-order="1">\s*\*\s*<\/td>/',
+            (string)$this->_response->getBody(),
+        );
+        $this->assertMatchesRegularExpression(
+            '/id="game-opponent-advanced-stats-table".*?<td>\s*John Doe\s*<\/td>\s*<td data-order="1">\s*\*\s*<\/td>/s',
+            (string)$this->_response->getBody(),
+        );
     }
 
     /**

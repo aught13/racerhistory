@@ -1,6 +1,7 @@
 /* global Element, IntersectionObserver */
 // ...existing code...
 import initBlogInteractions from "./blog-interactions.mjs";
+import { getSeasonStatsTableOptions } from "../../lib/season_stats_tables.js";
 
 const DEFAULT_TABLE_OPTIONS = {
     paging: false,
@@ -32,7 +33,7 @@ function scheduleTableInit(table) {
     return null;
 }
 
-function initTable(table) {
+function initTable(table, options = DEFAULT_TABLE_OPTIONS) {
     const $ = window.$;
     if (!table) {
         return null;
@@ -52,7 +53,7 @@ function initTable(table) {
         }
     }
 
-    return $(table).DataTable(DEFAULT_TABLE_OPTIONS);
+    return $(table).DataTable(options);
 }
 
 function navigateTo(url) {
@@ -522,7 +523,7 @@ export default function initSeasonView(options = {}) {
     const tables = selectors
         .map((selector) => root.querySelector(selector))
         .filter(Boolean)
-        .map((table) => initTable(table));
+        .map((table) => initTable(table, getSeasonStatsTableOptions(table)));
 
     root.querySelectorAll("[data-season-blog]").forEach((section) => {
         setupBlogClicks(section);

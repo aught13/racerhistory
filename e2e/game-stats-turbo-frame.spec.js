@@ -94,4 +94,50 @@ test.describe("Game Stats Frame - Content Validation", () => {
         const hasContent = await turboFrame.textContent();
         expect(hasContent).toBeTruthy();
     });
+
+    test("switches between basic and advanced box score tables", async ({
+        page,
+    }) => {
+        if (!(await goToGameView(page))) return;
+
+        await page.waitForLoadState("networkidle");
+        const frame = page.locator("turbo-frame#game-stats-frame");
+        const basicTab = frame.getByRole("tab", {
+            name: "Basic Box Score Stats",
+        });
+        const advancedTab = frame.getByRole("tab", {
+            name: "Advanced Box Score Stats",
+        });
+        if ((await basicTab.count()) === 0 || (await advancedTab.count()) === 0) {
+            test.skip();
+            return;
+        }
+
+        await expect(basicTab).toHaveAttribute("aria-selected", "true");
+        await expect(advancedTab).toHaveAttribute(
+            "data-game-stats-tab-bound",
+            "true",
+        );
+        await advancedTab.dispatchEvent("click");
+        await expect(advancedTab).toHaveAttribute("aria-selected", "true");
+
+        const advancedTable = frame.locator(
+            "#game-team-advanced-stats-table",
+        );
+        if ((await advancedTable.count()) === 0) {
+            test.skip();
+            return;
+        }
+        await expect(advancedTable).toBeVisible();
+        await expect(advancedTable.locator("thead")).toContainText("Name");
+        await expect(advancedTable.locator("thead")).toContainText("GS");
+        await expect(advancedTable.locator("thead")).toContainText("PProd");
+
+        await basicTab.dispatchEvent("click");
+        await expect(basicTab).toHaveAttribute("aria-selected", "true");
+        const basicTable = frame.locator("#game-team-stats-table");
+        await expect(basicTable).toBeVisible();
+        await expect(basicTable.locator("thead")).toContainText("Name");
+        await expect(basicTable.locator("thead")).toContainText("GS");
+    });
 });

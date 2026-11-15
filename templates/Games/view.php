@@ -22,6 +22,7 @@ use App\Service\SocialImageService;
  * @var array<int,\App\Model\Entity\BlogPost> $gamePreviewPosts
  * @var array<int,\App\Model\Entity\BlogPost> $gameRecapPosts
  * @var array<string,mixed>|null $seriesRecord
+ * @var bool $hasGameResult
  * @var \App\View\AppView $this
  * @var array $match
  */
@@ -38,7 +39,6 @@ $seasonLabel = $seasonStart && $seasonEnd
     ? sprintf('%s-%s', $seasonStart, substr((string)$seasonEnd, -2))
     : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
 $resultFlag = $game->result_flag ?? null;
-$hasFinalScore = $game->pts_mur !== null && $game->pts_opp !== null;
 $sportName = $game->team_season->team->sport_name ?? $game->team_season->team->sport->sport_name ?? 'Sport';
 
 $periods = 2;
@@ -127,7 +127,14 @@ $this->start('css'); ?>
 
     <div class="game-hero card shadow-sm mb-4">
         <div class="card-body">
-            <?php if (isset($previousGame) || isset($nextGame)) : ?>
+            <?php if (!$hasGameResult && !empty($game->team_season->id)) : ?>
+                <div class="mb-3">
+                    <a href="<?= $this->PublicScope->url(['controller' => 'Seasons', 'action' => 'view', $game->team_season->id]) ?>"
+                        class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back to <?= h($seasonLabel ?: $sportName) ?> Season
+                    </a>
+                </div>
+            <?php elseif (isset($previousGame) || isset($nextGame)) : ?>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <?php if (isset($previousGame)) : ?>
                         <a href="<?= $this->PublicScope->url(['controller' => 'Games', 'action' => 'view', $previousGame->id]) ?>"
@@ -217,8 +224,9 @@ $this->start('css'); ?>
                 </div>
                 <div class="col-lg-5">
                     <div class="game-line-score">
-                        <div class="table-responsive">
-                            <table class="table table-sm mb-0">
+                        <?php if ($hasGameResult) : ?>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
                                 <thead>
                                     <tr>
                                         <th scope="col"></th>
@@ -250,8 +258,9 @@ $this->start('css'); ?>
                                         <td class="text-center fw-bold"><?= h($game->pts_opp ?? '') ?></td>
                                     </tr>
                                 </tbody>
-                            </table>
-                        </div>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                         <?php if (!empty($officials)) : ?>
                             <div class="game-officials mt-2">
                                 <span class="game-meta-label">Officials</span>
@@ -274,11 +283,11 @@ $this->start('css'); ?>
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="game-series-history-heading">
                             <button
-                                class="accordion-button<?= $hasFinalScore ? ' collapsed' : '' ?>"
+                                class="accordion-button<?= $hasGameResult ? ' collapsed' : '' ?>"
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#game-series-history-collapse"
-                                aria-expanded="<?= $hasFinalScore ? 'false' : 'true' ?>"
+                                aria-expanded="<?= $hasGameResult ? 'false' : 'true' ?>"
                                 aria-controls="game-series-history-collapse"
                             >
                                 Series History vs <?= h($opponentName) ?>
@@ -286,7 +295,7 @@ $this->start('css'); ?>
                         </h2>
                         <div
                             id="game-series-history-collapse"
-                            class="accordion-collapse collapse<?= $hasFinalScore ? '' : ' show' ?>"
+                            class="accordion-collapse collapse<?= $hasGameResult ? '' : ' show' ?>"
                             aria-labelledby="game-series-history-heading"
                         >
                             <div class="accordion-body">
@@ -324,9 +333,13 @@ $this->start('css'); ?>
                     <h2 class="h5 mb-0">Box Score</h2>
                 </div>
                 <div class="card-body">
-                    <turbo-frame id="game-stats-frame" src="<?= $this->PublicScope->url(['action' => 'stats', $game->id]) ?>" data-turbo-cache="false">
-                        <p class="text-muted mb-0">Loading game stats...</p>
-                    </turbo-frame>
+                    <?php if ($hasGameResult) : ?>
+                        <turbo-frame id="game-stats-frame" src="<?= $this->PublicScope->url(['action' => 'stats', $game->id]) ?>" data-turbo-cache="false">
+                            <p class="text-muted mb-0">Loading game stats...</p>
+                        </turbo-frame>
+                    <?php else : ?>
+                        <p class="text-muted mb-0">Box score will be available after the game.</p>
+                    <?php endif; ?>
                 </div>
             </section>
 

@@ -39,6 +39,9 @@ class SeasonsControllerTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.StatBasketSeasonPerson',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
         'app.Advertisements',
         'app.AdvertisingSettings',
     ];
@@ -182,6 +185,45 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
         $this->assertStringNotContainsString('Undefined variable $page', (string)$this->_response->getBody());
         $this->assertStringNotContainsString('Undefined variable $limit', (string)$this->_response->getBody());
+    }
+
+    /**
+     * The basketball advanced table includes per-game and derived metrics.
+     */
+    public function testViewIncludesAdvancedSeasonMetrics(): void
+    {
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $seasonStats = $this->viewVariable('seasonStats');
+        $playerStat = $seasonStats['playerStats']->first();
+        $advancedStats = $playerStat->get('advanced_stats');
+
+        $this->assertEqualsWithDelta(12.0, $advancedStats['PPG'], 0.001);
+        $this->assertEqualsWithDelta(0.5917159763, $advancedStats['TS%'], 0.0001);
+        $this->assertGreaterThan(0, $advancedStats['AST%']);
+        $this->assertGreaterThan(0, $advancedStats['PProd']);
+        $this->assertLessThan(1, $advancedStats['USG%']);
+        $this->assertResponseContains('data-season-advanced-table');
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseContains('Per Game');
+        $this->assertResponseContains('<th>Name</th>');
+        $this->assertResponseContains('<th>GP</th>');
+        $this->assertResponseContains('<th>GS</th>');
+        $this->assertResponseContains('id="season-per-game-table"');
+        $this->assertResponseContains('PProd');
+
+        $html = (string)$this->_response->getBody();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $pointsPerGame = $xpath->query('//table[@id="season-per-game-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($pointsPerGame);
+        $this->assertSame('12.0', trim((string)$pointsPerGame->textContent));
     }
 
     /**

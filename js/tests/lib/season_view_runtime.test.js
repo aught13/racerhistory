@@ -18,6 +18,8 @@ import {
 describe("season_view_runtime", () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        document.body.innerHTML = "";
+        delete globalThis.$;
     });
 
     test("initializes the supplied root and defaults to the document", () => {
@@ -28,6 +30,32 @@ describe("season_view_runtime", () => {
 
         expect(initSeasonView).toHaveBeenNthCalledWith(1, { root });
         expect(initSeasonView).toHaveBeenNthCalledWith(2, { root: document });
+    });
+
+    test("initializes the advanced table through the modern runtime", () => {
+        const root = document.createElement("div");
+        root.innerHTML = `
+            <div data-season-stats-tabs>
+                <button data-season-stats-tab="advanced"></button>
+                <div data-season-stats-panel="advanced">
+                    <table class="js-datatable" data-season-advanced-table></table>
+                </div>
+            </div>`;
+        document.body.appendChild(root);
+
+        const initializeTable = jest.fn();
+        const jq = jest.fn(() => ({ DataTable: initializeTable }));
+        jq.fn = { dataTable: { isDataTable: jest.fn(() => false) } };
+        globalThis.$ = jq;
+
+        initSeasonViewRoot(root);
+        root.querySelector('[data-season-stats-tab="advanced"]').click();
+
+        expect(initSeasonView).toHaveBeenCalledWith({ root });
+        expect(jq).toHaveBeenCalledWith(
+            root.querySelector("[data-season-advanced-table]"),
+        );
+        expect(initializeTable).toHaveBeenCalledTimes(1);
     });
 
     test("boots a frame root for turbo frame loads", () => {

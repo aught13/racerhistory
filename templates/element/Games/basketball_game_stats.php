@@ -60,16 +60,6 @@ $formatPairForStats = static function (array $stats, string $madeKey, string $at
     return $formatPair($made, $attempt);
 };
 
-$formatPairForPlayer = static function (object $stat, string $madeKey, string $attemptKey) use ($formatPair): string {
-    $made = $stat->{$madeKey} ?? null;
-    $attempt = $stat->{$attemptKey} ?? null;
-    if ($attempt === null || $attempt === '') {
-        return $made !== null && $made !== '' ? (string)$made : '-';
-    }
-
-    return $formatPair($made, $attempt);
-};
-
 $formatPercentForStats = static function (array $stats, string $madeKey, string $attemptKey) use ($formatPercent, $hasStatValue): string {
     $made = $stats[$madeKey] ?? null;
     $attempt = $stats[$attemptKey] ?? null;
@@ -80,178 +70,13 @@ $formatPercentForStats = static function (array $stats, string $madeKey, string 
     return $formatPercent($made, $attempt);
 };
 
-$playerColumns = [
-    [
-        'id' => 'GS',
-        'label' => 'GS',
-        'value' => static function ($stat, ?string $position = null, string $fallback = 'GS'): string {
-            $gs = (int)($stat->GS ?? 0);
-            if ($gs <= 0) {
-                return '';
-            }
-
-            $position = trim((string)$position);
-
-            return $position !== '' ? $position : $fallback;
-        },
-        'total' => static fn(): string => '',
-    ],
-    [
-        'id' => 'MIN',
-        'label' => 'MIN',
-        'value' => static fn($stat): string => (string)($stat->MIN ?? ''),
-        'total' => static fn($stats): string => (string)($stats['MIN'] ?? '-'),
-    ],
-    [
-        'id' => 'FG',
-        'label' => 'FG',
-        'value' => static fn($stat): string => $formatPairForPlayer($stat, 'FGM', 'FGA'),
-        'total' => static fn($stats): string => $formatPair($stats['FGM'] ?? null, $stats['FGA'] ?? null),
-    ],
-    [
-        'id' => 'FGP',
-        'label' => 'FG%',
-        'value' => static fn($stat): string => $formatPercent($stat->FGM ?? null, $stat->FGA ?? null),
-        'total' => static fn($stats): string => $formatPercent($stats['FGM'] ?? null, $stats['FGA'] ?? null),
-    ],
-    [
-        'id' => 'TP',
-        'label' => '3PT',
-        'value' => static fn($stat): string => $formatPairForPlayer($stat, 'TPM', 'TPA'),
-        'total' => static fn($stats): string => $formatPair($stats['TPM'] ?? null, $stats['TPA'] ?? null),
-    ],
-    [
-        'id' => 'TPP',
-        'label' => '3PT%',
-        'value' => static fn($stat): string => $formatPercent($stat->TPM ?? null, $stat->TPA ?? null),
-        'total' => static fn($stats): string => $formatPercent($stats['TPM'] ?? null, $stats['TPA'] ?? null),
-    ],
-    [
-        'id' => 'FT',
-        'label' => 'FT',
-        'value' => static fn($stat): string => $formatPairForPlayer($stat, 'FTM', 'FTA'),
-        'total' => static fn($stats): string => $formatPair($stats['FTM'] ?? null, $stats['FTA'] ?? null),
-    ],
-    [
-        'id' => 'FTP',
-        'label' => 'FT%',
-        'value' => static fn($stat): string => $formatPercent($stat->FTM ?? null, $stat->FTA ?? null),
-        'total' => static fn($stats): string => $formatPercent($stats['FTM'] ?? null, $stats['FTA'] ?? null),
-    ],
-    [
-        'id' => 'ORB',
-        'label' => 'ORB',
-        'value' => static fn($stat): string => (string)($stat->ORB ?? ''),
-        'total' => static fn($stats): string => (string)($stats['ORB'] ?? '-'),
-    ],
-    [
-        'id' => 'DRB',
-        'label' => 'DRB',
-        'value' => static fn($stat): string => (string)($stat->DRB ?? ''),
-        'total' => static fn($stats): string => (string)($stats['DRB'] ?? '-'),
-    ],
-    [
-        'id' => 'RB',
-        'label' => 'RB',
-        'value' => static fn($stat): string => (string)($stat->RB ?? ''),
-        'total' => static fn($stats): string => (string)($stats['RB'] ?? '-'),
-    ],
-    [
-        'id' => 'AST',
-        'label' => 'AST',
-        'value' => static fn($stat): string => (string)($stat->AST ?? ''),
-        'total' => static fn($stats): string => (string)($stats['AST'] ?? '-'),
-    ],
-    [
-        'id' => 'STL',
-        'label' => 'STL',
-        'value' => static fn($stat): string => (string)($stat->STL ?? ''),
-        'total' => static fn($stats): string => (string)($stats['STL'] ?? '-'),
-    ],
-    [
-        'id' => 'BS',
-        'label' => 'BLK',
-        'value' => static fn($stat): string => (string)($stat->BS ?? ''),
-        'total' => static fn($stats): string => (string)($stats['BS'] ?? '-'),
-    ],
-    [
-        'id' => 'TRN',
-        'label' => 'TO',
-        'value' => static fn($stat): string => (string)($stat->TRN ?? ''),
-        'total' => static fn($stats): string => (string)($stats['TRN'] ?? '-'),
-    ],
-    [
-        'id' => 'PF',
-        'label' => 'PF',
-        'value' => static fn($stat): string => (string)($stat->PF ?? ''),
-        'total' => static fn($stats): string => (string)($stats['PF'] ?? '-'),
-    ],
-    [
-        'id' => 'PTS',
-        'label' => 'PTS',
-        'value' => static fn($stat): string => (string)($stat->PTS ?? ''),
-        'total' => static fn($stats): string => (string)($stats['PTS'] ?? '-'),
-    ],
-];
-
-$hasPlayerStatValue = static function (array $rows, string $columnId): bool {
-    foreach ($rows as $stat) {
-        switch ($columnId) {
-            case 'GS':
-                if (!empty($stat->GS)) {
-                    return true;
-                }
-                break;
-            case 'FG':
-                if (!empty($stat->FGM) || !empty($stat->FGA)) {
-                    return true;
-                }
-                break;
-            case 'FGP':
-                if (!empty($stat->FGA)) {
-                    return true;
-                }
-                break;
-            case 'TP':
-                if (!empty($stat->TPM) || !empty($stat->TPA)) {
-                    return true;
-                }
-                break;
-            case 'TPP':
-                if (!empty($stat->TPA)) {
-                    return true;
-                }
-                break;
-            case 'FT':
-                if (!empty($stat->FTM) || !empty($stat->FTA)) {
-                    return true;
-                }
-                break;
-            case 'FTP':
-                if (!empty($stat->FTA)) {
-                    return true;
-                }
-                break;
-            default:
-                if (!empty($stat->{$columnId})) {
-                    return true;
-                }
-                break;
-        }
+$formatAdvancedRate = static function ($value): string {
+    if (!is_numeric($value)) {
+        return '-';
     }
 
-    return false;
+    return number_format((float)$value * 100, 1, '.', '') . '%';
 };
-
-$visibleTeamPlayerColumns = array_values(array_filter(
-    $playerColumns,
-    static fn($column) => $hasPlayerStatValue($playerRows, $column['id']),
-));
-
-$visibleOpponentPlayerColumns = array_values(array_filter(
-    $playerColumns,
-    static fn($column) => $hasPlayerStatValue($opponentRows, $column['id']),
-));
 
 $hasAnyStats = !empty($playerRows) || !empty($opponentRows) || !empty($teamBoxStats) || !empty($opponentBoxStats);
 
@@ -296,6 +121,34 @@ $summaryRows = [
         'team' => $hasStatValue($teamBoxStats['TRN'] ?? null) ? $teamBoxStats['TRN'] : '-',
         'teamPct' => '',
         'opponent' => $hasStatValue($opponentBoxStats['TRN'] ?? null) ? $opponentBoxStats['TRN'] : '-',
+        'opponentPct' => '',
+    ],
+    [
+        'label' => 'eFG%',
+        'team' => $formatAdvancedRate($teamBoxStats['advanced_stats']['eFG%'] ?? null),
+        'teamPct' => '',
+        'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['eFG%'] ?? null),
+        'opponentPct' => '',
+    ],
+    [
+        'label' => 'TOV%',
+        'team' => $formatAdvancedRate($teamBoxStats['advanced_stats']['TOV%'] ?? null),
+        'teamPct' => '',
+        'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['TOV%'] ?? null),
+        'opponentPct' => '',
+    ],
+    [
+        'label' => 'ORB%',
+        'team' => $formatAdvancedRate($teamBoxStats['advanced_stats']['ORB%'] ?? null),
+        'teamPct' => '',
+        'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['ORB%'] ?? null),
+        'opponentPct' => '',
+    ],
+    [
+        'label' => 'FT/FGA',
+        'team' => $formatAdvancedRate($teamBoxStats['advanced_stats']['FT/FGA'] ?? null),
+        'teamPct' => '',
+        'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['FT/FGA'] ?? null),
         'opponentPct' => '',
     ],
 ];
@@ -388,155 +241,17 @@ foreach ($periodLabels as $periodInfo) {
     <?php endif; ?>
 
 
-    <?php if (!empty($playerRows)) : ?>
-        <div class="game-stats-block mb-4">
-            <h3 class="h5 mb-3"><?= h($teamName) ?> Player Stats</h3>
-            <div class="table-responsive">
-                <table class="table table-striped table-sm game-player-table js-datatable" id="game-team-stats-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Player</th>
-                            <?php foreach ($visibleTeamPlayerColumns as $column) : ?>
-                                <th><?= h($column['label']) ?></th>
-                            <?php endforeach; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($playerRows as $stat) : ?>
-                            <?php
-                            $person = $stat->team_season_roster->person ?? null;
-                            $name = '';
-                            if ($person) {
-                                $name = (string)($person->display
-                                    ?? $person->full
-                                    ?? trim((string)($person->first ?? '') . ' ' . (string)($person->last ?? '')));
-                            }
-                            if ($name === '') {
-                                $name = 'Unknown';
-                            }
-                            $personId = $person->id ?? 0;
-                            $position = $stat->team_season_roster->roster_position ?? null;
-                            ?>
-                            <tr>
-                                <td><?= h($stat->team_season_roster->roster_number ?? '') ?></td>
-                                <td>
-                                    <?php if ($personId) : ?>
-                                        <a href="<?= $this->Url->build(['controller' => 'People', 'action' => 'view', $personId]) ?>" class="game-player-link">
-                                            <?= h($name) ?>
-                                        </a>
-                                    <?php else : ?>
-                                        <?= h($name) ?>
-                                    <?php endif; ?>
-                                </td>
-                                <?php foreach ($visibleTeamPlayerColumns as $column) : ?>
-                                    <td><?= h($column['value']($stat, $position)) ?></td>
-                                <?php endforeach; ?>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                    <?php if (!empty($teamBoxStats)) : ?>
-                        <tfoot>
-                            <?php if (!empty($teamTeamStats)) : ?>
-                                <tr class="table-light">
-                                    <td colspan="2">TEAM</td>
-                                    <?php foreach ($visibleTeamPlayerColumns as $column) : ?>
-                                        <?php
-                                        $value = '-';
-                                        switch ($column['id']) {
-                                            case 'ORB':
-                                            case 'DRB':
-                                            case 'RB':
-                                            case 'TRN':
-                                            case 'PTS':
-                                                $value = $teamTeamStats->{$column['id']} ?? '-';
-                                                break;
-                                            default:
-                                                $value = '-';
-                                                break;
-                                        }
-                                        ?>
-                                        <td><?= h($value) ?></td>
-                                    <?php endforeach; ?>
-                                </tr>
-                            <?php endif; ?>
-                            <tr class="table-secondary fw-bold">
-                                <td colspan="2">TEAM TOTALS</td>
-                                <?php foreach ($visibleTeamPlayerColumns as $column) : ?>
-                                    <td><?= h($column['total']($teamBoxStats)) ?></td>
-                                <?php endforeach; ?>
-                            </tr>
-                        </tfoot>
-                    <?php endif; ?>
-                </table>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <?php if (!empty($opponentRows)) : ?>
-        <div class="game-stats-block">
-            <h3 class="h5 mb-3"><?= h($opponentName) ?> Player Stats</h3>
-            <div class="table-responsive">
-                <table class="table table-striped table-sm game-player-table js-datatable" id="game-opponent-stats-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Player</th>
-                            <?php foreach ($visibleOpponentPlayerColumns as $column) : ?>
-                                <th><?= h($column['label']) ?></th>
-                            <?php endforeach; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($opponentRows as $stat) : ?>
-                            <?php $position = $stat->position ?? null; ?>
-                            <tr>
-                                <td><?= h($stat->jersey ?? '') ?></td>
-                                <td><?= h($stat->name ?? '') ?></td>
-                                <?php foreach ($visibleOpponentPlayerColumns as $column) : ?>
-                                    <td><?= h($column['id'] === 'GS'
-                                        ? $column['value']($stat, $position, '*')
-                                        : $column['value']($stat, $position)) ?></td>
-                                <?php endforeach; ?>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                    <?php if (!empty($opponentBoxStats)) : ?>
-                        <tfoot>
-                            <?php if (!empty($opponentTeamStats)) : ?>
-                                <tr class="table-light">
-                                    <td colspan="2">TEAM</td>
-                                    <?php foreach ($visibleOpponentPlayerColumns as $column) : ?>
-                                        <?php
-                                        $value = '-';
-                                        switch ($column['id']) {
-                                            case 'ORB':
-                                            case 'DRB':
-                                            case 'RB':
-                                            case 'TRN':
-                                            case 'PTS':
-                                                $value = $opponentTeamStats->{$column['id']} ?? '-';
-                                                break;
-                                            default:
-                                                $value = '-';
-                                                break;
-                                        }
-                                        ?>
-                                        <td><?= h($value) ?></td>
-                                    <?php endforeach; ?>
-                                </tr>
-                            <?php endif; ?>
-                            <tr class="table-secondary fw-bold">
-                                <td colspan="2">OPPONENT TOTALS</td>
-                                <?php foreach ($visibleOpponentPlayerColumns as $column) : ?>
-                                    <td><?= h($column['total']($opponentBoxStats)) ?></td>
-                                <?php endforeach; ?>
-                            </tr>
-                        </tfoot>
-                    <?php endif; ?>
-                </table>
-            </div>
-        </div>
+    <?php if (!empty($playerRows) || !empty($opponentRows)) : ?>
+        <?= $this->element('Games/basketball_player_box_score_tabs', [
+            'teamName' => $teamName,
+            'opponentName' => $opponentName,
+            'playerRows' => $playerRows,
+            'opponentRows' => $opponentRows,
+            'teamBoxStats' => $teamBoxStats ?? [],
+            'opponentBoxStats' => $opponentBoxStats ?? [],
+            'teamTeamStats' => $teamTeamStats ?? null,
+            'opponentTeamStats' => $opponentTeamStats ?? null,
+        ]) ?>
     <?php endif; ?>
 
     <?php if (!empty($filteredMiscRows)) : ?>
