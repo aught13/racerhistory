@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use App\Utility\BoxScoreLeaderResolver;
+
 /**
  * @var string $teamName
  * @var string $opponentName
@@ -253,6 +255,21 @@ foreach (
                 }
             }
         }
+        $group['leaders'] = BoxScoreLeaderResolver::findLeaderCells(
+            $group['rows'],
+            $group['columns'],
+            static function (object $stat, array $column) use ($readPlayerValue, $tab): mixed {
+                return $readPlayerValue(
+                    $stat,
+                    $column['key'],
+                    $tab['advanced'] || isset($column['made']) || isset($column['derive']),
+                );
+            },
+            static fn(mixed $value, object $stat, array $column): string => $formatBoxValue(
+                $value,
+                $column['format'],
+            ),
+        );
         $visibleGroups[] = $group;
     }
 
@@ -313,7 +330,7 @@ $activeTabId = $tabs[0]['id'] ?? null;
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($group['rows'] as $stat) : ?>
+                                    <?php foreach ($group['rows'] as $rowIndex => $stat) : ?>
                                         <?php
                                         $person = $stat->team_season_roster->person ?? null;
                                         $name = $group['opponent']
@@ -343,12 +360,18 @@ $activeTabId = $tabs[0]['id'] ?? null;
                                                     $column['key'],
                                                     $tab['advanced'] || isset($column['made']) || isset($column['derive']),
                                                 );
+                                                $formattedValue = $formatBoxValue($value, $column['format']);
+                                                $isLeader = isset($group['leaders'][$column['key']][$rowIndex]);
                                                 $orderValue = $column['key'] === 'GS' && is_numeric($value)
                                                     ? (int)$value
                                                     : null;
                                                 ?>
                                                 <td<?= $orderValue !== null ? ' data-order="' . h((string)$orderValue) . '"' : '' ?>>
-                                                    <?= h($formatBoxValue($value, $column['format'])) ?>
+                                                    <?php if ($isLeader) : ?>
+                                                        <span class="box-score-stat-leader"><?= h($formattedValue) ?></span>
+                                                    <?php else : ?>
+                                                        <?= h($formattedValue) ?>
+                                                    <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
                                         </tr>

@@ -36,10 +36,21 @@ describe("Game view CSS", () => {
 
     test("game box score tabs use readable theme-aware button styles", () => {
         expect(css).toMatch(
-            /\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\s*\{[^}]*color:\s*var\(--rh-muted\)/i,
+            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link,\s*\.person-game-log-tabs \.person-game-log-tabs__nav \.nav-link\s*\{[^}]*color:\s*var\(--rh-muted\)/i,
         );
         expect(css).toMatch(
-            /\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\.active\s*\{[^}]*color:\s*var\(--rh-text\)[^}]*background-color:\s*var\(--rh-surface\)/i,
+            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link\.active,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\.active,\s*\.person-game-log-tabs \.person-game-log-tabs__nav \.nav-link\.active\s*\{[^}]*color:\s*var\(--rh-text\)[^}]*background-color:\s*var\(--rh-surface\)/i,
         );
+    });
+
+    test("box score leaders use a visible theme-aware highlight", () => {
+        const leaderStyles =
+            css.match(/\.box-score-stat-leader\s*\{([^}]*)\}/i)?.[1] ?? "";
+
+        expect(leaderStyles).toMatch(
+            /background-color:\s*color-mix\([^;]*var\(--rh-gold\)[^;]*var\(--rh-surface\)/i,
+        );
+        expect(leaderStyles).toMatch(/color:\s*var\(--rh-text\)/i);
+        expect(leaderStyles).toMatch(/font-weight:\s*700/i);
     });
 });

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use App\Utility\BoxScoreLeaderResolver;
+
 /**
  * Public Basketball Season Stats Element
  *
@@ -328,6 +330,19 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
 
         <div class="tab-content mt-3 season-stats-tabs__panels">
             <?php foreach ($statsTabs as $tab) : ?>
+                <?php
+                $leaders = BoxScoreLeaderResolver::findLeaderCells(
+                    $tab['rows'],
+                    $tab['columns'],
+                    static fn(array $row, array $column): mixed => $resolveBoxValue($row, $column),
+                    static fn(mixed $value, array $row, array $column): string => $formatBoxValue(
+                        $value,
+                        $column['format'],
+                        $tab['perGame'],
+                        $row['GP'],
+                    ),
+                );
+                ?>
                 <div
                     class="tab-pane<?= $tab['active'] ? ' active' : ' d-none' ?>"
                     data-season-stats-panel="<?= h($tab['id']) ?>"
@@ -346,7 +361,7 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($tab['rows'] as $row) : ?>
+                                <?php foreach ($tab['rows'] as $rowIndex => $row) : ?>
                                     <tr>
                                         <td>
                                             <?php if ($row['personId'] > 0) : ?>
@@ -360,8 +375,16 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
                                         <?php foreach ($tab['columns'] as $column) : ?>
                                             <?php
                                             $value = $resolveBoxValue($row, $column);
+                                            $formattedValue = $formatBoxValue($value, $column['format'], $tab['perGame'], $row['GP']);
+                                            $isLeader = isset($leaders[$column['key']][$rowIndex]);
                                             ?>
-                                            <td><?= h($formatBoxValue($value, $column['format'], $tab['perGame'], $row['GP'])) ?></td>
+                                            <td>
+                                                <?php if ($isLeader) : ?>
+                                                    <span class="box-score-stat-leader"><?= h($formattedValue) ?></span>
+                                                <?php else : ?>
+                                                    <?= h($formattedValue) ?>
+                                                <?php endif; ?>
+                                            </td>
                                         <?php endforeach; ?>
                                     </tr>
                                 <?php endforeach; ?>
@@ -387,6 +410,17 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
             <?php endforeach; ?>
 
             <?php if ($showAdvancedStats) : ?>
+                <?php
+                $advancedLeaders = BoxScoreLeaderResolver::findLeaderCells(
+                    $advancedRows,
+                    $advancedColumns,
+                    static fn(array $row, array $column): mixed => $resolveAdvancedValue($row, $column),
+                    static fn(mixed $value, array $row, array $column): string => $formatBoxValue(
+                        $value,
+                        $column['format'],
+                    ),
+                );
+                ?>
                 <div
                     class="tab-pane<?= $activeTabId === 'advanced' ? ' active' : ' d-none' ?>"
                     data-season-stats-panel="advanced"
@@ -406,7 +440,7 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($advancedRows as $row) : ?>
+                                <?php foreach ($advancedRows as $rowIndex => $row) : ?>
                                     <tr>
                                         <td>
                                             <?php if ($row['personId'] > 0) : ?>
@@ -418,8 +452,18 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
                                             <?php endif; ?>
                                         </td>
                                         <?php foreach ($advancedColumns as $column) : ?>
-                                            <?php $value = $resolveAdvancedValue($row, $column); ?>
-                                            <td><?= h($formatBoxValue($value, $column['format'])) ?></td>
+                                            <?php
+                                            $value = $resolveAdvancedValue($row, $column);
+                                            $formattedValue = $formatBoxValue($value, $column['format']);
+                                            $isLeader = isset($advancedLeaders[$column['key']][$rowIndex]);
+                                            ?>
+                                            <td>
+                                                <?php if ($isLeader) : ?>
+                                                    <span class="box-score-stat-leader"><?= h($formattedValue) ?></span>
+                                                <?php else : ?>
+                                                    <?= h($formattedValue) ?>
+                                                <?php endif; ?>
+                                            </td>
                                         <?php endforeach; ?>
                                     </tr>
                                 <?php endforeach; ?>

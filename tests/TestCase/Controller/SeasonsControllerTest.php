@@ -207,6 +207,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('data-season-advanced-table');
         $this->assertResponseContains('Basic Box Score Stats');
         $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('marks the highest value');
         $this->assertResponseContains('Per Game');
         $this->assertResponseNotContains('GS = games started.');
         $this->assertResponseNotContains('* = game starter.');
@@ -226,10 +227,37 @@ class SeasonsControllerTest extends TestCase
         $pointsPerGame = $xpath->query('//table[@id="season-per-game-table"]/tbody/tr[1]/td[last()]')->item(0);
         $this->assertNotNull($pointsPerGame);
         $this->assertSame('12.0', trim((string)$pointsPerGame->textContent));
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $pointsPerGame,
+            )->length,
+        );
 
         $advancedGamesPlayed = $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr[1]/td[2]')->item(0);
         $this->assertNotNull($advancedGamesPlayed);
         $this->assertSame('10', trim((string)$advancedGamesPlayed->textContent));
+
+        $seasonPoints = $xpath->query('//table[@id="season-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($seasonPoints);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $seasonPoints,
+            )->length,
+        );
+
+        $advancedPointsProduced = $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($advancedPointsProduced);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $advancedPointsProduced,
+            )->length,
+        );
     }
 
     /**

@@ -3395,6 +3395,15 @@ table.dataTable thead th {
   outline-offset: 2px;
 }
 
+.box-score-stat-leader {
+  display: inline-block;
+  padding: 0.08rem 0.3rem;
+  border-radius: 0.25rem;
+  background-color: color-mix(in srgb, var(--rh-gold) 24%, var(--rh-surface));
+  color: var(--rh-text);
+  font-weight: 700;
+}
+
 .blog-featured-no-image {
   background-color: var(--rh-surface);
   color: var(--rh-text);

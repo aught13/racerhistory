@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use App\Utility\BoxScoreLeaderResolver;
+
 /**
  * Public Basketball Game Stats Element
  *
@@ -87,6 +89,8 @@ $summaryRows = [
         'teamPct' => $formatPercentForStats($teamBoxStats ?? [], 'FGM', 'FGA'),
         'opponent' => $formatPairForStats($opponentBoxStats ?? [], 'FGM', 'FGA'),
         'opponentPct' => $formatPercentForStats($opponentBoxStats ?? [], 'FGM', 'FGA'),
+        'teamMetric' => $teamBoxStats['FGM'] ?? null,
+        'opponentMetric' => $opponentBoxStats['FGM'] ?? null,
     ],
     [
         'label' => '3PT',
@@ -94,6 +98,8 @@ $summaryRows = [
         'teamPct' => $formatPercentForStats($teamBoxStats ?? [], 'TPM', 'TPA'),
         'opponent' => $formatPairForStats($opponentBoxStats ?? [], 'TPM', 'TPA'),
         'opponentPct' => $formatPercentForStats($opponentBoxStats ?? [], 'TPM', 'TPA'),
+        'teamMetric' => $teamBoxStats['TPM'] ?? null,
+        'opponentMetric' => $opponentBoxStats['TPM'] ?? null,
     ],
     [
         'label' => 'Free Throws',
@@ -101,6 +107,8 @@ $summaryRows = [
         'teamPct' => $formatPercentForStats($teamBoxStats ?? [], 'FTM', 'FTA'),
         'opponent' => $formatPairForStats($opponentBoxStats ?? [], 'FTM', 'FTA'),
         'opponentPct' => $formatPercentForStats($opponentBoxStats ?? [], 'FTM', 'FTA'),
+        'teamMetric' => $teamBoxStats['FTM'] ?? null,
+        'opponentMetric' => $opponentBoxStats['FTM'] ?? null,
     ],
     [
         'label' => 'Rebounds',
@@ -108,6 +116,8 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $hasStatValue($opponentBoxStats['RB'] ?? null) ? $opponentBoxStats['RB'] : '-',
         'opponentPct' => '',
+        'teamMetric' => $teamBoxStats['RB'] ?? null,
+        'opponentMetric' => $opponentBoxStats['RB'] ?? null,
     ],
     [
         'label' => 'Assists',
@@ -115,6 +125,8 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $hasStatValue($opponentBoxStats['AST'] ?? null) ? $opponentBoxStats['AST'] : '-',
         'opponentPct' => '',
+        'teamMetric' => $teamBoxStats['AST'] ?? null,
+        'opponentMetric' => $opponentBoxStats['AST'] ?? null,
     ],
     [
         'label' => 'Turnovers',
@@ -122,6 +134,9 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $hasStatValue($opponentBoxStats['TRN'] ?? null) ? $opponentBoxStats['TRN'] : '-',
         'opponentPct' => '',
+        'teamMetric' => $teamBoxStats['TRN'] ?? null,
+        'opponentMetric' => $opponentBoxStats['TRN'] ?? null,
+        'lowerIsBetter' => true,
     ],
     [
         'label' => 'eFG%',
@@ -129,6 +144,8 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['eFG%'] ?? null),
         'opponentPct' => '',
+        'teamMetric' => $formatAdvancedRate($teamBoxStats['advanced_stats']['eFG%'] ?? null),
+        'opponentMetric' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['eFG%'] ?? null),
     ],
     [
         'label' => 'TOV%',
@@ -136,6 +153,9 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['TOV%'] ?? null),
         'opponentPct' => '',
+        'teamMetric' => $formatAdvancedRate($teamBoxStats['advanced_stats']['TOV%'] ?? null),
+        'opponentMetric' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['TOV%'] ?? null),
+        'lowerIsBetter' => true,
     ],
     [
         'label' => 'ORB%',
@@ -143,6 +163,8 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['ORB%'] ?? null),
         'opponentPct' => '',
+        'teamMetric' => $formatAdvancedRate($teamBoxStats['advanced_stats']['ORB%'] ?? null),
+        'opponentMetric' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['ORB%'] ?? null),
     ],
     [
         'label' => 'FT/FGA',
@@ -150,6 +172,8 @@ $summaryRows = [
         'teamPct' => '',
         'opponent' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['FT/FGA'] ?? null),
         'opponentPct' => '',
+        'teamMetric' => $formatAdvancedRate($teamBoxStats['advanced_stats']['FT/FGA'] ?? null),
+        'opponentMetric' => $formatAdvancedRate($opponentBoxStats['advanced_stats']['FT/FGA'] ?? null),
     ],
 ];
 
@@ -219,18 +243,49 @@ foreach ($periodLabels as $periodInfo) {
                 </thead>
                 <tbody>
                     <?php foreach ($filteredSummaryRows as $row) : ?>
+                        <?php
+                        $mainLeaders = BoxScoreLeaderResolver::compareValues(
+                            $row['teamMetric'] ?? null,
+                            $row['opponentMetric'] ?? null,
+                            $row['lowerIsBetter'] ?? false,
+                        );
+                        $percentageLeaders = BoxScoreLeaderResolver::compareValues(
+                            $row['teamPct'],
+                            $row['opponentPct'],
+                        );
+                        ?>
                         <tr>
                             <th scope="row" class="text-muted"><?= h($row['label']) ?></th>
                             <td class="text-end">
-                                <?= h($row['team']) ?>
+                                <?php if ($mainLeaders['left']) : ?>
+                                    <span class="box-score-stat-leader"><?= h($row['team']) ?></span>
+                                <?php else : ?>
+                                    <?= h($row['team']) ?>
+                                <?php endif; ?>
                                 <?php if (!empty($row['teamPct'])) : ?>
-                                    <span class="text-muted small">(<?= h($row['teamPct']) ?>)</span>
+                                    <span class="text-muted small">(
+                                        <?php if ($percentageLeaders['left']) : ?>
+                                            <span class="box-score-stat-leader"><?= h($row['teamPct']) ?></span>
+                                        <?php else : ?>
+                                            <?= h($row['teamPct']) ?>
+                                        <?php endif; ?>
+                                    )</span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
-                                <?= h($row['opponent']) ?>
+                                <?php if ($mainLeaders['right']) : ?>
+                                    <span class="box-score-stat-leader"><?= h($row['opponent']) ?></span>
+                                <?php else : ?>
+                                    <?= h($row['opponent']) ?>
+                                <?php endif; ?>
                                 <?php if (!empty($row['opponentPct'])) : ?>
-                                    <span class="text-muted small">(<?= h($row['opponentPct']) ?>)</span>
+                                    <span class="text-muted small">(
+                                        <?php if ($percentageLeaders['right']) : ?>
+                                            <span class="box-score-stat-leader"><?= h($row['opponentPct']) ?></span>
+                                        <?php else : ?>
+                                            <?= h($row['opponentPct']) ?>
+                                        <?php endif; ?>
+                                    )</span>
                                 <?php endif; ?>
                             </td>
                         </tr>

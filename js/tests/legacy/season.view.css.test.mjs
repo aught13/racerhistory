@@ -61,13 +61,13 @@ describe("Season view CSS", () => {
 
     test("season stats tabs use theme-aware colors and focus styles", () => {
         expect(css).toMatch(
-            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\s*\{[^}]*color:\s*var\(--rh-muted\)/i,
+            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link,\s*\.person-game-log-tabs \.person-game-log-tabs__nav \.nav-link\s*\{[^}]*color:\s*var\(--rh-muted\)/i,
         );
         expect(css).toMatch(
-            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link\.active,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\.active\s*\{[^}]*color:\s*var\(--rh-text\)[^}]*background-color:\s*var\(--rh-surface\)/i,
+            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link\.active,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link\.active,\s*\.person-game-log-tabs \.person-game-log-tabs__nav \.nav-link\.active\s*\{[^}]*color:\s*var\(--rh-text\)[^}]*background-color:\s*var\(--rh-surface\)/i,
         );
         expect(css).toMatch(
-            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link:focus-visible,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--rh-link\)/i,
+            /\.season-stats-tabs \.season-stats-tabs__nav \.nav-link:focus-visible,\s*\.game-box-score-tabs \.game-box-score-tabs__nav \.nav-link:focus-visible,\s*\.person-game-log-tabs \.person-game-log-tabs__nav \.nav-link:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--rh-link\)/i,
         );
     });
 });

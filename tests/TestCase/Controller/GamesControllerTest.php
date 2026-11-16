@@ -357,6 +357,7 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Player Stats');
         $this->assertResponseContains('Basic Box Score Stats');
         $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('marks the highest value');
         $this->assertResponseNotContains('* = game starter.');
         $this->assertResponseNotContains('GS = games started.');
         $this->assertResponseContains('id="game-team-advanced-stats-table"');
@@ -390,6 +391,79 @@ class GamesControllerTest extends TestCase
             14 / 62,
             $teamBoxStats['advanced_stats']['FT/FGA'],
             0.0001,
+        );
+    }
+
+    /**
+     * Game box score leaders are highlighted within each team and stats tab.
+     */
+    public function testStatsFrameHighlightsStatLeaders(): void
+    {
+        $this->get('/games/stats/1');
+        $this->assertResponseOk();
+
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $fieldGoalsTeamCell = $xpath->query(
+            '//table[@id="game-team-summary-table"]/tbody/tr[1]/td[1]',
+        )->item(0);
+        $this->assertNotNull($fieldGoalsTeamCell);
+        $this->assertSame(
+            2,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $fieldGoalsTeamCell,
+            )->length,
+            $dom->saveHTML($fieldGoalsTeamCell),
+        );
+
+        $turnoversRow = $xpath->query(
+            '//table[@id="game-team-summary-table"]/tbody/tr[th[normalize-space(.)="Turnovers"]]',
+        )->item(0);
+        $this->assertNotNull($turnoversRow);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './td[1]/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $turnoversRow,
+            )->length,
+        );
+
+        $teamPointsCell = $xpath->query('//table[@id="game-team-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($teamPointsCell);
+        $this->assertSame('22', trim($teamPointsCell->textContent));
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $teamPointsCell,
+            )->length,
+        );
+
+        $advancedHeaders = $xpath->query('//table[@id="game-team-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $trueShootingColumn = null;
+        foreach ($advancedHeaders as $index => $header) {
+            if (trim($header->textContent) === 'TS%') {
+                $trueShootingColumn = $index + 1;
+                break;
+            }
+        }
+        $this->assertNotNull($trueShootingColumn);
+        $trueShootingCell = $xpath->query(
+            '//table[@id="game-team-advanced-stats-table"]/tbody/tr[1]/td[' . $trueShootingColumn . ']',
+        )->item(0);
+        $this->assertNotNull($trueShootingCell);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $trueShootingCell,
+            )->length,
         );
     }
 
