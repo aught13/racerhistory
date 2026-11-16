@@ -357,6 +357,8 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Player Stats');
         $this->assertResponseContains('Basic Box Score Stats');
         $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('* = game starter.');
+        $this->assertResponseNotContains('GS = games started.');
         $this->assertResponseContains('id="game-team-advanced-stats-table"');
         foreach (['Name', 'GS', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%', '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS'] as $label) {
             $this->assertResponseContains('<th>' . $label . '</th>');

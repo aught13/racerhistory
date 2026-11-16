@@ -258,13 +258,6 @@ foreach (
 
     if ($visibleGroups !== []) {
         $tab['groups'] = $visibleGroups;
-        $tab['showStarterNote'] = false;
-        foreach ($visibleGroups as $group) {
-            if (in_array('GS', array_column($group['columns'], 'key'), true)) {
-                $tab['showStarterNote'] = true;
-                break;
-            }
-        }
         $tabs[] = $tab;
     }
 }
@@ -385,9 +378,6 @@ $activeTabId = $tabs[0]['id'] ?? null;
                         </div>
                     </div>
                 <?php endforeach; ?>
-                <?php if ($tab['showStarterNote']) : ?>
-                    <p class="text-muted small mb-0">* = game starter.</p>
-                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>

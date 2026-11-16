@@ -383,9 +383,6 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
                             <?php endif; ?>
                         </table>
                     </div>
-                    <?php if (in_array('GS', array_column($tab['columns'], 'key'), true)) : ?>
-                        <p class="text-muted small mb-0">GS = games started.</p>
-                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
 
@@ -442,9 +439,6 @@ $activeTabId = $statsTabs[0]['id'] ?? ($showAdvancedStats ? 'advanced' : null);
                             <?php endif; ?>
                         </table>
                     </div>
-                    <?php if (in_array('GS', array_column($advancedColumns, 'key'), true)) : ?>
-                        <p class="text-muted small mb-0">GS = games started.</p>
-                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>

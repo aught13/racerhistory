@@ -7,6 +7,8 @@ use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use DOMDocument;
+use DOMXPath;
 
 /**
  * App\Controller\PeopleController Test Case
@@ -31,6 +33,9 @@ class PeopleControllerTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.StatBasketSeasonPerson',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
         'app.StatBasketGamePerson',
         'app.Games',
         'app.GameTypes',
@@ -285,6 +290,82 @@ class PeopleControllerTest extends TestCase
 
         $gameLogGroups = $this->viewVariable('gameLogGroups');
         $this->assertIsArray($gameLogGroups);
+    }
+
+    /**
+     * Basketball career stats include advanced values and preserve GS without notes.
+     */
+    public function testViewShowsBasketballCareerAdvancedStats(): void
+    {
+        $this->get('/people/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseContains('PProd');
+        $this->assertResponseNotContains('GS = games started.');
+        $this->assertResponseNotContains('* = game starter.');
+
+        $careerStatsBySport = $this->viewVariable('careerStatsBySport');
+        $careerData = $careerStatsBySport[1];
+        $this->assertEqualsWithDelta(0.5917159763, $careerData['advancedStats']['TS%'], 0.0001);
+
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $advancedHeaders = $xpath->query('//table[@id="basketball-career-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $advancedHeaderNames = [];
+        foreach ($advancedHeaders as $header) {
+            $advancedHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertContains('GS', $advancedHeaderNames);
+        $this->assertContains('TS%', $advancedHeaderNames);
+
+        $gamesStarted = $xpath->query(
+            '//table[@id="basketball-career-advanced-stats-table"]/tbody/tr[1]/td[3]',
+        )->item(0);
+        $this->assertNotNull($gamesStarted);
+        $this->assertSame('8', trim((string)$gamesStarted->textContent));
+    }
+
+    /**
+     * Hide the career Advanced tab when its source stats are unavailable.
+     */
+    public function testViewHidesCareerAdvancedTabWithoutRequiredSourceStats(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $teamFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $playerStats = array_fill_keys($playerFields, null);
+        $playerStats['GP'] = '10';
+        $playerStats['GS'] = '8';
+        $playerStats['MIN'] = '250';
+        $playerStats['FTM'] = '18';
+        $playerStats['FTA'] = '24';
+        $playerStats['PF'] = '18';
+        $playerStats['PTS'] = 120;
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+        $this->fetchTable('StatBasketSeasonPerson')->updateAll($playerStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonTeam')->updateAll($emptyTeamStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonOpponent')->updateAll($emptyTeamStats, ['id' => 1]);
+
+        $this->get('/people/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseNotContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('<th>FGM-A</th>');
+        $this->assertResponseNotContains('GS = games started.');
+        $this->assertResponseNotContains('* = game starter.');
     }
 
     /**

@@ -307,6 +307,7 @@ $formatSeasonLabel = static function ($season): string {
                                 <?= $this->element($careerElement, [
                                     'seasons' => $seasons,
                                     'totals' => $totals,
+                                    'advancedStats' => $careerData['advancedStats'] ?? [],
                                     'minYear' => $careerData['minYear'] ?? null,
                                     'maxYear' => $careerData['maxYear'] ?? null,
                                 ]) ?>

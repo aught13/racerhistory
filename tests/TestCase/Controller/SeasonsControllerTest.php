@@ -208,6 +208,8 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('Basic Box Score Stats');
         $this->assertResponseContains('Advanced Box Score Stats');
         $this->assertResponseContains('Per Game');
+        $this->assertResponseNotContains('GS = games started.');
+        $this->assertResponseNotContains('* = game starter.');
         $this->assertResponseContains('<th>Name</th>');
         $this->assertResponseContains('<th>GP</th>');
         $this->assertResponseContains('<th>GS</th>');
