@@ -3394,3 +3394,8 @@ table.dataTable thead th {
   outline: 2px solid var(--rh-link);
   outline-offset: 2px;
 }
+
+.blog-featured-no-image {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
+}

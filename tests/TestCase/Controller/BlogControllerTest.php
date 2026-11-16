@@ -72,6 +72,39 @@ class BlogControllerTest extends TestCase
     }
 
     /**
+     * The pinned homepage lead remains visible without a hero image.
+     */
+    public function testHomeFeedShowsPinnedLeadWithoutHeroImage(): void
+    {
+        $postsTable = TableRegistry::getTableLocator()->get('BlogPosts');
+        $postsTable->saveOrFail($postsTable->newEntity([
+            'title' => 'Pinned Post Without Image',
+            'slug' => 'pinned-post-without-image',
+            'excerpt' => 'Pinned story excerpt.',
+            'body' => 'Pinned story body.',
+            'status' => 'published',
+            'is_published' => true,
+            'is_pinned' => true,
+            'pinned_rank' => 1,
+            'published_at' => '2024-01-01 12:00:00',
+        ]));
+
+        $this->get('/pages/home');
+
+        $this->assertResponseOk();
+        $body = (string)$this->_response->getBody();
+        $this->assertStringContainsString('blog-featured-no-image', $body);
+        $this->assertStringContainsString('Pinned Post Without Image', $body);
+        $this->assertStringContainsString('Pinned story excerpt.', $body);
+
+        $featuredPosition = strpos($body, 'Pinned Post Without Image');
+        $nextPostPosition = strpos($body, 'First Post');
+        $this->assertNotFalse($featuredPosition);
+        $this->assertNotFalse($nextPostPosition);
+        $this->assertLessThan($nextPostPosition, $featuredPosition);
+    }
+
+    /**
      * Tests viewing a published blog post.
      */
     public function testView(): void
