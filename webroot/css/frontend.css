@@ -3353,6 +3353,7 @@ table.dataTable thead th {
 .person-game-log-tabs__nav {
   gap: 0.25rem;
   border-bottom-color: var(--rh-border);
+
   --bs-nav-tabs-border-color: var(--rh-border);
   --bs-nav-tabs-link-active-color: var(--rh-text);
   --bs-nav-tabs-link-active-bg: var(--rh-surface);
