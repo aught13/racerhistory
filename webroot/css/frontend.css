@@ -3349,7 +3349,8 @@ table.dataTable thead th {
 }
 
 .season-stats-tabs__nav,
-.game-box-score-tabs__nav {
+.game-box-score-tabs__nav,
+.person-game-log-tabs__nav {
   gap: 0.25rem;
   border-bottom-color: var(--rh-border);
   --bs-nav-tabs-border-color: var(--rh-border);
@@ -3359,7 +3360,8 @@ table.dataTable thead th {
 }
 
 .season-stats-tabs .season-stats-tabs__nav .nav-link,
-.game-box-score-tabs .game-box-score-tabs__nav .nav-link {
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link {
   color: var(--rh-muted);
   border-color: transparent;
   opacity: 1;
@@ -3368,14 +3370,17 @@ table.dataTable thead th {
 .season-stats-tabs .season-stats-tabs__nav .nav-link:hover,
 .season-stats-tabs .season-stats-tabs__nav .nav-link:focus-visible,
 .game-box-score-tabs .game-box-score-tabs__nav .nav-link:hover,
-.game-box-score-tabs .game-box-score-tabs__nav .nav-link:focus-visible {
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link:focus-visible,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link:hover,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link:focus-visible {
   color: var(--rh-link);
   background-color: rgba(127, 127, 127, 0.12);
   border-color: var(--rh-border) var(--rh-border) transparent;
 }
 
 .season-stats-tabs .season-stats-tabs__nav .nav-link.active,
-.game-box-score-tabs .game-box-score-tabs__nav .nav-link.active {
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link.active,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link.active {
   color: var(--rh-text);
   background-color: var(--rh-surface);
   border-color: var(--rh-border) var(--rh-border) var(--rh-surface);
@@ -3384,7 +3389,8 @@ table.dataTable thead th {
 }
 
 .season-stats-tabs .season-stats-tabs__nav .nav-link:focus-visible,
-.game-box-score-tabs .game-box-score-tabs__nav .nav-link:focus-visible {
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link:focus-visible,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link:focus-visible {
   outline: 2px solid var(--rh-link);
   outline-offset: 2px;
 }
