@@ -55,6 +55,93 @@ function initTable(table, options = DEFAULT_TABLE_OPTIONS) {
     return $(table).DataTable(options);
 }
 
+function getGameTableOptions(table) {
+    const headers = Array.from(table.querySelectorAll("thead th"), (header) =>
+        header.textContent.trim(),
+    );
+    const starterIndex = headers.indexOf("GS");
+    const pointsIndex = headers.indexOf(
+        table.id.includes("-advanced-") ? "PProd" : "PTS",
+    );
+    const order = [];
+
+    if (starterIndex >= 0) {
+        order.push([starterIndex, "desc"]);
+    }
+    if (pointsIndex >= 0) {
+        order.push([pointsIndex, "desc"]);
+    }
+
+    return { ...DEFAULT_TABLE_OPTIONS, order };
+}
+
+function setupGameBoxScoreTabs(root) {
+    const sections = [];
+    if (root.matches?.("[data-game-box-score-tabs]")) {
+        sections.push(root);
+    }
+    sections.push(...root.querySelectorAll("[data-game-box-score-tabs]"));
+
+    sections.forEach((section) => {
+        const tabs = Array.from(
+            section.querySelectorAll("[data-game-stats-tab]"),
+        );
+        const panels = Array.from(
+            section.querySelectorAll("[data-game-stats-panel]"),
+        );
+        tabs.forEach((tab) => {
+            if (tab.dataset.gameStatsTabBound === "true") {
+                return;
+            }
+
+            tab.dataset.gameStatsTabBound = "true";
+            tab.addEventListener("click", () => {
+                const activeTab = tab.dataset.gameStatsTab;
+                if (!activeTab) {
+                    return;
+                }
+
+                tabs.forEach((candidate) => {
+                    const active = candidate === tab;
+                    candidate.classList.toggle("active", active);
+                    candidate.setAttribute(
+                        "aria-selected",
+                        active ? "true" : "false",
+                    );
+                });
+                panels.forEach((panel) => {
+                    const active = panel.dataset.gameStatsPanel === activeTab;
+                    panel.classList.toggle("active", active);
+                    panel.classList.toggle("show", active);
+                    panel.classList.toggle("d-none", !active);
+                });
+
+                if (activeTab !== "advanced") {
+                    return;
+                }
+
+                const activePanel = panels.find(
+                    (panel) => panel.dataset.gameStatsPanel === activeTab,
+                );
+                activePanel
+                    ?.querySelectorAll("table.js-datatable")
+                    .forEach((table) => {
+                        if (
+                            table.dataset.gameAdvancedTableInitialized ===
+                            "true"
+                        ) {
+                            return;
+                        }
+
+                        if (initTable(table, getGameTableOptions(table))) {
+                            table.dataset.gameAdvancedTableInitialized = "true";
+                        }
+                    });
+            });
+        });
+    });
+}
+
 function navigateTo(url) {
     if (!url) {
         return;
@@ -175,22 +262,9 @@ export default function initGameView(options = {}) {
     const tables = selectors
         .map((selector) => root.querySelector(selector))
         .filter(Boolean)
-        .map((table) => {
-            const isPlayerTable =
-                table.id === "game-team-stats-table" ||
-                table.id === "game-opponent-stats-table";
-            const options = isPlayerTable
-                ? {
-                      ...DEFAULT_TABLE_OPTIONS,
-                      order: [
-                          [2, "desc"],
-                          [3, "desc"],
-                      ],
-                  }
-                : DEFAULT_TABLE_OPTIONS;
-            return initTable(table, options);
-        });
+        .map((table) => initTable(table, getGameTableOptions(table)));
 
+    setupGameBoxScoreTabs(root);
     root.querySelectorAll("[data-game-blog]").forEach((section) => {
         setupBlogClicks(section);
     });

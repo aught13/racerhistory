@@ -21,6 +21,9 @@ class PeopleDirectoryServiceTest extends TestCase
         'app.Teams',
         'app.Sports',
         'app.Seasons',
+        'app.StatBasketSeasonPerson',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
         'app.StatBasketGamePerson',
         'app.Games',
         'app.GameTypes',
@@ -83,6 +86,57 @@ class PeopleDirectoryServiceTest extends TestCase
         $this->assertIsArray($viewData['rostersBySport']);
         $this->assertIsArray($viewData['careerStatsBySport']);
         $this->assertIsArray($viewData['gameLogGroups']);
+    }
+
+    /**
+     * Career and individual season rows contain basketball advanced stats.
+     *
+     * @return void
+     */
+    public function testProfileViewDataIncludesBasketballAdvancedStats(): void
+    {
+        $viewData = $this->service->profileViewData(1, [
+            'valid' => true,
+            'error' => null,
+            'sportKey' => null,
+            'teamId' => null,
+        ], false);
+
+        $careerData = $viewData['careerStatsBySport'][1];
+        $this->assertIsArray($careerData['advancedStats']);
+        $this->assertEqualsWithDelta(0.5917159763, $careerData['advancedStats']['TS%'], 0.0001);
+
+        $seasonStats = $careerData['seasons'][0]['stats'];
+        $seasonAdvancedStats = $seasonStats->get('advanced_stats');
+        $this->assertIsArray($seasonAdvancedStats);
+        $this->assertEqualsWithDelta(0.5917159763, $seasonAdvancedStats['TS%'], 0.0001);
+    }
+
+    /**
+     * Career and individual season rows contain basketball advanced stats.
+     *
+     * @return void
+     */
+    public function testProfileViewDataIncludesBasketballCareerAdvancedStats(): void
+    {
+        $viewData = $this->service->profileViewData(1, [
+            'valid' => true,
+            'error' => null,
+            'sportKey' => null,
+            'teamId' => null,
+        ], false);
+
+        $careerData = $viewData['careerStatsBySport'][1];
+        $this->assertIsArray($careerData['advancedStats']);
+        $this->assertEqualsWithDelta(0.5917159763, $careerData['advancedStats']['TS%'], 0.0001);
+
+        $seasonStats = $careerData['seasons'][0]['stats'];
+        $this->assertIsArray($seasonStats->get('advanced_stats'));
+        $this->assertEqualsWithDelta(
+            0.5917159763,
+            $seasonStats->get('advanced_stats')['TS%'],
+            0.0001,
+        );
     }
 
     /**

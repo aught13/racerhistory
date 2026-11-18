@@ -63,6 +63,12 @@ describe("frontend.css variables", () => {
             /\.rh-footer[\s\S]*?background:\s*var\(--rh-surface\)/,
         );
     });
+
+    test("image-free blog lead uses readable theme surface and text colors", () => {
+        expect(css).toMatch(
+            /\.blog-featured-no-image\s*\{[^}]*background-color:\s*var\(--rh-surface\)[^}]*color:\s*var\(--rh-text\)/i,
+        );
+    });
 });
 
 describe("dark mode component overrides", () => {

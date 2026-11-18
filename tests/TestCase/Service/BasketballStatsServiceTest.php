@@ -237,6 +237,59 @@ class BasketballStatsServiceTest extends TestCase
     }
 
     /**
+     * Person season stats include the same advanced metrics as season tables.
+     */
+    public function testGetPersonSeasonStatsIncludesAdvancedMetrics(): void
+    {
+        $stats = $this->service->getPersonSeasonStats(1);
+
+        $this->assertNotNull($stats);
+        $advancedStats = $stats->get('advanced_stats');
+        $this->assertIsArray($advancedStats);
+        $this->assertEqualsWithDelta(0.5917159763, $advancedStats['TS%'], 0.0001);
+        $this->assertGreaterThan(0, $advancedStats['AST%']);
+        $this->assertGreaterThan(0, $advancedStats['PProd']);
+    }
+
+    /**
+     * Career advanced stats use aggregated team and opponent totals.
+     */
+    public function testGetPlayerCareerAdvancedStatsAggregatesSeasonTotals(): void
+    {
+        $seasonStats = $this->service->getPersonSeasonStats(1);
+        $this->assertNotNull($seasonStats);
+
+        $totals = $this->service->initializeStats('player');
+        $this->service->addSeasonStats($totals, $seasonStats);
+        $seasonAdvancedStats = $seasonStats->get('advanced_stats');
+        $careerAdvancedStats = $this->service->getPlayerCareerAdvancedStats($totals, [1], array_keys($totals));
+
+        $this->assertEqualsWithDelta(
+            $seasonAdvancedStats['TS%'],
+            $careerAdvancedStats['TS%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            $seasonAdvancedStats['ORB%'],
+            $careerAdvancedStats['ORB%'],
+            0.0001,
+        );
+
+        $playerOnlyAdvancedStats = $this->service->getPlayerCareerAdvancedStats($totals, [], array_keys($totals));
+        $this->assertEqualsWithDelta(
+            $seasonAdvancedStats['TS%'],
+            $playerOnlyAdvancedStats['TS%'],
+            0.0001,
+        );
+        $this->assertNull($playerOnlyAdvancedStats['AST%']);
+
+        $availableFields = array_values(array_diff(array_keys($totals), ['FGA']));
+        $incompleteCareerStats = $this->service->getPlayerCareerAdvancedStats($totals, [1], $availableFields);
+        $this->assertNull($incompleteCareerStats['TS%']);
+        $this->assertNull($incompleteCareerStats['TOV%']);
+    }
+
+    /**
      * Test getPersonGameStats returns empty array for non-existent roster
      */
     public function testGetPersonGameStatsNonExistent(): void

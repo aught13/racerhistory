@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-4.1.2-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.1.3-blue.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -23,7 +23,7 @@ RacerHistory V4 is the current production application, representing the fourth g
 A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2, an AdminLTE 4-based admin experience, a modular Vite frontend, and production-ready deployment tooling.
 
 - Start here: [APPLICATION_SUMMARY.md](APPLICATION_SUMMARY.md)
-- This release: 4.1.2 ([changelog](CHANGELOG.md))
+- This release: 4.1.3 ([changelog](CHANGELOG.md))
 
 ## Overview
 

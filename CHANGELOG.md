@@ -7,6 +7,25 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ## [Unreleased]
 
+## [4.1.3] - 2026-11-15
+
+### Added
+
+- Basketball basic and advanced box-score views for games and seasons, per-game season stats, and advanced career metrics.
+- Statistical-leader highlights in player box scores and game team comparisons, including Four Factors.
+- Scheduled games without results remain viewable with expanded series history and navigation back to the season.
+
+### Changed
+
+- Basketball game, season, and career stat tables hide unavailable rows, columns, and tabs; box-score tabs have improved dark-mode styling.
+- Homepage featured articles use hero crops when available, and blog lead stories display photo credits.
+- Local E2E workflows clear CakePHP's model cache after tests.
+
+### Fixed
+
+- Corrected basketball advanced-stat calculations, including AST% and Points Produced.
+- Pinned homepage articles without a hero image now remain visible.
+
 ## [4.1.2] - 2026-11-14
 
 ### Added
@@ -326,6 +345,7 @@ First beta release — application is feature-complete for initial production de
 
 Links:
 
+- [4.1.3]: https://github.com/aught13/racerhistory/compare/v4.1.2...v4.1.3
 - [4.1.2]: https://github.com/aught13/racerhistory/compare/v4.1.1...v4.1.2
 - [4.1.1]: https://github.com/aught13/racerhistory/compare/v4.1.0...v4.1.1
 - [4.0.0]: https://github.com/aught13/racerhistory/compare/v0.2.0-beta...v4.0.0

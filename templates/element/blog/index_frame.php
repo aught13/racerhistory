@@ -59,6 +59,15 @@ if ($page === 1 && !empty($paginatedPosts)) {
                                     ],
                                 ) ?>
                             </div>
+                                <?php
+                                $photoCredit = trim((string)($featured->hero_image->photo_credit ?? ''));
+                                ?>
+                                <?php if ($photoCredit !== '') : ?>
+                                <p class="text-muted small text-end mb-3">
+                                    <i class="bi bi-camera-fill me-1" aria-hidden="true"></i>
+                                    Photo: <?= h($photoCredit) ?>
+                                </p>
+                                <?php endif; ?>
                             <?php endif; ?>
                             <p class="lead mb-0 blog-hero-excerpt"><?= h($this->BlogContent->decodeHtmlEntities((string)($featured->excerpt ?: mb_substr(strip_tags((string)$featured->body), 0, 220) . '...'))) ?></p>
                         </div>

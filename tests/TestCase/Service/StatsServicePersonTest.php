@@ -22,6 +22,8 @@ class StatsServicePersonTest extends TestCase
         'app.Games',
         'app.Opponents',
         'app.StatBasketSeasonPerson',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
         'app.StatBasketGamePerson',
     ];
 
@@ -55,6 +57,23 @@ class StatsServicePersonTest extends TestCase
 
         $this->assertNotNull($stats);
         $this->assertSame(120, (int)($stats->PTS ?? 0));
+        $this->assertIsArray($stats->get('advanced_stats'));
+    }
+
+    /**
+     * Career advanced stats delegate to the basketball implementation.
+     */
+    public function testGetPlayerCareerAdvancedStatsBasketball(): void
+    {
+        $seasonStats = $this->service->getPersonSeasonStats(1, 1);
+        $this->assertNotNull($seasonStats);
+
+        $totals = $this->service->initializeStats(1, 'player');
+        $this->service->addSeasonStats(1, $totals, $seasonStats);
+        $advancedStats = $this->service->getPlayerCareerAdvancedStats(1, $totals, [1], array_keys($totals));
+
+        $this->assertEqualsWithDelta(0.5917159763, $advancedStats['TS%'], 0.0001);
+        $this->assertGreaterThan(0, $advancedStats['AST%']);
     }
 
     /**

@@ -39,6 +39,9 @@ class SeasonsControllerTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.StatBasketSeasonPerson',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
         'app.Advertisements',
         'app.AdvertisingSettings',
     ];
@@ -182,6 +185,207 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('<meta property="twitter:image" content="/img/storage/');
         $this->assertStringNotContainsString('Undefined variable $page', (string)$this->_response->getBody());
         $this->assertStringNotContainsString('Undefined variable $limit', (string)$this->_response->getBody());
+    }
+
+    /**
+     * The basketball advanced table includes per-game and derived metrics.
+     */
+    public function testViewIncludesAdvancedSeasonMetrics(): void
+    {
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $seasonStats = $this->viewVariable('seasonStats');
+        $playerStat = $seasonStats['playerStats']->first();
+        $advancedStats = $playerStat->get('advanced_stats');
+
+        $this->assertEqualsWithDelta(12.0, $advancedStats['PPG'], 0.001);
+        $this->assertEqualsWithDelta(0.5917159763, $advancedStats['TS%'], 0.0001);
+        $this->assertGreaterThan(0, $advancedStats['AST%']);
+        $this->assertGreaterThan(0, $advancedStats['PProd']);
+        $this->assertLessThan(1, $advancedStats['USG%']);
+        $this->assertResponseContains('data-season-advanced-table');
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('marks the highest value');
+        $this->assertResponseContains('Per Game');
+        $this->assertResponseNotContains('GS = games started.');
+        $this->assertResponseNotContains('* = game starter.');
+        $this->assertResponseContains('<th>Name</th>');
+        $this->assertResponseContains('<th>GP</th>');
+        $this->assertResponseContains('<th>GS</th>');
+        $this->assertResponseContains('id="season-per-game-table"');
+        $this->assertResponseContains('PProd');
+
+        $html = (string)$this->_response->getBody();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $pointsPerGame = $xpath->query('//table[@id="season-per-game-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($pointsPerGame);
+        $this->assertSame('12.0', trim((string)$pointsPerGame->textContent));
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $pointsPerGame,
+            )->length,
+        );
+
+        $advancedGamesPlayed = $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr[1]/td[2]')->item(0);
+        $this->assertNotNull($advancedGamesPlayed);
+        $this->assertSame('10', trim((string)$advancedGamesPlayed->textContent));
+
+        $seasonPoints = $xpath->query('//table[@id="season-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($seasonPoints);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $seasonPoints,
+            )->length,
+        );
+
+        $advancedPointsProduced = $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($advancedPointsProduced);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $advancedPointsProduced,
+            )->length,
+        );
+    }
+
+    /**
+     * Season stats only render populated columns and rows.
+     */
+    public function testViewFiltersSeasonStatsToAvailableValues(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $teamFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+
+        $playerStatsTable = $this->fetchTable('StatBasketSeasonPerson');
+        $playerStatsTable->updateAll($emptyPlayerStats, ['id' => 1]);
+        $playerStatsTable->saveOrFail($playerStatsTable->newEntity([
+            'team_season_roster_id' => 1,
+            'GP' => '2',
+            'MIN' => '30',
+            'FGM' => '8',
+            'FGA' => '20',
+            'TPM' => '2',
+            'TPA' => '6',
+            'FTM' => '4',
+            'FTA' => '5',
+            'PTS' => 22,
+        ]));
+        $this->fetchTable('StatBasketSeasonTeam')->updateAll($emptyTeamStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonOpponent')->updateAll($emptyTeamStats, ['id' => 1]);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $basicHeaders = $xpath->query('//table[@id="season-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $basicHeaderNames = [];
+        foreach ($basicHeaders as $header) {
+            $basicHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame([
+            'Name', 'GP', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%',
+            '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'PTS',
+        ], $basicHeaderNames);
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-stats-table"]/tbody/tr')->length,
+        );
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-per-game-table"]/tbody/tr')->length,
+        );
+
+        $advancedHeaders = $xpath->query('//table[@id="season-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $advancedHeaderNames = [];
+        foreach ($advancedHeaders as $header) {
+            $advancedHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame(['Name', 'GP', 'MP', 'TS%', 'eFG%', '3PAr', 'FTr'], $advancedHeaderNames);
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr')->length,
+        );
+    }
+
+    /**
+     * Per-game and advanced tabs are omitted without their required result data.
+     */
+    public function testViewHidesSeasonStatsTabsWhenValuesAreUnavailable(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $teamFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $emptyPlayerStats['FGM'] = '8';
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+        $this->fetchTable('StatBasketSeasonPerson')->updateAll($emptyPlayerStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonTeam')->updateAll($emptyTeamStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonOpponent')->updateAll($emptyTeamStats, ['id' => 1]);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $this->assertSame(1, $xpath->query('//button[@data-season-stats-tab="basic"]')->length);
+        $this->assertSame(0, $xpath->query('//button[@data-season-stats-tab="per-game"]')->length);
+        $this->assertSame(0, $xpath->query('//button[@data-season-stats-tab="advanced"]')->length);
+
+        $basicHeaders = $xpath->query('//table[@id="season-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $basicHeaderNames = [];
+        foreach ($basicHeaders as $header) {
+            $basicHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame(['Name', 'FG'], $basicHeaderNames);
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-stats-table"]/tbody/tr')->length,
+        );
+
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $this->fetchTable('StatBasketSeasonPerson')->updateAll($emptyPlayerStats, ['id' => 1]);
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('No stats available.');
+        $this->assertResponseNotContains('data-season-stats-tab=');
     }
 
     /**

@@ -6,6 +6,9 @@ namespace App\Test\TestCase\Controller;
 use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use DateTimeImmutable;
+use DOMDocument;
+use DOMXPath;
 
 /**
  * App\Controller\GamesController Test Case
@@ -154,16 +157,23 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Games without a result are excluded from public lists and detail pages.
+     * Games without a result stay out of public result lists but have a scheduled-game detail page.
      *
      * @return void
      */
     public function testPublicGamesHideGamesWithoutResults(): void
     {
+        $futureGameDate = new DateTimeImmutable('+1 year');
+        $seasonStart = (int)$futureGameDate->format('Y');
+        $this->fetchTable('Seasons')->updateAll([
+            'start' => $seasonStart,
+            'end' => $seasonStart + 1,
+        ], ['id' => 1]);
+
         $gamesTable = $this->fetchTable('Games');
         $pendingGame = $gamesTable->saveOrFail($gamesTable->newEntity([
             'team_season_id' => 1,
-            'game_date' => '2024-01-21',
+            'game_date' => $futureGameDate->format('Y-m-d'),
             'game_type_id' => 1,
             'opponent_id' => 1,
             'place_id' => 1,
@@ -178,7 +188,21 @@ class GamesControllerTest extends TestCase
         $this->assertCount(4, $payload['data']);
 
         $this->get('/games/' . $pendingGame->id . '?sport=basketball&team=1');
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $this->assertResponseContains(
+            'Back to ' . $seasonStart . '-' . substr((string)($seasonStart + 1), -2) . ' Season',
+        );
+        $this->assertResponseContains('href="/seasons/1');
+        $this->assertResponseNotContains('Previous Game:');
+        $this->assertResponseNotContains('Next Game:');
+        $this->assertResponseContains('aria-expanded="true"');
+        $this->assertResponseContains('class="accordion-collapse collapse show"');
+        $this->assertResponseContains('Box score will be available after the game.');
+        $this->assertResponseNotContains('id="game-stats-frame"');
+
+        $this->get('/games/stats/' . $pendingGame->id . '?sport=basketball&team=1');
+        $this->assertResponseOk();
+        $this->assertResponseContains('Box score will be available after the game.');
     }
 
     /**
@@ -285,9 +309,9 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Games without a result are not publicly viewable.
+     * Games without a result show the season navigation and expanded series history.
      */
-    public function testViewHidesUnplayedGame(): void
+    public function testViewShowsUnplayedGameWithoutPreviousNextNavigation(): void
     {
         $this->fetchTable('Games')->updateAll([
             'pts_mur' => null,
@@ -298,7 +322,12 @@ class GamesControllerTest extends TestCase
 
         $this->get('/games/1');
 
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $this->assertResponseContains('Back to 2023-24 Season');
+        $this->assertResponseNotContains('Previous Game:');
+        $this->assertResponseNotContains('Next Game:');
+        $this->assertResponseContains('class="accordion-collapse collapse show"');
+        $this->assertResponseNotContains('id="game-stats-frame"');
     }
 
     /**
@@ -326,32 +355,231 @@ class GamesControllerTest extends TestCase
         $this->get('/games/stats/1');
         $this->assertResponseOk();
         $this->assertResponseContains('Player Stats');
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('marks the highest value');
+        $this->assertResponseNotContains('* = game starter.');
+        $this->assertResponseNotContains('GS = games started.');
+        $this->assertResponseContains('id="game-team-advanced-stats-table"');
+        foreach (['Name', 'GS', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%', '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS'] as $label) {
+            $this->assertResponseContains('<th>' . $label . '</th>');
+        }
+        foreach (['TS%', '3PAr', 'FTr', 'ORB%', 'DRB%', 'TRB%', 'AST%', 'STL%', 'BLK%', 'TOV%', 'USG%', 'PProd'] as $label) {
+            $this->assertResponseContains($label);
+        }
+        foreach (['eFG%', 'TOV%', 'ORB%', 'FT/FGA'] as $label) {
+            $this->assertResponseContains('<th scope="row" class="text-muted">' . $label . '</th>');
+        }
+
+        $teamBoxStats = $this->viewVariable('teamBoxStats');
+        $this->assertEqualsWithDelta(
+            32 / 62,
+            $teamBoxStats['advanced_stats']['eFG%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            12 / (62 + (0.475 * 18) + 12),
+            $teamBoxStats['advanced_stats']['TOV%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            10 / (10 + 22),
+            $teamBoxStats['advanced_stats']['ORB%'],
+            0.0001,
+        );
+        $this->assertEqualsWithDelta(
+            14 / 62,
+            $teamBoxStats['advanced_stats']['FT/FGA'],
+            0.0001,
+        );
     }
 
     /**
-     * Tests opponent GS displays the manual position or a star when unset.
+     * Game box score leaders are highlighted within each team and stats tab.
      */
-    public function testStatsFrameDefaultsOpponentGsToStarWithoutPosition(): void
+    public function testStatsFrameHighlightsStatLeaders(): void
     {
         $this->get('/games/stats/1');
         $this->assertResponseOk();
-        $this->assertResponseContains('>G</td>');
 
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $fieldGoalsTeamCell = $xpath->query(
+            '//table[@id="game-team-summary-table"]/tbody/tr[1]/td[1]',
+        )->item(0);
+        $this->assertNotNull($fieldGoalsTeamCell);
+        $this->assertSame(
+            2,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $fieldGoalsTeamCell,
+            )->length,
+            $dom->saveHTML($fieldGoalsTeamCell),
+        );
+
+        $turnoversRow = $xpath->query(
+            '//table[@id="game-team-summary-table"]/tbody/tr[th[normalize-space(.)="Turnovers"]]',
+        )->item(0);
+        $this->assertNotNull($turnoversRow);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './td[1]/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $turnoversRow,
+            )->length,
+        );
+
+        $teamPointsCell = $xpath->query('//table[@id="game-team-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($teamPointsCell);
+        $this->assertSame('22', trim($teamPointsCell->textContent));
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $teamPointsCell,
+            )->length,
+        );
+
+        $advancedHeaders = $xpath->query('//table[@id="game-team-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $trueShootingColumn = null;
+        foreach ($advancedHeaders as $index => $header) {
+            if (trim($header->textContent) === 'TS%') {
+                $trueShootingColumn = $index + 1;
+                break;
+            }
+        }
+        $this->assertNotNull($trueShootingColumn);
+        $trueShootingCell = $xpath->query(
+            '//table[@id="game-team-advanced-stats-table"]/tbody/tr[1]/td[' . $trueShootingColumn . ']',
+        )->item(0);
+        $this->assertNotNull($trueShootingCell);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $trueShootingCell,
+            )->length,
+        );
+    }
+
+    /**
+     * The opponent box score displays numeric games started separately from the name.
+     */
+    public function testStatsFrameMarksOpponentStarters(): void
+    {
+        $this->get('/games/stats/1');
+        $this->assertResponseOk();
+        $this->assertMatchesRegularExpression(
+            '/<td>\s*John Doe\s*<\/td>\s*<td data-order="1">\s*\*\s*<\/td>/',
+            (string)$this->_response->getBody(),
+        );
+        $this->assertMatchesRegularExpression(
+            '/id="game-opponent-advanced-stats-table".*?<td>\s*John Doe\s*<\/td>\s*<td data-order="1">\s*\*\s*<\/td>/s',
+            (string)$this->_response->getBody(),
+        );
+    }
+
+    /**
+     * Game box-score tabs omit empty player rows, columns, and stat sets.
+     */
+    public function testStatsFrameFiltersUnavailablePlayerStatsAndTabs(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'BD', 'TRN', 'PF', 'TF', 'FD', 'PTS',
+        ];
+        $boxFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+            'PNT', 'OTO', 'SND', 'FB', 'BN', 'TIED', 'LC',
+        ];
+        $teamFields = ['ORB', 'DRB', 'RB', 'TRN', 'TF', 'PTS'];
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $emptyOpponentStats = array_fill_keys([
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'BD', 'TRN', 'PF', 'TF', 'FD', 'PTS',
+        ], null);
+        $emptyBoxStats = array_fill_keys($boxFields, null);
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+
+        $playerStats = $this->fetchTable('StatBasketGamePerson');
+        $partialPlayerStats = $emptyPlayerStats;
+        $partialPlayerStats['MIN'] = '30';
+        $partialPlayerStats['FGM'] = '8';
+        $partialPlayerStats['FGA'] = '20';
+        $partialPlayerStats['TPM'] = '2';
+        $partialPlayerStats['TPA'] = '6';
+        $partialPlayerStats['FTM'] = '4';
+        $partialPlayerStats['FTA'] = '5';
+        $partialPlayerStats['PTS'] = '22';
+        $playerStats->updateAll($partialPlayerStats, ['id' => 1]);
         $opponentStats = $this->fetchTable('StatBasketGameOpponent');
-        $opponentStat = $opponentStats->get(1);
-        $opponentStat->position = null;
-        $opponentStats->saveOrFail($opponentStat);
+        $opponentStats->updateAll($emptyOpponentStats, ['id' => 1]);
+        $this->fetchTable('StatBasketGameBox')->updateAll($emptyBoxStats, ['game_id' => 1, 'period' => 'Z']);
+        $this->fetchTable('StatBasketGameTeam')->updateAll($emptyTeamStats, ['game_id' => 1]);
 
         $this->get('/games/stats/1');
+
         $this->assertResponseOk();
-        $this->assertResponseContains('>*</td>');
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
 
-        $opponentStat->position = '';
-        $opponentStats->saveOrFail($opponentStat);
+        $xpath = new DOMXPath($dom);
+        $basicHeaders = $xpath->query('//table[@id="game-team-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $basicHeaderNames = [];
+        foreach ($basicHeaders as $header) {
+            $basicHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame([
+            'Name', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%',
+            '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'PTS',
+        ], $basicHeaderNames);
+        $this->assertSame(1, $xpath->query('//table[@id="game-team-stats-table"]/tbody/tr')->length);
+        $this->assertSame(0, $xpath->query('//table[@id="game-opponent-stats-table"]')->length);
 
+        $advancedHeaders = $xpath->query('//table[@id="game-team-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $advancedHeaderNames = [];
+        foreach ($advancedHeaders as $header) {
+            $advancedHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame(['Name', 'MP', 'TS%', 'eFG%', '3PAr', 'FTr'], $advancedHeaderNames);
+        $this->assertSame(1, $xpath->query('//table[@id="game-team-advanced-stats-table"]/tbody/tr')->length);
+        $this->assertSame(0, $xpath->query('//table[@id="game-opponent-advanced-stats-table"]')->length);
+
+        $ptsOnlyStats = $emptyPlayerStats;
+        $ptsOnlyStats['PTS'] = '7';
+        $playerStats->updateAll($ptsOnlyStats, ['id' => 1]);
         $this->get('/games/stats/1');
+
         $this->assertResponseOk();
-        $this->assertResponseContains('>*</td>');
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+        $xpath = new DOMXPath($dom);
+        $basicHeaders = $xpath->query('//table[@id="game-team-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $this->assertSame(
+            ['Name', 'PTS'],
+            array_map(static fn($header): string => trim($header->textContent), iterator_to_array($basicHeaders)),
+        );
+        $this->assertSame(0, $xpath->query('//button[@data-game-stats-tab="advanced"]')->length);
+
+        $playerStats->updateAll($emptyPlayerStats, ['game_id' => 1]);
+        $opponentStats->updateAll($emptyOpponentStats, ['game_id' => 1]);
+        $this->get('/games/stats/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('data-game-stats-tab=');
+        $this->assertResponseNotContains('id="game-team-stats-table"');
+        $this->assertResponseNotContains('id="game-opponent-stats-table"');
     }
 
     /**

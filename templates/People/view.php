@@ -307,6 +307,7 @@ $formatSeasonLabel = static function ($season): string {
                                 <?= $this->element($careerElement, [
                                     'seasons' => $seasons,
                                     'totals' => $totals,
+                                    'advancedStats' => $careerData['advancedStats'] ?? [],
                                     'minYear' => $careerData['minYear'] ?? null,
                                     'maxYear' => $careerData['maxYear'] ?? null,
                                 ]) ?>
@@ -332,11 +333,11 @@ $formatSeasonLabel = static function ($season): string {
                             $sportId = $group['sportId'];
                             $activeSeasonId = $group['activeSeasonId'];
                             ?>
-                            <div class="mb-4">
+                            <div class="mb-4 person-game-log-tabs">
                                 <h3 class="h6 text-uppercase text-muted mb-3">
                                     <?= h($sportName) ?> Game Log
                                 </h3>
-                                <ul class="nav nav-tabs" role="tablist">
+                                <ul class="nav nav-tabs person-game-log-tabs__nav" role="tablist">
                                     <?php foreach ($group['seasons'] as $seasonData) : ?>
                                         <?php
                                         $teamSeason = $seasonData['teamSeason'];
