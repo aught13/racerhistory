@@ -8,8 +8,10 @@ use Cake\Utility\Inflector;
  * @var array<string, string> $statTypes
  * @var string|null $currentSport
  * @var array<string,string> $supportedSports
+ * @var bool $statsScopeUnavailable
  */
 $this->assign('title', 'Statistics');
+$statsScopeUnavailable = $statsScopeUnavailable ?? false;
 ?>
 <div class="container py-4" data-controller="stats-page">
 
@@ -19,21 +21,17 @@ $this->assign('title', 'Statistics');
     </div>
 
     <?php if ($currentSport === null) : ?>
-        <form method="get" action="<?= $this->Url->build(['controller' => 'Stats', 'action' => 'index']) ?>" class="row g-2 align-items-end mb-4">
-            <div class="col-sm-6 col-md-4">
-                <label class="form-label" for="stats-sport">Sport</label>
-                <select id="stats-sport" class="form-select" name="sport" required>
-                    <option value="" selected disabled>Choose a sport</option>
-                    <?php foreach ($supportedSports as $sportKey => $sportName) : ?>
-                        <option value="<?= h($sportKey) ?>"><?= h($sportName) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <div class="form-text">Choose a sport to view its available statistics.</div>
+        <?php if ($statsScopeUnavailable) : ?>
+            <div class="rh-stats-selection-note border border-secondary-subtle rounded px-3 py-4 text-secondary text-center" aria-disabled="true">
+                <i class="bi bi-bar-chart fs-2 mb-2 d-block" aria-hidden="true"></i>
+                <strong>No stats are available for the selected sport or team</strong>
             </div>
-            <div class="col-sm-auto">
-                <button type="submit" class="btn btn-primary">View statistics</button>
+        <?php elseif (count($supportedSports) > 1) : ?>
+            <div class="rh-stats-selection-note border border-secondary-subtle rounded px-3 py-4 text-secondary text-center" aria-disabled="true">
+                <i class="bi bi-bar-chart fs-2 mb-2 d-block" aria-hidden="true"></i>
+                <strong>Select a team or sport for stats</strong>
             </div>
-        </form>
+        <?php endif; ?>
     <?php else : ?>
         <div class="row g-3" id="stats-type-cards">
             <?php foreach ($statTypes as $slug => $label) : ?>

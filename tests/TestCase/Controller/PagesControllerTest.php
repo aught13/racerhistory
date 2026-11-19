@@ -31,6 +31,11 @@ class PagesControllerTest extends TestCase
 {
     use IntegrationTestTrait;
 
+    protected array $fixtures = [
+        'app.Sports',
+        'app.Teams',
+    ];
+
     /**
      * testDisplay method
      *
@@ -45,6 +50,23 @@ class PagesControllerTest extends TestCase
         $this->assertResponseContains('<html>');
         $this->assertResponseContains('property="og:image"');
         $this->assertResponseContains('/img/logo.png');
+    }
+
+    /**
+     * The home page hides the scope bar until a real sport/team pair is selected.
+     *
+     * @return void
+     */
+    public function testHomeScopeBarVisibility(): void
+    {
+        Configure::write('debug', true);
+        $this->get('/');
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('rh-public-scope-bar');
+
+        $this->get('/?sport=football&team=3');
+        $this->assertResponseOk();
+        $this->assertResponseContains('rh-public-scope-bar');
     }
 
     /**

@@ -177,7 +177,7 @@ class SeasonsController extends AppController
      */
     private function resolvePublicScope(): array
     {
-        $scope = $this->publicSportScopeService->resolve($this->request->getQueryParams());
+        $scope = $this->publicSportScopeService->resolveSafe($this->request->getQueryParams());
         if (!$scope['valid']) {
             throw new BadRequestException('Invalid sport or team selection.');
         }
@@ -200,18 +200,16 @@ class SeasonsController extends AppController
             throw new NotFoundException('Season not found');
         }
 
-        if ($scope['teamId'] !== null && $scope['teamId'] !== (int)$teamSeason->team_id) {
-            throw new NotFoundException('Season not found');
-        }
-
-        if ($scope['sportKey'] !== null) {
-            $teamScope = $this->publicSportScopeService->resolve([
-                'sport' => $scope['sportKey'],
-                'team' => (string)$teamSeason->team_id,
-            ]);
-            if (!$teamScope['valid']) {
-                throw new NotFoundException('Season not found');
-            }
+        $teamId = (int)($teamSeason->team_id ?? 0);
+        $derivedScope = $teamId > 0
+            ? $this->publicSportScopeService->resolve(['team' => (string)$teamId])
+            : $this->publicSportScopeService->resolveSafe($this->request->getQueryParams());
+        if ($derivedScope['valid']) {
+            $scope = $derivedScope;
+            $query = $this->request->getQueryParams();
+            $query['sport'] = $scope['sportKey'] ?? 'all';
+            $query['team'] = $scope['teamId'] === null ? 'all' : (string)$scope['teamId'];
+            $this->setRequest($this->request->withQueryParams($query));
         }
 
         unset($viewData['teamSeason']);
