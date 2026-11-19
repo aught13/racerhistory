@@ -11,6 +11,7 @@ declare(strict_types=1);
  * @var bool $showPublicSportSelector
  * @var bool $showPublicTeamSelector
  * @var bool $isStatsController
+ * @var bool $statsScopeSupported
  */
 
 $currentTarget = (string)$this->getRequest()->getRequestTarget();
@@ -34,34 +35,10 @@ $showPublicTeamSelector = $showPublicTeamSelector ?? false;
 $isStatsController = $isStatsController ?? false;
 $publicSportOptions = $publicSportOptions ?? [];
 $publicTeamOptions = $publicTeamOptions ?? [];
-$allTeamsLabel = $scopeSport !== 'all'
-    && count($publicTeamOptions) > 1
-    && isset($publicSportOptions[$scopeSport])
-    ? 'All ' . $publicSportOptions[$scopeSport]
-    : 'All teams';
+$statsScopeSupported = $statsScopeSupported ?? false;
+$hasPublicScopeSelection = $hasPublicScopeSelection
+    ?? ($scopeSport !== 'all' || $scopeTeam !== 'all');
 $currentPath = (string)$this->getRequest()->getUri()->getPath();
-$preservedQuery = $this->getRequest()->getQueryParams();
-unset($preservedQuery['sport'], $preservedQuery['team'], $preservedQuery['gender'], $preservedQuery['show_all_history']);
-$renderHiddenQuery = function (string $name, mixed $value) use (&$renderHiddenQuery): string {
-    if (is_array($value)) {
-        $html = '';
-        foreach ($value as $key => $childValue) {
-            $html .= $renderHiddenQuery($name . '[' . $key . ']', $childValue);
-        }
-
-        return $html;
-    }
-
-    if (!is_scalar($value)) {
-        return '';
-    }
-
-    return '<input type="hidden" name="' . h($name) . '" value="' . h((string)$value) . '">';
-};
-$preservedQueryHtml = '';
-foreach ($preservedQuery as $queryName => $queryValue) {
-    $preservedQueryHtml .= $renderHiddenQuery((string)$queryName, $queryValue);
-}
 $withPublicScope = static function (string $url) use ($scopeSport, $scopeTeam): string {
     $parts = parse_url($url);
     if ($parts === false) {
@@ -182,53 +159,20 @@ $marginsLosingLinks = [
                     <?= $navLink('People', '/people') ?>
                 </li>
 
-                <?php if ($showPublicSportSelector || $showPublicTeamSelector) : ?>
-                    <li class="nav-item rh-nav-item rh-nav-item--scope">
-                        <form method="get" action="<?= h($currentPath) ?>" class="rh-nav-scope d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-1"
-                              data-controller="public-sport-scope"
-                              data-public-sport-scope-sport-key-value="<?= h($scopeSport) ?>"
-                              data-public-sport-scope-team-id-value="<?= h($scopeTeam) ?>"
-                              data-action="submit->public-sport-scope#submit">
-                            <?= $preservedQueryHtml ?>
-                            <?php if ($showPublicSportSelector) : ?>
-                                <label class="visually-hidden" for="public-scope-sport">Sport</label>
-                                <select id="public-scope-sport" name="sport" class="form-select form-select-sm"
-                                        data-public-sport-scope-target="sport"
-                                        data-action="change->public-sport-scope#changeSport">
-                                    <?php if ($isStatsController) : ?>
-                                        <option value=""<?= $scopeSport === 'all' ? ' selected' : '' ?> disabled>Choose a sport</option>
-                                    <?php else : ?>
-                                        <option value="all"<?= $scopeSport === 'all' ? ' selected' : '' ?>>All sports</option>
-                                    <?php endif; ?>
-                                    <?php foreach ($publicSportOptions as $sportKey => $sportName) : ?>
-                                        <option value="<?= h($sportKey) ?>"<?= $scopeSport === $sportKey ? ' selected' : '' ?>><?= h($sportName) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            <?php else : ?>
-                                <input type="hidden" name="sport" value="<?= h($scopeSport) ?>"
-                                       data-public-sport-scope-target="sport">
-                            <?php endif; ?>
-                            <?php if ($showPublicTeamSelector) : ?>
-                                <label class="visually-hidden" for="public-scope-team">Team</label>
-                                <select id="public-scope-team" name="team" class="form-select form-select-sm"
-                                        data-public-sport-scope-target="team"
-                                        data-action="change->public-sport-scope#changeTeam">
-                                    <option value="all" data-sport-key="all"<?= $scopeTeam === 'all' ? ' selected' : '' ?>><?= h($allTeamsLabel) ?></option>
-                                    <?php foreach ($publicTeamOptions as $teamId => $teamOption) : ?>
-                                        <option value="<?= (int)$teamId ?>" data-sport-key="<?= h($teamOption['sportKey']) ?>"<?= $scopeTeam === (string)$teamId ? ' selected' : '' ?>><?= h($teamOption['label']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            <?php else : ?>
-                                <input type="hidden" name="team" value="<?= h($scopeTeam) ?>">
-                            <?php endif; ?>
-                        </form>
-                    </li>
+                <?php if ($scopeTeam === 'all' || !$statsScopeSupported) : ?>
+                <li class="nav-item rh-nav-item rh-nav-item--link rh-nav-item--stats">
+                    <?php if ($scopeSport === 'all') : ?>
+                        <a class="nav-link<?= str_starts_with($currentPath, '/stats') ? ' active' : '' ?>"
+                           href="<?= h($this->Url->build('/stats')) ?>"
+                           data-preserve-public-scope="false"
+                           <?= str_starts_with($currentPath, '/stats') ? 'aria-current="page"' : '' ?>>
+                            Stats
+                        </a>
+                    <?php else : ?>
+                        <?= $navLink('Stats', '/stats') ?>
+                    <?php endif; ?>
+                </li>
                 <?php else : ?>
-                    <li class="d-none" data-controller="public-sport-scope"
-                        data-public-sport-scope-sport-key-value="<?= h($scopeSport) ?>"
-                        data-public-sport-scope-team-id-value="<?= h($scopeTeam) ?>"></li>
-                <?php endif; ?>
-
                 <li class="nav-item rh-nav-item rh-nav-item--menu rh-nav-item--stats">
                     <button
                         type="button"
@@ -250,7 +194,22 @@ $marginsLosingLinks = [
                         </div>
                     </div>
                 </li>
+                <?php endif; ?>
 
+                <?php if ($scopeTeam === 'all') : ?>
+                <li class="nav-item rh-nav-item rh-nav-item--link rh-nav-item--games">
+                    <?php if ($scopeSport === 'all') : ?>
+                        <a class="nav-link<?= str_starts_with($currentPath, '/games') ? ' active' : '' ?>"
+                           href="<?= h($this->Url->build('/games')) ?>"
+                           data-preserve-public-scope="false"
+                           <?= str_starts_with($currentPath, '/games') ? 'aria-current="page"' : '' ?>>
+                            Games
+                        </a>
+                    <?php else : ?>
+                        <?= $navLink('Games', '/games') ?>
+                    <?php endif; ?>
+                </li>
+                <?php else : ?>
                 <li class="nav-item rh-nav-item rh-nav-item--menu rh-nav-item--games">
                     <button
                         type="button"
@@ -460,6 +419,7 @@ $marginsLosingLinks = [
                         </div>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <li class="nav-item ms-auto">
                     <div class="rh-theme-toggle"></div>

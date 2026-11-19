@@ -91,20 +91,69 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Unscoped Games automatically selects the only team with results.
+     * An explicit team=all scope stays unselected and keeps Games static.
      *
      * @return void
      */
-    public function testIndexWithoutSelectedTeamSelectsOnlyTeamWithGames(): void
+    public function testIndexKeepsExplicitTeamAllUnselected(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => 'all']]);
         $this->get('/games?sport=basketball&team=all');
 
         $this->assertResponseOk();
-        $this->assertSame(1, $this->viewVariable('publicScope')['teamId']);
-        $this->assertArrayHasKey('ranked', $this->viewVariable('searchTypes'));
-        $this->assertArrayHasKey('streaks', $this->viewVariable('searchTypes'));
-        $this->assertArrayHasKey('series', $this->viewVariable('searchTypes'));
+        $this->assertSame('basketball', $this->viewVariable('publicScope')['sportKey']);
+        $this->assertNull($this->viewVariable('publicScope')['teamId']);
+        $this->assertSame(['all' => 'All Games'], $this->viewVariable('searchTypes'));
+        $this->assertResponseContains('href="/games?sport=basketball&amp;team=all"');
+        $this->assertResponseContains('rh-games-team-selection-note');
+        $this->assertResponseContains('Select a team');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--games');
+    }
+
+    /**
+     * All-scope Games stay unselected and show the team-selection prompt.
+     *
+     * @return void
+     */
+    public function testAllScopeKeepsGamesUnselectedAndShowsPrompt(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
+        $this->get('/games?sport=all&team=all');
+
+        $this->assertResponseOk();
+        $this->assertNull($this->viewVariable('publicScope')['sportKey']);
+        $this->assertNull($this->viewVariable('publicScope')['teamId']);
+        $this->assertResponseContains('rh-public-scope-bar');
+        $this->assertResponseContains('rh-games-team-selection-note');
+        $this->assertResponseContains('Select a team');
+        $this->assertResponseContains('<button class="rh-public-scope-current"');
+        $this->assertResponseNotContains('<a class="rh-public-scope-current"');
+        $this->assertResponseContains('href="/stats"');
+        $this->assertResponseContains('href="/games"');
+        $this->assertResponseContains('data-preserve-public-scope="false"');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--stats');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--games');
+
+        $this->get('/games/all?sport=all&team=all');
+        $this->assertResponseOk();
+        $this->assertResponseContains('rh-games-team-selection-note');
+        $this->assertResponseContains('unlock more options');
+    }
+
+    /**
+     * A selected sport/team scope keeps the Stats and Games top-nav entries as dropdowns.
+     *
+     * @return void
+     */
+    public function testSelectedScopeUsesTopNavDropdowns(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => '1']]);
+        $this->get('/games?sport=basketball&team=1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('rh-nav-item--menu rh-nav-item--stats');
+        $this->assertResponseContains('rh-nav-item--menu rh-nav-item--games');
+        $this->assertResponseNotContains('data-preserve-public-scope="false"');
     }
 
     /**
@@ -640,41 +689,38 @@ class GamesControllerTest extends TestCase
     }
 
     /**
-     * Specialty game views use the only team with results as their scope.
+     * Team-dependent ranked views require a team scope.
      */
-    public function testRankedPageUsesTheOnlyTeamWithGames(): void
+    public function testRankedPageRequiresTeamScope(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
         $this->get('/games/ranked?sport=all&team=all');
 
-        $this->assertResponseOk();
-        $this->assertResponseContains('Ranked Games');
+        $this->assertRedirectContains('/games?sport=all&team=all');
     }
 
     /**
-     * The 100-point view uses the only team with results as its scope.
+     * The 100-point view requires an explicit team scope.
      *
      * @return void
      */
-    public function testHundredPointUsesTheOnlyTeamWithGames(): void
+    public function testHundredPointRequiresTeamScope(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => 'all']]);
         $this->get('/games/hundred-point?sport=basketball&team=all');
 
-        $this->assertResponseOk();
-        $this->assertResponseContains('100 Point Games');
+        $this->assertRedirectContains('/games?sport=basketball&team=all');
     }
 
     /**
-     * The Series opponents endpoint uses the only team with results as its scope.
+     * The Series opponents endpoint requires a team scope.
      */
-    public function testSeriesOpponentsUsesTheOnlyTeamWithGames(): void
+    public function testSeriesOpponentsRequiresTeamScope(): void
     {
         $this->replaceRequest(['query' => ['sport' => 'all', 'team' => 'all']]);
         $this->get('/games/series-opponents?format=json&sport=all&team=all');
 
-        $this->assertResponseOk();
-        $this->assertContentType('application/json');
+        $this->assertRedirectContains('/games?sport=all&team=all');
     }
 
     /**

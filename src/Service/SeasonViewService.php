@@ -151,6 +151,9 @@ class SeasonViewService
         $query->orderBy($direction === 'previous' ? ['Seasons.end' => 'DESC'] : ['Seasons.end' => 'ASC']);
 
         $adjacent = $query->first();
+        if ($adjacent instanceof TeamSeason) {
+            $this->teamSportContextService->attachSportContextToTeam($adjacent->team ?? null);
+        }
 
         return $adjacent instanceof TeamSeason ? $adjacent : null;
     }

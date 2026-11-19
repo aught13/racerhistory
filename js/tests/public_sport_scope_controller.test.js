@@ -27,6 +27,8 @@ describe("public-sport-scope controller", () => {
                 <a id="shared-link" href="/blog/story">Story</a>
                 <a id="explicit-link" href="/people/1?sport=football&team=3&show_all_history=1">Profile</a>
                 <a id="admin-link" href="/admin/teams">Admin</a>
+                <a id="static-stats-link" href="/stats" data-preserve-public-scope="false">Stats</a>
+                <a id="static-games-link" href="/games" data-preserve-public-scope="false">Games</a>
             </form>
         `;
 
@@ -51,6 +53,8 @@ describe("public-sport-scope controller", () => {
             "sport=football",
         );
         expect(document.getElementById("admin-link").search).toBe("");
+        expect(document.getElementById("static-stats-link").search).toBe("");
+        expect(document.getElementById("static-games-link").search).toBe("");
     });
 
     test("changing sport resets the team and submits the form", () => {
@@ -118,5 +122,42 @@ describe("public-sport-scope controller", () => {
         expect(document.getElementById("shared-link").search).toBe(
             "?sport=all&team=all",
         );
+    });
+
+    test("scope bar whitespace toggles the dropdown menu", async () => {
+        const scopeBar = document.createElement("div");
+        scopeBar.id = "scope-bar";
+        scopeBar.className = "rh-public-scope-bar-inner";
+        scopeBar.dataset.controller = "public-sport-scope";
+        scopeBar.dataset.publicSportScopeSportKeyValue = "basketball";
+        scopeBar.dataset.publicSportScopeTeamIdValue = "all";
+        scopeBar.innerHTML = `
+            <button class="rh-public-scope-more-toggle" type="button">More</button>
+            <ul class="rh-public-scope-menu">
+                <li><a href="/stats">Stats</a></li>
+            </ul>
+        `;
+        document.body.appendChild(scopeBar);
+
+        application.stop();
+        application = Application.start();
+        application.register("public-sport-scope", PublicSportScopeController);
+        await Promise.resolve();
+
+        scopeBar.dispatchEvent(new Event("click", { bubbles: true }));
+        expect(
+            scopeBar
+                .querySelector(".rh-public-scope-menu")
+                .classList.contains("show"),
+        ).toBe(true);
+
+        scopeBar
+            .querySelector(".rh-public-scope-menu")
+            .dispatchEvent(new Event("click", { bubbles: true }));
+        expect(
+            scopeBar
+                .querySelector(".rh-public-scope-menu")
+                .classList.contains("show"),
+        ).toBe(true);
     });
 });

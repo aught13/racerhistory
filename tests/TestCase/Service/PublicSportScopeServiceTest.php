@@ -48,11 +48,110 @@ class PublicSportScopeServiceTest extends TestCase
     }
 
     /**
-     * The only team with a result is selected for public game browsing.
+     * Invalid sports normalize to the All-scope fallback.
      *
      * @return void
      */
-    public function testGamesScopeSelectsOnlyTeamWithResults(): void
+    public function testResolveSafeInvalidSportFallsBackToAll(): void
+    {
+        $scope = $this->service->resolveSafe([
+            'sport' => 'not-a-sport',
+            'team' => 'all',
+        ]);
+
+        $this->assertTrue($scope['valid']);
+        $this->assertNull($scope['sportKey']);
+        $this->assertNull($scope['teamId']);
+    }
+
+    /**
+     * Invalid teams keep a valid sport scope and clear the team.
+     *
+     * @return void
+     */
+    public function testResolveSafeInvalidTeamKeepsValidSport(): void
+    {
+        $scope = $this->service->resolveSafe([
+            'sport' => 'basketball',
+            'team' => '999',
+        ]);
+
+        $this->assertTrue($scope['valid']);
+        $this->assertSame('basketball', $scope['sportKey']);
+        $this->assertNull($scope['teamId']);
+    }
+
+    /**
+     * Mismatched valid team/sport scopes use the team-specific sport.
+     *
+     * @return void
+     */
+    public function testResolveSafeMismatchUsesTeamSport(): void
+    {
+        $scope = $this->service->resolveSafe([
+            'sport' => 'football',
+            'team' => '1',
+        ]);
+
+        $this->assertTrue($scope['valid']);
+        $this->assertSame('basketball', $scope['sportKey']);
+        $this->assertSame(1, $scope['teamId']);
+    }
+
+    /**
+     * Explicit all/all Games scope must remain unselected so users can choose a team.
+     *
+     * @return void
+     */
+    public function testGamesScopeLeavesAllSportsAndTeamsUnselected(): void
+    {
+        $scope = $this->service->resolveGamesScope([
+            'sport' => 'all',
+            'team' => 'all',
+        ]);
+
+        $this->assertTrue($scope['valid']);
+        $this->assertNull($scope['sportKey']);
+        $this->assertNull($scope['teamId']);
+    }
+
+    /**
+     * The public scope bar follows the route and selection visibility rules.
+     *
+     * @return void
+     */
+    public function testPublicScopeBarVisibility(): void
+    {
+        $allScope = [
+            'valid' => true,
+            'error' => null,
+            'sportKey' => null,
+            'teamId' => null,
+        ];
+        $selectedScope = [
+            'valid' => true,
+            'error' => null,
+            'sportKey' => 'football',
+            'teamId' => 3,
+        ];
+
+        $this->assertTrue($this->service->shouldShowPublicScopeBar('Seasons', 'index', [], $allScope));
+        $this->assertTrue($this->service->shouldShowPublicScopeBar('Stats', 'index', [], $allScope));
+        $this->assertTrue($this->service->shouldShowPublicScopeBar('Games', 'index', [], $allScope));
+        $this->assertFalse($this->service->shouldShowPublicScopeBar('Blog', 'index', [], $allScope));
+        $this->assertTrue($this->service->shouldShowPublicScopeBar('Blog', 'index', [], $selectedScope));
+        $this->assertFalse($this->service->shouldShowPublicScopeBar('People', 'index', [], $allScope));
+        $this->assertTrue($this->service->shouldShowPublicScopeBar('People', 'view', [], $selectedScope));
+        $this->assertFalse($this->service->shouldShowPublicScopeBar('Pages', 'display', ['privacy'], $selectedScope));
+        $this->assertTrue($this->service->shouldShowPublicScopeBar('Pages', 'display', ['home'], $selectedScope));
+    }
+
+    /**
+     * An explicit team=all scope remains unselected even for a single team sport.
+     *
+     * @return void
+     */
+    public function testGamesScopeLeavesExplicitTeamAllUnselected(): void
     {
         $gamesTable = $this->fetchTable('Games');
         $teamSeason = $this->fetchTable('TeamSeasons')->newEntity([
@@ -75,7 +174,7 @@ class PublicSportScopeServiceTest extends TestCase
             'valid' => true,
             'error' => null,
             'sportKey' => 'basketball',
-            'teamId' => 1,
+            'teamId' => null,
         ], $this->service->resolveGamesScope(['sport' => 'basketball', 'team' => 'all']));
     }
 
