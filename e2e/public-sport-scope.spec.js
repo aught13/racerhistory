@@ -99,4 +99,33 @@ test.describe("Public sport and team scope", () => {
         ).toHaveCount(0);
     });
 
+    test("direct team-season link derives the team and sport scope", async ({
+        page,
+    }) => {
+        await page.goto("/seasons/1");
+
+        await expect(page).toHaveURL(/\/seasons\/1\?sport=basketball&team=1/);
+        await expect(
+            page.locator(".rh-public-scope-current"),
+        ).not.toHaveText("All teams");
+    });
+
+    test("seasons index links include the row team and sport scope", async ({
+        page,
+    }) => {
+        await page.goto("/seasons?sport=all&team=all");
+
+        const seasonLink = page
+            .locator("#seasons-table tbody tr")
+            .first()
+            .locator(".season-freeze-col-3 a")
+            .first();
+        await expect(seasonLink).toBeVisible();
+
+        const href = await seasonLink.getAttribute("href");
+        const url = new URL(href, page.url());
+        expect(url.searchParams.get("sport")).not.toBe("all");
+        expect(url.searchParams.get("team")).not.toBe("all");
+    });
+
 });
