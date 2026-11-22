@@ -12,13 +12,16 @@ declare(strict_types=1);
  * @var object|null $teamTeamStats
  * @var object|null $opponentTeamStats
  * @var bool $hasPeriodStats
+ * @var bool $hasGameResult
  * @var array<string,string> $fieldLabels
  * @var string|null $statsElement
  * @var \App\View\AppView $this
  */
 ?>
 <turbo-frame id="game-stats-frame">
-    <?php if (!empty($statsElement)) : ?>
+    <?php if (!$hasGameResult) : ?>
+        <p class="text-muted mb-0">Box score will be available after the game.</p>
+    <?php elseif (!empty($statsElement)) : ?>
         <?= $this->element($statsElement, [
             'game' => $game,
             'teamBoxStats' => $teamBoxStats ?? [],

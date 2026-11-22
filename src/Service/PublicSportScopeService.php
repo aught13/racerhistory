@@ -95,6 +95,144 @@ class PublicSportScopeService
     }
 
     /**
+     * Resolve an invalid public scope to its closest valid browse scope.
+     *
+     * @param array<string,mixed> $query Query parameters.
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    public function resolveSafe(array $query): array
+    {
+        $scope = $this->resolve($query);
+        if ($scope['valid']) {
+            return $scope;
+        }
+
+        $teams = $this->getConfiguredTeams();
+        $sportOptions = $this->buildAvailableSportOptions($teams);
+
+        $team = null;
+        $teamId = null;
+        $rawTeam = $query['team'] ?? 'all';
+        if (is_scalar($rawTeam)) {
+            $teamValue = trim((string)$rawTeam);
+            if ($teamValue !== '' && strcasecmp($teamValue, 'all') !== 0 && ctype_digit($teamValue)) {
+                $candidateId = (int)$teamValue;
+                $candidate = $teams[$candidateId] ?? null;
+                if ($candidate instanceof Team) {
+                    $team = $candidate;
+                    $teamId = $candidateId;
+                }
+            }
+        }
+
+        if ($team instanceof Team) {
+            $teamSportKey = $this->teamSportContextService->resolveSportKeyFromTeam($team);
+            if ($teamSportKey !== null && isset($sportOptions[$teamSportKey])) {
+                return $this->validScope($teamSportKey, $teamId);
+            }
+        }
+
+        $rawSport = $query['sport'] ?? 'all';
+        if (is_scalar($rawSport)) {
+            $sportValue = trim((string)$rawSport);
+            if ($sportValue !== '' && strcasecmp($sportValue, 'all') !== 0) {
+                $sportKey = $this->teamSportContextService->resolveSportKey($sportValue);
+                if ($sportKey !== null && isset($sportOptions[$sportKey])) {
+                    return $this->validScope($sportKey, null);
+                }
+            }
+        }
+
+        return $this->validScope(null, null);
+    }
+
+    /**
+     * Resolve a Games browse scope, selecting the only team with public results when possible.
+     *
+     * @param array<string,mixed> $query Query parameters.
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    public function resolveGamesScope(array $query): array
+    {
+        $scope = $this->resolve($query);
+        if (!$scope['valid']) {
+            $scope = $this->resolveSafe($query);
+        }
+
+        return $scope;
+    }
+
+    /**
+     * Determine whether the public sport/team selector bar belongs on this route.
+     *
+     * @param string $controller Current controller name.
+     * @param string $action Current action name.
+     * @param array<int|string,mixed> $pass Current route pass parameters.
+     * @param array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null} $scope Resolved public scope.
+     * @return bool
+     */
+    public function shouldShowPublicScopeBar(
+        string $controller,
+        string $action,
+        array $pass,
+        array $scope,
+    ): bool {
+        if (in_array($controller, ['Seasons', 'Stats', 'Games'], true)) {
+            return true;
+        }
+
+        if (in_array($controller, ['Blog', 'People'], true)) {
+            return $scope['sportKey'] !== null && $scope['teamId'] !== null;
+        }
+
+        if ($controller === 'Pages' && $action === 'display') {
+            $page = $pass[0] ?? null;
+
+            return $page === 'home'
+                && $scope['sportKey'] !== null
+                && $scope['teamId'] !== null;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine whether a real sport or team scope is selected.
+     *
+     * @param array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null} $scope Resolved public scope.
+     * @return bool
+     */
+    public function hasPublicScopeSelection(array $scope): bool
+    {
+        return $scope['sportKey'] !== null || $scope['teamId'] !== null;
+    }
+
+    /**
+     * Resolve a Stats browse scope, selecting the only stats-enabled sport when possible.
+     *
+     * @param array<string,mixed> $query Query parameters.
+     * @param array<int,string> $supportedSportKeys Sports with a stats service and stats enabled.
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    public function resolveStatsScope(array $query, array $supportedSportKeys): array
+    {
+        $scope = $this->resolve($query);
+        if (!$scope['valid']) {
+            $scope = $this->resolveSafe($query);
+        }
+        if ($scope['sportKey'] !== null || count($supportedSportKeys) !== 1) {
+            return $scope;
+        }
+
+        $sportKey = $this->teamSportContextService->resolveSportKey($supportedSportKeys[0]);
+        if ($sportKey !== null) {
+            $scope['sportKey'] = $sportKey;
+        }
+
+        return $scope;
+    }
+
+    /**
      * Get configured sports that currently have at least one team.
      *
      * @return array<string,string>

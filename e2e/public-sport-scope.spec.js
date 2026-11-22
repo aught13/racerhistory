@@ -1,36 +1,61 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Public sport and team scope", () => {
-    test("normalizes default scope and includes it in public navigation", async ({
+    test("keeps all/all Games scope unselected and uses static Stats/Games links", async ({
         page,
     }) => {
-        await page.goto("/games");
+        await page.goto("/games?sport=all&team=all");
 
-        await expect
-            .poll(() => {
-                const url = new URL(page.url());
-                return [
-                    url.searchParams.get("sport"),
-                    url.searchParams.get("team"),
-                ];
-            })
-            .toEqual(["all", "all"]);
+        await expect(
+            page.locator(".rh-public-scope-current"),
+        ).toHaveText("All teams");
+        await expect(
+            page.locator(".rh-public-scope-current"),
+        ).toHaveJSProperty("tagName", "BUTTON");
+        await expect(page.locator(".rh-public-scope-bar")).toBeVisible();
+        await expect(page.getByText("Select a team", { exact: false })).toBeVisible();
 
-        const seasonsLink = page.getByRole("link", {
-            name: "Seasons",
-            exact: true,
-        });
-        const href = await seasonsLink.getAttribute("href");
-        const query = new URL(href, page.url()).searchParams;
+        await page
+            .locator(".rh-public-scope-bar-inner")
+            .click({ position: { x: 300, y: 16 } });
+        await expect(
+            page.locator(".rh-public-scope-menu").getByText("All teams", {
+                exact: true,
+            }),
+        ).toBeVisible();
 
-        expect(query.get("sport")).toBe("all");
-        expect(query.get("team")).toBe("all");
+        const innerBox = await page
+            .locator(".rh-public-scope-bar-inner")
+            .boundingBox();
+        const menuBox = await page
+            .locator(".rh-public-scope-menu")
+            .boundingBox();
+        const allTeamsBox = await page
+            .locator(".rh-public-scope-menu-all")
+            .boundingBox();
+        expect(menuBox).not.toBeNull();
+        expect(innerBox).not.toBeNull();
+        expect(allTeamsBox).not.toBeNull();
+        expect(menuBox.width).toBeGreaterThanOrEqual(innerBox.width);
+        expect(allTeamsBox.x).toBeGreaterThanOrEqual(innerBox.x);
+
+        const statsLink = page.getByRole("link", { name: "Stats", exact: true });
+        const gamesLink = page.getByRole("link", { name: "Games", exact: true });
+        await expect(statsLink).toHaveAttribute("href", "/stats");
+        await expect(gamesLink).toHaveAttribute("href", "/games");
     });
 
     test("preserves explicit sport and team scope in public navigation", async ({
         page,
     }) => {
         await page.goto("/games?sport=basketball&team=1");
+
+        await expect(
+            page.locator(".rh-nav-item--games > button"),
+        ).toHaveCount(1);
+        await expect(
+            page.locator(".rh-nav-item--games > a"),
+        ).toHaveCount(0);
 
         const seasonsLink = page.getByRole("link", {
             name: "Seasons",
@@ -42,4 +67,65 @@ test.describe("Public sport and team scope", () => {
         expect(query.get("sport")).toBe("basketball");
         expect(query.get("team")).toBe("1");
     });
+
+    test("keeps sport-with-all-team scope static in top navigation", async ({
+        page,
+    }) => {
+        await page.goto("/games?sport=basketball&team=all");
+
+        const statsLink = page.getByRole("link", {
+            name: "Stats",
+            exact: true,
+        });
+        const gamesLink = page.getByRole("link", {
+            name: "Games",
+            exact: true,
+        });
+        const statsHref = await statsLink.getAttribute("href");
+        const gamesHref = await gamesLink.getAttribute("href");
+        const statsUrl = new URL(statsHref, page.url());
+        const gamesUrl = new URL(gamesHref, page.url());
+        expect(statsUrl.pathname).toBe("/stats");
+        expect(statsUrl.searchParams.get("sport")).toBe("basketball");
+        expect(statsUrl.searchParams.get("team")).toBe("all");
+        expect(gamesUrl.pathname).toBe("/games");
+        expect(gamesUrl.searchParams.get("sport")).toBe("basketball");
+        expect(gamesUrl.searchParams.get("team")).toBe("all");
+        await expect(
+            page.getByText("Select a team", { exact: false }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: "Games", exact: true }),
+        ).toHaveCount(0);
+    });
+
+    test("direct team-season link derives the team and sport scope", async ({
+        page,
+    }) => {
+        await page.goto("/seasons/1");
+
+        await expect(page).toHaveURL(/\/seasons\/1\?sport=basketball&team=1/);
+        await expect(
+            page.locator(".rh-public-scope-current"),
+        ).not.toHaveText("All teams");
+    });
+
+    test("seasons index links include the row team and sport scope", async ({
+        page,
+    }) => {
+        await page.goto("/seasons?sport=all&team=all");
+
+        const seasonLink = page
+            .locator("#seasons-table tbody tr")
+            .first()
+            .locator(".season-freeze-col-3 a")
+            .first();
+        await expect(seasonLink).toBeVisible();
+
+        const href = await seasonLink.getAttribute("href");
+        const url = new URL(href, page.url());
+        expect(url.searchParams.get("sport")).not.toBe("all");
+        expect(url.searchParams.get("team")).not.toBe("all");
+    });
+
 });

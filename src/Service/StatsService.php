@@ -268,6 +268,29 @@ class StatsService
     }
 
     /**
+     * Calculate advanced stats for aggregated player career totals.
+     *
+     * @param int $sportId Sport ID.
+     * @param array<string,int> $totals Career player totals.
+     * @param array<int,int> $teamSeasonIds Team-season IDs in the career.
+     * @param array<int,string> $availableFields Player stat fields present in at least one season.
+     * @return array<string,float|null>
+     */
+    public function getPlayerCareerAdvancedStats(
+        int $sportId,
+        array $totals,
+        array $teamSeasonIds,
+        array $availableFields,
+    ): array {
+        $service = $this->getSportService($sportId);
+        if (!$service || !method_exists($service, 'getPlayerCareerAdvancedStats')) {
+            return [];
+        }
+
+        return $service->getPlayerCareerAdvancedStats($totals, $teamSeasonIds, $availableFields);
+    }
+
+    /**
      * Get a person's game statistics grouped by game for a given sport context
      *
      * Delegates to the appropriate sport-specific service based on the given sport id.
@@ -459,7 +482,8 @@ class StatsService
     {
         $sportName = $this->sportConfig->getSportName($sportId);
 
-        return isset($this->sportServiceMap[$sportName]);
+        return isset($this->sportServiceMap[$sportName])
+            && $this->sportConfig->getConfig($sportId, 'has_stats', false) === true;
     }
 
     /**
@@ -469,7 +493,15 @@ class StatsService
      */
     public function getSupportedSports(): array
     {
-        return array_keys($this->sportServiceMap);
+        $supportedSports = [];
+        foreach (array_keys($this->sportServiceMap) as $sportKey) {
+            $sportId = $this->sportConfig->getIdByKey($sportKey);
+            if ($sportId !== null && $this->hasSportSupport($sportId)) {
+                $supportedSports[] = $sportKey;
+            }
+        }
+
+        return $supportedSports;
     }
 
     /**

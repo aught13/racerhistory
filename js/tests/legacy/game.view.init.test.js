@@ -69,6 +69,71 @@ describe("Game view init", () => {
         }
     });
 
+    test("initially sorts game box score tables by starts and points", () => {
+        ["game-team-stats-table", "game-opponent-stats-table"].forEach((id) => {
+            document.getElementById(id).innerHTML = `
+                <thead><tr><th>Name</th><th>GS</th><th>PTS</th></tr></thead>`;
+        });
+
+        initGameView();
+
+        expect(global.__datatableCalls[0].opts.order).toEqual([
+            [1, "desc"],
+            [2, "desc"],
+        ]);
+        expect(global.__datatableCalls[1].opts.order).toEqual([
+            [1, "desc"],
+            [2, "desc"],
+        ]);
+    });
+
+    test("initializes advanced box score tables when the tab is shown", () => {
+        document.body.insertAdjacentHTML(
+            "beforeend",
+            `
+                <div data-game-box-score-tabs>
+                    <button class="active" data-game-stats-tab="basic" aria-selected="true"></button>
+                    <button data-game-stats-tab="advanced" aria-selected="false"></button>
+                    <div class="tab-pane show active" data-game-stats-panel="basic"></div>
+                    <div class="tab-pane d-none" data-game-stats-panel="advanced">
+                        <table class="js-datatable" id="game-team-advanced-stats-table">
+                            <thead><tr><th>Name</th><th>GS</th><th>PProd</th></tr></thead>
+                        </table>
+                        <table class="js-datatable" id="game-opponent-advanced-stats-table">
+                            <thead><tr><th>Name</th><th>GS</th><th>PProd</th></tr></thead>
+                        </table>
+                    </div>
+                </div>
+            `,
+        );
+
+        initGameView();
+        expect((global.__datatableCalls || []).length).toBe(2);
+
+        const advancedTab = document.querySelector(
+            '[data-game-stats-tab="advanced"]',
+        );
+        advancedTab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect((global.__datatableCalls || []).length).toBe(4);
+        expect(global.__datatableCalls[2].opts.order).toEqual([
+            [1, "desc"],
+            [2, "desc"],
+        ]);
+        expect(global.__datatableCalls[3].opts.order).toEqual([
+            [1, "desc"],
+            [2, "desc"],
+        ]);
+        expect(advancedTab.getAttribute("aria-selected")).toBe("true");
+        expect(
+            document
+                .querySelector('[data-game-stats-panel="advanced"]')
+                .classList.contains("active"),
+        ).toBe(true);
+
+        advancedTab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect((global.__datatableCalls || []).length).toBe(4);
+    });
+
     test("opens image modal when gallery is clicked", () => {
         initGameView();
         const img = document.querySelector(".game-photo-thumb-img");

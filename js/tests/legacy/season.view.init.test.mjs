@@ -62,7 +62,7 @@ describe("Season view init", () => {
                     <div class="tab-pane active" data-season-stats-panel="general">
                         <table id="season-stats-table">
                             <thead>
-                                <tr><th>#</th></tr>
+                                <tr><th>Name</th><th>PTS</th></tr>
                             </thead>
                         </table>
                     </div>
@@ -93,6 +93,10 @@ describe("Season view init", () => {
         initSeasonView();
         // initSeasonView may return undefined; we only exercise side effects
         expect((global.__datatableCalls || []).length).toBe(3);
+        const statsTableCall = global.__datatableCalls.find(
+            ({ el }) => el?.id === "season-stats-table",
+        );
+        expect(statsTableCall?.opts.order).toEqual([[1, "desc"]]);
 
         const blogItem = document.querySelector(".blog-list-item");
         // ensure the click event bubbles so delegated handlers are invoked in jsdom

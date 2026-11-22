@@ -211,10 +211,30 @@ $this->start('css'); ?>
 
     <div class="season-hero card shadow-sm mb-4">
         <div class="card-body">
-            <?php if (isset($previousTeamSeason) || isset($nextTeamSeason)) : ?>
+            <?php
+            $previousSeasonUrl = isset($previousTeamSeason)
+                ? $this->PublicScope->url(
+                    ['controller' => 'Seasons', 'action' => 'view', $previousTeamSeason->id],
+                    [
+                        'sportKey' => $previousTeamSeason->team?->sport_key ?? 'all',
+                        'teamId' => (int)($previousTeamSeason->team_id ?? 0),
+                    ],
+                )
+                : null;
+            $nextSeasonUrl = isset($nextTeamSeason)
+                ? $this->PublicScope->url(
+                    ['controller' => 'Seasons', 'action' => 'view', $nextTeamSeason->id],
+                    [
+                        'sportKey' => $nextTeamSeason->team?->sport_key ?? 'all',
+                        'teamId' => (int)($nextTeamSeason->team_id ?? 0),
+                    ],
+                )
+                : null;
+            ?>
+            <?php if ($previousSeasonUrl !== null || $nextSeasonUrl !== null) : ?>
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <?php if (isset($previousTeamSeason)) : ?>
-                        <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $previousTeamSeason->id]) ?>"
+                    <?php if ($previousSeasonUrl !== null) : ?>
+                        <a href="<?= h($previousSeasonUrl) ?>"
                             class="btn btn-outline-secondary btn-sm" title="Previous Season: <?= h($previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end) ?>">
                             <i class="bi bi-chevron-left"></i> <?= h($previousTeamSeason->season->start . '-' . $previousTeamSeason->season->end) ?>
                         </a>
@@ -222,8 +242,8 @@ $this->start('css'); ?>
                         <span></span>
                     <?php endif; ?>
 
-                    <?php if (isset($nextTeamSeason)) : ?>
-                        <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $nextTeamSeason->id]) ?>"
+                    <?php if ($nextSeasonUrl !== null) : ?>
+                        <a href="<?= h($nextSeasonUrl) ?>"
                             class="btn btn-outline-secondary btn-sm" title="Next Season: <?= h($nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end) ?>">
                             <?= h($nextTeamSeason->season->start . '-' . $nextTeamSeason->season->end) ?> <i class="bi bi-chevron-right"></i>
                         </a>

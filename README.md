@@ -1,6 +1,6 @@
 # RacerHistory Web Application
 
-[![Version](https://img.shields.io/badge/Version-4.1.1_509fb7e231b538e465aec73ba84073ed63f953b3-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-4.1.3-blue.svg)](CHANGELOG.md)
 [![PHP Version](https://img.shields.io/badge/PHP-8.3%2B-blue.svg)](https://php.net)
 [![CakePHP](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/cakephp-version.json&query=$.version&label=CakePHP&color=red)](https://cakephp.org)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.2-purple.svg)](https://getbootstrap.com)
@@ -14,7 +14,6 @@
 <a href="https://phpstan.org/" target="_blank"><img alt="PHPStan" src="https://img.shields.io/badge/PHPStan-level%205-brightgreen?style=flat"></a>
 <a href="https://github.com/squizlabs/PHP_CodeSniffer" target="_blank"><img alt="Code Consistency" src="https://img.shields.io/badge/PHPCS-passing-blue?style=flat"></a>
 [![Codecov](https://codecov.io/gh/aught13/racerhistory/branch/main/graph/badge.svg?token=)](https://app.codecov.io/gh/aught13/racerhistory)
-[![Documentation](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/aught13/racerhistory/main/docs-status.json&query=$.documentationPercent&label=Documentation&color=brightgreen)](templates/README.md)
 
 [![GitHub stars](https://img.shields.io/github/stars/aught13/racerhistory)](https://github.com/aught13/racerhistory/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/aught13/racerhistory)](https://github.com/aught13/racerhistory/network)
@@ -24,7 +23,7 @@ RacerHistory V4 is the current production application, representing the fourth g
 A comprehensive web application for [racerhistory.com](https://racerhistory.com) built on CakePHP 5.2+ with Bootstrap 5.3.2, an AdminLTE 4-based admin experience, a modular Vite frontend, and production-ready deployment tooling.
 
 - Start here: [APPLICATION_SUMMARY.md](APPLICATION_SUMMARY.md)
-- This release: 4.1.1 ([changelog](CHANGELOG.md))
+- This release: 4.1.3 ([changelog](CHANGELOG.md))
 
 ## Overview
 
@@ -34,6 +33,7 @@ This project powers the racerhistory.com website, providing features for:
 - **User Authentication** - Registration, login, logout, password reset
 - **Admin Dashboard** - Administrative interface for site data management
 - **Historical Game Data** - Team/season/game management with sport-aware configuration; sport configuration is managed via the Admin Site Options panel (`/admin/site-options`).
+- **Advertising Management** - Configure site-wide sponsor campaigns and content ads targeted by sport and/or team in the Admin Advertising area (`/admin/advertising`).
 - **Blog Engine** - Public blog with an admin editor, tagging, and hero images
 - **Responsive Design** - Mobile-first Bootstrap 5.3.2 public interface with an AdminLTE 4 admin shell
 - **Modern Frontend Runtime** - Vite-driven JS, Turbo/Stimulus initialization, modular controllers, and resilient PWA/service-worker behavior

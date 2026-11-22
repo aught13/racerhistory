@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Service;
 
+use App\Model\Entity\Game;
 use App\Service\GameSearchService;
 use Cake\TestSuite\TestCase;
 
@@ -25,6 +26,10 @@ class GameSearchServiceScopeTest extends TestCase
 
     private GameSearchService $service;
 
+    private Game $unscoredGame;
+
+    private Game $partialScoreGame;
+
     /**
      * @return void
      */
@@ -38,8 +43,9 @@ class GameSearchServiceScopeTest extends TestCase
             'semester' => 1,
         ]);
         $this->getTableLocator()->get('TeamSeasons')->saveOrFail($teamSeason);
-        $this->getTableLocator()->get('Games')->saveOrFail(
-            $this->getTableLocator()->get('Games')->newEntity([
+        $gamesTable = $this->getTableLocator()->get('Games');
+        $gamesTable->saveOrFail(
+            $gamesTable->newEntity([
                 'team_season_id' => $teamSeason->id,
                 'game_date' => '2024-02-02',
                 'game_type_id' => 1,
@@ -52,6 +58,25 @@ class GameSearchServiceScopeTest extends TestCase
                 'pts_opp' => '24',
             ]),
         );
+        $this->unscoredGame = $gamesTable->saveOrFail($gamesTable->newEntity([
+            'team_season_id' => $teamSeason->id,
+            'game_date' => '2024-02-03',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+        ]));
+        $this->partialScoreGame = $gamesTable->saveOrFail($gamesTable->newEntity([
+            'team_season_id' => $teamSeason->id,
+            'game_date' => '2024-02-04',
+            'game_type_id' => 1,
+            'opponent_id' => 1,
+            'place_id' => 1,
+            'site_id' => 1,
+            'hrn' => 1,
+            'pts_mur' => '30',
+        ]));
     }
 
     /**
@@ -59,7 +84,13 @@ class GameSearchServiceScopeTest extends TestCase
      */
     public function testAllGamesIncludesEverySportByDefault(): void
     {
-        $this->assertCount(5, $this->service->allGames());
+        $games = $this->service->allGames();
+        $this->assertCount(5, $games);
+        $gameIds = array_map(static fn(Game $game): int => (int)$game->id, $games);
+        $this->assertNotContains((int)$this->unscoredGame->id, $gameIds);
+        $this->assertNotContains((int)$this->partialScoreGame->id, $gameIds);
+        $this->assertFalse($this->service->hasResult($this->unscoredGame));
+        $this->assertFalse($this->service->hasResult($this->partialScoreGame));
     }
 
     /**
@@ -86,6 +117,23 @@ class GameSearchServiceScopeTest extends TestCase
 
         $this->assertCount(1, $games);
         $this->assertSame(3, (int)$games[0]->team_season->team->id);
+    }
+
+    /**
+     * Unscored games do not split or extend a public winning streak.
+     *
+     * @return void
+     */
+    public function testStreaksIgnoreGamesWithoutResults(): void
+    {
+        $this->service->setPublicScope('football', 3);
+
+        $streaks = $this->service->streaks('W');
+
+        $this->assertCount(1, $streaks);
+        $this->assertSame(1, $streaks[0]['length']);
+        $this->assertSame('2024-02-02', $streaks[0]['start_date']);
+        $this->assertSame('2024-02-02', $streaks[0]['end_date']);
     }
 
     /**
@@ -123,5 +171,6 @@ class GameSearchServiceScopeTest extends TestCase
 
         $this->assertNotEmpty($result['rows']);
         $this->assertSame('BEL Bruins', $result['rows'][0]['opponent_display_name']);
+        $this->assertSame(5, (int)$result['rows'][0]['games_count']);
     }
 }

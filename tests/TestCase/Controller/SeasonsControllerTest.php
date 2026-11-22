@@ -5,7 +5,7 @@ namespace App\Test\TestCase\Controller;
 
 use App\Service\BlogPostService;
 use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
-use Cake\Core\Configure;
+use Cake\ORM\TableRegistry;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 use DOMDocument;
@@ -39,6 +39,11 @@ class SeasonsControllerTest extends TestCase
         'app.BlogPosts',
         'app.BlogTags',
         'app.BlogPostsBlogTags',
+        'app.StatBasketSeasonPerson',
+        'app.StatBasketSeasonTeam',
+        'app.StatBasketSeasonOpponent',
+        'app.Advertisements',
+        'app.AdvertisingSettings',
     ];
 
     /**
@@ -56,8 +61,11 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="searchbuilder-panel"');
         $this->assertResponseContains('id="seasons-table-frame"');
         $this->assertResponseContains('data-controller="seasons-page"');
-        $this->assertResponseContains('id="public-scope-sport"');
-        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('rh-public-scope-bar');
+        $this->assertResponseContains('rh-public-scope-current');
+        $this->assertResponseContains('<button class="rh-public-scope-current"');
+        $this->assertResponseNotContains('<a class="rh-public-scope-current"');
+        $this->assertResponseContains('rh-public-scope-more-toggle');
     }
 
     /**
@@ -71,24 +79,41 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('href="/seasons?sport=football&amp;team=3"');
         $this->assertResponseContains('href="/?sport=football&amp;team=3"');
         $this->assertResponseContains('href="/privacy?sport=football&amp;team=3"');
+        $this->assertResponseContains('rh-public-scope-bar');
     }
 
     /**
-     * A one-team sport omits a redundant all-teams selector until a team is selected.
+     * All-scope blog pages do not show the public scope bar.
      *
      * @return void
      */
-    public function testTeamSelectorIsHiddenForSingleTeamSportUntilSelection(): void
+    public function testBlogAllScopeHidesScopeBar(): void
+    {
+        $this->get('/blog?sport=all&team=all');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('rh-public-scope-bar');
+        $this->assertResponseContains('href="/stats"');
+        $this->assertResponseContains('href="/games"');
+    }
+
+    /**
+     * The subnav continues to expose a one-team sport's team options.
+     *
+     * @return void
+     */
+    public function testSubnavListsSingleTeamSportOptions(): void
     {
         $this->get('/seasons?sport=football&team=all');
 
         $this->assertResponseOk();
-        $this->assertResponseNotContains('id="public-scope-team"');
+        $this->assertResponseContains('Football');
+        $this->assertResponseContains('New York Giants');
 
         $this->get('/seasons?sport=football&team=3');
 
         $this->assertResponseOk();
-        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('rh-public-scope-current');
         $this->assertResponseContains('New York Giants');
     }
 
@@ -105,6 +130,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertIsArray($teamSeasons);
         $recordSummaries = $this->viewVariable('recordSummaries');
         $this->assertIsArray($recordSummaries);
+        $this->assertResponseContains('/seasons/1?sport=basketball&amp;team=1');
     }
 
     /**
@@ -128,23 +154,29 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
-     * Tests a team outside the selected sport is rejected.
+     * Mismatched sport/team scopes normalize to the team-specific sport.
      */
-    public function testIndexRejectsMismatchedSportAndTeam(): void
+    public function testIndexNormalizesMismatchedSportAndTeam(): void
     {
         $this->get('/seasons?sport=basketball&team=3');
 
-        $this->assertResponseCode(400);
+        $this->assertResponseOk();
+        $scope = $this->viewVariable('publicScope');
+        $this->assertSame('football', $scope['sportKey']);
+        $this->assertSame(3, $scope['teamId']);
     }
 
     /**
-     * Tests a season outside the selected sport is not exposed by its detail URL.
+     * A mismatched detail URL updates to the season's actual team and sport scope.
      */
-    public function testViewRejectsSeasonOutsideSelectedSport(): void
+    public function testViewUpdatesMismatchedSeasonScope(): void
     {
         $this->get('/seasons/1?sport=football');
 
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $scope = $this->viewVariable('publicScope');
+        $this->assertSame('basketball', $scope['sportKey']);
+        $this->assertSame(1, $scope['teamId']);
     }
 
     /**
@@ -174,6 +206,9 @@ class SeasonsControllerTest extends TestCase
     {
         $this->get('/seasons/1');
         $this->assertResponseOk();
+        $scope = $this->viewVariable('publicScope');
+        $this->assertSame('basketball', $scope['sportKey']);
+        $this->assertSame(1, $scope['teamId']);
         $this->assertResponseContains('Game Log');
         $this->assertResponseContains('data-controller="season-view"');
         $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
@@ -183,42 +218,252 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
+     * The basketball advanced table includes per-game and derived metrics.
+     */
+    public function testViewIncludesAdvancedSeasonMetrics(): void
+    {
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $seasonStats = $this->viewVariable('seasonStats');
+        $playerStat = $seasonStats['playerStats']->first();
+        $advancedStats = $playerStat->get('advanced_stats');
+
+        $this->assertEqualsWithDelta(12.0, $advancedStats['PPG'], 0.001);
+        $this->assertEqualsWithDelta(0.5917159763, $advancedStats['TS%'], 0.0001);
+        $this->assertGreaterThan(0, $advancedStats['AST%']);
+        $this->assertGreaterThan(0, $advancedStats['PProd']);
+        $this->assertLessThan(1, $advancedStats['USG%']);
+        $this->assertResponseContains('data-season-advanced-table');
+        $this->assertResponseContains('Basic Box Score Stats');
+        $this->assertResponseContains('Advanced Box Score Stats');
+        $this->assertResponseNotContains('marks the highest value');
+        $this->assertResponseContains('Per Game');
+        $this->assertResponseNotContains('GS = games started.');
+        $this->assertResponseNotContains('* = game starter.');
+        $this->assertResponseContains('<th>Name</th>');
+        $this->assertResponseContains('<th>GP</th>');
+        $this->assertResponseContains('<th>GS</th>');
+        $this->assertResponseContains('id="season-per-game-table"');
+        $this->assertResponseContains('PProd');
+
+        $html = (string)$this->_response->getBody();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $pointsPerGame = $xpath->query('//table[@id="season-per-game-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($pointsPerGame);
+        $this->assertSame('12.0', trim((string)$pointsPerGame->textContent));
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $pointsPerGame,
+            )->length,
+        );
+
+        $advancedGamesPlayed = $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr[1]/td[2]')->item(0);
+        $this->assertNotNull($advancedGamesPlayed);
+        $this->assertSame('10', trim((string)$advancedGamesPlayed->textContent));
+
+        $seasonPoints = $xpath->query('//table[@id="season-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($seasonPoints);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $seasonPoints,
+            )->length,
+        );
+
+        $advancedPointsProduced = $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr[1]/td[last()]')->item(0);
+        $this->assertNotNull($advancedPointsProduced);
+        $this->assertSame(
+            1,
+            $xpath->query(
+                './/span[contains(concat(" ", normalize-space(@class), " "), " box-score-stat-leader ")]',
+                $advancedPointsProduced,
+            )->length,
+        );
+    }
+
+    /**
+     * Season stats only render populated columns and rows.
+     */
+    public function testViewFiltersSeasonStatsToAvailableValues(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $teamFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+
+        $playerStatsTable = $this->fetchTable('StatBasketSeasonPerson');
+        $playerStatsTable->updateAll($emptyPlayerStats, ['id' => 1]);
+        $playerStatsTable->saveOrFail($playerStatsTable->newEntity([
+            'team_season_roster_id' => 1,
+            'GP' => '2',
+            'MIN' => '30',
+            'FGM' => '8',
+            'FGA' => '20',
+            'TPM' => '2',
+            'TPA' => '6',
+            'FTM' => '4',
+            'FTA' => '5',
+            'PTS' => 22,
+        ]));
+        $this->fetchTable('StatBasketSeasonTeam')->updateAll($emptyTeamStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonOpponent')->updateAll($emptyTeamStats, ['id' => 1]);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $basicHeaders = $xpath->query('//table[@id="season-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $basicHeaderNames = [];
+        foreach ($basicHeaders as $header) {
+            $basicHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame([
+            'Name', 'GP', 'MP', 'FG', 'FGA', 'FG%', '2P', '2PA', '2P%',
+            '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'PTS',
+        ], $basicHeaderNames);
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-stats-table"]/tbody/tr')->length,
+        );
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-per-game-table"]/tbody/tr')->length,
+        );
+
+        $advancedHeaders = $xpath->query('//table[@id="season-advanced-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($advancedHeaders);
+        $advancedHeaderNames = [];
+        foreach ($advancedHeaders as $header) {
+            $advancedHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame(['Name', 'GP', 'MP', 'TS%', 'eFG%', '3PAr', 'FTr'], $advancedHeaderNames);
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-advanced-stats-table"]/tbody/tr')->length,
+        );
+    }
+
+    /**
+     * Per-game and advanced tabs are omitted without their required result data.
+     */
+    public function testViewHidesSeasonStatsTabsWhenValuesAreUnavailable(): void
+    {
+        $playerFields = [
+            'GP', 'GS', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $teamFields = [
+            'GP', 'MIN', 'FGM', 'FGA', 'TPM', 'TPA', 'FTM', 'FTA',
+            'ORB', 'DRB', 'RB', 'AST', 'STL', 'BS', 'TRN', 'PF', 'TF', 'PTS',
+        ];
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $emptyPlayerStats['FGM'] = '8';
+        $emptyTeamStats = array_fill_keys($teamFields, null);
+        $this->fetchTable('StatBasketSeasonPerson')->updateAll($emptyPlayerStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonTeam')->updateAll($emptyTeamStats, ['id' => 1]);
+        $this->fetchTable('StatBasketSeasonOpponent')->updateAll($emptyTeamStats, ['id' => 1]);
+
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $this->assertSame(1, $xpath->query('//button[@data-season-stats-tab="basic"]')->length);
+        $this->assertSame(0, $xpath->query('//button[@data-season-stats-tab="per-game"]')->length);
+        $this->assertSame(0, $xpath->query('//button[@data-season-stats-tab="advanced"]')->length);
+
+        $basicHeaders = $xpath->query('//table[@id="season-stats-table"]/thead/tr/th');
+        $this->assertNotFalse($basicHeaders);
+        $basicHeaderNames = [];
+        foreach ($basicHeaders as $header) {
+            $basicHeaderNames[] = trim($header->textContent);
+        }
+        $this->assertSame(['Name', 'FG'], $basicHeaderNames);
+        $this->assertSame(
+            1,
+            $xpath->query('//table[@id="season-stats-table"]/tbody/tr')->length,
+        );
+
+        $emptyPlayerStats = array_fill_keys($playerFields, null);
+        $this->fetchTable('StatBasketSeasonPerson')->updateAll($emptyPlayerStats, ['id' => 1]);
+        $this->get('/seasons/1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('No stats available.');
+        $this->assertResponseNotContains('data-season-stats-tab=');
+    }
+
+    /**
      * Tests season ad placements around recap, game log, and stats content.
      */
     public function testViewAdPlacements(): void
     {
-        $originalSiteOptions = Configure::read('SiteOptions');
-        Configure::write('SiteOptions.ad_below_content_active', true);
-        Configure::write('SiteOptions.ad_below_content_mode', 'custom');
-        Configure::write('SiteOptions.ad_below_content_html', '<div>Below content test ad</div>');
-        Configure::write('SiteOptions.ad_news_after_first_active', true);
-        Configure::write('SiteOptions.ad_news_after_first_mode', 'custom');
-        Configure::write('SiteOptions.ad_news_after_first_html', '<div>News test ad</div>');
-
-        try {
-            $this->get('/seasons/1');
-            $this->assertResponseOk();
-            $html = (string)$this->_response->getBody();
-            $this->assertSame(1, substr_count($html, 'data-ad-slot="below_content"'));
-            $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
-            $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
-
-            $this->blogPostTaggingService()->attachTags(1, [
-                ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
-                'preview',
-            ]);
-
-            $this->get('/seasons/1');
-            $this->assertResponseOk();
-            $html = (string)$this->_response->getBody();
-            $this->assertSame(1, preg_match('/id="season-preview".*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
-            $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
-        } finally {
-            Configure::delete('SiteOptions');
-            if (is_array($originalSiteOptions)) {
-                Configure::write('SiteOptions', $originalSiteOptions);
-            }
+        /** @var \App\Model\Table\AdvertisementsTable $advertisements */
+        $advertisements = TableRegistry::getTableLocator()->get('Advertisements');
+        $adDataEntries = [
+            [
+                'title' => 'Below content test ad',
+                'placement' => 'below_content',
+                'html' => '<div>Below content test ad</div>',
+            ],
+            [
+                'title' => 'News test ad',
+                'placement' => 'news_after_first',
+                'html' => '<div>News test ad</div>',
+            ],
+        ];
+        foreach ($adDataEntries as $adData) {
+            $entityData = $adData + [
+                'target_type' => 'site',
+                'is_active' => true,
+                'mode' => 'custom',
+                'display_order' => 0,
+            ];
+            $advertisements->saveOrFail($advertisements->newEntity($entityData));
         }
+
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+        $html = (string)$this->_response->getBody();
+        $this->assertSame(1, substr_count($html, 'data-ad-slot="below_content"'));
+        $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
+        $this->assertStringNotContainsString('data-ad-slot="news_after_first"', $html);
+
+        $this->blogPostTaggingService()->attachTags(1, [
+            ['slug' => 'teamseason-1', 'name' => 'Team Season 1'],
+            'preview',
+        ]);
+
+        $this->get('/seasons/1');
+        $this->assertResponseOk();
+        $html = (string)$this->_response->getBody();
+        $this->assertSame(1, preg_match('/id="season-preview".*?data-ad-slot="news_after_first".*?id="season-games"/s', $html));
+        $this->assertSame(1, preg_match('/id="season-games".*?data-ad-slot="below_content".*?id="season-stats"/s', $html));
     }
 
     /**

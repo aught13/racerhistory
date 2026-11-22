@@ -233,6 +233,7 @@ class BlogPostService
         }
 
         $query->select($table);
+        $query->select(['HeroImages.id', 'HeroImages.photo_credit']);
 
         $schema = $table->getSchema();
         if (!$ignorePinned && $schema->hasColumn('is_pinned') && !$tagSlug) {

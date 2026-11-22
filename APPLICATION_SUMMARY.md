@@ -1,4 +1,4 @@
-# RacerHistory Application Summary (v4.1.1)
+# RacerHistory Application Summary (v4.1.2)
 
 RacerHistory is a CakePHP 5.2+ web application for managing historical sports data (teams, seasons, team seasons, rosters, games, and sport-specific stats). Sport configuration and defaults are managed via the Admin Site Options surface (`SiteOptions`). The public site supports URL-backed sport/team browsing, while Admin access to team-owned data can be restricted by role. The project also includes a blog engine and public image serving.
 
@@ -25,7 +25,7 @@ Admin UI notes:
 - Admin pages now use an AdminLTE 4-style shell layout.
 - Sidebar behavior is managed with Stimulus (`admin_layout_controller` + `nav_accordion_controller`) for desktop collapse persistence, mobile open/close, and grouped treeview expansion.
 
--### Core entities managed in admin
+### Core entities managed in admin
 
 - Teams
 - Seasons, Team Seasons
@@ -45,6 +45,18 @@ Role data scope:
 - Role grants can allow all sports, selected sports, or selected teams. A sport grant includes every team in that sport; a team grant includes its team seasons, games, rosters, and parent-linked Basketball stats.
 - Effective access is the intersection of the role's existing model-level CRUD permission and its data scope. Lists, form choices, direct record IDs, and writes/bulk actions enforce the scope server-side; query parameters are filters, not authorization.
 - Existing roles are backfilled as unrestricted to preserve access. Admin and superuser identities remain unrestricted. Shared catalogs keep their existing model-level permissions.
+
+Advertising management:
+- `/admin/advertising` manages provider settings and campaigns independently from Site Options.
+- Campaigns use the existing site placements and support active status, display order, custom HTML, Google AdSense, and Google Publisher Tag delivery.
+- Site sponsors are global. Content sponsors can target any sport, any team, or both; when both are selected, both criteria must match. Page context supports games, team seasons, sport/team-filtered statistics, and related tagged blog posts.
+- The advertising migration carries existing provider settings and placement ads into the new tables.
+
+Key files:
+- `src/Controller/Admin/AdvertisingController.php`, `src/Service/AdvertisingService.php`
+- `src/Service/AdConfigurationService.php`, `src/View/Helper/AdHelper.php`
+- `src/Model/Table/AdvertisementsTable.php`, `src/Model/Table/AdvertisingSettingsTable.php`
+- `config/Migrations/20261112120000_CreateAdvertisingConfiguration.php`
 
 ## 3) Sport-aware Games + EAV metadata
 
@@ -112,6 +124,7 @@ Public:
 
 Admin:
 - `/admin` (dashboard)
+- `/admin/advertising` (provider settings and sponsor campaigns)
 - `/admin/*` CRUD controllers (teams/seasons/team-seasons/games/images/blog-posts/etc.) — legacy `/admin/sports/*` routes now redirect to the SiteOptions-backed sport configuration surfaces (`Admin/SiteOptionsController`).
 
 Routes are defined in `config/routes.php`.
@@ -128,7 +141,7 @@ The JavaScript frontend has been refactored into a fully-modular architecture:
 - **Build System**: Vite bundles ES modules with Turbo Drive for SPA-like navigation.
 
 Key patterns:
-- Initialize controllers on both `DOMContentLoaded` and `turbo:load` events for page reloads and navigation.
+- Route modules and Stimulus lifecycle callbacks support both initial page loads and Turbo navigation.
 - Service worker registration is non-blocking and gracefully handles CI environments.
 - Stimulus Application is exposed globally (`window.StimulusApplication`) for eager controller registration.
 
@@ -145,7 +158,7 @@ Common commands:
 - Static analysis: `php vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G`
 - PHPCS: `php vendor/bin/phpcs --standard=phpcs.xml src/ tests/`
 - JS lint: `npm run lint:js`
-- JS tests: `npm run test:js` (1578+ tests, 80% branch coverage)
-- E2E tests: `npx playwright test`
+- JS tests: `npm run test:js` (Jest tests in `js/tests/`)
+- E2E tests: run one Playwright spec at a time with `./scripts/e2e-local.sh -- --project=chromium path/to/spec.js`
 
 VS Code tasks are provided for the above workflows.

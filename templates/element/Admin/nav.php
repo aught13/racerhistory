@@ -68,9 +68,9 @@ $showReferenceDataGroup = $canReadGameTypes || $canReadOpponents || $canReadPlac
 
             <li class="nav-item w-100">
                 <button type="button"
-                        class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Sports', 'SiteOptions', 'Users', 'Roles') ?>"
+                        class="nav-link border-0 bg-transparent w-100 text-start<?= $isActive('Sports', 'SiteOptions', 'Advertising', 'Users', 'Roles') ?>"
                         data-nav-accordion-target="toggle"
-                        data-nav-accordion-prefix="/admin/sports|/admin/site-options|/admin/users|/admin/roles"
+                        data-nav-accordion-prefix="/admin/sports|/admin/site-options|/admin/advertising|/admin/users|/admin/roles"
                         aria-expanded="false"
                         data-action="click->nav-accordion#toggle">
                     <i class="nav-icon bi bi-check-square"></i>
@@ -86,6 +86,14 @@ $showReferenceDataGroup = $canReadGameTypes || $canReadOpponents || $canReadPlac
                            data-turbo-frame="admin-content">
                             <i class="nav-icon bi bi-sliders"></i>
                             <p>Site Options</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link ps-4<?= $isActive('Advertising') ?>"
+                           href="<?= $u(['prefix' => 'Admin', 'controller' => 'Advertising', 'action' => 'index']) ?>"
+                           data-turbo-frame="admin-content">
+                            <i class="nav-icon bi bi-megaphone"></i>
+                            <p>Advertising</p>
                         </a>
                     </li>
                     <li class="nav-item">

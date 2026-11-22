@@ -19,7 +19,6 @@ namespace App\Controller;
 
 use Cake\Controller\Controller;
 use Cake\Event\EventInterface;
-use Cake\Http\Exception\BadRequestException;
 
 /**
  * Application Controller
@@ -106,16 +105,38 @@ class AppController extends Controller
             return;
         }
 
-        $scope = $this->PublicScope->resolve($this->getRequest()->getQueryParams());
+        $controller = $this->getRequest()->getParam('controller');
+        $action = $this->getRequest()->getParam('action');
+        $isStatsController = $controller === 'Stats';
+        $scope = match ($controller) {
+            'Games' => $this->PublicScope->resolveGamesScope($this->getRequest()->getQueryParams()),
+            'Stats' => $this->PublicScope->resolveStatsScope($this->getRequest()->getQueryParams()),
+            default => $this->PublicScope->resolve($this->getRequest()->getQueryParams()),
+        };
         if (!$scope['valid']) {
-            throw new BadRequestException('Invalid sport or team selection.');
+            $scope = $this->PublicScope->resolveSafe($this->getRequest()->getQueryParams());
         }
 
         $sportOptions = $this->PublicScope->getAvailableSportOptions();
         $teamOptions = $this->PublicScope->getTeamOptions($scope['sportKey']);
-        $isStatsController = $this->getRequest()->getParam('controller') === 'Stats';
+        $publicScopeTeamLabel = null;
+        $publicScopeSportLabel = null;
+        if ($scope['teamId'] !== null && isset($teamOptions[$scope['teamId']])) {
+            $publicScopeTeamLabel = $teamOptions[$scope['teamId']]['label'];
+        }
+        if ($scope['sportKey'] !== null && isset($sportOptions[$scope['sportKey']])) {
+            $publicScopeSportLabel = $sportOptions[$scope['sportKey']];
+        }
+
+        $supportedKeys = array_fill_keys(
+            $this->PublicScope->getSupportedStatSports(),
+            true,
+        );
+        $statsScopeSupported =
+            $scope['sportKey'] !== null
+            && isset($supportedKeys[$scope['sportKey']]);
+
         if ($isStatsController) {
-            $supportedKeys = array_fill_keys($this->PublicScope->getSupportedStatSports(), true);
             $sportOptions = array_intersect_key($sportOptions, $supportedKeys);
             $teamOptions = array_filter(
                 $teamOptions,
@@ -123,17 +144,42 @@ class AppController extends Controller
             );
         }
 
-        $showPublicTeamSelector = $isStatsController
-            ? $scope['sportKey'] !== null && (count($teamOptions) > 1 || $scope['teamId'] !== null)
-            : count($teamOptions) > 1 || $scope['teamId'] !== null;
+        if ($isStatsController) {
+            $showPublicTeamSelector =
+                $scope['sportKey'] !== null
+                && (count($teamOptions) > 1 || $scope['teamId'] !== null);
+        } elseif ($scope['sportKey'] === null) {
+            $showPublicTeamSelector = count($teamOptions) > 0;
+        } else {
+            $showPublicTeamSelector =
+                count($teamOptions) > 1 || $scope['teamId'] !== null;
+        }
+        $showPublicSportSelector = $isStatsController
+            ? count($sportOptions) > 1
+            : count($sportOptions) > 1;
+
+        $passParam = $this->getRequest()->getParam('pass');
+        $pass = is_array($passParam) ? array_values($passParam) : [];
+        $showPublicScopeBar = $this->PublicScope->shouldShowScopeBar(
+            (string)$controller,
+            (string)$action,
+            $pass,
+            $scope,
+        );
+        $hasPublicScopeSelection = $this->PublicScope->hasScopeSelection($scope);
 
         $this->set([
             'publicScope' => $scope,
             'publicSportOptions' => $sportOptions,
             'publicTeamOptions' => $teamOptions,
-            'showPublicSportSelector' => count($sportOptions) > 1 || $isStatsController,
+            'showPublicSportSelector' => $showPublicSportSelector,
             'showPublicTeamSelector' => $showPublicTeamSelector,
             'isStatsController' => $isStatsController,
+            'showPublicScopeBar' => $showPublicScopeBar,
+            'hasPublicScopeSelection' => $hasPublicScopeSelection,
+            'publicScopeTeamLabel' => $publicScopeTeamLabel,
+            'publicScopeSportLabel' => $publicScopeSportLabel,
+            'statsScopeSupported' => $statsScopeSupported,
         ]);
     }
 }

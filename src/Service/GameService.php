@@ -386,25 +386,35 @@ class GameService
      */
     public function getResultFlag(Game $game): ?string
     {
-        if ($game->pts_mur !== null && $game->pts_opp !== null) {
-            if ($game->pts_mur > $game->pts_opp) {
+        $pointsFor = trim((string)($game->pts_mur ?? ''));
+        $pointsAgainst = trim((string)($game->pts_opp ?? ''));
+        if (
+            $pointsFor !== ''
+            && $pointsAgainst !== ''
+            && is_numeric($pointsFor)
+            && is_numeric($pointsAgainst)
+        ) {
+            if ((int)$pointsFor > (int)$pointsAgainst) {
                 return 'W';
             }
-            if ($game->pts_mur < $game->pts_opp) {
+            if ((int)$pointsFor < (int)$pointsAgainst) {
                 return 'L';
             }
 
             return 'T';
         }
 
-        if (!empty($game->w) && (int)$game->w === 1 && (empty($game->l) || (int)$game->l === 0)) {
+        $hasWin = in_array(strtoupper(trim((string)($game->w ?? ''))), ['W', '1'], true);
+        $hasLoss = in_array(strtoupper(trim((string)($game->l ?? ''))), ['L', '1'], true);
+
+        if ($hasWin && $hasLoss) {
+            return 'T';
+        }
+        if ($hasWin) {
             return 'W';
         }
-        if (!empty($game->l) && (int)$game->l === 1 && (empty($game->w) || (int)$game->w === 0)) {
+        if ($hasLoss) {
             return 'L';
-        }
-        if (!empty($game->w) && (int)$game->w === 1 && !empty($game->l) && (int)$game->l === 1) {
-            return 'T';
         }
 
         return null;

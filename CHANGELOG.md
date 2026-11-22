@@ -7,12 +7,36 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ## [Unreleased]
 
+## [4.1.3] - 2026-11-15
+
 ### Added
 
+- Basketball basic and advanced box-score views for games and seasons, per-game season stats, and advanced career metrics.
+- Statistical-leader highlights in player box scores and game team comparisons, including Four Factors.
+- Scheduled games without results remain viewable with expanded series history and navigation back to the season.
+
+### Changed
+
+- Basketball game, season, and career stat tables hide unavailable rows, columns, and tabs; box-score tabs have improved dark-mode styling.
+- Homepage featured articles use hero crops when available, and blog lead stories display photo credits.
+- Local E2E workflows clear CakePHP's model cache after tests.
+
+### Fixed
+
+- Corrected basketball advanced-stat calculations, including AST% and Points Produced.
+- Pinned homepage articles without a hero image now remain visible.
+
+## [4.1.2] - 2026-11-14
+
+### Added
+
+- A dedicated Admin Advertising area for managing provider settings and campaigns across the site's existing ad placements.
+- Site-wide sponsor campaigns and content sponsorship targeted by sport, team, or both. When both filters are selected, both must match; targeting follows game, season, stats, and related blog content.
 - Public person pages now separate published biography posts from other person-tagged stories.
 
 ### Changed
 
+- Moved advertising provider settings and placement configuration out of Site Options into dedicated advertising tables; the migration preserves existing provider settings and ads.
 - Standardized team and opponent display names across game, season, roster, statistics, and admin views; opponent abbreviations now support up to 30 characters.
 - Refined navigation styling and accessibility.
 
@@ -321,6 +345,9 @@ First beta release — application is feature-complete for initial production de
 
 Links:
 
+- [4.1.3]: https://github.com/aught13/racerhistory/compare/v4.1.2...v4.1.3
+- [4.1.2]: https://github.com/aught13/racerhistory/compare/v4.1.1...v4.1.2
+- [4.1.1]: https://github.com/aught13/racerhistory/compare/v4.1.0...v4.1.1
 - [4.0.0]: https://github.com/aught13/racerhistory/compare/v0.2.0-beta...v4.0.0
 - [0.2.0-beta]: https://github.com/aught13/racerhistory/compare/v0.1.9-alpha...v0.2.0-beta
 - [0.1.9-alpha]: https://github.com/aught13/racerhistory/compare/v0.1.6-alpha...v0.1.9-alpha

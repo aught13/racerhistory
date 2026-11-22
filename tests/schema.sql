@@ -88,6 +88,39 @@ CREATE TABLE IF NOT EXISTS teams (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Advertising provider settings and campaigns
+CREATE TABLE IF NOT EXISTS advertising_settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  global_script TEXT NOT NULL,
+  publisher_id VARCHAR(100) NOT NULL DEFAULT '',
+  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS advertisements (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title VARCHAR(190) NOT NULL,
+  placement VARCHAR(64) NOT NULL,
+  target_type VARCHAR(20) NOT NULL DEFAULT 'site',
+  sport_key VARCHAR(64) NULL,
+  team_id INTEGER NULL,
+  is_active BOOLEAN NOT NULL DEFAULT 0,
+  html TEXT NOT NULL,
+  mode VARCHAR(12) NOT NULL DEFAULT 'custom',
+  sizes_desktop TEXT NULL,
+  sizes_mobile TEXT NULL,
+  gpt_unit_path VARCHAR(255) NULL,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_advertisements_placement_active_order
+  ON advertisements (placement, is_active, display_order);
+CREATE INDEX IF NOT EXISTS idx_advertisements_sport_key
+  ON advertisements (sport_key);
+CREATE INDEX IF NOT EXISTS idx_advertisements_team_id
+  ON advertisements (team_id);
+
 -- Per-role scope grants for team-owned data
 CREATE TABLE IF NOT EXISTS role_data_scopes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

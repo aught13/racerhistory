@@ -7,6 +7,7 @@ set -euo pipefail
 # - builds frontend assets (Vite)
 # - starts CakePHP dev server
 # - runs Playwright with any args you pass through
+# - clears the shared CakePHP model/schema cache on exit
 # Non-destructive: will reuse an existing container if present; pass
 # --cleanup-db to remove a container created by this script afterwards.
 
@@ -29,6 +30,7 @@ Options:
   -h, --help                 Show this help
 
 Any args after `--` are forwarded to `npx playwright test`.
+The shared CakePHP model cache is cleared automatically on exit.
 EOF
 }
 
@@ -90,6 +92,9 @@ PLAYWRIGHT_ARGS=("$@")
 log() { echo "[e2e-local] $*"; }
 
 cleanup() {
+    local exit_status=$?
+    trap - EXIT
+
     if [[ -n "${SERVER_PID:-}" ]]; then
         if kill -0 "$SERVER_PID" >/dev/null 2>&1; then
             while IFS= read -r child_pid; do
@@ -107,10 +112,27 @@ cleanup() {
         rm -f server.pid || true
     fi
 
+    log "Clearing Cake model cache"
+    if command -v php >/dev/null 2>&1; then
+        if ! php bin/cake.php cache clear _cake_model_; then
+            log "Failed to clear Cake model cache"
+            if [[ "$exit_status" -eq 0 ]]; then
+                exit_status=1
+            fi
+        fi
+    else
+        log "Cannot clear Cake model cache: php is unavailable"
+        if [[ "$exit_status" -eq 0 ]]; then
+            exit_status=1
+        fi
+    fi
+
     if [[ "$CLEANUP_DB" == "true" && "${DB_CREATED_BY_SCRIPT:-false}" == "true" ]]; then
         log "Stopping and removing DB container $DB_CONTAINER_NAME";
         docker rm -f "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
     fi
+
+    exit "$exit_status"
 }
 
 trap cleanup EXIT

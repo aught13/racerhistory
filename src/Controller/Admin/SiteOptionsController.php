@@ -8,7 +8,6 @@ use Cake\Controller\ComponentRegistry;
 use Cake\Event\EventInterface;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
-use Throwable;
 
 /**
  * Admin Site Options Controller
@@ -340,37 +339,6 @@ class SiteOptionsController extends AppController
         $this->set(compact('privileges'));
 
         return null;
-    }
-
-    /**
-     * Write a minimal ads.txt file to webroot using the configured publisher ID.
-     *
-     * POST /admin/site-options/write-ads-txt
-     *
-     * @return \Cake\Http\Response
-     */
-    public function writeAdsTxt(): Response
-    {
-        $this->request->allowMethod(['post']);
-
-        $publisherId = (string)$this->siteOptionsService->getRuntimeSetting('ad_publisher_id', '');
-        if (trim($publisherId) === '') {
-            $this->Flash->error('No Publisher ID configured.');
-
-            return $this->redirect(['action' => 'edit']);
-        }
-
-        $adsFile = WWW_ROOT . 'ads.txt';
-        $line = sprintf("google.com, %s, DIRECT, f08c47fec0942fa0\n", $publisherId);
-
-        try {
-            file_put_contents($adsFile, $line, LOCK_EX);
-            $this->Flash->success('ads.txt has been written to webroot.');
-        } catch (Throwable $e) {
-            $this->Flash->error('Unable to write ads.txt. Check filesystem permissions.');
-        }
-
-        return $this->redirect(['action' => 'edit']);
     }
 
     /**

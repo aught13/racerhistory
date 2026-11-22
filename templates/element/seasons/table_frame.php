@@ -246,12 +246,17 @@ $subheading = $isSplits ? 'Home, road, and neutral splits for each season.' : ''
                                         : trim((string)$seasonStart . '-' . (string)$seasonEnd, '-');
                                     $teamLabel = $teamSeason->team?->getDisplayName() ?? 'Team';
                                     $primarySummary = $recordSummaries[$teamSeason->id] ?? [];
+                                    $rowTeamId = (int)($teamSeason->team_id ?? 0);
+                                    $rowSportKey = trim((string)($teamSeason->team?->sport_key ?? ''));
+                                    $rowScopeQuery = $scopeQuery;
+                                    $rowScopeQuery['sport'] = $rowSportKey !== '' ? strtolower($rowSportKey) : 'all';
+                                    $rowScopeQuery['team'] = $rowTeamId > 0 ? (string)$rowTeamId : 'all';
                                     ?>
                                     <tr>
                                         <td class="text-muted seasons-row-number"><?= $index + 1 ?></td>
                                         <td><?= h($teamLabel) ?></td>
                                         <td class="season-freeze-col-3" data-order="<?= h($seasonStart) ?>">
-                                            <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $teamSeason->id, '?' => $scopeQuery]) ?>"
+                                            <a href="<?= $this->Url->build(['controller' => 'Seasons', 'action' => 'view', $teamSeason->id, '?' => $rowScopeQuery]) ?>"
                                                class="text-decoration-none"
                                                data-turbo-frame="_top">
                                                 <?= h($seasonLabel) ?>

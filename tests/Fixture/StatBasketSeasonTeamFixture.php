@@ -29,7 +29,7 @@ class StatBasketSeasonTeamFixture extends TestFixture
                 'id' => 1,
                 'team_season_id' => 1,
                 'GP' => '10',
-                'MIN' => '400',
+                'MIN' => '2000',
                 'FGM' => '180',
                 'FGA' => '380',
                 'TPM' => '45',

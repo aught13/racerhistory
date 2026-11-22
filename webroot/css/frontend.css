@@ -928,6 +928,211 @@ body.rh-layout--mobile {
   transition: transform 0.3s ease;
 }
 
+.rh-public-scope-bar {
+  position: relative;
+  background: #ffffff;
+  color: var(--rh-navy);
+  border-bottom: 1px solid rgba(0, 33, 68, 0.12);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.rh-public-scope-bar-inner {
+  width: 100%;
+  max-width: var(--rh-main-max);
+  min-height: 48px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rh-public-scope-dropdown {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1 1 auto;
+  font-family: inherit;
+}
+
+.rh-public-scope-current {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--rh-navy);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: inherit;
+  padding: 0.25rem 0;
+}
+
+.rh-public-scope-current:hover,
+.rh-public-scope-current:focus-visible {
+  color: var(--rh-navy);
+  background: rgba(0, 33, 68, 0.06);
+  border-radius: 0.25rem;
+  outline: none;
+}
+
+.rh-public-scope-more-toggle {
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--rh-navy);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: inherit;
+}
+
+.rh-public-scope-more-toggle:hover,
+.rh-public-scope-more-toggle:focus-visible {
+  color: var(--rh-navy);
+  background: rgba(0, 33, 68, 0.06);
+  border-radius: 0.25rem;
+  outline: none;
+}
+
+.rh-public-scope-more-toggle .bi {
+  transition: transform 0.15s ease;
+}
+
+.rh-public-scope-more-toggle[aria-expanded="true"] .bi {
+  transform: rotate(180deg);
+}
+
+.rh-public-scope-menu {
+  position: absolute !important;
+  inset: 100% auto auto 0 !important;
+  width: 100% !important;
+  min-width: 0;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid rgba(0, 33, 68, 0.12);
+  border-radius: 0;
+  background: #ffffff;
+  color: var(--rh-navy);
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 33, 68, 0.16);
+  transform: none !important;
+  font-family: inherit;
+  z-index: 1040;
+  padding: 0.5rem max(1rem, calc((100vw - var(--rh-main-max)) / 2 + 1rem));
+}
+
+.rh-public-scope-menu.show {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.4fr) repeat(2, minmax(220px, 1fr));
+  gap: 0.75rem 1.25rem;
+  align-items: start;
+}
+
+.rh-public-scope-menu-column {
+  min-width: 0;
+  list-style: none;
+}
+
+.rh-public-scope-menu-all {
+  align-self: start;
+}
+
+.rh-public-scope-menu-options {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.rh-public-scope-menu-heading {
+  display: block;
+  padding: 0.5rem 0.75rem 0.25rem;
+  color: rgba(0, 33, 68, 0.72);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rh-public-scope-menu .dropdown-item {
+  color: var(--rh-navy);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: inherit;
+  border-radius: 0.25rem;
+}
+
+.rh-public-scope-menu .dropdown-item.active,
+.rh-public-scope-menu .dropdown-item:active {
+  background: rgba(0, 33, 68, 0.10);
+  color: var(--rh-navy);
+  font-weight: 600;
+}
+
+.rh-public-scope-menu .dropdown-item:hover,
+.rh-public-scope-menu .dropdown-item:focus {
+  background: rgba(0, 33, 68, 0.12);
+  color: var(--rh-navy);
+}
+
+@media (max-width: 767.98px) {
+  .rh-public-scope-menu.show {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rh-games-team-selection-note {
+  background: #e9ecef !important;
+  color: #6c757d !important;
+  border-color: #adb5bd !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.rh-stats-selection-note {
+  background: #e9ecef !important;
+  color: #6c757d !important;
+  border-color: #adb5bd !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .rh-games-team-selection-note {
+    background: var(--rh-surface) !important;
+    color: var(--rh-muted) !important;
+    border-color: var(--rh-border) !important;
+  }
+}
+
+:root[data-theme="dark"] .rh-games-team-selection-note {
+  background: var(--rh-surface) !important;
+  color: var(--rh-muted) !important;
+  border-color: var(--rh-border) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .rh-stats-selection-note {
+    background: var(--rh-surface) !important;
+    color: var(--rh-muted) !important;
+    border-color: var(--rh-border) !important;
+  }
+}
+
+:root[data-theme="dark"] .rh-stats-selection-note {
+  background: var(--rh-surface) !important;
+  color: var(--rh-muted) !important;
+  border-color: var(--rh-border) !important;
+}
+
 .rh-stats-subnav-wrap {
   background: var(--rh-navy);
   padding: 0.5rem 0;
@@ -2877,6 +3082,32 @@ select.dtsb-dropDown option[disabled] {
   color: var(--rh-text);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .rh-public-scope-menu {
+    background: #ffffff;
+    border: 0;
+    color: var(--rh-navy);
+  }
+  :root:not([data-theme]) .rh-public-scope-menu .dropdown-item {
+    color: var(--rh-navy);
+  }
+  :root:not([data-theme]) .rh-public-scope-menu-heading {
+    color: rgba(0, 33, 68, 0.72);
+  }
+}
+
+:root[data-theme="dark"] .rh-public-scope-menu {
+  background: #ffffff;
+  border: 0;
+  color: var(--rh-navy);
+}
+:root[data-theme="dark"] .rh-public-scope-menu .dropdown-item {
+  color: var(--rh-navy);
+}
+:root[data-theme="dark"] .rh-public-scope-menu-heading {
+  color: rgba(0, 33, 68, 0.72);
+}
+
 /* --- Pagination (DataTables + Bootstrap) --------------------------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .page-link {
@@ -3346,4 +3577,66 @@ table.dataTable thead th {
   background-color: #d49a00;
   border-color: #d49a00;
   color: var(--rh-navy);
+}
+
+.season-stats-tabs__nav,
+.game-box-score-tabs__nav,
+.person-game-log-tabs__nav {
+  gap: 0.25rem;
+  border-bottom-color: var(--rh-border);
+
+  --bs-nav-tabs-border-color: var(--rh-border);
+  --bs-nav-tabs-link-active-color: var(--rh-text);
+  --bs-nav-tabs-link-active-bg: var(--rh-surface);
+  --bs-nav-tabs-link-active-border-color: var(--rh-border) var(--rh-border) var(--rh-surface);
+}
+
+.season-stats-tabs .season-stats-tabs__nav .nav-link,
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link {
+  color: var(--rh-muted);
+  border-color: transparent;
+  opacity: 1;
+}
+
+.season-stats-tabs .season-stats-tabs__nav .nav-link:hover,
+.season-stats-tabs .season-stats-tabs__nav .nav-link:focus-visible,
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link:hover,
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link:focus-visible,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link:hover,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link:focus-visible {
+  color: var(--rh-link);
+  background-color: rgba(127, 127, 127, 0.12);
+  border-color: var(--rh-border) var(--rh-border) transparent;
+}
+
+.season-stats-tabs .season-stats-tabs__nav .nav-link.active,
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link.active,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link.active {
+  color: var(--rh-text);
+  background-color: var(--rh-surface);
+  border-color: var(--rh-border) var(--rh-border) var(--rh-surface);
+  font-weight: 600;
+  box-shadow: inset 0 2px 0 var(--rh-gold);
+}
+
+.season-stats-tabs .season-stats-tabs__nav .nav-link:focus-visible,
+.game-box-score-tabs .game-box-score-tabs__nav .nav-link:focus-visible,
+.person-game-log-tabs .person-game-log-tabs__nav .nav-link:focus-visible {
+  outline: 2px solid var(--rh-link);
+  outline-offset: 2px;
+}
+
+.box-score-stat-leader {
+  display: inline-block;
+  padding: 0.08rem 0.3rem;
+  border-radius: 0.25rem;
+  background-color: color-mix(in srgb, var(--rh-gold) 24%, var(--rh-surface));
+  color: var(--rh-text);
+  font-weight: 700;
+}
+
+.blog-featured-no-image {
+  background-color: var(--rh-surface);
+  color: var(--rh-text);
 }

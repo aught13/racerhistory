@@ -51,16 +51,25 @@ describe("frontend.css variables", () => {
             /\.rh-navbar \.rh-nav-panel \.nav-link[\s\S]*?color:\s*var\(--rh-nav-panel-text\)/,
         );
         expect(css).toMatch(
-            /\.rh-nav-scope \.form-select[\s\S]*?background-color:\s*transparent[\s\S]*?border-color:\s*transparent/,
+            /\.rh-public-scope-menu \.dropdown-item[\s\S]*?color:\s*var\(--rh-navy\)/,
         );
         expect(css).toMatch(
-            /\.rh-nav-scope \.form-select:focus-visible[\s\S]*?outline:\s*2px solid var\(--rh-navy\)/,
+            /\.rh-public-scope-more-toggle:hover[\s\S]*?background:\s*rgba\(0, 33, 68, 0\.06\)/,
+        );
+        expect(css).toMatch(
+            /:root\[data-theme="dark"\] \.rh-public-scope-menu[\s\S]*background:\s*#ffffff/i,
         );
     });
 
     test("footer uses CSS variable for background", () => {
         expect(css).toMatch(
             /\.rh-footer[\s\S]*?background:\s*var\(--rh-surface\)/,
+        );
+    });
+
+    test("image-free blog lead uses readable theme surface and text colors", () => {
+        expect(css).toMatch(
+            /\.blog-featured-no-image\s*\{[^}]*background-color:\s*var\(--rh-surface\)[^}]*color:\s*var\(--rh-text\)/i,
         );
     });
 });

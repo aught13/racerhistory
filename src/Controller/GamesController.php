@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Entity\Game;
 use App\Service\BlogPostService;
 use App\Service\GameListViewService;
 use App\Service\GameSearchService;
@@ -161,7 +162,7 @@ class GamesController extends AppController
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
 
-        $this->publicScope = $this->PublicScope->resolve($this->request->getQueryParams());
+        $this->publicScope = $this->PublicScope->resolveGamesScope($this->request->getQueryParams());
         if (!$this->publicScope['valid']) {
             throw new BadRequestException('Invalid sport or team selection.');
         }
@@ -652,8 +653,19 @@ class GamesController extends AppController
         }
 
         $game = $viewData['game'] ?? null;
-        if (!$game) {
+        if (!$game instanceof Game) {
             throw new NotFoundException('Game not found');
+        }
+
+        $hasGameResult = $this->gameSearchService->hasResult($game);
+        foreach (['previousGame', 'nextGame'] as $adjacentGameKey) {
+            $adjacentGame = $viewData[$adjacentGameKey] ?? null;
+            if (
+                !$hasGameResult
+                || ($adjacentGame instanceof Game && !$this->gameSearchService->hasResult($adjacentGame))
+            ) {
+                $viewData[$adjacentGameKey] = null;
+            }
         }
 
         $teamId = (int)($game->team_season->team_id ?? 0);
@@ -669,7 +681,7 @@ class GamesController extends AppController
 
         $this->gameListViewService->enrichGameDisplay($game);
 
-        $statsElement = $this->statsService->getGameStatsElement($id);
+        $statsElement = $hasGameResult ? $this->statsService->getGameStatsElement($id) : null;
         $images = $this->imageTagService->getImagesByAllTags(["game-{$id}"], 12);
         $gamePosts = $this->blogPostService->getPublishedForGame($id);
         $gamePreviewPosts = $gamePosts['previews'];
@@ -682,6 +694,7 @@ class GamesController extends AppController
 
         return $viewData + compact(
             'game',
+            'hasGameResult',
             'statsElement',
             'images',
             'blogPosts',

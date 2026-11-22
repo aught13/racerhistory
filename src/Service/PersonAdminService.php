@@ -218,6 +218,8 @@ class PersonAdminService
 
         $rostersBySport = [];
         $careerStatsBySport = [];
+        $teamSeasonIdsBySport = [];
+        $careerStatFieldsBySport = [];
 
         foreach ($person->team_season_rosters as $roster) {
             $teamSeason = $roster->team_season;
@@ -263,6 +265,7 @@ class PersonAdminService
                         'minYear' => null,
                         'maxYear' => null,
                     ];
+                    $careerStatFieldsBySport[$sportId] = [];
                 }
 
                 if ($seasonStats) {
@@ -288,8 +291,23 @@ class PersonAdminService
 
                     $totals = &$careerStatsBySport[$sportId]['totals'];
                     $this->statsService->addSeasonStats($sportId, $totals, $seasonStats);
+                    $teamSeasonIdsBySport[$sportId][] = (int)$teamSeason->id;
+                    foreach (array_keys($careerStatsBySport[$sportId]['totals']) as $field) {
+                        if (is_numeric($seasonStats->{$field} ?? null)) {
+                            $careerStatFieldsBySport[$sportId][$field] = true;
+                        }
+                    }
                 }
             }
+        }
+
+        foreach ($careerStatsBySport as $sportId => $careerData) {
+            $careerStatsBySport[$sportId]['advancedStats'] = $this->statsService->getPlayerCareerAdvancedStats(
+                (int)$sportId,
+                $careerData['totals'],
+                $teamSeasonIdsBySport[$sportId] ?? [],
+                array_keys($careerStatFieldsBySport[$sportId] ?? []),
+            );
         }
 
         return compact('person', 'rostersBySport', 'careerStatsBySport');
