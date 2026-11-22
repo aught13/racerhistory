@@ -37,6 +37,17 @@ class PublicScopeComponent extends Component
     }
 
     /**
+     * Resolve an invalid public scope to its closest valid fallback scope.
+     *
+     * @param array<string,mixed> $query
+     * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
+     */
+    public function resolveSafe(array $query): array
+    {
+        return $this->publicSportScopeService->resolveSafe($query);
+    }
+
+    /**
      * @param array<string,mixed> $query
      * @return array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null}
      */
@@ -55,6 +66,40 @@ class PublicScopeComponent extends Component
             $query,
             $this->statsService->getSupportedSports(),
         );
+    }
+
+    /**
+     * Determine whether the public selector bar should be displayed.
+     *
+     * @param string $controller Current controller name.
+     * @param string $action Current action name.
+     * @param array<int|string,mixed> $pass Current route pass parameters.
+     * @param array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null} $scope Resolved public scope.
+     * @return bool
+     */
+    public function shouldShowScopeBar(
+        string $controller,
+        string $action,
+        array $pass,
+        array $scope,
+    ): bool {
+        return $this->publicSportScopeService->shouldShowPublicScopeBar(
+            $controller,
+            $action,
+            $pass,
+            $scope,
+        );
+    }
+
+    /**
+     * Determine whether a real public sport or team is selected.
+     *
+     * @param array{valid:bool,error:string|null,sportKey:string|null,teamId:int|null} $scope Resolved public scope.
+     * @return bool
+     */
+    public function hasScopeSelection(array $scope): bool
+    {
+        return $this->publicSportScopeService->hasPublicScopeSelection($scope);
     }
 
     /**

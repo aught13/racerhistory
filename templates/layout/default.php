@@ -173,6 +173,16 @@ $bodyClass = trim(($identity ? 'rh-has-user ' : '') . ($isMainPage ? 'rh-has-hea
         'content' => $content,
         'flash' => $flash,
         'publicScope' => $publicScope,
+        'publicSportOptions' => $this->get('publicSportOptions') ?? [],
+        'publicTeamOptions' => $this->get('publicTeamOptions') ?? [],
+        'showPublicSportSelector' => (bool)($this->get('showPublicSportSelector') ?? false),
+        'showPublicTeamSelector' => (bool)($this->get('showPublicTeamSelector') ?? false),
+        'isStatsController' => (bool)($this->get('isStatsController') ?? false),
+        'showPublicScopeBar' => (bool)($this->get('showPublicScopeBar') ?? false),
+        'hasPublicScopeSelection' => (bool)($this->get('hasPublicScopeSelection') ?? false),
+        'publicScopeTeamLabel' => $this->get('publicScopeTeamLabel'),
+        'publicScopeSportLabel' => $this->get('publicScopeSportLabel'),
+        'statsScopeSupported' => (bool)($this->get('statsScopeSupported') ?? false),
     ]) ?>
 
 </body>

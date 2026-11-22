@@ -31,6 +31,8 @@ $descriptions = [
     'margins' => 'Biggest wins and worst losses',
     'series' => 'Head-to-head records vs opponents',
 ];
+$publicScope = $publicScope ?? ['sportKey' => null, 'teamId' => null];
+$showTeamSelectionPrompt = ($publicScope['teamId'] ?? null) === null;
 ?>
 <div class="container py-4" data-controller="games-search">
 
@@ -51,5 +53,16 @@ $descriptions = [
                 </a>
             </div>
         <?php endforeach; ?>
+        <?php if ($showTeamSelectionPrompt) : ?>
+            <div class="col-md-4 col-lg-3">
+                <div class="card h-100 rh-games-team-selection-note border-secondary-subtle" aria-disabled="true">
+                    <div class="card-body text-center">
+                        <i class="bi bi-person-check fs-2 mb-2 d-block" aria-hidden="true"></i>
+                        <h5 class="card-title">More Game Options</h5>
+                        <p class="card-text small mb-0">Select a team in the sport/team bar above to unlock more options.</p>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </div>

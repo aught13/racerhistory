@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Test\TestCase\Controller;
 
+use App\View\AppView;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 
@@ -59,6 +61,97 @@ class StatsControllerTest extends TestCase
         $this->assertResponseNotContains('id="stats-sport"');
         $this->assertResponseContains('property="og:image"');
         $this->assertResponseContains('/img/logo.png');
+        $this->assertResponseContains('rh-public-scope-bar');
+    }
+
+    /**
+     * Multiple supported sports show a grey selection prompt until a scope is chosen.
+     *
+     * @return void
+     */
+    public function testIndexMultipleSportsShowsSelectionPrompt(): void
+    {
+        $request = new ServerRequest(['url' => '/stats']);
+        $view = new AppView($request);
+        $view->set('statTypes', []);
+        $view->set('currentSport', null);
+        $view->set('statsScopeUnavailable', false);
+        $view->set('supportedSports', [
+            'basketball' => 'Basketball',
+            'football' => 'Football',
+        ]);
+        $view->disableAutoLayout();
+
+        $html = $view->render('Stats/index');
+
+        $this->assertStringContainsString('rh-stats-selection-note', $html);
+        $this->assertStringContainsString('Select a team or sport for stats', $html);
+    }
+
+    /**
+     * Unsupported sport scopes show an unavailable-state prompt instead of an error.
+     *
+     * @return void
+     */
+    public function testIndexUnsupportedSportShowsUnavailablePrompt(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'football', 'team' => 'all']]);
+        $this->get('/stats?sport=football&team=all');
+
+        $this->assertResponseOk();
+        $this->assertNull($this->viewVariable('currentSport'));
+        $this->assertTrue($this->viewVariable('statsScopeUnavailable'));
+        $this->assertResponseContains('rh-stats-selection-note');
+        $this->assertResponseContains('No stats are available for the selected sport or team');
+        $this->assertResponseContains('Football');
+        $this->assertResponseNotContains('>All teams</button>');
+        $this->assertResponseNotContains('Statistics are not available for the selected sport');
+    }
+
+    /**
+     * Invalid sports normalize safely instead of returning an error page.
+     *
+     * @return void
+     */
+    public function testIndexInvalidSportFallsBackSafely(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'not-a-sport', 'team' => 'all']]);
+        $this->get('/stats?sport=not-a-sport&team=all');
+
+        $this->assertResponseOk();
+        $this->assertSame('basketball', $this->viewVariable('currentSport'));
+    }
+
+    /**
+     * Invalid teams keep a valid sport and clear the team scope.
+     *
+     * @return void
+     */
+    public function testIndexInvalidTeamKeepsValidSport(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => '999']]);
+        $this->get('/stats?sport=basketball&team=999');
+
+        $this->assertResponseOk();
+        $this->assertSame('basketball', $this->viewVariable('publicScope')['sportKey']);
+        $this->assertNull($this->viewVariable('publicScope')['teamId']);
+    }
+
+    /**
+     * Mismatched team/sport scopes use the valid team-specific sport.
+     *
+     * @return void
+     */
+    public function testIndexMismatchUsesTeamScopeLabel(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => '3']]);
+        $this->get('/stats?sport=basketball&team=3');
+
+        $this->assertResponseOk();
+        $this->assertSame('football', $this->viewVariable('publicScope')['sportKey']);
+        $this->assertSame(3, $this->viewVariable('publicScope')['teamId']);
+        $this->assertResponseContains('New York Giants');
+        $this->assertResponseNotContains('>All teams</button>');
     }
 
     /**
@@ -90,6 +183,60 @@ class StatsControllerTest extends TestCase
         $this->assertSame('basketball', $currentSport);
         $this->assertSame('basketball', $this->viewVariable('publicScope')['sportKey']);
         $this->assertFalse($this->viewVariable('showPublicSportSelector'));
+        $this->assertResponseContains('href="/stats?sport=basketball&amp;team=all"');
+        $this->assertResponseContains('href="/games?sport=basketball&amp;team=all"');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--stats');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--games');
+    }
+
+    /**
+     * Sport-only scope keeps top-nav Stats and Games entries static.
+     *
+     * @return void
+     */
+    public function testSportOnlyScopeUsesStaticTopNavEntries(): void
+    {
+        $this->get('/stats?sport=basketball&team=all');
+
+        $this->assertResponseOk();
+        $this->assertNull($this->viewVariable('publicScope')['teamId']);
+        $this->assertResponseContains('href="/stats?sport=basketball&amp;team=all"');
+        $this->assertResponseContains('href="/games?sport=basketball&amp;team=all"');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--stats');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--games');
+    }
+
+    /**
+     * Unsupported team scope retains the team label and uses a static Stats entry.
+     *
+     * @return void
+     */
+    public function testUnsupportedTeamScopeKeepsTeamLabelAndStaticStatsNav(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'football', 'team' => '3']]);
+        $this->get('/stats?sport=football&team=3');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('New York Giants');
+        $this->assertResponseContains('rh-public-scope-current');
+        $this->assertResponseNotContains('>All teams</button>');
+        $this->assertResponseContains('href="/stats?sport=football&amp;team=3"');
+        $this->assertResponseNotContains('rh-nav-item--menu rh-nav-item--stats');
+        $this->assertResponseContains('No stats are available for the selected sport or team');
+    }
+
+    /**
+     * Supported team scope keeps the Stats top-nav dropdown.
+     *
+     * @return void
+     */
+    public function testSupportedTeamScopeUsesStatsDropdown(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => '1']]);
+        $this->get('/stats?sport=basketball&team=1');
+
+        $this->assertResponseOk();
+        $this->assertResponseContains('rh-nav-item--menu rh-nav-item--stats');
     }
 
     /**
@@ -115,10 +262,12 @@ class StatsControllerTest extends TestCase
         $this->get('/stats?sport=basketball');
 
         $this->assertResponseOk();
-        $this->assertResponseContains('id="public-scope-team"');
-        $this->assertResponseContains('All Basketball');
-        $this->assertResponseContains('value="1" data-sport-key="basketball"');
-        $this->assertResponseContains('value="2" data-sport-key="basketball"');
+        $this->assertResponseContains('rh-public-scope-current');
+        $this->assertResponseContains('Basketball');
+        $this->assertResponseContains('All teams');
+        $this->assertResponseContains('Basketball teams');
+        $this->assertResponseContains('sport=basketball&amp;team=1');
+        $this->assertResponseContains('sport=basketball&amp;team=2');
         $this->assertResponseNotContains('data-bs-theme="dark"');
         $this->assertResponseNotContains('>Apply</button>');
     }
@@ -137,14 +286,14 @@ class StatsControllerTest extends TestCase
     }
 
     /**
-     * Reports reject configured sports without a supported stat service.
+     * Reports redirect configured sports without a supported stat service to Stats home.
      */
-    public function testUnsupportedSportIsRejected(): void
+    public function testUnsupportedSportReportRedirectsToStatsHome(): void
     {
         $this->replaceRequest([]);
         $this->get('/stats/player-season?sport=football');
 
-        $this->assertResponseCode(400);
+        $this->assertRedirectContains('/stats?sport=football&team=all');
     }
 
     // ——— Player Season ————————————————————

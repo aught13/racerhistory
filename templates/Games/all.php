@@ -12,11 +12,21 @@ $ajaxUrl = $this->PublicScope->url([
     'action' => 'all',
     '?' => ['format' => 'json'],
 ]);
+$publicScope = $publicScope ?? ['sportKey' => null, 'teamId' => null];
+$showTeamSelectionPrompt = ($publicScope['teamId'] ?? null) === null;
 ?>
 <div class="container py-4" data-controller="games-search">
 
 
-    <h1 class="h3 mb-4">All Games</h1>
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
+        <h1 class="h3 mb-0">All Games</h1>
+        <?php if ($showTeamSelectionPrompt) : ?>
+            <div class="rh-games-team-selection-note border border-secondary-subtle rounded px-3 py-2 text-secondary" aria-disabled="true">
+                <i class="bi bi-person-check me-1" aria-hidden="true"></i>
+                Select a team in the sport/team bar to unlock more options.
+            </div>
+        <?php endif; ?>
+    </div>
 
     <?= $this->element('Stats/table_assets') ?>
 

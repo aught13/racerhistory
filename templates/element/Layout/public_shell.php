@@ -10,8 +10,28 @@
  * @var string $content
  * @var string $flash
  * @var array{sportKey:string|null,teamId:int|null} $publicScope
+ * @var array<string,string> $publicSportOptions
+ * @var array<int,array{label:string,sportKey:string}> $publicTeamOptions
+ * @var bool $showPublicSportSelector
+ * @var bool $showPublicTeamSelector
+ * @var bool $isStatsController
+ * @var bool $showPublicScopeBar
+ * @var bool $hasPublicScopeSelection
+ * @var string|null $publicScopeTeamLabel
+ * @var string|null $publicScopeSportLabel
+ * @var bool $statsScopeSupported
  */
 $publicScope = $publicScope ?? ['sportKey' => null, 'teamId' => null];
+$publicSportOptions = $publicSportOptions ?? [];
+$publicTeamOptions = $publicTeamOptions ?? [];
+$showPublicSportSelector = $showPublicSportSelector ?? false;
+$showPublicTeamSelector = $showPublicTeamSelector ?? false;
+$isStatsController = $isStatsController ?? false;
+$showPublicScopeBar = $showPublicScopeBar ?? false;
+$hasPublicScopeSelection = $hasPublicScopeSelection ?? false;
+$publicScopeTeamLabel = $publicScopeTeamLabel ?? null;
+$publicScopeSportLabel = $publicScopeSportLabel ?? null;
+$statsScopeSupported = $statsScopeSupported ?? false;
 $scopeQueryString = http_build_query([
     'sport' => $publicScope['sportKey'] ?? 'all',
     'team' => $publicScope['teamId'] ?? 'all',
@@ -49,7 +69,31 @@ $scopeQueryString = http_build_query([
     </header>
 
     <div class="rh-nav-wrap rh-unified-nav-wrap" data-nav>
-        <?= $this->element('Navigation/sidebar_clean') ?>
+        <?= $this->element('Navigation/sidebar_clean', [
+            'publicScope' => $publicScope,
+            'publicSportOptions' => $publicSportOptions,
+            'publicTeamOptions' => $publicTeamOptions,
+            'showPublicSportSelector' => $showPublicSportSelector,
+            'showPublicTeamSelector' => $showPublicTeamSelector,
+            'isStatsController' => $isStatsController,
+            'hasPublicScopeSelection' => $hasPublicScopeSelection,
+            'publicScopeTeamLabel' => $publicScopeTeamLabel,
+            'publicScopeSportLabel' => $publicScopeSportLabel,
+            'statsScopeSupported' => $statsScopeSupported,
+        ]) ?>
+        <?php if ($showPublicScopeBar) : ?>
+            <?= $this->element('Navigation/scope_bar', [
+                'publicScope' => $publicScope,
+                'publicSportOptions' => $publicSportOptions,
+                'publicTeamOptions' => $publicTeamOptions,
+                'showPublicSportSelector' => $showPublicSportSelector,
+                'showPublicTeamSelector' => $showPublicTeamSelector,
+                'isStatsController' => $isStatsController,
+                'publicScopeTeamLabel' => $publicScopeTeamLabel,
+                'publicScopeSportLabel' => $publicScopeSportLabel,
+                'statsScopeSupported' => $statsScopeSupported,
+            ]) ?>
+        <?php endif; ?>
     </div>
 
     <main id="main-content" class="rh-main">

@@ -142,6 +142,37 @@ class StatsController extends AppController
     {
         parent::beforeFilter($event);
         $this->Authorization->skipAuthorization();
+
+        $action = (string)$this->getRequest()->getParam('action');
+        if ($action === 'index') {
+            return;
+        }
+
+        $scope = $this->publicSportScopeService->resolveStatsScope(
+            $this->getRequest()->getQueryParams(),
+            $this->statsService->getSupportedSports(),
+        );
+        if (!$scope['valid']) {
+            throw new BadRequestException('Invalid sport or team selection.');
+        }
+
+        $supportedSports = array_fill_keys(
+            $this->statsService->getSupportedSports(),
+            true,
+        );
+        $scopeSupported =
+            $scope['sportKey'] !== null
+            && isset($supportedSports[$scope['sportKey']]);
+        if (!$scopeSupported) {
+            $event->setResult($this->redirect([
+                'controller' => 'Stats',
+                'action' => 'index',
+                '?' => [
+                    'sport' => $scope['sportKey'] ?? 'all',
+                    'team' => $scope['teamId'] === null ? 'all' : (string)$scope['teamId'],
+                ],
+            ]));
+        }
     }
 
     /**
@@ -247,7 +278,7 @@ class StatsController extends AppController
 
         $sportId = $this->statsService->getSportIdByName($sport);
         if ($sportId === null || !$this->statsService->hasSportSupport($sportId)) {
-            throw new BadRequestException('Statistics are not available for the selected sport.');
+            return null;
         }
 
         return $this->sportConfigService->getKeyById($sportId);
@@ -282,9 +313,16 @@ class StatsController extends AppController
      */
     public function index(): void
     {
+        $scope = $this->getResolvedPublicScope();
+        $currentSport = $this->resolveCurrentSport();
+        $statsScopeUnavailable =
+            $currentSport === null
+            && ($scope['sportKey'] !== null || $scope['teamId'] !== null);
+
         $this->set([
-            'currentSport' => $this->resolveCurrentSport(),
+            'currentSport' => $currentSport,
             'supportedSports' => $this->getSupportedSportOptions(),
+            'statsScopeUnavailable' => $statsScopeUnavailable,
         ]);
     }
 

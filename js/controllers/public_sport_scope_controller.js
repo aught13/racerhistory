@@ -10,10 +10,14 @@ export default class extends Controller {
 
     connect() {
         this.handleTurboFrameLoad = this.handleTurboFrameLoad.bind(this);
+        this.toggleScopeMenu = this.toggleScopeMenu.bind(this);
         document.addEventListener(
             "turbo:frame-load",
             this.handleTurboFrameLoad,
         );
+        if (this.element.classList.contains("rh-public-scope-bar-inner")) {
+            this.element.addEventListener("click", this.toggleScopeMenu, true);
+        }
 
         const url = new URL(window.location.href);
         const sport = this.hasSportTarget
@@ -42,6 +46,13 @@ export default class extends Controller {
                 this.handleTurboFrameLoad,
             );
         }
+        if (this.element.classList.contains("rh-public-scope-bar-inner")) {
+            this.element.removeEventListener(
+                "click",
+                this.toggleScopeMenu,
+                true,
+            );
+        }
     }
 
     handleTurboFrameLoad(event) {
@@ -57,6 +68,10 @@ export default class extends Controller {
             : this.teamIdValue || "all";
 
         root.querySelectorAll("a[href]").forEach((link) => {
+            if (link.dataset.preservePublicScope === "false") {
+                return;
+            }
+
             let url;
             try {
                 url = new URL(link.href, window.location.origin);
@@ -109,5 +124,30 @@ export default class extends Controller {
         if (sportKey && sportKey !== "all") {
             this.sportTarget.value = sportKey;
         }
+    }
+
+    toggleScopeMenu(event) {
+        if (event?.target?.closest(".rh-public-scope-menu")) {
+            return;
+        }
+
+        event?.preventDefault();
+        event?.stopPropagation();
+        const menu = this.element.querySelector(".rh-public-scope-menu");
+        if (!menu) {
+            return;
+        }
+
+        const isOpen = menu.classList.toggle("show");
+        this.element
+            .querySelectorAll(
+                ".rh-public-scope-current, .rh-public-scope-more-toggle",
+            )
+            .forEach((trigger) => {
+                trigger.setAttribute(
+                    "aria-expanded",
+                    isOpen ? "true" : "false",
+                );
+            });
     }
 }

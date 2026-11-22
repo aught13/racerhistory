@@ -61,8 +61,11 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('id="searchbuilder-panel"');
         $this->assertResponseContains('id="seasons-table-frame"');
         $this->assertResponseContains('data-controller="seasons-page"');
-        $this->assertResponseContains('id="public-scope-sport"');
-        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('rh-public-scope-bar');
+        $this->assertResponseContains('rh-public-scope-current');
+        $this->assertResponseContains('<button class="rh-public-scope-current"');
+        $this->assertResponseNotContains('<a class="rh-public-scope-current"');
+        $this->assertResponseContains('rh-public-scope-more-toggle');
     }
 
     /**
@@ -76,24 +79,41 @@ class SeasonsControllerTest extends TestCase
         $this->assertResponseContains('href="/seasons?sport=football&amp;team=3"');
         $this->assertResponseContains('href="/?sport=football&amp;team=3"');
         $this->assertResponseContains('href="/privacy?sport=football&amp;team=3"');
+        $this->assertResponseContains('rh-public-scope-bar');
     }
 
     /**
-     * A one-team sport omits a redundant all-teams selector until a team is selected.
+     * All-scope blog pages do not show the public scope bar.
      *
      * @return void
      */
-    public function testTeamSelectorIsHiddenForSingleTeamSportUntilSelection(): void
+    public function testBlogAllScopeHidesScopeBar(): void
+    {
+        $this->get('/blog?sport=all&team=all');
+
+        $this->assertResponseOk();
+        $this->assertResponseNotContains('rh-public-scope-bar');
+        $this->assertResponseContains('href="/stats"');
+        $this->assertResponseContains('href="/games"');
+    }
+
+    /**
+     * The subnav continues to expose a one-team sport's team options.
+     *
+     * @return void
+     */
+    public function testSubnavListsSingleTeamSportOptions(): void
     {
         $this->get('/seasons?sport=football&team=all');
 
         $this->assertResponseOk();
-        $this->assertResponseNotContains('id="public-scope-team"');
+        $this->assertResponseContains('Football');
+        $this->assertResponseContains('New York Giants');
 
         $this->get('/seasons?sport=football&team=3');
 
         $this->assertResponseOk();
-        $this->assertResponseContains('id="public-scope-team"');
+        $this->assertResponseContains('rh-public-scope-current');
         $this->assertResponseContains('New York Giants');
     }
 
@@ -110,6 +130,7 @@ class SeasonsControllerTest extends TestCase
         $this->assertIsArray($teamSeasons);
         $recordSummaries = $this->viewVariable('recordSummaries');
         $this->assertIsArray($recordSummaries);
+        $this->assertResponseContains('/seasons/1?sport=basketball&amp;team=1');
     }
 
     /**
@@ -133,23 +154,29 @@ class SeasonsControllerTest extends TestCase
     }
 
     /**
-     * Tests a team outside the selected sport is rejected.
+     * Mismatched sport/team scopes normalize to the team-specific sport.
      */
-    public function testIndexRejectsMismatchedSportAndTeam(): void
+    public function testIndexNormalizesMismatchedSportAndTeam(): void
     {
         $this->get('/seasons?sport=basketball&team=3');
 
-        $this->assertResponseCode(400);
+        $this->assertResponseOk();
+        $scope = $this->viewVariable('publicScope');
+        $this->assertSame('football', $scope['sportKey']);
+        $this->assertSame(3, $scope['teamId']);
     }
 
     /**
-     * Tests a season outside the selected sport is not exposed by its detail URL.
+     * A mismatched detail URL updates to the season's actual team and sport scope.
      */
-    public function testViewRejectsSeasonOutsideSelectedSport(): void
+    public function testViewUpdatesMismatchedSeasonScope(): void
     {
         $this->get('/seasons/1?sport=football');
 
-        $this->assertResponseCode(404);
+        $this->assertResponseOk();
+        $scope = $this->viewVariable('publicScope');
+        $this->assertSame('basketball', $scope['sportKey']);
+        $this->assertSame(1, $scope['teamId']);
     }
 
     /**
@@ -179,6 +206,9 @@ class SeasonsControllerTest extends TestCase
     {
         $this->get('/seasons/1');
         $this->assertResponseOk();
+        $scope = $this->viewVariable('publicScope');
+        $this->assertSame('basketball', $scope['sportKey']);
+        $this->assertSame(1, $scope['teamId']);
         $this->assertResponseContains('Game Log');
         $this->assertResponseContains('data-controller="season-view"');
         $this->assertResponseContains('<meta property="og:image" content="/img/storage/');
