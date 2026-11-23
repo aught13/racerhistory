@@ -2,7 +2,7 @@
 import { describe, test, expect } from "@jest/globals";
 import fs from "fs";
 
-const cssPath = "./webroot/css/frontend.css";
+const cssPath = "./js/styles/frontend.css";
 
 describe("Seasons index CSS rules", () => {
     test("seasons table card styles exist", () => {

@@ -36,7 +36,7 @@ This project powers the racerhistory.com website, providing features for:
 - **Advertising Management** - Configure site-wide sponsor campaigns and content ads targeted by sport and/or team in the Admin Advertising area (`/admin/advertising`).
 - **Blog Engine** - Public blog with an admin editor, tagging, and hero images
 - **Responsive Design** - Mobile-first Bootstrap 5.3.2 public interface with an AdminLTE 4 admin shell
-- **Modern Frontend Runtime** - Vite-driven JS, Turbo/Stimulus initialization, modular controllers, and resilient PWA/service-worker behavior
+- **Modern Frontend Runtime** - Vite-driven JS and CSS, Turbo/Stimulus initialization, modular controllers, and resilient PWA/service-worker behavior
 
 Built with [CakePHP](https://cakephp.org) 5.x framework for robust, scalable web development.
 
@@ -282,7 +282,7 @@ vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 ### External Resources
 
 - **CDN Integrity Hashes** for externally hosted CSS assets
-- **Vite manifest-backed JavaScript bundles** for public/runtime JS dependencies
+- **Vite manifest-backed JavaScript and CSS bundles** for public/runtime assets
 - **HTTPS Enforcement** for production deployment
 - **Secure Headers** for XSS and clickjacking protection
 
@@ -292,7 +292,7 @@ vendor/bin/phpcs --standard=phpcs.xml src/ tests/
 
 - **Bootstrap 5.3.2** - Responsive CSS framework
 - **Bootstrap Icons 1.11.3** - Comprehensive icon library
-- **Custom Styling** - Additional cake.css for application-specific styles
+- **Custom Styling** - Public, admin, and blog styles built from `js/styles/` by Vite
 
 ### JavaScript
 

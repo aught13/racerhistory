@@ -15,7 +15,5 @@ declare(strict_types=1);
  */
 
 $this->assign('title', 'Blog');
-$this->start('css');
-echo $this->Html->css('blog-content');
-$this->end();
+$this->Vite->css(['files' => ['js/styles/blog-content.css']]);
 echo $this->element('blog/index_frame');

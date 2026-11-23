@@ -1,12 +1,7 @@
 module.exports = {
     extends: ["stylelint-config-standard"],
     ignoreFiles: [
-        "webroot/css/*.min.css",
-        "webroot/css/normalize.min.css",
-        "webroot/css/milligram.min.css",
-        "webroot/css/cake.css",
-        "webroot/css/fonts.css",
-        "webroot/css/home.css"
+        "js/styles/cake.css",
     ],
     rules: {
         "color-hex-length": null,
