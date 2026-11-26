@@ -8,6 +8,7 @@ use App\Model\Table\ImagesTable;
 use App\Model\Table\UsersTable;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\I18n\Number;
+use Cake\Log\Log;
 use Cake\ORM\Query\SelectQuery as OrmSelectQuery;
 use Cake\Utility\Text;
 
@@ -475,8 +476,56 @@ class ImagesAdminService
      */
     public function applyTags(int $id, array $data, mixed $identity = null): void
     {
-        $this->getImageWithTags($id, $identity, 'update');
-        $this->taggingServiceFactory->forImages()->applyFromData($id, $data);
+        $image = $this->getImageWithTags($id, $identity, 'update');
+        $existingTagCount = count($image->image_tags ?? []);
+        $selectionCounts = [];
+        foreach (
+            [
+                'person_select',
+                'team_select',
+                'teamseason_select',
+                'game_select',
+                'site_select',
+                'opponent_select',
+                'sport_select',
+                'roster_select',
+                'preset_tags',
+            ] as $field
+        ) {
+            $value = $data[$field] ?? null;
+            $count = is_array($value)
+                ? count($value)
+                : (is_scalar($value) && (string)$value !== '' ? 1 : 0);
+            $selectionCounts[] = $field . '=' . $count;
+        }
+
+        $searchLengths = [];
+        foreach (['person_search', 'game_search', 'site_search', 'opponent_search'] as $field) {
+            $value = $data[$field] ?? null;
+            $searchLengths[] = $field . '=' . (is_string($value) ? strlen($value) : 0);
+        }
+
+        $freeformTags = $data['tags'] ?? null;
+        $freeformTagBytes = is_string($freeformTags) ? strlen($freeformTags) : 0;
+        Log::debug(sprintf(
+            'Image tag update started: image_id=%d existing_tag_count=%d submitted_field_count=%d '
+            . 'selection_counts=%s search_lengths=%s freeform_tag_type=%s freeform_tag_bytes=%d',
+            $id,
+            $existingTagCount,
+            count($data),
+            implode(',', $selectionCounts),
+            implode(',', $searchLengths),
+            get_debug_type($freeformTags),
+            $freeformTagBytes,
+        ));
+
+        $appliedTags = $this->taggingServiceFactory->forImages()->applyFromData($id, $data);
+        Log::debug(sprintf(
+            'Image tag update completed: image_id=%d existing_tag_count=%d applied_tag_count=%d',
+            $id,
+            $existingTagCount,
+            count($appliedTags),
+        ));
     }
 
     /**
