@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
-import blogContentCssUrl from "../../webroot/css/blog-content.css?url";
+import blogContentCssUrl from "../styles/blog-content.css?url";
 
 const TINYMCE_RETRY_DELAY_MS = 200;
 const TINYMCE_MAX_RETRIES = 20;

@@ -10,7 +10,7 @@
  *   2. Bootstrap Icons (CDN) — icon font
  *   3. DataTables Bootstrap 5 skin (CDN) — table plugins
  *   4. Vite bundle — includes AdminLTE 4 structural CSS + Stimulus controllers
- *   5. cake.css — project-specific overrides
+ *   5. Vite-built application overrides
  *
  * AdminLTE JS is intentionally NOT loaded. All layout behaviour (sidebar
  * toggle, active-link highlighting) is managed by Stimulus controllers
@@ -58,7 +58,9 @@ $rbacUiPayload = $this->Rbac->uiPayload();
         <?php endif; ?>
     <?php endif; ?>
     <!-- 5. Project-specific overrides -->
-    <?= $this->Html->css(['cake']) ?>
+    <?php if (class_exists('CakeVite\\View\\Helper\\ViteHelper') || class_exists('Josbeir\\Vite\\View\\Helper\\ViteHelper')) : ?>
+        <?= $this->Vite->css(['files' => ['js/styles/cake.css'], 'block' => false]) ?>
+    <?php endif; ?>
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
     <!-- jQuery + DataTables JS (must load before Bootstrap JS so $.fn.DataTable is available) -->

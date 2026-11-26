@@ -4,10 +4,7 @@ import path from "path";
 const __dirname = path.join(process.cwd(), "webroot", "js", "tests");
 
 describe("frontend.css variables", () => {
-    const cssPath = path.resolve(
-        __dirname,
-        "../../../webroot/css/frontend.css",
-    );
+    const cssPath = path.resolve(__dirname, "../../../js/styles/frontend.css");
     let css;
 
     beforeAll(() => {
@@ -75,10 +72,7 @@ describe("frontend.css variables", () => {
 });
 
 describe("dark mode component overrides", () => {
-    const cssPath = path.resolve(
-        __dirname,
-        "../../../webroot/css/frontend.css",
-    );
+    const cssPath = path.resolve(__dirname, "../../../js/styles/frontend.css");
     let css;
 
     beforeAll(() => {

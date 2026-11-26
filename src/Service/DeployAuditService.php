@@ -363,7 +363,6 @@ class DeployAuditService
             'js/legacy/image-selector.js',
             'js/legacy/person-image.js',
             'js/legacy/sport-aware-game-form.js',
-            'webroot/css/cake.css',
             'webroot/dist/manifest.json',
         ];
         foreach ($assets as $asset) {
@@ -384,6 +383,30 @@ class DeployAuditService
                 $manifest = json_decode($manifestRaw, true);
                 if (is_array($manifest) && array_key_exists('js/main.js', $manifest)) {
                     $this->ok($cat, 'Vite manifest contains js/main.js entry');
+
+                    $stylesheets = [
+                        'js/styles/cake.css',
+                        'js/styles/frontend.css',
+                        'js/styles/blog-content.css',
+                    ];
+                    foreach ($stylesheets as $stylesheet) {
+                        $entry = $manifest[$stylesheet] ?? null;
+                        $output = is_array($entry) ? ($entry['file'] ?? null) : null;
+                        if (!is_string($output) || !str_ends_with($output, '.css')) {
+                            $this->fail($cat, "Vite manifest missing stylesheet entry: {$stylesheet}");
+
+                            continue;
+                        }
+
+                        $outputPath = ROOT . DS . 'webroot' . DS . 'dist' . DS . str_replace('/', DS, $output);
+                        if (!is_file($outputPath)) {
+                            $this->fail($cat, "Missing Vite stylesheet: {$output}");
+
+                            continue;
+                        }
+
+                        $this->ok($cat, "Vite stylesheet: {$stylesheet}", $output);
+                    }
                 } else {
                     $this->fail($cat, 'Vite manifest missing js/main.js entry');
                 }

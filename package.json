@@ -42,9 +42,9 @@
     "playwright:install": "playwright install --with-deps chromium",
     "lint:js": "npx eslint 'js/**' --max-warnings=0",
     "lint:js:fix": "npx eslint 'js/**' --fix",
-    "lint:css": "npx stylelint 'webroot/css/**/*.css'",
-    "format:js": "npx prettier --write js",
-    "format:js:check": "npx prettier --check js"
+    "lint:css": "npx stylelint 'js/styles/**/*.css'",
+    "format:js": "npx prettier --write 'js/**/*.{js,mjs,cjs}'",
+    "format:js:check": "npx prettier --check 'js/**/*.{js,mjs,cjs}'"
   },
   "babel": {
     "presets": [

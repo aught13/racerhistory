@@ -14,7 +14,7 @@ describe("blog-content.css", () => {
     let cssContent;
 
     beforeAll(() => {
-        const cssPath = join(process.cwd(), "webroot/css/blog-content.css");
+        const cssPath = join(process.cwd(), "js/styles/blog-content.css");
         cssContent = readFileSync(cssPath, "utf-8");
     });
 

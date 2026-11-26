@@ -7,7 +7,7 @@ describe("People index styles", () => {
     test("frontend.css includes people index selectors", () => {
         const cssPath = path.resolve(
             __dirname,
-            "../../../webroot/css/frontend.css",
+            "../../../js/styles/frontend.css",
         );
         const css = fs.readFileSync(cssPath, "utf8");
 

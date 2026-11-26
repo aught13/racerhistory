@@ -8,7 +8,7 @@ import path from "path";
 // Note: __dirname computed relative to workspace root for Jest
 const __dirname = path.join(process.cwd(), "webroot", "js", "tests");
 
-const cssPath = path.resolve(__dirname, "../../../webroot/css/frontend.css");
+const cssPath = path.resolve(__dirname, "../../../js/styles/frontend.css");
 
 const loadStyles = () => fs.readFileSync(cssPath, "utf8");
 

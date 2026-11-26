@@ -10,7 +10,7 @@
  * - jQuery 3.7.1 for enhanced JavaScript functionality
  * - Responsive navigation with authentication status display
  * - Bootstrap Icons 1.11.3 for UI elements
- * - Custom cake.css for application-specific styling
+ * - Vite-built CSS for public application styling
  * - Flash message display area
  * - Responsive footer with copyright information
  *
@@ -128,8 +128,10 @@ $currentUrl = $this->Url->build($this->request->getRequestTarget(), ['fullBase' 
     <link rel="stylesheet" href="https://cdn.datatables.net/searchbuilder/1.8.4/css/searchBuilder.bootstrap5.min.css">
     <link href="https://cdn.jsdelivr.net/npm/datatables.net-datetime@1.6.3/dist/dataTables.dateTime.min.css" rel="stylesheet">
 
-    <!-- Optional: Custom styles -->
-    <?= $this->Html->css(['frontend']) ?>
+    <!-- Public application styles -->
+    <?php if (class_exists('CakeVite\\View\\Helper\\ViteHelper') || class_exists('Josbeir\\Vite\\View\\Helper\\ViteHelper')) : ?>
+        <?= $this->Vite->css(['files' => ['js/styles/frontend.css'], 'block' => false]) ?>
+    <?php endif; ?>
 
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>

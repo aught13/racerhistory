@@ -9,6 +9,9 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: "js/main.js",
+                cake: "js/styles/cake.css",
+                frontend: "js/styles/frontend.css",
+                blogContent: "js/styles/blog-content.css",
             },
         },
     },

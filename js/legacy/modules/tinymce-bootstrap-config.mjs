@@ -15,6 +15,8 @@
  * @module modules/tinymce-bootstrap-config
  */
 
+import blogContentCssUrl from "../../styles/blog-content.css?url";
+
 /**
  * Get the CSRF token from the page meta tag.
  * @returns {string|null}
@@ -463,7 +465,7 @@ export function createTinyMCEConfig(options = {}) {
         // Also use external CSS for full theme support
         content_css: [
             "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
-            "/css/blog-content.css",
+            blogContentCssUrl,
         ],
 
         // Image handling

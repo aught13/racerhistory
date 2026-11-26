@@ -29,9 +29,7 @@ if (!empty($post->hero_image_id)) {
     }
 }
 ?>
-<?php $this->start('css'); ?>
-<?= $this->Html->css('blog-content') ?>
-<?php $this->end(); ?>
+<?php $this->Vite->css(['files' => ['js/styles/blog-content.css']]); ?>
 
 <div class="blog-page blog-page--view" aria-label="Blog Post">
     <?= $this->element('blog/view_frame') ?>

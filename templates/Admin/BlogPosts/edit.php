@@ -33,9 +33,7 @@ $uploadContext = isset($post->id) ? ['type' => 'blogpost', 'id' => $post->id] : 
 $existingHeroId = (int)($post->hero_image_id ?? 0);
 $existingHeroUrl = $existingHeroId > 0 ? $this->ImageServe->url($existingHeroId, ['variant' => 'hero']) : '';
 ?>
-<?php $this->start('css'); ?>
-<?= $this->Html->css('blog-content') ?>
-<?php $this->end(); ?>
+<?php $this->Vite->css(['files' => ['js/styles/blog-content.css']]); ?>
 
 <div class="container py-4" data-controller="blog-post-form" data-action="turbo:before-render@document->blog-post-form#beforeRender turbo:before-cache@document->blog-post-form#beforeCache turbo:load@document->blog-post-form#onTurboLoad" data-blog-post-form-existing-hero-id-value="<?= $existingHeroId ?>" data-blog-post-form-existing-hero-url-value="<?= h($existingHeroUrl) ?>" data-blog-post-form-csrf-token-value="<?= h((string)$this->request->getAttribute('csrfToken')) ?>" data-blog-post-form-max-upload-bytes-value="<?= (int)Configure::read('Images.maxUploadBytes', 5242880) ?>" data-blog-post-form-images-upload-url-value="/admin/images/upload">
     <?= $this->Form->create($post, [

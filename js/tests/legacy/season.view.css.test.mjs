@@ -3,7 +3,7 @@
 import { describe, test, expect, beforeEach, beforeAll } from "@jest/globals";
 import fs from "fs";
 
-const cssPath = "./webroot/css/frontend.css";
+const cssPath = "./js/styles/frontend.css";
 
 const loadStyles = () => fs.readFileSync(cssPath, "utf8");
 
