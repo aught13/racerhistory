@@ -9,75 +9,10 @@ use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\Log\Log;
 use Cake\TestSuite\TestCase;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Http\Server\RequestHandlerInterface;
-use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
 use Stringable;
-use Throwable;
-
-final class BasketballBoxScoreImportDiagnosticsMemoryLogger extends AbstractLogger
-{
-    /**
-     * @param list<string> $levels Levels to retain.
-     */
-    public function __construct(private array $levels)
-    {
-    }
-
-    /**
-     * @var list<array{level: string, message: string}>
-     */
-    public array $records = [];
-
-    /**
-     * @param mixed $level Log level.
-     * @param string|\Stringable $message Log message.
-     * @param array $context Log context.
-     * @return void
-     */
-    public function log(mixed $level, string|Stringable $message, array $context = []): void
-    {
-        if (!in_array((string)$level, $this->levels, true)) {
-            return;
-        }
-
-        $this->records[] = ['level' => (string)$level, 'message' => (string)$message];
-    }
-}
-
-final class BasketballBoxScoreImportDiagnosticsResponseHandler implements RequestHandlerInterface
-{
-    public function __construct(private ResponseInterface $response)
-    {
-    }
-
-    /**
-     * @param \Psr\Http\Message\ServerRequestInterface $request The current request.
-     * @return \Psr\Http\Message\ResponseInterface The configured response.
-     */
-    public function handle(ServerRequestInterface $request): ResponseInterface
-    {
-        return $this->response;
-    }
-}
-
-final class BasketballBoxScoreImportDiagnosticsThrowingHandler implements RequestHandlerInterface
-{
-    public function __construct(private Throwable $exception)
-    {
-    }
-
-    /**
-     * @param \Psr\Http\Message\ServerRequestInterface $request The current request.
-     * @return \Psr\Http\Message\ResponseInterface Never returns.
-     * @throws \Throwable The configured exception.
-     */
-    public function handle(ServerRequestInterface $request): ResponseInterface
-    {
-        throw $this->exception;
-    }
-}
 
 class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
 {
@@ -85,9 +20,7 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
 
     private array $originalErrorLogConfig;
 
-    private BasketballBoxScoreImportDiagnosticsMemoryLogger $debugLogger;
-
-    private BasketballBoxScoreImportDiagnosticsMemoryLogger $errorLogger;
+    private LoggerInterface&MockObject $debugLogger;
 
     /**
      * @return void
@@ -102,13 +35,11 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
         self::assertIsArray($errorConfig);
         $this->originalDebugLogConfig = $debugConfig;
         $this->originalErrorLogConfig = $errorConfig;
-        $this->debugLogger = new BasketballBoxScoreImportDiagnosticsMemoryLogger(['debug']);
-        $this->errorLogger = new BasketballBoxScoreImportDiagnosticsMemoryLogger(['warning']);
+        $this->debugLogger = $this->createMock(LoggerInterface::class);
 
         Log::drop('debug');
         Log::drop('error');
         Log::setConfig('debug', $this->debugLogger);
-        Log::setConfig('error', $this->errorLogger);
     }
 
     /**
@@ -138,20 +69,29 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
             'period_boxes_selected' => ['team_1' => ['PTS' => '1']],
         ]);
         $response = new Response(['status' => 200]);
-        $handler = new BasketballBoxScoreImportDiagnosticsResponseHandler($response);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::once())->method('handle')->willReturn($response);
+        $message = '';
+        $this->debugLogger->expects(self::once())->method('log')->with(
+            'debug',
+            $this->callback(static function (string|Stringable $loggedMessage) use (&$message): bool {
+                $message = (string)$loggedMessage;
+
+                return true;
+            }),
+            $this->anything(),
+        );
 
         $result = (new BasketballBoxScoreImportDiagnosticsMiddleware())->process($request, $handler);
 
         self::assertSame($response, $result);
-        self::assertCount(1, $this->debugLogger->records);
-        self::assertSame([], $this->errorLogger->records);
-        self::assertStringContainsString('intent=save', $this->debugLogger->records[0]['message']);
-        self::assertStringContainsString('parsed_input_values=5', $this->debugLogger->records[0]['message']);
-        self::assertStringContainsString('period_boxes[team_1]=2', $this->debugLogger->records[0]['message']);
-        self::assertStringContainsString('period_boxes_selected[team_1]=1', $this->debugLogger->records[0]['message']);
-        self::assertStringContainsString('max_input_vars=', $this->debugLogger->records[0]['message']);
-        self::assertStringNotContainsString('sensitive-token', $this->debugLogger->records[0]['message']);
-        self::assertStringNotContainsString('sensitive-stat', $this->debugLogger->records[0]['message']);
+        self::assertStringContainsString('intent=save', $message);
+        self::assertStringContainsString('parsed_input_values=5', $message);
+        self::assertStringContainsString('period_boxes[team_1]=2', $message);
+        self::assertStringContainsString('period_boxes_selected[team_1]=1', $message);
+        self::assertStringContainsString('max_input_vars=', $message);
+        self::assertStringNotContainsString('sensitive-token', $message);
+        self::assertStringNotContainsString('sensitive-stat', $message);
     }
 
     /**
@@ -163,13 +103,13 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
     {
         $request = $this->importRequest([], '/admin/games/add/1');
         $response = new Response(['status' => 200]);
-        $handler = new BasketballBoxScoreImportDiagnosticsResponseHandler($response);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::once())->method('handle')->willReturn($response);
+        $this->debugLogger->expects(self::never())->method('log');
 
         $result = (new BasketballBoxScoreImportDiagnosticsMiddleware())->process($request, $handler);
 
         self::assertSame($response, $result);
-        self::assertSame([], $this->debugLogger->records);
-        self::assertSame([], $this->errorLogger->records);
     }
 
     /**
@@ -180,7 +120,16 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
     public function testLogsAndRethrowsBadRequestExceptions(): void
     {
         $exception = new BadRequestException('Form token rejected');
-        $handler = new BasketballBoxScoreImportDiagnosticsThrowingHandler($exception);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::once())->method('handle')->willThrowException($exception);
+        $levels = [];
+        $messages = [];
+        $this->debugLogger->expects(self::exactly(2))->method('log')->willReturnCallback(
+            static function (mixed $level, string|Stringable $message) use (&$levels, &$messages): void {
+                $levels[] = (string)$level;
+                $messages[] = (string)$message;
+            },
+        );
 
         try {
             (new BasketballBoxScoreImportDiagnosticsMiddleware())->process($this->importRequest(), $handler);
@@ -189,10 +138,9 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
             self::assertSame($exception, $caught);
         }
 
-        self::assertSame(['debug'], array_column($this->debugLogger->records, 'level'));
-        self::assertSame(['warning'], array_column($this->errorLogger->records, 'level'));
-        self::assertStringContainsString('BadRequestException', $this->errorLogger->records[0]['message']);
-        self::assertStringContainsString('Form token rejected', $this->errorLogger->records[0]['message']);
+        self::assertSame(['debug', 'warning'], $levels);
+        self::assertStringContainsString('BadRequestException', $messages[1]);
+        self::assertStringContainsString('Form token rejected', $messages[1]);
     }
 
     /**
@@ -203,14 +151,22 @@ class BasketballBoxScoreImportDiagnosticsMiddlewareTest extends TestCase
     public function testLogsBadRequestResponses(): void
     {
         $response = new Response(['status' => 400]);
-        $handler = new BasketballBoxScoreImportDiagnosticsResponseHandler($response);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::once())->method('handle')->willReturn($response);
+        $levels = [];
+        $messages = [];
+        $this->debugLogger->expects(self::exactly(2))->method('log')->willReturnCallback(
+            static function (mixed $level, string|Stringable $message) use (&$levels, &$messages): void {
+                $levels[] = (string)$level;
+                $messages[] = (string)$message;
+            },
+        );
 
         $result = (new BasketballBoxScoreImportDiagnosticsMiddleware())->process($this->importRequest(), $handler);
 
         self::assertSame($response, $result);
-        self::assertSame(['debug'], array_column($this->debugLogger->records, 'level'));
-        self::assertSame(['warning'], array_column($this->errorLogger->records, 'level'));
-        self::assertStringContainsString('returned HTTP 400', $this->errorLogger->records[0]['message']);
+        self::assertSame(['debug', 'warning'], $levels);
+        self::assertStringContainsString('returned HTTP 400', $messages[1]);
     }
 
     /**

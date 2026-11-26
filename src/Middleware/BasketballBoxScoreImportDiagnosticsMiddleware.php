@@ -117,7 +117,8 @@ class BasketballBoxScoreImportDiagnosticsMiddleware implements MiddlewareInterfa
 
         return sprintf(
             'path=%s intent=%s content_type=%s content_length=%s parsed_input_values=%d top_level_fields=%d '
-            . 'period_field_counts=%s token_field_count=%d max_input_vars=%s max_multipart_body_parts=%s post_max_size=%s',
+            . 'period_field_counts=%s token_field_count=%d max_input_vars=%s '
+            . 'max_multipart_body_parts=%s post_max_size=%s',
             $path,
             $intent,
             $contentType !== '' ? $contentType : 'unknown',
