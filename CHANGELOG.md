@@ -78,7 +78,7 @@ and this project adheres (at the moment) to semantic versioning *starting with p
 
 ### Fixed
 
-- Large box-score preview saves no longer lose CakePHP FormProtection fields when PHP truncates requests at its default `max_input_vars` limit; the webroot config raises the limit for supported PHP SAPIs.
+- Large box-score preview saves no longer lose CakePHP FormProtection fields when PHP truncates multipart requests; the webroot config raises both `max_input_vars` and `max_multipart_body_parts` for supported PHP SAPIs.
 - Modern Sidearm detail tables keep styled game totals separate from period values, so an aggregate rebound total is not presented as a quarter stat. Missing source period values remain blank.
 - Role data-scope migration now matches the unsigned team key and can recover from partial migration runs while preserving legacy role access.
 - Modern overtime periods now map to the game's configured overtime fields; cumulative detail totals are not mistaken for overtime stats, and missing period defensive rebounds are derived from total minus offensive rebounds.
