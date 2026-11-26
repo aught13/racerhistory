@@ -56,6 +56,7 @@ use App\Controller\PeopleController;
 use App\Controller\SeasonsController as PublicSeasonsController;
 use App\Controller\StatsController;
 use App\Controller\UsersController;
+use App\Middleware\BasketballBoxScoreImportDiagnosticsMiddleware;
 use App\Middleware\DebugSessionMiddleware;
 use App\Model\Table\BlogTagsTable;
 use App\Model\Table\GamesTable;
@@ -241,6 +242,9 @@ class Application extends BaseApplication implements
             // available as array through $request->getData()
             // https://book.cakephp.org/5/en/controllers/middleware.html#body-parser-middleware
             ->add(new BodyParserMiddleware())
+
+            // Record parsed importer fields before FormProtection can reject a truncated POST.
+            ->add(new BasketballBoxScoreImportDiagnosticsMiddleware())
 
             // Cross Site Request Forgery (CSRF) Protection Middleware
             // https://book.cakephp.org/5/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
