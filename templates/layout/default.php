@@ -49,7 +49,7 @@ if ($socialTitle === '') {
 
 $socialDescription = trim((string)$this->fetch('socialDescription'));
 if ($socialDescription === '') {
-    $socialDescription = 'RacerHistory tracks players, teams, games, and stat leaders from across the sport.';
+    $socialDescription = 'RacerHistory tracks players, teams, games, and stat leaders.';
 }
 
 $socialImageUrl = trim((string)$this->fetch('socialImageUrl'));
