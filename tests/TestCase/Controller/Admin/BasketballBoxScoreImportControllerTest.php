@@ -23,6 +23,7 @@ class BasketballBoxScoreImportControllerTest extends TestCase
         'app.Persons',
         'app.TeamSeasonRosters',
         'app.StatBasketGamePerson',
+        'app.StatBasketSeasonPerson',
         'app.StatBasketGameBox',
         'app.GameEav',
         'app.Sports',
@@ -352,6 +353,32 @@ TEXT;
         self::assertSame('51', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'period_1_opponent'])->firstOrFail()->get('value'));
         self::assertSame('Imported Referee', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_1'])->firstOrFail()->get('value'));
         self::assertSame('Ref B', (string)$eavTable->find()->where(['game_id' => 1, 'key' => 'official_2'])->firstOrFail()->get('value'));
+    }
+
+    /**
+     * Add imported player stats to season totals and redirect within the game's team scope.
+     *
+     * @return void
+     */
+    public function testSaveWithSeasonTotalsRedirectsToGameTeamScope(): void
+    {
+        $this->post('/admin/basketball-box-score-import/index/2?sport=basketball&team=2', [
+            'intent' => 'save',
+            'add_to_totals' => '1',
+            'team_rows' => [[
+                'import' => '1',
+                'team_season_roster_id' => '1',
+                'PTS' => '1',
+            ]],
+        ]);
+
+        $this->assertResponseCode(302);
+        $this->assertStringContainsString(
+            'sport=basketball&team=1',
+            $this->_response->getHeaderLine('Location'),
+        );
+        $seasonTotals = $this->fetchTable('StatBasketSeasonPerson')->get(1);
+        self::assertSame(121, (int)$seasonTotals->PTS);
     }
 
     /**
