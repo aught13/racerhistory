@@ -23,8 +23,11 @@ use App\Service\TeamService;
 use App\Service\TeamSportContextService;
 use App\Test\TestCase\Support\TaggingServiceFactoryTestTrait;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\Log\Log;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
+use Psr\Log\LoggerInterface;
+use Stringable;
 
 class ImagesAdminServiceTest extends TestCase
 {
@@ -371,5 +374,58 @@ class ImagesAdminServiceTest extends TestCase
         $this->assertArrayHasKey('canManageImageOwner', $data);
         $this->assertTrue($data['canManageImageOwner']);
         $this->assertSame('admin', (string)$data['ownerLabel']);
+    }
+
+    /**
+     * Tag updates log safe selection summaries and the applied tag count.
+     */
+    public function testApplyTagsLogsSafeInputSummaryAndResult(): void
+    {
+        $debugConfig = Log::getConfig('debug');
+        $errorConfig = Log::getConfig('error');
+        self::assertIsArray($debugConfig);
+        self::assertIsArray($errorConfig);
+
+        $messages = [];
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::exactly(2))->method('log')->willReturnCallback(
+            static function (mixed $level, string|Stringable $message, array $context) use (&$messages): void {
+                $messages[] = (string)$message;
+            },
+        );
+
+        Log::drop('debug');
+        Log::drop('error');
+        Log::setConfig('debug', $logger);
+
+        try {
+            $this->service->applyTags(1, [
+                'person_select' => [1],
+                'person_search' => 'Test Person',
+                'team_select' => 1,
+                'tags' => 'private-tag-value',
+            ], [
+                'id' => 1,
+                'role' => 'admin',
+                'role_id' => 1,
+                'status' => 'active',
+                'active' => true,
+            ]);
+        } finally {
+            Log::drop('debug');
+            Log::drop('error');
+            Log::setConfig('debug', $debugConfig);
+            Log::setConfig('error', $errorConfig);
+        }
+
+        self::assertCount(2, $messages);
+        self::assertStringContainsString('Image tag update started: image_id=1', $messages[0]);
+        self::assertStringContainsString('person_select=1', $messages[0]);
+        self::assertStringContainsString('team_select=1', $messages[0]);
+        self::assertStringContainsString('person_search=11', $messages[0]);
+        self::assertStringContainsString('freeform_tag_type=string', $messages[0]);
+        self::assertStringContainsString('Image tag update completed: image_id=1', $messages[1]);
+        self::assertStringContainsString('applied_tag_count=3', $messages[1]);
+        self::assertStringNotContainsString('private-tag-value', implode("\n", $messages));
     }
 }
