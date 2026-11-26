@@ -122,6 +122,7 @@ use App\Service\TeamSeasonRosterAdminService;
 use App\Service\TeamSeasonRosterService;
 use App\Service\TeamSeasonService;
 use App\Service\TeamService;
+use App\Middleware\BasketballBoxScoreImportDiagnosticsMiddleware;
 use App\Service\TeamSportContextService;
 use App\Service\UserAccountService;
 use App\Service\UserProfileService;
@@ -241,6 +242,9 @@ class Application extends BaseApplication implements
             // available as array through $request->getData()
             // https://book.cakephp.org/5/en/controllers/middleware.html#body-parser-middleware
             ->add(new BodyParserMiddleware())
+
+            // Record parsed importer fields before FormProtection can reject a truncated POST.
+            ->add(new BasketballBoxScoreImportDiagnosticsMiddleware())
 
             // Cross Site Request Forgery (CSRF) Protection Middleware
             // https://book.cakephp.org/5/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
