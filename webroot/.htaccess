@@ -1,5 +1,6 @@
 <IfModule php_module>
     php_value max_input_vars 5000
+    php_value max_multipart_body_parts 6000
 </IfModule>
 
 <IfModule mod_rewrite.c>
