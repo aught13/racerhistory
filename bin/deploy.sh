@@ -316,7 +316,6 @@ CRITICAL_ASSETS=(
     js/legacy/image-selector.js
     js/legacy/person-image.js
     js/legacy/sport-aware-game-form.js
-    webroot/css/cake.css
     webroot/dist/manifest.json
 )
 for asset in "${CRITICAL_ASSETS[@]}"; do
@@ -332,6 +331,24 @@ if grep -q '"js/main.js"' webroot/dist/manifest.json 2>/dev/null; then
     ok "Vite manifest contains js/main.js entry"
 else
     fail "Vite manifest missing js/main.js entry"
+fi
+
+if node -e '
+const fs = require("node:fs");
+const manifest = JSON.parse(fs.readFileSync("webroot/dist/manifest.json", "utf8"));
+const stylesheets = [
+  "js/styles/cake.css",
+  "js/styles/frontend.css",
+  "js/styles/blog-content.css",
+];
+if (stylesheets.some((key) => {
+  const file = manifest[key]?.file;
+  return typeof file !== "string" || !file.endsWith(".css") || !fs.existsSync(`webroot/dist/${file}`);
+})) process.exit(1);
+'; then
+    ok "Vite manifest contains built application stylesheets"
+else
+    fail "Vite manifest is missing built application stylesheets"
 fi
 
 # Check TinyMCE is present

@@ -9,7 +9,9 @@ describe("SearchBuilder CSS rules", () => {
             __dirname,
             "..",
             "..",
-            "css",
+            "..",
+            "js",
+            "styles",
             "frontend.css",
         );
         const exists = fs.existsSync(cssPath);

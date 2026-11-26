@@ -8,10 +8,13 @@ declare(strict_types=1);
  * @var array<int, string> $opponents
  * @var int|null $selectedOpponent
  * @var string|null $opponentName
+ * @var string|null $publicScopeTeamLabel
  * @var array|null $record
  * @var array|null $seriesGames
  */
-$this->assign('title', 'Series History');
+$seriesTitle = trim((string)($publicScopeTeamLabel ?? '') . ' Series History');
+$this->assign('title', $seriesTitle);
+$this->assign('socialTitle', $seriesTitle);
 $selectedOpponent = $selectedOpponent ?? null;
 $record = $record ?? null;
 $seriesGames = $seriesGames ?? null;

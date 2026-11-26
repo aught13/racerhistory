@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Model\Entity\Game;
 use App\Model\Entity\Opponent;
 use App\Model\Entity\Team;
 use App\Service\BasketballBoxScoreImportService;
@@ -133,7 +134,16 @@ class BasketballBoxScoreImportController extends AppController
                             $this->Flash->warning(__('Skipped {0} duplicate player rows.', $result['skipped']));
                         }
 
-                        return $this->redirect(['controller' => 'Games', 'action' => 'view', $gameId]);
+                        $game = $viewData['game'] ?? null;
+                        $teamId = $game instanceof Game
+                            ? (int)($game->team_season->team_id ?? 0)
+                            : 0;
+                        $redirectUrl = ['controller' => 'Games', 'action' => 'view', $gameId];
+                        if ($teamId > 0) {
+                            $redirectUrl['?'] = ['sport' => 'basketball', 'team' => (string)$teamId];
+                        }
+
+                        return $this->redirect($redirectUrl);
                     }
 
                     foreach ($result['errors'] as $error) {

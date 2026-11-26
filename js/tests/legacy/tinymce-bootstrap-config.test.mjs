@@ -51,6 +51,7 @@ describe("tinymce-bootstrap-config module", () => {
         expect(config.plugins).toContain("link");
         expect(config.content_css).toBeDefined();
         expect(Array.isArray(config.content_css)).toBe(true);
+        expect(config.content_css).toContain("/mock-asset");
     });
 
     test("createTinyMCEConfig uses default selector when not provided", async () => {

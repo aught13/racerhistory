@@ -157,6 +157,19 @@ class DeployAuditServiceTest extends TestCase
     }
 
     /**
+     * Tests Vite-built stylesheets are verified by the deployment audit.
+     */
+    public function testViteStylesheetsArePresent(): void
+    {
+        $audit = $this->service->run();
+        $labels = array_column($audit['results'], 'label');
+
+        $this->assertContains('Vite stylesheet: js/styles/cake.css', $labels);
+        $this->assertContains('Vite stylesheet: js/styles/frontend.css', $labels);
+        $this->assertContains('Vite stylesheet: js/styles/blog-content.css', $labels);
+    }
+
+    /**
      * Tests error and warning counts match results.
      */
     public function testErrorAndWarningCountsMatchResults(): void

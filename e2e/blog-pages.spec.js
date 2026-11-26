@@ -29,10 +29,21 @@ test.describe("Blog - Public Pages", () => {
     });
 
     test("should display blog CSS styles", async ({ page }) => {
-        // Check that blog-content CSS is loaded
         const hasBlogCss = await page.evaluate(() => {
             const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
-            return links.some(l => l.href.includes('blog-content.css'));
+            return links.some((link) => {
+                if (!link.href.includes("/dist/assets/") || !link.sheet) {
+                    return false;
+                }
+
+                try {
+                    return Array.from(link.sheet.cssRules).some((rule) =>
+                        rule.cssText.includes(".blog-content img"),
+                    );
+                } catch {
+                    return false;
+                }
+            });
         });
 
         expect(hasBlogCss).toBe(true);

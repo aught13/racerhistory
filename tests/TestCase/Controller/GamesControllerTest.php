@@ -8,6 +8,7 @@ use Cake\TestSuite\IntegrationTestTrait;
 use Cake\TestSuite\TestCase;
 use DateTimeImmutable;
 use DOMDocument;
+use DOMElement;
 use DOMXPath;
 
 /**
@@ -1087,6 +1088,43 @@ class GamesControllerTest extends TestCase
         $this->assertResponseContains('Change opponent');
         $this->assertResponseContains('series-opponents-picker-panel');
         $this->assertResponseContains('d-none');
+    }
+
+    /**
+     * Series history preview metadata includes its selected team and concise description.
+     */
+    public function testSeriesHistoryPreviewUsesSelectedTeam(): void
+    {
+        $this->replaceRequest(['query' => ['sport' => 'basketball', 'team' => '2']]);
+        $this->get('/games/series-history?opponent_id=1&sport=basketball&team=2');
+        $this->assertResponseOk();
+
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML((string)$this->_response->getBody());
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($dom);
+        $socialTitle = $xpath->query('//meta[@property="og:title"]')->item(0);
+        $this->assertInstanceOf(DOMElement::class, $socialTitle);
+        $this->assertSame(
+            "Celtics Men's Boston Celtics Series History",
+            $socialTitle->getAttribute('content'),
+        );
+
+        $socialDescription = $xpath->query('//meta[@property="og:description"]')->item(0);
+        $this->assertInstanceOf(DOMElement::class, $socialDescription);
+        $this->assertSame(
+            'RacerHistory tracks players, teams, games, and stat leaders.',
+            $socialDescription->getAttribute('content'),
+        );
+
+        $pageTitle = $xpath->query('//title')->item(0);
+        $this->assertNotNull($pageTitle);
+        $this->assertSame(
+            "Celtics Men's Boston Celtics Series History | RacerHistory",
+            trim($pageTitle->textContent),
+        );
     }
 
     /**
